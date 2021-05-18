@@ -138,5 +138,8 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 		return
 	}
 	fdata, _ := base64.StdEncoding.DecodeString(f.Content)
-	response.Success(ctx, 200, string(fdata))
+	response.Success(ctx, 200, gin.H{
+		"data": string(fdata),
+		"type": marsC.ConfigFileType,
+	})
 }
