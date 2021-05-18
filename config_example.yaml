@@ -1,8 +1,8 @@
 app_port: 6000
 debug: false
 
-# logrus or klog
-log_channel: "logrus"
+# logrus
+#log_channel: "logrus"
 
 profile_enabled: true
 

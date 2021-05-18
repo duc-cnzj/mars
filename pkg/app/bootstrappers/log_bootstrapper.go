@@ -14,7 +14,7 @@ type LogBootstrapper struct{}
 
 func (a *LogBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	switch app.Config().LogChannel {
-	case "logrus":
+	case "", "logrus":
 		mlog.SetLogger(logrusLogger(app))
 	default:
 		return errors.New("log channel not exists: " + app.Config().LogChannel)
