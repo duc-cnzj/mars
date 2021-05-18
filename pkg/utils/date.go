@@ -1,0 +1,7 @@
+package utils
+
+import "time"
+
+func ToHumanizeDatetimeString(time *time.Time) string {
+	return time.Format("2006-01-02 15:04:05")
+}
