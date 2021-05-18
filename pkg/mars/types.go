@@ -34,6 +34,16 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 		}
 	} else {
 		switch mars.ConfigFileType {
+		case "yaml":
+			var data map[string]interface{}
+			decoder := yaml.NewDecoder(strings.NewReader(input))
+			if err := decoder.Decode(&data); err != nil {
+				return "", nil, err
+			}
+
+			if yamlData, err = EncodeConfigToYaml(mars.ConfigField, data); err != nil {
+				return "", nil, err
+			}
 		case "json":
 			var data map[string]interface{}
 			if err := json.Unmarshal([]byte(input), &data); err != nil {
