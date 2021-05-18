@@ -182,3 +182,41 @@ func checkIfInstallable(ch *chart.Chart) error {
 	}
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
+
+//StatusUnknown Status = "unknown"
+//StatusDeployed Status = "deployed"
+//StatusFailed Status = "failed"
+
+const (
+	StatusUnknown  string = "unknown"
+	StatusDeployed string = "deployed"
+	StatusFailed   string = "failed"
+)
+
+func ReleaseStatus(releaseName, namespace string) (string, error) {
+	var settings = GetSettings(namespace)
+
+	mlog.Warning("settings ns", settings.Namespace())
+	actionConfig := new(action.Configuration)
+	flags := genericclioptions.NewConfigFlags(true)
+	flags.Namespace = &namespace
+	*flags.KubeConfig = "/Users/duc/.kube/config"
+	if err := actionConfig.Init(flags, namespace, "", log.Printf); err != nil {
+		return "", err
+	}
+	statusClient := action.NewStatus(actionConfig)
+	run, err := statusClient.Run(releaseName)
+	if err != nil {
+		mlog.Error(err)
+		return "", err
+	}
+
+	switch run.Info.Status {
+	case release.StatusDeployed:
+		return StatusDeployed, err
+	case release.StatusFailed:
+		return StatusFailed, err
+	default:
+		return StatusUnknown, err
+	}
+}

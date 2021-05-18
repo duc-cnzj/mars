@@ -57,6 +57,7 @@ func Init(e *gin.Engine) {
 		proC := controllers.NewProjectController()
 		api.POST("/namespaces/:namespace_id/projects", proC.Store)
 		api.DELETE("/namespaces/:namespace_id/projects/:project_id", proC.Destroy)
+		api.GET("/namespaces/:namespace_id/projects/:project_id", proC.Show)
 
 		gitlabController := controllers.NewGitlabController()
 		api.GET("/gitlab/projects", gitlabController.Projects)

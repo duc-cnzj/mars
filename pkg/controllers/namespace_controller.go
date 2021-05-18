@@ -23,6 +23,12 @@ func NewNamespaceController() *NamespaceController {
 	return &NamespaceController{}
 }
 
+type SimpleProjectItem struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 type NamespaceItem struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
@@ -31,15 +37,31 @@ type NamespaceItem struct {
 
 	Cpu    string `json:"cpu"`
 	Memory string `json:"memory"`
+
+	Projects []SimpleProjectItem `json:"projects"`
 }
 
 func (ns *NamespaceController) Index(ctx *gin.Context) {
 	var namespaces []*models.Namespace
-	utils.DB().Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
+	utils.DB().Preload("Projects").Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
 	var res = make([]NamespaceItem, 0, len(namespaces))
 
 	for _, namespace := range namespaces {
 		cpu, memory := utils.GetCpuAndMemoryInNamespace(namespace.Name)
+		var projects = make([]SimpleProjectItem, 0, len(namespace.Projects))
+		for _, project := range namespace.Projects {
+			status, err := utils.ReleaseStatus(project.Name, namespace.Name)
+			if err != nil {
+				mlog.Error(err)
+				status = utils.StatusUnknown
+			}
+			projects = append(projects, SimpleProjectItem{
+				ID:     project.ID,
+				Name:   project.Name,
+				Status: status,
+			})
+		}
+
 		res = append(res, NamespaceItem{
 			ID:        namespace.ID,
 			Name:      namespace.Name,
@@ -47,6 +69,7 @@ func (ns *NamespaceController) Index(ctx *gin.Context) {
 			UpdatedAt: namespace.UpdatedAt,
 			Cpu:       cpu,
 			Memory:    memory,
+			Projects:  projects,
 		})
 	}
 
