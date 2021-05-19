@@ -94,9 +94,10 @@ func (p *ProjectController) Store(ctx *gin.Context) {
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath},
 	}
-	//input.Config
 	if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts); err != nil {
 		mlog.Error(err)
+		response.Error(ctx, 500, err)
+		return
 	}
 
 	response.Success(ctx, http.StatusCreated, project)

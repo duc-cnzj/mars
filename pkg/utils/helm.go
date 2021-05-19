@@ -69,7 +69,8 @@ func GetSettings(namespace string) *cli.EnvSettings {
 	config := (*genericclioptions.ConfigFlags)(unsafe.Pointer(s))
 	v := namespace
 	reflect.ValueOf(config).Elem().FieldByName("Namespace").Set(reflect.ValueOf(&v))
-	mlog.Warning(config, s)
+	s.Debug = App().IsDebug()
+	mlog.Warningf("%#v", s)
 
 	return s
 }
@@ -77,19 +78,19 @@ func GetSettings(namespace string) *cli.EnvSettings {
 // UpgradeOrInstall TODO
 func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options) (*release.Release, error) {
 	var settings = GetSettings(namespace)
-
 	mlog.Warning("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
 	*flags.KubeConfig = "/Users/duc/.kube/config"
-	if err := actionConfig.Init(flags, namespace, "", log.Printf); err != nil {
+	if err := actionConfig.Init(flags, namespace, "", mlog.Warningf); err != nil {
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
 	//client.DryRun = true
 	// TODO
-	client.Atomic = false
+	client.Atomic = true
+	client.WaitForJobs = true
 	client.Install = true
 	client.Timeout = 2 * time.Minute
 	client.Namespace = namespace
