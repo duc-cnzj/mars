@@ -3,7 +3,6 @@ package controllers
 import (
 	"bytes"
 	"encoding/base64"
-	"net/http"
 
 	"github.com/DuC-cnZj/mars/pkg/mars"
 	"github.com/DuC-cnZj/mars/pkg/mlog"
@@ -11,12 +10,9 @@ import (
 	"github.com/DuC-cnZj/mars/pkg/response"
 	"github.com/DuC-cnZj/mars/pkg/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/gosimple/slug"
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli/values"
 )
 
 type ProjectController struct{}
@@ -26,81 +22,13 @@ func NewProjectController() *ProjectController {
 }
 
 type ProjectStoreInput struct {
-	NamespaceId int `uri:"namespace_id"`
+	NamespaceId int `uri:"namespace_id" json:"namespace_id"`
 
 	Name            string `json:"name"`
 	GitlabProjectId int    `json:"gitlab_project_id"`
 	GitlabBranch    string `json:"gitlab_branch"`
 	GitlabCommit    string `json:"gitlab_commit"`
 	Config          string `json:"config"`
-}
-
-func (p *ProjectController) Store(ctx *gin.Context) {
-	var input ProjectStoreInput
-	if err := ctx.ShouldBindUri(&input); err != nil {
-		response.Error(ctx, 422, err)
-		return
-	}
-	if err := ctx.ShouldBind(&input); err != nil {
-		response.Error(ctx, 422, err)
-		return
-	}
-
-	var ns models.Namespace
-	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
-		response.Error(ctx, 500, err)
-
-		return
-	}
-
-	input.Name = slug.Make(input.Name)
-
-	project := models.Project{
-		Name:            input.Name,
-		GitlabProjectId: input.GitlabProjectId,
-		GitlabBranch:    input.GitlabBranch,
-		GitlabCommit:    input.GitlabCommit,
-		Config:          input.Config,
-		NamespaceId:     ns.ID,
-	}
-	utils.DB().Create(&project)
-
-	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
-	if err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(input.GitlabProjectId, marsC.LocalChartPath, &gitlab.GetFileOptions{Ref: gitlab.String(input.GitlabBranch)})
-	if err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-	archive, _ := base64.StdEncoding.DecodeString(file.Content)
-
-	loadArchive, err := loader.LoadArchive(bytes.NewReader(archive))
-	if err != nil {
-		response.Error(ctx, 500, err)
-
-		return
-	}
-
-	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
-	if err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-	defer deleteFn()
-
-	var valueOpts = &values.Options{
-		ValueFiles: []string{filePath},
-	}
-	if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts); err != nil {
-		mlog.Error(err)
-		response.Error(ctx, 500, err)
-		return
-	}
-
-	response.Success(ctx, http.StatusCreated, project)
 }
 
 type ProjectDetailItem struct {
