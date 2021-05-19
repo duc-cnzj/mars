@@ -69,13 +69,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		}
 		mlog.Infof("receive msg %s", message)
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
-			r := &WsResponse{
-				Type:    "error to Unmarshal",
-				Success: false,
-				Error:   err.Error(),
-			}
-			mlog.Error("json.Unmarshal", err.Error())
-			c.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+			c.WriteMessage(websocket.TextMessage, NewErrorEndResponse("", "", err).EncodeToBytes())
 			continue
 		}
 
@@ -116,6 +110,8 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 
 	input.Name = slug.Make(input.Name)
 
+	var slugName = slug.Make(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
+
 	var project models.Project
 	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
 		utils.DB().Where("`id` = ?", project.ID).Updates(map[string]interface{}{
@@ -138,45 +134,25 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
 	if err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
 		return
 	}
 	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(input.GitlabProjectId, marsC.LocalChartPath, &gitlab.GetFileOptions{Ref: gitlab.String(input.GitlabBranch)})
 	if err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
 		return
 	}
 	archive, _ := base64.StdEncoding.DecodeString(file.Content)
 
 	loadArchive, err := loader.LoadArchive(bytes.NewReader(archive))
 	if err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
 		return
 	}
 
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
 		return
 	}
 	defer deleteFn()
@@ -214,13 +190,15 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 	for s := range ch {
 		r := &WsResponse{
 			Type: wstype,
-			Slug: slug.Make(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name)),
+			Slug: slugName,
+			Data: s.Msg,
 		}
-		r.Data = s.Msg
+
 		if s.Type == "error" {
 			r.Success = false
 			r.End = true
 		}
+
 		if s.Type == "success" {
 			r.Success = true
 			r.End = true
@@ -232,4 +210,14 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 type MessageItem struct {
 	Msg  string
 	Type string
+}
+
+func NewErrorEndResponse(slug, wsType string, err error) *WsResponse {
+	return &WsResponse{
+		Slug:    slug,
+		Type:    wsType,
+		Success: false,
+		Error:   err.Error(),
+		End:     true,
+	}
 }
