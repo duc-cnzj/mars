@@ -146,6 +146,10 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 		NamespaceId:     ns.ID,
 	}
 
+	var namespace models.Namespace
+
+	utils.DB().Where("`id` = ?", ns.ID).First(&namespace)
+
 	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
 
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
@@ -222,7 +226,7 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 
 	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
 
-	for key, secret := range project.Namespace.ImagePullSecretsArray() {
+	for key, secret := range namespace.ImagePullSecretsArray() {
 		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
 	}
