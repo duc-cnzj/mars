@@ -10,7 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.5.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.4.2
 	github.com/gosimple/slug v1.9.0
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
@@ -38,14 +38,14 @@ require (
 	gorm.io/driver/mysql v1.1.0
 	gorm.io/gorm v1.21.9
 	helm.sh/helm/v3 v3.5.4
-	k8s.io/api v0.20.6
-	k8s.io/apimachinery v0.20.6
-	k8s.io/cli-runtime v0.20.6
-	k8s.io/client-go v0.20.6
+	k8s.io/api v0.20.7
+	k8s.io/apimachinery v0.20.7
+	k8s.io/cli-runtime v0.20.7
+	k8s.io/client-go v0.20.7
 	k8s.io/klog/v2 v2.8.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
-	k8s.io/kubectl v0.20.4 // indirect
-	k8s.io/metrics v0.20.6
+	k8s.io/kubectl v0.20.7
+	k8s.io/metrics v0.20.7
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 )
 

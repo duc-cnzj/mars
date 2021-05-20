@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/DuC-cnZj/mars/pkg/mlog"
@@ -187,14 +188,57 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 	}
 	defer deleteFn()
 
+	SendMsg(conn, slugName, wsType, "解析镜像tag")
+	t := template.New("tag_parse")
+	parse, err := t.Parse(marsC.DockerTagFormat)
+	if err != nil {
+		SendEndError(conn, slugName, wsType, err)
+		return
+	}
+	b := &bytes.Buffer{}
+	commit, _, err := utils.GitlabClient().Commits.GetCommit(project.GitlabProjectId, project.GitlabCommit)
+	if err != nil {
+		SendEndError(conn, slugName, wsType, err)
+		return
+	}
+	var pipelineID int
+
+	if commit.LastPipeline != nil {
+		pipelineID = commit.LastPipeline.ID
+	}
+
+	SendMsg(conn, slugName, wsType, fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", project.GitlabBranch, project.GitlabCommit, pipelineID))
+
+	if err := parse.Execute(b, struct {
+		Branch   string
+		Commit   string
+		Pipeline int
+	}{
+		Branch:   project.GitlabBranch,
+		Commit:   project.GitlabCommit,
+		Pipeline: pipelineID,
+	}); err != nil {
+		SendEndError(conn, slugName, wsType, err)
+		return
+	}
+
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath},
-		Values:     []string{},
+		Values: []string{
+			"image.pullPolicy=IfNotPresent",
+			"image.repository=" + marsC.DockerRepository,
+			"image.tag=" + b.String(),
+		},
 	}
+
+	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
 
 	for key, secret := range project.Namespace.ImagePullSecretsArray() {
 		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
+		SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
 	}
+
+	valueOpts.Values = append(valueOpts.Values, marsC.DefaultValues...)
 
 	ch := make(chan MessageItem)
 	fn := func(format string, v ...interface{}) {
@@ -205,6 +249,7 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 			Type: "text",
 		}
 	}
+
 	SendMsg(conn, slugName, wsType, "准备部署...")
 
 	go func() {
