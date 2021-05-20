@@ -12,3 +12,13 @@ db_port: 3306
 db_database: mars
 db_username: root
 db_password: ""
+
+imagepullsecrets:
+  - username: "jack"
+    password: "12345"
+    email: "jack@example.com"
+    server: "registry.cn-hangzhou.aliyuncs.com"
+  - username: "john"
+    password: "12345"
+    email: "john@example.com"
+    server: "registry.cn-hangzhou.aliyuncs.com"
