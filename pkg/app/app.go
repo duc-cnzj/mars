@@ -24,7 +24,6 @@ var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.K8sClientBootstrapper{},
-	&bootstrappers.HelmBootstrapper{},
 	&bootstrappers.GitlabBootstrapper{},
 	&bootstrappers.ValidatorBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
@@ -40,8 +39,7 @@ type Application struct {
 
 	dbManager contracts.DBManager
 
-	clientSet  *contracts.K8sClient
-	helmConfig *contracts.HelmClient
+	clientSet *contracts.K8sClient
 
 	gitlabClient *gitlab.Client
 
@@ -60,14 +58,6 @@ func (app *Application) GitlabClient() *gitlab.Client {
 
 func (app *Application) SetGitlabClient(client *gitlab.Client) {
 	app.gitlabClient = client
-}
-
-func (app *Application) HelmConfig() *contracts.HelmClient {
-	return app.helmConfig
-}
-
-func (app *Application) SetHelmConfig(configuration *contracts.HelmClient) {
-	app.helmConfig = configuration
 }
 
 func (app *Application) K8sClient() *contracts.K8sClient {

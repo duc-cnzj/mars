@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/xanzy/go-gitlab"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 
@@ -24,11 +22,6 @@ type K8sClient struct {
 	MetricsClient *versioned.Clientset
 }
 
-type HelmClient struct {
-	Setting *cli.EnvSettings
-	Config  *action.Configuration
-}
-
 type Option func(ApplicationInterface)
 
 type ApplicationInterface interface {
@@ -39,9 +32,6 @@ type ApplicationInterface interface {
 
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
-
-	HelmConfig() *HelmClient
-	SetHelmConfig(*HelmClient)
 
 	Bootstrap() error
 	Config() *config.Config

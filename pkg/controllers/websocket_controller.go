@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/DuC-cnZj/mars/pkg/mlog"
 	"github.com/DuC-cnZj/mars/pkg/models"
@@ -16,6 +17,13 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli/values"
+)
+
+const (
+	ResultError        string = "error"
+	ResultSuccess      string = "success"
+	ResultDeployed     string = "deployed"
+	ResultDeployFailed string = "deployed_failed"
 )
 
 var upgrader = websocket.Upgrader{
@@ -37,18 +45,25 @@ type WsRequest struct {
 
 type WsResponse struct {
 	// 有可能同一个用户同时部署两个环境, 必须要有 slug 区分
-	Slug    string `json:"slug"`
-	Type    string `json:"type"`
-	Success bool   `json:"success"`
-	Data    string `json:"data,omitempty"`
-	Error   string `json:"error,omitempty"`
-	End     bool   `json:"end"`
+	Slug   string `json:"slug"`
+	Type   string `json:"type"`
+	Result string `json:"result"`
+	Data   string `json:"data"`
+	End    bool   `json:"end"`
 }
 
 func (r *WsResponse) EncodeToBytes() []byte {
 	marshal, _ := json.Marshal(&r)
 	return marshal
 }
+
+const (
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 1024 * 5
+)
 
 func (*WebsocketController) Ws(ctx *gin.Context) {
 	c, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
@@ -57,6 +72,9 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		return
 	}
 	defer c.Close()
+
+	c.SetReadLimit(maxMessageSize)
+	c.SetPongHandler(func(string) error { c.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	mlog.Debug("ws connected")
 
@@ -69,7 +87,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		}
 		mlog.Infof("receive msg %s", message)
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
-			c.WriteMessage(websocket.TextMessage, NewErrorEndResponse("", "", err).EncodeToBytes())
+			SendEndError(c, "", "", err)
 			continue
 		}
 
@@ -77,40 +95,43 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		switch wsRequest.Type {
 		case "create_project":
 			mlog.Infof("create_project type %s data %s", wsRequest.Type, wsRequest.Data)
-			c.WriteMessage(1, []byte(fmt.Sprintf("create_project type %s data %s", wsRequest.Type, wsRequest.Data)))
+			SendMsg(c, "", wsRequest.Type, "收到请求，开始创建项目")
 			handleCreateProject(wsRequest.Type, wsRequest, c)
 		}
 	}
+}
+
+type ProjectStoreInput struct {
+	NamespaceId int `uri:"namespace_id" json:"namespace_id"`
+
+	Name            string `json:"name"`
+	GitlabProjectId int    `json:"gitlab_project_id"`
+	GitlabBranch    string `json:"gitlab_branch"`
+	GitlabCommit    string `json:"gitlab_commit"`
+	Config          string `json:"config"`
 }
 
 func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Conn) {
 	var input ProjectStoreInput
 
 	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
 		mlog.Error(wsRequest.Data, &input)
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		SendEndError(conn, "", wstype, err)
 		return
 	}
 
 	var ns models.Namespace
 	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
-		r := &WsResponse{
-			Type:    wstype,
-			Success: false,
-			Error:   err.Error(),
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
+		mlog.Error(err)
+		SendEndError(conn, "", wstype, err)
 		return
 	}
 
 	input.Name = slug.Make(input.Name)
 
 	var slugName = slug.Make(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
+
+	SendMsg(conn, slugName, wstype, "校验传参...")
 
 	var project models.Project
 	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
@@ -132,27 +153,33 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 		utils.DB().Create(&project)
 	}
 
+	SendMsg(conn, slugName, wstype, "校验项目配置传参...")
+
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
 	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
+		SendEndError(conn, slugName, wstype, err)
 		return
 	}
+
 	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(input.GitlabProjectId, marsC.LocalChartPath, &gitlab.GetFileOptions{Ref: gitlab.String(input.GitlabBranch)})
 	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
+		SendEndError(conn, slugName, wstype, err)
 		return
 	}
 	archive, _ := base64.StdEncoding.DecodeString(file.Content)
 
+	SendMsg(conn, slugName, wstype, "加载 helm charts...")
+
 	loadArchive, err := loader.LoadArchive(bytes.NewReader(archive))
 	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
+		SendEndError(conn, slugName, wstype, err)
 		return
 	}
 
+	SendMsg(conn, slugName, wstype, "生成配置文件...")
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, NewErrorEndResponse(slugName, wstype, err).EncodeToBytes())
+		SendEndError(conn, slugName, wstype, err)
 		return
 	}
 	defer deleteFn()
@@ -170,6 +197,8 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 			Type: "text",
 		}
 	}
+	SendMsg(conn, slugName, wstype, "准备部署...")
+
 	go func() {
 		if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
 			mlog.Error(err)
@@ -188,22 +217,14 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 	}()
 
 	for s := range ch {
-		r := &WsResponse{
-			Type: wstype,
-			Slug: slugName,
-			Data: s.Msg,
+		switch s.Type {
+		case "text":
+			SendMsg(conn, slugName, wstype, s.Msg)
+		case "error":
+			SendEndMsg(conn, ResultDeployFailed, slugName, wstype, s.Msg)
+		case "success":
+			SendEndMsg(conn, ResultDeployed, slugName, wstype, s.Msg)
 		}
-
-		if s.Type == "error" {
-			r.Success = false
-			r.End = true
-		}
-
-		if s.Type == "success" {
-			r.Success = true
-			r.End = true
-		}
-		conn.WriteMessage(websocket.TextMessage, r.EncodeToBytes())
 	}
 }
 
@@ -212,12 +233,46 @@ type MessageItem struct {
 	Type string
 }
 
-func NewErrorEndResponse(slug, wsType string, err error) *WsResponse {
-	return &WsResponse{
-		Slug:    slug,
-		Type:    wsType,
-		Success: false,
-		Error:   err.Error(),
-		End:     true,
+func SendEndError(conn *websocket.Conn, slug, wsType string, err error) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    true,
 	}
+	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func SendError(conn *websocket.Conn, slug, wsType string, err error) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    false,
+	}
+	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func SendMsg(conn *websocket.Conn, slug, wsType string, msg string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   msg,
+	}
+	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func SendEndMsg(conn *websocket.Conn, result, slug, wsType string, msg string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: result,
+		End:    true,
+		Data:   msg,
+	}
+	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }

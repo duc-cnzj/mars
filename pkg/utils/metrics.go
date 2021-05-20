@@ -43,8 +43,7 @@ func analyseMetricsToCpuAndMemory(list *v1beta1.PodMetricsList) (string, string)
 		}
 	}
 
-	var cpuStr string
-	var memoryStr string
+	var cpuStr, memoryStr string
 	if cpu != nil {
 		cpuStr = fmt.Sprintf("%d m", cpu.MilliValue())
 	}

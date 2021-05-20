@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/DuC-cnZj/mars/pkg/event/events"
@@ -89,7 +90,7 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 	input.Namespace = utils.GetMarsNamespace(input.Namespace)
 
 	// 创建名称空间
-	create, err := utils.K8s().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: input.Namespace}}, metav1.CreateOptions{})
+	create, err := utils.K8sClientSet().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: input.Namespace}}, metav1.CreateOptions{})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -120,8 +121,22 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 		return
 	}
 
-	if utils.DB().Where("`id` = ?", input.NamespaceId).First(&namespace).Error == nil {
-		if err := utils.K8s().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
+	// 删除空间前，要先删除空间下的项目
+	if utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error == nil {
+		wg := sync.WaitGroup{}
+		wg.Add(len(namespace.Projects))
+		for _, project := range namespace.Projects {
+			go func(releaseName, namespace string) {
+				defer wg.Done()
+				mlog.Debug("delete release %s namespace %s", releaseName, namespace)
+				if err := utils.UninstallRelease(releaseName, namespace); err != nil {
+					mlog.Error(err)
+					return
+				}
+			}(project.Name, namespace.Name)
+		}
+		wg.Wait()
+		if err := utils.K8sClientSet().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
 			mlog.Error("删除 namespace 出现错误: ", err)
 		}
 		utils.DB().Delete(&namespace)

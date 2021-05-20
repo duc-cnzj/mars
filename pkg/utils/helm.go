@@ -87,11 +87,10 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
-	//client.DryRun = true
-	// TODO
 	client.Atomic = true
 	client.WaitForJobs = true
 	client.Install = true
+	// TODO
 	client.Timeout = 30 * time.Second
 	//client.Timeout = 2 * time.Minute
 	client.Namespace = namespace
@@ -149,6 +148,22 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	return client.Run(releaseName, ch, vals)
 }
 
+func UninstallRelease(releaseName, namespace string) error {
+	settings := GetSettings(namespace)
+	actionConfig := new(action.Configuration)
+
+	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "", mlog.Debugf); err != nil {
+		return err
+	}
+
+	uninstall := action.NewUninstall(actionConfig)
+	if _, err := uninstall.Run(releaseName); err != nil {
+		mlog.Error(err)
+		return err
+	}
+	return nil
+}
+
 func runInstall(releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options, settings *cli.EnvSettings) (*release.Release, error) {
 	mlog.Debugf("Original chart version: %q", client.Version)
 	if client.Version == "" && client.Devel {
@@ -184,10 +199,6 @@ func checkIfInstallable(ch *chart.Chart) error {
 	}
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
-
-//StatusUnknown Status = "unknown"
-//StatusDeployed Status = "deployed"
-//StatusFailed Status = "failed"
 
 const (
 	StatusUnknown  string = "unknown"

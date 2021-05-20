@@ -12,23 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
-	"helm.sh/helm/v3/pkg/action"
 )
 
 type ProjectController struct{}
 
 func NewProjectController() *ProjectController {
 	return &ProjectController{}
-}
-
-type ProjectStoreInput struct {
-	NamespaceId int `uri:"namespace_id" json:"namespace_id"`
-
-	Name            string `json:"name"`
-	GitlabProjectId int    `json:"gitlab_project_id"`
-	GitlabBranch    string `json:"gitlab_branch"`
-	GitlabCommit    string `json:"gitlab_commit"`
-	Config          string `json:"config"`
 }
 
 type ProjectDetailItem struct {
@@ -113,15 +102,7 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
-	settings := utils.GetSettings(project.Namespace.Name)
-	actionConfig := new(action.Configuration)
-
-	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "", mlog.Debugf); err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-	uninstall := action.NewUninstall(actionConfig)
-	if _, err := uninstall.Run(project.Name); err != nil {
+	if err := utils.UninstallRelease(project.Name, project.Namespace.Name); err != nil {
 		mlog.Error(err)
 	}
 	utils.DB().Delete(&project)
