@@ -137,24 +137,13 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 
 	SendMsg(conn, slugName, wsType, "校验传参...")
 
-	var project models.Project
-	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
-		utils.DB().Where("`id` = ?", project.ID).Updates(map[string]interface{}{
-			"config":            input.Config,
-			"gitlab_project_id": input.GitlabProjectId,
-			"gitlab_commit":     input.GitlabCommit,
-			"gitlab_branch":     input.GitlabBranch,
-		})
-	} else {
-		project = models.Project{
-			Name:            input.Name,
-			GitlabProjectId: input.GitlabProjectId,
-			GitlabBranch:    input.GitlabBranch,
-			GitlabCommit:    input.GitlabCommit,
-			Config:          input.Config,
-			NamespaceId:     ns.ID,
-		}
-		utils.DB().Create(&project)
+	var project = models.Project{
+		Name:            input.Name,
+		GitlabProjectId: input.GitlabProjectId,
+		GitlabBranch:    input.GitlabBranch,
+		GitlabCommit:    input.GitlabCommit,
+		Config:          input.Config,
+		NamespaceId:     ns.ID,
 	}
 
 	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
@@ -264,6 +253,16 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 			ch <- MessageItem{
 				Msg:  "部署成功",
 				Type: "success",
+			}
+			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
+				utils.DB().Where("`id` = ?", project.ID).Updates(map[string]interface{}{
+					"config":            input.Config,
+					"gitlab_project_id": input.GitlabProjectId,
+					"gitlab_commit":     input.GitlabCommit,
+					"gitlab_branch":     input.GitlabBranch,
+				})
+			} else {
+				utils.DB().Create(&project)
 			}
 			close(ch)
 		}
