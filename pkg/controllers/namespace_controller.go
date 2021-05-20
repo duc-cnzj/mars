@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -84,10 +85,16 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 	}
 	input.Namespace = utils.GetMarsNamespace(input.Namespace)
 
+	if utils.DB().Where("`name` = ?", input.Namespace).First(&models.Namespace{}).Error == nil {
+		response.Error(ctx, 422, errors.New("namespace already exists"))
+		return
+	}
+
 	// 创建名称空间
 	create, err := utils.K8sClientSet().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: input.Namespace}}, metav1.CreateOptions{})
 	if err != nil {
 		response.Error(ctx, 500, err)
+		mlog.Error(err)
 		return
 	}
 
@@ -153,6 +160,21 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 			utils.DB().Delete(&namespace.Projects)
 		}
 		utils.DB().Delete(&namespace)
+	}
+
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+LABEL:
+	for {
+		select {
+		case <-time.After(500 * time.Millisecond):
+			if _, err := utils.K8sClientSet().CoreV1().Namespaces().Get(context.Background(), namespace.Name, metav1.GetOptions{}); err != nil {
+				mlog.Error(err)
+				break LABEL
+			}
+		case <-timer.C:
+			break LABEL
+		}
 	}
 
 	utils.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &namespace})
