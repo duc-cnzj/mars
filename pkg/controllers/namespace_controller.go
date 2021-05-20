@@ -37,9 +37,6 @@ type NamespaceItem struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	Cpu    string `json:"cpu"`
-	Memory string `json:"memory"`
-
 	Projects []SimpleProjectItem `json:"projects"`
 }
 
@@ -49,7 +46,6 @@ func (ns *NamespaceController) Index(ctx *gin.Context) {
 	var res = make([]NamespaceItem, 0, len(namespaces))
 
 	for _, namespace := range namespaces {
-		cpu, memory := utils.GetCpuAndMemoryInNamespace(namespace.Name)
 		var projects = make([]SimpleProjectItem, 0, len(namespace.Projects))
 		for _, project := range namespace.Projects {
 			status, err := utils.ReleaseStatus(project.Name, namespace.Name)
@@ -69,8 +65,6 @@ func (ns *NamespaceController) Index(ctx *gin.Context) {
 			Name:      namespace.Name,
 			CreatedAt: namespace.CreatedAt,
 			UpdatedAt: namespace.UpdatedAt,
-			Cpu:       cpu,
-			Memory:    memory,
 			Projects:  projects,
 		})
 	}
@@ -164,4 +158,28 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 	utils.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &namespace})
 
 	response.Success(ctx, http.StatusNoContent, "")
+}
+
+func (*NamespaceController) CpuAndMemory(ctx *gin.Context) {
+	var (
+		input     NamespaceUri
+		namespace models.Namespace
+	)
+	if err := ctx.ShouldBindUri(&input); err != nil {
+		response.Error(ctx, 422, err)
+		return
+	}
+
+	if err := utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
+		response.Error(ctx, 500, err)
+
+		return
+	}
+
+	cpu, memory := utils.GetCpuAndMemoryInNamespace(namespace.Name)
+
+	response.Success(ctx, 200, gin.H{
+		"cpu":    cpu,
+		"memory": memory,
+	})
 }

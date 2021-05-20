@@ -43,6 +43,7 @@ func Init(e *gin.Engine) {
 		nsC := controllers.NewNamespaceController()
 		api.GET("/namespaces", nsC.Index)
 		api.POST("/namespaces", nsC.Store)
+		api.GET("/namespaces/:namespace_id/cpu_and_memory", nsC.CpuAndMemory)
 		api.DELETE("/namespaces/:namespace_id", nsC.Destroy)
 
 		proC := controllers.NewProjectController()
