@@ -250,10 +250,6 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 			}
 			close(ch)
 		} else {
-			ch <- MessageItem{
-				Msg:  "部署成功",
-				Type: "success",
-			}
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
 				utils.DB().Where("`id` = ?", project.ID).Updates(map[string]interface{}{
 					"config":            input.Config,
@@ -263,6 +259,10 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 				})
 			} else {
 				utils.DB().Create(&project)
+			}
+			ch <- MessageItem{
+				Msg:  "部署成功",
+				Type: "success",
 			}
 			close(ch)
 		}
