@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -18,7 +19,7 @@ type Namespace struct {
 
 	Name string `json:"name" gorm:"size:100;not null;unique;comment:'项目空间名'"`
 
-	// ImagePullSecret 目前只支持一个 secret
+	// ImagePullSecrets
 	ImagePullSecrets string `json:"image_pull_secrets" gorm:"size:255;not null;default:'';comment:'项目空间拉取镜像的secrets，数组'"`
 
 	CreatedAt time.Time      `json:"created_at"`
@@ -26,4 +27,8 @@ type Namespace struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 
 	Projects []Project
+}
+
+func (ns *Namespace) ImagePullSecretsArray() []string {
+	return strings.Split(ns.ImagePullSecrets, ",")
 }

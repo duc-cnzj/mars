@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DuC-cnZj/mars/pkg/utils"
+
 	"github.com/xanzy/go-gitlab"
 
 	"github.com/DuC-cnZj/mars/pkg/app/bootstrappers"
@@ -113,7 +115,15 @@ func NewApplication(config *config.Config, opts ...contracts.Option) *Applicatio
 		}
 	}
 
+	if app.IsDebug() {
+		printConfig()
+	}
+
 	return app
+}
+
+func printConfig() {
+	mlog.Warningf("imagepullsecrets %#v", utils.App().Config().ImagePullSecrets)
 }
 
 func (app *Application) Bootstrap() error {

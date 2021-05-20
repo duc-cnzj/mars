@@ -26,6 +26,10 @@ const (
 	ResultDeployFailed string = "deployed_failed"
 )
 
+const (
+	WsCreateProject string = "create_project"
+)
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -93,8 +97,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 
 		mlog.Info("handle req", wsRequest)
 		switch wsRequest.Type {
-		case "create_project":
-			mlog.Infof("create_project type %s data %s", wsRequest.Type, wsRequest.Data)
+		case WsCreateProject:
 			SendMsg(c, "", wsRequest.Type, "收到请求，开始创建项目")
 			handleCreateProject(wsRequest.Type, wsRequest, c)
 		}
@@ -111,19 +114,19 @@ type ProjectStoreInput struct {
 	Config          string `json:"config"`
 }
 
-func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Conn) {
+func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Conn) {
 	var input ProjectStoreInput
 
 	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
 		mlog.Error(wsRequest.Data, &input)
-		SendEndError(conn, "", wstype, err)
+		SendEndError(conn, "", wsType, err)
 		return
 	}
 
 	var ns models.Namespace
 	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
 		mlog.Error(err)
-		SendEndError(conn, "", wstype, err)
+		SendEndError(conn, "", wsType, err)
 		return
 	}
 
@@ -131,7 +134,7 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 
 	var slugName = slug.Make(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 
-	SendMsg(conn, slugName, wstype, "校验传参...")
+	SendMsg(conn, slugName, wsType, "校验传参...")
 
 	var project models.Project
 	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
@@ -153,39 +156,44 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 		utils.DB().Create(&project)
 	}
 
-	SendMsg(conn, slugName, wstype, "校验项目配置传参...")
+	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
 
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
 	if err != nil {
-		SendEndError(conn, slugName, wstype, err)
+		SendEndError(conn, slugName, wsType, err)
 		return
 	}
 
 	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(input.GitlabProjectId, marsC.LocalChartPath, &gitlab.GetFileOptions{Ref: gitlab.String(input.GitlabBranch)})
 	if err != nil {
-		SendEndError(conn, slugName, wstype, err)
+		SendEndError(conn, slugName, wsType, err)
 		return
 	}
 	archive, _ := base64.StdEncoding.DecodeString(file.Content)
 
-	SendMsg(conn, slugName, wstype, "加载 helm charts...")
+	SendMsg(conn, slugName, wsType, "加载 helm charts...")
 
 	loadArchive, err := loader.LoadArchive(bytes.NewReader(archive))
 	if err != nil {
-		SendEndError(conn, slugName, wstype, err)
+		SendEndError(conn, slugName, wsType, err)
 		return
 	}
 
-	SendMsg(conn, slugName, wstype, "生成配置文件...")
+	SendMsg(conn, slugName, wsType, "生成配置文件...")
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
-		SendEndError(conn, slugName, wstype, err)
+		SendEndError(conn, slugName, wsType, err)
 		return
 	}
 	defer deleteFn()
 
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath},
+		Values:     []string{},
+	}
+
+	for key, secret := range project.Namespace.ImagePullSecretsArray() {
+		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
 	}
 
 	ch := make(chan MessageItem)
@@ -197,7 +205,7 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 			Type: "text",
 		}
 	}
-	SendMsg(conn, slugName, wstype, "准备部署...")
+	SendMsg(conn, slugName, wsType, "准备部署...")
 
 	go func() {
 		if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
@@ -219,11 +227,11 @@ func handleCreateProject(wstype string, wsRequest WsRequest, conn *websocket.Con
 	for s := range ch {
 		switch s.Type {
 		case "text":
-			SendMsg(conn, slugName, wstype, s.Msg)
+			SendMsg(conn, slugName, wsType, s.Msg)
 		case "error":
-			SendEndMsg(conn, ResultDeployFailed, slugName, wstype, s.Msg)
+			SendEndMsg(conn, ResultDeployFailed, slugName, wsType, s.Msg)
 		case "success":
-			SendEndMsg(conn, ResultDeployed, slugName, wstype, s.Msg)
+			SendEndMsg(conn, ResultDeployed, slugName, wsType, s.Msg)
 		}
 	}
 }

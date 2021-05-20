@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -95,8 +96,19 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
+
+	var imagePullSecrets []string
+	for _, secret := range utils.Config().ImagePullSecrets {
+		s, err := utils.CreateDockerSecret(input.Namespace, secret.Username, secret.Password, secret.Email)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
+		imagePullSecrets = append(imagePullSecrets, s.Name)
+	}
 	mlog.Debug("成功创建namespace: ", create.Name)
-	data := models.Namespace{Name: create.Name}
+	data := models.Namespace{Name: create.Name, ImagePullSecrets: strings.Join(imagePullSecrets, ",")}
+
 	utils.DB().Create(&data)
 
 	utils.Event().Dispatch(events.EventNamespaceCreated, events.NamespaceCreatedData{
@@ -136,6 +148,10 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 			}(project.Name, namespace.Name)
 		}
 		wg.Wait()
+		for _, secret := range namespace.ImagePullSecretsArray() {
+			mlog.Debugf("delete namespace %s secret %s", namespace.Name, secret)
+			utils.K8sClientSet().CoreV1().Secrets(namespace.Name).Delete(context.Background(), secret, metav1.DeleteOptions{})
+		}
 		if err := utils.K8sClientSet().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
 			mlog.Error("删除 namespace 出现错误: ", err)
 		}
