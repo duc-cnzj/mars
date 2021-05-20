@@ -139,6 +139,9 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 		if err := utils.K8sClientSet().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
 			mlog.Error("删除 namespace 出现错误: ", err)
 		}
+		if len(namespace.Projects) > 0 {
+			utils.DB().Delete(&namespace.Projects)
+		}
 		utils.DB().Delete(&namespace)
 	}
 
