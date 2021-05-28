@@ -27,7 +27,7 @@ var tmpFileDir = "/tmp"
 type DeleteFunc func()
 
 func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
-	fileName := RandomString(20) + ".yaml"
+	fileName := "mars_" + RandomString(20) + ".yaml"
 	var fullPath = fmt.Sprintf("%s/%s", tmpFileDir, fileName)
 	if FileExists(fullPath) {
 		return "", nil, errors.New(fmt.Sprintf("file %s already exists", fullPath))

@@ -99,7 +99,6 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		mlog.Info("handle req", wsRequest)
 		switch wsRequest.Type {
 		case WsCreateProject:
-			SendMsg(c, "", wsRequest.Type, "收到请求，开始创建项目")
 			handleCreateProject(wsRequest.Type, wsRequest, c)
 		}
 	}
@@ -123,6 +122,8 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 		SendEndError(conn, "", wsType, err)
 		return
 	}
+	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
+	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
 
 	var ns models.Namespace
 	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
@@ -130,10 +131,7 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 		SendEndError(conn, "", wsType, err)
 		return
 	}
-
 	input.Name = slug.Make(input.Name)
-
-	var slugName = slug.Make(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 
 	SendMsg(conn, slugName, wsType, "校验传参...")
 
@@ -215,14 +213,39 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 		return
 	}
 
+	var ingressConfig []string
+	if utils.Config().HasWildcardDomain() {
+		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
+		ingressConfig = []string{
+			"ingress.enabled=true",
+			"ingress.hosts[0].host=" + host,
+			"ingress.hosts[0].paths[0].path=/",
+			"ingress.tls[0].secretName=" + secretName,
+			"ingress.tls[0].hosts[0]=" + host,
+			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
+			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
+		}
+		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
+	}
+
+	var commonValues = []string{
+		"image.pullPolicy=IfNotPresent",
+		"image.repository=" + marsC.DockerRepository,
+		"image.tag=" + b.String(),
+	}
+
+	var imagePullSecrets []string
+	for k, s := range namespace.ImagePullSecretsArray() {
+		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
+	}
+
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath},
-		Values: []string{
-			"image.pullPolicy=IfNotPresent",
-			"image.repository=" + marsC.DockerRepository,
-			"image.tag=" + b.String(),
-		},
+		Values:     append(append(append(commonValues, ingressConfig...), marsC.DefaultValues...), imagePullSecrets...),
 	}
+
+	indent, _ := json.MarshalIndent(append(append(append(commonValues, ingressConfig...), marsC.DefaultValues...), imagePullSecrets...), "", "\t")
+	mlog.Warningf("values: %s", string(indent))
 
 	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
 

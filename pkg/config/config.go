@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -21,6 +23,9 @@ type Config struct {
 	Debug          bool
 	LogChannel     string
 	ProfileEnabled bool
+
+	WildcardDomain string
+	ClusterIssuer  string
 
 	// mysql
 	DBHost     string
@@ -57,6 +62,8 @@ func Init(cfgFile string) *Config {
 		Debug:          viper.GetBool("debug"),
 		LogChannel:     viper.GetString("log_channel"),
 		ProfileEnabled: viper.GetBool("profile_enabled"),
+		WildcardDomain: viper.GetString("wildcard_domain"),
+		ClusterIssuer:  viper.GetString("cluster_issuer"),
 		DBHost:         viper.GetString("db_host"),
 		DBPort:         viper.GetString("db_port"),
 		DBUsername:     viper.GetString("db_username"),
@@ -92,4 +99,20 @@ func Init(cfgFile string) *Config {
 	}
 
 	return cfg
+}
+
+func (c *Config) HasWildcardDomain() bool {
+	if c.WildcardDomain != "" {
+		return strings.HasPrefix(c.WildcardDomain, "*.")
+	}
+
+	return false
+}
+
+func (c *Config) GetDomain(sub string) string {
+	if !c.HasWildcardDomain() {
+		return ""
+	}
+
+	return fmt.Sprintf("%s.%s", sub, strings.TrimLeft(c.WildcardDomain, "*."))
 }
