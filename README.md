@@ -1,5 +1,3 @@
 # Mars
 
-## 第一期
-
-1. namespace curd
+> xuanji golang 版本。
