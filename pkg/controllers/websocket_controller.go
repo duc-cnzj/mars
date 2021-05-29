@@ -215,6 +215,7 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
+		// TODO: 不同k8s版本 ingress 定义不一样。
 		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
 		ingressConfig = []string{
 			"ingress.enabled=true",
