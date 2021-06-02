@@ -226,10 +226,10 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 
 	switch run.Info.Status {
 	case release.StatusDeployed:
-		return StatusDeployed, err
+		return StatusDeployed, nil
 	case release.StatusFailed:
-		return StatusFailed, err
+		return StatusFailed, nil
 	default:
-		return StatusUnknown, err
+		return StatusUnknown, nil
 	}
 }

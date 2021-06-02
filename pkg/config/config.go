@@ -26,6 +26,7 @@ type Config struct {
 
 	WildcardDomain string
 	ClusterIssuer  string
+	ClusterIp      string
 
 	// mysql
 	DBHost     string
@@ -64,6 +65,7 @@ func Init(cfgFile string) *Config {
 		ProfileEnabled: viper.GetBool("profile_enabled"),
 		WildcardDomain: viper.GetString("wildcard_domain"),
 		ClusterIssuer:  viper.GetString("cluster_issuer"),
+		ClusterIp:      viper.GetString("cluster_ip"),
 		DBHost:         viper.GetString("db_host"),
 		DBPort:         viper.GetString("db_port"),
 		DBUsername:     viper.GetString("db_username"),

@@ -44,6 +44,7 @@ func Init(e *gin.Engine) {
 		api.GET("/namespaces", nsC.Index)
 		api.POST("/namespaces", nsC.Store)
 		api.GET("/namespaces/:namespace_id/cpu_and_memory", nsC.CpuAndMemory)
+		api.GET("/namespaces/:namespace_id/service_endpoints", nsC.ServiceEndpoints)
 		api.DELETE("/namespaces/:namespace_id", nsC.Destroy)
 
 		proC := controllers.NewProjectController()
@@ -54,6 +55,7 @@ func Init(e *gin.Engine) {
 		api.GET("/gitlab/projects", gitlabController.Projects)
 		api.GET("/gitlab/projects/:project_id/branches", gitlabController.Branches)
 		api.GET("/gitlab/projects/:project_id/branches/:branch/commits", gitlabController.Commits)
+		api.GET("/gitlab/projects/:project_id/branches/:branch/commits/:commit", gitlabController.Commit)
 
 		api.GET("/gitlab/projects/:project_id/branches/:branch/config_file", gitlabController.ConfigFile)
 	}

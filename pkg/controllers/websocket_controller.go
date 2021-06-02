@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 	"time"
 
@@ -29,6 +30,7 @@ const (
 
 const (
 	WsCreateProject string = "create_project"
+	WsUpdateProject string = "update_project"
 )
 
 var upgrader = websocket.Upgrader{
@@ -99,12 +101,48 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		mlog.Info("handle req", wsRequest)
 		switch wsRequest.Type {
 		case WsCreateProject:
-			handleCreateProject(wsRequest.Type, wsRequest, c)
+			var input ProjectInput
+			if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+				mlog.Error(wsRequest.Data, &input)
+				SendEndError(c, "", wsRequest.Type, err)
+				return
+			}
+			installProject(input, wsRequest.Type, wsRequest, c)
+		case WsUpdateProject:
+			var input UpdateProject
+			if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+				mlog.Error(wsRequest.Data, &input)
+				SendEndError(c, "", wsRequest.Type, err)
+				return
+			}
+			var p models.Project
+			if err := utils.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
+				mlog.Error(wsRequest.Data, &input)
+				SendEndError(c, "", wsRequest.Type, err)
+				return
+			}
+
+			installProject(ProjectInput{
+				NamespaceId:     p.NamespaceId,
+				Name:            p.Name,
+				GitlabProjectId: p.GitlabProjectId,
+				GitlabBranch:    input.GitlabBranch,
+				GitlabCommit:    input.GitlabCommit,
+				Config:          input.Config,
+			}, wsRequest.Type, wsRequest, c)
 		}
 	}
 }
 
-type ProjectStoreInput struct {
+type UpdateProject struct {
+	ProjectId int `json:"project_id"`
+
+	GitlabBranch string `json:"gitlab_branch"`
+	GitlabCommit string `json:"gitlab_commit"`
+	Config       string `json:"config"`
+}
+
+type ProjectInput struct {
 	NamespaceId int `uri:"namespace_id" json:"namespace_id"`
 
 	Name            string `json:"name"`
@@ -114,14 +152,7 @@ type ProjectStoreInput struct {
 	Config          string `json:"config"`
 }
 
-func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Conn) {
-	var input ProjectStoreInput
-
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		SendEndError(conn, "", wsType, err)
-		return
-	}
+func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *websocket.Conn) {
 	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
 
@@ -215,17 +246,54 @@ func handleCreateProject(wsType string, wsRequest WsRequest, conn *websocket.Con
 
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
-		// TODO: 不同k8s版本 ingress 定义不一样。
 		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
+		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
+		// 旧版长这样
+		// ingress:
+		//  enabled: true
+		//  annotations: {}
+		//    # kubernetes.io/ingress.class: nginx
+		//    # kubernetes.io/tls-acme: "true"
+		//  hosts:
+		//    - host: chart-example.local
+		//      paths: []
+		// 新版长这样
+		// ingress:
+		// enabled: false
+		// annotations: {}
+		// 	# kubernetes.io/ingress.class: nginx
+		// 	# kubernetes.io/tls-acme: "true"
+		// hosts:
+		// 	- host: chart-example.local
+		// paths:
+		// 	- path: /
+		//    backend:
+		//      serviceName: chart-example.local
+		//      servicePort: 80
+		var isOldVersion bool
+		for _, f := range loadArchive.Templates {
+			if strings.Contains(f.Name, "ingress") {
+				mlog.Info(string(f.Data))
+				if strings.Contains(string(f.Data), "path: {{ . }}") {
+					isOldVersion = true
+					break
+				}
+			}
+		}
 		ingressConfig = []string{
 			"ingress.enabled=true",
 			"ingress.hosts[0].host=" + host,
-			"ingress.hosts[0].paths[0].path=/",
 			"ingress.tls[0].secretName=" + secretName,
 			"ingress.tls[0].hosts[0]=" + host,
 			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
 			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
 		}
+		if isOldVersion {
+			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+		} else {
+			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/")
+		}
+
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
 	}
 

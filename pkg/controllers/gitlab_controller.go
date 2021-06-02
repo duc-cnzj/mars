@@ -61,7 +61,7 @@ type BranchUri struct {
 func (*GitlabController) Branches(ctx *gin.Context) {
 	var uri BranchUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		response.Error(ctx, 500, err)
+		response.Error(ctx, 400, err)
 		return
 	}
 
@@ -94,7 +94,7 @@ type CommitUri struct {
 func (*GitlabController) Commits(ctx *gin.Context) {
 	var uri CommitUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		response.Error(ctx, 500, err)
+		response.Error(ctx, 400, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (*GitlabController) Commits(ctx *gin.Context) {
 func (*GitlabController) ConfigFile(ctx *gin.Context) {
 	var uri CommitUri
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		response.Error(ctx, 500, err)
+		response.Error(ctx, 400, err)
 		return
 	}
 
@@ -141,5 +141,34 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 	response.Success(ctx, 200, gin.H{
 		"data": string(fdata),
 		"type": marsC.ConfigFileType,
+	})
+}
+
+type ShowCommitUri struct {
+	ProjectId int    `uri:"project_id"`
+	Branch    string `uri:"branch"`
+	Commit    string `uri:"commit"`
+}
+
+func (*GitlabController) Commit(ctx *gin.Context) {
+	var uri ShowCommitUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		response.Error(ctx, 400, err)
+		return
+	}
+
+	commit, _, err := utils.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
+	if err != nil {
+		response.Error(ctx, 500, err)
+		return
+	}
+
+	response.Success(ctx, 200, Options{
+		Value:     commit.ID,
+		IsLeaf:    true,
+		Label:     fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.CommittedDate), commit.Title),
+		Type:      OptionTypeCommit,
+		ProjectId: uri.ProjectId,
+		Branch:    uri.Branch,
 	})
 }

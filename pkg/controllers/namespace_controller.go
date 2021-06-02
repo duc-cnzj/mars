@@ -32,6 +32,11 @@ type SimpleProjectItem struct {
 	Status string `json:"status"`
 }
 
+type ServiceLink struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+}
+
 type NamespaceItem struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
@@ -45,9 +50,9 @@ func (ns *NamespaceController) Index(ctx *gin.Context) {
 	var namespaces []*models.Namespace
 	utils.DB().Preload("Projects").Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
 	var res = make([]NamespaceItem, 0, len(namespaces))
-
 	for _, namespace := range namespaces {
 		var projects = make([]SimpleProjectItem, 0, len(namespace.Projects))
+
 		for _, project := range namespace.Projects {
 			status, err := utils.ReleaseStatus(project.Name, namespace.Name)
 			if err != nil {
@@ -204,4 +209,55 @@ func (*NamespaceController) CpuAndMemory(ctx *gin.Context) {
 		"cpu":    cpu,
 		"memory": memory,
 	})
+}
+
+type ServiceEndpointsQuery struct {
+	ProjectName string `form:"project_name"`
+}
+
+func (*NamespaceController) ServiceEndpoints(ctx *gin.Context) {
+	var (
+		input     NamespaceUri
+		query     ServiceEndpointsQuery
+		namespace models.Namespace
+	)
+	if err := ctx.ShouldBindUri(&input); err != nil {
+		response.Error(ctx, 422, err)
+		return
+	}
+
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		response.Error(ctx, 400, err)
+		return
+	}
+
+	if err := utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
+		response.Error(ctx, 500, err)
+
+		return
+	}
+
+	var res = map[string][]string{}
+	nodePortMapping := utils.GetNodePortMappingByNamespace(namespace.Name)
+	ingMapping := utils.GetIngressMappingByNamespace(namespace.Name)
+	for projectName, hosts := range nodePortMapping {
+		var items []string = hosts
+		if v, ok := ingMapping[projectName]; ok {
+			items = append(v, hosts...)
+		}
+		res[projectName] = items
+	}
+	for projectName, hosts := range ingMapping {
+		if _, ok := res[projectName]; ok {
+			continue
+		}
+		res[projectName] = append([]string{}, hosts...)
+	}
+
+	if query.ProjectName != "" {
+		response.Success(ctx, 200, gin.H{query.ProjectName: res[query.ProjectName]})
+		return
+	}
+
+	response.Success(ctx, 200, res)
 }
