@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -72,6 +73,11 @@ const (
 	maxMessageSize = 1024 * 5
 )
 
+type WsConn struct {
+	sync.Mutex
+	c *websocket.Conn
+}
+
 func (*WebsocketController) Ws(ctx *gin.Context) {
 	c, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
@@ -79,6 +85,8 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		return
 	}
 	defer c.Close()
+
+	var wsconn = &WsConn{c: c}
 
 	c.SetReadLimit(maxMessageSize)
 	c.SetPongHandler(func(string) error { c.SetReadDeadline(time.Now().Add(pongWait)); return nil })
@@ -94,43 +102,48 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		}
 		mlog.Infof("receive msg %s", message)
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
-			SendEndError(c, "", "", err)
+			SendEndError(wsconn, "", "", err)
 			continue
 		}
 
 		mlog.Info("handle req", wsRequest)
-		switch wsRequest.Type {
-		case WsCreateProject:
-			var input ProjectInput
-			if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-				mlog.Error(wsRequest.Data, &input)
-				SendEndError(c, "", wsRequest.Type, err)
-				return
-			}
-			installProject(input, wsRequest.Type, wsRequest, c)
-		case WsUpdateProject:
-			var input UpdateProject
-			if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-				mlog.Error(wsRequest.Data, &input)
-				SendEndError(c, "", wsRequest.Type, err)
-				return
-			}
-			var p models.Project
-			if err := utils.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
-				mlog.Error(wsRequest.Data, &input)
-				SendEndError(c, "", wsRequest.Type, err)
-				return
-			}
+		go serveWebsocket(wsconn, wsRequest)
+	}
+}
 
-			installProject(ProjectInput{
-				NamespaceId:     p.NamespaceId,
-				Name:            p.Name,
-				GitlabProjectId: p.GitlabProjectId,
-				GitlabBranch:    input.GitlabBranch,
-				GitlabCommit:    input.GitlabCommit,
-				Config:          input.Config,
-			}, wsRequest.Type, wsRequest, c)
+func serveWebsocket(c *WsConn, wsRequest WsRequest) {
+	switch wsRequest.Type {
+	case WsCreateProject:
+		var input ProjectInput
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
 		}
+
+		installProject(input, wsRequest.Type, wsRequest, c)
+	case WsUpdateProject:
+		var input UpdateProject
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+		var p models.Project
+		if err := utils.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+
+		installProject(ProjectInput{
+			NamespaceId:     p.NamespaceId,
+			Name:            p.Name,
+			GitlabProjectId: p.GitlabProjectId,
+			GitlabBranch:    input.GitlabBranch,
+			GitlabCommit:    input.GitlabCommit,
+			Config:          input.Config,
+		}, wsRequest.Type, wsRequest, c)
 	}
 }
 
@@ -152,7 +165,7 @@ type ProjectInput struct {
 	Config          string `json:"config"`
 }
 
-func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *websocket.Conn) {
+func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
 	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
 
@@ -347,7 +360,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			close(ch)
 		} else {
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
-				utils.DB().Where("`id` = ?", project.ID).Updates(map[string]interface{}{
+				utils.DB().Model(&models.Project{}).Where("`id` = ?", project.ID).Updates(map[string]interface{}{
 					"config":            input.Config,
 					"gitlab_project_id": input.GitlabProjectId,
 					"gitlab_commit":     input.GitlabCommit,
@@ -381,7 +394,7 @@ type MessageItem struct {
 	Type string
 }
 
-func SendEndError(conn *websocket.Conn, slug, wsType string, err error) {
+func SendEndError(conn *WsConn, slug, wsType string, err error) {
 	res := &WsResponse{
 		Slug:   slug,
 		Type:   wsType,
@@ -389,10 +402,12 @@ func SendEndError(conn *websocket.Conn, slug, wsType string, err error) {
 		Data:   err.Error(),
 		End:    true,
 	}
-	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }
 
-func SendError(conn *websocket.Conn, slug, wsType string, err error) {
+func SendError(conn *WsConn, slug, wsType string, err error) {
 	res := &WsResponse{
 		Slug:   slug,
 		Type:   wsType,
@@ -400,10 +415,12 @@ func SendError(conn *websocket.Conn, slug, wsType string, err error) {
 		Data:   err.Error(),
 		End:    false,
 	}
-	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }
 
-func SendMsg(conn *websocket.Conn, slug, wsType string, msg string) {
+func SendMsg(conn *WsConn, slug, wsType string, msg string) {
 	res := &WsResponse{
 		Slug:   slug,
 		Type:   wsType,
@@ -411,10 +428,12 @@ func SendMsg(conn *websocket.Conn, slug, wsType string, msg string) {
 		End:    false,
 		Data:   msg,
 	}
-	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }
 
-func SendEndMsg(conn *websocket.Conn, result, slug, wsType string, msg string) {
+func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
 	res := &WsResponse{
 		Slug:   slug,
 		Type:   wsType,
@@ -422,5 +441,7 @@ func SendEndMsg(conn *websocket.Conn, result, slug, wsType string, msg string) {
 		End:    true,
 		Data:   msg,
 	}
-	conn.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }

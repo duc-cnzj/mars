@@ -54,7 +54,7 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 					case strings.Contains(port.Name, "rpc"):
 						fallthrough
 					case strings.Contains(port.Name, "tcp"):
-						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", Config().ClusterIp, port.Name, port.NodePort))
+						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, Config().ClusterIp, port.NodePort))
 					}
 				}
 			}

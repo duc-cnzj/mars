@@ -172,3 +172,31 @@ func (*GitlabController) Commit(ctx *gin.Context) {
 		Branch:    uri.Branch,
 	})
 }
+
+type PipelineInfo struct {
+	Status string `json:"status"`
+	WebUrl string `json:"web_url"`
+}
+
+func (*GitlabController) PipelineInfo(ctx *gin.Context) {
+	var uri ShowCommitUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		response.Error(ctx, 400, err)
+		return
+	}
+
+	commit, _, err := utils.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
+	if err != nil {
+		response.Error(ctx, 500, err)
+		return
+	}
+	if commit.LastPipeline == nil {
+		response.Error(ctx, 404, "")
+		return
+	}
+
+	response.Success(ctx, 200, PipelineInfo{
+		Status: commit.LastPipeline.Status,
+		WebUrl: commit.LastPipeline.WebURL,
+	})
+}

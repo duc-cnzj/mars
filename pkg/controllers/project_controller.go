@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
-
 	"github.com/DuC-cnZj/mars/pkg/mars"
 	"github.com/DuC-cnZj/mars/pkg/mlog"
 	"github.com/DuC-cnZj/mars/pkg/models"
@@ -12,6 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
+	v12 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 )
 
 type ProjectController struct{}
@@ -82,6 +85,115 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		Cpu:       cpu,
 		Memory:    memory,
 		CreatedAt: utils.ToHumanizeDatetimeString(&project.CreatedAt),
+	})
+}
+
+type ContainerLogsResponse struct {
+	List []struct {
+		PodName       string `json:"pod_name"`
+		ContainerName string `json:"container_name"`
+	} `json:"list"`
+
+	Log struct {
+		PodName       string `json:"pod_name"`
+		ContainerName string `json:"container_name"`
+		Log           string `json:"log"`
+	} `json:"logs"`
+}
+
+type ContainerLogsQuery struct {
+	Pod       string `form:"pod"`
+	Container string `form:"container"`
+}
+
+type PodContainerResponse struct {
+	PodName       string `json:"pod_name"`
+	ContainerName string `json:"container_name"`
+
+	Log string `json:"log,omitempty"`
+}
+
+func (p *ProjectController) AllPodContainers(ctx *gin.Context) {
+	var uri ProjectUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		response.Error(ctx, 422, err)
+		return
+	}
+
+	var project models.Project
+	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+		response.Error(ctx, 500, err)
+		return
+	}
+
+	list, _ := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), v1.ListOptions{
+		LabelSelector: "app.kubernetes.io/instance=" + project.Name,
+	})
+
+	var containerList []PodContainerResponse
+	for _, item := range list.Items {
+		for _, c := range item.Spec.Containers {
+			containerList = append(containerList, PodContainerResponse{
+				PodName:       item.Name,
+				ContainerName: c.Name,
+			})
+		}
+	}
+	containerList = append(containerList, PodContainerResponse{
+		PodName:       "a",
+		ContainerName: "b",
+	})
+
+	response.Success(ctx, 200, containerList)
+}
+
+type PodContainerLogUri struct {
+	NamespaceId int `uri:"namespace_id"`
+	ProjectId   int `uri:"project_id"`
+
+	Pod       string `uri:"pod"`
+	Container string `uri:"container"`
+}
+
+func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
+	var uri PodContainerLogUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		response.Error(ctx, 422, err)
+		return
+	}
+
+	var project models.Project
+	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+		response.Error(ctx, 500, err)
+		return
+	}
+
+	var limit int64 = 10000
+	//logs := utils.K8sClientSet().CoreV1().Pods("kube-system").GetLogs("kube-proxy-lcvtb", &v12.PodLogOptions{
+	//	Container: "kube-proxy",
+	//	TailLines: &limit,
+	//})
+	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v12.PodLogOptions{
+		Container: uri.Container,
+		TailLines: &limit,
+	})
+	var raw = []byte("未找到日志")
+	do := logs.Do(context.Background())
+	raw, err := do.Raw()
+	if err == nil {
+		split := strings.Split(string(raw), "\n")
+		var reverseLog []string
+		for i := len(split) - 1; i > 0; i-- {
+			reverseLog = append(reverseLog, split[i])
+		}
+
+		raw = bytes.Trim([]byte(strings.Join(reverseLog, "\n")), "\n")
+	}
+
+	response.Success(ctx, 200, PodContainerResponse{
+		PodName:       uri.Pod,
+		ContainerName: uri.Container,
+		Log:           string(raw),
 	})
 }
 
