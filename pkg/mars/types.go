@@ -20,6 +20,7 @@ type Config struct {
 	ConfigField      string   `json:"config_field" yaml:"config_field"`
 	IsSimpleEnv      bool     `json:"is_simple_env" yaml:"is_simple_env"`
 	DefaultValues    []string `json:"default_values" yaml:"default_values"`
+	// TODO Branches 我还没限制
 	Branches         []string `json:"branches" yaml:"branches"`
 }
 
