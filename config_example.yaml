@@ -6,6 +6,8 @@ debug: false
 
 profile_enabled: true
 
+kubeconfig: ""
+
 # database
 db_host: 127.0.0.1
 db_port: 3306

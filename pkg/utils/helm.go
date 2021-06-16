@@ -3,7 +3,9 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"reflect"
 	"time"
@@ -82,7 +84,16 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
-	*flags.KubeConfig = "/Users/duc/.kube/config"
+
+	if Config().KubeConfig != "" {
+		*flags.KubeConfig = Config().KubeConfig
+	} else {
+		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
+		token, _ := ioutil.ReadFile(tokenFile)
+		settings.KubeToken = string(token)
+	}
+
 	if err := actionConfig.Init(flags, namespace, "", fn); err != nil {
 		return nil, err
 	}
@@ -90,9 +101,7 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	client.Atomic = true
 	client.WaitForJobs = true
 	client.Install = true
-	// TODO
-	client.Timeout = 60 * time.Second
-	//client.Timeout = 2 * time.Minute
+	client.Timeout = 2 * time.Minute
 	client.Namespace = namespace
 	if valueOpts == nil {
 		valueOpts = &values.Options{}
@@ -206,6 +215,11 @@ const (
 	StatusFailed   string = "failed"
 )
 
+var (
+	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+)
+
 func ReleaseStatus(releaseName, namespace string) (string, error) {
 	var settings = GetSettings(namespace)
 
@@ -213,7 +227,15 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
-	*flags.KubeConfig = "/Users/duc/.kube/config"
+	if Config().KubeConfig != "" {
+		*flags.KubeConfig = Config().KubeConfig
+	} else {
+		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
+		token, _ := ioutil.ReadFile(tokenFile)
+		settings.KubeToken = string(token)
+	}
+
 	if err := actionConfig.Init(flags, namespace, "", log.Printf); err != nil {
 		return "", err
 	}

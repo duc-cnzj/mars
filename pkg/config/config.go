@@ -24,6 +24,8 @@ type Config struct {
 	LogChannel     string
 	ProfileEnabled bool
 
+	KubeConfig string `yaml:"kubeconfig"`
+
 	WildcardDomain string
 	ClusterIssuer  string
 	ClusterIp      string
@@ -63,6 +65,7 @@ func Init(cfgFile string) *Config {
 		Debug:          viper.GetBool("debug"),
 		LogChannel:     viper.GetString("log_channel"),
 		ProfileEnabled: viper.GetBool("profile_enabled"),
+		KubeConfig:     viper.GetString("kubeconfig"),
 		WildcardDomain: viper.GetString("wildcard_domain"),
 		ClusterIssuer:  viper.GetString("cluster_issuer"),
 		ClusterIp:      viper.GetString("cluster_ip"),
@@ -74,7 +77,6 @@ func Init(cfgFile string) *Config {
 	}
 
 	dockerAuths := viper.Get("imagepullsecrets")
-	//cfg.ImagePullSecrets = []DockerAuth{}
 	if dockerAuths != nil {
 		if m, ok := dockerAuths.([]interface{}); ok {
 			for _, interf := range m {

@@ -3,6 +3,7 @@ package bootstrappers
 import (
 	"github.com/DuC-cnZj/mars/pkg/contracts"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
@@ -10,10 +11,21 @@ import (
 type K8sClientBootstrapper struct{}
 
 func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	kubeconfig := "/Users/duc/.kube/config"
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return err
+	var (
+		config *restclient.Config
+		err    error
+	)
+
+	if app.Config().KubeConfig != "" {
+		config, err = clientcmd.BuildConfigFromFlags("", app.Config().KubeConfig)
+		if err != nil {
+			return err
+		}
+	} else {
+		config, err = restclient.InClusterConfig()
+		if err != nil {
+			return err
+		}
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
