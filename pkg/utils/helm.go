@@ -255,3 +255,30 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 		return StatusUnknown, nil
 	}
 }
+
+func PackageChart(path string, destDir string) (string, error) {
+	var settings = GetSettings("")
+
+	mlog.Warning("settings ns", settings.Namespace())
+	actionConfig := new(action.Configuration)
+	flags := genericclioptions.NewConfigFlags(true)
+	if Config().KubeConfig != "" {
+		*flags.KubeConfig = Config().KubeConfig
+	} else {
+		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
+		token, _ := ioutil.ReadFile(tokenFile)
+		settings.KubeToken = string(token)
+	}
+
+	if err := actionConfig.Init(flags, "", "", log.Printf); err != nil {
+		mlog.Error(err)
+		return "", err
+	}
+	newPackage := action.NewPackage()
+	if destDir != "" {
+		newPackage.Destination = destDir
+	}
+
+	return newPackage.Run(path, nil)
+}

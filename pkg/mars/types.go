@@ -21,7 +21,7 @@ type Config struct {
 	IsSimpleEnv      bool     `json:"is_simple_env" yaml:"is_simple_env"`
 	DefaultValues    []string `json:"default_values" yaml:"default_values"`
 	// TODO Branches 我还没限制
-	Branches         []string `json:"branches" yaml:"branches"`
+	Branches []string `json:"branches" yaml:"branches"`
 }
 
 func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(), error) {

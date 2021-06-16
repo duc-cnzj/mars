@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"text/template"
@@ -17,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
-	"github.com/xanzy/go-gitlab"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli/values"
 )
@@ -200,16 +200,27 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		return
 	}
 
-	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(input.GitlabProjectId, marsC.LocalChartPath, &gitlab.GetFileOptions{Ref: gitlab.String(input.GitlabBranch)})
+	// 下载 helm charts
+	SendMsg(conn, slugName, wsType, fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
+	files := utils.GetDirectoryFiles(input.GitlabProjectId, input.GitlabCommit, marsC.LocalChartPath)
+	tmpChartsDir, deleteDirFn := utils.DownloadFiles(input.GitlabProjectId, input.GitlabCommit, files)
+	defer deleteDirFn()
+	chartDir := filepath.Join(tmpChartsDir, marsC.LocalChartPath)
+	chart, err := utils.PackageChart(chartDir, chartDir)
 	if err != nil {
 		SendEndError(conn, slugName, wsType, err)
 		return
 	}
-	archive, _ := base64.StdEncoding.DecodeString(file.Content)
+	archive, err := os.Open(chart)
+	if err != nil {
+		SendEndError(conn, slugName, wsType, err)
+		return
+	}
+	defer archive.Close()
 
 	SendMsg(conn, slugName, wsType, "加载 helm charts...")
 
-	loadArchive, err := loader.LoadArchive(bytes.NewReader(archive))
+	loadArchive, err := loader.LoadArchive(archive)
 	if err != nil {
 		SendEndError(conn, slugName, wsType, err)
 		return
