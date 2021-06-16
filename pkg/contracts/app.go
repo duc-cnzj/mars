@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"os"
 
+	restclient "k8s.io/client-go/rest"
+
 	"github.com/xanzy/go-gitlab"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
@@ -20,6 +22,7 @@ type Bootstrapper interface {
 type K8sClient struct {
 	Client        *kubernetes.Clientset
 	MetricsClient *versioned.Clientset
+	RestConfig    *restclient.Config
 }
 
 type Option func(ApplicationInterface)

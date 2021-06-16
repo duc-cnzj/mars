@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"strings"
+
 	"github.com/DuC-cnZj/mars/pkg/mars"
 	"github.com/DuC-cnZj/mars/pkg/mlog"
 	"github.com/DuC-cnZj/mars/pkg/models"
@@ -14,7 +16,6 @@ import (
 	"gopkg.in/yaml.v2"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 type ProjectController struct{}
@@ -169,10 +170,6 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 	}
 
 	var limit int64 = 10000
-	//logs := utils.K8sClientSet().CoreV1().Pods("kube-system").GetLogs("kube-proxy-lcvtb", &v12.PodLogOptions{
-	//	Container: "kube-proxy",
-	//	TailLines: &limit,
-	//})
 	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v12.PodLogOptions{
 		Container: uri.Container,
 		TailLines: &limit,

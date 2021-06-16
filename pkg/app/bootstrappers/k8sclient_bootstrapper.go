@@ -29,6 +29,7 @@ func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	app.SetK8sClient(&contracts.K8sClient{
 		Client:        clientset,
 		MetricsClient: metrics,
+		RestConfig:    config,
 	})
 
 	return nil
