@@ -38,6 +38,9 @@ type Config struct {
 	DBDatabase string
 
 	ImagePullSecrets []DockerAuth
+
+	GitlabToken   string
+	GitlabBaseURL string
 }
 
 func Init(cfgFile string) *Config {
@@ -74,6 +77,8 @@ func Init(cfgFile string) *Config {
 		DBUsername:     viper.GetString("db_username"),
 		DBPassword:     viper.GetString("db_password"),
 		DBDatabase:     viper.GetString("db_database"),
+		GitlabToken:    viper.GetString("gitlab_token"),
+		GitlabBaseURL:  viper.GetString("gitlab_baseurl"),
 	}
 
 	dockerAuths := viper.Get("imagepullsecrets")

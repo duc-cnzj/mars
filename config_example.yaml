@@ -23,6 +23,9 @@ cluster_issuer: "prod"
 # 集群外网访问 ip
 cluster_ip: "127.0.0.1"
 
+gitlab_token: ""
+gitlab_baseurl: "https://gitlab.com/api/v4"
+
 # imagepullsecrets: docker 私有镜像仓库需要配置相关的账号密码以及仓库地址
 imagepullsecrets:
   - username: "jack"

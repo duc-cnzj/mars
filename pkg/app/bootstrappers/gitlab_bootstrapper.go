@@ -8,7 +8,7 @@ import (
 type GitlabBootstrapper struct{}
 
 func (g *GitlabBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	client, err := gitlab.NewClient("TKGtsB1zcYRuqFvyawst", gitlab.WithBaseURL("https://gitlab.com/api/v4"))
+	client, err := gitlab.NewClient(app.Config().GitlabToken, gitlab.WithBaseURL(app.Config().GitlabBaseURL))
 	if err != nil {
 		return err
 	}
