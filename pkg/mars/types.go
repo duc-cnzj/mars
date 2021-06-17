@@ -14,16 +14,24 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Config mars 配置文件，默认取的是当前 branch 的最新的 .mars.yaml
 type Config struct {
-	ConfigFile       string                 `json:"config_file" yaml:"config_file"`
-	ConfigFileType   string                 `json:"config_file_type" yaml:"config_file_type"`
-	DockerRepository string                 `json:"docker_repository" yaml:"docker_repository"`
-	DockerTagFormat  string                 `json:"docker_tag_format" yaml:"docker_tag_format"`
-	LocalChartPath   string                 `json:"local_chart_path" yaml:"local_chart_path"`
-	ConfigField      string                 `json:"config_field" yaml:"config_field"`
-	IsSimpleEnv      bool                   `json:"is_simple_env" yaml:"is_simple_env"`
-	DefaultValues    map[string]interface{} `json:"default_values" yaml:"default_values"`
-	// TODO Branches 我还没限制
+	ConfigFile string `json:"config_file" yaml:"config_file"`
+
+	// ConfigFileType 配置文件类型，php/env/yaml...
+	ConfigFileType   string `json:"config_file_type" yaml:"config_file_type"`
+	DockerRepository string `json:"docker_repository" yaml:"docker_repository"`
+
+	// DockerTagFormat 可用变量 {{.Branch}} {{.Commit}} {{.Pipeline}}
+	DockerTagFormat string `json:"docker_tag_format" yaml:"docker_tag_format"`
+	LocalChartPath  string `json:"local_chart_path" yaml:"local_chart_path"`
+	ConfigField     string `json:"config_field" yaml:"config_field"`
+	IsSimpleEnv     bool   `json:"is_simple_env" yaml:"is_simple_env"`
+
+	// DefaultValues 默认的配置，和 values.yaml 一样写就行了
+	DefaultValues map[string]interface{} `json:"default_values" yaml:"default_values"`
+
+	// Branches 启用的分支
 	Branches []string `json:"branches" yaml:"branches"`
 }
 
