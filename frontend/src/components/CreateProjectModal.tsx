@@ -243,7 +243,7 @@ const CreateProjectModal: React.FC<{
             options={options}
             style={{ width: "100%", marginBottom: "10px" }}
             autoFocus
-            allowClear
+            allowClear={false}
             loadData={loadData}
             onChange={onChange}
             changeOnSelect
