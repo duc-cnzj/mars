@@ -222,7 +222,11 @@ func GetProjectMarsConfig(projectId int, branch string) (*mars.Config, error) {
 	var marsC mars.Config
 
 	// 获取 mars.yaml
-	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(projectId, ".mars.yaml", &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
+	opt := &gitlab.GetFileOptions{}
+	if branch != "" {
+		opt.Ref = gitlab.String(branch)
+	}
+	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(projectId, ".mars.yaml", opt)
 	if err != nil {
 		return nil, err
 	}

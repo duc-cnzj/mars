@@ -71,16 +71,27 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 		return
 	}
 
+	var defaultBranch string
+	for _, branch := range branches {
+		if branch.Default {
+			defaultBranch = branch.Name
+		}
+	}
+
+	config, _ := GetProjectMarsConfig(uri.ProjectId, defaultBranch)
+
 	res := make([]Options, 0, len(branches))
 	for _, branch := range branches {
-		res = append(res, Options{
-			Value:     branch.Name,
-			Label:     branch.Name,
-			IsLeaf:    false,
-			Type:      OptionTypeBranch,
-			Branch:    branch.Name,
-			ProjectId: uri.ProjectId,
-		})
+		if config.BranchPass(branch.Name) {
+			res = append(res, Options{
+				Value:     branch.Name,
+				Label:     branch.Name,
+				IsLeaf:    false,
+				Type:      OptionTypeBranch,
+				Branch:    branch.Name,
+				ProjectId: uri.ProjectId,
+			})
+		}
 	}
 
 	response.Success(ctx, 200, res)

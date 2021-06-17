@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/DuC-cnZj/mars/pkg/mlog"
@@ -24,6 +25,25 @@ type Config struct {
 	DefaultValues    map[string]interface{} `json:"default_values" yaml:"default_values"`
 	// TODO Branches 我还没限制
 	Branches []string `json:"branches" yaml:"branches"`
+}
+
+func (mars *Config) BranchPass(name string) bool {
+	for _, branch := range mars.Branches {
+		if branch == "*" || branch == name {
+			return true
+		}
+
+		if strings.Contains(branch, ".*?") {
+			compile, err := regexp.Compile(branch)
+			if err != nil {
+				continue
+			}
+
+			return compile.FindString(name) == name
+		}
+	}
+
+	return false
 }
 
 func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
