@@ -6,22 +6,36 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/DuC-cnZj/mars/pkg/mlog"
+
 	"github.com/DuC-cnZj/mars/pkg/utils"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	ConfigFile       string   `json:"config_file" yaml:"config_file"`
-	ConfigFileType   string   `json:"config_file_type" yaml:"config_file_type"`
-	DockerRepository string   `json:"docker_repository" yaml:"docker_repository"`
-	DockerTagFormat  string   `json:"docker_tag_format" yaml:"docker_tag_format"`
-	LocalChartPath   string   `json:"local_chart_path" yaml:"local_chart_path"`
-	ConfigField      string   `json:"config_field" yaml:"config_field"`
-	IsSimpleEnv      bool     `json:"is_simple_env" yaml:"is_simple_env"`
-	DefaultValues    []string `json:"default_values" yaml:"default_values"`
+	ConfigFile       string                 `json:"config_file" yaml:"config_file"`
+	ConfigFileType   string                 `json:"config_file_type" yaml:"config_file_type"`
+	DockerRepository string                 `json:"docker_repository" yaml:"docker_repository"`
+	DockerTagFormat  string                 `json:"docker_tag_format" yaml:"docker_tag_format"`
+	LocalChartPath   string                 `json:"local_chart_path" yaml:"local_chart_path"`
+	ConfigField      string                 `json:"config_field" yaml:"config_field"`
+	IsSimpleEnv      bool                   `json:"is_simple_env" yaml:"is_simple_env"`
+	DefaultValues    map[string]interface{} `json:"default_values" yaml:"default_values"`
 	// TODO Branches 我还没限制
 	Branches []string `json:"branches" yaml:"branches"`
+}
+
+func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
+	bf := &bytes.Buffer{}
+	encoder := yaml.NewEncoder(bf)
+	if err := encoder.Encode(mars.DefaultValues); err != nil {
+		return "", nil, err
+	}
+	b := bf.Bytes()
+	mlog.Debug("GenerateDefaultValuesYamlFile", string(b))
+
+	return utils.WriteConfigYamlToTmpFile(b)
 }
 
 func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(), error) {

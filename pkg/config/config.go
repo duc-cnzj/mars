@@ -24,7 +24,7 @@ type Config struct {
 	LogChannel     string
 	ProfileEnabled bool
 
-	KubeConfig string `yaml:"kubeconfig"`
+	KubeConfig string
 
 	WildcardDomain string
 	ClusterIssuer  string

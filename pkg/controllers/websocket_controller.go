@@ -297,7 +297,6 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		var isOldVersion bool
 		for _, f := range loadArchive.Templates {
 			if strings.Contains(f.Name, "ingress") {
-				mlog.Info(string(f.Data))
 				if strings.Contains(string(f.Data), "path: {{ . }}") {
 					isOldVersion = true
 					break
@@ -332,12 +331,20 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
 	}
 
-	var valueOpts = &values.Options{
-		ValueFiles: []string{filePath},
-		Values:     append(append(append(commonValues, ingressConfig...), marsC.DefaultValues...), imagePullSecrets...),
+	// default_values 也需要一个 file
+	file, deleteDefaultValuesFileFn, err := marsC.GenerateDefaultValuesYamlFile()
+	if err != nil {
+		SendEndError(conn, slugName, wsType, err)
+		return
 	}
 
-	indent, _ := json.MarshalIndent(append(append(append(commonValues, ingressConfig...), marsC.DefaultValues...), imagePullSecrets...), "", "\t")
+	defer deleteDefaultValuesFileFn()
+	var valueOpts = &values.Options{
+		ValueFiles: []string{filePath, file},
+		Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
+	}
+
+	indent, _ := json.MarshalIndent(append(append(commonValues, ingressConfig...), imagePullSecrets...), "", "\t")
 	mlog.Warningf("values: %s", string(indent))
 
 	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
@@ -346,8 +353,6 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
 	}
-
-	valueOpts.Values = append(valueOpts.Values, marsC.DefaultValues...)
 
 	ch := make(chan MessageItem)
 	fn := func(format string, v ...interface{}) {

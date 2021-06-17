@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -172,8 +171,6 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	err := sm.Sessions[sessionId].sockJSSession.Close(status, reason)
 	if err != nil {
 		mlog.Error(err)
-
-		log.Println(err)
 	}
 
 	delete(sm.Sessions, sessionId)
@@ -191,26 +188,22 @@ func handleTerminalSession(session sockjs.Session) {
 	)
 
 	if buf, err = session.Recv(); err != nil {
-		mlog.Error(err)
-
-		log.Printf("handleTerminalSession: can't Recv: %v", err)
+		mlog.Errorf("handleTerminalSession: can't Recv: %v", err)
 		return
 	}
 
 	if err = json.Unmarshal([]byte(buf), &msg); err != nil {
-		mlog.Error(err)
-
-		log.Printf("handleTerminalSession: can't UnMarshal (%v): %s", err, buf)
+		mlog.Errorf("handleTerminalSession: can't UnMarshal (%v): %s", err, buf)
 		return
 	}
 
 	if msg.Op != "bind" {
-		log.Printf("handleTerminalSession: expected 'bind' message, got: %s", buf)
+		mlog.Errorf("handleTerminalSession: expected 'bind' message, got: %s", buf)
 		return
 	}
 
 	if terminalSession = terminalSessions.Get(msg.SessionID); terminalSession.id == "" {
-		log.Printf("handleTerminalSession: can't find session '%s'", msg.SessionID)
+		mlog.Errorf("handleTerminalSession: can't find session '%s'", msg.SessionID)
 		return
 	}
 
