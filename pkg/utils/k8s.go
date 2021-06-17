@@ -9,19 +9,32 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubectl/pkg/generate/versioned"
 )
 
+type DockerConfig map[string]DockerConfigEntry
+
+type DockerConfigEntry struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Auth     string `json:"auth,omitempty"`
+}
+
+type DockerConfigJSON struct {
+	Auths       DockerConfig      `json:"auths"`
+	HttpHeaders map[string]string `json:"HttpHeaders,omitempty"`
+}
+
 func CreateDockerSecret(namespace, username, password, email string) (*v1.Secret, error) {
-	dockercfgAuth := versioned.DockerConfigEntry{
+	dockercfgAuth := DockerConfigEntry{
 		Username: username,
 		Password: password,
 		Email:    email,
 		Auth:     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
 	}
 
-	dockerCfgJSON := versioned.DockerConfigJSON{
-		Auths: map[string]versioned.DockerConfigEntry{"server": dockercfgAuth},
+	dockerCfgJSON := DockerConfigJSON{
+		Auths: map[string]DockerConfigEntry{"server": dockercfgAuth},
 	}
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
