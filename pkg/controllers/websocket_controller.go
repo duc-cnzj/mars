@@ -32,6 +32,8 @@ const (
 const (
 	WsCreateProject string = "create_project"
 	WsUpdateProject string = "update_project"
+
+	WsProcessPercent string = "process_percent"
 )
 
 var upgrader = websocket.Upgrader{
@@ -168,6 +170,7 @@ type ProjectInput struct {
 func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
 	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
+	SendProcessPercent(conn, slugName, "5")
 
 	var ns models.Namespace
 	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
@@ -193,6 +196,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	utils.DB().Where("`id` = ?", ns.ID).First(&namespace)
 
 	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
+	SendProcessPercent(conn, slugName, "15")
 
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
 	if err != nil {
@@ -218,6 +222,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 	defer archive.Close()
 
+	SendProcessPercent(conn, slugName, "30")
+
 	SendMsg(conn, slugName, wsType, "加载 helm charts...")
 
 	loadArchive, err := loader.LoadArchive(archive)
@@ -227,6 +233,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 
 	SendMsg(conn, slugName, wsType, "生成配置文件...")
+	SendProcessPercent(conn, slugName, "40")
+
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
 		SendEndError(conn, slugName, wsType, err)
@@ -235,6 +243,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	defer deleteFn()
 
 	SendMsg(conn, slugName, wsType, "解析镜像tag")
+	SendProcessPercent(conn, slugName, "45")
 	t := template.New("tag_parse")
 	parse, err := t.Parse(marsC.DockerTagFormat)
 	if err != nil {
@@ -267,6 +276,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		SendEndError(conn, slugName, wsType, err)
 		return
 	}
+
+	SendProcessPercent(conn, slugName, "60")
 
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
@@ -320,6 +331,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
 	}
 
+	SendProcessPercent(conn, slugName, "65")
+
 	var commonValues = []string{
 		"image.pullPolicy=IfNotPresent",
 		"image.repository=" + marsC.DockerRepository,
@@ -338,6 +351,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		return
 	}
 
+	SendProcessPercent(conn, slugName, "70")
 	defer deleteDefaultValuesFileFn()
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath, file},
@@ -365,6 +379,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 
 	SendMsg(conn, slugName, wsType, "准备部署...")
+	SendProcessPercent(conn, slugName, "85")
 
 	go func() {
 		if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
@@ -385,6 +400,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			} else {
 				utils.DB().Create(&project)
 			}
+			SendProcessPercent(conn, slugName, "100")
 			ch <- MessageItem{
 				Msg:  "部署成功",
 				Type: "success",
@@ -430,6 +446,19 @@ func SendError(conn *WsConn, slug, wsType string, err error) {
 		Result: ResultError,
 		Data:   err.Error(),
 		End:    false,
+	}
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func SendProcessPercent(conn *WsConn, slug, percent string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   WsProcessPercent,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   percent,
 	}
 	conn.Lock()
 	defer conn.Unlock()

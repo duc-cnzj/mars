@@ -16,7 +16,7 @@ import {
 } from "../store/reducers/createProject";
 import _ from "lodash";
 import { CascaderOptionType } from "antd/lib/cascader";
-import { Button, Cascader, Timeline, Skeleton } from "antd";
+import { Button, Cascader, Timeline, Skeleton, Progress } from "antd";
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/material.css";
 import "codemirror/theme/dracula.css";
@@ -251,7 +251,11 @@ const ModalSub: React.FC<{
 
   return (
     <div className="edit-project">
-      <PipelineInfo projectId={data.gitlabProjectId} branch={data.gitlabBranch} commit={data.gitlabCommit} />
+      <PipelineInfo
+        projectId={data.gitlabProjectId}
+        branch={data.gitlabBranch}
+        commit={data.gitlabCommit}
+      />
       <div className={classNames({ "display-none": !editVisible })}>
         <div style={{ width: "100%" }}>
           {list[slug]?.output.length > 0 ? (
@@ -307,16 +311,24 @@ const ModalSub: React.FC<{
           "display-none": !timelineVisible,
         })}
       >
-        <Button
-          style={{ marginBottom: 20 }}
-          type="dashed"
-          disabled={list[slug]?.isLoading}
-          onClick={() => {
-            setEditVisible(true);
-            setTimelineVisible(false);
-          }}
-          icon={<ArrowLeftOutlined />}
-        />
+        <div
+          style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
+        >
+          <Button
+            type="dashed"
+            disabled={list[slug]?.isLoading}
+            onClick={() => {
+              setEditVisible(true);
+              setTimelineVisible(false);
+            }}
+            icon={<ArrowLeftOutlined />}
+          />
+          <Progress
+            style={{ padding: "0 10px" }}
+            percent={list[slug]?.processPercent}
+            status="active"
+          />
+        </div>
         <Timeline
           pending={list[slug]?.isLoading ? "loading..." : false}
           reverse={true}

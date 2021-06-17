@@ -2,7 +2,7 @@ import React, { FC, useEffect, useState } from "react";
 import { Layout } from "antd";
 import AppContent from "./components/AppContent";
 import { WsContext } from "./contexts/useWebsocket";
-import { handleCreateProjects } from "./store/actions";
+import { handleCreateOrUpdateProjects } from "./store/actions";
 import { isJsonString } from "./utils/json";
 import { useDispatch } from "react-redux";
 
@@ -23,9 +23,11 @@ const App: FC = () => {
   useEffect(() => {
     if (!ws) {
       console.log("ws init");
-      let url:string = process.env.REACT_APP_WS_URL ? process.env.REACT_APP_WS_URL : ""
+      let url: string = process.env.REACT_APP_WS_URL
+        ? process.env.REACT_APP_WS_URL
+        : "";
       if (url === "") {
-        url =`ws://${window.location.host}/ws`
+        url = `ws://${window.location.host}/ws`;
       }
       let conn = new WebSocket(url);
       setWs(conn);
@@ -42,9 +44,7 @@ const App: FC = () => {
         }
         let data: WsResponse = JSON.parse(evt.data);
         console.log(data, data.type);
-        if (data.type === "create_project" || data.type === "update_project") {
-          dispatch(handleCreateProjects(data.slug, data));
-        }
+        dispatch(handleCreateOrUpdateProjects(data.slug, data));
         console.log("onmessage", evt.data);
       };
     }

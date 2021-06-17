@@ -76,7 +76,7 @@ class Shell extends Component<{
     }
     this.term = new Terminal({
       fontSize: 14,
-      fontFamily: 'Consolas, "Courier New", monospace',
+      fontFamily: '"Fira code", "Fira Mono", monospace',
       bellStyle: "sound",
       cursorBlink: true,
     });

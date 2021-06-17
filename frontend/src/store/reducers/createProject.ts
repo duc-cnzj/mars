@@ -1,4 +1,4 @@
-import { CLEAR_CREATE_PROJECT_LOG, SET_DEPLOY_STATUS } from "./../actionTypes";
+import { CLEAR_CREATE_PROJECT_LOG, SET_DEPLOY_STATUS, SET_PROCESS_PERCENT } from "./../actionTypes";
 import {
   CREATE_PROJECT_LOADING,
   CREATE_PROJECT_LOADING_DONE,
@@ -20,6 +20,7 @@ export interface CreateProjectItem {
   isLoading: boolean;
   deployStatus: DeployStatus;
   output: string[];
+  processPercent: number;
 }
 
 export const selectList = (state: { createProject: List }) =>
@@ -40,10 +41,23 @@ export default function createProject(
       isLoading: boolean;
       output: string;
       deployStatus: string;
+      processPercent: number;
     };
   }
 ) {
   switch (action.type) {
+    case SET_PROCESS_PERCENT:
+      if (action.data) {
+        return {
+          ...set(
+            state,
+            [action.data.id, "processPercent"],
+            action.data.processPercent
+          ),
+        };
+      }
+
+      return state;
     case SET_DEPLOY_STATUS:
       if (action.data) {
         return {

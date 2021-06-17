@@ -5,19 +5,20 @@ import {
   SET_DEPLOY_STATUS,
   CLEAR_CREATE_PROJECT_LOG,
   SET_NAMESPACE_RELOAD,
+  SET_PROCESS_PERCENT,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
 import { message } from "antd";
 
-export const setCreateProjectLoading = (id:string, loading: boolean) => ({
+export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
   data: {
     id,
     isLoading: loading,
   },
 });
-export const appendCreateProjectLog = (id:string, log: string) => ({
+export const appendCreateProjectLog = (id: string, log: string) => ({
   type: APPEND_CREATE_PROJECT_LOG,
   data: {
     id,
@@ -25,14 +26,14 @@ export const appendCreateProjectLog = (id:string, log: string) => ({
   },
 });
 
-export const clearCreateProjectLog = (id:string) => ({
+export const clearCreateProjectLog = (id: string) => ({
   type: CLEAR_CREATE_PROJECT_LOG,
   data: {
-    id
-  }
+    id,
+  },
 });
 
-export const setDeployStatus = (id:string, status: DeployStatus) => ({
+export const setDeployStatus = (id: string, status: DeployStatus) => ({
   type: SET_DEPLOY_STATUS,
   data: {
     id: id,
@@ -47,12 +48,22 @@ export const setNamespaceReload = (reload: boolean) => ({
   },
 });
 
-export const handleCreateProjects = (id:string, data: WsResponse) => {
+export const setProcessPercent = (id: string, percent: number) => ({
+  type: SET_PROCESS_PERCENT,
+  data: {
+    id: id,
+    processPercent: percent,
+  },
+});
+
+export const handleCreateOrUpdateProjects = (id: string, data: WsResponse) => {
   return function (dispatch: Dispatch) {
-    console.log("redux handleCreateProjects");
-    console.log("data.data", data.data);
-    dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
-    
+    if (data.type === "process_percent") {
+      dispatch(setProcessPercent(id, Number(data.data)));
+    } else {
+      dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
+    }
+
     if (data.type === "create_project" && data.end) {
       if (data.result === "deployed") {
         dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));

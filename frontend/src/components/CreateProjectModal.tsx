@@ -16,7 +16,7 @@ import {
 import _ from "lodash";
 import { CascaderOptionType } from "antd/lib/cascader";
 import { useWs } from "../contexts/useWebsocket";
-import { message } from "antd";
+import { message, Progress } from "antd";
 import { Button, Cascader, Timeline } from "antd";
 import {
   PlusOutlined,
@@ -167,6 +167,7 @@ const CreateProjectModal: React.FC<{
           targetOption.children = res.data.data;
           setOptions([...options]);
         });
+        setConfigLoaded(false);
         return;
     }
   };
@@ -223,7 +224,11 @@ const CreateProjectModal: React.FC<{
         className="drag-item-modal"
         onCancel={onCancel}
       >
-        <PipelineInfo projectId={data.gitlabProjectId} branch={data.gitlabBranch} commit={data.gitlabCommit} />
+        <PipelineInfo
+          projectId={data.gitlabProjectId}
+          branch={data.gitlabBranch}
+          commit={data.gitlabCommit}
+        />
         <div className={classNames({ "display-none": !editVisible })}>
           {list[slug]?.output.length > 0 ? (
             <Button
@@ -281,16 +286,25 @@ const CreateProjectModal: React.FC<{
             "display-none": !timelineVisible,
           })}
         >
-          <Button
-            style={{ marginBottom: 20 }}
-            type="dashed"
-            disabled={list[slug]?.isLoading}
-            onClick={() => {
-              setEditVisible(true);
-              setTimelineVisible(false);
-            }}
-            icon={<ArrowLeftOutlined />}
-          />
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
+          >
+            <Button
+              type="dashed"
+              disabled={list[slug]?.isLoading}
+              onClick={() => {
+                setEditVisible(true);
+                setTimelineVisible(false);
+              }}
+              icon={<ArrowLeftOutlined />}
+            />
+            <Progress
+              style={{ padding: "0 10px" }}
+              percent={list[slug]?.processPercent}
+              status="active"
+            />
+          </div>
+
           <Timeline
             pending={list[slug]?.isLoading ? "loading..." : false}
             reverse={true}
