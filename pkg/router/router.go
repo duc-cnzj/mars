@@ -3,6 +3,8 @@ package router
 import (
 	"net/http"
 
+	"github.com/DuC-cnZj/mars/frontend"
+
 	"github.com/DuC-cnZj/mars/pkg/controllers"
 	t "github.com/DuC-cnZj/mars/pkg/translator"
 	"github.com/gin-contrib/cors"
@@ -26,6 +28,8 @@ func Init(e *gin.Engine) {
 	cd.AllowAllOrigins = true
 	cd.AddAllowHeaders("X-Requested-With", "Authorization", "Accept-Language", "Access-Control-Allow-Credentials")
 	e.Use(cors.New(cd))
+
+	frontend.LoadFrontendRoutes(e)
 
 	wsC := controllers.NewWebsocketController()
 	e.GET("/ws", wsC.Ws)

@@ -1,0 +1,48 @@
+// * {outline: 1px slateblue solid}
+
+@import "~antd/dist/antd.less";
+@import "./app.less";
+@import "./app-content.less";
+@import "./edit-project-modal.less";
+@import "./project-container-logs.less";
+
+body {
+  background: #f8fafc;
+}
+
+.CodeMirror {
+  border: 1px solid #eee;
+  height: auto;
+}
+
+.draggable-modal {
+  .ant-modal-header {
+    border: none;
+  }
+  .ant-design-draggable-modal-title {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .detail-tab {
+    p {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 3px 0;
+    }
+
+    .detail-data {
+      margin-left: 10px;
+      font-weight: normal;
+      font-size: 14px;
+
+      a {
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+.display-none {
+  display: none;
+}

@@ -7,16 +7,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+	rootCmd = &cobra.Command{
+		Use:   "app",
+		Short: "mars app.",
+	}
 
-var rootCmd = &cobra.Command{
-	Use:   "app",
-	Short: "mars app.",
-}
+	configExampleFile []byte
+)
 
-func Execute() {
+func Execute(configFile []byte) {
+	configExampleFile = configFile
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(testCmd)
+	rootCmd.AddCommand(initCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

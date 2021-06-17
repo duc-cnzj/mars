@@ -1,0 +1,19 @@
+@main-bg: #001529;
+@main-color: white;
+.app {
+  &-title {
+    color: @main-color;
+  }
+  &-content {
+      margin-top: 64px;
+      padding: 0 50px;
+      min-height: calc(100vh - 134px) !important;
+  }
+  &-footer {
+    background: @main-bg !important;
+    text-align: center;
+    .copyright {
+      color: @main-color;
+    }
+  }
+}

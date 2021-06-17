@@ -1,0 +1,76 @@
+{
+  "name": "mars",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@ant-design/icons": "^4.6.2",
+    "@craco/craco": "^6.1.2",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "@types/jest": "^26.0.15",
+    "@types/node": "^12.0.0",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "@types/react-redux": "^7.1.16",
+    "add": "^2.0.6",
+    "ant-design-draggable-modal": "^1.0.0",
+    "antd": "^4.15.5",
+    "axios": "^0.21.1",
+    "blueimp-md5": "^2.18.0",
+    "classnames": "^2.3.1",
+    "codemirror": "^5.61.0",
+    "craco-antd": "^1.19.0",
+    "lodash": "^4.17.21",
+    "normalize.css": "^8.0.1",
+    "react": "^17.0.2",
+    "react-codemirror2": "^7.2.1",
+    "react-dom": "^17.0.2",
+    "react-redux": "^7.2.4",
+    "react-scripts": "4.0.3",
+    "react-syntax-highlighter": "^15.4.3",
+    "redux-devtools-extension": "^2.13.9",
+    "redux-thunk": "^2.3.0",
+    "rxjs": "^7.1.0",
+    "sockjs-client": "^1.5.1",
+    "typescript": "^4.1.2",
+    "web-vitals": "^1.0.1",
+    "xterm": "^4.13.0",
+    "xterm-addon-fit": "^0.5.0",
+    "yarn": "^1.22.10"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "rules": {
+      "react/jsx-no-target-blank": "off"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/blueimp-md5": "^2.18.0",
+    "@types/lodash": "^4.14.169",
+    "@types/react-syntax-highlighter": "^13.5.0",
+    "@types/sockjs-client": "^1.5.0",
+    "babel-plugin-transform-remove-console": "^6.9.4"
+  }
+}
