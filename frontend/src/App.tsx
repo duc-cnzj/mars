@@ -5,6 +5,8 @@ import { WsContext } from "./contexts/useWebsocket";
 import { handleCreateOrUpdateProjects } from "./store/actions";
 import { isJsonString } from "./utils/json";
 import { useDispatch } from "react-redux";
+import { Switch, Route, Link } from "react-router-dom";
+import GitlabProjectManager from './components/GitlabProjectManager'
 
 const { Header, Content, Footer } = Layout;
 
@@ -54,10 +56,15 @@ const App: FC = () => {
     <WsContext.Provider value={ws}>
       <Layout className="app">
         <Header style={{ position: "fixed", zIndex: 1, width: "100%" }}>
-          <h1 className="app-title">Mars</h1>
+          <Link to="/" className="app-title">Mars</Link>
         </Header>
         <Content className="app-content">
-          <AppContent />
+          <Switch>
+            <Route path="/gitlab_project_manager" component={GitlabProjectManager} />
+            <Route path="*">
+              <AppContent />
+            </Route>
+          </Switch>
         </Content>
         <Footer className="app-footer">
           <div className="copyright">created by duc@2021.</div>

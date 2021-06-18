@@ -221,7 +221,7 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 func GetProjectMarsConfig(projectId int, branch string) (*mars.Config, error) {
 	var marsC mars.Config
 
-	// 获取 mars.yaml
+	// 获取 .mars.yaml
 	opt := &gitlab.GetFileOptions{}
 	if branch != "" {
 		opt.Ref = gitlab.String(branch)

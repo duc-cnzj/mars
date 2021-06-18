@@ -17,6 +17,7 @@ import (
 var Models = []interface{}{
 	&models.Namespace{},
 	&models.Project{},
+	&models.GitlabProject{},
 }
 
 type DBBootstrapper struct{}

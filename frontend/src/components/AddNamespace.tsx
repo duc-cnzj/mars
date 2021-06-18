@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, memo } from "react";
 import { Affix, Button, Modal, Input, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { createNamespace } from "../api/namespace";
@@ -62,4 +62,4 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
   );
 };
 
-export default AddNamespace;
+export default memo(AddNamespace);

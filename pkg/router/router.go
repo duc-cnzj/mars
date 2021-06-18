@@ -62,6 +62,13 @@ func Init(e *gin.Engine) {
 
 		gitlabController := controllers.NewGitlabController()
 		{
+			api.POST("/gitlab/projects/enable", gitlabController.EnableProject)
+			api.POST("/gitlab/projects/disable", gitlabController.DisableProject)
+
+			// 这个接口返回更加详细的项目详细
+			api.GET("/gitlab/project_list", gitlabController.ProjectList)
+
+			// 下面三个只返回级联所需的信息
 			api.GET("/gitlab/projects", gitlabController.Projects)
 			api.GET("/gitlab/projects/:project_id/branches", gitlabController.Branches)
 			api.GET("/gitlab/projects/:project_id/branches/:branch/commits", gitlabController.Commits)
