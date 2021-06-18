@@ -70,7 +70,8 @@ const CreateProjectModal: React.FC<{
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
-  const [configLoaded, setConfigLoaded] = useState<boolean>(false);
+  const [value, setValue] = useState<string[]>([]);
+
   let slug = toSlug(namespaceId, data.name);
 
   const onCancel = useCallback(() => {
@@ -96,44 +97,65 @@ const CreateProjectModal: React.FC<{
   }, [list, dispatch, slug]);
 
   const onChange = (values: any[]) => {
-    setData({
-      ...data,
+    let gitlabId = _.get(values, 0, 0);
+    let gbranch = _.get(values, 1, "");
+    let gcommit = _.get(values, 2, "");
+    setData((d) => ({
+      ...d,
       name: _.get(
         options.find((item) => item.value === values[0]),
         "label",
         ""
       ),
-      gitlabProjectId: _.get(values, 0, 0),
-      gitlabBranch: _.get(values, 1, ""),
-      gitlabCommit: _.get(values, 2, ""),
-    });
+      gitlabProjectId: gitlabId,
+      gitlabBranch: gbranch,
+      gitlabCommit: gcommit,
+    }));
+
+    if (gitlabId) {
+      let o = options.find((item) => item.value === values[0]);
+      setValue([o ? o.label : ""]);
+      if (gbranch) {
+        if (o && o.children) {
+          let b = o.children.find((item) => item.value === gbranch);
+          setValue([o.label, b ? b.label : ""]);
+
+          if (gcommit) {
+            if (b && b.children) {
+              let c = b.children.find((item) => item.value === gcommit);
+              setValue([o.label, b.label, c ? c.label : ""]);
+              if (data.config === "") {
+                loadConfigFile();
+              }
+            }
+          }
+        }
+      }
+    }
   };
   const cmref = useRef<any>();
 
-  useEffect(() => {
-    if (!!data.gitlabCommit && !data.config && !configLoaded) {
-      configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
-        setConfigLoaded(true);
-        setData({ ...data, config: res.data.data.data });
-        switch (res.data.data.type) {
-          case "dotenv":
-          case "env":
-          case ".env":
-            setMode("text/x-textile");
-            break;
-          case "yaml":
-            setMode("text/x-yaml");
-            break;
-          case "php":
-            setMode("php");
-            break;
-          default:
-            setMode(res.data.data.type);
-            break;
-        }
-      });
-    }
-  }, [data.gitlabCommit, data, configLoaded]);
+  const loadConfigFile = useCallback(() => {
+    configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
+      setData((d) => ({ ...d, config: res.data.data.data }));
+      switch (res.data.data.type) {
+        case "dotenv":
+        case "env":
+        case ".env":
+          setMode("text/x-textile");
+          break;
+        case "yaml":
+          setMode("text/x-yaml");
+          break;
+        case "php":
+          setMode("php");
+          break;
+        default:
+          setMode(res.data.data.type);
+          break;
+      }
+    });
+  }, [data.gitlabBranch, data.gitlabProjectId]);
 
   useEffect(() => {
     if (cmref.current && data.config) {
@@ -156,7 +178,6 @@ const CreateProjectModal: React.FC<{
           targetOption.children = res.data.data;
           setOptions([...options]);
         });
-        setConfigLoaded(false);
         return;
       case "branch":
         commits(
@@ -167,7 +188,6 @@ const CreateProjectModal: React.FC<{
           targetOption.children = res.data.data;
           setOptions([...options]);
         });
-        setConfigLoaded(false);
         return;
     }
   };
@@ -179,7 +199,6 @@ const CreateProjectModal: React.FC<{
       // todo ws connected!
       setEditVisible(false);
       setTimelineVisible(true);
-      console.log("send create project request", ws);
 
       let re = {
         type: "create_project",
@@ -192,6 +211,7 @@ const CreateProjectModal: React.FC<{
           config: data.config,
         }),
       };
+
       let s = JSON.stringify(re);
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
@@ -248,6 +268,7 @@ const CreateProjectModal: React.FC<{
             options={options}
             style={{ width: "100%", marginBottom: "10px" }}
             autoFocus
+            value={value}
             allowClear={false}
             loadData={loadData}
             onChange={onChange}

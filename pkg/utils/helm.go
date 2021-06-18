@@ -11,6 +11,8 @@ import (
 	"time"
 	"unsafe"
 
+	"helm.sh/helm/v3/pkg/downloader"
+
 	"github.com/DuC-cnZj/mars/pkg/mlog"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -278,6 +280,21 @@ func PackageChart(path string, destDir string) (string, error) {
 	newPackage := action.NewPackage()
 	if destDir != "" {
 		newPackage.Destination = destDir
+	}
+
+	// 更新依赖 dependency, 防止没有依赖文件打包失败
+	downloadManager := &downloader.Manager{
+		Out:              ioutil.Discard,
+		ChartPath:        path,
+		Keyring:          newPackage.Keyring,
+		Getters:          getter.All(settings),
+		Debug:            settings.Debug,
+		RepositoryConfig: settings.RepositoryConfig,
+		RepositoryCache:  settings.RepositoryCache,
+	}
+
+	if err := downloadManager.Update(); err != nil {
+		return "", err
 	}
 
 	return newPackage.Run(path, nil)

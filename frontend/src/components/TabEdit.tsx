@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import PipelineInfo from "./PipelineInfo";
 
@@ -68,8 +68,6 @@ const ModalSub: React.FC<{
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [options, setOptions] = useState<Options[]>([]);
-  const [configLoaded, setConfigLoaded] = useState<boolean>(false);
-
   const [value, setValue] = useState<string[]>([]);
   const [initValue, setInitValue] = useState<string[]>([]);
   let slug = toSlug(namespaceId, data.name);
@@ -127,30 +125,27 @@ const ModalSub: React.FC<{
   }, [list, dispatch, slug, onSuccess]);
 
   // 更新 config 文件的类型， TODO 支持动态加载 mode css 文件
-  useEffect(() => {
-    if (!!data.gitlabCommit && !data.config && !configLoaded) {
-      configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
-        setConfigLoaded(true);
-        setData({ ...data, config: res.data.data.data });
-        switch (res.data.data.type) {
-          case "dotenv":
-          case "env":
-          case ".env":
-            setMode("text/x-textile");
-            break;
-          case "yaml":
-            setMode("text/x-yaml");
-            break;
-          case "php":
-            setMode("php");
-            break;
-          default:
-            setMode(res.data.data.type);
-            break;
-        }
-      });
-    }
-  }, [data.gitlabCommit, data, configLoaded]);
+  const loadConfigFile = useCallback(() => {
+    configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
+      setData((d) => ({ ...d, config: res.data.data.data }));
+      switch (res.data.data.type) {
+        case "dotenv":
+        case "env":
+        case ".env":
+          setMode("text/x-textile");
+          break;
+        case "yaml":
+          setMode("text/x-yaml");
+          break;
+        case "php":
+          setMode("php");
+          break;
+        default:
+          setMode(res.data.data.type);
+          break;
+      }
+    });
+  }, [data.gitlabProjectId, data.gitlabBranch]);
 
   const loadData = (selectedOptions: CascaderOptionType[] | undefined) => {
     if (!selectedOptions) {
@@ -167,7 +162,6 @@ const ModalSub: React.FC<{
           targetOption.children = res.data.data;
           setOptions([...options]);
         });
-        setConfigLoaded(false);
         return;
       case "branch":
         commits(
@@ -186,8 +180,8 @@ const ModalSub: React.FC<{
     let gitlabId = _.get(values, 0, 0);
     let gbranch = _.get(values, 1, "");
     let gcommit = _.get(values, 2, "");
-    setData({
-      ...data,
+    setData((d) => ({
+      ...d,
       name: _.get(
         options.find((item) => item.value === values[0]),
         "label",
@@ -196,7 +190,7 @@ const ModalSub: React.FC<{
       gitlabProjectId: gitlabId,
       gitlabBranch: gbranch,
       gitlabCommit: gcommit,
-    });
+    }));
 
     if (gitlabId) {
       let o = options.find((item) => item.value === values[0]);
@@ -210,6 +204,9 @@ const ModalSub: React.FC<{
             if (b && b.children) {
               let c = b.children.find((item) => item.value === gcommit);
               setValue([o.label, b.label, c ? c.label : ""]);
+              if (data.config === "") {
+                loadConfigFile();
+              }
             }
           }
         }
