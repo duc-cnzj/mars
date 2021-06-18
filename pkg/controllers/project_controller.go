@@ -140,10 +140,6 @@ func (p *ProjectController) AllPodContainers(ctx *gin.Context) {
 			})
 		}
 	}
-	containerList = append(containerList, PodContainerResponse{
-		PodName:       "a",
-		ContainerName: "b",
-	})
 
 	response.Success(ctx, 200, containerList)
 }
