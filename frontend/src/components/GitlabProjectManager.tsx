@@ -63,7 +63,7 @@ const GitlabProjectManager: React.FC = () => {
 
   return (
     <>
-      <Card title={"manager"} style={{ marginTop: 20, marginBottom: 30 }}>
+      <Card title={"gitlab项目管理"} style={{ marginTop: 20, marginBottom: 30 }}>
         <List
           itemLayout="horizontal"
           loading={initLoading}
