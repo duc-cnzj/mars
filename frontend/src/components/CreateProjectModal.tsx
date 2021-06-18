@@ -75,6 +75,7 @@ const CreateProjectModal: React.FC<{
   let slug = toSlug(namespaceId, data.name);
 
   const onCancel = useCallback(() => {
+    setValue([])
     setVisible(false);
     setData(initItemData);
     dispatch(clearCreateProjectLog(slug));
