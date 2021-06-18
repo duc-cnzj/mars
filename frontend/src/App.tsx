@@ -60,7 +60,7 @@ const App: FC = () => {
         </Header>
         <Content className="app-content">
           <Switch>
-            <Route path="/gitlab_project_manager" component={GitlabProjectManager} />
+            <Route path="/web/gitlab_project_manager" component={GitlabProjectManager} />
             <Route path="*">
               <AppContent />
             </Route>
