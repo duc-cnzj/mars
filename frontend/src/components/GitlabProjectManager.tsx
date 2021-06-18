@@ -27,20 +27,20 @@ const GitlabProjectManager: React.FC = () => {
   }, [fetchList, setInitLoading]);
 
   const toggleStatus = (item: Info) => {
-    setLoadingList({ ...loadingList, [item.id]: true });
+    setLoadingList((l) => ({ ...l, [item.id]: true }));
     console.log(loadingList);
     if (item.enabled) {
       disabledProject(item.id)
         .then((res) => {
           message.success("成功");
           setTimeout(() => {
-            setLoadingList({ ...loadingList, [item.id]: false });
+            setLoadingList((l) => ({ ...l, [item.id]: false }));
           }, 1500);
         })
         .catch((e) => {
           message.error(e.message);
           setTimeout(() => {
-            setLoadingList({ ...loadingList, [item.id]: false });
+            setLoadingList((l) => ({ ...l, [item.id]: false }));
           }, 1500);
         });
     } else {
@@ -48,13 +48,13 @@ const GitlabProjectManager: React.FC = () => {
         .then((res) => {
           message.success("成功");
           setTimeout(() => {
-            setLoadingList({ ...loadingList, [item.id]: false });
+            setLoadingList((l) => ({ ...l, [item.id]: false }));
           }, 500);
         })
         .catch((e) => {
           message.error(e.response.data.message);
           setTimeout(() => {
-            setLoadingList({ ...loadingList, [item.id]: false });
+            setLoadingList((l) => ({ ...l, [item.id]: false }));
           }, 500);
         });
     }
@@ -63,7 +63,10 @@ const GitlabProjectManager: React.FC = () => {
 
   return (
     <>
-      <Card title={"gitlab项目管理"} style={{ marginTop: 20, marginBottom: 30 }}>
+      <Card
+        title={"gitlab项目管理"}
+        style={{ marginTop: 20, marginBottom: 30 }}
+      >
         <List
           itemLayout="horizontal"
           loading={initLoading}
