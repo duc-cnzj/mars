@@ -9,7 +9,7 @@ module.exports = {
     }) => {
       webpackConfig.output = {
         ...webpackConfig.output,
-        publicPath: process.env.NODE_ENV === 'production' ? '/static/build' : '/',
+        publicPath: process.env.NODE_ENV === 'production' ? '/resources' : '/',
       }
       return webpackConfig
     }
