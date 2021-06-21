@@ -382,7 +382,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	SendProcessPercent(conn, slugName, "85")
 
 	go func() {
-		if _, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
+		if result, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
 			mlog.Error(err)
 			ch <- MessageItem{
 				Msg:  err.Error(),
@@ -390,6 +390,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			}
 			close(ch)
 		} else {
+			// TODO 看看是否能通过 result 拿到所有 pod
+			mlog.Warning(result)
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
 				utils.DB().Model(&models.Project{}).Where("`id` = ?", project.ID).Updates(map[string]interface{}{
 					"config":            input.Config,
