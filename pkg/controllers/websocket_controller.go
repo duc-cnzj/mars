@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"k8s.io/client-go/kubernetes/scheme"
+
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,6 +13,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	v1 "k8s.io/api/apps/v1"
 
 	"github.com/DuC-cnZj/mars/pkg/mlog"
 	"github.com/DuC-cnZj/mars/pkg/models"
@@ -393,12 +397,11 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			}
 			close(ch)
 		} else {
-			// TODO 看看是否能通过 result 拿到所有 pod
-			mlog.Debugf("%#v", result.Manifest)
+			project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&p).Error == nil {
 				utils.DB().Model(&models.Project{}).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage").
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors").
 					Where("`id` = ?", p.ID).
 					Updates(&project)
 			} else {
@@ -423,6 +426,33 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			SendEndMsg(conn, ResultDeployed, slugName, wsType, s.Msg)
 		}
 	}
+}
+
+// getPodSelectorsInDeploymentAndStatefulSetByManifest TODO: 比较 hack
+func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []string {
+	var selectors []string
+	split := strings.Split(manifest, "---")
+	for _, f := range split {
+		obj, _, _ := scheme.Codecs.UniversalDeserializer().Decode([]byte(f), nil, nil)
+		switch a := obj.(type) {
+		case *v1.Deployment:
+			mlog.Debug("############### getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) ###############")
+			var labels []string
+			for k, v := range a.Spec.Selector.MatchLabels {
+				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+			}
+			selectors = append(selectors, strings.Join(labels, ","))
+		case *v1.StatefulSet:
+			mlog.Debug("############### getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) ###############")
+			var labels []string
+			for k, v := range a.Spec.Selector.MatchLabels {
+				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+			}
+			selectors = append(selectors, strings.Join(labels, ","))
+		}
+	}
+
+	return selectors
 }
 
 type MessageItem struct {

@@ -15,7 +15,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ProjectController struct{}
@@ -61,7 +60,7 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
-	cpu, memory := utils.GetCpuAndMemoryInNamespaceByRelease(project.Namespace.Name, project.Name)
+	cpu, memory := utils.GetCpuAndMemory(project.GetAllPodMetrics())
 	commit, _, err := utils.GitlabClient().Commits.GetCommit(project.GitlabProjectId, project.GitlabCommit)
 	if err != nil {
 		mlog.Error(err)
@@ -129,12 +128,10 @@ func (p *ProjectController) AllPodContainers(ctx *gin.Context) {
 		return
 	}
 
-	list, _ := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), v1.ListOptions{
-		LabelSelector: "app.kubernetes.io/instance=" + project.Name,
-	})
+	var list = project.GetAllPods()
 
 	var containerList []PodContainerResponse
-	for _, item := range list.Items {
+	for _, item := range list {
 		for _, c := range item.Spec.Containers {
 			containerList = append(containerList, PodContainerResponse{
 				PodName:       item.Name,
