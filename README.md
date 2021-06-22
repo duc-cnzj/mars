@@ -40,7 +40,9 @@ helm upgrade --install mars mars-charts/mars -f mars-values.yaml
 
 ## 🔍 configuration
 
-配置参考：
+用法借鉴 `.gitlab.yml`, 使用时只需要在项目下面创建一个 `.mars.yaml` 就可以了。 
+
+`.mars.yaml` 配置参考：
 
 ```yaml
 # 项目默认的配置文件
