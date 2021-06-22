@@ -378,7 +378,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	ch := make(chan MessageItem)
 	fn := func(format string, v ...interface{}) {
-		pp.AddOne()
+		pp.Add()
 		msg := fmt.Sprintf(format, v...)
 		mlog.Debug(msg)
 		ch <- MessageItem{
@@ -542,7 +542,7 @@ func NewProcessPercent(conn *WsConn, slug string, percent int64) *ProcessPercent
 	}
 }
 
-func (pp *ProcessPercent) AddOne() {
+func (pp *ProcessPercent) Add() {
 	pp.Lock()
 	defer pp.Unlock()
 
