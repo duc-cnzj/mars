@@ -1,8 +1,8 @@
 package bootstrappers
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	"github.com/DuC-cnZj/mars/pkg/router"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/router"
 	"github.com/gin-gonic/gin"
 )
 

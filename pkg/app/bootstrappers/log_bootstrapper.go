@@ -3,8 +3,8 @@ package bootstrappers
 import (
 	"errors"
 
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 	log "github.com/sirupsen/logrus"
 
 	"os"

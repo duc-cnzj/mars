@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/DuC-cnZj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/pkg/utils"
 
 	"github.com/xanzy/go-gitlab"
 
-	"github.com/DuC-cnZj/mars/pkg/app/bootstrappers"
-	"github.com/DuC-cnZj/mars/pkg/app/instance"
-	"github.com/DuC-cnZj/mars/pkg/config"
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	"github.com/DuC-cnZj/mars/pkg/database"
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/app/bootstrappers"
+	"github.com/duc-cnzj/mars/pkg/app/instance"
+	"github.com/duc-cnzj/mars/pkg/config"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/database"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 )
 
 var _ contracts.ApplicationInterface = (*Application)(nil)

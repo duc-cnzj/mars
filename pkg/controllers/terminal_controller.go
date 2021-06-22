@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/DuC-cnZj/mars/pkg/controllers/terminal"
+	"github.com/duc-cnzj/mars/pkg/controllers/terminal"
 	"github.com/gin-gonic/gin"
 )
 

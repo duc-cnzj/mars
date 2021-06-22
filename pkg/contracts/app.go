@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/DuC-cnZj/mars/pkg/config"
+	"github.com/duc-cnzj/mars/pkg/config"
 )
 
 type ShutdownFunc func(ApplicationInterface)

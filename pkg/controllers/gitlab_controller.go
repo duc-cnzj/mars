@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/DuC-cnZj/mars/pkg/models"
-	"github.com/DuC-cnZj/mars/pkg/response"
-	"github.com/DuC-cnZj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/pkg/models"
+	"github.com/duc-cnzj/mars/pkg/response"
+	"github.com/duc-cnzj/mars/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/xanzy/go-gitlab"
 )

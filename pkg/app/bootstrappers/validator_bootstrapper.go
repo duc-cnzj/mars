@@ -3,7 +3,7 @@ package bootstrappers
 import (
 	"regexp"
 
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )

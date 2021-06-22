@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 	"github.com/sirupsen/logrus"
 )
 

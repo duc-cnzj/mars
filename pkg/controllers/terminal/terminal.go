@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
-	"github.com/DuC-cnZj/mars/pkg/response"
-	"github.com/DuC-cnZj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/response"
+	"github.com/duc-cnzj/mars/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/igm/sockjs-go.v2/sockjs"
 

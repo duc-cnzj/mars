@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DuC-cnZj/mars/pkg/models"
+	"github.com/duc-cnzj/mars/pkg/models"
 
-	"github.com/DuC-cnZj/mars/pkg/adapter"
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/adapter"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 
-	"github.com/DuC-cnZj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/pkg/utils"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v2"
 )

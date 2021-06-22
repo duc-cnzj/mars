@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
-	"github.com/DuC-cnZj/mars/pkg/translator/langs"
+	"github.com/duc-cnzj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/translator/langs"
 
 	"github.com/gin-gonic/gin"
 

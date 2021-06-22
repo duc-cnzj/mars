@@ -3,7 +3,7 @@ package instance
 import (
 	"sync"
 
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 )
 
 var (

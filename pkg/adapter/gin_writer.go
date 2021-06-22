@@ -3,7 +3,7 @@ package adapter
 import (
 	"strings"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 )
 
 type GinWriter struct{}

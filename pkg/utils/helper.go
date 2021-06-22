@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/app/instance"
-	"github.com/DuC-cnZj/mars/pkg/config"
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/app/instance"
+	"github.com/duc-cnzj/mars/pkg/config"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 	"github.com/xanzy/go-gitlab"
 	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"

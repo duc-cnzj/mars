@@ -1,4 +1,4 @@
-module github.com/DuC-cnZj/mars
+module github.com/duc-cnzj/mars
 
 go 1.16
 

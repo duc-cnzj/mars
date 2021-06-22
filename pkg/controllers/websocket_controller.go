@@ -16,9 +16,9 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
-	"github.com/DuC-cnZj/mars/pkg/models"
-	"github.com/DuC-cnZj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/models"
+	"github.com/duc-cnzj/mars/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"

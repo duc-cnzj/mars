@@ -1,8 +1,8 @@
 package events
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	"github.com/DuC-cnZj/mars/pkg/models"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/models"
 	v1 "k8s.io/api/core/v1"
 )
 

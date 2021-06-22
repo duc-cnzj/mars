@@ -1,7 +1,7 @@
 package bootstrappers
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

@@ -3,7 +3,7 @@ package main
 import (
 	_ "embed"
 
-	"github.com/DuC-cnZj/mars/cmd"
+	"github.com/duc-cnzj/mars/cmd"
 )
 
 //go:embed config_example.yaml

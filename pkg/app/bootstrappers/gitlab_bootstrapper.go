@@ -1,7 +1,7 @@
 package bootstrappers
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 	"github.com/xanzy/go-gitlab"
 )
 

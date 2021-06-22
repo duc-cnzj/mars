@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 	"github.com/xanzy/go-gitlab"
 )
 

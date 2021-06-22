@@ -1,8 +1,8 @@
 package bootstrappers
 
 import (
-	"github.com/DuC-cnZj/mars/pkg/contracts"
-	t "github.com/DuC-cnZj/mars/pkg/translator"
+	"github.com/duc-cnzj/mars/pkg/contracts"
+	t "github.com/duc-cnzj/mars/pkg/translator"
 )
 
 type I18nBootstrapper struct{}

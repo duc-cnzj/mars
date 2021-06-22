@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DuC-cnZj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/pkg/mlog"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -3,10 +3,10 @@ package router
 import (
 	"net/http"
 
-	"github.com/DuC-cnZj/mars/frontend"
+	"github.com/duc-cnzj/mars/frontend"
 
-	"github.com/DuC-cnZj/mars/pkg/controllers"
-	t "github.com/DuC-cnZj/mars/pkg/translator"
+	"github.com/duc-cnzj/mars/pkg/controllers"
+	t "github.com/duc-cnzj/mars/pkg/translator"
 	"github.com/gin-contrib/cors"
 	"github.com/gorilla/websocket"
 

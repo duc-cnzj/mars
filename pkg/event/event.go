@@ -3,7 +3,7 @@ package event
 import (
 	"sync"
 
-	"github.com/DuC-cnZj/mars/pkg/contracts"
+	"github.com/duc-cnzj/mars/pkg/contracts"
 )
 
 type Dispatcher struct {
