@@ -14,6 +14,7 @@ export interface ProjectDetail {
 
   cpu:string;
   memory:string;
+  override_values:string;
   created_at:string;
   updated_at:string;
 

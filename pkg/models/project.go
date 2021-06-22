@@ -21,6 +21,7 @@ type Project struct {
 	GitlabBranch    string `json:"gitlab_branch" gorm:"not null;size:255;"`
 	GitlabCommit    string `json:"gitlab_commit" gorm:"not null;size:255;"`
 	Config          string `json:"config"`
+	OverrideValues  string `json:"override_values"`
 
 	DockerImage string `json:"docker_image" gorm:"not null;size:255;default:''"`
 

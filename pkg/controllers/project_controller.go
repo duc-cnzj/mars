@@ -42,8 +42,9 @@ type ProjectDetailItem struct {
 		Name string `json:"name"`
 	} `json:"namespace"`
 
-	Cpu    string `json:"cpu"`
-	Memory string `json:"memory"`
+	Cpu            string `json:"cpu"`
+	Memory         string `json:"memory"`
+	OverrideValues string `json:"override_values"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -85,10 +86,11 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 			ID   int    `json:"id"`
 			Name string `json:"name"`
 		}{project.NamespaceId, project.Namespace.Name},
-		Cpu:       cpu,
-		Memory:    memory,
-		CreatedAt: utils.ToHumanizeDatetimeString(&project.CreatedAt),
-		UpdatedAt: utils.ToHumanizeDatetimeString(&project.UpdatedAt),
+		Cpu:            cpu,
+		Memory:         memory,
+		OverrideValues: project.OverrideValues,
+		CreatedAt:      utils.ToHumanizeDatetimeString(&project.CreatedAt),
+		UpdatedAt:      utils.ToHumanizeDatetimeString(&project.UpdatedAt),
 	})
 }
 

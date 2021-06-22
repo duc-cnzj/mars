@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"bytes"
@@ -398,13 +399,14 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			}
 			close(ch)
 		} else {
-			// TODO: config 入库，前端增加 config 查看
-			mlog.Warning(result.Config)
+			bf := &bytes.Buffer{}
+			yaml.NewEncoder(bf).Encode(&result.Config)
+			project.OverrideValues = bf.String()
 			project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&p).Error == nil {
 				utils.DB().Model(&models.Project{}).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors").
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues").
 					Where("`id` = ?", p.ID).
 					Updates(&project)
 			} else {
