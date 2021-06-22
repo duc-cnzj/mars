@@ -98,6 +98,7 @@ const ItemDetailModal: React.FC<{
             </div>
             {detail ? (
               <TabLog
+                updatedAt={detail.updated_at}
                 autoRefresh={autoRefresh}
                 id={detail.id}
                 namespaceId={detail.namespace.id}
@@ -110,6 +111,7 @@ const ItemDetailModal: React.FC<{
             <ErrorBoundary>
               {detail ? (
                 <Shell
+                  updatedAt={detail.updated_at}
                   namespace={detail.namespace.name}
                   id={detail.id}
                   namespaceId={detail.namespace.id}

@@ -5,10 +5,11 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import { xt256 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 const ProjectContainerLogs: React.FC<{
+  updatedAt:string;
   id: number;
   namespaceId: number;
   autoRefresh: boolean;
-}> = ({ id, namespaceId, autoRefresh }) => {
+}> = ({ id, namespaceId, autoRefresh, updatedAt }) => {
   const [value, setValue] = useState<string>();
   const [list, setList] = useState<PodContainerItem[]>();
   const [log, setLog] = useState<string>();
@@ -29,7 +30,7 @@ const ProjectContainerLogs: React.FC<{
         });
       }
     });
-  }, [setList, id, namespaceId]);
+  }, [setList, id, namespaceId, updatedAt]);
 
   const onChange = (e: RadioChangeEvent) => {
     setValue(e.target.value);

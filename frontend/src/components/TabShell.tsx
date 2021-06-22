@@ -11,6 +11,7 @@ import "xterm/css/xterm.css";
 import { handleExecShell } from "../api/shell";
 
 class Shell extends Component<{
+  updatedAt: string;
   namespaceId: number;
   id: number;
   namespace: string;
@@ -35,19 +36,7 @@ class Shell extends Component<{
   };
 
   componentDidMount() {
-    containerList(this.props.namespaceId, this.props.id).then((res) => {
-      this.setState({ list: res.data.data });
-      if (res.data.data.length > 0) {
-        let first = res.data.data[0];
-        this.setState({ value: first.pod_name + "|" + first.container_name });
-        if (this.conn_ && this.connected_) {
-          this.disconnect();
-        }
-        this.setupConnection();
-        this.initTerm();
-        this.debouncedFit_ && this.debouncedFit_();
-      }
-    });
+    this.fetchData();
   }
 
   componentWillUnmount() {
@@ -84,9 +73,11 @@ class Shell extends Component<{
     this.myRef.current && this.term.open(this.myRef.current);
     this.term.loadAddon(fitAddon);
     this.debouncedFit_ = debounce(() => {
-        if (typeof this.term?.rows === "number" && typeof this.term?.cols === "number") {
-            fitAddon.fit();
-        }
+      try {
+        fitAddon.fit();
+      } catch (e) {
+        console.log(e);
+      }
     }, 300);
     window.addEventListener(
       "resize",
@@ -108,7 +99,7 @@ class Shell extends Component<{
     }
 
     if (frame.Op === "toast") {
-      message.error(frame.Data)
+      message.error(frame.Data);
     }
 
     this.incommingMessage$_.next(frame);
@@ -138,11 +129,9 @@ class Shell extends Component<{
       this.setState({ sessionId: data.data.id });
       let url = process.env.REACT_APP_BASE_URL;
       if (url === "") {
-        url = window.location.origin
+        url = window.location.origin;
       }
-      this.conn_ = new SockJS(
-        `${url}/api/sockjs?${data.data.id}`
-      );
+      this.conn_ = new SockJS(`${url}/api/sockjs?${data.data.id}`);
       this.conn_.onopen = this.onConnectionOpen.bind(
         this,
         this.state.sessionId
@@ -153,7 +142,26 @@ class Shell extends Component<{
     });
   };
 
+  fetchData = () => {
+    containerList(this.props.namespaceId, this.props.id).then((res) => {
+      this.setState({ list: res.data.data });
+      if (res.data.data.length > 0) {
+        let first = res.data.data[0];
+        this.setState({ value: first.pod_name + "|" + first.container_name });
+        if (this.conn_ && this.connected_) {
+          this.disconnect();
+        }
+        this.setupConnection();
+        this.initTerm();
+        this.debouncedFit_ && this.debouncedFit_();
+      }
+    });
+  };
+
   componentDidUpdate(prevProps: any, prevState: any, snapshot: any) {
+    if (this.props.updatedAt !== prevProps.updatedAt) {
+      this.fetchData();
+    }
     if (prevProps.value !== prevState.value && prevState.value !== "") {
       this.disconnect();
       this.setupConnection();

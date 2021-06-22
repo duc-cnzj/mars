@@ -15,6 +15,7 @@ export interface ProjectDetail {
   cpu:string;
   memory:string;
   created_at:string;
+  updated_at:string;
 
   gitlab_commit_title:string;
   gitlab_commit_web_url:string;

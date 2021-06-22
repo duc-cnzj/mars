@@ -46,6 +46,7 @@ type ProjectDetailItem struct {
 	Memory string `json:"memory"`
 
 	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func (p *ProjectController) Show(ctx *gin.Context) {
@@ -87,6 +88,7 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		Cpu:       cpu,
 		Memory:    memory,
 		CreatedAt: utils.ToHumanizeDatetimeString(&project.CreatedAt),
+		UpdatedAt: utils.ToHumanizeDatetimeString(&project.UpdatedAt),
 	})
 }
 
