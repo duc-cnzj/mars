@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -321,7 +322,9 @@ func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, container
 			mlog.Error(err)
 			s := terminalSessions.Get(sessionId)
 			if s.sockJSSession != nil {
-				s.Toast(err.Error())
+				if !strings.Contains(err.Error(), "unable to upgrade connection") {
+					s.Toast(err.Error())
+				}
 			}
 			terminalSessions.Close(sessionId, 2, err.Error())
 			return
