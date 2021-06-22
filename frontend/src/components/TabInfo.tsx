@@ -5,6 +5,7 @@ import {
   BranchesOutlined,
   PushpinOutlined,
   ExclamationCircleOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 const { confirm } = Modal;
 
@@ -86,6 +87,28 @@ const DetailTab: React.FC<{ detail?: ProjectDetail, onDeleted: ()=>void }> = ({ 
         />
         <p>
           分支: <span className="detail-data">{detail.gitlab_branch}</span>
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <SettingOutlined
+          style={{
+            width: 20,
+            height: 20,
+            marginRight: 4,
+            fontSize: 16,
+          }}
+        />
+        <p>
+          容器镜像:
+          <span className="detail-data">
+            {detail.docker_image}
+          </span>
         </p>
       </div>
 

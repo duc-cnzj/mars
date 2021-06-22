@@ -4,6 +4,7 @@ export interface ProjectDetail {
   name: string;
   gitlab_project_id: string;
   gitlab_branch: string;
+  docker_image: string;
   gitlab_commit: string;
   config: string;
   namespace: {

@@ -15,6 +15,8 @@ type Project struct {
 	GitlabCommit    string `json:"gitlab_commit" gorm:"not null;size:255;"`
 	Config          string `json:"config"`
 
+	DockerImage string `json:"docker_image" gorm:"not null;size:255;default:''"`
+
 	NamespaceId int `json:"namespace_id"`
 
 	CreatedAt time.Time      `json:"created_at"`

@@ -333,11 +333,14 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	SendProcessPercent(conn, slugName, "65")
 
+	tag := b.String()
 	var commonValues = []string{
 		"image.pullPolicy=IfNotPresent",
 		"image.repository=" + marsC.DockerRepository,
-		"image.tag=" + b.String(),
+		"image.tag=" + tag,
 	}
+
+	project.DockerImage = fmt.Sprintf("%s:%s", marsC.DockerRepository, tag)
 
 	var imagePullSecrets []string
 	for k, s := range namespace.ImagePullSecretsArray() {
@@ -391,14 +394,13 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			close(ch)
 		} else {
 			// TODO 看看是否能通过 result 拿到所有 pod
-			mlog.Warning(result)
-			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&project).Error == nil {
-				utils.DB().Model(&models.Project{}).Where("`id` = ?", project.ID).Updates(map[string]interface{}{
-					"config":            input.Config,
-					"gitlab_project_id": input.GitlabProjectId,
-					"gitlab_commit":     input.GitlabCommit,
-					"gitlab_branch":     input.GitlabBranch,
-				})
+			mlog.Debugf("%#v", result.Manifest)
+			var p models.Project
+			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&p).Error == nil {
+				utils.DB().Model(&models.Project{}).
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage").
+					Where("`id` = ?", p.ID).
+					Updates(&project)
 			} else {
 				utils.DB().Create(&project)
 			}
