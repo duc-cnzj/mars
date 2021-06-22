@@ -22,10 +22,8 @@
 
 ## 🛠️ 使用文档
 
-1. 如果本地有 (golang > 1.16) 环境，则可以使用
-```bash
-go get github.com/duc-cnZj/mars
-```
+1. 直接去 [release page](https://github.com/DuC-cnZj/mars/releases) 下载二进制包
+
 初始化配置
 ```bash
 mars init
