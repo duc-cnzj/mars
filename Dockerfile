@@ -1,4 +1,4 @@
-FROM node:lts-alpine as admin-build
+FROM node:lts-alpine as web-build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ WORKDIR /app
 
 COPY . .
 
-COPY --from=admin-build /app/frontend/build /app/frontend/build
+COPY --from=web-build /app/frontend/build /app/frontend/build
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod download
