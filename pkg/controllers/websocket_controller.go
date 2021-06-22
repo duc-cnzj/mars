@@ -429,6 +429,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 }
 
 // getPodSelectorsInDeploymentAndStatefulSetByManifest TODO: 比较 hack
+// 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
 func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []string {
 	var selectors []string
 	split := strings.Split(manifest, "---")
