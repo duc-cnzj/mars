@@ -552,11 +552,11 @@ func (pp *ProcessPercent) AddOne() {
 	}
 }
 
-func (pp *ProcessPercent) To(to int64) {
+func (pp *ProcessPercent) To(percent int64) {
 	pp.Lock()
 	defer pp.Unlock()
 
-	for pp.percent < to {
+	for pp.percent < percent {
 		time.Sleep(100 * time.Millisecond)
 		pp.percent++
 		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
