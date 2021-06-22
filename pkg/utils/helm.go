@@ -74,7 +74,7 @@ func GetSettings(namespace string) *cli.EnvSettings {
 	v := namespace
 	reflect.ValueOf(config).Elem().FieldByName("Namespace").Set(reflect.ValueOf(&v))
 	s.Debug = App().IsDebug()
-	mlog.Warningf("%#v", s)
+	mlog.Debugf("%#v", s)
 
 	return s
 }

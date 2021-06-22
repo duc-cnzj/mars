@@ -174,7 +174,8 @@ type ProjectInput struct {
 func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
 	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
-	SendProcessPercent(conn, slugName, "5")
+	var pp = NewProcessPercent(conn, slugName, 0)
+	pp.To(5)
 
 	var ns models.Namespace
 	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
@@ -200,7 +201,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	utils.DB().Where("`id` = ?", ns.ID).First(&namespace)
 
 	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
-	SendProcessPercent(conn, slugName, "15")
+	pp.To(15)
 
 	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
 	if err != nil {
@@ -226,7 +227,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 	defer archive.Close()
 
-	SendProcessPercent(conn, slugName, "30")
+	pp.To(30)
 
 	SendMsg(conn, slugName, wsType, "加载 helm charts...")
 
@@ -237,7 +238,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 
 	SendMsg(conn, slugName, wsType, "生成配置文件...")
-	SendProcessPercent(conn, slugName, "40")
+	pp.To(40)
 
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
@@ -247,7 +248,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	defer deleteFn()
 
 	SendMsg(conn, slugName, wsType, "解析镜像tag")
-	SendProcessPercent(conn, slugName, "45")
+	pp.To(45)
 	t := template.New("tag_parse")
 	parse, err := t.Parse(marsC.DockerTagFormat)
 	if err != nil {
@@ -281,7 +282,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		return
 	}
 
-	SendProcessPercent(conn, slugName, "60")
+	pp.To(60)
 
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
@@ -335,7 +336,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
 	}
 
-	SendProcessPercent(conn, slugName, "65")
+	pp.To(65)
 
 	tag := b.String()
 	var commonValues = []string{
@@ -358,7 +359,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		return
 	}
 
-	SendProcessPercent(conn, slugName, "70")
+	pp.To(70)
 	defer deleteDefaultValuesFileFn()
 	var valueOpts = &values.Options{
 		ValueFiles: []string{filePath, file},
@@ -377,6 +378,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	ch := make(chan MessageItem)
 	fn := func(format string, v ...interface{}) {
+		pp.AddOne()
 		msg := fmt.Sprintf(format, v...)
 		mlog.Debug(msg)
 		ch <- MessageItem{
@@ -386,7 +388,6 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 
 	SendMsg(conn, slugName, wsType, "准备部署...")
-	SendProcessPercent(conn, slugName, "85")
 
 	go func() {
 		if result, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
@@ -407,7 +408,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			} else {
 				utils.DB().Create(&project)
 			}
-			SendProcessPercent(conn, slugName, "100")
+			pp.To(100)
 			ch <- MessageItem{
 				Msg:  "部署成功",
 				Type: "success",
@@ -524,4 +525,42 @@ func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
 	conn.Lock()
 	defer conn.Unlock()
 	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+type ProcessPercent struct {
+	sync.Mutex
+	percent int64
+	slug    string
+	conn    *WsConn
+}
+
+func NewProcessPercent(conn *WsConn, slug string, percent int64) *ProcessPercent {
+	return &ProcessPercent{
+		percent: percent,
+		slug:    slug,
+		conn:    conn,
+	}
+}
+
+func (pp *ProcessPercent) AddOne() {
+	pp.Lock()
+	defer pp.Unlock()
+
+	if pp.percent < 100 {
+		pp.percent++
+		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
+	}
+}
+
+func (pp *ProcessPercent) To(to int64) {
+	pp.Lock()
+	defer pp.Unlock()
+
+	if pp.percent < to {
+		for pp.percent < to {
+			time.Sleep(100 * time.Millisecond)
+			pp.percent++
+			SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
+		}
+	}
 }
