@@ -6,6 +6,10 @@ fmt:
 serve:
 	go run main.go serve --debug --app_port 4000
 
+.PHONY: build_web
+build_web:
+	cd ./frontend && yarn build
+
 .PHONY: build_linux_amd64
 build_linux_amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o app-linux-amd64 main.go
