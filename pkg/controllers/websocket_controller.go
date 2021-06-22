@@ -398,6 +398,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			}
 			close(ch)
 		} else {
+			// TODO: config 入库，前端增加 config 查看
+			mlog.Warning(result.Config)
 			project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&p).Error == nil {
