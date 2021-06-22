@@ -556,11 +556,9 @@ func (pp *ProcessPercent) To(to int64) {
 	pp.Lock()
 	defer pp.Unlock()
 
-	if pp.percent < to {
-		for pp.percent < to {
-			time.Sleep(100 * time.Millisecond)
-			pp.percent++
-			SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
-		}
+	for pp.percent < to {
+		time.Sleep(100 * time.Millisecond)
+		pp.percent++
+		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
 	}
 }
