@@ -29,7 +29,8 @@ const App: FC = () => {
         ? process.env.REACT_APP_WS_URL
         : "";
       if (url === "") {
-        url = `ws://${window.location.host}/ws`;
+        let isHttps = 'https:' === window.location.protocol ? true: false;
+        url = `${isHttps ? "wss" : "ws"}://${window.location.host}/ws`;
       }
       let conn = new WebSocket(url);
       setWs(conn);
