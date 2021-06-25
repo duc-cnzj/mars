@@ -379,7 +379,9 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	ch := make(chan MessageItem)
 	fn := func(format string, v ...interface{}) {
-		pp.Add()
+		if pp.Current() < 99 {
+			pp.Add()
+		}
 		msg := fmt.Sprintf(format, v...)
 		mlog.Debug(msg)
 		ch <- MessageItem{
@@ -532,7 +534,7 @@ func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
 }
 
 type ProcessPercent struct {
-	sync.Mutex
+	sync.RWMutex
 	percent int64
 	slug    string
 	conn    *WsConn
@@ -544,6 +546,13 @@ func NewProcessPercent(conn *WsConn, slug string, percent int64) *ProcessPercent
 		slug:    slug,
 		conn:    conn,
 	}
+}
+
+func (pp *ProcessPercent) Current() int64 {
+	pp.RLock()
+	defer pp.RUnlock()
+
+	return pp.percent
 }
 
 func (pp *ProcessPercent) Add() {
