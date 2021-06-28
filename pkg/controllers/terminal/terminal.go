@@ -78,7 +78,7 @@ func (t TerminalSession) Next() *remotecommand.TerminalSize {
 func (t TerminalSession) Read(p []byte) (int, error) {
 	m, err := t.sockJSSession.Recv()
 	if err != nil {
-		mlog.Error(err)
+		mlog.Debug(err)
 		// Send terminated signal to process to avoid resource leak
 		return copy(p, END_OF_TRANSMISSION), err
 	}

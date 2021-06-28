@@ -104,16 +104,16 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		var wsRequest WsRequest
 		_, message, err := c.ReadMessage()
 		if err != nil {
-			mlog.Warning("read:", err, message)
+			mlog.Debug("read:", err, message)
 			break
 		}
-		mlog.Infof("receive msg %s", message)
+		mlog.Debugf("receive msg %s", message)
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
 			SendEndError(wsconn, "", "", err)
 			continue
 		}
 
-		mlog.Info("handle req", wsRequest)
+		mlog.Debug("handle req", wsRequest)
 		go serveWebsocket(wsconn, wsRequest)
 	}
 }
@@ -368,7 +368,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	}
 
 	indent, _ := json.MarshalIndent(append(append(commonValues, ingressConfig...), imagePullSecrets...), "", "\t")
-	mlog.Warningf("values: %s", string(indent))
+	mlog.Debugf("values: %s", string(indent))
 
 	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
 

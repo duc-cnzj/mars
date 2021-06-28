@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"reflect"
@@ -47,7 +46,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
 	}
 
 	return fullPath, func() {
-		mlog.Warning("delete file: " + fullPath)
+		mlog.Debug("delete file: " + fullPath)
 		if err := os.Remove(fullPath); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 		}
@@ -82,7 +81,7 @@ func GetSettings(namespace string) *cli.EnvSettings {
 // UpgradeOrInstall TODO
 func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{})) (*release.Release, error) {
 	var settings = GetSettings(namespace)
-	mlog.Warning("settings ns", settings.Namespace())
+	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
@@ -225,7 +224,7 @@ var (
 func ReleaseStatus(releaseName, namespace string) (string, error) {
 	var settings = GetSettings(namespace)
 
-	mlog.Warning("settings ns", settings.Namespace())
+	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
@@ -238,7 +237,7 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 		settings.KubeToken = string(token)
 	}
 
-	if err := actionConfig.Init(flags, namespace, "", log.Printf); err != nil {
+	if err := actionConfig.Init(flags, namespace, "", mlog.Debugf); err != nil {
 		return "", err
 	}
 	statusClient := action.NewStatus(actionConfig)
@@ -261,7 +260,7 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 func PackageChart(path string, destDir string) (string, error) {
 	var settings = GetSettings("")
 
-	mlog.Warning("settings ns", settings.Namespace())
+	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	if Config().KubeConfig != "" {
@@ -273,7 +272,7 @@ func PackageChart(path string, destDir string) (string, error) {
 		settings.KubeToken = string(token)
 	}
 
-	if err := actionConfig.Init(flags, "", "", log.Printf); err != nil {
+	if err := actionConfig.Init(flags, "", "", mlog.Debugf); err != nil {
 		mlog.Error(err)
 		return "", err
 	}

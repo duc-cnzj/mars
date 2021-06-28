@@ -69,8 +69,7 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
-	// TODO add pipeline info
-	mlog.Warning("commit.LastPipeline", commit.LastPipeline)
+	mlog.Debug("commit.LastPipeline", commit.LastPipeline)
 	response.Success(ctx, 200, ProjectDetailItem{
 		ID:                 project.ID,
 		Name:               project.Name,

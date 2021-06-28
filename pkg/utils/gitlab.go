@@ -74,7 +74,7 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 				mlog.Warning(err)
 				return
 			}
-			mlog.Warning("remove " + dir)
+			mlog.Debug("remove " + dir)
 		}
 	}
 }
