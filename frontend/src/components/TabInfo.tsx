@@ -182,16 +182,19 @@ const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
             />
             相关配置
           </p>
-          <SyntaxHighlighter
-            language="yaml"
-            style={monokaiSublime}
-            customStyle={{
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              fontSize: 12,
-            }}
-          >
-            {detail.override_values}
-          </SyntaxHighlighter>
+          <details>
+            <summary style={{ cursor: "pointer" }}>展开查看</summary>
+            <SyntaxHighlighter
+              language="yaml"
+              style={monokaiSublime}
+              customStyle={{
+                fontFamily: '"Fira code", "Fira Mono", monospace',
+                fontSize: 12,
+              }}
+            >
+              {detail.override_values}
+            </SyntaxHighlighter>
+          </details>
         </div>
 
         <Button
