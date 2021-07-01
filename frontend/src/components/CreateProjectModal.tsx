@@ -77,6 +77,7 @@ const CreateProjectModal: React.FC<{
   const onCancel = useCallback(() => {
     setValue([])
     setVisible(false);
+    setTimelineVisible(false);
     setData(initItemData);
     dispatch(clearCreateProjectLog(slug));
   }, [dispatch, slug]);
@@ -92,6 +93,7 @@ const CreateProjectModal: React.FC<{
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
+        setValue([])
         setData(initItemData);
       }, 500);
     }

@@ -579,9 +579,13 @@ func (pp *ProcessPercent) To(percent int64) {
 	pp.Lock()
 	defer pp.Unlock()
 
+	sleepTime := 100 * time.Millisecond
 	for pp.percent < percent {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(sleepTime)
 		pp.percent++
+		if sleepTime > 50*time.Millisecond {
+			sleepTime = sleepTime / 2
+		}
 		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
 	}
 }

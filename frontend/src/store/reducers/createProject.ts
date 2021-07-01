@@ -23,7 +23,7 @@ export interface CreateProjectItem {
   processPercent: number;
 }
 
-export const selectList = (state: { createProject: List }) =>
+export const selectList = (state: { createProject: List }):List =>
   state.createProject;
 
 export interface List {

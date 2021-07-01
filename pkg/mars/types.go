@@ -3,7 +3,6 @@ package mars
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"regexp"
 	"strings"
 
@@ -81,9 +80,6 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 		err      error
 		yamlData []byte
 	)
-	if input == "" {
-		return "", func() {}, nil
-	}
 	if mars.IsSimpleEnv {
 		if yamlData, err = utils.EncodeConfigToYaml(mars.ConfigField, input); err != nil {
 			return "", nil, err
@@ -119,7 +115,8 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 				return "", nil, err
 			}
 		default:
-			return "", nil, errors.New("unsupport type: " + mars.ConfigFileType)
+			mlog.Error("unsupport type: " + mars.ConfigFileType)
+			return "", func() {}, nil
 		}
 	}
 
