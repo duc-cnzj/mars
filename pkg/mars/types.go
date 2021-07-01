@@ -38,6 +38,10 @@ type Config struct {
 }
 
 func (mars *Config) BranchPass(name string) bool {
+	if len(mars.Branches) < 1 {
+		return true
+	}
+
 	for _, branch := range mars.Branches {
 		if branch == "*" || branch == name {
 			return true
