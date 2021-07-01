@@ -25,8 +25,12 @@ const ProjectContainerLogs: React.FC<{
           id,
           first.pod_name,
           first.container_name
-        ).then((res) => {
-          setLog(res.data.data.log);
+        ).then(({data: {data}}) => {
+          let log: string = "暂无日志";
+          if (data.log) {
+              log = data.log
+          }
+          setLog(log);
         });
       }
     });
