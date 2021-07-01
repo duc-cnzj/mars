@@ -45,21 +45,21 @@ helm upgrade --install mars mars-charts/mars -f mars-values.yaml
 `.mars.yaml` 配置参考：
 
 ```yaml
-# 项目默认的配置文件
+# 项目默认的配置文件(可选)
 config_file: config.yaml
-# 配置文件的类型
+# 配置文件的类型(如果有config_file，必填)
 config_file_type: yaml
-# config_file 对应到 helm values.yaml 中的哪个字段
+# config_file 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
 config_field: conf
-# 镜像仓库
+# 镜像仓库(必填)
 docker_repository: nginx
-# tag 可以使用的变量有 {{.Commit}} {{.Branch}} {{.Pipeline}}
+# tag 可以使用的变量有 {{.Commit}} {{.Branch}} {{.Pipeline}}(必填)
 docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
-# charts 文件在项目中存放的目录
+# charts 文件在项目中存放的目录(必填)
 local_chart_path: charts
-# 是不是单字段的配置
+# 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# values.yaml 会合并其他配置
+# values.yaml 会合并其他配置(可选)
 default_values:
   redis:
     enabled: true
@@ -70,7 +70,7 @@ default_values:
     type: ClusterIP
   ingess:
     enabled: false
-# 若配置则只会显示配置的分支, 默认 "*", 可选 
+# 若配置则只会显示配置的分支, 默认 "*"(可选)
 branches:
 - dev
 - master
