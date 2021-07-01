@@ -56,6 +56,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
       >
         <Input
           placeholder="空间名称"
+          value={namespace}
           onChange={(e) => {
             setNamespace(e.target.value);
           }}
