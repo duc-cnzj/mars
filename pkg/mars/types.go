@@ -61,15 +61,19 @@ func (mars *Config) BranchPass(name string) bool {
 }
 
 func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-	if err := encoder.Encode(mars.DefaultValues); err != nil {
-		return "", nil, err
-	}
-	b := bf.Bytes()
-	mlog.Debug("GenerateDefaultValuesYamlFile", string(b))
+	if len(mars.DefaultValues) > 0 {
+		bf := &bytes.Buffer{}
+		encoder := yaml.NewEncoder(bf)
+		if err := encoder.Encode(mars.DefaultValues); err != nil {
+			return "", nil, err
+		}
+		b := bf.Bytes()
+		mlog.Debug("GenerateDefaultValuesYamlFile", string(b))
 
-	return utils.WriteConfigYamlToTmpFile(b)
+		return utils.WriteConfigYamlToTmpFile(b)
+	}
+
+	return "", func() {}, nil
 }
 
 func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(), error) {
@@ -77,6 +81,9 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 		err      error
 		yamlData []byte
 	)
+	if input == "" {
+		return "", func() {}, nil
+	}
 	if mars.IsSimpleEnv {
 		if yamlData, err = utils.EncodeConfigToYaml(mars.ConfigField, input); err != nil {
 			return "", nil, err

@@ -241,6 +241,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	SendMsg(conn, slugName, wsType, "生成配置文件...")
 	pp.To(40)
 
+	var filePath string
 	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
 	if err != nil {
 		SendEndError(conn, slugName, wsType, err)
@@ -362,8 +363,16 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	pp.To(70)
 	defer deleteDefaultValuesFileFn()
+	var vf []string
+
+	if filePath != "" {
+		vf = append(vf, filePath)
+	}
+	if file != "" {
+		vf = append(vf, file)
+	}
 	var valueOpts = &values.Options{
-		ValueFiles: []string{filePath, file},
+		ValueFiles: vf,
 		Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
 	}
 
