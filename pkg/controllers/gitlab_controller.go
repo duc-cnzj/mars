@@ -156,6 +156,17 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 		return
 	}
 	configFile := marsC.ConfigFile
+	if configFile == "" {
+		ct := marsC.ConfigFileType
+		if marsC.ConfigFileType == "" {
+			ct = "yaml"
+		}
+		response.Success(ctx, 200, gin.H{
+			"data": "",
+			"type": ct,
+		})
+		return
+	}
 	f, _, err := utils.GitlabClient().RepositoryFiles.GetFile(uri.ProjectId, configFile, &gitlab.GetFileOptions{Ref: gitlab.String(uri.Branch)})
 	if err != nil {
 		response.Success(ctx, 200, "")
