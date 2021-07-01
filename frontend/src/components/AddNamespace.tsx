@@ -13,10 +13,12 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
   const submit = useCallback(() => {
     if (!namespace) {
       message.error("名称空间必填");
+      return;
     }
 
     if (!new RegExp(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/).test(namespace)) {
       message.error("名称空间格式有问题, (e.g. 'my-name',  or '123-abc')");
+      return
     }
 
     createNamespace(namespace)
@@ -27,6 +29,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
         onCreated({ id: id, name: name });
         message.success("名称空间创建成功");
         setIsVisible(false);
+        setNamespace("")
       })
       .catch((e) => message.error(e.message));
   }, [namespace, onCreated]);
