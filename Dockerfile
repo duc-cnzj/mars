@@ -29,7 +29,6 @@ FROM alpine:3.13
 WORKDIR /
 
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /bin/app /bin/app
 
