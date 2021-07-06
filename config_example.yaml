@@ -21,7 +21,7 @@ wildcard_domain: "*.test.local"
 # cert-manager 的 cluster_issuer 名称
 cluster_issuer: "prod"
 # 集群外网访问 ip
-cluster_ip: "127.0.0.1"
+external_ip: "127.0.0.1"
 
 gitlab_token: ""
 gitlab_baseurl: "https://gitlab.com/api/v4"

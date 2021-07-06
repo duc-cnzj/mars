@@ -28,7 +28,7 @@ type Config struct {
 
 	WildcardDomain string
 	ClusterIssuer  string
-	ClusterIp      string
+	ExternalIp     string
 
 	// mysql
 	DBHost     string
@@ -71,7 +71,7 @@ func Init(cfgFile string) *Config {
 		KubeConfig:     viper.GetString("kubeconfig"),
 		WildcardDomain: viper.GetString("wildcard_domain"),
 		ClusterIssuer:  viper.GetString("cluster_issuer"),
-		ClusterIp:      viper.GetString("cluster_ip"),
+		ExternalIp:     viper.GetString("external_ip"),
 		DBHost:         viper.GetString("db_host"),
 		DBPort:         viper.GetString("db_port"),
 		DBUsername:     viper.GetString("db_username"),
