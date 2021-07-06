@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Masterminds/semver/v3"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -288,51 +289,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
 		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
-		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
-		// 旧版长这样
-		// ingress:
-		//  enabled: true
-		//  annotations: {}
-		//    # kubernetes.io/ingress.class: nginx
-		//    # kubernetes.io/tls-acme: "true"
-		//  hosts:
-		//    - host: chart-example.local
-		//      paths: []
-		// 新版长这样
-		// ingress:
-		// enabled: false
-		// annotations: {}
-		// 	# kubernetes.io/ingress.class: nginx
-		// 	# kubernetes.io/tls-acme: "true"
-		// hosts:
-		// 	- host: chart-example.local
-		// paths:
-		// 	- path: /
-		//    backend:
-		//      serviceName: chart-example.local
-		//      servicePort: 80
-		var isOldVersion bool
-		for _, f := range loadArchive.Templates {
-			if strings.Contains(f.Name, "ingress") {
-				if strings.Contains(string(f.Data), "path: {{ . }}") {
-					isOldVersion = true
-					break
-				}
-			}
-		}
-		ingressConfig = []string{
-			"ingress.enabled=true",
-			"ingress.hosts[0].host=" + host,
-			"ingress.tls[0].secretName=" + secretName,
-			"ingress.tls[0].hosts[0]=" + host,
-			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
-			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
-		}
-		if isOldVersion {
-			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
-		} else {
-			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
-		}
+		ingressConfig = getIngressConfig(host, secretName)
 
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
 	}
@@ -443,6 +400,28 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 			SendEndMsg(conn, ResultDeployed, slugName, wsType, s.Msg)
 		}
 	}
+}
+
+func getIngressConfig(host, secretName string) []string {
+	var ingressConfig []string = []string{
+		"ingress.enabled=true",
+		"ingress.hosts[0].host=" + host,
+		"ingress.tls[0].secretName=" + secretName,
+		"ingress.tls[0].hosts[0]=" + host,
+		"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
+		"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
+	}
+	version, _ := utils.K8sClientSet().ServerVersion()
+	currentVersion, _ := semver.NewVersion(version.GitVersion)
+	v118, _ := semver.NewVersion("1.18-0")
+	if currentVersion.Compare(v118) >= 0 {
+		mlog.Debug(">= 1.18")
+		ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
+	} else {
+		ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+	}
+
+	return ingressConfig
 }
 
 // getPodSelectorsInDeploymentAndStatefulSetByManifest FIXME: 比较 hack
