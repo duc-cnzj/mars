@@ -77,6 +77,7 @@ const CreateProjectModal: React.FC<{
   const onCancel = useCallback(() => {
     setValue([])
     setVisible(false);
+    setEditVisible(true)
     setTimelineVisible(false);
     setData(initItemData);
     dispatch(clearCreateProjectLog(slug));

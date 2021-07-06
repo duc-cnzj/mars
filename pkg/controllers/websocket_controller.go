@@ -331,7 +331,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		if isOldVersion {
 			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
 		} else {
-			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/")
+			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
 		}
 
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
