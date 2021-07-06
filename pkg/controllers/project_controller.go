@@ -37,6 +37,8 @@ type ProjectDetailItem struct {
 	GitlabCommitTitle  string `json:"gitlab_commit_title"`
 	GitlabCommitAuthor string `json:"gitlab_commit_author"`
 
+	Urls []string `json:"urls"`
+
 	Namespace struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -70,9 +72,26 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		return
 	}
 	mlog.Debug("commit.LastPipeline", commit.LastPipeline)
+
+	nodePortMapping := utils.GetNodePortMappingByNamespace(project.Namespace.Name)
+	ingMapping := utils.GetIngressMappingByNamespace(project.Namespace.Name)
+
+	var urls = make([]string, 0)
+	for key, values := range ingMapping {
+		if project.Name == key {
+			urls = append(urls, values...)
+		}
+	}
+	for key, values := range nodePortMapping {
+		if project.Name == key {
+			urls = append(urls, values...)
+		}
+	}
+
 	response.Success(ctx, 200, ProjectDetailItem{
 		ID:                 project.ID,
 		Name:               project.Name,
+		Urls:               urls,
 		GitlabProjectId:    project.GitlabProjectId,
 		GitlabBranch:       project.GitlabBranch,
 		GitlabCommit:       project.GitlabCommit,

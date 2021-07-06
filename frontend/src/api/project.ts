@@ -12,6 +12,7 @@ export interface ProjectDetail {
     name: string;
   }
 
+  urls:string[];
   cpu:string;
   memory:string;
   override_values:string;

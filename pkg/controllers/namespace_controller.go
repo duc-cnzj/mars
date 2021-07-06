@@ -32,11 +32,6 @@ type SimpleProjectItem struct {
 	Status string `json:"status"`
 }
 
-type ServiceLink struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
-}
-
 type NamespaceItem struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`

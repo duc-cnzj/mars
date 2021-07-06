@@ -10,6 +10,7 @@ import {
   ExclamationCircleOutlined,
   SettingOutlined,
   FireOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 const { confirm } = Modal;
 
@@ -92,6 +93,29 @@ const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
           />
           <p>
             分支: <span className="detail-data">{detail.gitlab_branch}</span>
+          </p>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <LinkOutlined
+            style={{
+              width: 20,
+              height: 20,
+              marginRight: 4,
+              fontSize: 16,
+            }}
+          />
+          <p>
+            地址:
+            {detail.urls.map((item) => (
+              <a href={item} target="_blank" className="detail-data">
+                {item}
+              </a>
+            ))}
           </p>
         </div>
 
