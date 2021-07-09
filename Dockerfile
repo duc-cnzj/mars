@@ -24,8 +24,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
 
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /bin/app main.go
 
-FROM alpine
-#FROM scratch
+FROM scratch
 
 WORKDIR /
 
