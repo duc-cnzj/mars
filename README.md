@@ -113,8 +113,6 @@ conf_two: |
 
 > [demo project](https://gitlab.com/DuC-cnZj/mars-demo)
 
-![demo](./docs/mars.gif)
-
 > xuanji golang 版本。
 
 https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
