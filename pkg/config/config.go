@@ -31,6 +31,7 @@ type Config struct {
 	ExternalIp     string
 
 	// mysql
+	DBDriver   string
 	DBHost     string
 	DBPort     string
 	DBUsername string
@@ -72,6 +73,7 @@ func Init(cfgFile string) *Config {
 		WildcardDomain: viper.GetString("wildcard_domain"),
 		ClusterIssuer:  viper.GetString("cluster_issuer"),
 		ExternalIp:     viper.GetString("external_ip"),
+		DBDriver:       viper.GetString("db_driver"),
 		DBHost:         viper.GetString("db_host"),
 		DBPort:         viper.GetString("db_port"),
 		DBUsername:     viper.GetString("db_username"),

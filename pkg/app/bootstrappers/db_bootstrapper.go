@@ -10,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/contracts"
 	"github.com/duc-cnzj/mars/pkg/mlog"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -23,9 +24,19 @@ var Models = []interface{}{
 type DBBootstrapper struct{}
 
 func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
+	var (
+		db  *gorm.DB
+		err error
+	)
 	cfg := app.Config()
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBDatabase)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	switch cfg.DBDriver {
+	case "mysql":
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	case "sqlite":
+		db, err = gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+	}
+
 	if err != nil {
 		return err
 	}
