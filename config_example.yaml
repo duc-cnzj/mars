@@ -12,9 +12,10 @@ kubeconfig: ""
 # database
 # 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径
 db_driver: "sqlite"
+db_database: /tmp/mars-sqlite.db
+# 如果是 'mysql' 以下均为必填项，如果是 'sqlite' 就不用填
 db_host: 127.0.0.1
 db_port: 3306
-db_database: mars
 db_username: root
 db_password: ""
 
