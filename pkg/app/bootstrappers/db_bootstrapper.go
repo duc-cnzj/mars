@@ -1,6 +1,7 @@
 package bootstrappers
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,6 +36,8 @@ func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	case "sqlite":
 		db, err = gorm.Open(sqlite.Open(cfg.DBDatabase), &gorm.Config{})
+	default:
+		return errors.New("db_driver must in ['sqlite', 'mysql']")
 	}
 
 	if err != nil {
