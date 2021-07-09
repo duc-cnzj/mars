@@ -34,7 +34,7 @@ func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	case "mysql":
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	case "sqlite":
-		db, err = gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(cfg.DBDatabase), &gorm.Config{})
 	}
 
 	if err != nil {

@@ -10,7 +10,7 @@ profile_enabled: true
 kubeconfig: ""
 
 # database
-# 'sqlite' or 'mysql'
+# 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径
 db_driver: "sqlite"
 db_host: 127.0.0.1
 db_port: 3306
