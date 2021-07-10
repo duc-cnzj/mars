@@ -111,7 +111,9 @@ conf_two: |
 
 ## 🏗 preview
 
-> [demo project](https://gitlab.com/DuC-cnZj/mars-demo)
+> [demo source code](https://gitlab.com/DuC-cnZj/mars-demo)
+
+[视频教程](https://www.bilibili.com/video/BV19b4y1r7iY/)
 
 > xuanji golang 版本。
 
