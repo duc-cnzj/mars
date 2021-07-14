@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/duc-cnzj/mars/pkg/utils"
+	"github.com/duc-cnzj/mars/internal/utils"
 
 	"github.com/spf13/cobra"
 )

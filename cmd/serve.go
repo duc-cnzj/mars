@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/duc-cnzj/mars/pkg/app"
-	"github.com/duc-cnzj/mars/pkg/config"
-	"github.com/duc-cnzj/mars/pkg/mlog"
+	"github.com/duc-cnzj/mars/internal/app"
+	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/spf13/cobra"
 )
 
