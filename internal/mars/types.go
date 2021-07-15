@@ -34,6 +34,10 @@ type Config struct {
 
 	// Branches 启用的分支
 	Branches []string `json:"branches" yaml:"branches"`
+
+	// 如果默认的ingress 规则不符合，你可以通过这个重写
+	// 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
+	IngressOverwriteValues []string `json:"ingress_overwrite_values" yaml:"ingress_overwrite_values"`
 }
 
 func (mars *Config) BranchPass(name string) bool {

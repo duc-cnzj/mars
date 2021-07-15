@@ -288,6 +288,11 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	var ingressConfig []string
 	if utils.Config().HasWildcardDomain() {
 		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
+		var vars = map[string]string{}
+		for i := 1; i <= 10; i++ {
+			vars[fmt.Sprintf("Host%d", i)] = utils.Config().GetDomain(fmt.Sprintf("%s-%s-%d", project.Name, namespace.Name, i))
+			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", project.Name, namespace.Name, i)
+		}
 		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
 		// 旧版长这样
 		// ingress:
@@ -322,16 +327,35 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		}
 		ingressConfig = []string{
 			"ingress.enabled=true",
-			"ingress.hosts[0].host=" + host,
-			"ingress.tls[0].secretName=" + secretName,
-			"ingress.tls[0].hosts[0]=" + host,
 			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
 			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
 		}
-		if isOldVersion {
-			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+		if len(marsC.IngressOverwriteValues) > 0 {
+			var overwrites []string
+			for _, value := range marsC.IngressOverwriteValues {
+				bb := &bytes.Buffer{}
+				ingressT := template.New("")
+				t2, _ := ingressT.Parse(value)
+				if err := t2.Execute(bb, vars); err != nil {
+					SendEndError(conn, slugName, wsType, err)
+					return
+				}
+				overwrites = append(overwrites, bb.String())
+			}
+			mlog.Warning(overwrites)
+			ingressConfig = append(ingressConfig, overwrites...)
 		} else {
-			ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
+			ingressConfig = append(ingressConfig, []string{
+				"ingress.hosts[0].host=" + host,
+				"ingress.tls[0].secretName=" + secretName,
+				"ingress.tls[0].hosts[0]=" + host,
+			}...)
+
+			if isOldVersion {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+			} else {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
+			}
 		}
 
 		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
