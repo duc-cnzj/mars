@@ -1,6 +1,8 @@
 import React, { memo, useState } from "react";
 import { getServiceEndpoints } from "../api/namespace";
-import { Popover } from "antd";
+import { Popover, message } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
   ({ namespaceId, projectName }) => {
@@ -16,9 +18,15 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
           v.map((link) => (
             <div key={link} onClick={(e) => e.stopPropagation()}>
               <span style={{ marginRight: 5 }}>{k}:</span>
-              <a href={link} target="_blank">
+              <a href={link} target="_blank" style={{ marginRight: 10 }}>
                 {link}
               </a>
+              <CopyToClipboard
+                text={link}
+                onCopy={() => message.success("已复制！")}
+              >
+                <CopyOutlined />
+              </CopyToClipboard>
             </div>
           ))
         )}

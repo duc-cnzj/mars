@@ -176,7 +176,10 @@ const ModalSub: React.FC<{
     }
   };
 
-  const onChange = (values: any[]) => {
+  const onChange = (
+    values: any[],
+    selectedOptions: CascaderOptionType[] | undefined
+  ) => {
     let gitlabId = _.get(values, 0, 0);
     let gbranch = _.get(values, 1, "");
     let gcommit = _.get(values, 2, "");
@@ -191,6 +194,33 @@ const ModalSub: React.FC<{
       gitlabBranch: gbranch,
       gitlabCommit: gcommit,
     }));
+
+    if (selectedOptions) {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (targetOption.children) {
+        targetOption.loading = true;
+        targetOption.children = undefined;
+        switch (targetOption.type) {
+          case "project":
+            branches(Number(targetOption.value)).then((res) => {
+              targetOption.loading = false;
+              targetOption.children = res.data.data;
+              setOptions([...options]);
+            });
+            return;
+          case "branch":
+            commits(
+              Number(targetOption.projectId),
+              String(targetOption.value)
+            ).then((res) => {
+              targetOption.loading = false;
+              targetOption.children = res.data.data;
+              setOptions([...options]);
+            });
+            return;
+        }
+      }
+    }
 
     if (gitlabId) {
       let o = options.find((item) => item.value === values[0]);

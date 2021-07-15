@@ -75,9 +75,9 @@ const CreateProjectModal: React.FC<{
   let slug = toSlug(namespaceId, data.name);
 
   const onCancel = useCallback(() => {
-    setValue([])
+    setValue([]);
     setVisible(false);
-    setEditVisible(true)
+    setEditVisible(true);
     setTimelineVisible(false);
     setData(initItemData);
     dispatch(clearCreateProjectLog(slug));
@@ -94,13 +94,16 @@ const CreateProjectModal: React.FC<{
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
-        setValue([])
+        setValue([]);
         setData(initItemData);
       }, 500);
     }
   }, [list, dispatch, slug]);
 
-  const onChange = (values: any[]) => {
+  const onChange = (
+    values: any[],
+    selectedOptions: CascaderOptionType[] | undefined
+  ) => {
     let gitlabId = _.get(values, 0, 0);
     let gbranch = _.get(values, 1, "");
     let gcommit = _.get(values, 2, "");
@@ -116,6 +119,33 @@ const CreateProjectModal: React.FC<{
       gitlabCommit: gcommit,
     }));
 
+    if (selectedOptions) {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (targetOption.children) {
+        targetOption.loading = true;
+        targetOption.children = undefined;
+        switch (targetOption.type) {
+          case "project":
+            branches(Number(targetOption.value)).then((res) => {
+              targetOption.loading = false;
+              targetOption.children = res.data.data;
+              setOptions([...options]);
+            });
+            return;
+          case "branch":
+            commits(
+              Number(targetOption.projectId),
+              String(targetOption.value)
+            ).then((res) => {
+              targetOption.loading = false;
+              targetOption.children = res.data.data;
+              setOptions([...options]);
+            });
+            return;
+        }
+      }
+    }
+
     if (gitlabId) {
       let o = options.find((item) => item.value === values[0]);
       setValue([o ? o.label : ""]);
@@ -123,7 +153,6 @@ const CreateProjectModal: React.FC<{
         if (o && o.children) {
           let b = o.children.find((item) => item.value === gbranch);
           setValue([o.label, b ? b.label : ""]);
-
           if (gcommit) {
             if (b && b.children) {
               let c = b.children.find((item) => item.value === gcommit);
@@ -175,6 +204,7 @@ const CreateProjectModal: React.FC<{
     targetOption.loading = true;
 
     console.log(targetOption);
+
     switch (targetOption.type) {
       case "project":
         branches(Number(targetOption.value)).then((res) => {
