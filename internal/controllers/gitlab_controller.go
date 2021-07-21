@@ -110,6 +110,21 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 	response.Success(ctx, 200, res)
 }
 
+func getDefaultBranch(projectId int) (string, error) {
+	branches, _, err := utils.GitlabClient().Branches.ListBranches(projectId, &gitlab.ListBranchesOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, branch := range branches {
+		if branch.Default {
+			return branch.Name, nil
+		}
+	}
+
+	return "", errors.New(fmt.Sprintf("project %d cant find default branch", projectId))
+}
+
 type CommitUri struct {
 	ProjectId int    `uri:"project_id"`
 	Branch    string `uri:"branch"`

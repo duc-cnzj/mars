@@ -85,5 +85,10 @@ func Init(e *gin.Engine) {
 				tc.HandleSocket("/api/sockjs").ServeHTTP(ctx.Writer, ctx.Request)
 			})
 		}
+
+		marsController := controllers.NewMarsController()
+		{
+			api.GET("/gitlab/projects/:project_id/mars_config", marsController.Show)
+		}
 	}
 }
