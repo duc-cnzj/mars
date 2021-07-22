@@ -71,7 +71,7 @@ const GitlabProjectManager: React.FC = () => {
   const [mbranches, setMbranches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false)
 
-  const loadConfig = (id: number, branch = "") => {
+  const loadConfig = useCallback((id: number, branch = "") => {
     setLoading(true)
     marsConfig(id, { branch }).then((res) => {
       setConfig(res.config);
@@ -81,9 +81,9 @@ const GitlabProjectManager: React.FC = () => {
       message.error(e.response.data.message)
       setLoading(false)
     });
-  };
+  }, []);
 
-  const resetModal = () => {
+  const resetModal = useCallback(() => {
     setTitle("");
     setModalBranch("")
     setCurrentItem(undefined)
@@ -91,7 +91,7 @@ const GitlabProjectManager: React.FC = () => {
     setLoading(false)
     setConfig(undefined);
     setConfigVisible(false);
-  };
+  }, []);
 
   const selectBranch = (value: string) => {
     if (currentItem) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { DraggableModalProvider } from "ant-design-draggable-modal";
 import ItemCard from "./ItemCard";
-import { Row, Col } from "antd";
+import { Empty, Row, Col } from "antd";
 import AddNamespace from "./AddNamespace";
 import Setting from "./Setting";
 import "ant-design-draggable-modal/dist/index.css";
@@ -46,24 +46,28 @@ const AppContent: React.FC = () => {
       dispatch(setNamespaceReload(false));
     }
   }, [reloadNamespace, dispatch, fetchNamespaces]);
- 
+
   return (
     <DraggableModalProvider>
       <div className="content">
         <AddNamespace onCreated={onNamespaceCreated} />
-        <Setting/>
+        <Setting />
 
-        <Row gutter={[16, 16]}>
-          {namespaceItems.map((item: NamespaceItem) => (
-            <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
-              <ItemCard
-                loading={loading}
-                item={item}
-                onNamespaceDeleted={() => fetchNamespaces()}
-              />
-            </Col>
-          ))}
-        </Row>
+        {namespaceItems.length < 1 ? (
+          <Empty description={false} imageStyle={{height: 300}} />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {namespaceItems.map((item: NamespaceItem) => (
+              <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
+                <ItemCard
+                  loading={loading}
+                  item={item}
+                  onNamespaceDeleted={() => fetchNamespaces()}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
     </DraggableModalProvider>
   );
