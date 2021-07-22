@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"errors"
+	"strconv"
+
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -212,10 +215,40 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	// 下载 helm charts
 	SendMsg(conn, slugName, wsType, fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
-	files := utils.GetDirectoryFiles(input.GitlabProjectId, input.GitlabCommit, marsC.LocalChartPath)
-	tmpChartsDir, deleteDirFn := utils.DownloadFiles(input.GitlabProjectId, input.GitlabCommit, files)
+	split := strings.Split(marsC.LocalChartPath, "|")
+	intPid := func(pid string) bool {
+		if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+			return true
+		}
+		return false
+	}
+	var (
+		files        []string
+		tmpChartsDir string
+		deleteDirFn  func()
+		dir          string
+	)
+	// pid|branch|path
+	if len(split) == 3 && intPid(split[0]) {
+		pid := split[0]
+		branch := split[1]
+		path := split[2]
+		files = utils.GetDirectoryFiles(pid, branch, path)
+		if len(files) < 1 {
+			SendEndError(conn, slugName, wsType, errors.New("charts 文件不存在"))
+			return
+		}
+		mlog.Warning(files)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
+		dir = path
+		SendMsg(conn, slugName, wsType, fmt.Sprintf("识别为远程仓库 pid %v branch %s path %s", pid, branch, path))
+	} else {
+		dir = marsC.LocalChartPath
+		files = utils.GetDirectoryFiles(input.GitlabProjectId, input.GitlabCommit, marsC.LocalChartPath)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(input.GitlabProjectId, input.GitlabCommit, files)
+	}
 	defer deleteDirFn()
-	chartDir := filepath.Join(tmpChartsDir, marsC.LocalChartPath)
+	chartDir := filepath.Join(tmpChartsDir, dir)
 	chart, err := utils.PackageChart(chartDir, chartDir)
 	if err != nil {
 		SendEndError(conn, slugName, wsType, err)

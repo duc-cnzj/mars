@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"sort"
 	"sync"
+
+	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/response"
