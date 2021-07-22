@@ -55,7 +55,7 @@ config_field: conf
 docker_repository: nginx
 # tag 可以使用的变量有 {{.Commit}} {{.Branch}} {{.Pipeline}}(必填)
 docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
-# charts 文件在项目中存放的目录(必填)
+# charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
@@ -123,7 +123,5 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 ## TODO
 
 - ui 美化
-- 配置管理界面可以直接查看 `.mars.yaml` 配置文件
 - grpc-gateway 替换 gin？
-- ui 选择commit每次都获取最新的
-- url `copy` button
+- 使得可以使用其他仓库的配置
