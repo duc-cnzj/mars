@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"sort"
 	"sync"
 
@@ -63,7 +64,9 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 			defer wg.Done()
 			if p, ok := ids[project.ID]; ok {
 				if !p.GlobalEnabled {
-					if _, err := GetProjectMarsConfig(p.GitlabProjectId, ""); err != nil {
+					defaultBranch, _ := getDefaultBranch(p.GitlabProjectId)
+					if _, err := GetProjectMarsConfig(p.GitlabProjectId, defaultBranch); err != nil {
+						mlog.Debug(err)
 						return
 					}
 				}
