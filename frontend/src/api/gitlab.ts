@@ -18,6 +18,7 @@ export interface Info {
   avatar_url: string;
   description: string;
   enabled: boolean;
+  global_enabled: boolean;
 }
 
 export function projectList() {

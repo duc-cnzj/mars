@@ -1,28 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
-import yaml from "js-yaml";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import {
-  branches,
   disabledProject,
   enabledProject,
   Info,
   projectList,
 } from "../api/gitlab";
-import {
-  List,
-  Select,
-  Avatar,
-  Card,
-  Button,
-  message,
-  Modal,
-  Skeleton,
-  Spin,
-} from "antd";
-import { marsConfig } from "../api/mars";
+import { List, Avatar, Card, Button, message, Tooltip } from "antd";
+import ConfigModal from "./ConfigModal";
+import { GlobalOutlined } from "@ant-design/icons";
 
-const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
   const [list, setList] = useState<Info[]>([]);
 
@@ -54,7 +40,7 @@ const GitlabProjectManager: React.FC = () => {
     } catch (e) {
       message.error(e.response.data.message);
       setLoadingList((l) => ({ ...l, [item.id]: false }));
-      return
+      return;
     }
 
     fetchList().then((res) => {
@@ -63,41 +49,8 @@ const GitlabProjectManager: React.FC = () => {
     });
   };
 
-  const [modalBranch, setModalBranch] = useState("");
   const [currentItem, setCurrentItem] = useState<Info>();
-  const [title, setTitle] = useState("");
-  const [config, setConfig] = useState<API.Mars>();
   const [configVisible, setConfigVisible] = useState(false);
-  const [mbranches, setMbranches] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false)
-
-  const loadConfig = useCallback((id: number, branch = "") => {
-    setLoading(true)
-    marsConfig(id, { branch }).then((res) => {
-      setConfig(res.config);
-      setModalBranch(res.branch);
-      setLoading(false)
-    }).catch(e=>{
-      message.error(e.response.data.message)
-      setLoading(false)
-    });
-  }, []);
-
-  const resetModal = useCallback(() => {
-    setTitle("");
-    setModalBranch("")
-    setCurrentItem(undefined)
-    setMbranches([])
-    setLoading(false)
-    setConfig(undefined);
-    setConfigVisible(false);
-  }, []);
-
-  const selectBranch = (value: string) => {
-    if (currentItem) {
-      loadConfig(currentItem.id, value);
-    }
-  };
 
   return (
     <>
@@ -117,10 +70,6 @@ const GitlabProjectManager: React.FC = () => {
                     onClick={() => {
                       setCurrentItem(item);
                       setConfigVisible(true);
-                      branches(item.id).then((res) =>
-                        setMbranches(res.data.data.map((item) => item.value))
-                      );
-                      loadConfig(item.id);
                     }}
                   >
                     查看配置
@@ -140,7 +89,20 @@ const GitlabProjectManager: React.FC = () => {
             >
               <List.Item.Meta
                 avatar={<Avatar src={item.avatar_url} />}
-                title={item.name}
+                title={
+                  <div>
+                    {item.name}{" "}
+                    {item.global_enabled ? (
+                        <Tooltip placement="top" title="已使用全局配置" overlayStyle={{fontSize: "10px"}}>
+                          <GlobalOutlined
+                            style={{ color: item.enabled ? "green" : "red" }}
+                          />
+                      </Tooltip>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                }
                 description={
                   item.description ? item.description : "该项目还没有描述信息哦"
                 }
@@ -148,47 +110,12 @@ const GitlabProjectManager: React.FC = () => {
             </List.Item>
           )}
         />
-        <Modal
-          title={title}
+        <ConfigModal
           visible={configVisible}
-          footer={null}
-          width={800}
-          onCancel={resetModal}
-        >
-          {modalBranch ? (
-            <>
-              <Select
-                placeholder="请选择"
-                value={modalBranch}
-                style={{ width: 250, marginBottom: 10 }}
-                onChange={selectBranch}
-              >
-                {mbranches.map((item) => (
-                  <Option value={item} key={item}>
-                    {item}
-                  </Option>
-                ))}
-              </Select>
-              <Spin spinning={loading}>
-                <SyntaxHighlighter
-                  language="yaml"
-                  style={monokaiSublime}
-                  customStyle={{
-                    minHeight: 200,
-                    lineHeight: 1.2,
-                    padding: "10px",
-                    fontFamily: '"Fira code", "Fira Mono", monospace',
-                    fontSize: 15,
-                  }}
-                >
-                  {yaml.dump(config)}
-                </SyntaxHighlighter>
-              </Spin>
-            </>
-          ) : (
-            <Skeleton active />
-          )}
-        </Modal>
+          item={currentItem}
+          onCancel={() => setConfigVisible(false)}
+          onChange={()=>fetchList()}
+        />
       </Card>
     </>
   );
