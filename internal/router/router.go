@@ -89,6 +89,9 @@ func Init(e *gin.Engine) {
 		marsController := controllers.NewMarsController()
 		{
 			api.GET("/gitlab/projects/:project_id/mars_config", marsController.Show)
+			api.GET("/gitlab/projects/:project_id/global_config", marsController.GlobalConfig)
+			api.POST("/gitlab/projects/:project_id/toggle_enabled", marsController.ToggleEnabled)
+			api.PUT("/gitlab/projects/:project_id/mars_config", marsController.Update)
 		}
 	}
 }

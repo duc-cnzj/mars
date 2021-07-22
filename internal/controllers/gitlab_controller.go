@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"sort"
+	"sync"
 
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/response"
@@ -45,23 +47,45 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 	var enabledProjects []models.GitlabProject
 	utils.DB().Where("`enabled` = ?", true).Find(&enabledProjects)
 
-	var ids = map[int]struct{}{}
+	var ids = map[int]models.GitlabProject{}
 
 	for _, project := range enabledProjects {
-		ids[project.GitlabProjectId] = struct{}{}
+		ids[project.GitlabProjectId] = project
 	}
 
+	ch := make(chan Options)
+
 	res := make([]Options, 0, len(projects))
+	wg := sync.WaitGroup{}
+	wg.Add(len(projects))
 	for _, project := range projects {
-		if _, ok := ids[project.ID]; ok {
-			res = append(res, Options{
-				Value:     fmt.Sprintf("%d", project.ID),
-				Label:     project.Name,
-				IsLeaf:    false,
-				Type:      OptionTypeProject,
-				ProjectId: project.ID,
-			})
-		}
+		go func(project *gitlab.Project) {
+			defer wg.Done()
+			if p, ok := ids[project.ID]; ok {
+				if !p.GlobalEnabled {
+					if _, err := GetProjectMarsConfig(p.GitlabProjectId, ""); err != nil {
+						return
+					}
+				}
+
+				ch <- Options{
+					Value:     fmt.Sprintf("%d", project.ID),
+					Label:     project.Name,
+					IsLeaf:    false,
+					Type:      OptionTypeProject,
+					ProjectId: project.ID,
+				}
+			}
+		}(project)
+	}
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for options := range ch {
+		res = append(res, options)
 	}
 
 	response.Success(ctx, 200, res)
@@ -91,7 +115,11 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 		}
 	}
 
-	config, _ := GetProjectMarsConfig(uri.ProjectId, defaultBranch)
+	config, err := GetProjectMarsConfig(uri.ProjectId, defaultBranch)
+	if err != nil {
+		response.Success(ctx, 200, make([]Options, 0))
+		return
+	}
 
 	res := make([]Options, 0, len(branches))
 	for _, branch := range branches {
@@ -252,13 +280,14 @@ func (*GitlabController) PipelineInfo(ctx *gin.Context) {
 }
 
 type ProjectInfo struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	WebURL      string `json:"web_url"`
-	AvatarURL   string `json:"avatar_url"`
-	Description string `json:"description"`
-	Enabled     bool   `json:"enabled"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Path          string `json:"path"`
+	WebURL        string `json:"web_url"`
+	AvatarURL     string `json:"avatar_url"`
+	Description   string `json:"description"`
+	Enabled       bool   `json:"enabled"`
+	GlobalEnabled bool   `json:"global_enabled"`
 }
 
 func (*GitlabController) ProjectList(ctx *gin.Context) {
@@ -279,20 +308,26 @@ func (*GitlabController) ProjectList(ctx *gin.Context) {
 	var infos = make([]ProjectInfo, 0)
 
 	for _, project := range projects {
-		var enabled bool
+		var enabled, GlobalEnabled bool
 		if gitlabProject, ok := m[project.ID]; ok {
 			enabled = gitlabProject.Enabled
+			GlobalEnabled = gitlabProject.GlobalEnabled
 		}
 		infos = append(infos, ProjectInfo{
-			ID:          project.ID,
-			Name:        project.Name,
-			Path:        project.Path,
-			WebURL:      project.WebURL,
-			AvatarURL:   project.AvatarURL,
-			Description: project.Description,
-			Enabled:     enabled,
+			ID:            project.ID,
+			Name:          project.Name,
+			Path:          project.Path,
+			WebURL:        project.WebURL,
+			AvatarURL:     project.AvatarURL,
+			Description:   project.Description,
+			Enabled:       enabled,
+			GlobalEnabled: GlobalEnabled,
 		})
 	}
+
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].ID > infos[j].ID
+	})
 
 	response.Success(ctx, 200, infos)
 }
@@ -305,26 +340,6 @@ func (*GitlabController) EnableProject(ctx *gin.Context) {
 	var input EnableDisableInput
 	if err := ctx.ShouldBind(&input); err != nil {
 		response.Error(ctx, 400, err)
-		return
-	}
-
-	branches, _, err := utils.GitlabClient().Branches.ListBranches(input.GitlabProjectID, &gitlab.ListBranchesOptions{})
-	if err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-
-	var defaultBranch string
-	for _, branch := range branches {
-		if branch.Default {
-			defaultBranch = branch.Name
-			break
-		}
-	}
-
-	_, err = GetProjectMarsConfig(input.GitlabProjectID, defaultBranch)
-	if err != nil {
-		response.Error(ctx, 400, errors.New(".mars.yaml 解析失败"))
 		return
 	}
 

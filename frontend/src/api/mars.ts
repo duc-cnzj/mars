@@ -1,12 +1,11 @@
 import ajax from "./ajax";
-import yaml from "js-yaml";
 
 export async function marsConfig(
   projectID: number,
   { branch }: { branch?: string }
 ) {
   return ajax
-    .get<{ data: {branch: string, config: string} }>(
+    .get<{ data: { branch: string; config: string } }>(
       `/api/gitlab/projects/${projectID}/mars_config?branch=${branch || ""}`
     )
     .then(
@@ -14,13 +13,51 @@ export async function marsConfig(
         res
       ): {
         branch: string;
-        config: API.Mars;
+        config: string;
       } => {
-        const doc = yaml.load(res.data.data.config);
         return {
           branch: res.data.data.branch,
-          config: doc as API.Mars,
+          config: res.data.data.config,
         };
       }
     );
+}
+
+export async function toggleGlobalEnabled(projectID: number, enabled: boolean) {
+  return ajax.post<{ data: { enabled: boolean; config: string } }>(
+    `/api/gitlab/projects/${projectID}/toggle_enabled`,
+    { enabled }
+  );
+}
+
+export async function globalConfig(projectID: number) {
+  return ajax
+    .get<{ data: { enabled: boolean; config: string } }>(
+      `/api/gitlab/projects/${projectID}/global_config`
+    )
+    .then(
+      (
+        res
+      ): {
+        enabled: boolean;
+        config: string;
+      } => {
+        return {
+          enabled: res.data.data.enabled,
+          config: res.data.data.config,
+        };
+      }
+    );
+}
+
+interface Config {
+  global_config: string;
+}
+
+export async function updateGlobalConfig(projectID: number, config: string) { 
+  return ajax
+    .put<{ data: Config }>(
+      `/api/gitlab/projects/${projectID}/mars_config`,
+      {config: config}
+    )
 }

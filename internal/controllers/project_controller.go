@@ -238,6 +238,13 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 func GetProjectMarsConfig(projectId int, branch string) (*mars.Config, error) {
 	var marsC mars.Config
 
+	var gp models.GitlabProject
+	if utils.DB().Where("`gitlab_project_id` = ?", projectId).First(&gp).Error == nil {
+		if gp.GlobalEnabled {
+			return gp.GlobalMarsConfig(), nil
+		}
+	}
+
 	// 获取 .mars.yaml
 	opt := &gitlab.GetFileOptions{}
 	if branch != "" {
