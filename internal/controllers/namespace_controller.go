@@ -100,7 +100,7 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 
 	var imagePullSecrets []string
 	for _, secret := range utils.Config().ImagePullSecrets {
-		s, err := utils.CreateDockerSecret(input.Namespace, secret.Username, secret.Password, secret.Email)
+		s, err := utils.CreateDockerSecret(input.Namespace, secret.Username, secret.Password, secret.Email, secret.Server)
 		if err != nil {
 			mlog.Error(err)
 			continue

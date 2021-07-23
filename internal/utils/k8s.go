@@ -25,7 +25,10 @@ type DockerConfigJSON struct {
 	HttpHeaders map[string]string `json:"HttpHeaders,omitempty"`
 }
 
-func CreateDockerSecret(namespace, username, password, email string) (*v1.Secret, error) {
+func CreateDockerSecret(namespace, username, password, email, server string) (*v1.Secret, error) {
+	if server == "" {
+		server = "https://index.docker.io/v1/"
+	}
 	dockercfgAuth := DockerConfigEntry{
 		Username: username,
 		Password: password,
@@ -34,7 +37,7 @@ func CreateDockerSecret(namespace, username, password, email string) (*v1.Secret
 	}
 
 	dockerCfgJSON := DockerConfigJSON{
-		Auths: map[string]DockerConfigEntry{"server": dockercfgAuth},
+		Auths: map[string]DockerConfigEntry{server: dockercfgAuth},
 	}
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
