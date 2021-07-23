@@ -13,6 +13,7 @@ import {
   Modal,
   Skeleton,
   Spin,
+  Empty,
 } from "antd";
 import { QuestionCircleOutlined, EditOutlined } from "@ant-design/icons";
 import {
@@ -222,27 +223,29 @@ const ConfigModal: React.FC<{
                 lineNumbers: true,
               }}
               onBeforeChange={(editor, d, value) => {
-                // console.log(editor, d, value);
-                // setData({ ...data, config: value });
                 console.log("valuevalue", globalConfig, value);
                 setGlobalConfig(value);
               }}
             />
           ) : (
             <Spin spinning={loading}>
-              <SyntaxHighlighter
-                language="yaml"
-                style={monokaiSublime}
-                customStyle={{
-                  minHeight: 200,
-                  lineHeight: 1.2,
-                  padding: "10px",
-                  fontFamily: '"Fira code", "Fira Mono", monospace',
-                  fontSize: 15,
-                }}
-              >
-                {globalEnabled ? globalConfig : config}
-              </SyntaxHighlighter>
+              {!globalEnabled && !config ? (
+                <Empty description="未发现该项目的配置文件" style={{height: 220}} />
+              ) : (
+                <SyntaxHighlighter
+                  language="yaml"
+                  style={monokaiSublime}
+                  customStyle={{
+                    minHeight: 200,
+                    lineHeight: 1.2,
+                    padding: "10px",
+                    fontFamily: '"Fira code", "Fira Mono", monospace',
+                    fontSize: 15,
+                  }}
+                >
+                  {globalEnabled ? globalConfig : config}
+                </SyntaxHighlighter>
+              )}
             </Spin>
           )}
         </>

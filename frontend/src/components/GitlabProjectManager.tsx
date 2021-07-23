@@ -5,15 +5,13 @@ import {
   Info,
   projectList,
 } from "../api/gitlab";
-import { List, Avatar, Card, Button, message, Tooltip } from "antd";
+import { List, Avatar, Card, Button, Select, message, Tooltip } from "antd";
 import ConfigModal from "./ConfigModal";
 import { GlobalOutlined } from "@ant-design/icons";
-
+const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
   const [list, setList] = useState<Info[]>([]);
-
   const [initLoading, setInitLoading] = useState(true);
-
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
 
   const fetchList = useCallback(() => {
@@ -44,13 +42,27 @@ const GitlabProjectManager: React.FC = () => {
     }
 
     fetchList().then((res) => {
-      message.success("操作成功");
       setLoadingList((l) => ({ ...l, [item.id]: false }));
+      message.success("操作成功");
     });
   };
 
   const [currentItem, setCurrentItem] = useState<Info>();
   const [configVisible, setConfigVisible] = useState(false);
+  const [selected, setSelected] = useState<Info>();
+
+  const onChange = (v: any) => {
+    console.log(v);
+    if (!v) {
+      setSelected(undefined);
+      return;
+    }
+    let item = list.find((item) => item.id === v);
+    if (item) {
+      setSelected(item);
+      console.log(item)
+    }
+  };
 
   return (
     <>
@@ -58,10 +70,27 @@ const GitlabProjectManager: React.FC = () => {
         title={"gitlab项目管理"}
         style={{ marginTop: 20, marginBottom: 30 }}
       >
+        <div>
+          <Select
+            showSearch
+            allowClear
+            style={{ width: 500, marginBottom: 10 }}
+            placeholder="Select a person"
+            optionFilterProp="children"
+            onChange={onChange}
+            filterOption={(input, option: any) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+          >
+            {list ? list.map((item, key) => (
+              <Option value={item.id}>{item.name}</Option>
+            )):<></>}
+          </Select>
+        </div>
         <List
           itemLayout="horizontal"
           loading={initLoading}
-          dataSource={list}
+          dataSource={list.filter(item=> selected ? item.id === selected.id : true)}
           renderItem={(item: Info) => (
             <List.Item
               actions={[
@@ -93,10 +122,14 @@ const GitlabProjectManager: React.FC = () => {
                   <div>
                     {item.name}{" "}
                     {item.global_enabled ? (
-                        <Tooltip placement="top" title="已使用全局配置" overlayStyle={{fontSize: "10px"}}>
-                          <GlobalOutlined
-                            style={{ color: item.enabled ? "green" : "red" }}
-                          />
+                      <Tooltip
+                        placement="top"
+                        title="已使用全局配置"
+                        overlayStyle={{ fontSize: "10px" }}
+                      >
+                        <GlobalOutlined
+                          style={{ color: item.enabled ? "green" : "red" }}
+                        />
                       </Tooltip>
                     ) : (
                       <></>
@@ -114,7 +147,7 @@ const GitlabProjectManager: React.FC = () => {
           visible={configVisible}
           item={currentItem}
           onCancel={() => setConfigVisible(false)}
-          onChange={()=>fetchList()}
+          onChange={() => fetchList()}
         />
       </Card>
     </>
