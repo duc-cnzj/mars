@@ -30,6 +30,7 @@ import { toSlug } from "../utils/slug";
 import { useWs } from "../contexts/useWebsocket";
 import { ArrowLeftOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import classNames from "classnames";
+import { ProjectDetail } from "../api/project";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -48,11 +49,11 @@ interface CreateItemInterface {
 }
 
 const ModalSub: React.FC<{
-  id: number;
-  namespaceId: number;
-  detail: CreateItemInterface;
+  detail: ProjectDetail;
   onSuccess: () => void;
-}> = ({ namespaceId, detail, id, onSuccess }) => {
+}> = ({ detail, onSuccess }) => {
+  let id = detail.id;
+  let namespaceId = detail.namespace.id;
   const ws = useWs();
 
   const [editVisible, setEditVisible] = useState<boolean>(true);
@@ -61,9 +62,9 @@ const ModalSub: React.FC<{
   const dispatch = useDispatch();
   const [data, setData] = useState<CreateItemInterface>({
     name: detail.name,
-    gitlabProjectId: detail.gitlabProjectId,
-    gitlabBranch: detail.gitlabBranch,
-    gitlabCommit: detail.gitlabCommit,
+    gitlabProjectId: Number(detail.gitlab_project_id),
+    gitlabBranch: detail.gitlab_branch,
+    gitlabCommit: detail.gitlab_commit,
     config: detail.config,
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
@@ -80,31 +81,35 @@ const ModalSub: React.FC<{
         // 如果是编辑，则需要获取对应的默认值
         if (
           detail &&
-          detail.gitlabProjectId &&
-          detail.gitlabBranch &&
-          detail.gitlabCommit
+          detail.gitlab_project_id &&
+          detail.gitlab_branch &&
+          detail.gitlab_commit
         ) {
           commit(
-            detail.gitlabProjectId,
-            detail.gitlabBranch,
-            detail.gitlabCommit
+            Number(detail.gitlab_project_id),
+            detail.gitlab_branch,
+            detail.gitlab_commit
           ).then((res) => {
             let match = data.find(
-              (item) => Number(item.value) === detail.gitlabProjectId
+              (item) => Number(item.value) === Number(detail.gitlab_project_id)
             );
             if (match) {
-              setValue([match.label, detail.gitlabBranch, res.data.data.label]);
+              setValue([
+                match.label,
+                detail.gitlab_branch,
+                res.data.data.label,
+              ]);
               setInitValue([
                 match.label,
-                detail.gitlabBranch,
+                detail.gitlab_branch,
                 res.data.data.label,
               ]);
             }
           });
         }
-        if (detail && detail.gitlabProjectId) {
+        if (detail && Number(detail.gitlab_project_id)) {
           let r = data.find(
-            (item) => item.projectId === detail.gitlabProjectId
+            (item) => item.projectId === Number(detail.gitlab_project_id)
           );
           return r ? [r] : [];
         }
@@ -268,9 +273,9 @@ const ModalSub: React.FC<{
   const onReset = () => {
     setData({
       name: detail.name,
-      gitlabProjectId: detail.gitlabProjectId,
-      gitlabBranch: detail.gitlabBranch,
-      gitlabCommit: detail.gitlabCommit,
+      gitlabProjectId: Number(detail.gitlab_project_id),
+      gitlabBranch: detail.gitlab_branch,
+      gitlabCommit: detail.gitlab_commit,
       config: detail.config,
     });
     setValue(initValue);

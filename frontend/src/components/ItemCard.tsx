@@ -13,7 +13,7 @@ import {
   Tooltip,
   Button,
 } from "antd";
-import "ant-design-draggable-modal/dist/index.css";
+import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
 import {
   deleteNamespace,

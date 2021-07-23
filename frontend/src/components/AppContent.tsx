@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { DraggableModalProvider } from "ant-design-draggable-modal";
+import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
 import { Empty, Row, Col } from "antd";
 import AddNamespace from "./AddNamespace";
 import Setting from "./Setting";
-import "ant-design-draggable-modal/dist/index.css";
+import "../pkg/DraggableModal/index.css";
 import { listNamespaces, NamespaceItem } from "../api/namespace";
 
 import { useWs } from "../contexts/useWebsocket";
