@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import PipelineInfo from "./PipelineInfo";
-import { DraggableModal } from "ant-design-draggable-modal";
+import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import {
   branches,

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
-import { DraggableModal } from "ant-design-draggable-modal";
+import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { detailProject, ProjectDetail } from "../api/project";
 import { Button, Tabs, Skeleton, Switch } from "antd";
 import DeployStatus from "./DeployStatus";
@@ -23,6 +23,7 @@ const ItemDetailModal: React.FC<{
   const [visible, setVisible] = useState(false);
   const onOk = useCallback(() => setVisible(true), []);
   const [detail, setDetail] = useState<ProjectDetail | undefined>();
+  const [resizeAt, setResizeAt] = useState<number>(0);
 
   console.log("render ItemDetailModal");
   useEffect(() => {
@@ -78,6 +79,10 @@ const ItemDetailModal: React.FC<{
         <ServiceEndpoint namespaceId={namespaceId} projectName={item.name} />
       </Button>
       <DraggableModal
+        onResize={() => {
+          console.log("DraggableModal onResize");
+          setResizeAt(new Date().getTime());
+        }}
         className="draggable-modal"
         visible={visible}
         initialWidth={800}
@@ -111,10 +116,8 @@ const ItemDetailModal: React.FC<{
             <ErrorBoundary>
               {detail ? (
                 <Shell
-                  updatedAt={detail.updated_at}
-                  namespace={detail.namespace.name}
-                  id={detail.id}
-                  namespaceId={detail.namespace.id}
+                  resizeAt={resizeAt}
+                  detail={detail}
                 />
               ) : (
                 <Skeleton active />
@@ -124,16 +127,8 @@ const ItemDetailModal: React.FC<{
           <TabPane tab="配置更新" key="update-config">
             {detail ? (
               <EditProject
+                detail={detail}
                 onSuccess={onSuccess}
-                id={detail.id}
-                namespaceId={detail.namespace.id}
-                detail={{
-                  name: detail.name,
-                  gitlabProjectId: Number(detail.gitlab_project_id),
-                  gitlabBranch: detail.gitlab_branch,
-                  gitlabCommit: detail.gitlab_commit,
-                  config: detail.config,
-                }}
               />
             ) : (
               <Skeleton active />

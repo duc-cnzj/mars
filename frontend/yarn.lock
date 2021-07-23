@@ -2443,13 +2443,6 @@ ansi-styles@^4.0.0, ansi-styles@^4.1.0:
   dependencies:
     color-convert "^2.0.1"
 
-ant-design-draggable-modal@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/ant-design-draggable-modal/-/ant-design-draggable-modal-1.0.0.tgz#6988907487293053d22158e768659d17a8ae26e4"
-  integrity sha512-AG8e1DFqopMBHxb3usuWV8PWeqGWbXaGwUAqp4PDOPgvhdM+jVISS8hJY7/wNHrYOec9jT6KhuXFzo49oD4UkA==
-  dependencies:
-    react-uid "^2.3.0"
-
 antd@^4.15.5:
   version "4.15.5"
   resolved "https://registry.yarnpkg.com/antd/-/antd-4.15.5.tgz#c54bf3a8a7e537c57395165b47c6caa4f9ea4860"
@@ -10047,7 +10040,7 @@ react-syntax-highlighter@^15.4.3:
     prismjs "^1.22.0"
     refractor "^3.2.0"
 
-react-uid@^2.3.0:
+react-uid@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/react-uid/-/react-uid-2.3.1.tgz#22a75d4a948a4824b9b8078cbf864d55d91ca4be"
   integrity sha512-6C5pwNYP1udgp5feQ9MTBZBKD4su9nhD2aYCFY1bB0Bpask8wYKYz0ZhAtAJ4lcmTDC5kY1ByGTQMFDHQW6p0w==

@@ -1,5 +1,5 @@
 import React, { Component, memo } from "react";
-import { containerList, PodContainerItem } from "../api/project";
+import { containerList, PodContainerItem, ProjectDetail } from "../api/project";
 import { message, Radio, RadioChangeEvent, Tag } from "antd";
 import { debounce } from "lodash";
 import { Terminal } from "xterm";
@@ -11,10 +11,8 @@ import "xterm/css/xterm.css";
 import { handleExecShell } from "../api/shell";
 
 class Shell extends Component<{
-  updatedAt: string;
-  namespaceId: number;
-  id: number;
-  namespace: string;
+  detail: ProjectDetail;
+  resizeAt: number;
 }> {
   private connecting_: boolean = false;
   private connectionClosed_: boolean = false;
@@ -79,10 +77,6 @@ class Shell extends Component<{
         console.log(e);
       }
     }, 300);
-    window.addEventListener(
-      "resize",
-      () => this.debouncedFit_ && this.debouncedFit_()
-    );
     this.connSubject_.pipe(takeUntil(this.unsubscribe_)).subscribe((frame) => {
       this.handleConnectionMessage(frame);
     });
@@ -93,6 +87,16 @@ class Shell extends Component<{
     });
   };
 
+  listContainer = async () => {
+    return containerList(
+      this.props.detail.namespace.id,
+      this.props.detail.id
+    ).then((res) => {
+      this.setState({ list: res.data.data });
+      return res;
+    });
+  };
+
   handleConnectionMessage = (frame: any) => {
     if (frame.Op === "stdout") {
       this.term?.write(frame.Data);
@@ -100,7 +104,7 @@ class Shell extends Component<{
 
     if (frame.Op === "toast") {
       message.error(frame.Data);
-      this.listContainer()
+      this.listContainer();
     }
 
     this.incommingMessage$_.next(frame);
@@ -126,28 +130,23 @@ class Shell extends Component<{
     this.connecting_ = true;
     this.connectionClosed_ = false;
     let [pod, container] = this.state.value.split("|");
-    handleExecShell(this.props.namespace, pod, container).then(({ data }) => {
-      this.setState({ sessionId: data.data.id });
-      let url = process.env.REACT_APP_BASE_URL;
-      if (url === "") {
-        url = window.location.origin;
+    handleExecShell(this.props.detail.namespace.name, pod, container).then(
+      ({ data }) => {
+        this.setState({ sessionId: data.data.id });
+        let url = process.env.REACT_APP_BASE_URL;
+        if (url === "") {
+          url = window.location.origin;
+        }
+        this.conn_ = new SockJS(`${url}/api/sockjs?${data.data.id}`);
+        this.conn_.onopen = this.onConnectionOpen.bind(
+          this,
+          this.state.sessionId
+        );
+        this.conn_.onmessage = this.onConnectionMessage.bind(this);
+        this.conn_.onclose = this.onConnectionClose.bind(this);
+        this.conn_.onerror = this.onErrorMessage.bind(this);
       }
-      this.conn_ = new SockJS(`${url}/api/sockjs?${data.data.id}`);
-      this.conn_.onopen = this.onConnectionOpen.bind(
-        this,
-        this.state.sessionId
-      );
-      this.conn_.onmessage = this.onConnectionMessage.bind(this);
-      this.conn_.onclose = this.onConnectionClose.bind(this);
-      this.conn_.onerror = this.onErrorMessage.bind(this);
-    });
-  };
-
-  listContainer = async () => {
-    return containerList(this.props.namespaceId, this.props.id).then((res) => {
-      this.setState({ list: res.data.data });
-      return res;
-    });
+    );
   };
 
   fetchData = () => {
@@ -166,10 +165,18 @@ class Shell extends Component<{
   };
 
   componentDidUpdate(prevProps: any, prevState: any, snapshot: any) {
-    if (this.props.updatedAt !== prevProps.updatedAt) {
-      this.fetchData();
+    if (this.props.resizeAt !== prevProps.resizeAt) {
+      this.debouncedFit_ && this.debouncedFit_();
+      return false;
     }
+
+    if (this.props.detail.updated_at !== prevProps.detail.updated_at) {
+      this.fetchData()
+    }
+
+    console.log("this.props, prevProps", this.props, prevProps);
     if (this.state.value !== prevState.value && this.state.value !== "") {
+      console.log("value changed");
       this.disconnect();
       this.setupConnection();
       this.initTerm();
@@ -241,9 +248,9 @@ class Shell extends Component<{
   };
 
   onChange = (e: RadioChangeEvent) => {
+    console.log("onchange");
     this.setState({ value: e.target.value });
   };
-
   render() {
     return (
       <div>
