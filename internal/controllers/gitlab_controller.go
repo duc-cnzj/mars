@@ -40,7 +40,12 @@ type Options struct {
 }
 
 func (*GitlabController) Projects(ctx *gin.Context) {
-	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{Membership: gitlab.Bool(true)})
+	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
+		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
+		ListOptions: gitlab.ListOptions{
+			PerPage: 9999,
+		},
+	})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
