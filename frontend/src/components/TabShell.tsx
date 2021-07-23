@@ -162,7 +162,7 @@ class Shell extends Component<{
     if (this.props.updatedAt !== prevProps.updatedAt) {
       this.fetchData();
     }
-    if (prevProps.value !== prevState.value && prevState.value !== "") {
+    if (this.state.value !== prevState.value && this.state.value !== "") {
       this.disconnect();
       this.setupConnection();
       this.initTerm();
