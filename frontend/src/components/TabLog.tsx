@@ -1,11 +1,11 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useEffect, useState, useCallback } from "react";
 import { containerList, containerLog, PodContainerItem } from "../api/project";
-import { Radio, Skeleton, RadioChangeEvent, Tag } from "antd";
+import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { xt256 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 const ProjectContainerLogs: React.FC<{
-  updatedAt:string;
+  updatedAt: string;
   id: number;
   namespaceId: number;
   autoRefresh: boolean;
@@ -14,9 +14,15 @@ const ProjectContainerLogs: React.FC<{
   const [list, setList] = useState<PodContainerItem[]>();
   const [log, setLog] = useState<string>();
 
-  useEffect(() => {
-    containerList(namespaceId, id).then((res) => {
+  const listContainer = useCallback(async () => {
+    return containerList(namespaceId, id).then((res) => {
       setList(res.data.data);
+      return res;
+    });
+  }, [namespaceId, id]);
+
+  useEffect(() => {
+    listContainer().then((res) => {
       if (res.data.data.length > 0) {
         let first = res.data.data[0];
         setValue(first.pod_name + "|" + first.container_name);
@@ -25,24 +31,29 @@ const ProjectContainerLogs: React.FC<{
           id,
           first.pod_name,
           first.container_name
-        ).then(({data: {data}}) => {
+        ).then(({ data: { data } }) => {
           let log: string = "暂无日志";
           if (data.log) {
-              log = data.log
+            log = data.log;
           }
           setLog(log);
         });
       }
     });
-  }, [setList, id, namespaceId, updatedAt]);
+  }, [setList, id, namespaceId, updatedAt, listContainer]);
 
   const onChange = (e: RadioChangeEvent) => {
     setValue(e.target.value);
     let [pod, container] = (e.target.value as string).split("|");
 
-    containerLog(namespaceId, id, pod, container).then((res) => {
-      setLog(res.data.data.log);
-    });
+    containerLog(namespaceId, id, pod, container)
+      .then((res) => {
+        setLog(res.data.data.log);
+      })
+      .catch((e) => {
+        message.error(e.response.data.message);
+        listContainer();
+      });
     console.log("on change", e.target);
   };
 
@@ -59,8 +70,8 @@ const ProjectContainerLogs: React.FC<{
         }
 
         console.log("setInterval");
-      }
-      fn()
+      };
+      fn();
       intervalId = setInterval(fn, 5000);
     }
 

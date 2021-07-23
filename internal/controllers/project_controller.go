@@ -194,15 +194,17 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 	var raw = []byte("未找到日志")
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
-	if err == nil {
-		split := strings.Split(string(raw), "\n")
-		var reverseLog []string
-		for i := len(split) - 1; i > 0; i-- {
-			reverseLog = append(reverseLog, split[i])
-		}
-
-		raw = bytes.Trim([]byte(strings.Join(reverseLog, "\n")), "\n")
+	if err != nil {
+		response.Error(ctx, 400, err)
+		return
 	}
+	split := strings.Split(string(raw), "\n")
+	var reverseLog []string
+	for i := len(split) - 1; i > 0; i-- {
+		reverseLog = append(reverseLog, split[i])
+	}
+
+	raw = bytes.Trim([]byte(strings.Join(reverseLog, "\n")), "\n")
 
 	response.Success(ctx, 200, PodContainerResponse{
 		PodName:       uri.Pod,
