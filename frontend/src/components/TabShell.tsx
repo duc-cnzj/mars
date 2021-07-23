@@ -100,6 +100,7 @@ class Shell extends Component<{
 
     if (frame.Op === "toast") {
       message.error(frame.Data);
+      this.listContainer()
     }
 
     this.incommingMessage$_.next(frame);
@@ -142,9 +143,15 @@ class Shell extends Component<{
     });
   };
 
-  fetchData = () => {
-    containerList(this.props.namespaceId, this.props.id).then((res) => {
+  listContainer = async () => {
+    return containerList(this.props.namespaceId, this.props.id).then((res) => {
       this.setState({ list: res.data.data });
+      return res;
+    });
+  };
+
+  fetchData = () => {
+    this.listContainer().then((res) => {
       if (res.data.data.length > 0) {
         let first = res.data.data[0];
         this.setState({ value: first.pod_name + "|" + first.container_name });
