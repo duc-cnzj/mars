@@ -145,7 +145,11 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 func getDefaultBranch(projectId int) (string, error) {
 	branches, _, err := utils.GitlabClient().Branches.ListBranches(projectId, &gitlab.ListBranchesOptions{})
 	if err != nil {
+		mlog.Error(err)
 		return "", err
+	}
+	if len(branches) < 1 {
+		return "no branches", errors.New("no branches")
 	}
 
 	for _, branch := range branches {
@@ -153,8 +157,9 @@ func getDefaultBranch(projectId int) (string, error) {
 			return branch.Name, nil
 		}
 	}
+	mlog.Error(errors.New(fmt.Sprintf("project %d cant find default branch", projectId)))
 
-	return "", errors.New(fmt.Sprintf("project %d cant find default branch", projectId))
+	return branches[0].Name, nil
 }
 
 type CommitUri struct {
@@ -295,7 +300,12 @@ type ProjectInfo struct {
 }
 
 func (*GitlabController) ProjectList(ctx *gin.Context) {
-	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{Membership: gitlab.Bool(true)})
+	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
+		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
+		ListOptions: gitlab.ListOptions{
+			PerPage: 9999,
+		},
+	})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
