@@ -85,9 +85,11 @@ func GetIngressMappingByNamespace(namespace string) map[string][]string {
 		for _, tls := range item.Spec.TLS {
 			if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
 				data := m[projectName]
+				var hosts []string
 				for _, host := range tls.Hosts {
-					m[projectName] = append(data, fmt.Sprintf("https://%s", host))
+					hosts = append(hosts, fmt.Sprintf("https://%s", host))
 				}
+				m[projectName] = append(data, hosts...)
 			}
 		}
 	}
