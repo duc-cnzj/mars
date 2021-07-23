@@ -41,7 +41,7 @@ const PipelineInfo: React.FC<{
             web_url: res.data.data.web_url,
           });
         }
-      });
+      }).catch(e=>console.log(e));
     }
   }, [projectId, branch, commit]);
 
