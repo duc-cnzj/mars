@@ -40,19 +40,31 @@ type Options struct {
 }
 
 func (*GitlabController) Projects(ctx *gin.Context) {
-	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
-		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
-		ListOptions: gitlab.ListOptions{
-			PerPage: 9999,
-		},
-	})
-	if err != nil {
-		response.Error(ctx, 500, err)
-		return
-	}
-
+	var projects []*gitlab.Project
+	var chone = make(chan *gitlab.Project)
 	var enabledProjects []models.GitlabProject
+
 	utils.DB().Where("`enabled` = ?", true).Find(&enabledProjects)
+	wg := sync.WaitGroup{}
+	wg.Add(len(enabledProjects))
+	for _, project := range enabledProjects {
+		go func(project models.GitlabProject) {
+			defer wg.Done()
+			getProject, _, err := utils.GitlabClient().Projects.GetProject(project.GitlabProjectId, &gitlab.GetProjectOptions{})
+			if err != nil {
+				return
+			}
+			chone <- getProject
+		}(project)
+	}
+	go func() {
+		wg.Wait()
+		close(chone)
+	}()
+
+	for project := range chone {
+		projects = append(projects, project)
+	}
 
 	var ids = map[int]models.GitlabProject{}
 
@@ -63,7 +75,6 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 	ch := make(chan Options)
 
 	res := make([]Options, 0, len(projects))
-	wg := sync.WaitGroup{}
 	wg.Add(len(projects))
 	for _, project := range projects {
 		go func(project *gitlab.Project) {
