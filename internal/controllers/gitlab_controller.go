@@ -40,69 +40,44 @@ type Options struct {
 }
 
 func (*GitlabController) Projects(ctx *gin.Context) {
-	var projects []*gitlab.Project
-	var chone = make(chan *gitlab.Project)
-	var enabledProjects []models.GitlabProject
+	var (
+		projects        []*gitlab.Project
+		enabledProjects []models.GitlabProject
+		ch              = make(chan Options)
+		wg              = sync.WaitGroup{}
+	)
 
 	utils.DB().Where("`enabled` = ?", true).Find(&enabledProjects)
-	wg := sync.WaitGroup{}
 	wg.Add(len(enabledProjects))
 	for _, project := range enabledProjects {
 		go func(project models.GitlabProject) {
 			defer wg.Done()
+			if !project.GlobalEnabled {
+				defaultBranch, _ := getDefaultBranch(project.GitlabProjectId)
+				if _, err := GetProjectMarsConfig(project.GitlabProjectId, defaultBranch); err != nil {
+					mlog.Debug(err)
+					return
+				}
+			}
 			getProject, _, err := utils.GitlabClient().Projects.GetProject(project.GitlabProjectId, &gitlab.GetProjectOptions{})
 			if err != nil {
 				return
 			}
-			chone <- getProject
-		}(project)
-	}
-	go func() {
-		wg.Wait()
-		close(chone)
-	}()
-
-	for project := range chone {
-		projects = append(projects, project)
-	}
-
-	var ids = map[int]models.GitlabProject{}
-
-	for _, project := range enabledProjects {
-		ids[project.GitlabProjectId] = project
-	}
-
-	ch := make(chan Options)
-
-	res := make([]Options, 0, len(projects))
-	wg.Add(len(projects))
-	for _, project := range projects {
-		go func(project *gitlab.Project) {
-			defer wg.Done()
-			if p, ok := ids[project.ID]; ok {
-				if !p.GlobalEnabled {
-					defaultBranch, _ := getDefaultBranch(p.GitlabProjectId)
-					if _, err := GetProjectMarsConfig(p.GitlabProjectId, defaultBranch); err != nil {
-						mlog.Debug(err)
-						return
-					}
-				}
-
-				ch <- Options{
-					Value:     fmt.Sprintf("%d", project.ID),
-					Label:     project.Name,
-					IsLeaf:    false,
-					Type:      OptionTypeProject,
-					ProjectId: project.ID,
-				}
+			ch <- Options{
+				Value:     fmt.Sprintf("%d", getProject.ID),
+				Label:     getProject.Name,
+				IsLeaf:    false,
+				Type:      OptionTypeProject,
+				ProjectId: getProject.ID,
 			}
 		}(project)
 	}
-
 	go func() {
 		wg.Wait()
 		close(ch)
 	}()
+
+	res := make([]Options, 0, len(projects))
 
 	for options := range ch {
 		res = append(res, options)
