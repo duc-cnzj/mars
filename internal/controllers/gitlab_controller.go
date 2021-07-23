@@ -41,7 +41,6 @@ type Options struct {
 
 func (*GitlabController) Projects(ctx *gin.Context) {
 	var (
-		projects        []*gitlab.Project
 		enabledProjects []models.GitlabProject
 		ch              = make(chan Options)
 		wg              = sync.WaitGroup{}
@@ -77,7 +76,7 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 		close(ch)
 	}()
 
-	res := make([]Options, 0, len(projects))
+	res := make([]Options, 0)
 
 	for options := range ch {
 		res = append(res, options)
