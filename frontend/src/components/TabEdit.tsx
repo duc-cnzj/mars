@@ -321,7 +321,7 @@ const ModalSub: React.FC<{
           )}
         </div>
         配置文件:
-        <div style={{ minWidth: 200, maxWidth: 1280, marginBottom: 20 }}>
+        <div style={{ minWidth: 200, marginBottom: 20 }}>
           <CodeMirror
             value={data.config}
             options={{
