@@ -55,7 +55,8 @@
       "react-app/jest"
     ],
     "rules": {
-      "react/jsx-no-target-blank": "off"
+      "react/jsx-no-target-blank": "off",
+      "react-hooks/exhaustive-deps": "off"
     }
   },
   "browserslist": {
