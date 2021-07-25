@@ -1,10 +1,10 @@
 import React from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
-const TimeCost: React.FC<{ seconds: string }> = ({ seconds }) => {
+const TimeCost: React.FC<{ seconds: string }> = ({ seconds: s }) => {
   const getColor = (seconds: number): string => {
     if (seconds < 10) {
-      return "#059669";
+      return "#6EE7B7";
     }
     if (seconds < 30) {
       return "#FCD34D";
@@ -19,11 +19,13 @@ const TimeCost: React.FC<{ seconds: string }> = ({ seconds }) => {
     return "#DC2626";
   };
 
+  let seconds: number = Number(s ? s : "0.0");
+
   return (
     <div style={{ paddingTop: 10, paddingBottom: 10 }}>
       <FieldTimeOutlined />
       &nbsp; 耗时：
-      <span style={{ color: getColor(Number(seconds)) }}>{seconds ? seconds : "0.0"}</span> s
+      <span style={{ color: getColor(seconds) }}>{seconds}</span> s
     </div>
   );
 };
