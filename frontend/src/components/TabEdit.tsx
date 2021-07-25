@@ -2,11 +2,7 @@ import React, { useState, useEffect, useCallback, memo } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import PipelineInfo from "./PipelineInfo";
 
-import {
-  commit,
-  configFile,
-  projects,
-} from "../api/gitlab";
+import { commit, configFile, projects } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -32,6 +28,7 @@ import classNames from "classnames";
 import { ProjectDetail } from "../api/project";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
+import TimeCost from "./TimeCost";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -74,7 +71,7 @@ const ModalSub: React.FC<{
     gitlabProjectId: number;
     gitlabBranch: string;
     gitlabCommit: string;
-    time?: number
+    time?: number;
   }>();
   let slug = toSlug(namespaceId, data.name);
 
@@ -191,7 +188,7 @@ const ModalSub: React.FC<{
       config: detail.config,
     });
     if (initValue) {
-      setInitValue({...initValue, time: new Date().getUTCSeconds()});
+      setInitValue({ ...initValue, time: new Date().getUTCSeconds() });
     }
   };
 
@@ -281,16 +278,21 @@ const ModalSub: React.FC<{
             status="active"
           />
         </div>
-        <Button
-          hidden={list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled}
-          style={{ marginBottom: 10 }}
-          danger
-          icon={<StopOutlined />}
-          type="dashed"
-          onClick={onRemove}
-        >
-          取消
-        </Button>
+        <div style={{display: "flex", alignItems: "center", marginBottom: 10}}>
+          <Button
+            hidden={
+              list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
+            }
+            style={{ marginRight: 10 }}
+            danger
+            icon={<StopOutlined />}
+            type="dashed"
+            onClick={onRemove}
+          >
+            取消
+          </Button>
+          <TimeCost seconds={list[slug]?.ElapsedTime} />
+        </div>
         <LogOutput slug={slug} />
       </div>
 

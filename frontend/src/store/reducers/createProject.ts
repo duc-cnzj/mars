@@ -1,4 +1,4 @@
-import { CLEAR_CREATE_PROJECT_LOG, SET_DEPLOY_STATUS, SET_PROCESS_PERCENT } from "./../actionTypes";
+import { CLEAR_CREATE_PROJECT_LOG, SET_DEPLOY_STATUS, SET_ELAPSED_TIME, SET_PROCESS_PERCENT } from "./../actionTypes";
 import {
   CREATE_PROJECT_LOADING,
   CREATE_PROJECT_LOADING_DONE,
@@ -22,6 +22,7 @@ export interface CreateProjectItem {
   deployStatus: DeployStatus;
   output: string[];
   processPercent: number;
+  ElapsedTime: string;
 }
 
 export const selectList = (state: { createProject: List }):List =>
@@ -43,6 +44,7 @@ export default function createProject(
       output: string;
       deployStatus: string;
       processPercent: number;
+      elapsedTime: string;
     };
   }
 ) {
@@ -66,6 +68,18 @@ export default function createProject(
             state,
             [action.data.id, "deployStatus"],
             action.data.deployStatus
+          ),
+        };
+      }
+
+      return state;
+    case SET_ELAPSED_TIME:
+      if (action.data) {
+        return {
+          ...set(
+            state,
+            [action.data.id, "ElapsedTime"],
+            action.data.elapsedTime
           ),
         };
       }

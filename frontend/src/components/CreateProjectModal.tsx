@@ -29,6 +29,7 @@ import classNames from "classnames";
 import { toSlug } from "../utils/slug";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
+import TimeCost from "./TimeCost";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -282,18 +283,23 @@ const CreateProjectModal: React.FC<{
             />
           </div>
 
-          <Button
-            hidden={
-              list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
-            }
-            style={{ marginBottom: 10 }}
-            danger
-            icon={<StopOutlined />}
-            type="dashed"
-            onClick={onRemove}
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
           >
-            取消
-          </Button>
+            <Button
+              hidden={
+                list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
+              }
+              style={{ marginRight: 10 }}
+              danger
+              icon={<StopOutlined />}
+              type="dashed"
+              onClick={onRemove}
+            >
+              取消
+            </Button>
+            <TimeCost seconds={list[slug]?.ElapsedTime} />
+          </div>
 
           <LogOutput slug={slug} />
         </div>
