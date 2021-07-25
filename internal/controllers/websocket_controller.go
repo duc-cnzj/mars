@@ -47,7 +47,6 @@ const (
 	WsCreateProject string = "create_project"
 	WsUpdateProject string = "update_project"
 
-	WsElapsedTime    string = "elapsed_time"
 	WsProcessPercent string = "process_percent"
 )
 
@@ -347,19 +346,6 @@ func SendProcessPercent(conn *WsConn, slug, percent string) {
 		Result: ResultSuccess,
 		End:    false,
 		Data:   percent,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
-}
-
-func SendElapsedTime(conn *WsConn, slug, elapsedTime string) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   WsElapsedTime,
-		Result: ResultSuccess,
-		End:    false,
-		Data:   elapsedTime,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -839,9 +825,6 @@ func NewMessageSender(conn *WsConn, slugName string, wsType string) *MessageSend
 
 func (ms *MessageSender) SendEndError(err error) {
 	SendEndError(ms.conn, ms.slugName, ms.wsType, err)
-}
-func (ms *MessageSender) SendElapsedTime(st time.Time) {
-	SendElapsedTime(ms.conn, ms.slugName, fmt.Sprintf("%f", time.Since(st).Seconds()))
 }
 
 func (ms *MessageSender) SendError(err error) {
