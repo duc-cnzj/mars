@@ -1,7 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
-const TimeCost: React.FC<{ seconds: string }> = ({ seconds: s }) => {
+const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
+  const [seconds, setSeconds] = useState<number>(0.0);
+  useEffect(() => {
+    if (start) {
+      setSeconds(0.0);
+      let id = setInterval(() => {
+        setSeconds((c) => (c += 0.1));
+      }, 100);
+      return () => {
+        clearInterval(id);
+        console.log("clearInterval(id)");
+      };
+    }
+  }, [start, setSeconds]);
+
   const getColor = (seconds: number): string => {
     if (seconds < 10) {
       return "#6EE7B7";
@@ -19,13 +33,11 @@ const TimeCost: React.FC<{ seconds: string }> = ({ seconds: s }) => {
     return "#DC2626";
   };
 
-  let seconds: number = Number(s ? s : "0.0");
-
   return (
     <div style={{ paddingTop: 10, paddingBottom: 10 }}>
       <FieldTimeOutlined />
       &nbsp; 耗时：
-      <span style={{ color: getColor(seconds) }}>{seconds}</span> s
+      <span style={{ color: getColor(seconds) }}>{seconds.toFixed(1)}</span> s
     </div>
   );
 };
