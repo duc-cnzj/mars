@@ -2,9 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { Controlled as CodeMirror } from "react-codemirror2";
-import {
-  configFile,
-} from "../api/gitlab";
+import { configFile } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -89,19 +87,17 @@ const CreateProjectModal: React.FC<{
     }
   }, [list, dispatch, slug]);
 
-  const onChange = (
-    {
-      projectName,
-      gitlabProjectId,
-      gitlabBranch,
-      gitlabCommit,
-    }: {
-      projectName: string;
-      gitlabProjectId: number;
-      gitlabBranch: string;
-      gitlabCommit: string;
-    }
-  ) => {
+  const onChange = ({
+    projectName,
+    gitlabProjectId,
+    gitlabBranch,
+    gitlabCommit,
+  }: {
+    projectName: string;
+    gitlabProjectId: number;
+    gitlabBranch: string;
+    gitlabCommit: string;
+  }) => {
     setData((d) => ({
       ...d,
       name: projectName,
