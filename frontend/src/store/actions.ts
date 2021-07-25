@@ -65,6 +65,14 @@ export const setElapsedTime = (id: string, elapsedTime: string) => ({
   },
 });
 
+export const resetElapsedTime = (id: string) => ({
+  type: SET_ELAPSED_TIME,
+  data: {
+    id: id,
+    elapsedTime: "0.0",
+  },
+});
+
 export const handleCreateOrUpdateProjects = (id: string, data: WsResponse) => {
   return function (dispatch: Dispatch) {
     switch (data.type) {

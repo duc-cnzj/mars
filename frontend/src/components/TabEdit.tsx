@@ -14,6 +14,7 @@ import "codemirror/theme/dracula.css";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCreateProjectLog,
+  resetElapsedTime,
   setCreateProjectLoading,
   setDeployStatus,
 } from "../store/actions";
@@ -172,6 +173,7 @@ const ModalSub: React.FC<{
       };
       let s = JSON.stringify(re);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+      dispatch(resetElapsedTime(slug));
 
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
