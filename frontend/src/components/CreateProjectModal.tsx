@@ -88,6 +88,11 @@ const CreateProjectModal: React.FC<{
       }, 500);
     }
   }, [list, dispatch, slug]);
+  useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
+  }, [list, dispatch, slug]);
 
   const onChange = ({
     projectName,
@@ -169,6 +174,7 @@ const CreateProjectModal: React.FC<{
       dispatch(resetElapsedTime(slug));
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
+      setStart(true);
       ws?.send(s);
       return;
     }
@@ -190,6 +196,8 @@ const CreateProjectModal: React.FC<{
       return;
     }
   }, [data, ws, namespaceId]);
+
+  const [start, setStart] = useState(false);
 
   return (
     <div>
@@ -300,7 +308,7 @@ const CreateProjectModal: React.FC<{
             >
               取消
             </Button>
-            <TimeCost seconds={list[slug]?.ElapsedTime} />
+            <TimeCost start={start} />
           </div>
 
           <LogOutput slug={slug} />

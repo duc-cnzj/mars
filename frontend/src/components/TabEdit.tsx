@@ -180,6 +180,13 @@ const ModalSub: React.FC<{
       ws?.send(s);
     }
   };
+  const [start, setStart] = useState(false);
+
+  useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
+  }, [list, dispatch, slug]);
 
   const onReset = () => {
     setData({
@@ -280,7 +287,9 @@ const ModalSub: React.FC<{
             status="active"
           />
         </div>
-        <div style={{display: "flex", alignItems: "center", marginBottom: 10}}>
+        <div
+          style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+        >
           <Button
             hidden={
               list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
@@ -293,7 +302,7 @@ const ModalSub: React.FC<{
           >
             取消
           </Button>
-          <TimeCost seconds={list[slug]?.ElapsedTime} />
+          <TimeCost start={start} />
         </div>
         <LogOutput slug={slug} />
       </div>

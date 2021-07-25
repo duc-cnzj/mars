@@ -254,8 +254,6 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		mlog.Warningf("done!!!!")
 	}()
 
-	pc.TimerStart()
-
 	var checkList = []func() error{
 		pc.CheckConfig,
 		pc.PrepareConfigFiles,
@@ -827,26 +825,6 @@ func (pc *ProcessControl) Wait() {
 			pc.SendEndMsg(ResultDeployed, s.Msg)
 		}
 	}
-}
-
-func (pc *ProcessControl) TimerStart() {
-	ticker := time.NewTicker(200 * time.Millisecond)
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	pc.AddAfterInstalledFunc(func() {
-		cancelFunc()
-		mlog.Warning("timer stop!!!")
-	})
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				pc.SendElapsedTime(pc.st)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 }
 
 type MessageSender struct {
