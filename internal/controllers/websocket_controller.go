@@ -276,34 +276,22 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		mlog.Warningf("done!!!!")
 	}()
 
-	if pc.NeedStop() {
-		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
-
-		return
+	var checkList = []func() error{
+		pc.CheckConfig,
+		pc.PrepareConfigFiles,
 	}
 
-	// step 2: 校验项目配置
-	if err := pc.CheckConfig(); err != nil {
-		pc.SendEndError(err)
-		return
-	}
+	for _, fn := range checkList {
+		if err := fn(); err != nil {
+			pc.SendEndError(err)
+			return
+		}
 
-	if pc.NeedStop() {
-		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+		if pc.NeedStop() {
+			pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
 
-		return
-	}
-
-	// step 3: 生成配置文件
-	if err := pc.PrepareConfig(); err != nil {
-		pc.SendEndError(err)
-		return
-	}
-
-	if pc.NeedStop() {
-		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
-
-		return
+			return
+		}
 	}
 
 	pc.SendMsg("准备部署...")
@@ -609,7 +597,7 @@ func (pc *ProcessControl) CheckConfig() error {
 	return nil
 }
 
-func (pc *ProcessControl) PrepareConfig() error {
+func (pc *ProcessControl) PrepareConfigFiles() error {
 	pc.SendMsg("生成配置文件...")
 	pc.To(40)
 	marsC := pc.marC
