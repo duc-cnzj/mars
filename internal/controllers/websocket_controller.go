@@ -781,12 +781,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 func (pc *ProcessControl) Run() {
 	pc.running = true
 	ch := pc.messageCh
-	input := pc.input
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 
 	go func() {
-		if result, err := utils.UpgradeOrInstall(input.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log); err != nil {
+		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log); err != nil {
 			mlog.Error(err)
 			ch <- MessageItem{
 				Msg:  err.Error(),
@@ -799,7 +798,7 @@ func (pc *ProcessControl) Run() {
 			pc.project.OverrideValues = bf.String()
 			pc.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
-			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, pc.project.NamespaceId).First(&p).Error == nil {
+			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == nil {
 				utils.DB().Model(&models.Project{}).
 					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues").
 					Where("`id` = ?", p.ID).
