@@ -6,7 +6,6 @@ import {
   CLEAR_CREATE_PROJECT_LOG,
   SET_NAMESPACE_RELOAD,
   SET_PROCESS_PERCENT,
-  SET_ELAPSED_TIME,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -57,30 +56,11 @@ export const setProcessPercent = (id: string, percent: number) => ({
   },
 });
 
-export const setElapsedTime = (id: string, elapsedTime: string) => ({
-  type: SET_ELAPSED_TIME,
-  data: {
-    id: id,
-    elapsedTime: elapsedTime,
-  },
-});
-
-export const resetElapsedTime = (id: string) => ({
-  type: SET_ELAPSED_TIME,
-  data: {
-    id: id,
-    elapsedTime: "0.0",
-  },
-});
-
 export const handleCreateOrUpdateProjects = (id: string, data: WsResponse) => {
   return function (dispatch: Dispatch) {
     switch (data.type) {
       case "process_percent":
         dispatch(setProcessPercent(id, Number(data.data)));
-        break;
-      case "elapsed_time":
-        dispatch(setElapsedTime(id, data.data));
         break;
       default:
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
