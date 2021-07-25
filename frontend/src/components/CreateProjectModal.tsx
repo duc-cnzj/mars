@@ -22,6 +22,7 @@ import "codemirror/theme/dracula.css";
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearCreateProjectLog,
+  resetElapsedTime,
   setCreateProjectLoading,
   setDeployStatus,
 } from "../store/actions";
@@ -165,6 +166,7 @@ const CreateProjectModal: React.FC<{
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
       let s = JSON.stringify(re);
+      dispatch(resetElapsedTime(slug));
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
       ws?.send(s);
