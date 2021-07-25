@@ -841,7 +841,6 @@ func (pc *ProcessControl) TimerStart() {
 		for {
 			select {
 			case <-ticker.C:
-				mlog.Warningf("aaaaaaaa")
 				pc.SendElapsedTime(pc.st)
 			case <-ctx.Done():
 				return
