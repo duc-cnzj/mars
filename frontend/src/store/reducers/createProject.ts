@@ -11,6 +11,7 @@ import { set, get } from "lodash";
 export enum DeployStatus {
   DeployUnknown = "unknown",
   DeployFailed = "failed",
+  DeployCanceled = "canceled",
   DeploySuccess = "success",
 
   DeployUpdateSuccess = "update_success"

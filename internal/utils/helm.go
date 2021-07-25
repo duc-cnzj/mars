@@ -158,11 +158,11 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	return client.Run(releaseName, ch, vals)
 }
 
-func UninstallRelease(releaseName, namespace string) error {
+func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
 	settings := GetSettings(namespace)
 	actionConfig := new(action.Configuration)
 
-	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "", mlog.Debugf); err != nil {
+	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "", log); err != nil {
 		return err
 	}
 
