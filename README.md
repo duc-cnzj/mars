@@ -125,3 +125,5 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 - ui 美化
 - grpc-gateway 替换 gin？
 - 使得可以使用其他仓库的配置
+- 重构 ui 创建项目部分代码
+- 重构后端部署部分代码

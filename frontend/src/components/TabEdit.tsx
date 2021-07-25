@@ -3,20 +3,15 @@ import { Controlled as CodeMirror } from "react-codemirror2";
 import PipelineInfo from "./PipelineInfo";
 
 import {
-  branches,
   commit,
-  commits,
   configFile,
-  Options,
   projects,
 } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import _ from "lodash";
-import { CascaderOptionType } from "antd/lib/cascader";
-import { Button, Cascader, Timeline, Skeleton, Progress } from "antd";
+import { Button, Skeleton, Progress } from "antd";
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/material.css";
 import "codemirror/theme/dracula.css";
@@ -35,6 +30,8 @@ import {
 } from "@ant-design/icons";
 import classNames from "classnames";
 import { ProjectDetail } from "../api/project";
+import LogOutput from "./LogOutput";
+import ProjectSelector from "./ProjectSelector";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -72,56 +69,39 @@ const ModalSub: React.FC<{
     config: detail.config,
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
-  const [options, setOptions] = useState<Options[]>([]);
-  const [value, setValue] = useState<string[]>([]);
-  const [initValue, setInitValue] = useState<string[]>([]);
+  const [initValue, setInitValue] = useState<{
+    projectName: string;
+    gitlabProjectId: number;
+    gitlabBranch: string;
+    gitlabCommit: string;
+    time?: number
+  }>();
   let slug = toSlug(namespaceId, data.name);
 
   // 初始化，设置 initvalue
   useEffect(() => {
     projects().then((res) => {
-      setOptions(() => {
-        let data = res.data.data;
-        // 如果是编辑，则需要获取对应的默认值
-        if (
-          detail &&
-          detail.gitlab_project_id &&
-          detail.gitlab_branch &&
+      if (
+        detail &&
+        detail.gitlab_project_id &&
+        detail.gitlab_branch &&
+        detail.gitlab_commit
+      ) {
+        commit(
+          Number(detail.gitlab_project_id),
+          detail.gitlab_branch,
           detail.gitlab_commit
-        ) {
-          commit(
-            Number(detail.gitlab_project_id),
-            detail.gitlab_branch,
-            detail.gitlab_commit
-          ).then((res) => {
-            let match = data.find(
-              (item) => Number(item.value) === Number(detail.gitlab_project_id)
-            );
-            if (match) {
-              setValue([
-                match.label,
-                detail.gitlab_branch,
-                res.data.data.label,
-              ]);
-              setInitValue([
-                match.label,
-                detail.gitlab_branch,
-                res.data.data.label,
-              ]);
-            }
+        ).then((res) => {
+          setInitValue({
+            projectName: detail.name,
+            gitlabProjectId: Number(detail.gitlab_project_id),
+            gitlabBranch: detail.gitlab_branch,
+            gitlabCommit: res.data.data.label,
           });
-        }
-        if (detail && Number(detail.gitlab_project_id)) {
-          let r = data.find(
-            (item) => item.projectId === Number(detail.gitlab_project_id)
-          );
-          return r ? [r] : [];
-        }
-
-        return data;
-      });
+        });
+      }
     });
-  }, [setValue, detail]);
+  }, [setInitValue, detail]);
 
   // 更新成功，触发 onSuccess
   useEffect(() => {
@@ -156,103 +136,29 @@ const ModalSub: React.FC<{
     });
   }, [data.gitlabProjectId, data.gitlabBranch]);
 
-  const loadData = (selectedOptions: CascaderOptionType[] | undefined) => {
-    if (!selectedOptions) {
-      return;
-    }
-    const targetOption = selectedOptions[selectedOptions.length - 1];
-    targetOption.loading = true;
-
-    console.log(targetOption);
-    switch (targetOption.type) {
-      case "project":
-        branches(Number(targetOption.value)).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
-        return;
-      case "branch":
-        commits(
-          Number(targetOption.projectId),
-          String(targetOption.value)
-        ).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
-        return;
-    }
-  };
-
-  const onChange = (
-    values: any[],
-    selectedOptions: CascaderOptionType[] | undefined
-  ) => {
-    let gitlabId = _.get(values, 0, 0);
-    let gbranch = _.get(values, 1, "");
-    let gcommit = _.get(values, 2, "");
+  const onChange = ({
+    projectName,
+    gitlabProjectId,
+    gitlabBranch,
+    gitlabCommit,
+  }: {
+    projectName: string;
+    gitlabProjectId: number;
+    gitlabBranch: string;
+    gitlabCommit: string;
+  }) => {
     setData((d) => ({
       ...d,
-      name: _.get(
-        options.find((item) => item.value === values[0]),
-        "label",
-        ""
-      ),
-      gitlabProjectId: gitlabId,
-      gitlabBranch: gbranch,
-      gitlabCommit: gcommit,
+      name: projectName,
+      gitlabProjectId: gitlabProjectId,
+      gitlabBranch: gitlabBranch,
+      gitlabCommit: gitlabCommit,
     }));
 
-    if (selectedOptions) {
-      const targetOption = selectedOptions[selectedOptions.length - 1];
-      if (targetOption.children) {
-        targetOption.loading = true;
-        targetOption.children = undefined;
-        switch (targetOption.type) {
-          case "project":
-            branches(Number(targetOption.value)).then((res) => {
-              targetOption.loading = false;
-              targetOption.children = res.data.data;
-              setOptions([...options]);
-            });
-            return;
-          case "branch":
-            commits(
-              Number(targetOption.projectId),
-              String(targetOption.value)
-            ).then((res) => {
-              targetOption.loading = false;
-              targetOption.children = res.data.data;
-              setOptions([...options]);
-            });
-            return;
-        }
-      }
-    }
-
-    if (gitlabId) {
-      let o = options.find((item) => item.value === values[0]);
-      setValue([o ? o.label : ""]);
-      if (gbranch) {
-        if (o && o.children) {
-          let b = o.children.find((item) => item.value === gbranch);
-          setValue([o.label, b ? b.label : ""]);
-
-          if (gcommit) {
-            if (b && b.children) {
-              let c = b.children.find((item) => item.value === gcommit);
-              setValue([o.label, b.label, c ? c.label : ""]);
-              if (data.config === "") {
-                loadConfigFile();
-              }
-            }
-          }
-        }
-      }
+    if (gitlabCommit !== "" && data.config === "") {
+      loadConfigFile();
     }
   };
-
   const updateDeploy = () => {
     if (data.gitlabCommit && data.gitlabBranch) {
       setEditVisible(false);
@@ -284,17 +190,8 @@ const ModalSub: React.FC<{
       gitlabCommit: detail.gitlab_commit,
       config: detail.config,
     });
-    setValue(initValue);
-  };
-
-  const getResultColor = (data: string) => {
-    switch (data) {
-      case "部署已取消":
-        return "#fffa65";
-      case "部署失败":
-        return "red";
-      default:
-        return "blue";
+    if (initValue) {
+      setInitValue({...initValue, time: new Date().getUTCSeconds()});
     }
   };
 
@@ -337,18 +234,8 @@ const ModalSub: React.FC<{
           ) : (
             ""
           )}
-          {value.length > 0 ? (
-            <Cascader
-              options={options}
-              style={{ width: "100%", marginBottom: "10px" }}
-              autoFocus
-              allowClear={false}
-              value={value}
-              loadData={loadData}
-              onChange={onChange}
-              changeOnSelect
-              placeholder="选择项目/分支/提交"
-            />
+          {initValue ? (
+            <ProjectSelector value={initValue} onChange={onChange} />
           ) : (
             <Skeleton.Input active style={{ width: 800 }} size="small" />
           )}
@@ -404,17 +291,7 @@ const ModalSub: React.FC<{
         >
           取消
         </Button>
-        <Timeline
-          pending={list[slug]?.isLoading ? "loading..." : false}
-          reverse={true}
-          style={{ paddingLeft: 2 }}
-        >
-          {list[slug]?.output.map((data, index) => (
-            <Timeline.Item key={index} color={getResultColor(data)}>
-              {data}
-            </Timeline.Item>
-          ))}
-        </Timeline>
+        <LogOutput slug={slug} />
       </div>
 
       <div className="edit-project__footer">

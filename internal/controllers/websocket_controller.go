@@ -139,6 +139,7 @@ func (jobs *CancelSignals) Cancel(id string) {
 			//	}
 			//}
 		}
+		pc.SendMsg("收到取消信号，开始停止部署！！！")
 		pc.Stop()
 		jobs.Remove(id)
 	}
@@ -157,7 +158,6 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		return
 	}
 	defer c.Close()
-
 	var wsconn = &WsConn{c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
 
 	c.SetReadLimit(maxMessageSize)
@@ -198,7 +198,6 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 		input.Name = slug.Make(input.Name)
 		var ns models.Namespace
 		utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
-		SendMsg(c, slugName, WsCancel, "收到取消信号！！！")
 		c.cs.Cancel(slugName)
 	case WsCreateProject:
 		var input ProjectInput
@@ -273,6 +272,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	defer func() {
 		pc.stopFunc()
 		pc.conn.cs.Remove(pc.slugName)
+		pc.CallAfterInstalledFuncs()
+		mlog.Warningf("done!!!!")
 	}()
 
 	if pc.NeedStop() {
@@ -465,6 +466,8 @@ type ProcessControl struct {
 
 	running bool
 
+	customFuncAfterInstalled []func()
+
 	stopCtx  context.Context
 	stopFunc func()
 
@@ -480,6 +483,15 @@ type ProcessControl struct {
 	valueOpts *values.Options
 	log       func(format string, v ...interface{})
 	messageCh chan MessageItem
+}
+
+func (pc *ProcessControl) CallAfterInstalledFuncs() {
+	for _, f := range pc.customFuncAfterInstalled {
+		f()
+	}
+}
+func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
+	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
 }
 
 func (pc *ProcessControl) Stop() {
@@ -572,7 +584,7 @@ func (pc *ProcessControl) CheckConfig() error {
 		files = utils.GetDirectoryFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, marsC.LocalChartPath)
 		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, files)
 	}
-	defer deleteDirFn()
+	pc.AddAfterInstalledFunc(deleteDirFn)
 	chartDir := filepath.Join(tmpChartsDir, dir)
 	chart, err := utils.PackageChart(chartDir, chartDir)
 	if err != nil {
@@ -608,7 +620,7 @@ func (pc *ProcessControl) PrepareConfig() error {
 	if err != nil {
 		return err
 	}
-	defer deleteFn()
+	pc.AddAfterInstalledFunc(deleteFn)
 
 	pc.SendMsg("解析镜像tag")
 	pc.To(45)
@@ -742,7 +754,7 @@ func (pc *ProcessControl) PrepareConfig() error {
 	}
 
 	pc.To(70)
-	defer deleteDefaultValuesFileFn()
+	pc.AddAfterInstalledFunc(deleteDefaultValuesFileFn)
 	var vf []string
 
 	if filePath != "" {
