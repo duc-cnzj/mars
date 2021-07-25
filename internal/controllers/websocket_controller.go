@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"strconv"
+
+	"github.com/duc-cnzj/mars/internal/mars"
+	"helm.sh/helm/v3/pkg/chart"
 
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -31,13 +35,15 @@ import (
 )
 
 const (
-	ResultError        string = "error"
-	ResultSuccess      string = "success"
-	ResultDeployed     string = "deployed"
-	ResultDeployFailed string = "deployed_failed"
+	ResultError          string = "error"
+	ResultSuccess        string = "success"
+	ResultDeployed       string = "deployed"
+	ResultDeployFailed   string = "deployed_failed"
+	ResultDeployCanceled string = "deployed_canceled"
 )
 
 const (
+	WsCancel        string = "cancel_project"
 	WsCreateProject string = "create_project"
 	WsUpdateProject string = "update_project"
 
@@ -85,7 +91,63 @@ const (
 
 type WsConn struct {
 	sync.Mutex
-	c *websocket.Conn
+	c  *websocket.Conn
+	cs *CancelSignals
+}
+
+type CancelSignals struct {
+	cs map[string]*ProcessControl
+	sync.Mutex
+}
+
+func (jobs *CancelSignals) Remove(id string) {
+	if _, ok := jobs.cs[id]; ok {
+		delete(jobs.cs, id)
+	}
+}
+
+func (jobs *CancelSignals) Cancel(id string) {
+	jobs.Lock()
+	defer jobs.Unlock()
+	if pc, ok := jobs.cs[id]; ok {
+		if pc.running {
+			pc.SendError(errors.New("已经开始部署了，无法停止！！！！！！！"))
+			return
+			//if !utils.HasHistoryRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {}){
+			//	if err := utils.UninstallRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {
+			//		pc.SendMsg("停止中！！！")
+			//
+			//		pc.SendMsg(fmt.Sprintf(format, v...))
+			//		mlog.Warningf(format, v...)
+			//	}); err == nil {
+			//		p := &models.Project{}
+			//		utils.DB().Where("`name`= ? and `namespace_id` = ?", pc.input.Name, pc.input.NamespaceId).First(&p)
+			//		utils.DB().Delete(&p)
+			//		pc.SendMsg("delete release!!!")
+			//
+			//	} else {
+			//		mlog.Error(err)
+			//	}
+			//} else {
+			//	if err := utils.RollbackRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {
+			//		pc.SendMsg("停止中！！！")
+			//
+			//		pc.SendMsg(fmt.Sprintf(format, v...))
+			//		mlog.Warningf(format, v...)
+			//	}); err == nil {
+			//		pc.SendMsg("release rollback!!!")
+			//	}
+			//}
+		}
+		pc.Stop()
+		jobs.Remove(id)
+	}
+}
+
+func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
+	jobs.Lock()
+	defer jobs.Unlock()
+	jobs.cs[id] = pc
 }
 
 func (*WebsocketController) Ws(ctx *gin.Context) {
@@ -96,7 +158,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 	}
 	defer c.Close()
 
-	var wsconn = &WsConn{c: c}
+	var wsconn = &WsConn{c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
 
 	c.SetReadLimit(maxMessageSize)
 	c.SetPongHandler(func(string) error { c.SetReadDeadline(time.Now().Add(pongWait)); return nil })
@@ -123,6 +185,21 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 	switch wsRequest.Type {
+	case WsCancel:
+		var input CancelInput
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+
+		// cancel
+		var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
+		input.Name = slug.Make(input.Name)
+		var ns models.Namespace
+		utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
+		SendMsg(c, slugName, WsCancel, "收到取消信号！！！")
+		c.cs.Cancel(slugName)
 	case WsCreateProject:
 		var input ProjectInput
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
@@ -175,331 +252,66 @@ type ProjectInput struct {
 	Config          string `json:"config"`
 }
 
+type CancelInput struct {
+	NamespaceId int    `uri:"namespace_id" json:"namespace_id"`
+	Name        string `json:"name"`
+}
+
 func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
-	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
-	SendMsg(conn, slugName, wsRequest.Type, "收到请求，开始创建项目")
-	var pp = NewProcessPercent(conn, slugName, 0)
-	pp.To(5)
-
-	var ns models.Namespace
-	if err := utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns).Error; err != nil {
-		mlog.Error(err)
-		SendEndError(conn, "", wsType, err)
-		return
+	// step 1: 初始化
+	pc := &ProcessControl{
+		input:     input,
+		wsType:    wsType,
+		wsRequest: wsRequest,
+		conn:      conn,
 	}
-	input.Name = slug.Make(input.Name)
-
-	SendMsg(conn, slugName, wsType, "校验传参...")
-
-	var project = models.Project{
-		Name:            input.Name,
-		GitlabProjectId: input.GitlabProjectId,
-		GitlabBranch:    input.GitlabBranch,
-		GitlabCommit:    input.GitlabCommit,
-		Config:          input.Config,
-		NamespaceId:     ns.ID,
-	}
-
-	var namespace models.Namespace
-
-	utils.DB().Where("`id` = ?", ns.ID).First(&namespace)
-
-	SendMsg(conn, slugName, wsType, "校验项目配置传参...")
-	pp.To(15)
-
-	marsC, err := GetProjectMarsConfig(input.GitlabProjectId, input.GitlabBranch)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
+	if err := pc.SetUp(); err != nil {
+		pc.SendEndError(err)
 		return
 	}
 
-	// 下载 helm charts
-	SendMsg(conn, slugName, wsType, fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
-	split := strings.Split(marsC.LocalChartPath, "|")
-	intPid := func(pid string) bool {
-		if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
-			return true
-		}
-		return false
-	}
-	var (
-		files        []string
-		tmpChartsDir string
-		deleteDirFn  func()
-		dir          string
-	)
-	// pid|branch|path
-	if len(split) == 3 && intPid(split[0]) {
-		pid := split[0]
-		branch := split[1]
-		path := split[2]
-		files = utils.GetDirectoryFiles(pid, branch, path)
-		if len(files) < 1 {
-			SendEndError(conn, slugName, wsType, errors.New("charts 文件不存在"))
-			return
-		}
-		mlog.Warning(files)
-		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
-		dir = path
-		SendMsg(conn, slugName, wsType, fmt.Sprintf("识别为远程仓库 pid %v branch %s path %s", pid, branch, path))
-	} else {
-		dir = marsC.LocalChartPath
-		files = utils.GetDirectoryFiles(input.GitlabProjectId, input.GitlabCommit, marsC.LocalChartPath)
-		tmpChartsDir, deleteDirFn = utils.DownloadFiles(input.GitlabProjectId, input.GitlabCommit, files)
-	}
-	defer deleteDirFn()
-	chartDir := filepath.Join(tmpChartsDir, dir)
-	chart, err := utils.PackageChart(chartDir, chartDir)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-	archive, err := os.Open(chart)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-	defer archive.Close()
-
-	pp.To(30)
-
-	SendMsg(conn, slugName, wsType, "加载 helm charts...")
-
-	loadArchive, err := loader.LoadArchive(archive)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-
-	SendMsg(conn, slugName, wsType, "生成配置文件...")
-	pp.To(40)
-
-	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-	defer deleteFn()
-
-	SendMsg(conn, slugName, wsType, "解析镜像tag")
-	pp.To(45)
-	t := template.New("tag_parse")
-	parse, err := t.Parse(marsC.DockerTagFormat)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-	b := &bytes.Buffer{}
-	commit, _, err := utils.GitlabClient().Commits.GetCommit(project.GitlabProjectId, project.GitlabCommit)
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-	var pipelineID int
-
-	if commit.LastPipeline != nil {
-		pipelineID = commit.LastPipeline.ID
-	}
-
-	SendMsg(conn, slugName, wsType, fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", project.GitlabBranch, project.GitlabCommit, pipelineID))
-
-	if err := parse.Execute(b, struct {
-		Branch   string
-		Commit   string
-		Pipeline int
-	}{
-		Branch:   project.GitlabBranch,
-		Commit:   project.GitlabCommit,
-		Pipeline: pipelineID,
-	}); err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-
-	pp.To(60)
-
-	var ingressConfig []string
-	if utils.Config().HasWildcardDomain() {
-		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", project.Name, namespace.Name)), fmt.Sprintf("%s-%s-tls", project.Name, namespace.Name)
-		var vars = map[string]string{}
-		for i := 1; i <= 10; i++ {
-			vars[fmt.Sprintf("Host%d", i)] = utils.Config().GetDomain(fmt.Sprintf("%s-%s-%d", project.Name, namespace.Name, i))
-			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", project.Name, namespace.Name, i)
-		}
-		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
-		// 旧版长这样
-		// ingress:
-		//  enabled: true
-		//  annotations: {}
-		//    # kubernetes.io/ingress.class: nginx
-		//    # kubernetes.io/tls-acme: "true"
-		//  hosts:
-		//    - host: chart-example.local
-		//      paths: []
-		// 新版长这样
-		// ingress:
-		// enabled: false
-		// annotations: {}
-		// 	# kubernetes.io/ingress.class: nginx
-		// 	# kubernetes.io/tls-acme: "true"
-		// hosts:
-		// 	- host: chart-example.local
-		// paths:
-		// 	- path: /
-		//    backend:
-		//      serviceName: chart-example.local
-		//      servicePort: 80
-		var isOldVersion bool
-		for _, f := range loadArchive.Templates {
-			if strings.Contains(f.Name, "ingress") {
-				if strings.Contains(string(f.Data), "path: {{ . }}") {
-					isOldVersion = true
-					break
-				}
-			}
-		}
-		ingressConfig = []string{
-			"ingress.enabled=true",
-			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
-			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
-		}
-		if len(marsC.IngressOverwriteValues) > 0 {
-			var overwrites []string
-			for _, value := range marsC.IngressOverwriteValues {
-				bb := &bytes.Buffer{}
-				ingressT := template.New("")
-				t2, _ := ingressT.Parse(value)
-				if err := t2.Execute(bb, vars); err != nil {
-					SendEndError(conn, slugName, wsType, err)
-					return
-				}
-				overwrites = append(overwrites, bb.String())
-			}
-			mlog.Warning(overwrites)
-			ingressConfig = append(ingressConfig, overwrites...)
-		} else {
-			ingressConfig = append(ingressConfig, []string{
-				"ingress.hosts[0].host=" + host,
-				"ingress.tls[0].secretName=" + secretName,
-				"ingress.tls[0].hosts[0]=" + host,
-			}...)
-
-			if isOldVersion {
-				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
-			} else {
-				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
-			}
-		}
-
-		SendMsg(conn, slugName, wsType, fmt.Sprintf("已配置域名: %s", host))
-	}
-
-	pp.To(65)
-
-	tag := b.String()
-	var commonValues = []string{
-		"image.pullPolicy=IfNotPresent",
-		"image.repository=" + marsC.DockerRepository,
-		"image.tag=" + tag,
-	}
-
-	project.DockerImage = fmt.Sprintf("%s:%s", marsC.DockerRepository, tag)
-
-	var imagePullSecrets []string
-	for k, s := range namespace.ImagePullSecretsArray() {
-		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
-	}
-
-	// default_values 也需要一个 file
-	file, deleteDefaultValuesFileFn, err := marsC.GenerateDefaultValuesYamlFile()
-	if err != nil {
-		SendEndError(conn, slugName, wsType, err)
-		return
-	}
-
-	pp.To(70)
-	defer deleteDefaultValuesFileFn()
-	var vf []string
-
-	if filePath != "" {
-		vf = append(vf, filePath)
-	}
-
-	if file != "" {
-		vf = append(vf, file)
-	}
-
-	var valueOpts = &values.Options{
-		ValueFiles: vf,
-		Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
-	}
-
-	indent, _ := json.MarshalIndent(append(append(commonValues, ingressConfig...), imagePullSecrets...), "", "\t")
-	mlog.Debugf("values: %s", string(indent))
-
-	SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
-
-	for key, secret := range namespace.ImagePullSecretsArray() {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
-		SendMsg(conn, slugName, wsType, fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
-	}
-
-	ch := make(chan MessageItem)
-	fn := func(format string, v ...interface{}) {
-		if pp.Current() < 99 {
-			pp.Add()
-		}
-		msg := fmt.Sprintf(format, v...)
-		mlog.Debug(msg)
-		ch <- MessageItem{
-			Msg:  msg,
-			Type: "text",
-		}
-	}
-
-	SendMsg(conn, slugName, wsType, "准备部署...")
-
-	go func() {
-		if result, err := utils.UpgradeOrInstall(input.Name, ns.Name, loadArchive, valueOpts, fn); err != nil {
-			mlog.Error(err)
-			ch <- MessageItem{
-				Msg:  err.Error(),
-				Type: "error",
-			}
-			close(ch)
-		} else {
-			bf := &bytes.Buffer{}
-			yaml.NewEncoder(bf).Encode(&result.Config)
-			project.OverrideValues = bf.String()
-			project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
-			var p models.Project
-			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, ns.ID).First(&p).Error == nil {
-				utils.DB().Model(&models.Project{}).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues").
-					Where("`id` = ?", p.ID).
-					Updates(&project)
-			} else {
-				utils.DB().Create(&project)
-			}
-			pp.To(100)
-			ch <- MessageItem{
-				Msg:  "部署成功",
-				Type: "success",
-			}
-			close(ch)
-		}
+	defer func() {
+		pc.stopFunc()
+		pc.conn.cs.Remove(pc.slugName)
 	}()
 
-	for s := range ch {
-		switch s.Type {
-		case "text":
-			SendMsg(conn, slugName, wsType, s.Msg)
-		case "error":
-			SendEndMsg(conn, ResultDeployFailed, slugName, wsType, s.Msg)
-		case "success":
-			SendEndMsg(conn, ResultDeployed, slugName, wsType, s.Msg)
-		}
+	if pc.NeedStop() {
+		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+
+		return
 	}
+
+	// step 2: 校验项目配置
+	if err := pc.CheckConfig(); err != nil {
+		pc.SendEndError(err)
+		return
+	}
+
+	if pc.NeedStop() {
+		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+
+		return
+	}
+
+	// step 3: 生成配置文件
+	if err := pc.PrepareConfig(); err != nil {
+		pc.SendEndError(err)
+		return
+	}
+
+	if pc.NeedStop() {
+		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+
+		return
+	}
+
+	pc.SendMsg("准备部署...")
+
+	// step 4: 开始部署
+	pc.Run()
+
+	// 返回结果
+	pc.Wait()
 }
 
 // getPodSelectorsInDeploymentAndStatefulSetByManifest FIXME: 比较 hack
@@ -602,16 +414,16 @@ func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
 
 type ProcessPercent struct {
 	sync.RWMutex
-	percent int64
-	slug    string
-	conn    *WsConn
+	percent  int64
+	slugName string
+	conn     *WsConn
 }
 
 func NewProcessPercent(conn *WsConn, slug string, percent int64) *ProcessPercent {
 	return &ProcessPercent{
-		percent: percent,
-		slug:    slug,
-		conn:    conn,
+		percent:  percent,
+		slugName: slug,
+		conn:     conn,
 	}
 }
 
@@ -628,7 +440,7 @@ func (pp *ProcessPercent) Add() {
 
 	if pp.percent < 100 {
 		pp.percent++
-		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
+		SendProcessPercent(pp.conn, pp.slugName, fmt.Sprintf("%d", pp.percent))
 	}
 }
 
@@ -643,6 +455,458 @@ func (pp *ProcessPercent) To(percent int64) {
 		if sleepTime > 50*time.Millisecond {
 			sleepTime = sleepTime / 2
 		}
-		SendProcessPercent(pp.conn, pp.slug, fmt.Sprintf("%d", pp.percent))
+		SendProcessPercent(pp.conn, pp.slugName, fmt.Sprintf("%d", pp.percent))
 	}
+}
+
+type ProcessControl struct {
+	*ProcessPercent
+	*MessageSender
+
+	running bool
+
+	stopCtx  context.Context
+	stopFunc func()
+
+	input     ProjectInput
+	wsType    string
+	wsRequest WsRequest
+
+	marC      *mars.Config
+	project   models.Project
+	conn      *WsConn
+	slugName  string
+	chart     *chart.Chart
+	valueOpts *values.Options
+	log       func(format string, v ...interface{})
+	messageCh chan MessageItem
+}
+
+func (pc *ProcessControl) Stop() {
+	if pc.stopFunc != nil {
+		pc.stopFunc()
+	}
+}
+
+func (pc *ProcessControl) NeedStop() bool {
+	if pc.stopCtx == nil {
+		return false
+	}
+	select {
+	case <-pc.stopCtx.Done():
+		return true
+	default:
+		return false
+	}
+}
+
+func (pc *ProcessControl) SetUp() error {
+	pc.slugName = utils.Md5(fmt.Sprintf("%d-%s", pc.input.NamespaceId, pc.input.Name))
+	pc.stopCtx, pc.stopFunc = context.WithCancel(context.Background())
+	pc.conn.cs.Add(pc.slugName, pc)
+	pc.messageCh = make(chan MessageItem)
+	pc.ProcessPercent = NewProcessPercent(pc.conn, pc.slugName, 0)
+	pc.MessageSender = NewMessageSender(pc.conn, pc.slugName, pc.wsType)
+
+	pc.SendMsg("收到请求，开始创建项目")
+	pc.To(5)
+	pc.SendMsg("校验传参...")
+
+	var ns models.Namespace
+	if err := utils.DB().Where("`id` = ?", pc.input.NamespaceId).First(&ns).Error; err != nil {
+		return err
+	}
+
+	pc.project = models.Project{
+		Name:            slug.Make(pc.input.Name),
+		GitlabProjectId: pc.input.GitlabProjectId,
+		GitlabBranch:    pc.input.GitlabBranch,
+		GitlabCommit:    pc.input.GitlabCommit,
+		Config:          pc.input.Config,
+		NamespaceId:     ns.ID,
+		Namespace:       ns,
+	}
+
+	return nil
+}
+
+func (pc *ProcessControl) CheckConfig() error {
+	pc.SendMsg("校验项目配置传参...")
+	pc.To(15)
+	marsC, err := GetProjectMarsConfig(pc.input.GitlabProjectId, pc.input.GitlabBranch)
+	if err != nil {
+		return err
+	}
+	pc.marC = marsC
+
+	// 下载 helm charts
+	pc.SendMsg(fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
+	split := strings.Split(marsC.LocalChartPath, "|")
+	intPid := func(pid string) bool {
+		if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+			return true
+		}
+		return false
+	}
+	var (
+		files        []string
+		tmpChartsDir string
+		deleteDirFn  func()
+		dir          string
+	)
+	// pid|branch|path
+	if len(split) == 3 && intPid(split[0]) {
+		pid := split[0]
+		branch := split[1]
+		path := split[2]
+		files = utils.GetDirectoryFiles(pid, branch, path)
+		if len(files) < 1 {
+			return errors.New("charts 文件不存在")
+		}
+		mlog.Warning(files)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
+		dir = path
+		pc.SendMsg(fmt.Sprintf("识别为远程仓库 pid %v branch %s path %s", pid, branch, path))
+	} else {
+		dir = marsC.LocalChartPath
+		files = utils.GetDirectoryFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, marsC.LocalChartPath)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, files)
+	}
+	defer deleteDirFn()
+	chartDir := filepath.Join(tmpChartsDir, dir)
+	chart, err := utils.PackageChart(chartDir, chartDir)
+	if err != nil {
+		return err
+	}
+	archive, err := os.Open(chart)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	pc.To(30)
+
+	pc.SendMsg("加载 helm charts...")
+
+	loadArchive, err := loader.LoadArchive(archive)
+	if err != nil {
+		return err
+	}
+	pc.chart = loadArchive
+
+	return nil
+}
+
+func (pc *ProcessControl) PrepareConfig() error {
+	pc.SendMsg("生成配置文件...")
+	pc.To(40)
+	marsC := pc.marC
+	loadArchive := pc.chart
+	input := pc.input
+
+	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
+	if err != nil {
+		return err
+	}
+	defer deleteFn()
+
+	pc.SendMsg("解析镜像tag")
+	pc.To(45)
+	t := template.New("tag_parse")
+	parse, err := t.Parse(marsC.DockerTagFormat)
+	if err != nil {
+		return err
+	}
+	b := &bytes.Buffer{}
+	commit, _, err := utils.GitlabClient().Commits.GetCommit(pc.project.GitlabProjectId, pc.project.GitlabCommit)
+	if err != nil {
+		return err
+	}
+	var pipelineID int
+
+	if commit.LastPipeline != nil {
+		pipelineID = commit.LastPipeline.ID
+	}
+
+	pc.SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pc.project.GitlabBranch, pc.project.GitlabCommit, pipelineID))
+
+	if err := parse.Execute(b, struct {
+		Branch   string
+		Commit   string
+		Pipeline int
+	}{
+		Branch:   pc.project.GitlabBranch,
+		Commit:   pc.project.GitlabCommit,
+		Pipeline: pipelineID,
+	}); err != nil {
+		return err
+	}
+
+	pc.To(60)
+
+	var ingressConfig []string
+	if utils.Config().HasWildcardDomain() {
+		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", pc.project.Name, pc.project.Namespace.Name)), fmt.Sprintf("%s-%s-tls", pc.project.Name, pc.project.Namespace.Name)
+		var vars = map[string]string{}
+		for i := 1; i <= 10; i++ {
+			vars[fmt.Sprintf("Host%d", i)] = utils.Config().GetDomain(fmt.Sprintf("%s-%s-%d", pc.project.Name, pc.project.Namespace.Name, i))
+			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", pc.project.Name, pc.project.Namespace.Name, i)
+		}
+		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
+		// 旧版长这样
+		// ingress:
+		//  enabled: true
+		//  annotations: {}
+		//    # kubernetes.io/ingress.class: nginx
+		//    # kubernetes.io/tls-acme: "true"
+		//  hosts:
+		//    - host: chart-example.local
+		//      paths: []
+		// 新版长这样
+		// ingress:
+		// enabled: false
+		// annotations: {}
+		// 	# kubernetes.io/ingress.class: nginx
+		// 	# kubernetes.io/tls-acme: "true"
+		// hosts:
+		// 	- host: chart-example.local
+		// paths:
+		// 	- path: /
+		//    backend:
+		//      serviceName: chart-example.local
+		//      servicePort: 80
+		var isOldVersion bool
+		for _, f := range loadArchive.Templates {
+			if strings.Contains(f.Name, "ingress") {
+				if strings.Contains(string(f.Data), "path: {{ . }}") {
+					isOldVersion = true
+					break
+				}
+			}
+		}
+		ingressConfig = []string{
+			"ingress.enabled=true",
+			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
+			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
+		}
+		if len(marsC.IngressOverwriteValues) > 0 {
+			var overwrites []string
+			for _, value := range marsC.IngressOverwriteValues {
+				bb := &bytes.Buffer{}
+				ingressT := template.New("")
+				t2, _ := ingressT.Parse(value)
+				if err := t2.Execute(bb, vars); err != nil {
+					return err
+				}
+				overwrites = append(overwrites, bb.String())
+			}
+			mlog.Warning(overwrites)
+			ingressConfig = append(ingressConfig, overwrites...)
+		} else {
+			ingressConfig = append(ingressConfig, []string{
+				"ingress.hosts[0].host=" + host,
+				"ingress.tls[0].secretName=" + secretName,
+				"ingress.tls[0].hosts[0]=" + host,
+			}...)
+
+			if isOldVersion {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+			} else {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
+			}
+		}
+
+		pc.SendMsg(fmt.Sprintf("已配置域名: %s", host))
+	}
+
+	pc.To(65)
+
+	tag := b.String()
+	var commonValues = []string{
+		"image.pullPolicy=IfNotPresent",
+		"image.repository=" + marsC.DockerRepository,
+		"image.tag=" + tag,
+	}
+
+	pc.project.DockerImage = fmt.Sprintf("%s:%s", marsC.DockerRepository, tag)
+
+	var imagePullSecrets []string
+	for k, s := range pc.project.Namespace.ImagePullSecretsArray() {
+		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
+	}
+
+	// default_values 也需要一个 file
+	file, deleteDefaultValuesFileFn, err := marsC.GenerateDefaultValuesYamlFile()
+	if err != nil {
+		return err
+	}
+
+	pc.To(70)
+	defer deleteDefaultValuesFileFn()
+	var vf []string
+
+	if filePath != "" {
+		vf = append(vf, filePath)
+	}
+
+	if file != "" {
+		vf = append(vf, file)
+	}
+
+	var valueOpts = &values.Options{
+		ValueFiles: vf,
+		Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
+	}
+
+	indent, _ := json.MarshalIndent(append(append(commonValues, ingressConfig...), imagePullSecrets...), "", "\t")
+	mlog.Debugf("values: %s", string(indent))
+
+	pc.SendMsg(fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
+
+	for key, secret := range pc.project.Namespace.ImagePullSecretsArray() {
+		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
+		pc.SendMsg(fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
+	}
+	pc.valueOpts = valueOpts
+
+	pc.log = func(format string, v ...interface{}) {
+		if pc.Current() < 99 {
+			pc.Add()
+		}
+		msg := fmt.Sprintf(format, v...)
+		mlog.Debug(msg)
+		pc.messageCh <- MessageItem{
+			Msg:  msg,
+			Type: "text",
+		}
+	}
+
+	return nil
+}
+
+func (pc *ProcessControl) Run() {
+	pc.running = true
+	ch := pc.messageCh
+	input := pc.input
+	loadArchive := pc.chart
+	valueOpts := pc.valueOpts
+
+	go func() {
+		if result, err := utils.UpgradeOrInstall(input.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log); err != nil {
+			mlog.Error(err)
+			ch <- MessageItem{
+				Msg:  err.Error(),
+				Type: "error",
+			}
+			close(ch)
+		} else {
+			bf := &bytes.Buffer{}
+			yaml.NewEncoder(bf).Encode(&result.Config)
+			pc.project.OverrideValues = bf.String()
+			pc.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
+			var p models.Project
+			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", input.Name, pc.project.NamespaceId).First(&p).Error == nil {
+				utils.DB().Model(&models.Project{}).
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues").
+					Where("`id` = ?", p.ID).
+					Updates(&pc.project)
+			} else {
+				utils.DB().Create(&pc.project)
+			}
+			pc.To(100)
+			ch <- MessageItem{
+				Msg:  "部署成功",
+				Type: "success",
+			}
+			close(ch)
+		}
+	}()
+}
+
+func (pc *ProcessControl) Wait() {
+	for s := range pc.messageCh {
+		switch s.Type {
+		case "text":
+			pc.SendMsg(s.Msg)
+		case "error":
+			pc.SendEndMsg(ResultDeployFailed, s.Msg)
+		case "success":
+			pc.SendEndMsg(ResultDeployed, s.Msg)
+		}
+	}
+}
+
+type MessageSender struct {
+	conn     *WsConn
+	slugName string
+	wsType   string
+}
+
+func NewMessageSender(conn *WsConn, slugName string, wsType string) *MessageSender {
+	return &MessageSender{conn: conn, slugName: slugName, wsType: wsType}
+}
+
+func (ms *MessageSender) SendEndError(err error) {
+	res := &WsResponse{
+		Slug:   ms.slugName,
+		Type:   ms.wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    true,
+	}
+	ms.conn.Lock()
+	defer ms.conn.Unlock()
+	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func (ms *MessageSender) SendError(err error) {
+	res := &WsResponse{
+		Slug:   ms.slugName,
+		Type:   ms.wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    false,
+	}
+	ms.conn.Lock()
+	defer ms.conn.Unlock()
+	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func (ms *MessageSender) SendProcessPercent(percent string) {
+	res := &WsResponse{
+		Slug:   ms.slugName,
+		Type:   WsProcessPercent,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   percent,
+	}
+	ms.conn.Lock()
+	defer ms.conn.Unlock()
+	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func (ms *MessageSender) SendMsg(msg string) {
+	res := &WsResponse{
+		Slug:   ms.slugName,
+		Type:   ms.wsType,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   msg,
+	}
+	ms.conn.Lock()
+	defer ms.conn.Unlock()
+	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
+func (ms *MessageSender) SendEndMsg(result, msg string) {
+	res := &WsResponse{
+		Slug:   ms.slugName,
+		Type:   ms.wsType,
+		Result: result,
+		End:    true,
+		Data:   msg,
+	}
+	ms.conn.Lock()
+	defer ms.conn.Unlock()
+	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }

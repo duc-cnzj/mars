@@ -20,6 +20,7 @@ import { message, Progress } from "antd";
 import { Button, Cascader, Timeline } from "antd";
 import {
   PlusOutlined,
+  StopOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
 } from "@ant-design/icons";
@@ -246,6 +247,8 @@ const CreateProjectModal: React.FC<{
         }),
       };
 
+      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+
       let s = JSON.stringify(re);
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
@@ -255,6 +258,32 @@ const CreateProjectModal: React.FC<{
 
     message.error("项目id, 分支，提交必填");
   }, [data, dispatch, slug, ws, namespaceId]);
+  const onRemove = useCallback(() => {
+    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
+      let re = {
+        type: "cancel_project",
+        data: JSON.stringify({
+          namespace_id: Number(namespaceId),
+          name: data.name,
+        }),
+      };
+
+      let s = JSON.stringify(re);
+      ws?.send(s);
+      return;
+    }
+  }, [data, ws, namespaceId]);
+
+  const getResultColor = (data: string) => {
+    switch (data) {
+      case "部署已取消":
+        return "#fffa65";
+      case "部署失败":
+        return "red";
+      default:
+        return "blue";
+    }
+  };
 
   return (
     <div>
@@ -360,16 +389,26 @@ const CreateProjectModal: React.FC<{
             />
           </div>
 
+          <Button
+            hidden={
+              list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
+            }
+            style={{ marginBottom: 10 }}
+            danger
+            icon={<StopOutlined />}
+            type="dashed"
+            onClick={onRemove}
+          >
+            取消
+          </Button>
+
           <Timeline
             pending={list[slug]?.isLoading ? "loading..." : false}
             reverse={true}
             style={{ paddingLeft: 2 }}
           >
             {list[slug]?.output.map((data, index) => (
-              <Timeline.Item
-                key={index}
-                color={data === "部署失败" ? "red" : "blue"}
-              >
+              <Timeline.Item key={index} color={getResultColor(data)}>
                 {data}
               </Timeline.Item>
             ))}

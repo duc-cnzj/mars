@@ -65,14 +65,23 @@ export const handleCreateOrUpdateProjects = (id: string, data: WsResponse) => {
     }
 
     if (data.type === "create_project" && data.end) {
-      if (data.result === "deployed") {
-        dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
-        message.success("部署成功");
-        dispatch(clearCreateProjectLog(id));
-      } else {
-        dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
-        dispatch(appendCreateProjectLog(id, "部署失败"));
-        message.error("部署失败");
+      switch (data.result) {
+        case "deployed":
+          dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
+          message.success("部署成功");
+          dispatch(clearCreateProjectLog(id));
+          break;
+        case "deployed_canceled":
+          dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
+          dispatch(appendCreateProjectLog(id, "部署已取消"));
+          message.error("部署已取消");
+          break;
+        case "deployed_failed":
+        default:
+          dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
+          dispatch(appendCreateProjectLog(id, "部署失败"));
+          message.error("部署失败");
+          break;
       }
       dispatch(setCreateProjectLoading(id, false));
       setTimeout(() => {
@@ -80,14 +89,23 @@ export const handleCreateOrUpdateProjects = (id: string, data: WsResponse) => {
       }, 1000);
     }
     if (data.type === "update_project" && data.end) {
-      if (data.result === "deployed") {
-        dispatch(setDeployStatus(id, DeployStatus.DeployUpdateSuccess));
-        message.success("部署成功");
-        dispatch(clearCreateProjectLog(id));
-      } else {
-        dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
-        dispatch(appendCreateProjectLog(id, "部署失败"));
-        message.error("部署失败");
+      switch (data.result) {
+        case "deployed":
+          dispatch(setDeployStatus(id, DeployStatus.DeployUpdateSuccess));
+          message.success("部署成功");
+          dispatch(clearCreateProjectLog(id));
+          break;
+        case "deployed_canceled":
+          dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
+          dispatch(appendCreateProjectLog(id, "部署已取消"));
+          message.error("部署已取消");
+          break;
+        case "deployed_failed":
+        default:
+          dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
+          dispatch(appendCreateProjectLog(id, "部署失败"));
+          message.error("部署失败");
+          break;
       }
       dispatch(setCreateProjectLoading(id, false));
     }

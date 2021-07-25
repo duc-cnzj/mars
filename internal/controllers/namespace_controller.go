@@ -142,7 +142,7 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 			go func(releaseName, namespace string) {
 				defer wg.Done()
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
-				if err := utils.UninstallRelease(releaseName, namespace); err != nil {
+				if err := utils.UninstallRelease(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)
 					return
 				}

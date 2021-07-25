@@ -230,7 +230,7 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
-	if err := utils.UninstallRelease(project.Name, project.Namespace.Name); err != nil {
+	if err := utils.UninstallRelease(project.Name, project.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
 	utils.DB().Delete(&project)

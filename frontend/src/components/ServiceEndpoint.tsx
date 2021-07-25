@@ -14,7 +14,7 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
       <Popover
         placement="right"
         title={"链接"}
-        content={Object.entries(endpoints).map(([k, v]) =>
+        content={Object.entries(endpoints)?.map(([k, v]) =>
           v.map((link) => (
             <div key={link} onClick={(e) => e.stopPropagation()}>
               <span style={{ marginRight: 5 }}>{k}:</span>

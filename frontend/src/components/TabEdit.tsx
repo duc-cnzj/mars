@@ -28,7 +28,11 @@ import {
 } from "../store/actions";
 import { toSlug } from "../utils/slug";
 import { useWs } from "../contexts/useWebsocket";
-import { ArrowLeftOutlined, ArrowRightOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  StopOutlined,
+  ArrowRightOutlined,
+} from "@ant-design/icons";
 import classNames from "classnames";
 import { ProjectDetail } from "../api/project";
 
@@ -264,6 +268,8 @@ const ModalSub: React.FC<{
         }),
       };
       let s = JSON.stringify(re);
+      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
       ws?.send(s);
@@ -280,6 +286,33 @@ const ModalSub: React.FC<{
     });
     setValue(initValue);
   };
+
+  const getResultColor = (data: string) => {
+    switch (data) {
+      case "部署已取消":
+        return "#fffa65";
+      case "部署失败":
+        return "red";
+      default:
+        return "blue";
+    }
+  };
+
+  const onRemove = useCallback(() => {
+    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
+      let re = {
+        type: "cancel_project",
+        data: JSON.stringify({
+          namespace_id: Number(namespaceId),
+          name: data.name,
+        }),
+      };
+
+      let s = JSON.stringify(re);
+      ws?.send(s);
+      return;
+    }
+  }, [data, ws, namespaceId]);
 
   return (
     <div className="edit-project">
@@ -361,16 +394,23 @@ const ModalSub: React.FC<{
             status="active"
           />
         </div>
+        <Button
+          hidden={list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled}
+          style={{ marginBottom: 10 }}
+          danger
+          icon={<StopOutlined />}
+          type="dashed"
+          onClick={onRemove}
+        >
+          取消
+        </Button>
         <Timeline
           pending={list[slug]?.isLoading ? "loading..." : false}
           reverse={true}
           style={{ paddingLeft: 2 }}
         >
           {list[slug]?.output.map((data, index) => (
-            <Timeline.Item
-              key={index}
-              color={data === "部署失败" ? "red" : "blue"}
-            >
+            <Timeline.Item key={index} color={getResultColor(data)}>
               {data}
             </Timeline.Item>
           ))}
