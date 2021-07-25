@@ -75,7 +75,7 @@ const GitlabProjectManager: React.FC = () => {
             showSearch
             allowClear
             style={{ width: 500, marginBottom: 10 }}
-            placeholder="Select a person"
+            placeholder="搜索项目"
             optionFilterProp="children"
             onChange={onChange}
             filterOption={(input, option: any) =>

@@ -3,21 +3,15 @@ import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import {
-  branches,
-  commits,
   configFile,
-  Options,
-  projects,
 } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import _ from "lodash";
-import { CascaderOptionType } from "antd/lib/cascader";
 import { useWs } from "../contexts/useWebsocket";
 import { message, Progress } from "antd";
-import { Button, Cascader, Timeline } from "antd";
+import { Button } from "antd";
 import {
   PlusOutlined,
   StopOutlined,
@@ -35,6 +29,8 @@ import {
 } from "../store/actions";
 import classNames from "classnames";
 import { toSlug } from "../utils/slug";
+import LogOutput from "./LogOutput";
+import ProjectSelector from "./ProjectSelector";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -67,16 +63,13 @@ const CreateProjectModal: React.FC<{
   const dispatch = useDispatch();
   const [data, setData] = useState<CreateItemInterface>(initItemData);
   const [mode, setMode] = useState<string>("text/x-yaml");
-  const [options, setOptions] = useState<Options[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
-  const [value, setValue] = useState<string[]>([]);
 
   let slug = toSlug(namespaceId, data.name);
 
   const onCancel = useCallback(() => {
-    setValue([]);
     setVisible(false);
     setEditVisible(true);
     setTimelineVisible(false);
@@ -85,86 +78,40 @@ const CreateProjectModal: React.FC<{
   }, [dispatch, slug]);
 
   useEffect(() => {
-    projects().then((res) => setOptions(res.data.data));
-  }, []);
-
-  useEffect(() => {
     if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
       setTimelineVisible(false);
       setEditVisible(true);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
-        setValue([]);
         setData(initItemData);
       }, 500);
     }
   }, [list, dispatch, slug]);
 
   const onChange = (
-    values: any[],
-    selectedOptions: CascaderOptionType[] | undefined
+    {
+      projectName,
+      gitlabProjectId,
+      gitlabBranch,
+      gitlabCommit,
+    }: {
+      projectName: string;
+      gitlabProjectId: number;
+      gitlabBranch: string;
+      gitlabCommit: string;
+    }
   ) => {
-    let gitlabId = _.get(values, 0, 0);
-    let gbranch = _.get(values, 1, "");
-    let gcommit = _.get(values, 2, "");
     setData((d) => ({
       ...d,
-      name: _.get(
-        options.find((item) => item.value === values[0]),
-        "label",
-        ""
-      ),
-      gitlabProjectId: gitlabId,
-      gitlabBranch: gbranch,
-      gitlabCommit: gcommit,
+      name: projectName,
+      gitlabProjectId: gitlabProjectId,
+      gitlabBranch: gitlabBranch,
+      gitlabCommit: gitlabCommit,
     }));
 
-    if (selectedOptions) {
-      const targetOption = selectedOptions[selectedOptions.length - 1];
-      if (targetOption.children) {
-        targetOption.loading = true;
-        targetOption.children = undefined;
-        switch (targetOption.type) {
-          case "project":
-            branches(Number(targetOption.value)).then((res) => {
-              targetOption.loading = false;
-              targetOption.children = res.data.data;
-              setOptions([...options]);
-            });
-            return;
-          case "branch":
-            commits(
-              Number(targetOption.projectId),
-              String(targetOption.value)
-            ).then((res) => {
-              targetOption.loading = false;
-              targetOption.children = res.data.data;
-              setOptions([...options]);
-            });
-            return;
-        }
-      }
-    }
-
-    if (gitlabId) {
-      let o = options.find((item) => item.value === values[0]);
-      setValue([o ? o.label : ""]);
-      if (gbranch) {
-        if (o && o.children) {
-          let b = o.children.find((item) => item.value === gbranch);
-          setValue([o.label, b ? b.label : ""]);
-          if (gcommit) {
-            if (b && b.children) {
-              let c = b.children.find((item) => item.value === gcommit);
-              setValue([o.label, b.label, c ? c.label : ""]);
-              if (data.config === "") {
-                loadConfigFile();
-              }
-            }
-          }
-        }
-      }
+    if (gitlabCommit !== "" && data.config === "") {
+      loadConfigFile();
     }
   };
   const cmref = useRef<any>();
@@ -197,35 +144,6 @@ const CreateProjectModal: React.FC<{
     }
   }, [data.config]);
 
-  const loadData = (selectedOptions: CascaderOptionType[] | undefined) => {
-    if (!selectedOptions) {
-      return;
-    }
-    const targetOption = selectedOptions[selectedOptions.length - 1];
-    targetOption.loading = true;
-
-    console.log(targetOption);
-
-    switch (targetOption.type) {
-      case "project":
-        branches(Number(targetOption.value)).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
-        return;
-      case "branch":
-        commits(
-          Number(targetOption.projectId),
-          String(targetOption.value)
-        ).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
-        return;
-    }
-  };
   const ws = useWs();
 
   const onOk = useCallback(() => {
@@ -274,17 +192,6 @@ const CreateProjectModal: React.FC<{
     }
   }, [data, ws, namespaceId]);
 
-  const getResultColor = (data: string) => {
-    switch (data) {
-      case "部署已取消":
-        return "#fffa65";
-      case "部署失败":
-        return "red";
-      default:
-        return "blue";
-    }
-  };
-
   return (
     <div>
       <Button
@@ -327,17 +234,7 @@ const CreateProjectModal: React.FC<{
           ) : (
             ""
           )}
-          <Cascader
-            options={options}
-            style={{ width: "100%", marginBottom: "10px" }}
-            autoFocus
-            value={value}
-            allowClear={false}
-            loadData={loadData}
-            onChange={onChange}
-            changeOnSelect
-            placeholder="选择项目/分支/提交"
-          />
+          <ProjectSelector onChange={onChange} />
           配置文件:
           <div
             style={{
@@ -402,17 +299,7 @@ const CreateProjectModal: React.FC<{
             取消
           </Button>
 
-          <Timeline
-            pending={list[slug]?.isLoading ? "loading..." : false}
-            reverse={true}
-            style={{ paddingLeft: 2 }}
-          >
-            {list[slug]?.output.map((data, index) => (
-              <Timeline.Item key={index} color={getResultColor(data)}>
-                {data}
-              </Timeline.Item>
-            ))}
-          </Timeline>
+          <LogOutput slug={slug} />
         </div>
       </DraggableModal>
     </div>
