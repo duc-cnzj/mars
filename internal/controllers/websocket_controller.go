@@ -47,6 +47,7 @@ const (
 	WsCreateProject string = "create_project"
 	WsUpdateProject string = "update_project"
 
+	WsElapsedTime    string = "elapsed_time"
 	WsProcessPercent string = "process_percent"
 )
 
@@ -91,6 +92,7 @@ const (
 
 type WsConn struct {
 	sync.Mutex
+
 	c  *websocket.Conn
 	cs *CancelSignals
 }
@@ -113,31 +115,6 @@ func (jobs *CancelSignals) Cancel(id string) {
 		if pc.running {
 			pc.SendError(errors.New("已经开始部署了，无法停止！！！！！！！"))
 			return
-			//if !utils.HasHistoryRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {}){
-			//	if err := utils.UninstallRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {
-			//		pc.SendMsg("停止中！！！")
-			//
-			//		pc.SendMsg(fmt.Sprintf(format, v...))
-			//		mlog.Warningf(format, v...)
-			//	}); err == nil {
-			//		p := &models.Project{}
-			//		utils.DB().Where("`name`= ? and `namespace_id` = ?", pc.input.Name, pc.input.NamespaceId).First(&p)
-			//		utils.DB().Delete(&p)
-			//		pc.SendMsg("delete release!!!")
-			//
-			//	} else {
-			//		mlog.Error(err)
-			//	}
-			//} else {
-			//	if err := utils.RollbackRelease(pc.project.Name, pc.project.Namespace.Name, func(format string, v ...interface{}) {
-			//		pc.SendMsg("停止中！！！")
-			//
-			//		pc.SendMsg(fmt.Sprintf(format, v...))
-			//		mlog.Warningf(format, v...)
-			//	}); err == nil {
-			//		pc.SendMsg("release rollback!!!")
-			//	}
-			//}
 		}
 		pc.SendMsg("收到取消信号，开始停止部署！！！")
 		pc.Stop()
@@ -263,6 +240,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		wsType:    wsType,
 		wsRequest: wsRequest,
 		conn:      conn,
+		st:        time.Now(),
 	}
 	if err := pc.SetUp(); err != nil {
 		pc.SendEndError(err)
@@ -275,6 +253,8 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		pc.CallAfterInstalledFuncs()
 		mlog.Warningf("done!!!!")
 	}()
+
+	pc.TimerStart()
 
 	var checkList = []func() error{
 		pc.CheckConfig,
@@ -375,6 +355,19 @@ func SendProcessPercent(conn *WsConn, slug, percent string) {
 	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }
 
+func SendElapsedTime(conn *WsConn, slug, elapsedTime string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   WsElapsedTime,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   elapsedTime,
+	}
+	conn.Lock()
+	defer conn.Unlock()
+	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+}
+
 func SendMsg(conn *WsConn, slug, wsType string, msg string) {
 	res := &WsResponse{
 		Slug:   slug,
@@ -453,6 +446,7 @@ type ProcessControl struct {
 	*MessageSender
 
 	running bool
+	st      time.Time
 
 	customFuncAfterInstalled []func()
 
@@ -836,6 +830,26 @@ func (pc *ProcessControl) Wait() {
 	}
 }
 
+func (pc *ProcessControl) TimerStart() {
+	ticker := time.NewTicker(200 * time.Millisecond)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	pc.AddAfterInstalledFunc(func() {
+		cancelFunc()
+		mlog.Warning("timer stop!!!")
+	})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				mlog.Warningf("aaaaaaaa")
+				pc.SendElapsedTime(pc.st)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
 type MessageSender struct {
 	conn     *WsConn
 	slugName string
@@ -847,66 +861,24 @@ func NewMessageSender(conn *WsConn, slugName string, wsType string) *MessageSend
 }
 
 func (ms *MessageSender) SendEndError(err error) {
-	res := &WsResponse{
-		Slug:   ms.slugName,
-		Type:   ms.wsType,
-		Result: ResultError,
-		Data:   err.Error(),
-		End:    true,
-	}
-	ms.conn.Lock()
-	defer ms.conn.Unlock()
-	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	SendEndError(ms.conn, ms.slugName, ms.wsType, err)
+}
+func (ms *MessageSender) SendElapsedTime(st time.Time) {
+	SendElapsedTime(ms.conn, ms.slugName, fmt.Sprintf("%f", time.Since(st).Seconds()))
 }
 
 func (ms *MessageSender) SendError(err error) {
-	res := &WsResponse{
-		Slug:   ms.slugName,
-		Type:   ms.wsType,
-		Result: ResultError,
-		Data:   err.Error(),
-		End:    false,
-	}
-	ms.conn.Lock()
-	defer ms.conn.Unlock()
-	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	SendError(ms.conn, ms.slugName, ms.wsType, err)
 }
 
 func (ms *MessageSender) SendProcessPercent(percent string) {
-	res := &WsResponse{
-		Slug:   ms.slugName,
-		Type:   WsProcessPercent,
-		Result: ResultSuccess,
-		End:    false,
-		Data:   percent,
-	}
-	ms.conn.Lock()
-	defer ms.conn.Unlock()
-	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	SendProcessPercent(ms.conn, ms.slugName, percent)
 }
 
 func (ms *MessageSender) SendMsg(msg string) {
-	res := &WsResponse{
-		Slug:   ms.slugName,
-		Type:   ms.wsType,
-		Result: ResultSuccess,
-		End:    false,
-		Data:   msg,
-	}
-	ms.conn.Lock()
-	defer ms.conn.Unlock()
-	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	SendMsg(ms.conn, ms.slugName, ms.wsType, msg)
 }
 
 func (ms *MessageSender) SendEndMsg(result, msg string) {
-	res := &WsResponse{
-		Slug:   ms.slugName,
-		Type:   ms.wsType,
-		Result: result,
-		End:    true,
-		Data:   msg,
-	}
-	ms.conn.Lock()
-	defer ms.conn.Unlock()
-	ms.conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
+	SendEndMsg(ms.conn, result, ms.slugName, ms.wsType, msg)
 }
