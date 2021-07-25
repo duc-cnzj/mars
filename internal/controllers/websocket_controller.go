@@ -838,6 +838,7 @@ func (pc *ProcessControl) TimerStart() {
 		mlog.Warning("timer stop!!!")
 	})
 	go func() {
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
