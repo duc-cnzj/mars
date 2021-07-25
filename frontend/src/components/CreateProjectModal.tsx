@@ -92,7 +92,7 @@ const CreateProjectModal: React.FC<{
     if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
       setStart(false);
     }
-  }, [list, dispatch, slug]);
+  }, [list, slug]);
 
   const onChange = ({
     projectName,
