@@ -212,6 +212,7 @@ func checkIfInstallable(ch *chart.Chart) error {
 
 const (
 	StatusUnknown  string = "unknown"
+	StatusPending  string = "pending"
 	StatusDeployed string = "deployed"
 	StatusFailed   string = "failed"
 )
@@ -247,7 +248,10 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 		return "", err
 	}
 
+	mlog.Debug(run.Info.Status)
 	switch run.Info.Status {
+	case release.StatusPendingUpgrade, release.StatusPendingRollback, release.StatusPendingInstall:
+		return StatusPending, nil
 	case release.StatusDeployed:
 		return StatusDeployed, nil
 	case release.StatusFailed:

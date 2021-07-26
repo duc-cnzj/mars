@@ -22,12 +22,9 @@ type Project struct {
 	GitlabCommit    string `json:"gitlab_commit" gorm:"not null;size:255;"`
 	Config          string `json:"config"`
 	OverrideValues  string `json:"override_values"`
-
-	DockerImage string `json:"docker_image" gorm:"not null;size:255;default:''"`
-
-	PodSelectors string `json:"pod_selectors" gorm:"type:text;nullable;"`
-
-	NamespaceId int `json:"namespace_id"`
+	DockerImage     string `json:"docker_image" gorm:"not null;size:255;default:''"`
+	PodSelectors    string `json:"pod_selectors" gorm:"type:text;nullable;"`
+	NamespaceId     int    `json:"namespace_id"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
