@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -52,22 +51,17 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 		go func(project models.GitlabProject) {
 			defer wg.Done()
 			if !project.GlobalEnabled {
-				defaultBranch, _ := getDefaultBranch(project.GitlabProjectId)
-				if _, err := GetProjectMarsConfig(project.GitlabProjectId, defaultBranch); err != nil {
+				if _, err := GetProjectMarsConfig(project.GitlabProjectId, project.DefaultBranch); err != nil {
 					mlog.Debug(err)
 					return
 				}
 			}
-			getProject, _, err := utils.GitlabClient().Projects.GetProject(project.GitlabProjectId, &gitlab.GetProjectOptions{})
-			if err != nil {
-				return
-			}
 			ch <- Options{
-				Value:     fmt.Sprintf("%d", getProject.ID),
-				Label:     getProject.Name,
+				Value:     fmt.Sprintf("%d", project.GitlabProjectId),
+				Label:     project.Name,
 				IsLeaf:    false,
 				Type:      OptionTypeProject,
-				ProjectId: getProject.ID,
+				ProjectId: project.GitlabProjectId,
 			}
 		}(project)
 	}
@@ -133,23 +127,12 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 }
 
 func getDefaultBranch(projectId int) (string, error) {
-	branches, _, err := utils.GitlabClient().Branches.ListBranches(projectId, &gitlab.ListBranchesOptions{})
+	p, _, err := utils.GitlabClient().Projects.GetProject(projectId, &gitlab.GetProjectOptions{})
 	if err != nil {
 		mlog.Error(err)
 		return "", err
 	}
-	if len(branches) < 1 {
-		return "no branches", errors.New("no branches")
-	}
-
-	for _, branch := range branches {
-		if branch.Default {
-			return branch.Name, nil
-		}
-	}
-	mlog.Error(errors.New(fmt.Sprintf("project %d cant find default branch", projectId)))
-
-	return branches[0].Name, nil
+	return p.DefaultBranch, nil
 }
 
 type CommitUri struct {
@@ -164,7 +147,7 @@ func (*GitlabController) Commits(ctx *gin.Context) {
 		return
 	}
 
-	commits, _, err := utils.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch)})
+	commits, _, err := utils.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch), ListOptions: gitlab.ListOptions{PerPage: 200}})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -347,11 +330,19 @@ func (*GitlabController) EnableProject(ctx *gin.Context) {
 		return
 	}
 
+	project, _, _ := utils.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
+
 	var gp models.GitlabProject
 	if utils.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
-		utils.DB().Model(&gp).UpdateColumn("enabled", true)
+		utils.DB().Model(&gp).Updates(map[string]interface{}{
+			"enabled":        true,
+			"default_branch": project.DefaultBranch,
+			"name":           project.Name,
+		})
 	} else {
 		utils.DB().Create(&models.GitlabProject{
+			DefaultBranch:   project.DefaultBranch,
+			Name:            project.Name,
 			GitlabProjectId: input.GitlabProjectID,
 			Enabled:         true,
 		})
@@ -367,11 +358,18 @@ func (*GitlabController) DisableProject(ctx *gin.Context) {
 		return
 	}
 
+	project, _, _ := utils.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
 	var gp models.GitlabProject
 	if utils.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
-		utils.DB().Model(&gp).UpdateColumn("enabled", false)
+		utils.DB().Model(&gp).Updates(map[string]interface{}{
+			"enabled":        false,
+			"default_branch": project.DefaultBranch,
+			"name":           project.Name,
+		})
 	} else {
 		utils.DB().Create(&models.GitlabProject{
+			DefaultBranch:   project.DefaultBranch,
+			Name:            project.Name,
 			GitlabProjectId: input.GitlabProjectID,
 			Enabled:         false,
 		})
