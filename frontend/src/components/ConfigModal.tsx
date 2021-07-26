@@ -25,6 +25,7 @@ import {
 import { branches, Info } from "../api/gitlab";
 
 import "codemirror/theme/mdn-like.css";
+import MarsExample from "./MarsExample";
 require("codemirror/mode/yaml/yaml");
 
 const { Option } = Select;
@@ -132,6 +133,7 @@ const ConfigModal: React.FC<{
           message.success("保存成功");
           console.log(res.data.data.global_config);
           setGlobalConfig(res.data.data.global_config);
+          setEditMode(false);
         })
         .catch((e) => {
           message.error(e.response.data.message);
@@ -146,7 +148,7 @@ const ConfigModal: React.FC<{
 
   return (
     <Modal
-      title={title}
+      title={<div>{title}&nbsp;<MarsExample/></div>}
       visible={configVisible}
       footer={null}
       width={800}
@@ -158,8 +160,8 @@ const ConfigModal: React.FC<{
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
-              height: 60,
+              alignItems: "start",
+              height: 40,
             }}
           >
             {!globalEnabled ? (
@@ -230,7 +232,10 @@ const ConfigModal: React.FC<{
           ) : (
             <Spin spinning={loading}>
               {!globalEnabled && !config ? (
-                <Empty description="未发现该项目的配置文件" style={{height: 220}} />
+                <Empty
+                  description="未发现该项目的配置文件"
+                  style={{ height: 220 }}
+                />
               ) : (
                 <SyntaxHighlighter
                   language="yaml"
