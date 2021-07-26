@@ -260,6 +260,26 @@ const ModalSub: React.FC<{
             }}
           />
         </div>
+        <div
+          className={classNames("edit-project__footer", {
+            "edit-project--hidden": list[slug]?.isLoading,
+          })}
+        >
+          <Button
+            style={{ marginRight: 5 }}
+            disabled={list[slug]?.isLoading}
+            onClick={onReset}
+          >
+            重置
+          </Button>
+          <Button
+            type="primary"
+            loading={list[slug]?.isLoading}
+            onClick={updateDeploy}
+          >
+            部署
+          </Button>
+        </div>
       </div>
       <div
         id="preview"
@@ -289,11 +309,20 @@ const ModalSub: React.FC<{
         <div
           style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
         >
+          <TimeCost start={start} />
+
+          <Button
+            type="primary"
+            loading={list[slug]?.isLoading}
+            onClick={updateDeploy}
+            style={{ marginRight: 10, marginLeft: 10 }}
+          >
+            部署
+          </Button>
           <Button
             hidden={
               list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
             }
-            style={{ marginRight: 10 }}
             danger
             icon={<StopOutlined />}
             type="dashed"
@@ -301,26 +330,8 @@ const ModalSub: React.FC<{
           >
             取消
           </Button>
-          <TimeCost start={start} />
         </div>
         <LogOutput slug={slug} />
-      </div>
-
-      <div className="edit-project__footer">
-        <Button
-          style={{ marginRight: 5 }}
-          disabled={list[slug]?.isLoading}
-          onClick={onReset}
-        >
-          重置
-        </Button>
-        <Button
-          type="primary"
-          loading={list[slug]?.isLoading}
-          onClick={updateDeploy}
-        >
-          部署
-        </Button>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ const DeployStatus: React.FC<{ status: string }> = ({ status }) => {
         <Tooltip
           placement="top"
           overlayStyle={{ fontSize: "10px" }}
-          title={"状态未知，建议重新部署~"}
+          title={"状态未知，刷新试试~"}
         >
           <QuestionCircleTwoTone
             twoToneColor="#f9ca24"
