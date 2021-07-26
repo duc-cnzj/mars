@@ -148,7 +148,7 @@ const ConfigModal: React.FC<{
 
   return (
     <Modal
-      title={<div>{title}&nbsp;<MarsExample/></div>}
+      title={<div><MarsExample/>&nbsp;&nbsp;{title}</div>}
       visible={configVisible}
       footer={null}
       width={800}
