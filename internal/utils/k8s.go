@@ -43,7 +43,10 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
 	return K8sClientSet().CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
-		TypeMeta: metav1.TypeMeta{},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1.SchemeGroupVersion.String(),
+			Kind:       "Secret",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    namespace,
 			GenerateName: "mars-",
@@ -51,7 +54,7 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 		Data: map[string][]byte{
 			v1.DockerConfigJsonKey: marshal,
 		},
-		Type: v1.DockerConfigJsonKey,
+		Type: v1.SecretTypeDockerConfigJson,
 	}, metav1.CreateOptions{})
 }
 
