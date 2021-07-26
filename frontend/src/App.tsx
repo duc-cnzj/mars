@@ -2,11 +2,12 @@ import React, { FC, useEffect, useState, useCallback } from "react";
 import { Layout } from "antd";
 import AppContent from "./components/AppContent";
 import { WsContext } from "./contexts/useWebsocket";
-import { handleCreateOrUpdateProjects } from "./store/actions";
+import { handleEvents } from "./store/actions";
 import { isJsonString } from "./utils/json";
 import { useDispatch } from "react-redux";
 import { Switch, Route, Link } from "react-router-dom";
 import GitlabProjectManager from "./components/GitlabProjectManager";
+import { getUid } from "./utils/uid";
 
 const { Header, Content, Footer } = Layout;
 
@@ -31,6 +32,10 @@ const App: FC = () => {
       let isHttps = "https:" === window.location.protocol ? true : false;
       url = `${isHttps ? "wss" : "ws"}://${window.location.host}/ws`;
     }
+    let uid = getUid()
+    if (uid) {
+      url+="?uid="+uid
+    }
     let conn = new WebSocket(url);
     setWs(conn);
     conn.onopen = function (evt) {
@@ -46,7 +51,7 @@ const App: FC = () => {
       }
       let data: WsResponse = JSON.parse(evt.data);
       console.log(data, data.type);
-      dispatch(handleCreateOrUpdateProjects(data.slug, data));
+      dispatch(handleEvents(data.slug, data));
       console.log("onmessage", evt.data);
     };
   }, [dispatch]);
