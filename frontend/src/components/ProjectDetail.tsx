@@ -55,7 +55,9 @@ const ItemDetailModal: React.FC<{
   return (
     <>
       <Button
-        onClick={onOk}
+        onClick={() => {
+          onOk();
+        }}
         style={{
           width: "100%",
           display: "flex",
@@ -76,7 +78,11 @@ const ItemDetailModal: React.FC<{
         >
           {item.name}
         </span>
-        <ServiceEndpoint namespaceId={namespaceId} projectName={item.name} />
+        {item.status === "deployed" ? (
+          <ServiceEndpoint namespaceId={namespaceId} projectName={item.name} />
+        ) : (
+          <></>
+        )}
       </Button>
       <DraggableModal
         onResize={() => {
@@ -92,48 +98,48 @@ const ItemDetailModal: React.FC<{
         title={item.name + "(" + namespace + ")"}
       >
         <Tabs defaultActiveKey="1" centered>
-          <TabPane tab="容器日志" key="container-logs">
-            <div style={{ marginBottom: 10 }}>
-              <span style={{ marginRight: 5 }}>自动刷新(5s):</span>
-              <Switch
-                checked={autoRefresh}
-                onChange={handleAutoRefresh}
-                defaultChecked={autoRefresh}
-              />
-            </div>
-            {detail ? (
-              <TabLog
-                updatedAt={detail.updated_at}
-                autoRefresh={autoRefresh}
-                id={detail.id}
-                namespaceId={detail.namespace.id}
-              />
-            ) : (
-              <Skeleton active />
-            )}
-          </TabPane>
-          <TabPane tab="命令行" key="shell">
-            <ErrorBoundary>
-              {detail ? (
-                <Shell
-                  resizeAt={resizeAt}
-                  detail={detail}
-                />
-              ) : (
-                <Skeleton active />
-              )}
-            </ErrorBoundary>
-          </TabPane>
-          <TabPane tab="配置更新" key="update-config">
-            {detail ? (
-              <EditProject
-                detail={detail}
-                onSuccess={onSuccess}
-              />
-            ) : (
-              <Skeleton active />
-            )}
-          </TabPane>
+          {item.status === "deployed" ? (
+            <>
+              <TabPane tab="容器日志" key="container-logs">
+                <div style={{ marginBottom: 10 }}>
+                  <span style={{ marginRight: 5 }}>自动刷新(5s):</span>
+                  <Switch
+                    checked={autoRefresh}
+                    onChange={handleAutoRefresh}
+                    defaultChecked={autoRefresh}
+                  />
+                </div>
+                {detail ? (
+                  <TabLog
+                    updatedAt={detail.updated_at}
+                    autoRefresh={autoRefresh}
+                    id={detail.id}
+                    namespaceId={detail.namespace.id}
+                  />
+                ) : (
+                  <Skeleton active />
+                )}
+              </TabPane>
+              <TabPane tab="命令行" key="shell">
+                <ErrorBoundary>
+                  {detail ? (
+                    <Shell resizeAt={resizeAt} detail={detail} />
+                  ) : (
+                    <Skeleton active />
+                  )}
+                </ErrorBoundary>
+              </TabPane>
+              <TabPane tab="配置更新" key="update-config">
+                {detail ? (
+                  <EditProject detail={detail} onSuccess={onSuccess} />
+                ) : (
+                  <Skeleton active />
+                )}
+              </TabPane>
+            </>
+          ) : (
+            <></>
+          )}
           <TabPane tab="详细信息" key="detail" className="detail-tab">
             <TabInfo
               detail={detail}

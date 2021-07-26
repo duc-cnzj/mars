@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strconv"
 
+	"gorm.io/gorm"
+
 	"github.com/duc-cnzj/mars/internal/mars"
 	"helm.sh/helm/v3/pkg/chart"
 
@@ -107,6 +109,13 @@ func (jobs *CancelSignals) Remove(id string) {
 	}
 }
 
+func (jobs *CancelSignals) CancelAll() {
+	mlog.Warning("cancel all!")
+	for _, control := range jobs.cs {
+		control.SendStopSignal()
+	}
+}
+
 func (jobs *CancelSignals) Cancel(id string) {
 	jobs.Lock()
 	defer jobs.Unlock()
@@ -116,7 +125,7 @@ func (jobs *CancelSignals) Cancel(id string) {
 			return
 		}
 		pc.SendMsg("收到取消信号，开始停止部署！！！")
-		pc.Stop()
+		pc.SendStopSignal()
 		jobs.Remove(id)
 	}
 }
@@ -145,6 +154,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		var wsRequest WsRequest
 		_, message, err := c.ReadMessage()
 		if err != nil {
+			wsconn.cs.CancelAll()
 			mlog.Debug("read:", err, message)
 			break
 		}
@@ -265,8 +275,7 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 		}
 
 		if pc.NeedStop() {
-			pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
-
+			pc.DoStop()
 			return
 		}
 	}
@@ -441,6 +450,7 @@ type ProcessControl struct {
 	wsType    string
 	wsRequest WsRequest
 
+	new       bool
 	marC      *mars.Config
 	project   models.Project
 	conn      *WsConn
@@ -460,7 +470,19 @@ func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
 	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
 }
 
-func (pc *ProcessControl) Stop() {
+func (pc *ProcessControl) DoStop() {
+	select {
+	case <-pc.stopCtx.Done():
+		if pc.new {
+			utils.DB().Delete(&pc.project)
+		}
+		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+	default:
+		return
+	}
+}
+
+func (pc *ProcessControl) SendStopSignal() {
 	if pc.stopFunc != nil {
 		pc.stopFunc()
 	}
@@ -503,6 +525,12 @@ func (pc *ProcessControl) SetUp() error {
 		Config:          pc.input.Config,
 		NamespaceId:     ns.ID,
 		Namespace:       ns,
+	}
+
+	var p models.Project
+	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
+		utils.DB().Create(&pc.project)
+		pc.new = true
 	}
 
 	return nil
