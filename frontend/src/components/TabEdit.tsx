@@ -158,6 +158,7 @@ const ModalSub: React.FC<{
   };
   const updateDeploy = () => {
     if (data.gitlabCommit && data.gitlabBranch) {
+      setStart(true);
       setEditVisible(false);
       setTimelineVisible(true);
 
