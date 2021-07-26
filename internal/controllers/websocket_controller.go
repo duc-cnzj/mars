@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars/internal/mars"
@@ -45,12 +47,71 @@ const (
 )
 
 const (
-	WsCancel        string = "cancel_project"
-	WsCreateProject string = "create_project"
-	WsUpdateProject string = "update_project"
+	WsSetUid         string = "set_uid"
+	WsReloadProjects string = "reload_projects"
+	WsCancel         string = "cancel_project"
+	WsCreateProject  string = "create_project"
+	WsUpdateProject  string = "update_project"
 
 	WsProcessPercent string = "process_percent"
 )
+
+type AllWsConnections struct {
+	sync.RWMutex
+	conns map[string]map[string]*WsConn
+}
+
+func (awc *AllWsConnections) Add(uid string, conn *WsConn) {
+	awc.Lock()
+	defer awc.Unlock()
+	if awc.conns == nil {
+		awc.conns = map[string]map[string]*WsConn{}
+	}
+	if m, ok := awc.conns[uid]; ok {
+		m[conn.id] = conn
+	} else {
+		awc.conns[uid] = map[string]*WsConn{conn.id: conn}
+	}
+}
+
+func (awc *AllWsConnections) Delete(uid string, id string) {
+	awc.Lock()
+	defer awc.Unlock()
+	if m, ok := awc.conns[uid]; ok {
+		delete(m, id)
+		if len(m) == 0 {
+			delete(awc.conns, uid)
+		}
+	}
+}
+
+func (awc *AllWsConnections) SendExcept(uid, wsType, data string) {
+	awc.Lock()
+	defer awc.Unlock()
+	for u, uidconns := range awc.conns {
+		if u != uid {
+			for _, conn := range uidconns {
+				SendMsg(conn, "", wsType, data)
+			}
+		}
+	}
+}
+
+func (awc *AllWsConnections) SendToAll(wsType, data string) {
+	awc.Lock()
+	defer awc.Unlock()
+	for _, uidconns := range awc.conns {
+		for _, conn := range uidconns {
+			SendMsg(conn, "", wsType, data)
+		}
+	}
+}
+
+func (awc *AllWsConnections) Count() int {
+	awc.RLock()
+	defer awc.RUnlock()
+	return len(awc.conns)
+}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -58,10 +119,31 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type WebsocketController struct{}
+var awc *AllWsConnections
+
+type WebsocketController struct {
+	*AllWsConnections
+}
 
 func NewWebsocketController() *WebsocketController {
-	return &WebsocketController{}
+	awc = &AllWsConnections{conns: nil}
+	if utils.App().IsDebug() {
+		go func() {
+			t := time.NewTicker(1 * time.Second)
+			for {
+				select {
+				case <-t.C:
+					mlog.Warningf("################################# 一共有 %d 个客户端 #################################", len(awc.conns))
+					for s, m := range awc.conns {
+						mlog.Warningf("当前uid：%s 该uid下面的连接数: %d", s, len(m))
+					}
+				}
+			}
+		}()
+	}
+	return &WebsocketController{
+		AllWsConnections: awc,
+	}
 }
 
 type WsRequest struct {
@@ -76,6 +158,8 @@ type WsResponse struct {
 	Result string `json:"result"`
 	Data   string `json:"data"`
 	End    bool   `json:"end"`
+	Uid    string `json:"uid"`
+	ID     string `json:"id"`
 }
 
 func (r *WsResponse) EncodeToBytes() []byte {
@@ -94,8 +178,10 @@ const (
 type WsConn struct {
 	sync.Mutex
 
-	c  *websocket.Conn
-	cs *CancelSignals
+	id  string
+	uid string
+	c   *websocket.Conn
+	cs  *CancelSignals
 }
 
 type CancelSignals struct {
@@ -136,14 +222,22 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 	jobs.cs[id] = pc
 }
 
-func (*WebsocketController) Ws(ctx *gin.Context) {
+func (wc *WebsocketController) Ws(ctx *gin.Context) {
 	c, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		mlog.Error(err)
 		return
 	}
 	defer c.Close()
-	var wsconn = &WsConn{c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
+	var uid string
+	uid = ctx.Query("uid")
+	if uid == "" {
+		uid = uuid.New().String()
+	}
+	id := uuid.New().String()
+	var wsconn = &WsConn{id: id, uid: uid, c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
+	wc.Add(uid, wsconn)
+	SendMsg(wsconn, "", WsSetUid, uid)
 
 	c.SetReadLimit(maxMessageSize)
 	c.SetPongHandler(func(string) error { c.SetReadDeadline(time.Now().Add(pongWait)); return nil })
@@ -155,6 +249,7 @@ func (*WebsocketController) Ws(ctx *gin.Context) {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			wsconn.cs.CancelAll()
+			wc.Delete(uid, id)
 			mlog.Debug("read:", err, message)
 			break
 		}
@@ -287,6 +382,12 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 
 	// 返回结果
 	pc.Wait()
+	select {
+	case <-pc.stopCtx.Done():
+		awc.SendToAll(WsReloadProjects, "")
+	default:
+		awc.SendExcept(conn.uid, WsReloadProjects, "")
+	}
 }
 
 // getPodSelectorsInDeploymentAndStatefulSetByManifest FIXME: 比较 hack
@@ -329,6 +430,8 @@ func SendEndError(conn *WsConn, slug, wsType string, err error) {
 		Result: ResultError,
 		Data:   err.Error(),
 		End:    true,
+		Uid:    conn.uid,
+		ID:     conn.id,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -342,6 +445,8 @@ func SendError(conn *WsConn, slug, wsType string, err error) {
 		Result: ResultError,
 		Data:   err.Error(),
 		End:    false,
+		Uid:    conn.uid,
+		ID:     conn.id,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -355,6 +460,8 @@ func SendProcessPercent(conn *WsConn, slug, percent string) {
 		Result: ResultSuccess,
 		End:    false,
 		Data:   percent,
+		Uid:    conn.uid,
+		ID:     conn.id,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -368,6 +475,8 @@ func SendMsg(conn *WsConn, slug, wsType string, msg string) {
 		Result: ResultSuccess,
 		End:    false,
 		Data:   msg,
+		Uid:    conn.uid,
+		ID:     conn.id,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -381,6 +490,8 @@ func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
 		Result: result,
 		End:    true,
 		Data:   msg,
+		Uid:    conn.uid,
+		ID:     conn.id,
 	}
 	conn.Lock()
 	defer conn.Unlock()
@@ -560,7 +671,7 @@ func (pc *ProcessControl) CheckConfig() error {
 		deleteDirFn  func()
 		dir          string
 	)
-	// pid|branch|path
+	// uid|branch|path
 	if len(split) == 3 && intPid(split[0]) {
 		pid := split[0]
 		branch := split[1]
@@ -572,7 +683,7 @@ func (pc *ProcessControl) CheckConfig() error {
 		mlog.Warning(files)
 		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
 		dir = path
-		pc.SendMsg(fmt.Sprintf("识别为远程仓库 pid %v branch %s path %s", pid, branch, path))
+		pc.SendMsg(fmt.Sprintf("识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
 	} else {
 		dir = marsC.LocalChartPath
 		files = utils.GetDirectoryFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, marsC.LocalChartPath)
