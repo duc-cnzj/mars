@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -15,7 +16,10 @@ import (
 
 // Config mars 配置文件，默认取的是当前 branch 的最新的 .mars.yaml
 type Config struct {
+	// ConfigFile 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
 	ConfigFile string `json:"config_file" yaml:"config_file"`
+	// ConfigFileValues 全局配置文件，如果没有 ConfigFile 则使用这个
+	ConfigFileValues string `json:"config_file_values" yaml:"config_file_values"`
 
 	// ConfigFileType 配置文件类型，php/env/yaml...
 	ConfigFileType   string `json:"config_file_type" yaml:"config_file_type"`
@@ -24,7 +28,7 @@ type Config struct {
 	// DockerTagFormat 可用变量 {{.Branch}} {{.Commit}} {{.Pipeline}}
 	DockerTagFormat string `json:"docker_tag_format" yaml:"docker_tag_format"`
 
-	// LocalChartPath helm charts 目录
+	// LocalChartPath helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
 	LocalChartPath string `json:"local_chart_path" yaml:"local_chart_path"`
 	ConfigField    string `json:"config_field" yaml:"config_field"`
 	IsSimpleEnv    bool   `json:"is_simple_env" yaml:"is_simple_env"`
@@ -125,6 +129,27 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 	}
 
 	return utils.WriteConfigYamlToTmpFile(yamlData)
+}
+
+// IsRemoteConfigFile 如果是这个格式意味着是远程项目, "pid|branch|filename"
+func (mars *Config) IsRemoteConfigFile() bool {
+	split := strings.Split(mars.ConfigFile, "|")
+
+	return len(split) == 3 && intPid(split[0])
+}
+
+func (mars *Config) IsRemoteChart() bool {
+	split := strings.Split(mars.LocalChartPath, "|")
+	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
+
+	return len(split) == 3 && intPid(split[0])
+}
+
+func intPid(pid string) bool {
+	if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
+		return true
+	}
+	return false
 }
 
 func EncodeConfigToYaml(field string, data interface{}) ([]byte, error) {

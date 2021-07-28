@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"strconv"
 
 	"github.com/google/uuid"
 
@@ -659,20 +658,14 @@ func (pc *ProcessControl) CheckConfig() error {
 	// 下载 helm charts
 	pc.SendMsg(fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
 	split := strings.Split(marsC.LocalChartPath, "|")
-	intPid := func(pid string) bool {
-		if _, err := strconv.ParseInt(pid, 10, 64); err == nil {
-			return true
-		}
-		return false
-	}
 	var (
 		files        []string
 		tmpChartsDir string
 		deleteDirFn  func()
 		dir          string
 	)
-	// uid|branch|path
-	if len(split) == 3 && intPid(split[0]) {
+	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
+	if marsC.IsRemoteChart() {
 		pid := split[0]
 		branch := split[1]
 		path := split[2]
