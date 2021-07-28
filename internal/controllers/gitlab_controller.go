@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -180,6 +181,7 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 		response.Error(ctx, 500, err)
 		return
 	}
+	// 先拿 ConfigFile 如果没有，则拿 ConfigFileValues
 	configFile := marsC.ConfigFile
 	if configFile == "" {
 		ct := marsC.ConfigFileType
@@ -187,14 +189,37 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 			ct = "yaml"
 		}
 		response.Success(ctx, 200, gin.H{
-			"data": "",
+			"data": marsC.ConfigFileValues,
 			"type": ct,
 		})
 		return
 	}
-	f, _, err := utils.GitlabClient().RepositoryFiles.GetFile(uri.ProjectId, configFile, &gitlab.GetFileOptions{Ref: gitlab.String(uri.Branch)})
+	// 如果有 ConfigFile，则获取内容，如果没有内容，则使用 ConfigFileValues
+
+	var (
+		pid      string
+		branch   string
+		filename string
+	)
+
+	if marsC.IsRemoteConfigFile() {
+		split := strings.Split(configFile, "|")
+		pid = split[0]
+		branch = split[1]
+		filename = split[2]
+	} else {
+		pid = fmt.Sprintf("%d", uri.ProjectId)
+		branch = uri.Branch
+		filename = configFile
+	}
+
+	f, _, err := utils.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
 	if err != nil {
-		response.Success(ctx, 200, "")
+		mlog.Debug(err)
+		response.Success(ctx, 200, gin.H{
+			"data": marsC.ConfigFileValues,
+			"type": marsC.ConfigFileType,
+		})
 		return
 	}
 	fdata, _ := base64.StdEncoding.DecodeString(f.Content)

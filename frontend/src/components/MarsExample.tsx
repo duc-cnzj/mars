@@ -8,6 +8,10 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 const MarsExample: React.FC = () => {
   const example = `# 项目默认的配置文件(可选)
 config_file: config.yaml
+# 默认配置, 必须用 '|', 全局配置文件，如果没有设置 config_file 则使用这个
+config_file_values: |
+  env: dev
+  port: 8000
 # 配置文件的类型(如果有config_file，必填)
 config_file_type: yaml
 # config_file 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)

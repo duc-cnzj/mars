@@ -47,6 +47,10 @@ helm upgrade --install mars mars-charts/mars -f mars-values.yaml
 ```yaml
 # 项目默认的配置文件(可选)
 config_file: config.yaml
+# 默认配置, 必须用 '|', 全局配置文件，如果没有设置 config_file 则使用这个
+config_file_values: |
+  env: dev
+  port: 8000
 # 配置文件的类型(如果有config_file，必填)
 config_file_type: yaml
 # config_file 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
@@ -122,8 +126,8 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
+- 全部 restful 使用 websocket 重写(grpc)？
 - ui 美化
 - grpc-gateway 替换 gin？
-- 使得可以使用其他仓库的配置
 - 重构 ui 创建项目部分代码
 - 重构后端部署部分代码
