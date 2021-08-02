@@ -1,10 +1,8 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -33,11 +31,11 @@ func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 	return files
 }
 
-var TmpDirName = "/tmp/gitlab_files"
-
 func DownloadFiles(pid interface{}, commit string, files []string) (string, func()) {
-	dir := fmt.Sprintf("%s/tmp_%s/", TmpDirName, RandomString(10))
-	os.MkdirAll(dir, 0755)
+	dir, err := os.MkdirTemp("", "mars_tmp_*")
+	if err != nil {
+		return "", nil
+	}
 	wg := &sync.WaitGroup{}
 	wg.Add(len(files))
 	for _, file := range files {
@@ -54,9 +52,9 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 			fp := filepath.Join(dir, file)
 			s := filepath.Dir(fp)
 			if !FileExists(s) {
-				os.MkdirAll(s, 0755)
+				os.MkdirAll(s, 0700)
 			}
-			openFile, err := os.OpenFile(fp, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+			openFile, err := os.OpenFile(fp, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
 			if err != nil {
 				mlog.Error(err)
 				return
@@ -68,7 +66,7 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 	wg.Wait()
 
 	return dir, func() {
-		if FileExists(dir) && strings.HasPrefix(dir, "/tmp") {
+		if FileExists(dir) {
 			err := os.RemoveAll(dir)
 			if err != nil {
 				mlog.Warning(err)
