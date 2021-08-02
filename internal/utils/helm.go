@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -25,18 +24,10 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-var tmpFileDir = "/tmp"
-
 type DeleteFunc func()
 
 func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
-	fileName := "mars_" + RandomString(20) + ".yaml"
-	var fullPath = fmt.Sprintf("%s/%s", tmpFileDir, fileName)
-	if FileExists(fullPath) {
-		return "", nil, errors.New(fmt.Sprintf("file %s already exists", fullPath))
-	}
-
-	openFile, err := os.OpenFile(fullPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	openFile, err := os.CreateTemp("", "mars-*.yaml")
 	if err != nil {
 		return "", nil, err
 	}
@@ -45,9 +36,9 @@ func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
 		return "", nil, err
 	}
 
-	return fullPath, func() {
-		mlog.Debug("delete file: " + fullPath)
-		if err := os.Remove(fullPath); err != nil {
+	return openFile.Name(), func() {
+		mlog.Debug("delete file: " + openFile.Name())
+		if err := os.Remove(openFile.Name()); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 		}
 	}, nil
