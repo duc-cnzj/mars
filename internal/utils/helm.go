@@ -91,7 +91,7 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Atomic = true
-	client.WaitForJobs = true
+	client.Wait = true
 	client.Install = true
 	client.Timeout = 90 * time.Second
 	client.Namespace = namespace
