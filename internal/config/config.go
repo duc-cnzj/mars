@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -42,6 +43,8 @@ type Config struct {
 
 	GitlabToken   string
 	GitlabBaseURL string
+
+	InstallTimeout time.Duration
 }
 
 func Init(cfgFile string) *Config {
@@ -81,6 +84,7 @@ func Init(cfgFile string) *Config {
 		DBDatabase:     viper.GetString("db_database"),
 		GitlabToken:    viper.GetString("gitlab_token"),
 		GitlabBaseURL:  viper.GetString("gitlab_baseurl"),
+		InstallTimeout: viper.GetDuration("install_timeout"),
 	}
 
 	dockerAuths := viper.Get("imagepullsecrets")
