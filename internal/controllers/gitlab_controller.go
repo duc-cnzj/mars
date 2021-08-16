@@ -91,7 +91,7 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 		return
 	}
 
-	branches, _, err := utils.GitlabClient().Branches.ListBranches(uri.ProjectId, &gitlab.ListBranchesOptions{})
+	branches, _, err := utils.GitlabClient().Branches.ListBranches(uri.ProjectId, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 200}})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
