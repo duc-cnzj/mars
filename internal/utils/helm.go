@@ -93,7 +93,11 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	client.Atomic = true
 	client.Wait = true
 	client.Install = true
-	client.Timeout = 90 * time.Second
+	var timeout time.Duration = 90 * time.Second
+	if App().Config().InstallTimeout != 0 {
+		timeout = App().Config().InstallTimeout
+	}
+	client.Timeout = timeout
 	client.Namespace = namespace
 	if valueOpts == nil {
 		valueOpts = &values.Options{}
