@@ -239,7 +239,8 @@ func (wc *WebsocketController) Ws(ctx *gin.Context) {
 	SendMsg(wsconn, "", WsSetUid, uid)
 
 	c.SetReadLimit(maxMessageSize)
-	c.SetPongHandler(func(string) error { c.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	// 未设置 c.SetReadDeadline()，所以不需要 ping/pong 续命
+	c.SetPongHandler(func(string) error { mlog.Infof("收到心跳 id: %s, uid %s", id, uid); return nil })
 
 	mlog.Debug("ws connected")
 
