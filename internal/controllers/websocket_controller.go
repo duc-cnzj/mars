@@ -901,7 +901,6 @@ func (pc *ProcessControl) Run() {
 	ch := pc.messageCh
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
-
 	go func() {
 		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log); err != nil {
 			mlog.Error(err)
@@ -939,6 +938,9 @@ func (pc *ProcessControl) Wait() {
 		case "text":
 			pc.SendMsg(s.Msg)
 		case "error":
+			if pc.new {
+				utils.DB().Delete(&pc.project)
+			}
 			pc.SendEndMsg(ResultDeployFailed, s.Msg)
 		case "success":
 			pc.SendEndMsg(ResultDeployed, s.Msg)
