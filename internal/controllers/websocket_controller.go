@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"helm.sh/helm/v3/pkg/chartutil"
+
 	"github.com/google/uuid"
 
 	"gorm.io/gorm"
@@ -11,7 +13,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/mars"
 	"helm.sh/helm/v3/pkg/chart"
 
-	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"bytes"
@@ -910,9 +911,8 @@ func (pc *ProcessControl) Run() {
 			}
 			close(ch)
 		} else {
-			bf := &bytes.Buffer{}
-			yaml.NewEncoder(bf).Encode(&result.Config)
-			pc.project.OverrideValues = bf.String()
+			coalesceValues, _ := chartutil.CoalesceValues(loadArchive, result.Config)
+			pc.project.OverrideValues, _ = coalesceValues.YAML()
 			pc.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == nil {
