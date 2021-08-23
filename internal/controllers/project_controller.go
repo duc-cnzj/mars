@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"strings"
 
 	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -198,13 +197,6 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 		response.Error(ctx, 400, err)
 		return
 	}
-	split := strings.Split(string(raw), "\n")
-	var reverseLog []string
-	for i := len(split) - 1; i > 0; i-- {
-		reverseLog = append(reverseLog, split[i])
-	}
-
-	raw = bytes.Trim([]byte(strings.Join(reverseLog, "\n")), "\n")
 
 	response.Success(ctx, 200, PodContainerResponse{
 		PodName:       uri.Pod,
