@@ -3,6 +3,7 @@ import { containerList, containerLog, PodContainerItem } from "../api/project";
 import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { xt256 } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import AutoScroll from "./AutoScroll";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: string;
@@ -36,6 +37,7 @@ const ProjectContainerLogs: React.FC<{
           if (data.log) {
             log = data.log;
           }
+
           setLog(log);
         });
       }
@@ -106,20 +108,24 @@ const ProjectContainerLogs: React.FC<{
       <div
         className="project-container-logs"
         style={{
-          maxHeight: 800,
-          overflow: "auto",
           fontFamily: '"Fira code", "Fira Mono", monospace',
           fontSize: 12,
         }}
       >
         {log ? (
-          <SyntaxHighlighter
-            wrapLongLines={true}
-            language="shell"
-            style={xt256}
+          <AutoScroll
+            height={400}
+            className="auto-scroll"
           >
-            {log}
-          </SyntaxHighlighter>
+            <SyntaxHighlighter
+              wrapLongLines={true}
+              showLineNumbers
+              language="shell"
+              style={xt256}
+            >
+              {log}
+            </SyntaxHighlighter>
+          </AutoScroll>
         ) : (
           <Skeleton active />
         )}
