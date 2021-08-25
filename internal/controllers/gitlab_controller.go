@@ -91,7 +91,7 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 		return
 	}
 
-	branches, _, err := utils.GitlabClient().Branches.ListBranches(uri.ProjectId, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 200}})
+	branches, err := utils.GetAllBranches(uri.ProjectId)
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -148,7 +148,7 @@ func (*GitlabController) Commits(ctx *gin.Context) {
 		return
 	}
 
-	commits, _, err := utils.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch), ListOptions: gitlab.ListOptions{PerPage: 200}})
+	commits, _, err := utils.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -301,7 +301,7 @@ func (*GitlabController) ProjectList(ctx *gin.Context) {
 	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions: gitlab.ListOptions{
-			PerPage: 9999,
+			PerPage: 100,
 		},
 	})
 	if err != nil {
