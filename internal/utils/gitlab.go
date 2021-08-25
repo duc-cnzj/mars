@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -75,4 +76,24 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 			mlog.Debug("remove " + dir)
 		}
 	}
+}
+
+func GetAllBranches(pid interface{}, options ...gitlab.RequestOptionFunc) ([]*gitlab.Branch, error) {
+	var branches []*gitlab.Branch
+	page := 1
+	for page != -1 {
+		b, r, e := GitlabClient().Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 100, Page: page}}, options...)
+		if e != nil {
+			return nil, e
+		}
+		nextPage := r.Header.Get("x-next-page")
+		if nextPage == "" {
+			page = -1
+		} else {
+			page, _ = strconv.Atoi(nextPage)
+		}
+		branches = append(branches, b...)
+	}
+
+	return branches, nil
 }
