@@ -13,7 +13,11 @@ import (
 func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 	var files []string
 
+	// TODO: 坑, GitlabClient().Repositories.ListTree 带分页！！凸(艹皿艹 )
 	opt := &gitlab.ListTreeOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+		},
 		Path:      gitlab.String(path),
 		Recursive: gitlab.Bool(true),
 	}
@@ -37,6 +41,11 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 	if err != nil {
 		return "", nil
 	}
+
+	return DownloadFilesToDir(pid, commit, files, dir)
+}
+
+func DownloadFilesToDir(pid interface{}, commit string, files []string, dir string) (string, func()) {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(files))
 	for _, file := range files {
