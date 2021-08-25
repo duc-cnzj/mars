@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"helm.sh/helm/v3/pkg/action"
+
 	"helm.sh/helm/v3/pkg/chartutil"
 
 	"github.com/google/uuid"
@@ -678,6 +680,18 @@ func (pc *ProcessControl) CheckConfig() error {
 		mlog.Warning(files)
 		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
 		dir = path
+
+		loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
+		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
+			for _, dependency := range loadDir.Metadata.Dependencies {
+				if strings.HasPrefix(dependency.Repository, "file://") {
+					depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
+					_, depDeleteFn := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
+					pc.AddAfterInstalledFunc(depDeleteFn)
+					pc.SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
+				}
+			}
+		}
 		pc.SendMsg(fmt.Sprintf("识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
 	} else {
 		dir = marsC.LocalChartPath
@@ -686,6 +700,7 @@ func (pc *ProcessControl) CheckConfig() error {
 	}
 	pc.AddAfterInstalledFunc(deleteDirFn)
 	chartDir := filepath.Join(tmpChartsDir, dir)
+
 	chart, err := utils.PackageChart(chartDir, chartDir)
 	if err != nil {
 		return err
