@@ -48,10 +48,17 @@ type Application struct {
 	httpHandler http.Handler
 	httpServer  *http.Server
 
+	done     context.Context
+	doneFunc func()
+
 	beforeShutdownFunctions []contracts.ShutdownFunc
 	afterShutdownFunctions  []contracts.ShutdownFunc
 
 	dispatcher contracts.DispatcherInterface
+}
+
+func (app *Application) Done() <-chan struct{} {
+	return app.done.Done()
 }
 
 func (app *Application) GitlabClient() *gitlab.Client {
@@ -96,9 +103,12 @@ func NewApplication(config *config.Config, opts ...contracts.Option) *Applicatio
 		&bootstrappers.EventBootstrapper{},
 	}
 
+	doneCtx, cancelFunc := context.WithCancel(context.Background())
 	app := &Application{
 		bootstrappers: DefaultBootstrappers,
 		config:        config,
+		done:          doneCtx,
+		doneFunc:      cancelFunc,
 	}
 
 	app.dbManager = database.NewManager(app)
@@ -173,6 +183,8 @@ func (app *Application) Run() chan os.Signal {
 
 func (app *Application) Shutdown() {
 	var err error
+
+	app.doneFunc()
 
 	callBeforeShutdownFunctions(app)
 

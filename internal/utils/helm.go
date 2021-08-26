@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"reflect"
-	"time"
 	"unsafe"
 
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -92,14 +91,14 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
-	client.Atomic = true
-	client.Wait = true
 	client.Install = true
-	var timeout time.Duration = 90 * time.Second
+
 	if App().Config().InstallTimeout != 0 {
-		timeout = App().Config().InstallTimeout
+		client.Atomic = true
+		client.Wait = true
+		client.Timeout = App().Config().InstallTimeout
 	}
-	client.Timeout = timeout
+
 	client.Namespace = namespace
 	if valueOpts == nil {
 		valueOpts = &values.Options{}

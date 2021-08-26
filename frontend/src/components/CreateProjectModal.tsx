@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { Controlled as CodeMirror } from "react-codemirror2";
@@ -196,6 +197,7 @@ const CreateProjectModal: React.FC<{
   }, [data, ws, namespaceId]);
 
   const [start, setStart] = useState(false);
+  const info = useSelector(selectClusterInfo);
 
   return (
     <div>
@@ -207,10 +209,13 @@ const CreateProjectModal: React.FC<{
       ></Button>
       <DraggableModal
         visible={visible}
-        okButtonProps={{ loading: list[slug]?.isLoading }}
+        okButtonProps={{
+          loading: list[slug]?.isLoading,
+          danger: info.status === "bad",
+        }}
         cancelButtonProps={{ disabled: list[slug]?.isLoading }}
         closable={!list[slug]?.isLoading}
-        okText="部署"
+        okText={info.status === "health" ? "部署" : "集群资源不足，请先释放资源"}
         cancelText="取消"
         onOk={onOk}
         initialWidth={800}

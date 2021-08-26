@@ -57,7 +57,8 @@ const (
 	WsCreateProject  string = "create_project"
 	WsUpdateProject  string = "update_project"
 
-	WsProcessPercent string = "process_percent"
+	WsProcessPercent  string = "process_percent"
+	WsClusterInfoSync string = "cluster_info_sync"
 )
 
 type AllWsConnections struct {
@@ -125,9 +126,26 @@ type WebsocketController struct {
 }
 
 func NewWebsocketController() *WebsocketController {
-	return &WebsocketController{
+	wc := &WebsocketController{
 		AllWsConnections: &AllWsConnections{conns: map[string]map[string]*WsConn{}},
 	}
+
+	ticker := time.NewTicker(5 * time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				marshal, _ := json.Marshal(utils.ClusterInfo())
+				wc.SendToAll(WsClusterInfoSync, string(marshal))
+			case <-utils.App().Done():
+				mlog.Warning("app shutdown and stop WsClusterInfoSync")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	return wc
 }
 
 type WsRequest struct {
