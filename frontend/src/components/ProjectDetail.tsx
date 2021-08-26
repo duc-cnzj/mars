@@ -102,7 +102,7 @@ const ItemDetailModal: React.FC<{
             <>
               <TabPane tab="容器日志" key="container-logs">
                 <div style={{ marginBottom: 10 }}>
-                  <span style={{ marginRight: 5 }}>自动刷新(5s):</span>
+                  <span style={{ marginRight: 5 }}>自动刷新(2s):</span>
                   <Switch
                     checked={autoRefresh}
                     onChange={handleAutoRefresh}

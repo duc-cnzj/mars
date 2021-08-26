@@ -74,7 +74,7 @@ const ProjectContainerLogs: React.FC<{
         console.log("setInterval");
       };
       fn();
-      intervalId = setInterval(fn, 5000);
+      intervalId = setInterval(fn, 2000);
     }
 
     return () => {

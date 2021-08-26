@@ -69,11 +69,15 @@ export const handleEvents = (id: string, data: WsResponse) => {
       case "set_uid":
         setUid(data.data);
         break;
+      case "cluster_info_sync":
+        dispatch(setClusterInfo(JSON.parse(data.data) as API.ClusterInfo))
+        break;
       case "reload_projects":
         dispatch(setNamespaceReload(true));
         break;
       case "update_project":
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
+        console.log("update_project", data);
 
         if (data.end) {
           switch (data.result) {
@@ -98,6 +102,7 @@ export const handleEvents = (id: string, data: WsResponse) => {
         }
         break;
       case "create_project":
+        console.log("create_project", data);
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
 
         if (data.end) {

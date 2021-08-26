@@ -50,9 +50,7 @@ const App: FC = () => {
         return;
       }
       let data: WsResponse = JSON.parse(evt.data);
-      console.log(data, data.type);
       dispatch(handleEvents(data.slug, data));
-      console.log("onmessage", evt.data);
     };
   }, [dispatch]);
 

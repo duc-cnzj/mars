@@ -44,6 +44,8 @@ type ApplicationInterface interface {
 	Run() chan os.Signal
 	Shutdown()
 
+	Done() <-chan struct{}
+
 	RegisterBeforeShutdownFunc(ShutdownFunc)
 	RegisterAfterShutdownFunc(ShutdownFunc)
 
