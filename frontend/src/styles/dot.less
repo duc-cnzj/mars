@@ -1,0 +1,30 @@
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+}
+
+.dot--health {
+    background-color: #6EE7B7;
+    box-shadow: 0px 0px 5px #A7F3D0;
+}
+
+.dot--bad {
+    background-color: #F87171;
+    box-shadow: 0px 0px 5px #FCA5A5;
+
+    animation: fade 2s infinite;
+}
+
+@keyframes fade {
+    from {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    to {
+        opacity: 1;
+    }
+}

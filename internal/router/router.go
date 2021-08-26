@@ -88,5 +88,10 @@ func Init(e *gin.Engine) {
 			e.GET("/ws", wsC.Ws)
 			api.GET("/ws_info", wsC.Info)
 		}
+
+		cc := controllers.NewClusterController()
+		{
+			api.GET("/cluster_info", cc.Info)
+		}
 	}
 }

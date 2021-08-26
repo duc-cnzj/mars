@@ -6,6 +6,7 @@ import {
   CLEAR_CREATE_PROJECT_LOG,
   SET_NAMESPACE_RELOAD,
   SET_PROCESS_PERCENT,
+  SET_CLUSTER_INFO,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -57,14 +58,19 @@ export const setProcessPercent = (id: string, percent: number) => ({
   },
 });
 
+export const setClusterInfo = (info: API.ClusterInfo) => ({
+  type: SET_CLUSTER_INFO,
+  info: info,
+});
+
 export const handleEvents = (id: string, data: WsResponse) => {
   return function (dispatch: Dispatch) {
     switch (data.type) {
       case "set_uid":
-        setUid(data.data)
+        setUid(data.data);
         break;
       case "reload_projects":
-        dispatch(setNamespaceReload(true))
+        dispatch(setNamespaceReload(true));
         break;
       case "update_project":
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
@@ -123,7 +129,7 @@ export const handleEvents = (id: string, data: WsResponse) => {
         dispatch(setProcessPercent(id, Number(data.data)));
         break;
       default:
-        console.log("unknown event: ", data.type)
+        console.log("unknown event: ", data.type);
     }
   };
 };
