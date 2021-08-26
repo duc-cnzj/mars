@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/duc-cnzj/mars/internal/response"
+
 	"helm.sh/helm/v3/pkg/action"
 
 	"helm.sh/helm/v3/pkg/chartutil"
@@ -66,9 +68,6 @@ type AllWsConnections struct {
 func (awc *AllWsConnections) Add(uid string, conn *WsConn) {
 	awc.Lock()
 	defer awc.Unlock()
-	if awc.conns == nil {
-		awc.conns = map[string]map[string]*WsConn{}
-	}
 	if m, ok := awc.conns[uid]; ok {
 		m[conn.id] = conn
 	} else {
@@ -121,30 +120,13 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var awc *AllWsConnections
-
 type WebsocketController struct {
 	*AllWsConnections
 }
 
 func NewWebsocketController() *WebsocketController {
-	awc = &AllWsConnections{conns: nil}
-	if utils.App().IsDebug() {
-		go func() {
-			t := time.NewTicker(1 * time.Second)
-			for {
-				select {
-				case <-t.C:
-					mlog.Warningf("################################# 一共有 %d 个客户端 #################################", len(awc.conns))
-					for s, m := range awc.conns {
-						mlog.Warningf("当前uid：%s 该uid下面的连接数: %d", s, len(m))
-					}
-				}
-			}
-		}()
-	}
 	return &WebsocketController{
-		AllWsConnections: awc,
+		AllWsConnections: &AllWsConnections{conns: map[string]map[string]*WsConn{}},
 	}
 }
 
@@ -224,6 +206,20 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 	jobs.cs[id] = pc
 }
 
+func (wc *WebsocketController) Info(ctx *gin.Context) {
+	detail := map[string]interface{}{}
+	wc.RLock()
+	defer wc.RUnlock()
+	for s, m := range wc.conns {
+		detail[s] = len(m)
+	}
+
+	response.Success(ctx, 200, gin.H{
+		"count":  len(wc.AllWsConnections.conns),
+		"detail": detail,
+	})
+}
+
 func (wc *WebsocketController) Ws(ctx *gin.Context) {
 	c, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
@@ -263,11 +259,11 @@ func (wc *WebsocketController) Ws(ctx *gin.Context) {
 		}
 
 		mlog.Debug("handle req", wsRequest)
-		go serveWebsocket(wsconn, wsRequest)
+		go wc.serveWebsocket(wsconn, wsRequest)
 	}
 }
 
-func serveWebsocket(c *WsConn, wsRequest WsRequest) {
+func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 	switch wsRequest.Type {
 	case WsCancel:
 		var input CancelInput
@@ -291,7 +287,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 
-		installProject(input, wsRequest.Type, wsRequest, c)
+		wc.installProject(input, wsRequest.Type, wsRequest, c)
 	case WsUpdateProject:
 		var input UpdateProject
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
@@ -306,7 +302,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 
-		installProject(ProjectInput{
+		wc.installProject(ProjectInput{
 			NamespaceId:     p.NamespaceId,
 			Name:            p.Name,
 			GitlabProjectId: p.GitlabProjectId,
@@ -340,7 +336,7 @@ type CancelInput struct {
 	Name        string `json:"name"`
 }
 
-func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
+func (wc *WebsocketController) installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
 	// step 1: 初始化
 	pc := &ProcessControl{
 		input:     input,
@@ -387,9 +383,9 @@ func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn
 	pc.Wait()
 	select {
 	case <-pc.stopCtx.Done():
-		awc.SendToAll(WsReloadProjects, "")
+		wc.SendToAll(WsReloadProjects, "")
 	default:
-		awc.SendExcept(conn.uid, WsReloadProjects, "")
+		wc.SendExcept(conn.uid, WsReloadProjects, "")
 	}
 }
 
@@ -580,6 +576,7 @@ func (pc *ProcessControl) CallAfterInstalledFuncs() {
 		f()
 	}
 }
+
 func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
 	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
 }

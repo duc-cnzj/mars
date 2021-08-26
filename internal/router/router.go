@@ -8,20 +8,12 @@ import (
 	"github.com/duc-cnzj/mars/internal/controllers"
 	t "github.com/duc-cnzj/mars/internal/translator"
 	"github.com/gin-contrib/cors"
-	"github.com/gorilla/websocket"
-
 	"github.com/gin-gonic/gin"
 )
 
 const (
 	JSONContentType = "application/json"
 )
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 func Init(e *gin.Engine) {
 	var cd = cors.DefaultConfig()
@@ -30,9 +22,6 @@ func Init(e *gin.Engine) {
 	e.Use(cors.New(cd))
 
 	frontend.LoadFrontendRoutes(e)
-
-	wsC := controllers.NewWebsocketController()
-	e.GET("/ws", wsC.Ws)
 
 	e.NoRoute(func(ctx *gin.Context) {
 		ctx.Data(http.StatusNotFound, JSONContentType, []byte(`{"code": 404, "message": "404 not found"}`))
@@ -92,6 +81,12 @@ func Init(e *gin.Engine) {
 			api.GET("/gitlab/projects/:project_id/global_config", marsController.GlobalConfig)
 			api.POST("/gitlab/projects/:project_id/toggle_enabled", marsController.ToggleEnabled)
 			api.PUT("/gitlab/projects/:project_id/mars_config", marsController.Update)
+		}
+
+		wsC := controllers.NewWebsocketController()
+		{
+			e.GET("/ws", wsC.Ws)
+			api.GET("/ws_info", wsC.Info)
 		}
 	}
 }
