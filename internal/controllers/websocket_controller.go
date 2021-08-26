@@ -209,10 +209,10 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 func (wc *WebsocketController) Info(ctx *gin.Context) {
 	detail := map[string]interface{}{}
 	wc.RLock()
-	defer wc.RUnlock()
 	for s, m := range wc.conns {
 		detail[s] = len(m)
 	}
+	wc.RUnlock()
 
 	response.Success(ctx, 200, gin.H{
 		"count":  len(wc.AllWsConnections.conns),
