@@ -8,7 +8,7 @@ import { useDispatch } from "react-redux";
 import { Switch, Route, Link } from "react-router-dom";
 import GitlabProjectManager from "./components/GitlabProjectManager";
 import { getUid } from "./utils/uid";
-
+import ClusterInfo from "./components/ClusterInfo";
 const { Header, Content, Footer } = Layout;
 
 export interface WsResponse {
@@ -32,9 +32,9 @@ const App: FC = () => {
       let isHttps = "https:" === window.location.protocol ? true : false;
       url = `${isHttps ? "wss" : "ws"}://${window.location.host}/ws`;
     }
-    let uid = getUid()
+    let uid = getUid();
     if (uid) {
-      url+="?uid="+uid
+      url += "?uid=" + uid;
     }
     let conn = new WebSocket(url);
     setWs(conn);
@@ -66,9 +66,12 @@ const App: FC = () => {
     <WsContext.Provider value={ws}>
       <Layout className="app">
         <Header style={{ position: "fixed", zIndex: 1, width: "100%" }}>
-          <Link to="/" className="app-title">
-            Mars
-          </Link>
+          <div style={{display: "flex", alignItems: "center", justifyContent: "space-between"}}>
+            <Link to="/" className="app-title">
+              Mars
+            </Link>
+            <ClusterInfo />
+          </div>
         </Header>
         <Content className="app-content">
           <Switch>
