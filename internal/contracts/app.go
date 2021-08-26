@@ -20,8 +20,8 @@ type Bootstrapper interface {
 }
 
 type K8sClient struct {
-	Client        *kubernetes.Clientset
-	MetricsClient *versioned.Clientset
+	Client        kubernetes.Interface
+	MetricsClient versioned.Interface
 	RestConfig    *restclient.Config
 }
 

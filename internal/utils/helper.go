@@ -34,10 +34,10 @@ func K8sClient() *contracts.K8sClient {
 	return App().K8sClient()
 }
 
-func K8sClientSet() *kubernetes.Clientset {
+func K8sClientSet() kubernetes.Interface {
 	return App().K8sClient().Client
 }
 
-func K8sMetrics() *versioned.Clientset {
+func K8sMetrics() versioned.Interface {
 	return App().K8sClient().MetricsClient
 }
