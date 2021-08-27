@@ -933,7 +933,7 @@ func (pc *ProcessControl) Run() {
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 	go func() {
-		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log); err != nil {
+		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log, pc.marC.Atomic); err != nil {
 			mlog.Error(err)
 			ch <- MessageItem{
 				Msg:  err.Error(),
