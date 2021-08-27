@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 
@@ -42,6 +43,8 @@ type Config struct {
 	// 如果默认的ingress 规则不符合，你可以通过这个重写
 	// 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
 	IngressOverwriteValues []string `json:"ingress_overwrite_values" yaml:"ingress_overwrite_values"`
+
+	ImagePullSecrets []string `json:"image_pull_secrets"`
 }
 
 func (mars *Config) BranchPass(name string) bool {
@@ -76,10 +79,23 @@ func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
 	if err := encoder.Encode(mars.DefaultValues); err != nil {
 		return "", nil, err
 	}
-	b := bf.Bytes()
+	b := bf.String()
+	parse, e := template.New("").Parse(b)
+	if e != nil {
+		return "", nil, e
+	}
+
+	renderResult := &bytes.Buffer{}
+	if err := parse.Execute(renderResult, struct {
+		ImagePullSecrets []string
+	}{
+		ImagePullSecrets: mars.ImagePullSecrets,
+	}); err != nil {
+		return "", nil, err
+	}
 	mlog.Debug("GenerateDefaultValuesYamlFile", string(b))
 
-	return utils.WriteConfigYamlToTmpFile(b)
+	return utils.WriteConfigYamlToTmpFile(renderResult.Bytes())
 
 }
 

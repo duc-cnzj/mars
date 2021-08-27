@@ -24,8 +24,13 @@ docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# values.yaml 会合并其他配置(可选)
+# default_values 会合并其他配置(可选), 可用变量 .ImagePullSecrets
 default_values:
+  db:
+    imagePullSecrets: |
+      {{- range .ImagePullSecrets }}
+      - name: {{ . }}
+      {{- end}}
   service:
     type: ClusterIP
   ingess:
