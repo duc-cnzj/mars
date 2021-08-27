@@ -32,6 +32,9 @@ default_values:
     type: ClusterIP
   ingess:
     enabled: false
+# 等于 helm 中的 --atomic，优点：部署成功可以直接访问, 缺点：部署失败时不能查看日志 (可选)
+# 如果你的容器部署后起不来，建议设置为 false，查看下容器日志
+atomic: false
 # 若配置则只会显示配置的分支, 默认 "*"(可选)
 branches:
   - dev
