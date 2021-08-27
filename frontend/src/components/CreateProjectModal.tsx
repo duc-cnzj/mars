@@ -215,7 +215,7 @@ const CreateProjectModal: React.FC<{
         }}
         cancelButtonProps={{ disabled: list[slug]?.isLoading }}
         closable={!list[slug]?.isLoading}
-        okText={info.status === "health" ? "部署" : "集群资源不足，请先释放资源"}
+        okText={info.status === "health" ? "部署" : "集群资源不足"}
         cancelText="取消"
         onOk={onOk}
         initialWidth={800}
