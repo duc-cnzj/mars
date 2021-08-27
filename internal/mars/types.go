@@ -44,6 +44,9 @@ type Config struct {
 	// 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
 	IngressOverwriteValues []string `json:"ingress_overwrite_values" yaml:"ingress_overwrite_values"`
 
+	// Atomic 既 helm 中的 --atomic
+	Atomic bool `json:"atomic" yaml:"atomic"`
+
 	ImagePullSecrets []string `json:"image_pull_secrets"`
 }
 

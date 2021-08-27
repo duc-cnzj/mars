@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"time"
 	"unsafe"
 
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -71,7 +72,7 @@ func GetSettings(namespace string) *cli.EnvSettings {
 }
 
 // UpgradeOrInstall TODO
-func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{})) (*release.Release, error) {
+func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool) (*release.Release, error) {
 	var settings = GetSettings(namespace)
 	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
@@ -93,10 +94,14 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
 
-	if App().Config().InstallTimeout != 0 {
+	if atomic {
 		client.Atomic = true
 		client.Wait = true
-		client.Timeout = App().Config().InstallTimeout
+		if App().Config().InstallTimeout != 0 {
+			client.Timeout = App().Config().InstallTimeout
+		} else {
+			client.Timeout = 90 * time.Second
+		}
 	}
 
 	client.Namespace = namespace
