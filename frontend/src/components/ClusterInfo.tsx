@@ -16,10 +16,6 @@ const ClusterInfo: React.FC = () => {
     });
   }, [dispatch]);
 
-  const isHealth = useCallback(() => {
-    return info.status === "health";
-  }, [info.status]);
-
   return (
     <Tooltip
       placement="bottom"
@@ -58,8 +54,9 @@ const ClusterInfo: React.FC = () => {
     >
       <div
         className={classnames("dot", {
-          "dot--health": isHealth(),
-          "dot--bad": !isHealth(),
+          "dot--health": info.status === "health",
+          "dot--bad": info.status === "bad",
+          "dot--not-good": info.status === "not good",
         })}
       ></div>
     </Tooltip>

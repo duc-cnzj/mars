@@ -14,8 +14,9 @@ import (
 type ClusterStatus string
 
 const (
-	StatusBad    ClusterStatus = "bad"
-	StatusHealth ClusterStatus = "health"
+	StatusBad     ClusterStatus = "bad"
+	StatusNotGood ClusterStatus = "not good"
+	StatusHealth  ClusterStatus = "health"
 )
 
 type InfoResponse struct {
@@ -76,7 +77,10 @@ func ClusterInfo() *InfoResponse {
 	rateCpu := float64(usedCpu.Value()) / float64(totalCpu.Value()) * 100
 
 	var status = StatusHealth
-	if rateMemory > 85 {
+	if rateMemory > 70 {
+		status = StatusNotGood
+	}
+	if rateMemory > 90 {
 		status = StatusBad
 	}
 
