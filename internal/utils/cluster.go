@@ -77,10 +77,10 @@ func ClusterInfo() *InfoResponse {
 	rateCpu := float64(usedCpu.Value()) / float64(totalCpu.Value()) * 100
 
 	var status = StatusHealth
-	if rateMemory > 70 {
+	if rateMemory > 60 {
 		status = StatusNotGood
 	}
-	if rateMemory > 90 {
+	if rateMemory > 80 {
 		status = StatusBad
 	}
 
