@@ -875,6 +875,7 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	var imagePullSecrets []string
 	for k, s := range pc.project.Namespace.ImagePullSecretsArray() {
 		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
+		marsC.ImagePullSecrets = append(marsC.ImagePullSecrets, s)
 	}
 
 	// default_values 也需要一个 file

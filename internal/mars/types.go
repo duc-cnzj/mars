@@ -70,6 +70,7 @@ func (mars *Config) BranchPass(name string) bool {
 	return false
 }
 
+// GenerateDefaultValuesYamlFile 支持变量 "$imagePullSecrets"
 func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
 	if len(mars.DefaultValues) < 1 {
 		return "", func() {}, nil
@@ -79,7 +80,9 @@ func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
 	if err := encoder.Encode(mars.DefaultValues); err != nil {
 		return "", nil, err
 	}
-	b := bf.String()
+
+	b := strings.Replace(bf.String(), `$imagePullSecrets`, `[{{- range .ImagePullSecrets }}{name: {{ . }}}, {{- end }}]`, -1)
+
 	parse, e := template.New("").Parse(b)
 	if e != nil {
 		return "", nil, e
@@ -93,9 +96,11 @@ func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
 	}); err != nil {
 		return "", nil, err
 	}
-	mlog.Debug("GenerateDefaultValuesYamlFile", string(b))
 
-	return utils.WriteConfigYamlToTmpFile(renderResult.Bytes())
+	res := renderResult.Bytes()
+	mlog.Warning("GenerateDefaultValuesYamlFile", string(res))
+
+	return utils.WriteConfigYamlToTmpFile(res)
 
 }
 
