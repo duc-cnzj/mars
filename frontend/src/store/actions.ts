@@ -1,4 +1,3 @@
-import { WsResponse } from "./../App";
 import {
   SET_CREATE_PROJECT_LOADING,
   APPEND_CREATE_PROJECT_LOG,
@@ -63,7 +62,7 @@ export const setClusterInfo = (info: API.ClusterInfo) => ({
   info: info,
 });
 
-export const handleEvents = (id: string, data: WsResponse) => {
+export const handleEvents = (id: string, data: API.WsResponse) => {
   return function (dispatch: Dispatch) {
     switch (data.type) {
       case "set_uid":

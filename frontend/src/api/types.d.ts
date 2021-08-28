@@ -21,4 +21,12 @@ declare namespace API {
     usage_memory_rate: string;
     usage_cpu_rate: string;
   }
+
+  interface WsResponse {
+    type: string;
+    slug: string;
+    result: string;
+    data: string;
+    end: boolean;
+  }
 }
