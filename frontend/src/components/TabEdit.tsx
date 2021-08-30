@@ -103,6 +103,7 @@ const ModalSub: React.FC<{
   // 更新成功，触发 onSuccess
   useEffect(() => {
     if (list[slug]?.deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
+      setStart(false)
       setTimelineVisible(false);
       setEditVisible(true);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
