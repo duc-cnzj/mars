@@ -93,6 +93,7 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
+	client.DisableOpenAPIValidation = true
 
 	if atomic {
 		client.Atomic = true
