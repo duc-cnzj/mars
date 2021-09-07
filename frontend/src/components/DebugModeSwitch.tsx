@@ -36,7 +36,7 @@ const DebugModeSwitch: React.FC<{
           <InfoCircleOutlined />
         </Tooltip>
         <div style={{ paddingLeft: 3 }}>
-          <span>debug: </span>
+          <span>debug 模式:</span>
         </div>
       </div>
       <Switch
