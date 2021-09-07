@@ -63,8 +63,6 @@ docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# 等于 helm 中的 --atomic，优点：部署成功可以直接访问, 缺点：部署失败时原因没办法详细查看 (可选)
-atomic: false
 # values.yaml 会合并其他配置(可选)
 default_values:
   redis:

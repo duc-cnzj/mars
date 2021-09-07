@@ -29,6 +29,7 @@ import { ProjectDetail } from "../api/project";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
+import DebugModeSwitch from './DebugModeSwitch'
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -44,6 +45,7 @@ interface CreateItemInterface {
 
   name: string;
   config: string;
+  debug: boolean;
 }
 
 const ModalSub: React.FC<{
@@ -64,6 +66,7 @@ const ModalSub: React.FC<{
     gitlabBranch: detail.gitlab_branch,
     gitlabCommit: detail.gitlab_commit,
     config: detail.config,
+    debug: !detail.atomic,
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [initValue, setInitValue] = useState<{
@@ -170,6 +173,7 @@ const ModalSub: React.FC<{
           gitlab_branch: data.gitlabBranch,
           gitlab_commit: data.gitlabCommit,
           config: data.config,
+          atomic: !data.debug,
         }),
       };
       let s = JSON.stringify(re);
@@ -195,6 +199,7 @@ const ModalSub: React.FC<{
       gitlabBranch: detail.gitlab_branch,
       gitlabCommit: detail.gitlab_commit,
       config: detail.config,
+      debug: !detail.atomic,
     });
     if (initValue) {
       setInitValue({ ...initValue, time: new Date().getUTCSeconds() });
@@ -246,7 +251,22 @@ const ModalSub: React.FC<{
             <Skeleton.Input active style={{ width: 800 }} size="small" />
           )}
         </div>
-        配置文件:
+        <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: 10,
+            }}
+          >
+            <span>配置文件:</span>
+            <DebugModeSwitch
+              value={data.debug}
+              onchange={(checked: boolean, event: MouseEvent) => {
+                setData((data) => ({ ...data, debug: checked }));
+              }}
+            />
+          </div>
         <div style={{ minWidth: 200, marginBottom: 20 }}>
           <CodeMirror
             value={data.config}

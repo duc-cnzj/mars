@@ -30,6 +30,7 @@ import classNames from "classnames";
 import { toSlug } from "../utils/slug";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
+import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
 require("codemirror/mode/go/go");
@@ -45,6 +46,7 @@ const initItemData: CreateItemInterface = {
   gitlabBranch: "",
   gitlabCommit: "",
   config: "",
+  debug: false,
 };
 
 interface CreateItemInterface {
@@ -54,6 +56,7 @@ interface CreateItemInterface {
 
   name: string;
   config: string;
+  debug: boolean;
 }
 
 const CreateProjectModal: React.FC<{
@@ -165,6 +168,7 @@ const CreateProjectModal: React.FC<{
           gitlab_branch: data.gitlabBranch,
           gitlab_commit: data.gitlabCommit,
           config: data.config,
+          atomic: !data.debug,
         }),
       };
 
@@ -245,7 +249,22 @@ const CreateProjectModal: React.FC<{
             ""
           )}
           <ProjectSelector onChange={onChange} />
-          配置文件:
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: 10,
+            }}
+          >
+            <span>配置文件:</span>
+            <DebugModeSwitch
+              value={data.debug}
+              onchange={(checked: boolean, event: MouseEvent) => {
+                setData((data) => ({ ...data, debug: checked }));
+              }}
+            />
+          </div>
           <div
             style={{
               minWidth: 200,

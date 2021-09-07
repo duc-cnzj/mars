@@ -12,6 +12,7 @@ export interface ProjectDetail {
     name: string;
   }
 
+  atomic: boolean;
   urls:string[];
   cpu:string;
   memory:string;

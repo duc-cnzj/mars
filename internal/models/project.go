@@ -25,6 +25,7 @@ type Project struct {
 	DockerImage     string `json:"docker_image" gorm:"not null;size:255;default:''"`
 	PodSelectors    string `json:"pod_selectors" gorm:"type:text;nullable;"`
 	NamespaceId     int    `json:"namespace_id"`
+	Atomic          bool   `json:"atomic"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
