@@ -47,7 +47,7 @@ type Config struct {
 	// Atomic 既 helm 中的 --atomic
 	Atomic bool `json:"atomic" yaml:"atomic"`
 
-	ImagePullSecrets []string `json:"image_pull_secrets"`
+	ImagePullSecrets []string `json:"-"`
 }
 
 func (mars *Config) BranchPass(name string) bool {
