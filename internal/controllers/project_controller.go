@@ -31,6 +31,7 @@ type ProjectDetailItem struct {
 	GitlabCommit    string `json:"gitlab_commit"`
 	Config          string `json:"config"`
 	DockerImage     string `json:"docker_image"`
+	Atomic          bool   `json:"atomic"`
 
 	GitlabCommitWebURL string `json:"gitlab_commit_web_url"`
 	GitlabCommitTitle  string `json:"gitlab_commit_title"`
@@ -91,6 +92,7 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		ID:                 project.ID,
 		Name:               project.Name,
 		Urls:               urls,
+		Atomic:             project.Atomic,
 		GitlabProjectId:    project.GitlabProjectId,
 		GitlabBranch:       project.GitlabBranch,
 		GitlabCommit:       project.GitlabCommit,

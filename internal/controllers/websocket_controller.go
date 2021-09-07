@@ -337,6 +337,7 @@ type UpdateProject struct {
 	GitlabBranch string `json:"gitlab_branch"`
 	GitlabCommit string `json:"gitlab_commit"`
 	Config       string `json:"config"`
+	Atomic       bool   `json:"atomic"`
 }
 
 type ProjectInput struct {
@@ -347,6 +348,7 @@ type ProjectInput struct {
 	GitlabBranch    string `json:"gitlab_branch"`
 	GitlabCommit    string `json:"gitlab_commit"`
 	Config          string `json:"config"`
+	Atomic          bool   `json:"atomic"`
 }
 
 type CancelInput struct {
@@ -654,6 +656,7 @@ func (pc *ProcessControl) SetUp() error {
 		Config:          pc.input.Config,
 		NamespaceId:     ns.ID,
 		Namespace:       ns,
+		Atomic:          pc.input.Atomic,
 	}
 
 	var p models.Project
@@ -829,8 +832,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 		ingressConfig = []string{
 			"ingress.enabled=true",
 			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
-			"ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer=" + utils.Config().ClusterIssuer,
 		}
+		if utils.Config().ClusterIssuer != "" {
+			ingressConfig = append(ingressConfig, "ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer="+utils.Config().ClusterIssuer)
+		}
+
 		if len(marsC.IngressOverwriteValues) > 0 {
 			var overwrites []string
 			for _, value := range marsC.IngressOverwriteValues {
@@ -933,7 +939,7 @@ func (pc *ProcessControl) Run() {
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 	go func() {
-		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log, pc.marC.Atomic); err != nil {
+		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log, pc.input.Atomic); err != nil {
 			mlog.Error(err)
 			ch <- MessageItem{
 				Msg:  err.Error(),
@@ -947,7 +953,7 @@ func (pc *ProcessControl) Run() {
 			var p models.Project
 			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == nil {
 				utils.DB().Model(&models.Project{}).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues").
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
 					Where("`id` = ?", p.ID).
 					Updates(&pc.project)
 			} else {
