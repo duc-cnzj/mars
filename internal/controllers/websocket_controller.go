@@ -327,6 +327,7 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			GitlabBranch:    input.GitlabBranch,
 			GitlabCommit:    input.GitlabCommit,
 			Config:          input.Config,
+			Atomic:          input.Atomic,
 		}, wsRequest.Type, wsRequest, c)
 	}
 }
