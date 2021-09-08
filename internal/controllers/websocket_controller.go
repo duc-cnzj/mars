@@ -130,7 +130,7 @@ func NewWebsocketController() *WebsocketController {
 		AllWsConnections: &AllWsConnections{conns: map[string]map[string]*WsConn{}},
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	go func() {
 		for {
 			select {

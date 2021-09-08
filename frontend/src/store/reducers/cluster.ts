@@ -4,9 +4,13 @@ const initialState: API.ClusterInfo = {
   free_memory: "",
   free_cpu: "",
   total_memory: "",
+  free_request_cpu: "",
+  free_request_memory: "",
   total_cpu: "",
   usage_memory_rate: "",
   usage_cpu_rate: "",
+  request_memory_rate: "",
+  request_cpu_rate: "",
 };
 
 export const selectClusterInfo = (state: { cluster: API.ClusterInfo }) =>
