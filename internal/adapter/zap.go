@@ -14,11 +14,11 @@ type ZapLogger struct {
 func NewZapLogger(app contracts.ApplicationInterface) *ZapLogger {
 	var logger *zap.Logger
 
-	opt := zap.AddStacktrace(zapcore.ErrorLevel)
+	opts := []zap.Option{zap.AddStacktrace(zapcore.ErrorLevel), zap.AddCallerSkip(2)}
 	if app.IsDebug() {
-		logger, _ = zap.NewDevelopment(opt)
+		logger, _ = zap.NewDevelopment(opts...)
 	} else {
-		logger, _ = zap.NewProduction(opt)
+		logger, _ = zap.NewProduction(opts...)
 	}
 
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
