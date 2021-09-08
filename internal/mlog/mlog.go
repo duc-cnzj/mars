@@ -8,10 +8,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger contracts.LoggerInterface = logrus.New()
+var (
+	addCaller bool
 
-func SetLogger(l contracts.LoggerInterface) {
+	logger contracts.LoggerInterface = logrus.New()
+)
+
+func SetLogger(l contracts.LoggerInterface, showCaller bool) {
 	logger = l
+	addCaller = showCaller
 }
 
 func Debug(v ...interface{}) {
@@ -23,53 +28,69 @@ func Debugf(format string, v ...interface{}) {
 }
 
 func Warning(v ...interface{}) {
-	v = append(v, getCaller(true))
+	if addCaller {
+		v = append(v, getCaller(true))
+	}
 
 	logger.Warning(v...)
 }
 
 func Warningf(format string, v ...interface{}) {
-	format = format + "%s"
-	v = append(v, getCaller(true))
+	if addCaller {
+		format = format + "%s"
+		v = append(v, getCaller(true))
+	}
 
 	logger.Warningf(format, v...)
 }
 
 func Info(v ...interface{}) {
-	v = append(v, getCaller(true))
+	if addCaller {
+		v = append(v, getCaller(true))
+	}
 
 	logger.Info(v...)
 }
 
 func Infof(format string, v ...interface{}) {
-	format = format + "%s"
-	v = append(v, getCaller(true))
+	if addCaller {
+		format = format + "%s"
+		v = append(v, getCaller(true))
+	}
 
 	logger.Infof(format, v...)
 }
 
 func Error(v ...interface{}) {
-	v = append(v, getCaller(false))
+	if addCaller {
+		v = append(v, getCaller(false))
+	}
 
 	logger.Error(v...)
 }
 
 func Errorf(format string, v ...interface{}) {
-	format = format + "%s"
-	v = append(v, getCaller(false))
+	if addCaller {
+		format = format + "%s"
+		v = append(v, getCaller(false))
+	}
 
 	logger.Errorf(format, v...)
 }
 
 func Fatal(v ...interface{}) {
-	v = append(v, getCaller(false))
+	if addCaller {
+		v = append(v, getCaller(false))
+	}
 
 	logger.Fatal(v...)
 }
 
 func Fatalf(format string, v ...interface{}) {
-	format = format + "%s"
-	v = append(v, getCaller(false))
+	if addCaller {
+		format = format + "%s"
+		v = append(v, getCaller(false))
+	}
 
 	logger.Fatalf(format, v...)
 }
