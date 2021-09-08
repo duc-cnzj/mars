@@ -26,20 +26,20 @@ const ClusterInfo: React.FC = () => {
             {info.status}
           </div>
           <div>
-            <span>cpu 剩余: </span>
-            {info.free_cpu}
+            <span>cpu 剩余可分配量: </span>
+            {info.free_request_cpu}
           </div>
           <div>
-            <span>memory 剩余: </span>
-            {info.free_memory}
+            <span>memory 剩余可分配量: </span>
+            {info.free_request_memory}
           </div>
           <div>
-            <span>cpu 使用率: </span>
-            {info.usage_cpu_rate}
+            <span>cpu 分配率: </span>
+            {info.request_cpu_rate}
           </div>
           <div>
-            <span>memory 使用率: </span>
-            {info.usage_memory_rate}
+            <span>memory 分配率: </span>
+            {info.request_memory_rate}
           </div>
           <div>
             <span>cpu 总量: </span>
