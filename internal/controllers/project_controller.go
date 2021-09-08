@@ -36,6 +36,7 @@ type ProjectDetailItem struct {
 	GitlabCommitWebURL string `json:"gitlab_commit_web_url"`
 	GitlabCommitTitle  string `json:"gitlab_commit_title"`
 	GitlabCommitAuthor string `json:"gitlab_commit_author"`
+	GitlabCommitDate   string `json:"gitlab_commit_date"`
 
 	Urls []string `json:"urls"`
 
@@ -101,6 +102,7 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 		GitlabCommitWebURL: commit.WebURL,
 		GitlabCommitTitle:  commit.Title,
 		GitlabCommitAuthor: commit.AuthorName,
+		GitlabCommitDate:   utils.ToHumanizeDatetimeString(commit.CreatedAt),
 		Namespace: struct {
 			ID   int    `json:"id"`
 			Name string `json:"name"`

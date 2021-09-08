@@ -23,6 +23,7 @@ export interface ProjectDetail {
   gitlab_commit_title:string;
   gitlab_commit_web_url:string;
   gitlab_commit_author:string;
+  gitlab_commit_date:string;
 }
 
 export function detailProject(namespaceId:number, projectId:number) {
