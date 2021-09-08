@@ -3,6 +3,7 @@ package adapter
 import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type ZapLogger struct {
@@ -13,10 +14,11 @@ type ZapLogger struct {
 func NewZapLogger(app contracts.ApplicationInterface) *ZapLogger {
 	var logger *zap.Logger
 
+	opt := zap.AddStacktrace(zapcore.ErrorLevel)
 	if app.IsDebug() {
-		logger, _ = zap.NewDevelopment()
+		logger, _ = zap.NewDevelopment(opt)
 	} else {
-		logger, _ = zap.NewProduction()
+		logger, _ = zap.NewProduction(opt)
 	}
 
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
