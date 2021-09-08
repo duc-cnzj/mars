@@ -201,7 +201,7 @@ func (app *Application) Shutdown() {
 }
 
 func (app *Application) RegisterAfterShutdownFunc(fn contracts.ShutdownFunc) {
-	app.beforeShutdownFunctions = append(app.afterShutdownFunctions, fn)
+	app.afterShutdownFunctions = append(app.afterShutdownFunctions, fn)
 }
 
 func (app *Application) RegisterBeforeShutdownFunc(fn contracts.ShutdownFunc) {
