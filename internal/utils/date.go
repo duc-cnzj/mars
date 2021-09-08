@@ -19,12 +19,12 @@ var magnitudes = []humanize.RelTimeMagnitude{
 	{humanize.Week, "%d 天%s", humanize.Day},
 	{2 * humanize.Week, "1 周%s", 1},
 	{humanize.Month, "%d 周%s", humanize.Week},
-	{2 * humanize.Month, "1 月%s", 1},
-	{humanize.Year, "%d 月%s", humanize.Month},
+	{2 * humanize.Month, "1 个月%s", 1},
+	{humanize.Year, "%d 个月%s", humanize.Month},
 	{18 * humanize.Month, "1 年%s", 1},
 	{2 * humanize.Year, "2 年%s", 1},
 	{humanize.LongTime, "%d 年%s", humanize.Year},
-	{math.MaxInt64, "很长一段时间%s", 1},
+	{math.MaxInt64, "很久%s", 1},
 }
 
 func ToHumanizeDatetimeString(t *time.Time) string {
