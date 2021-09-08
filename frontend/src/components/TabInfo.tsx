@@ -159,7 +159,7 @@ const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
               <a href={detail.gitlab_commit_web_url} target="_blank">
                 {detail.gitlab_commit_title}
               </a>
-              by {detail.gitlab_commit_author}
+              by {detail.gitlab_commit_author} 于 {detail.gitlab_commit_date}
             </span>
           </p>
         </div>
@@ -190,7 +190,7 @@ const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
             />
           </svg>
           <p>
-            提交日期: <span className="detail-data">{detail.created_at}</span>
+            部署日期: <span className="detail-data">{detail.created_at}</span>
           </p>
         </div>
 
