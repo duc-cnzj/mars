@@ -131,7 +131,6 @@ func ClusterInfo() *InfoResponse {
 	if rateRequestMemory > 80 || rateRequestCpu > 80 {
 		status = StatusBad
 	}
-	mlog.Info("rateRequestCpu, rateRequestMemory", rateRequestCpu, rateRequestMemory)
 
 	return &InfoResponse{
 		Status:            status,
