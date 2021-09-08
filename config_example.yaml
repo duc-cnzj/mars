@@ -1,7 +1,7 @@
 app_port: 6000
 debug: false
 
-# logrus
+# 'logrus' | 'zap'
 #log_channel: "logrus"
 
 profile_enabled: true
