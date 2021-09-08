@@ -381,10 +381,12 @@ func (wc *WebsocketController) installProject(input ProjectInput, wsType string,
 	var checkList = []func() error{
 		pc.CheckConfig,
 		pc.PrepareConfigFiles,
+		pc.CheckImage,
 	}
 
 	for _, fn := range checkList {
 		if err := fn(); err != nil {
+			pc.Prune()
 			pc.SendEndError(err)
 			return
 		}
@@ -602,12 +604,16 @@ func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
 	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
 }
 
+func (pc *ProcessControl) Prune() {
+	if pc.new {
+		utils.DB().Delete(&pc.project)
+	}
+}
+
 func (pc *ProcessControl) DoStop() {
 	select {
 	case <-pc.stopCtx.Done():
-		if pc.new {
-			utils.DB().Delete(&pc.project)
-		}
+		pc.Prune()
 		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
 	default:
 		return
@@ -984,6 +990,17 @@ func (pc *ProcessControl) Wait() {
 			pc.SendEndMsg(ResultDeployed, s.Msg)
 		}
 	}
+}
+
+func (pc *ProcessControl) CheckImage() error {
+	image := strings.Split(pc.project.DockerImage, ":")
+	if len(image) == 2 {
+		if utils.ImageNotExists(image[0], image[1]) {
+			return errors.New(fmt.Sprintf("镜像 %s 不存在！", pc.project.DockerImage))
+		}
+	}
+
+	return nil
 }
 
 type MessageSender struct {
