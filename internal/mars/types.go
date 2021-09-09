@@ -70,22 +70,22 @@ func (mars *Config) BranchPass(name string) bool {
 	return false
 }
 
-// GenerateDefaultValuesYamlFile 支持变量 "$imagePullSecrets"
-func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
+// GenerateDefaultValuesYaml 支持变量 "$imagePullSecrets"
+func (mars *Config) GenerateDefaultValuesYaml() (string, error) {
 	if len(mars.DefaultValues) < 1 {
-		return "", func() {}, nil
+		return "", nil
 	}
 	bf := &bytes.Buffer{}
 	encoder := yaml.NewEncoder(bf)
 	if err := encoder.Encode(mars.DefaultValues); err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	b := strings.Replace(bf.String(), `$imagePullSecrets`, `[{{- range .ImagePullSecrets }}{name: {{ . }}}, {{- end }}]`, -1)
 
 	parse, e := template.New("").Parse(b)
 	if e != nil {
-		return "", nil, e
+		return "", e
 	}
 
 	renderResult := &bytes.Buffer{}
@@ -94,24 +94,24 @@ func (mars *Config) GenerateDefaultValuesYamlFile() (string, func(), error) {
 	}{
 		ImagePullSecrets: mars.ImagePullSecrets,
 	}); err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	res := renderResult.Bytes()
-	mlog.Warning("GenerateDefaultValuesYamlFile", string(res))
+	res := renderResult.String()
+	mlog.Warning("GenerateDefaultValuesYamlFile", res)
 
-	return utils.WriteConfigYamlToTmpFile(res)
+	return res, nil
 
 }
 
-func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(), error) {
+func (mars *Config) GenerateConfigYamlByInput(input string) (string, error) {
 	var (
 		err      error
 		yamlData []byte
 	)
 	if mars.IsSimpleEnv {
-		if yamlData, err = utils.EncodeConfigToYaml(mars.ConfigField, input); err != nil {
-			return "", nil, err
+		if yamlData, err = utils.YamlDeepSetKey(mars.ConfigField, input); err != nil {
+			return "", err
 		}
 	} else {
 		switch mars.ConfigFileType {
@@ -119,37 +119,37 @@ func (mars *Config) GenerateConfigYamlFileByInput(input string) (string, func(),
 			var data map[string]interface{}
 			decoder := yaml.NewDecoder(strings.NewReader(input))
 			if err := decoder.Decode(&data); err != nil {
-				return "", nil, err
+				return "", err
 			}
 
-			if yamlData, err = EncodeConfigToYaml(mars.ConfigField, data); err != nil {
-				return "", nil, err
+			if yamlData, err = utils.YamlDeepSetKey(mars.ConfigField, data); err != nil {
+				return "", err
 			}
 		case "json":
 			var data map[string]interface{}
 			if err := json.Unmarshal([]byte(input), &data); err != nil {
-				return "", nil, err
+				return "", err
 			}
 
-			if yamlData, err = EncodeConfigToYaml(mars.ConfigField, data); err != nil {
-				return "", nil, err
+			if yamlData, err = utils.YamlDeepSetKey(mars.ConfigField, data); err != nil {
+				return "", err
 			}
 		case "env", "dotenv", ".env":
 			parse, err := godotenv.Parse(strings.NewReader(input))
 			if err != nil {
-				return "", nil, err
+				return "", err
 			}
 
-			if yamlData, err = EncodeConfigToYaml(mars.ConfigField, parse); err != nil {
-				return "", nil, err
+			if yamlData, err = utils.YamlDeepSetKey(mars.ConfigField, parse); err != nil {
+				return "", err
 			}
 		default:
 			mlog.Error("unsupport type: " + mars.ConfigFileType)
-			return "", func() {}, nil
+			return "", nil
 		}
 	}
 
-	return utils.WriteConfigYamlToTmpFile(yamlData)
+	return string(yamlData), nil
 }
 
 // IsRemoteConfigFile 如果是这个格式意味着是远程项目, "pid|branch|filename"
@@ -171,16 +171,4 @@ func intPid(pid string) bool {
 		return true
 	}
 	return false
-}
-
-func EncodeConfigToYaml(field string, data interface{}) ([]byte, error) {
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-	if err := encoder.Encode(map[string]interface{}{
-		field: data,
-	}); err != nil {
-		return nil, err
-	}
-
-	return bf.Bytes(), nil
 }

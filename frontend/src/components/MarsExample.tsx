@@ -14,7 +14,10 @@ config_file_values: |
   port: 8000
 # 配置文件的类型(如果有config_file，必填)
 config_file_type: yaml
-# config_file 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
+# config_field 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
+# 可以使用 '->' 指向下一级, 比如：'config->app_name'， 会变成
+# config:
+#   app_name: xxxx
 config_field: conf
 # 镜像仓库(必填)
 docker_repository: nginx
@@ -24,7 +27,7 @@ docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# default_values 会合并其他配置(可选), 可用变量 "$imagePullSecrets"
+# default_values 会合并其他配置(可选), 可用变量 "$imagePullSecrets", 会和 'config_field' deep merge
 default_values:
   db:
     imagePullSecrets: $imagePullSecrets

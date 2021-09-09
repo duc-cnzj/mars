@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 
@@ -114,12 +115,18 @@ func CleanEvictedPods(namespace string, selectors string) {
 		mlog.Error(err)
 		return
 	}
+	wg := &sync.WaitGroup{}
+	wg.Add(len(list.Items))
 	for _, item := range list.Items {
-		if item.Status.Reason == "Evicted" {
-			err := K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
-			if err != nil {
-				mlog.Error(err)
+		go func(item v1.Pod) {
+			defer wg.Done()
+			if item.Status.Reason == "Evicted" {
+				err := K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
+				if err != nil {
+					mlog.Error(err)
+				}
 			}
-		}
+		}(item)
 	}
+	wg.Wait()
 }

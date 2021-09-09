@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/config"
+	"gopkg.in/yaml.v2"
+
 	"github.com/duc-cnzj/mars/internal/response"
 
 	"helm.sh/helm/v3/pkg/action"
@@ -756,7 +759,36 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	loadArchive := pc.chart
 	input := pc.input
 
-	filePath, deleteFn, err := marsC.GenerateConfigYamlFileByInput(input.Config)
+	// default_values 也需要一个 file
+	defaultValues, err := marsC.GenerateDefaultValuesYaml()
+	if err != nil {
+		return err
+	}
+
+	// 传入自定义配置必须在默认配置之后，不然会被上面的 default_values 覆盖，导致不管你怎么更新配置文件都无法正正的更新到容器
+	configValues, err := marsC.GenerateConfigYamlByInput(input.Config)
+	if err != nil {
+		return err
+	}
+
+	base := strings.NewReader(defaultValues)
+	override := strings.NewReader(configValues)
+
+	provider, err := config.NewYAML(config.Source(base), config.Source(override))
+	if err != nil {
+		return err
+	}
+	var mergedDefaultAndConfigYamlValues map[string]interface{}
+	if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
+		return err
+	}
+
+	bf := &bytes.Buffer{}
+	encoder := yaml.NewEncoder(bf)
+	if err := encoder.Encode(&mergedDefaultAndConfigYamlValues); err != nil {
+		return err
+	}
+	mergedFile, deleteFn, err := utils.WriteConfigYamlToTmpFile(bf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -891,26 +923,10 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 		marsC.ImagePullSecrets = append(marsC.ImagePullSecrets, s)
 	}
 
-	// default_values 也需要一个 file
-	file, deleteDefaultValuesFileFn, err := marsC.GenerateDefaultValuesYamlFile()
-	if err != nil {
-		return err
-	}
-
 	pc.To(70)
-	pc.AddAfterInstalledFunc(deleteDefaultValuesFileFn)
-	var vf []string
-
-	if filePath != "" {
-		vf = append(vf, filePath)
-	}
-
-	if file != "" {
-		vf = append(vf, file)
-	}
 
 	var valueOpts = &values.Options{
-		ValueFiles: vf,
+		ValueFiles: []string{mergedFile},
 		Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
 	}
 
