@@ -191,7 +191,7 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 		return
 	}
 
-	var limit int64 = 10000
+	var limit int64 = 2000
 	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v12.PodLogOptions{
 		Container: uri.Container,
 		TailLines: &limit,
