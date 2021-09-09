@@ -38,6 +38,11 @@ func (project *Project) SetPodSelectors(selectors []string) {
 	project.PodSelectors = strings.Join(selectors, "|")
 }
 
+// GetPodSelectors 不仅包括 deployment 的 pod 还包括其他的 stateful sets...
+func (project *Project) GetPodSelectors() []string {
+	return strings.Split(project.PodSelectors, "|")
+}
+
 func (project *Project) GetAllPods() []v1.Pod {
 	var list []v1.Pod
 	split := strings.Split(project.PodSelectors, "|")
