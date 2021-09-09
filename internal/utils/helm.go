@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net"
 	"os"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -44,18 +42,6 @@ func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 		}
 	}, nil
-}
-
-func EncodeConfigToYaml(field string, data interface{}) ([]byte, error) {
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-	if err := encoder.Encode(map[string]interface{}{
-		field: data,
-	}); err != nil {
-		return nil, err
-	}
-
-	return bf.Bytes(), nil
 }
 
 func GetSettings(namespace string) *cli.EnvSettings {

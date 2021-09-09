@@ -53,7 +53,10 @@ config_file_values: |
   port: 8000
 # 配置文件的类型(如果有config_file，必填)
 config_file_type: yaml
-# config_file 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
+# config_field 对应到 helm values.yaml 中的哪个字段(如果有config_file，必填)
+# 可以使用 '->' 指向下一级, 比如：'config->app_name'， 会变成
+# config:
+#   app_name: xxxx
 config_field: conf
 # 镜像仓库(必填)
 docker_repository: nginx
@@ -63,21 +66,27 @@ docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# values.yaml 会合并其他配置(可选)
+# default_values 会合并其他配置(可选), 可用变量 "$imagePullSecrets", 会和 'config_field' deep merge
 default_values:
-  redis:
-    enabled: true
-    cluster: 
-      slaveCount: 0
-    usePassword: false
+  db:
+    imagePullSecrets: $imagePullSecrets
   service:
     type: ClusterIP
   ingess:
     enabled: false
 # 若配置则只会显示配置的分支, 默认 "*"(可选)
 branches:
-- dev
-- master
+  - dev
+  - master
+# 如果默认的ingress 规则不符合，你可以通过这个重写
+# 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
+ingress_overwrite_values:
+  - ingress.hosts.hostone={{.Host1}}
+  - ingress.hosts.hosttwo={{.Host2}}
+  - ingress.tls[0].hosts[0]={{.Host1}}
+  - ingress.tls[0].secretName={{.TlsSecret1}}
+  - ingress.tls[1].hosts[0]={{.Host2}}
+  - ingress.tls[1].secretName={{.TlsSecret2}}`
 ```
 
 ### 📒 `is_simple_env`, `config_file` 解释
