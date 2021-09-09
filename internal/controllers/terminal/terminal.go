@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/response"
@@ -323,6 +326,10 @@ func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, container
 			s := terminalSessions.Get(sessionId)
 			if s.sockJSSession != nil {
 				if !strings.Contains(err.Error(), "unable to upgrade connection") {
+					if pod, e := utils.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
+						mlog.Warningf("delete po %s when evicted in namespace %s!", container.Pod, container.Namespace)
+						utils.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
+					}
 					s.Toast(err.Error())
 				}
 			}
