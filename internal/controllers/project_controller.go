@@ -203,7 +203,9 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 		if status, ok := err.(apierrors.APIStatus); ok {
 			if status.Status().Code == http.StatusBadRequest {
 				mlog.Warningf("CleanEvictedPods code: %d message: %s", status.Status().Code, status.Status().Reason)
-				utils.CleanEvictedPods(project.Namespace.Name, project.PodSelectors)
+				for _, selector := range project.GetPodSelectors() {
+					utils.CleanEvictedPods(project.Namespace.Name, selector)
+				}
 			}
 		}
 		response.Error(ctx, 400, err)
