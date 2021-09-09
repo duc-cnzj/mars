@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"net/http"
 
 	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -14,6 +15,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 	v12 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type ProjectController struct{}
@@ -198,6 +200,12 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
 	if err != nil {
+		if status, ok := err.(apierrors.APIStatus); ok {
+			if status.Status().Code == http.StatusBadRequest {
+				mlog.Warningf("CleanEvictedPods code: %d message: %s", status.Status().Code, status.Status().Reason)
+				utils.CleanEvictedPods(project.Namespace.Name, project.PodSelectors)
+			}
+		}
 		response.Error(ctx, 400, err)
 		return
 	}

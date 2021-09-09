@@ -152,6 +152,7 @@ func getNodeRequestCpuAndMemory(noExecuteNodes []v1.Node) (*resource.Quantity, *
 		requestCpu    = &resource.Quantity{}
 		requestMemory = &resource.Quantity{}
 	)
+
 	var nodeSelector []string = []string{
 		"status.phase!=" + string(v1.PodSucceeded),
 		"status.phase!=" + string(v1.PodFailed),

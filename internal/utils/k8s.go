@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/duc-cnzj/mars/internal/mlog"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -101,4 +103,24 @@ func GetIngressMappingByNamespace(namespace string) map[string][]string {
 	}
 
 	return m
+}
+
+func CleanEvictedPods(namespace string, selectors string) {
+	list, err := K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selectors,
+		FieldSelector: "status.phase==" + string(v1.PodFailed),
+	})
+	if err != nil {
+		mlog.Error(err)
+		return
+	}
+	for _, item := range list.Items {
+		if item.Status.Reason == "Evicted" {
+			mlog.Info(item.Name, item.Status.Reason)
+			err := K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
+			if err != nil {
+				mlog.Error(err)
+			}
+		}
+	}
 }
