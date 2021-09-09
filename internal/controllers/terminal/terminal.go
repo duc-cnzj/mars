@@ -327,8 +327,8 @@ func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, container
 			if s.sockJSSession != nil {
 				if strings.Contains(err.Error(), "unable to upgrade connection") {
 					if pod, e := utils.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
-						mlog.Warningf("delete po %s when evicted in namespace %s!", container.Pod, container.Namespace)
 						utils.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
+						s.Toast(fmt.Sprintf("delete po %s when evicted in namespace %s!", container.Pod, container.Namespace))
 					}
 				} else {
 					s.Toast(err.Error())
