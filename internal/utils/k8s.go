@@ -116,7 +116,6 @@ func CleanEvictedPods(namespace string, selectors string) {
 	}
 	for _, item := range list.Items {
 		if item.Status.Reason == "Evicted" {
-			mlog.Info(item.Name, item.Status.Reason)
 			err := K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
 			if err != nil {
 				mlog.Error(err)
