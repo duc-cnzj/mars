@@ -171,16 +171,20 @@ class Shell extends Component<{
     }
 
     if (this.props.detail.updated_at !== prevProps.detail.updated_at) {
-      this.fetchData()
+      this.fetchData();
     }
 
     console.log("this.props, prevProps", this.props, prevProps);
     if (this.state.value !== prevState.value && this.state.value !== "") {
       console.log("value changed");
-      this.disconnect();
-      this.setupConnection();
-      this.initTerm();
+      this.reconnect()
     }
+  }
+
+  reconnect = () => {
+    this.disconnect();
+    this.setupConnection();
+    this.initTerm();
   }
 
   onConnectionClose() {
@@ -261,6 +265,7 @@ class Shell extends Component<{
         >
           {this.state.list.map((item) => (
             <Radio
+              onClick={this.reconnect}
               key={item.pod_name + "|" + item.container_name}
               value={item.pod_name + "|" + item.container_name}
             >
