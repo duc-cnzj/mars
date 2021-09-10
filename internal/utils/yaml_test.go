@@ -66,7 +66,6 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "name->duc->aaaa->",
 				data:  "duc",
 			},
-			want: map[string]interface{}{},
 			wantErr: true,
 		},
 		{
@@ -75,7 +74,6 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "->name->duc->aaaa",
 				data:  "duc",
 			},
-			want: map[string]interface{}{},
 			wantErr: true,
 		},
 	}
@@ -89,7 +87,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 				t.Errorf("YamlDeepSetKey() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if reflect.DeepEqual(got, want) {
+			if err != nil && reflect.DeepEqual(got, want) {
 				t.Errorf("YamlDeepSetKey() got = %q, want %q", string(got), string(want))
 			}
 		})
