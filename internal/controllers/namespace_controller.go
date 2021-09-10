@@ -250,7 +250,11 @@ func (*NamespaceController) ServiceEndpoints(ctx *gin.Context) {
 	}
 
 	if query.ProjectName != "" {
-		response.Success(ctx, 200, gin.H{query.ProjectName: res[query.ProjectName]})
+		var data = []string{}
+		if len(res[query.ProjectName]) > 0 {
+			data = append(data, res[query.ProjectName]...)
+		}
+		response.Success(ctx, 200, gin.H{query.ProjectName: data})
 		return
 	}
 
