@@ -2,8 +2,9 @@ package utils
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"gopkg.in/yaml.v2"
 )
@@ -14,10 +15,10 @@ func TestYamlDeepSetKey(t *testing.T) {
 		data  interface{}
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    interface{}
-		wantErr bool
+		name string
+		args args
+		want interface{}
+		err  error
 	}{
 		{
 			name: "ok",
@@ -30,7 +31,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 					"duc": "duc",
 				},
 			},
-			wantErr: false,
+			err: nil,
 		},
 		{
 			name: "ok2",
@@ -41,7 +42,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 			want: map[string]interface{}{
 				"name": "duc",
 			},
-			wantErr: false,
+			err: nil,
 		},
 		{
 			name: "ok2",
@@ -58,7 +59,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			err: nil,
 		},
 		{
 			name: "fail",
@@ -66,7 +67,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "name->duc->aaaa->",
 				data:  "duc",
 			},
-			wantErr: true,
+			err: ErrorInvalidSeparator,
 		},
 		{
 			name: "fail",
@@ -74,21 +75,19 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "->name->duc->aaaa",
 				data:  "duc",
 			},
-			wantErr: true,
+			err: ErrorInvalidSeparator,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
 			bf := bytes.Buffer{}
 			yaml.NewEncoder(&bf).Encode(tt.want)
-			want := bf.String()
+			want := bf.Bytes()
 			got, err := YamlDeepSetKey(tt.args.field, tt.args.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("YamlDeepSetKey() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if err != nil && reflect.DeepEqual(got, want) {
-				t.Errorf("YamlDeepSetKey() got = %q, want %q", string(got), string(want))
+			assert.ErrorIs(t, err, tt.err)
+			if err == nil {
+				assert.Equal(t, got, want)
 			}
 		})
 	}
