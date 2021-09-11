@@ -146,7 +146,11 @@ class Shell extends Component<{
         this.conn_.onclose = this.onConnectionClose.bind(this);
         this.conn_.onerror = this.onErrorMessage.bind(this);
       }
-    );
+    ).catch((e) => {
+      this.connecting_ = false;
+      this.connectionClosed_ = false;
+      message.error(e.response.data.message);
+    });
   };
 
   fetchData = () => {
@@ -182,6 +186,7 @@ class Shell extends Component<{
   }
 
   reconnect = () => {
+    console.log("reconnect")
     this.disconnect();
     this.setupConnection();
     this.initTerm();

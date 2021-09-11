@@ -365,6 +365,11 @@ func HandleExecShell(ctx *gin.Context) {
 		return
 	}
 
+	if running, reason := utils.IsPodRunning(input.Namespace, input.Pod); !running {
+		response.Error(ctx, 404, reason)
+		return
+	}
+
 	sessionID, err := GenTerminalSessionId()
 	if err != nil {
 		response.Error(ctx, 500, err)

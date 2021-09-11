@@ -130,3 +130,16 @@ func CleanEvictedPods(namespace string, selectors string) {
 	}
 	wg.Wait()
 }
+
+func IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
+	podInfo, _ := K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if podInfo.Status.Phase == v1.PodRunning {
+		return true, ""
+	}
+
+	for _, status := range podInfo.Status.ContainerStatuses {
+		return false, fmt.Sprintf("%s %s", status.State.Waiting.Reason, status.State.Waiting.Message)
+	}
+
+	return false, "unknown pod not running reason."
+}
