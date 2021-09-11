@@ -140,7 +140,7 @@ const ConfigModal: React.FC<{
           globalConfigApi(currentItem.id).then((res) => {
             setGlobalEnabled(res.enabled);
             console.log(res.config);
-            setGlobalConfig(res.config);
+            // setGlobalConfig(res.config);
           });
         });
   };
