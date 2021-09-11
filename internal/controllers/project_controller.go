@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
-	v12 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -191,8 +191,13 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 		return
 	}
 
+	if running, reason := utils.IsPodRunning(project.Namespace.Name, uri.Pod); !running {
+		response.Error(ctx, 404, reason)
+		return
+	}
+
 	var limit int64 = 2000
-	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v12.PodLogOptions{
+	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v1.PodLogOptions{
 		Container: uri.Container,
 		TailLines: &limit,
 	})

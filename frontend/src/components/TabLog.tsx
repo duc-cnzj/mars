@@ -39,7 +39,7 @@ const ProjectContainerLogs: React.FC<{
           }
 
           setLog(log);
-        });
+        }).catch(e => {message.error(e.response.data.message)})
       }
     });
   }, [setList, id, namespaceId, updatedAt, listContainer]);
