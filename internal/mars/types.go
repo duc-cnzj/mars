@@ -115,6 +115,8 @@ func (mars *Config) GenerateConfigYamlByInput(input string) (string, error) {
 		}
 	} else {
 		switch mars.ConfigFileType {
+		case "":
+			return "", nil
 		case "yaml":
 			var data map[string]interface{}
 			decoder := yaml.NewDecoder(strings.NewReader(input))
