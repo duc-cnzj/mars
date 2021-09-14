@@ -141,5 +141,5 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 		return false, fmt.Sprintf("%s %s", status.State.Waiting.Reason, status.State.Waiting.Message)
 	}
 
-	return false, "unknown pod not running reason."
+	return false, "pod not running."
 }
