@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
@@ -191,7 +192,7 @@ type WsConn struct {
 
 type CancelSignals struct {
 	cs map[string]*ProcessControl
-	sync.Mutex
+	sync.RWMutex
 }
 
 func (jobs *CancelSignals) Remove(id string) {
@@ -207,14 +208,18 @@ func (jobs *CancelSignals) CancelAll() {
 	}
 }
 
+func (jobs *CancelSignals) Has(id string) bool {
+	jobs.RLock()
+	defer jobs.RUnlock()
+
+	_, ok := jobs.cs[id]
+
+	return ok
+}
 func (jobs *CancelSignals) Cancel(id string) {
 	jobs.Lock()
 	defer jobs.Unlock()
 	if pc, ok := jobs.cs[id]; ok {
-		if pc.running {
-			pc.SendError(errors.New("已经开始部署了，无法停止！！！！！！！"))
-			return
-		}
 		pc.SendMsg("收到取消信号，开始停止部署！！！")
 		pc.SendStopSignal()
 		jobs.Remove(id)
@@ -296,10 +301,12 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 
 		// cancel
 		var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
-		input.Name = slug.Make(input.Name)
-		var ns models.Namespace
-		utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
-		c.cs.Cancel(slugName)
+		if c.cs.Has(slugName) {
+			input.Name = slug.Make(input.Name)
+			var ns models.Namespace
+			utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
+			c.cs.Cancel(slugName)
+		}
 	case WsCreateProject:
 		var input ProjectInput
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
@@ -375,7 +382,7 @@ func (wc *WebsocketController) installProject(input ProjectInput, wsType string,
 	}
 
 	defer func() {
-		pc.stopFunc()
+		pc.stopFunc(nil)
 		pc.conn.cs.Remove(pc.slugName)
 		pc.CallAfterInstalledFuncs()
 		mlog.Warningf("done!!!!")
@@ -570,17 +577,23 @@ func (pp *ProcessPercent) To(percent int64) {
 	}
 }
 
+type atomicBool int32
+
+func (b *atomicBool) isSet() bool { return atomic.LoadInt32((*int32)(b)) != 0 }
+func (b *atomicBool) setTrue()    { atomic.StoreInt32((*int32)(b), 1) }
+func (b *atomicBool) setFalse()   { atomic.StoreInt32((*int32)(b), 0) }
+
 type ProcessControl struct {
 	*ProcessPercent
 	*MessageSender
 
-	running bool
+	running atomicBool
 	st      time.Time
 
 	customFuncAfterInstalled []func()
 
 	stopCtx  context.Context
-	stopFunc func()
+	stopFunc func(error)
 
 	input     ProjectInput
 	wsType    string
@@ -625,7 +638,7 @@ func (pc *ProcessControl) DoStop() {
 
 func (pc *ProcessControl) SendStopSignal() {
 	if pc.stopFunc != nil {
-		pc.stopFunc()
+		pc.stopFunc(errors.New("receive canceled signal"))
 	}
 }
 
@@ -643,7 +656,7 @@ func (pc *ProcessControl) NeedStop() bool {
 
 func (pc *ProcessControl) SetUp() error {
 	pc.slugName = utils.Md5(fmt.Sprintf("%d-%s", pc.input.NamespaceId, pc.input.Name))
-	pc.stopCtx, pc.stopFunc = context.WithCancel(context.Background())
+	pc.stopCtx, pc.stopFunc = utils.NewCustomErrorContext()
 	pc.conn.cs.Add(pc.slugName, pc)
 	pc.messageCh = make(chan MessageItem)
 	pc.ProcessPercent = NewProcessPercent(pc.conn, pc.slugName, 0)
@@ -947,9 +960,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 		}
 		msg := fmt.Sprintf(format, v...)
 		mlog.Debug(msg)
-		pc.messageCh <- MessageItem{
-			Msg:  msg,
-			Type: "text",
+		if pc.running.isSet() {
+			pc.messageCh <- MessageItem{
+				Msg:  msg,
+				Type: "text",
+			}
 		}
 	}
 
@@ -957,18 +972,22 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 }
 
 func (pc *ProcessControl) Run() {
-	pc.running = true
+	pc.running.setTrue()
 	ch := pc.messageCh
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 	go func() {
-		if result, err := utils.UpgradeOrInstall(pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log, pc.input.Atomic); err != nil {
+		defer func() {
+			pc.running.setFalse()
+			close(ch)
+		}()
+
+		if result, err := utils.UpgradeOrInstall(pc.stopCtx, pc.project.Name, pc.project.Namespace.Name, loadArchive, valueOpts, pc.log, pc.input.Atomic); err != nil {
 			mlog.Error(err)
 			ch <- MessageItem{
 				Msg:  err.Error(),
 				Type: "error",
 			}
-			close(ch)
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(loadArchive, result.Config)
 			pc.project.OverrideValues, _ = coalesceValues.YAML()
@@ -987,7 +1006,6 @@ func (pc *ProcessControl) Run() {
 				Msg:  "部署成功",
 				Type: "success",
 			}
-			close(ch)
 		}
 	}()
 }
@@ -1001,7 +1019,12 @@ func (pc *ProcessControl) Wait() {
 			if pc.new {
 				utils.DB().Delete(&pc.project)
 			}
-			pc.SendEndMsg(ResultDeployFailed, s.Msg)
+			select {
+			case <-pc.stopCtx.Done():
+				pc.SendEndMsg(ResultDeployCanceled, s.Msg)
+			default:
+				pc.SendEndMsg(ResultDeployFailed, s.Msg)
+			}
 		case "success":
 			pc.SendEndMsg(ResultDeployed, s.Msg)
 		}

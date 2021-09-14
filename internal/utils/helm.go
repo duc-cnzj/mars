@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"io/ioutil"
 	"net"
 	"os"
@@ -58,7 +59,7 @@ func GetSettings(namespace string) *cli.EnvSettings {
 }
 
 // UpgradeOrInstall TODO
-func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool) (*release.Release, error) {
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool) (*release.Release, error) {
 	var settings = GetSettings(namespace)
 	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
@@ -119,7 +120,7 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 			instClient.SubNotes = client.SubNotes
 			instClient.Description = client.Description
 			mlog.Debug("start install release", valueOpts)
-			return runInstall(releaseName, ch, instClient, valueOpts, settings)
+			return runInstall(ctx, releaseName, ch, instClient, valueOpts, settings)
 		}
 	}
 
@@ -143,7 +144,7 @@ func UpgradeOrInstall(releaseName, namespace string, ch *chart.Chart, valueOpts 
 		mlog.Warning("This chart is deprecated")
 	}
 
-	return client.Run(releaseName, ch, vals)
+	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
 func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
@@ -162,7 +163,7 @@ func UninstallRelease(releaseName, namespace string, log action.DebugLog) error 
 	return nil
 }
 
-func runInstall(releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options, settings *cli.EnvSettings) (*release.Release, error) {
+func runInstall(ctx context.Context, releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options, settings *cli.EnvSettings) (*release.Release, error) {
 	mlog.Debugf("Original chart version: %q", client.Version)
 	if client.Version == "" && client.Devel {
 		mlog.Debug("setting version to >0.0.0-0")
@@ -187,7 +188,7 @@ func runInstall(releaseName string, chartRequested *chart.Chart, client *action.
 	}
 
 	client.Namespace = settings.Namespace()
-	return client.Run(chartRequested, vals)
+	return client.RunWithContext(ctx, chartRequested, vals)
 }
 
 func checkIfInstallable(ch *chart.Chart) error {
