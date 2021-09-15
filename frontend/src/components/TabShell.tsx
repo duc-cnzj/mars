@@ -150,6 +150,7 @@ class Shell extends Component<{
       this.connecting_ = false;
       this.connectionClosed_ = false;
       message.error(e.response.data.message);
+      this.listContainer()
     });
   };
 
@@ -270,7 +271,7 @@ class Shell extends Component<{
         >
           {this.state.list.map((item) => (
             <Radio
-              onClick={this.reconnect}
+              onClick={()=>this.setState({value: item.pod_name + "|" + item.container_name})}
               key={item.pod_name + "|" + item.container_name}
               value={item.pod_name + "|" + item.container_name}
             >
