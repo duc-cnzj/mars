@@ -91,12 +91,24 @@ func (awc *AllWsConnections) Delete(uid string, id string) {
 	}
 }
 
-func (awc *AllWsConnections) SendExcept(uid, wsType, data string) {
-	awc.Lock()
-	defer awc.Unlock()
+func (awc *AllWsConnections) SendExceptUid(uid, wsType, data string) {
+	awc.RLock()
+	defer awc.RUnlock()
 	for u, uidconns := range awc.conns {
 		if u != uid {
 			for _, conn := range uidconns {
+				SendMsg(conn, "", wsType, data)
+			}
+		}
+	}
+}
+
+func (awc *AllWsConnections) SendExceptId(id, wsType, data string) {
+	awc.RLock()
+	defer awc.RUnlock()
+	for _, uidconns := range awc.conns {
+		for idx, conn := range uidconns {
+			if idx != id {
 				SendMsg(conn, "", wsType, data)
 			}
 		}
@@ -196,9 +208,7 @@ type CancelSignals struct {
 }
 
 func (jobs *CancelSignals) Remove(id string) {
-	if _, ok := jobs.cs[id]; ok {
-		delete(jobs.cs, id)
-	}
+	delete(jobs.cs, id)
 }
 
 func (jobs *CancelSignals) CancelAll() {
@@ -418,7 +428,7 @@ func (wc *WebsocketController) installProject(input ProjectInput, wsType string,
 	case <-pc.stopCtx.Done():
 		wc.SendToAll(WsReloadProjects, "")
 	default:
-		wc.SendExcept(conn.uid, WsReloadProjects, "")
+		wc.SendExceptId(conn.id, WsReloadProjects, "")
 	}
 }
 
