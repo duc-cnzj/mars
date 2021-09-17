@@ -60,22 +60,8 @@ func GetSettings(namespace string) *cli.EnvSettings {
 
 // UpgradeOrInstall TODO
 func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool) (*release.Release, error) {
-	var settings = GetSettings(namespace)
-	mlog.Debug("settings ns", settings.Namespace())
-	actionConfig := new(action.Configuration)
-	flags := genericclioptions.NewConfigFlags(true)
-	flags.Namespace = &namespace
-
-	if Config().KubeConfig != "" {
-		*flags.KubeConfig = Config().KubeConfig
-	} else {
-		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
-		token, _ := ioutil.ReadFile(tokenFile)
-		settings.KubeToken = string(token)
-	}
-
-	if err := actionConfig.Init(flags, namespace, "", fn); err != nil {
+	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
+	if err != nil {
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
@@ -148,13 +134,10 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 }
 
 func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
-	settings := GetSettings(namespace)
-	actionConfig := new(action.Configuration)
-
-	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "", log); err != nil {
+	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+	if err != nil {
 		return err
 	}
-
 	uninstall := action.NewUninstall(actionConfig)
 	if _, err := uninstall.Run(releaseName); err != nil {
 		mlog.Error(err)
@@ -212,22 +195,8 @@ var (
 )
 
 func ReleaseStatus(releaseName, namespace string) (string, error) {
-	var settings = GetSettings(namespace)
-
-	mlog.Debug("settings ns", settings.Namespace())
-	actionConfig := new(action.Configuration)
-	flags := genericclioptions.NewConfigFlags(true)
-	flags.Namespace = &namespace
-	if Config().KubeConfig != "" {
-		*flags.KubeConfig = Config().KubeConfig
-	} else {
-		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
-		token, _ := ioutil.ReadFile(tokenFile)
-		settings.KubeToken = string(token)
-	}
-
-	if err := actionConfig.Init(flags, namespace, "", mlog.Debugf); err != nil {
+	actionConfig, _, err := getActionConfigAndSettings(namespace, mlog.Debugf)
+	if err != nil {
 		return "", err
 	}
 	statusClient := action.NewStatus(actionConfig)
@@ -251,22 +220,8 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 }
 
 func PackageChart(path string, destDir string) (string, error) {
-	var settings = GetSettings("")
-
-	mlog.Debug("settings ns", settings.Namespace())
-	actionConfig := new(action.Configuration)
-	flags := genericclioptions.NewConfigFlags(true)
-	if Config().KubeConfig != "" {
-		*flags.KubeConfig = Config().KubeConfig
-	} else {
-		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
-		token, _ := ioutil.ReadFile(tokenFile)
-		settings.KubeToken = string(token)
-	}
-
-	if err := actionConfig.Init(flags, "", "", mlog.Debugf); err != nil {
-		mlog.Error(err)
+	_, settings, err := getActionConfigAndSettings("", mlog.Debugf)
+	if err != nil {
 		return "", err
 	}
 	newPackage := action.NewPackage()
@@ -293,4 +248,27 @@ func PackageChart(path string, destDir string) (string, error) {
 	}
 
 	return newPackage.Run(path, nil)
+}
+
+func getActionConfigAndSettings(namespace string, log func(format string, v ...interface{})) (*action.Configuration, *cli.EnvSettings, error) {
+	var settings = GetSettings(namespace)
+	mlog.Debug("settings ns", settings.Namespace())
+	actionConfig := new(action.Configuration)
+	flags := genericclioptions.NewConfigFlags(true)
+	flags.Namespace = &namespace
+
+	if Config().KubeConfig != "" {
+		*flags.KubeConfig = Config().KubeConfig
+	} else {
+		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
+		token, _ := ioutil.ReadFile(tokenFile)
+		settings.KubeToken = string(token)
+	}
+
+	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
+		return nil, nil, err
+	}
+
+	return actionConfig, settings, nil
 }
