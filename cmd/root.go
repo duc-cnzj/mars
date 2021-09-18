@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/util/homedir"
 )
 
 var (
@@ -29,10 +31,14 @@ func Execute(configFile []byte) {
 }
 
 func init() {
+	var defaultConfig string
+	if home := homedir.HomeDir(); home != "" {
+		defaultConfig = filepath.Join(home, ".kube", "config")
+	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
 	rootCmd.PersistentFlags().BoolP("debug", "", true, "debug mode.")
 	rootCmd.PersistentFlags().StringP("app_port", "", "6000", "app port.")
-	rootCmd.PersistentFlags().StringP("kubeconfig", "", "~/.kube/config", "kubeconfig.")
+	rootCmd.PersistentFlags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("app_port", rootCmd.PersistentFlags().Lookup("app_port"))
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
