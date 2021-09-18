@@ -25,6 +25,8 @@ type Config struct {
 	LogChannel     string
 	ProfileEnabled bool
 
+	DockerPlugin string
+
 	KubeConfig string
 
 	WildcardDomain string
@@ -67,11 +69,14 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
+	viper.SetDefault("docker_plugin", "docker_default")
+
 	cfg := &Config{
 		AppPort:        viper.GetString("app_port"),
 		Debug:          viper.GetBool("debug"),
 		LogChannel:     viper.GetString("log_channel"),
 		ProfileEnabled: viper.GetBool("profile_enabled"),
+		DockerPlugin:   viper.GetString("docker_plugin"),
 		KubeConfig:     viper.GetString("kubeconfig"),
 		WildcardDomain: viper.GetString("wildcard_domain"),
 		ClusterIssuer:  viper.GetString("cluster_issuer"),

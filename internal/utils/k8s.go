@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 
 	v1 "k8s.io/api/core/v1"
@@ -45,7 +47,7 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	return K8sClientSet().CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
+	return app.K8sClientSet().CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1.SchemeGroupVersion.String(),
 			Kind:       "Secret",
@@ -62,7 +64,7 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 }
 
 func GetNodePortMappingByNamespace(namespace string) map[string][]string {
-	list, _ := K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
+	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
 	var m = map[string][]string{}
 
 	for _, item := range list.Items {
@@ -75,11 +77,11 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 					case strings.Contains(port.Name, "rpc"):
 						fallthrough
 					case strings.Contains(port.Name, "tcp"):
-						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, Config().ExternalIp, port.NodePort))
+						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
 					case strings.Contains(port.Name, "http"):
 						fallthrough
 					default:
-						m[projectName] = append(data, fmt.Sprintf("http://%s:%d", Config().ExternalIp, port.NodePort))
+						m[projectName] = append(data, fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort))
 					}
 				}
 			}
@@ -91,7 +93,7 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 func GetIngressMappingByNamespace(namespace string) map[string][]string {
 	var m = map[string][]string{}
 
-	list, _ := K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
+	list, _ := app.K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
 	for _, item := range list.Items {
 		for _, tls := range item.Spec.TLS {
 			if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
@@ -109,7 +111,7 @@ func GetIngressMappingByNamespace(namespace string) map[string][]string {
 }
 
 func CleanEvictedPods(namespace string, selectors string) {
-	list, err := K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+	list, err := app.K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selectors,
 		FieldSelector: "status.phase==" + string(v1.PodFailed),
 	})
@@ -123,7 +125,7 @@ func CleanEvictedPods(namespace string, selectors string) {
 		go func(item v1.Pod) {
 			defer wg.Done()
 			if item.Status.Reason == "Evicted" {
-				err := K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
+				err := app.K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
 				if err != nil {
 					mlog.Error(err)
 				}
@@ -134,7 +136,7 @@ func CleanEvictedPods(namespace string, selectors string) {
 }
 
 func IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, _ := K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	podInfo, _ := app.K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if podInfo.Status.Phase == v1.PodRunning {
 		return true, ""
 	}

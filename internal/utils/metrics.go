@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 
 	"github.com/dustin/go-humanize"
@@ -12,7 +14,7 @@ import (
 )
 
 func GetCpuAndMemoryInNamespace(namespace string) (string, string) {
-	metricses := K8sMetrics().MetricsV1beta1().PodMetricses(namespace)
+	metricses := app.K8sMetrics().MetricsV1beta1().PodMetricses(namespace)
 	list, _ := metricses.List(context.Background(), metav1.ListOptions{})
 	return GetCpuAndMemory(list.Items)
 }

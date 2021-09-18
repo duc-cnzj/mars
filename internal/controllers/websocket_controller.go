@@ -5,9 +5,12 @@ import (
 	"errors"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars/internal/plugins"
+
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/response"
 
 	"helm.sh/helm/v3/pkg/action"
@@ -153,7 +156,7 @@ func NewWebsocketController() *WebsocketController {
 			case <-ticker.C:
 				marshal, _ := json.Marshal(utils.ClusterInfo())
 				wc.SendToAll(WsClusterInfoSync, string(marshal))
-			case <-utils.App().Done():
+			case <-app.App().Done():
 				mlog.Warning("app shutdown and stop WsClusterInfoSync")
 				ticker.Stop()
 				return
@@ -314,7 +317,7 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 		if c.cs.Has(slugName) {
 			input.Name = slug.Make(input.Name)
 			var ns models.Namespace
-			utils.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
+			app.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
 			c.cs.Cancel(slugName)
 		}
 	case WsCreateProject:
@@ -334,7 +337,7 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 		var p models.Project
-		if err := utils.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
+		if err := app.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
 			mlog.Error(wsRequest.Data, &input)
 			SendEndError(c, "", wsRequest.Type, err)
 			return
@@ -632,7 +635,7 @@ func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
 
 func (pc *ProcessControl) Prune() {
 	if pc.new {
-		utils.DB().Delete(&pc.project)
+		app.DB().Delete(&pc.project)
 	}
 }
 
@@ -677,7 +680,7 @@ func (pc *ProcessControl) SetUp() error {
 	pc.SendMsg("校验传参...")
 
 	var ns models.Namespace
-	if err := utils.DB().Where("`id` = ?", pc.input.NamespaceId).First(&ns).Error; err != nil {
+	if err := app.DB().Where("`id` = ?", pc.input.NamespaceId).First(&ns).Error; err != nil {
 		return err
 	}
 
@@ -693,8 +696,8 @@ func (pc *ProcessControl) SetUp() error {
 	}
 
 	var p models.Project
-	if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		utils.DB().Create(&pc.project)
+	if app.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
+		app.DB().Create(&pc.project)
 		pc.new = true
 	}
 
@@ -825,7 +828,7 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 		return err
 	}
 	b := &bytes.Buffer{}
-	commit, _, err := utils.GitlabClient().Commits.GetCommit(pc.project.GitlabProjectId, pc.project.GitlabCommit)
+	commit, _, err := app.GitlabClient().Commits.GetCommit(pc.project.GitlabProjectId, pc.project.GitlabCommit)
 	if err != nil {
 		return err
 	}
@@ -852,11 +855,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	pc.To(60)
 
 	var ingressConfig []string
-	if utils.Config().HasWildcardDomain() {
-		var host, secretName string = utils.Config().GetDomain(fmt.Sprintf("%s-%s", pc.project.Name, pc.project.Namespace.Name)), fmt.Sprintf("%s-%s-tls", pc.project.Name, pc.project.Namespace.Name)
+	if app.Config().HasWildcardDomain() {
+		var host, secretName string = app.Config().GetDomain(fmt.Sprintf("%s-%s", pc.project.Name, pc.project.Namespace.Name)), fmt.Sprintf("%s-%s-tls", pc.project.Name, pc.project.Namespace.Name)
 		var vars = map[string]string{}
 		for i := 1; i <= 10; i++ {
-			vars[fmt.Sprintf("Host%d", i)] = utils.Config().GetDomain(fmt.Sprintf("%s-%s-%d", pc.project.Name, pc.project.Namespace.Name, i))
+			vars[fmt.Sprintf("Host%d", i)] = app.Config().GetDomain(fmt.Sprintf("%s-%s-%d", pc.project.Name, pc.project.Namespace.Name, i))
 			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", pc.project.Name, pc.project.Namespace.Name, i)
 		}
 		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
@@ -895,8 +898,8 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 			"ingress.enabled=true",
 			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
 		}
-		if utils.Config().ClusterIssuer != "" {
-			ingressConfig = append(ingressConfig, "ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer="+utils.Config().ClusterIssuer)
+		if app.Config().ClusterIssuer != "" {
+			ingressConfig = append(ingressConfig, "ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer="+app.Config().ClusterIssuer)
 		}
 
 		if len(marsC.IngressOverwriteValues) > 0 {
@@ -1003,13 +1006,13 @@ func (pc *ProcessControl) Run() {
 			pc.project.OverrideValues, _ = coalesceValues.YAML()
 			pc.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
 			var p models.Project
-			if utils.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == nil {
-				utils.DB().Model(&models.Project{}).
+			if app.DB().Where("`name` = ? AND `namespace_id` = ?", pc.project.Name, pc.project.NamespaceId).First(&p).Error == nil {
+				app.DB().Model(&models.Project{}).
 					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
 					Where("`id` = ?", p.ID).
 					Updates(&pc.project)
 			} else {
-				utils.DB().Create(&pc.project)
+				app.DB().Create(&pc.project)
 			}
 			pc.To(100)
 			ch <- MessageItem{
@@ -1027,7 +1030,7 @@ func (pc *ProcessControl) Wait() {
 			pc.SendMsg(s.Msg)
 		case "error":
 			if pc.new {
-				utils.DB().Delete(&pc.project)
+				app.DB().Delete(&pc.project)
 			}
 			select {
 			case <-pc.stopCtx.Done():
@@ -1044,7 +1047,7 @@ func (pc *ProcessControl) Wait() {
 func (pc *ProcessControl) CheckImage() error {
 	image := strings.Split(pc.project.DockerImage, ":")
 	if len(image) == 2 {
-		if utils.ImageNotExists(image[0], image[1]) {
+		if plugins.GetDockerPlugin().ImageNotExists(image[0], image[1]) {
 			return errors.New(fmt.Sprintf("镜像 %s 不存在！", pc.project.DockerImage))
 		}
 	}

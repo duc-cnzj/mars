@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"github.com/duc-cnzj/mars/internal/models"
@@ -46,7 +48,7 @@ func (*GitlabController) Projects(ctx *gin.Context) {
 		wg              = sync.WaitGroup{}
 	)
 
-	utils.DB().Where("`enabled` = ?", true).Find(&enabledProjects)
+	app.DB().Where("`enabled` = ?", true).Find(&enabledProjects)
 	wg.Add(len(enabledProjects))
 	for _, project := range enabledProjects {
 		go func(project models.GitlabProject) {
@@ -128,7 +130,7 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 }
 
 func getDefaultBranch(projectId int) (string, error) {
-	p, _, err := utils.GitlabClient().Projects.GetProject(projectId, &gitlab.GetProjectOptions{})
+	p, _, err := app.GitlabClient().Projects.GetProject(projectId, &gitlab.GetProjectOptions{})
 	if err != nil {
 		mlog.Error(err)
 		return "", err
@@ -148,7 +150,7 @@ func (*GitlabController) Commits(ctx *gin.Context) {
 		return
 	}
 
-	commits, _, err := utils.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
+	commits, _, err := app.GitlabClient().Commits.ListCommits(uri.ProjectId, &gitlab.ListCommitsOptions{RefName: gitlab.String(uri.Branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -213,7 +215,7 @@ func (*GitlabController) ConfigFile(ctx *gin.Context) {
 		filename = configFile
 	}
 
-	f, _, err := utils.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
+	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
 	if err != nil {
 		mlog.Debug(err)
 		response.Success(ctx, 200, gin.H{
@@ -242,7 +244,7 @@ func (*GitlabController) Commit(ctx *gin.Context) {
 		return
 	}
 
-	commit, _, err := utils.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
+	commit, _, err := app.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -270,7 +272,7 @@ func (*GitlabController) PipelineInfo(ctx *gin.Context) {
 		return
 	}
 
-	commit, _, err := utils.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
+	commit, _, err := app.GitlabClient().Commits.GetCommit(uri.ProjectId, uri.Commit)
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return
@@ -298,7 +300,7 @@ type ProjectInfo struct {
 }
 
 func (*GitlabController) ProjectList(ctx *gin.Context) {
-	projects, _, err := utils.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
+	projects, _, err := app.GitlabClient().Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions: gitlab.ListOptions{
 			PerPage: 100,
@@ -310,7 +312,7 @@ func (*GitlabController) ProjectList(ctx *gin.Context) {
 	}
 
 	var gps []models.GitlabProject
-	utils.DB().Find(&gps)
+	app.DB().Find(&gps)
 
 	var m = map[int]models.GitlabProject{}
 	for _, gp := range gps {
@@ -355,17 +357,17 @@ func (*GitlabController) EnableProject(ctx *gin.Context) {
 		return
 	}
 
-	project, _, _ := utils.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
+	project, _, _ := app.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
 
 	var gp models.GitlabProject
-	if utils.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
-		utils.DB().Model(&gp).Updates(map[string]interface{}{
+	if app.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
+		app.DB().Model(&gp).Updates(map[string]interface{}{
 			"enabled":        true,
 			"default_branch": project.DefaultBranch,
 			"name":           project.Name,
 		})
 	} else {
-		utils.DB().Create(&models.GitlabProject{
+		app.DB().Create(&models.GitlabProject{
 			DefaultBranch:   project.DefaultBranch,
 			Name:            project.Name,
 			GitlabProjectId: input.GitlabProjectID,
@@ -383,16 +385,16 @@ func (*GitlabController) DisableProject(ctx *gin.Context) {
 		return
 	}
 
-	project, _, _ := utils.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
+	project, _, _ := app.GitlabClient().Projects.GetProject(input.GitlabProjectID, &gitlab.GetProjectOptions{})
 	var gp models.GitlabProject
-	if utils.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
-		utils.DB().Model(&gp).Updates(map[string]interface{}{
+	if app.DB().Where("`gitlab_project_id` = ?", input.GitlabProjectID).First(&gp).Error == nil {
+		app.DB().Model(&gp).Updates(map[string]interface{}{
 			"enabled":        false,
 			"default_branch": project.DefaultBranch,
 			"name":           project.Name,
 		})
 	} else {
-		utils.DB().Create(&models.GitlabProject{
+		app.DB().Create(&models.GitlabProject{
 			DefaultBranch:   project.DefaultBranch,
 			Name:            project.Name,
 			GitlabProjectId: input.GitlabProjectID,

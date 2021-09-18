@@ -6,6 +6,8 @@ debug: false
 
 profile_enabled: true
 
+#docker_plugin: "docker_default"
+
 # 如果在集群外部，则需要配置，否则不用
 kubeconfig: ""
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/dustin/go-humanize"
 	v1 "k8s.io/api/core/v1"
@@ -57,7 +59,7 @@ func ClusterInfo() *InfoResponse {
 	var nodes []v1.Node
 
 	// 获取已经使用的 cpu, memory
-	nodeList, _ := K8sClient().Client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
+	nodeList, _ := app.K8sClient().Client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 	nodes = append(nodes, nodeList.Items...)
@@ -100,7 +102,7 @@ func ClusterInfo() *InfoResponse {
 		usedMemory = &resource.Quantity{}
 	)
 
-	list, _ := K8sMetrics().MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{
+	list, _ := app.K8sMetrics().MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 
@@ -161,7 +163,7 @@ func getNodeRequestCpuAndMemory(noExecuteNodes []v1.Node) (*resource.Quantity, *
 		nodeSelector = append(nodeSelector, "spec.nodeName!="+node.Name)
 	}
 	fieldSelector, _ := fields.ParseSelector(strings.Join(nodeSelector, ","))
-	nodeNonTerminatedPodsList, err := K8sClientSet().CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
+	nodeNonTerminatedPodsList, err := app.K8sClientSet().CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{FieldSelector: fieldSelector.String()})
 	if err != nil {
 		mlog.Error(err)
 		return requestCpu, requestMemory

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"net/http"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -63,12 +64,12 @@ func (p *ProjectController) Show(ctx *gin.Context) {
 	}
 
 	var project models.Project
-	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
 		response.Error(ctx, 500, err)
 		return
 	}
 	cpu, memory := utils.GetCpuAndMemory(project.GetAllPodMetrics())
-	commit, _, err := utils.GitlabClient().Commits.GetCommit(project.GitlabProjectId, project.GitlabCommit)
+	commit, _, err := app.GitlabClient().Commits.GetCommit(project.GitlabProjectId, project.GitlabCommit)
 	if err != nil {
 		mlog.Error(err)
 		response.Error(ctx, 500, err)
@@ -150,7 +151,7 @@ func (p *ProjectController) AllPodContainers(ctx *gin.Context) {
 	}
 
 	var project models.Project
-	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
 		response.Error(ctx, 500, err)
 		return
 	}
@@ -186,7 +187,7 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 	}
 
 	var project models.Project
-	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
 		response.Error(ctx, 500, err)
 		return
 	}
@@ -197,7 +198,7 @@ func (p *ProjectController) PodContainerLog(ctx *gin.Context) {
 	}
 
 	var limit int64 = 2000
-	logs := utils.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v1.PodLogOptions{
+	logs := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).GetLogs(uri.Pod, &v1.PodLogOptions{
 		Container: uri.Container,
 		TailLines: &limit,
 	})
@@ -237,14 +238,14 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 	}
 
 	var project models.Project
-	if err := utils.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", uri.ProjectId).First(&project).Error; err != nil {
 		response.Error(ctx, 500, err)
 		return
 	}
 	if err := utils.UninstallRelease(project.Name, project.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
-	utils.DB().Delete(&project)
+	app.DB().Delete(&project)
 	response.Success(ctx, 204, "")
 }
 
@@ -252,7 +253,7 @@ func GetProjectMarsConfig(projectId int, branch string) (*mars.Config, error) {
 	var marsC mars.Config
 
 	var gp models.GitlabProject
-	if utils.DB().Where("`gitlab_project_id` = ?", projectId).First(&gp).Error == nil {
+	if app.DB().Where("`gitlab_project_id` = ?", projectId).First(&gp).Error == nil {
 		if gp.GlobalEnabled {
 			return gp.GlobalMarsConfig(), nil
 		}
@@ -263,7 +264,7 @@ func GetProjectMarsConfig(projectId int, branch string) (*mars.Config, error) {
 	if branch != "" {
 		opt.Ref = gitlab.String(branch)
 	}
-	file, _, err := utils.GitlabClient().RepositoryFiles.GetFile(projectId, ".mars.yaml", opt)
+	file, _, err := app.GitlabClient().RepositoryFiles.GetFile(projectId, ".mars.yaml", opt)
 	if err != nil {
 		return nil, err
 	}

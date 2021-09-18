@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/response"
-	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
@@ -80,7 +80,7 @@ func (*MarsController) GlobalConfig(ctx *gin.Context) {
 		return
 	}
 	var project models.GitlabProject
-	if utils.DB().Where("`gitlab_project_id` = ?", uri.ProjectId).First(&project).Error != nil {
+	if app.DB().Where("`gitlab_project_id` = ?", uri.ProjectId).First(&project).Error != nil {
 		response.Success(ctx, 200, gin.H{
 			"enabled": false,
 			"config":  project.GlobalConfigString(),
@@ -113,9 +113,9 @@ func (*MarsController) ToggleEnabled(ctx *gin.Context) {
 	}
 
 	var project models.GitlabProject
-	if err := utils.DB().Where("`gitlab_project_id` = ?", input.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Where("`gitlab_project_id` = ?", input.ProjectId).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.DB().Create(&models.GitlabProject{
+			app.DB().Create(&models.GitlabProject{
 				GitlabProjectId: input.ProjectId,
 				Enabled:         false,
 				GlobalEnabled:   input.Enabled,
@@ -125,7 +125,7 @@ func (*MarsController) ToggleEnabled(ctx *gin.Context) {
 		return
 	}
 
-	utils.DB().Model(&project).UpdateColumn("global_enabled", input.Enabled)
+	app.DB().Model(&project).UpdateColumn("global_enabled", input.Enabled)
 	response.Success(ctx, 204, nil)
 }
 
@@ -148,7 +148,7 @@ func (*MarsController) Update(ctx *gin.Context) {
 	}
 
 	var project models.GitlabProject
-	if err := utils.DB().Where("`gitlab_project_id` = ?", input.ProjectId).First(&project).Error; err != nil {
+	if err := app.DB().Where("`gitlab_project_id` = ?", input.ProjectId).First(&project).Error; err != nil {
 		response.Success(ctx, 500, err)
 		return
 	}
@@ -159,6 +159,6 @@ func (*MarsController) Update(ctx *gin.Context) {
 		return
 	}
 
-	utils.DB().Model(&project).UpdateColumn("global_config", input.Config)
+	app.DB().Model(&project).UpdateColumn("global_config", input.Config)
 	response.Success(ctx, 200, &project)
 }
