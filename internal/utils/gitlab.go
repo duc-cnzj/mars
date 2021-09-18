@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/xanzy/go-gitlab"
 )
@@ -25,7 +27,7 @@ func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 		opt.Ref = gitlab.String(commit)
 	}
 
-	tree, _, _ := GitlabClient().Repositories.ListTree(pid, opt)
+	tree, _, _ := app.GitlabClient().Repositories.ListTree(pid, opt)
 
 	for _, node := range tree {
 		if node.Type == "blob" {
@@ -55,7 +57,7 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 			if commit != "" {
 				opt.Ref = gitlab.String(commit)
 			}
-			raw, _, err := GitlabClient().RepositoryFiles.GetRawFile(pid, file, &opt)
+			raw, _, err := app.GitlabClient().RepositoryFiles.GetRawFile(pid, file, &opt)
 			if err != nil {
 				mlog.Error(err)
 			}
@@ -91,7 +93,7 @@ func GetAllBranches(pid interface{}, options ...gitlab.RequestOptionFunc) ([]*gi
 	var branches []*gitlab.Branch
 	page := 1
 	for page != -1 {
-		b, r, e := GitlabClient().Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 100, Page: page}}, options...)
+		b, r, e := app.GitlabClient().Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 100, Page: page}}, options...)
 		if e != nil {
 			return nil, e
 		}

@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -326,8 +328,8 @@ func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, container
 			s := terminalSessions.Get(sessionId)
 			if s.sockJSSession != nil {
 				if strings.Contains(err.Error(), "unable to upgrade connection") {
-					if pod, e := utils.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
-						utils.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
+					if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
+						app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
 						s.Toast(fmt.Sprintf("delete po %s when evicted in namespace %s!", container.Pod, container.Namespace))
 					}
 				} else {
@@ -381,7 +383,7 @@ func HandleExecShell(ctx *gin.Context) {
 		bound:    make(chan error),
 		sizeChan: make(chan remotecommand.TerminalSize),
 	})
-	go WaitForTerminal(utils.K8sClientSet(), utils.K8sClient().RestConfig, &Container{
+	go WaitForTerminal(app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
 		Namespace: input.Namespace,
 		Pod:       input.Pod,
 		Container: input.Container,

@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 
 	"github.com/xanzy/go-gitlab"
 
@@ -25,6 +25,7 @@ import (
 var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var DefaultBootstrappers = []contracts.Bootstrapper{
+	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.GitlabBootstrapper{},
 	&bootstrappers.ValidatorBootstrapper{},
@@ -55,6 +56,20 @@ type Application struct {
 	afterShutdownFunctions  []contracts.ShutdownFunc
 
 	dispatcher contracts.DispatcherInterface
+
+	plugins map[string]contracts.PluginInterface
+}
+
+func (app *Application) GetPluginByName(name string) contracts.PluginInterface {
+	return app.plugins[name]
+}
+
+func (app *Application) SetPlugins(plugins map[string]contracts.PluginInterface) {
+	app.plugins = plugins
+}
+
+func (app *Application) GetPlugins() map[string]contracts.PluginInterface {
+	return app.plugins
 }
 
 func (app *Application) Done() <-chan struct{} {
@@ -133,7 +148,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) *Applicatio
 }
 
 func printConfig() {
-	mlog.Warningf("imagepullsecrets %#v", utils.App().Config().ImagePullSecrets)
+	mlog.Warningf("imagepullsecrets %#v", app.App().Config().ImagePullSecrets)
 }
 
 func (app *Application) Bootstrap() error {

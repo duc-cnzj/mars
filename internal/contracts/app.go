@@ -54,4 +54,8 @@ type ApplicationInterface interface {
 
 	HttpHandler() http.Handler
 	SetHttpHandler(http.Handler)
+
+	SetPlugins(map[string]PluginInterface)
+	GetPlugins() map[string]PluginInterface
+	GetPluginByName(name string) PluginInterface
 }

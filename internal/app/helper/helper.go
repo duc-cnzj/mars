@@ -1,4 +1,4 @@
-package utils
+package app
 
 import (
 	"github.com/duc-cnzj/mars/internal/app/instance"

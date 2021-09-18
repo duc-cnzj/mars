@@ -9,6 +9,8 @@ import (
 	"time"
 	"unsafe"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"helm.sh/helm/v3/pkg/chart/loader"
 
 	"helm.sh/helm/v3/pkg/downloader"
@@ -52,7 +54,7 @@ func GetSettings(namespace string) *cli.EnvSettings {
 	config := (*genericclioptions.ConfigFlags)(unsafe.Pointer(s))
 	v := namespace
 	reflect.ValueOf(config).Elem().FieldByName("Namespace").Set(reflect.ValueOf(&v))
-	s.Debug = App().IsDebug()
+	s.Debug = app.App().IsDebug()
 	mlog.Debugf("%#v", s)
 
 	return s
@@ -71,8 +73,8 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	if atomic {
 		client.Atomic = true
 		client.Wait = true
-		if App().Config().InstallTimeout != 0 {
-			client.Timeout = App().Config().InstallTimeout
+		if app.App().Config().InstallTimeout != 0 {
+			client.Timeout = app.App().Config().InstallTimeout
 		} else {
 			client.Timeout = 90 * time.Second
 		}
@@ -257,8 +259,8 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 	flags := genericclioptions.NewConfigFlags(true)
 	flags.Namespace = &namespace
 
-	if Config().KubeConfig != "" {
-		*flags.KubeConfig = Config().KubeConfig
+	if app.Config().KubeConfig != "" {
+		*flags.KubeConfig = app.Config().KubeConfig
 	} else {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
 		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)

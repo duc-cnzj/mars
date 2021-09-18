@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -43,7 +45,7 @@ type NamespaceItem struct {
 
 func (ns *NamespaceController) Index(ctx *gin.Context) {
 	var namespaces []*models.Namespace
-	utils.DB().Preload("Projects").Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
+	app.DB().Preload("Projects").Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
 	var res = make([]NamespaceItem, 0, len(namespaces))
 	for _, namespace := range namespaces {
 		var projects = make([]SimpleProjectItem, 0, len(namespace.Projects))
@@ -85,13 +87,13 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 	}
 	input.Namespace = utils.GetMarsNamespace(input.Namespace)
 
-	if utils.DB().Where("`name` = ?", input.Namespace).First(&models.Namespace{}).Error == nil {
+	if app.DB().Where("`name` = ?", input.Namespace).First(&models.Namespace{}).Error == nil {
 		response.Error(ctx, 422, errors.New("namespace already exists"))
 		return
 	}
 
 	// 创建名称空间
-	create, err := utils.K8sClientSet().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: input.Namespace}}, metav1.CreateOptions{})
+	create, err := app.K8sClientSet().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: input.Namespace}}, metav1.CreateOptions{})
 	if err != nil {
 		response.Error(ctx, 500, err)
 		mlog.Error(err)
@@ -99,7 +101,7 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 	}
 
 	var imagePullSecrets []string
-	for _, secret := range utils.Config().ImagePullSecrets {
+	for _, secret := range app.Config().ImagePullSecrets {
 		s, err := utils.CreateDockerSecret(input.Namespace, secret.Username, secret.Password, secret.Email, secret.Server)
 		if err != nil {
 			mlog.Error(err)
@@ -110,9 +112,9 @@ func (ns *NamespaceController) Store(ctx *gin.Context) {
 	mlog.Debug("成功创建namespace: ", create.Name)
 	data := models.Namespace{Name: create.Name, ImagePullSecrets: strings.Join(imagePullSecrets, ",")}
 
-	utils.DB().Create(&data)
+	app.DB().Create(&data)
 
-	utils.Event().Dispatch(events.EventNamespaceCreated, events.NamespaceCreatedData{
+	app.Event().Dispatch(events.EventNamespaceCreated, events.NamespaceCreatedData{
 		NsModel:  &data,
 		NsK8sObj: create,
 	})
@@ -135,7 +137,7 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 	}
 
 	// 删除空间前，要先删除空间下的项目
-	if utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error == nil {
+	if app.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error == nil {
 		wg := sync.WaitGroup{}
 		wg.Add(len(namespace.Projects))
 		for _, project := range namespace.Projects {
@@ -151,15 +153,15 @@ func (ns *NamespaceController) Destroy(ctx *gin.Context) {
 		wg.Wait()
 		for _, secret := range namespace.ImagePullSecretsArray() {
 			mlog.Debugf("delete namespace %s secret %s", namespace.Name, secret)
-			utils.K8sClientSet().CoreV1().Secrets(namespace.Name).Delete(context.Background(), secret, metav1.DeleteOptions{})
+			app.K8sClientSet().CoreV1().Secrets(namespace.Name).Delete(context.Background(), secret, metav1.DeleteOptions{})
 		}
-		if err := utils.K8sClientSet().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
+		if err := app.K8sClientSet().CoreV1().Namespaces().Delete(context.Background(), namespace.Name, metav1.DeleteOptions{}); err != nil {
 			mlog.Error("删除 namespace 出现错误: ", err)
 		}
 		if len(namespace.Projects) > 0 {
-			utils.DB().Delete(&namespace.Projects)
+			app.DB().Delete(&namespace.Projects)
 		}
-		utils.DB().Delete(&namespace)
+		app.DB().Delete(&namespace)
 	}
 
 	timer := time.NewTimer(5 * time.Second)
@@ -168,7 +170,7 @@ LABEL:
 	for {
 		select {
 		case <-time.After(500 * time.Millisecond):
-			if _, err := utils.K8sClientSet().CoreV1().Namespaces().Get(context.Background(), namespace.Name, metav1.GetOptions{}); err != nil {
+			if _, err := app.K8sClientSet().CoreV1().Namespaces().Get(context.Background(), namespace.Name, metav1.GetOptions{}); err != nil {
 				mlog.Error(err)
 				break LABEL
 			}
@@ -177,7 +179,7 @@ LABEL:
 		}
 	}
 
-	utils.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &namespace})
+	app.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &namespace})
 
 	response.Success(ctx, http.StatusNoContent, "")
 }
@@ -192,7 +194,7 @@ func (*NamespaceController) CpuAndMemory(ctx *gin.Context) {
 		return
 	}
 
-	if err := utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
+	if err := app.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
 		response.Error(ctx, 500, err)
 
 		return
@@ -226,7 +228,7 @@ func (*NamespaceController) ServiceEndpoints(ctx *gin.Context) {
 		return
 	}
 
-	if err := utils.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
+	if err := app.DB().Preload("Projects").Where("`id` = ?", input.NamespaceId).First(&namespace).Error; err != nil {
 		response.Error(ctx, 500, err)
 
 		return

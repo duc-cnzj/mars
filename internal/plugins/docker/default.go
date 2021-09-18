@@ -1,14 +1,37 @@
-package utils
+package docker
 
 import (
 	"strings"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/heroku/docker-registry-client/registry"
 )
 
-func ImageNotExists(repo, tag string) bool {
-	for _, s := range Config().ImagePullSecrets {
+func init() {
+	p := &dockerPlugin{}
+	plugins.RegisterPlugin(p.Name(), p)
+}
+
+type dockerPlugin struct{}
+
+func (d *dockerPlugin) Name() string {
+	return "docker_default"
+}
+
+func (d *dockerPlugin) Initialize() error {
+	mlog.Info(d.Name() + " plugin Initialize...")
+	return nil
+}
+
+func (d *dockerPlugin) Destroy() error {
+	mlog.Info(d.Name() + " plugin Destroy...")
+	return nil
+}
+
+func (d *dockerPlugin) ImageNotExists(repo, tag string) bool {
+	for _, s := range app.Config().ImagePullSecrets {
 		server := s.Server
 		server = strings.TrimPrefix(strings.TrimPrefix(server, "https://"), "http://")
 		if strings.HasPrefix(repo, server) {
