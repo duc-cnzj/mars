@@ -79,9 +79,9 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 					case strings.Contains(port.Name, "tcp"):
 						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
 					case strings.Contains(port.Name, "http"):
-						fallthrough
-					default:
 						m[projectName] = append(data, fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort))
+					default:
+						m[projectName] = append(data, fmt.Sprintf("[%s] %s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
 					}
 				}
 			}
