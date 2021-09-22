@@ -9,6 +9,8 @@ import (
 	"github.com/heroku/docker-registry-client/registry"
 )
 
+var name = "docker_default"
+
 func init() {
 	p := &dockerPlugin{}
 	plugins.RegisterPlugin(p.Name(), p)
@@ -17,7 +19,7 @@ func init() {
 type dockerPlugin struct{}
 
 func (d *dockerPlugin) Name() string {
-	return "docker_default"
+	return name
 }
 
 func (d *dockerPlugin) Initialize() error {
