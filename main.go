@@ -5,6 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/cmd"
 	_ "github.com/duc-cnzj/mars/internal/plugins/docker"
+	_ "github.com/duc-cnzj/mars/internal/plugins/domain_resolver"
 )
 
 //go:embed config_example.yaml
