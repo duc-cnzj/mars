@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"regexp"
 	"sync/atomic"
 
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -67,6 +68,8 @@ const (
 	WsProcessPercent  string = "process_percent"
 	WsClusterInfoSync string = "cluster_info_sync"
 )
+
+var hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
 
 type AllWsConnections struct {
 	sync.RWMutex
@@ -855,11 +858,13 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	pc.To(60)
 
 	var ingressConfig []string
+
 	if app.Config().HasWildcardDomain() {
-		var host, secretName string = app.Config().GetDomain(fmt.Sprintf("%s-%s", pc.project.Name, pc.project.Namespace.Name)), fmt.Sprintf("%s-%s-tls", pc.project.Name, pc.project.Namespace.Name)
+		sub := getPreOccupiedLen(marsC.IngressOverwriteValues)
+		var host, secretName string = getDomain(pc.project.Name, pc.project.Namespace.Name, sub), fmt.Sprintf("%s-%s-tls", pc.project.Name, pc.project.Namespace.Name)
 		var vars = map[string]string{}
 		for i := 1; i <= 10; i++ {
-			vars[fmt.Sprintf("Host%d", i)] = app.Config().GetDomain(fmt.Sprintf("%s-%s-%d", pc.project.Name, pc.project.Namespace.Name, i))
+			vars[fmt.Sprintf("Host%d", i)] = getDomainByIndex(pc.project.Name, pc.project.Namespace.Name, i, sub)
 			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", pc.project.Name, pc.project.Namespace.Name, i)
 		}
 		// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
@@ -984,6 +989,19 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	return nil
 }
 
+func getPreOccupiedLen(values []string) int {
+	var sub = 0
+	if len(values) > 0 {
+		for _, value := range values {
+			submatch := hostMatch.FindAllStringSubmatch(value, -1)
+			if len(submatch) == 1 && len(submatch[0]) >= 1 {
+				sub = max(sub, len(submatch[0][1]))
+			}
+		}
+	}
+	return sub
+}
+
 func (pc *ProcessControl) Run() {
 	pc.running.setTrue()
 	ch := pc.messageCh
@@ -1083,4 +1101,27 @@ func (ms *MessageSender) SendMsg(msg string) {
 
 func (ms *MessageSender) SendEndMsg(result, msg string) {
 	SendEndMsg(ms.conn, result, ms.slugName, ms.wsType, msg)
+}
+
+func getDomain(project, namespace string, preOccupiedLen int) string {
+	if !app.Config().HasWildcardDomain() {
+		return ""
+	}
+
+	return plugins.GetDomainResolverPlugin().GetDomain(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, preOccupiedLen)
+}
+
+func getDomainByIndex(project, namespace string, index, preOccupiedLen int) string {
+	if !app.Config().HasWildcardDomain() {
+		return ""
+	}
+
+	return plugins.GetDomainResolverPlugin().GetDomainByIndex(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, index, preOccupiedLen)
+}
+
+func max(a, b int) int {
+	if a < b {
+		return b
+	}
+	return a
 }

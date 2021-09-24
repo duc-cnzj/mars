@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -25,10 +24,11 @@ type Config struct {
 	LogChannel     string
 	ProfileEnabled bool
 
-	DockerPlugin string
+	DockerPlugin         string
+	DomainResolverPlugin string
 
-	KubeConfig string
-
+	KubeConfig     string
+	NsPrefix       string
 	WildcardDomain string
 	ClusterIssuer  string
 	ExternalIp     string
@@ -70,26 +70,29 @@ func Init(cfgFile string) *Config {
 	}
 
 	viper.SetDefault("docker_plugin", "docker_default")
+	viper.SetDefault("domain_resolver_plugin", "domain_resolver_default")
 
 	cfg := &Config{
-		AppPort:        viper.GetString("app_port"),
-		Debug:          viper.GetBool("debug"),
-		LogChannel:     viper.GetString("log_channel"),
-		ProfileEnabled: viper.GetBool("profile_enabled"),
-		DockerPlugin:   viper.GetString("docker_plugin"),
-		KubeConfig:     viper.GetString("kubeconfig"),
-		WildcardDomain: viper.GetString("wildcard_domain"),
-		ClusterIssuer:  viper.GetString("cluster_issuer"),
-		ExternalIp:     viper.GetString("external_ip"),
-		DBDriver:       viper.GetString("db_driver"),
-		DBHost:         viper.GetString("db_host"),
-		DBPort:         viper.GetString("db_port"),
-		DBUsername:     viper.GetString("db_username"),
-		DBPassword:     viper.GetString("db_password"),
-		DBDatabase:     viper.GetString("db_database"),
-		GitlabToken:    viper.GetString("gitlab_token"),
-		GitlabBaseURL:  viper.GetString("gitlab_baseurl"),
-		InstallTimeout: viper.GetDuration("install_timeout"),
+		NsPrefix:             "devops-",
+		AppPort:              viper.GetString("app_port"),
+		Debug:                viper.GetBool("debug"),
+		LogChannel:           viper.GetString("log_channel"),
+		ProfileEnabled:       viper.GetBool("profile_enabled"),
+		DockerPlugin:         viper.GetString("docker_plugin"),
+		DomainResolverPlugin: viper.GetString("domain_resolver_plugin"),
+		KubeConfig:           viper.GetString("kubeconfig"),
+		WildcardDomain:       viper.GetString("wildcard_domain"),
+		ClusterIssuer:        viper.GetString("cluster_issuer"),
+		ExternalIp:           viper.GetString("external_ip"),
+		DBDriver:             viper.GetString("db_driver"),
+		DBHost:               viper.GetString("db_host"),
+		DBPort:               viper.GetString("db_port"),
+		DBUsername:           viper.GetString("db_username"),
+		DBPassword:           viper.GetString("db_password"),
+		DBDatabase:           viper.GetString("db_database"),
+		GitlabToken:          viper.GetString("gitlab_token"),
+		GitlabBaseURL:        viper.GetString("gitlab_baseurl"),
+		InstallTimeout:       viper.GetDuration("install_timeout"),
 	}
 
 	dockerAuths := viper.Get("imagepullsecrets")
@@ -127,12 +130,4 @@ func (c *Config) HasWildcardDomain() bool {
 	}
 
 	return false
-}
-
-func (c *Config) GetDomain(sub string) string {
-	if !c.HasWildcardDomain() {
-		return ""
-	}
-
-	return fmt.Sprintf("%s.%s", sub, strings.TrimLeft(c.WildcardDomain, "*."))
 }
