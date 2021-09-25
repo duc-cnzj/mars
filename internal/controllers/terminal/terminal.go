@@ -297,8 +297,10 @@ func isValidShell(validShells []string, shell string) bool {
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleTerminalSession
 func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
 	select {
-	case <-time.After(30 * time.Second):
+	case <-timer.C:
 		mlog.Warning("WaitForTerminal timeout: 30 * time.Second.")
 		terminalSessions.Lock.Lock()
 		delete(terminalSessions.Sessions, sessionId)
