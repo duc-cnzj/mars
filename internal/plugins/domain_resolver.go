@@ -20,7 +20,7 @@ type DomainResolverInterface interface {
 }
 
 func GetDomainResolverPlugin() DomainResolverInterface {
-	p := app.App().GetPluginByName(app.App().Config().DomainResolverPlugin)
+	p := app.App().GetPluginByName(app.App().Config().DomainResolverPlugin.Name)
 	domainResolverOnce.Do(func() {
 		if err := p.Initialize(); err != nil {
 			panic(err)

@@ -9,44 +9,48 @@ import (
 	"github.com/spf13/viper"
 )
 
-type DockerAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
-	Server   string `json:"server"`
+type Plugin struct {
+	Name string                 `mapstructure:"name"`
+	Args map[string]interface{} `mapstructure:"args"`
+}
 
-	// Server eg: registry.cn-hangzhou.aliyuncs.com
+type DockerAuth struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Email    string `mapstructure:"email"`
+	Server   string `mapstructure:"server"`
 }
 
 type Config struct {
-	AppPort        string
-	Debug          bool
-	LogChannel     string
-	ProfileEnabled bool
+	AppPort        string `mapstructure:"app_port"`
+	Debug          bool   `mapstructure:"debug"`
+	LogChannel     string `mapstructure:"log_channel"`
+	ProfileEnabled bool   `mapstructure:"profile_enabled"`
 
-	DockerPlugin         string
-	DomainResolverPlugin string
+	DockerPlugin         Plugin `mapstructure:"docker_plugin"`
+	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
+	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
 
-	KubeConfig     string
-	NsPrefix       string
-	WildcardDomain string
-	ClusterIssuer  string
-	ExternalIp     string
+	KubeConfig     string `mapstructure:"kubeconfig"`
+	NsPrefix       string `mapstructure:"ns_prefix"`
+	WildcardDomain string `mapstructure:"wildcard_domain"`
+	ClusterIssuer  string `mapstructure:"cluster_issuer"`
+	ExternalIp     string `mapstructure:"external_ip"`
 
 	// mysql
-	DBDriver   string
-	DBHost     string
-	DBPort     string
-	DBUsername string
-	DBPassword string
-	DBDatabase string
+	DBDriver   string `mapstructure:"db_driver"`
+	DBHost     string `mapstructure:"db_host"`
+	DBPort     string `mapstructure:"db_port"`
+	DBUsername string `mapstructure:"db_username"`
+	DBPassword string `mapstructure:"db_password"`
+	DBDatabase string `mapstructure:"db_database"`
 
-	ImagePullSecrets []DockerAuth
+	ImagePullSecrets []DockerAuth `mapstructure:"imagepullsecrets"`
 
-	GitlabToken   string
-	GitlabBaseURL string
+	GitlabToken   string `mapstructure:"gitlab_token"`
+	GitlabBaseURL string `mapstructure:"gitlab_baseurl"`
 
-	InstallTimeout time.Duration
+	InstallTimeout time.Duration `mapstructure:"install_timeout"`
 }
 
 func Init(cfgFile string) *Config {
@@ -69,57 +73,22 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
-	viper.SetDefault("docker_plugin", "docker_default")
-	viper.SetDefault("domain_resolver_plugin", "domain_resolver_default")
+	viper.SetDefault("docker_plugin", map[string]interface{}{
+		"name": "docker_default",
+		"args": nil,
+	})
+	viper.SetDefault("domain_resolver_plugin", map[string]interface{}{
+		"name": "domain_resolver_default",
+		"args": nil,
+	})
+	viper.SetDefault("ws_sender_plugin", map[string]interface{}{
+		"name": "ws_sender_memory",
+		"args": nil,
+	})
 
-	cfg := &Config{
-		NsPrefix:             "devops-",
-		AppPort:              viper.GetString("app_port"),
-		Debug:                viper.GetBool("debug"),
-		LogChannel:           viper.GetString("log_channel"),
-		ProfileEnabled:       viper.GetBool("profile_enabled"),
-		DockerPlugin:         viper.GetString("docker_plugin"),
-		DomainResolverPlugin: viper.GetString("domain_resolver_plugin"),
-		KubeConfig:           viper.GetString("kubeconfig"),
-		WildcardDomain:       viper.GetString("wildcard_domain"),
-		ClusterIssuer:        viper.GetString("cluster_issuer"),
-		ExternalIp:           viper.GetString("external_ip"),
-		DBDriver:             viper.GetString("db_driver"),
-		DBHost:               viper.GetString("db_host"),
-		DBPort:               viper.GetString("db_port"),
-		DBUsername:           viper.GetString("db_username"),
-		DBPassword:           viper.GetString("db_password"),
-		DBDatabase:           viper.GetString("db_database"),
-		GitlabToken:          viper.GetString("gitlab_token"),
-		GitlabBaseURL:        viper.GetString("gitlab_baseurl"),
-		InstallTimeout:       viper.GetDuration("install_timeout"),
-	}
+	cfg := &Config{NsPrefix: "devops-"}
 
-	dockerAuths := viper.Get("imagepullsecrets")
-	if dockerAuths != nil {
-		if m, ok := dockerAuths.([]interface{}); ok {
-			for _, interf := range m {
-				if m2, ok := interf.(map[interface{}]interface{}); ok {
-					username, usernameOk := m2["username"]
-					password, passwordOk := m2["password"]
-					email, emailOk := m2["email"]
-					server, serverOk := m2["server"]
-					if usernameOk && passwordOk && serverOk {
-						var em string
-						if emailOk {
-							em = email.(string)
-						}
-						cfg.ImagePullSecrets = append(cfg.ImagePullSecrets, DockerAuth{
-							Username: username.(string),
-							Password: password.(string),
-							Email:    em,
-							Server:   server.(string),
-						})
-					}
-				}
-			}
-		}
-	}
+	viper.Unmarshal(&cfg)
 
 	return cfg
 }
