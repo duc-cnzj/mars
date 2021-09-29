@@ -100,13 +100,7 @@ func (p *memoryPubSub) ToSelf(wsResponse *plugins.WsResponse) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	wsResponse.To = plugins.ToSelf
-	for _, m := range p.manager.conns {
-		for _, s := range m {
-			if s.id == p.id {
-				s.ch <- wsResponse.EncodeToString()
-			}
-		}
-	}
+	p.manager.conns[p.uid][p.id].ch <- wsResponse.EncodeToString()
 	return nil
 }
 
