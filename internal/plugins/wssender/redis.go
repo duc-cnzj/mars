@@ -87,7 +87,7 @@ func (p *rdsPubSub) ID() string {
 }
 
 func (p *rdsPubSub) ToSelf(wsResponse *plugins.WsResponse) error {
-	mlog.Infof("ToSelf id: %s msg: %v ch len: %d", p.id, wsResponse.EncodeToString(), len(p.ch))
+	mlog.Debugf("ToSelf id: %s msg: %v ch len: %d", p.id, wsResponse.EncodeToString(), len(p.ch))
 	wsResponse.To = plugins.ToSelf
 	p.rds.Publish(context.TODO(), p.id, wsResponse.EncodeToBytes())
 	return nil
