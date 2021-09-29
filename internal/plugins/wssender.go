@@ -45,6 +45,7 @@ type WsSender interface {
 }
 
 type PubSub interface {
+	Info() interface{}
 	Uid() string
 	ID() string
 	ToSelf(*WsResponse) error

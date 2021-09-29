@@ -177,17 +177,7 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 }
 
 func (wc *WebsocketController) Info(ctx *gin.Context) {
-	detail := map[string]interface{}{}
-	//wc.RLock()
-	//for s, m := range wc.conns {
-	//	detail[s] = len(m)
-	//}
-	//wc.RUnlock()
-
-	response.Success(ctx, 200, gin.H{
-		"count":  0,
-		"detail": detail,
-	})
+	response.Success(ctx, 200, plugins.GetWsSender().New("", "").Info())
 }
 
 func (wc *WebsocketController) Ws(ctx *gin.Context) {

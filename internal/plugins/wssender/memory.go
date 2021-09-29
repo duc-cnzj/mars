@@ -27,6 +27,10 @@ type memorySender struct {
 }
 
 func (ms *memorySender) Add(uid, id string) {
+	if uid == "" || id == "" {
+		return
+	}
+
 	ms.Lock()
 	defer ms.Unlock()
 	st := &Conn{id: id, uid: uid, ch: make(chan string, messageChSize)}
@@ -76,6 +80,12 @@ type memoryPubSub struct {
 	manager *memorySender
 	uid     string
 	id      string
+}
+
+func (p *memoryPubSub) Info() interface{} {
+	p.manager.RLock()
+	defer p.manager.RUnlock()
+	return p.manager.conns
 }
 
 func (p *memoryPubSub) Uid() string {
