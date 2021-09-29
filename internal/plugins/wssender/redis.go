@@ -75,6 +75,9 @@ func (p *rdsPubSub) Close() error {
 	return nil
 }
 
+func (p *rdsPubSub) Info() interface{} {
+	return "<unknown>"
+}
 func (p *rdsPubSub) Uid() string {
 	return p.uid
 }
