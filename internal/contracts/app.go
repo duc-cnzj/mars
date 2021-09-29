@@ -13,7 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/config"
 )
 
-type ShutdownFunc func(ApplicationInterface)
+type Callback func(ApplicationInterface)
 
 type Bootstrapper interface {
 	Bootstrap(ApplicationInterface) error
@@ -46,8 +46,9 @@ type ApplicationInterface interface {
 
 	Done() <-chan struct{}
 
-	RegisterBeforeShutdownFunc(ShutdownFunc)
-	RegisterAfterShutdownFunc(ShutdownFunc)
+	BeforeServerRunHooks(Callback)
+	RegisterBeforeShutdownFunc(Callback)
+	RegisterAfterShutdownFunc(Callback)
 
 	EventDispatcher() DispatcherInterface
 	SetEventDispatcher(DispatcherInterface)

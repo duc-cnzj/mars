@@ -16,7 +16,7 @@ type DockerPluginInterface interface {
 }
 
 func GetDockerPlugin() DockerPluginInterface {
-	p := app.App().GetPluginByName(app.App().Config().DockerPlugin)
+	p := app.App().GetPluginByName(app.App().Config().DockerPlugin.Name)
 	dockerOnce.Do(func() {
 		if err := p.Initialize(); err != nil {
 			panic(err)
