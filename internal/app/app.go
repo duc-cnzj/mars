@@ -60,9 +60,6 @@ type Application struct {
 	done     context.Context
 	doneFunc func()
 
-	beforeShutdownFunctions []contracts.Callback
-	afterShutdownFunctions  []contracts.Callback
-
 	hooks map[Hook][]contracts.Callback
 
 	dispatcher contracts.DispatcherInterface
