@@ -271,7 +271,7 @@ class Shell extends Component<{
         >
           {this.state.list.map((item) => (
             <Radio
-              onClick={()=>this.setState({value: item.pod_name + "|" + item.container_name})}
+              onClick={() => this.reconnect()}
               key={item.pod_name + "|" + item.container_name}
               value={item.pod_name + "|" + item.container_name}
             >
