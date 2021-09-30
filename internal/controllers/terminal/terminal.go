@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -175,11 +176,14 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	err := sm.Sessions[sessionId].sockJSSession.Close(status, reason)
+	delete(sm.Sessions, sessionId)
 	if err != nil {
+		if errors.Is(err, sockjs.ErrSessionNotOpen) {
+			mlog.Warning(err)
+			return
+		}
 		mlog.Error(err)
 	}
-
-	delete(sm.Sessions, sessionId)
 }
 
 var terminalSessions = SessionMap{Sessions: make(map[string]TerminalSession)}
@@ -247,8 +251,6 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *C
 
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
 	if err != nil {
-		mlog.Error(err)
-
 		return err
 	}
 
