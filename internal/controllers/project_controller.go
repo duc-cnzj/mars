@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"net/http"
 
+	"github.com/duc-cnzj/mars/internal/event/events"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -246,6 +248,8 @@ func (p *ProjectController) Destroy(ctx *gin.Context) {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&project)
+	app.Event().Dispatch(events.EventProjectedDeleted, map[string]interface{}{"data": &project})
+
 	response.Success(ctx, 204, "")
 }
 
