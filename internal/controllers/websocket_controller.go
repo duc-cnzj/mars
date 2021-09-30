@@ -554,6 +554,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	loadArchive := pc.chart
 	input := pc.input
 
+	var imagePullSecrets []string
+	for k, s := range marsC.ImagePullSecrets {
+		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
+	}
+
 	// default_values 也需要一个 file
 	defaultValues, err := marsC.GenerateDefaultValuesYaml()
 	if err != nil {
@@ -714,12 +719,6 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 
 	pc.project.DockerImage = fmt.Sprintf("%s:%s", marsC.DockerRepository, tag)
 
-	var imagePullSecrets []string
-	for k, s := range pc.project.Namespace.ImagePullSecretsArray() {
-		imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
-		marsC.ImagePullSecrets = append(marsC.ImagePullSecrets, s)
-	}
-
 	pc.To(70)
 
 	var valueOpts = &values.Options{
@@ -732,7 +731,7 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 
 	pc.SendMsg(fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
 
-	for key, secret := range pc.project.Namespace.ImagePullSecretsArray() {
+	for key, secret := range marsC.ImagePullSecrets {
 		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
 		pc.SendMsg(fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
 	}
@@ -762,6 +761,7 @@ func (pc *ProcessControl) CheckConfig() error {
 	if err != nil {
 		return err
 	}
+	marsC.ImagePullSecrets = pc.project.Namespace.ImagePullSecretsArray()
 	pc.marC = marsC
 
 	// 下载 helm charts
