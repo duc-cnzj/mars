@@ -97,7 +97,6 @@ func NewWebsocketController() *WebsocketController {
 				sub.ToAll(&WsResponse{
 					Type: WsClusterInfoSync,
 					Data: string(marshal),
-					End:  false,
 				})
 			case <-app.App().Done():
 				mlog.Warning("app shutdown and stop WsClusterInfoSync")
@@ -248,7 +247,7 @@ func read(wsconn *WsConn) {
 	wsconn.c.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.c.SetPongHandler(func(string) error {
 		wsconn.c.SetReadDeadline(time.Now().Add(pongWait))
-		mlog.Debugf("收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
+		mlog.Debugf("[Websocket] 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
 		return nil
 	})
 	for {
