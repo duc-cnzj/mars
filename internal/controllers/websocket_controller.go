@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars/internal/enums"
+
 	"github.com/duc-cnzj/mars/internal/plugins"
 
 	"go.uber.org/config"
@@ -59,83 +61,19 @@ const (
 )
 
 const (
-	WsSetUid         string = "set_uid"
-	WsReloadProjects string = "reload_projects"
-	WsCancel         string = "cancel_project"
-	WsCreateProject  string = "create_project"
-	WsUpdateProject  string = "update_project"
+	WsSetUid         string = enums.WsSetUid
+	WsReloadProjects string = enums.WsReloadProjects
+	WsCancel         string = enums.WsCancel
+	WsCreateProject  string = enums.WsCreateProject
+	WsUpdateProject  string = enums.WsUpdateProject
 
-	WsProcessPercent  string = "process_percent"
-	WsClusterInfoSync string = "cluster_info_sync"
+	WsProcessPercent  string = enums.WsProcessPercent
+	WsClusterInfoSync string = enums.WsClusterInfoSync
+
+	WsInternalError string = enums.WsInternalError
 )
 
 var hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
-
-type AllWsConnections struct {
-	sync.RWMutex
-	conns map[string]map[string]*WsConn
-}
-
-func (awc *AllWsConnections) Add(uid string, conn *WsConn) {
-	awc.Lock()
-	defer awc.Unlock()
-	if m, ok := awc.conns[uid]; ok {
-		m[conn.id] = conn
-	} else {
-		awc.conns[uid] = map[string]*WsConn{conn.id: conn}
-	}
-}
-
-func (awc *AllWsConnections) Delete(uid string, id string) {
-	awc.Lock()
-	defer awc.Unlock()
-	if m, ok := awc.conns[uid]; ok {
-		delete(m, id)
-		if len(m) == 0 {
-			delete(awc.conns, uid)
-		}
-	}
-}
-
-func (awc *AllWsConnections) SendExceptUid(uid, wsType, data string) {
-	awc.RLock()
-	defer awc.RUnlock()
-	for u, uidconns := range awc.conns {
-		if u != uid {
-			for _, conn := range uidconns {
-				SendMsg(conn, "", wsType, data)
-			}
-		}
-	}
-}
-
-func (awc *AllWsConnections) SendExceptId(id, wsType, data string) {
-	awc.RLock()
-	defer awc.RUnlock()
-	for _, uidconns := range awc.conns {
-		for idx, conn := range uidconns {
-			if idx != id {
-				SendMsg(conn, "", wsType, data)
-			}
-		}
-	}
-}
-
-func (awc *AllWsConnections) SendToAll(wsType, data string) {
-	awc.Lock()
-	defer awc.Unlock()
-	for _, uidconns := range awc.conns {
-		for _, conn := range uidconns {
-			SendMsg(conn, "", wsType, data)
-		}
-	}
-}
-
-func (awc *AllWsConnections) Count() int {
-	awc.RLock()
-	defer awc.RUnlock()
-	return len(awc.conns)
-}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -143,22 +81,23 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type WebsocketController struct {
-	*AllWsConnections
-}
+type WebsocketController struct{}
 
 func NewWebsocketController() *WebsocketController {
-	wc := &WebsocketController{
-		AllWsConnections: &AllWsConnections{conns: map[string]map[string]*WsConn{}},
-	}
+	wc := &WebsocketController{}
 
 	ticker := time.NewTicker(15 * time.Second)
+	sub := plugins.GetWsSender().New("", "")
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
 				marshal, _ := json.Marshal(utils.ClusterInfo())
-				wc.SendToAll(WsClusterInfoSync, string(marshal))
+
+				sub.ToAll(&WsResponse{
+					Type: WsClusterInfoSync,
+					Data: string(marshal),
+				})
 			case <-app.App().Done():
 				mlog.Warning("app shutdown and stop WsClusterInfoSync")
 				ticker.Stop()
@@ -175,32 +114,26 @@ type WsRequest struct {
 	Data string `json:"data"`
 }
 
-type WsResponse struct {
-	// 有可能同一个用户同时部署两个环境, 必须要有 slug 区分
-	Slug   string `json:"slug"`
-	Type   string `json:"type"`
-	Result string `json:"result"`
-	Data   string `json:"data"`
-	End    bool   `json:"end"`
-	Uid    string `json:"uid"`
-	ID     string `json:"id"`
-}
-
-func (r *WsResponse) EncodeToBytes() []byte {
-	marshal, _ := json.Marshal(&r)
-	return marshal
-}
+type WsResponse = plugins.WsResponse
 
 const (
+	// Maximum message size allowed from peer.
+	maxMessageSize = 1024 * 5
+
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
 
-	// Maximum message size allowed from peer.
-	maxMessageSize = 1024 * 5
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
 )
 
 type WsConn struct {
 	sync.Mutex
+
+	ps plugins.PubSub
 
 	id  string
 	uid string
@@ -217,13 +150,6 @@ func (jobs *CancelSignals) Remove(id string) {
 	delete(jobs.cs, id)
 }
 
-func (jobs *CancelSignals) CancelAll() {
-	mlog.Warning("cancel all!")
-	for _, control := range jobs.cs {
-		control.SendStopSignal()
-	}
-}
-
 func (jobs *CancelSignals) Has(id string) bool {
 	jobs.RLock()
 	defer jobs.RUnlock()
@@ -232,6 +158,7 @@ func (jobs *CancelSignals) Has(id string) bool {
 
 	return ok
 }
+
 func (jobs *CancelSignals) Cancel(id string) {
 	jobs.Lock()
 	defer jobs.Unlock()
@@ -249,17 +176,7 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 }
 
 func (wc *WebsocketController) Info(ctx *gin.Context) {
-	detail := map[string]interface{}{}
-	wc.RLock()
-	for s, m := range wc.conns {
-		detail[s] = len(m)
-	}
-	wc.RUnlock()
-
-	response.Success(ctx, 200, gin.H{
-		"count":  len(wc.AllWsConnections.conns),
-		"detail": detail,
-	})
+	response.Success(ctx, 200, plugins.GetWsSender().New("", "").Info())
 }
 
 func (wc *WebsocketController) Ws(ctx *gin.Context) {
@@ -268,44 +185,88 @@ func (wc *WebsocketController) Ws(ctx *gin.Context) {
 		mlog.Error(err)
 		return
 	}
-	defer c.Close()
+
 	var uid string
 	uid = ctx.Query("uid")
 	if uid == "" {
 		uid = uuid.New().String()
 	}
 	id := uuid.New().String()
-	var wsconn = &WsConn{id: id, uid: uid, c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
-	wc.Add(uid, wsconn)
+
+	ps := plugins.GetWsSender().New(uid, id)
+	var wsconn = &WsConn{ps: ps, id: id, uid: uid, c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
+
+	defer func() {
+		ps.Close()
+		c.Close()
+	}()
+
+	go write(wsconn)
+
 	SendMsg(wsconn, "", WsSetUid, uid)
 
-	c.SetReadLimit(maxMessageSize)
-	// 未设置 c.SetReadDeadline()，所以不需要 ping/pong 续命
-	c.SetPongHandler(func(string) error { mlog.Infof("收到心跳 id: %s, uid %s", id, uid); return nil })
+	read(wsconn)
+}
 
-	mlog.Debug("ws connected")
-
+func write(wsconn *WsConn) error {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		wsconn.c.Close()
+	}()
+	ch := wsconn.ps.Subscribe()
 	for {
-		var wsRequest WsRequest
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			wsconn.cs.CancelAll()
-			wc.Delete(uid, id)
-			mlog.Debug("read:", err, message)
-			break
-		}
-		mlog.Debugf("receive msg %s", message)
-		if err := json.Unmarshal(message, &wsRequest); err != nil {
-			SendEndError(wsconn, "", "", err)
-			continue
-		}
+		select {
+		case message, ok := <-ch:
+			wsconn.c.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				return wsconn.c.WriteMessage(websocket.CloseMessage, []byte{})
+			}
 
-		mlog.Debug("handle req", wsRequest)
-		go wc.serveWebsocket(wsconn, wsRequest)
+			w, err := wsconn.c.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return err
+			}
+			w.Write([]byte(message))
+
+			if err := w.Close(); err != nil {
+				return err
+			}
+		case <-ticker.C:
+			mlog.Debugf("[Websocket] tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
+			wsconn.c.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := wsconn.c.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return err
+			}
+		}
 	}
 }
 
-func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
+func read(wsconn *WsConn) {
+	wsconn.c.SetReadLimit(maxMessageSize)
+	wsconn.c.SetReadDeadline(time.Now().Add(pongWait))
+	wsconn.c.SetPongHandler(func(string) error {
+		wsconn.c.SetReadDeadline(time.Now().Add(pongWait))
+		mlog.Debugf("[Websocket] 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
+		return nil
+	})
+	for {
+		var wsRequest WsRequest
+		_, message, err := wsconn.c.ReadMessage()
+		if err != nil {
+			mlog.Warning("[Websocket] read error:", err, message)
+			break
+		}
+		if err := json.Unmarshal(message, &wsRequest); err != nil {
+			SendEndError(wsconn, "", WsInternalError, err)
+			continue
+		}
+
+		go serveWebsocket(wsconn, wsRequest)
+	}
+}
+
+func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 	switch wsRequest.Type {
 	case WsCancel:
 		var input CancelInput
@@ -319,8 +280,6 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 		var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 		if c.cs.Has(slugName) {
 			input.Name = slug.Make(input.Name)
-			var ns models.Namespace
-			app.DB().Where("`id` = ?", input.NamespaceId).First(&ns)
 			c.cs.Cancel(slugName)
 		}
 	case WsCreateProject:
@@ -331,7 +290,7 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 
-		wc.installProject(input, wsRequest.Type, wsRequest, c)
+		installProject(input, wsRequest.Type, wsRequest, c)
 	case WsUpdateProject:
 		var input UpdateProject
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
@@ -346,7 +305,7 @@ func (wc *WebsocketController) serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 
-		wc.installProject(ProjectInput{
+		installProject(ProjectInput{
 			NamespaceId:     p.NamespaceId,
 			Name:            p.Name,
 			GitlabProjectId: p.GitlabProjectId,
@@ -383,7 +342,7 @@ type CancelInput struct {
 	Name        string `json:"name"`
 }
 
-func (wc *WebsocketController) installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
+func installProject(input ProjectInput, wsType string, wsRequest WsRequest, conn *WsConn) {
 	// step 1: 初始化
 	pc := &ProcessControl{
 		input:     input,
@@ -432,9 +391,9 @@ func (wc *WebsocketController) installProject(input ProjectInput, wsType string,
 	pc.Wait()
 	select {
 	case <-pc.stopCtx.Done():
-		wc.SendToAll(WsReloadProjects, "")
+		conn.ps.ToAll(&WsResponse{Type: WsReloadProjects})
 	default:
-		wc.SendExceptId(conn.id, WsReloadProjects, "")
+		conn.ps.ToOthers(&WsResponse{Type: WsReloadProjects})
 	}
 }
 
@@ -469,81 +428,6 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []stri
 type MessageItem struct {
 	Msg  string
 	Type string
-}
-
-func SendEndError(conn *WsConn, slug, wsType string, err error) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   wsType,
-		Result: ResultError,
-		Data:   err.Error(),
-		End:    true,
-		Uid:    conn.uid,
-		ID:     conn.id,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
-}
-
-func SendError(conn *WsConn, slug, wsType string, err error) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   wsType,
-		Result: ResultError,
-		Data:   err.Error(),
-		End:    false,
-		Uid:    conn.uid,
-		ID:     conn.id,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
-}
-
-func SendProcessPercent(conn *WsConn, slug, percent string) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   WsProcessPercent,
-		Result: ResultSuccess,
-		End:    false,
-		Data:   percent,
-		Uid:    conn.uid,
-		ID:     conn.id,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
-}
-
-func SendMsg(conn *WsConn, slug, wsType string, msg string) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   wsType,
-		Result: ResultSuccess,
-		End:    false,
-		Data:   msg,
-		Uid:    conn.uid,
-		ID:     conn.id,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
-}
-
-func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
-	res := &WsResponse{
-		Slug:   slug,
-		Type:   wsType,
-		Result: result,
-		End:    true,
-		Data:   msg,
-		Uid:    conn.uid,
-		ID:     conn.id,
-	}
-	conn.Lock()
-	defer conn.Unlock()
-	conn.c.WriteMessage(websocket.TextMessage, res.EncodeToBytes())
 }
 
 type ProcessPercent struct {
@@ -626,50 +510,6 @@ type ProcessControl struct {
 	messageCh chan MessageItem
 }
 
-func (pc *ProcessControl) CallAfterInstalledFuncs() {
-	for _, f := range pc.customFuncAfterInstalled {
-		f()
-	}
-}
-
-func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
-	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
-}
-
-func (pc *ProcessControl) Prune() {
-	if pc.new {
-		app.DB().Delete(&pc.project)
-	}
-}
-
-func (pc *ProcessControl) DoStop() {
-	select {
-	case <-pc.stopCtx.Done():
-		pc.Prune()
-		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
-	default:
-		return
-	}
-}
-
-func (pc *ProcessControl) SendStopSignal() {
-	if pc.stopFunc != nil {
-		pc.stopFunc(errors.New("receive canceled signal"))
-	}
-}
-
-func (pc *ProcessControl) NeedStop() bool {
-	if pc.stopCtx == nil {
-		return false
-	}
-	select {
-	case <-pc.stopCtx.Done():
-		return true
-	default:
-		return false
-	}
-}
-
 func (pc *ProcessControl) SetUp() error {
 	pc.slugName = utils.Md5(fmt.Sprintf("%d-%s", pc.input.NamespaceId, pc.input.Name))
 	pc.stopCtx, pc.stopFunc = utils.NewCustomErrorContext()
@@ -703,80 +543,6 @@ func (pc *ProcessControl) SetUp() error {
 		app.DB().Create(&pc.project)
 		pc.new = true
 	}
-
-	return nil
-}
-
-func (pc *ProcessControl) CheckConfig() error {
-	pc.SendMsg("校验项目配置传参...")
-	pc.To(15)
-	marsC, err := GetProjectMarsConfig(pc.input.GitlabProjectId, pc.input.GitlabBranch)
-	if err != nil {
-		return err
-	}
-	pc.marC = marsC
-
-	// 下载 helm charts
-	pc.SendMsg(fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
-	split := strings.Split(marsC.LocalChartPath, "|")
-	var (
-		files        []string
-		tmpChartsDir string
-		deleteDirFn  func()
-		dir          string
-	)
-	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
-	if marsC.IsRemoteChart() {
-		pid := split[0]
-		branch := split[1]
-		path := split[2]
-		files = utils.GetDirectoryFiles(pid, branch, path)
-		if len(files) < 1 {
-			return errors.New("charts 文件不存在")
-		}
-		mlog.Warning(files)
-		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
-		dir = path
-
-		loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
-		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
-			for _, dependency := range loadDir.Metadata.Dependencies {
-				if strings.HasPrefix(dependency.Repository, "file://") {
-					depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
-					_, depDeleteFn := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
-					pc.AddAfterInstalledFunc(depDeleteFn)
-					pc.SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
-				}
-			}
-		}
-		pc.SendMsg(fmt.Sprintf("识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
-	} else {
-		dir = marsC.LocalChartPath
-		files = utils.GetDirectoryFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, marsC.LocalChartPath)
-		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, files)
-	}
-	pc.AddAfterInstalledFunc(deleteDirFn)
-	chartDir := filepath.Join(tmpChartsDir, dir)
-
-	chart, err := utils.PackageChart(chartDir, chartDir)
-	if err != nil {
-		return err
-	}
-	archive, err := os.Open(chart)
-	if err != nil {
-		return err
-	}
-	defer archive.Close()
-
-	pc.To(30)
-
-	pc.SendMsg("加载 helm charts...")
-
-	loadArchive, err := loader.LoadArchive(archive)
-	if err != nil {
-		return err
-	}
-	pc.chart = loadArchive
 
 	return nil
 }
@@ -989,17 +755,133 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	return nil
 }
 
-func getPreOccupiedLen(values []string) int {
-	var sub = 0
-	if len(values) > 0 {
-		for _, value := range values {
-			submatch := hostMatch.FindAllStringSubmatch(value, -1)
-			if len(submatch) == 1 && len(submatch[0]) >= 1 {
-				sub = max(sub, len(submatch[0][1]))
+func (pc *ProcessControl) CheckConfig() error {
+	pc.SendMsg("校验项目配置传参...")
+	pc.To(15)
+	marsC, err := GetProjectMarsConfig(pc.input.GitlabProjectId, pc.input.GitlabBranch)
+	if err != nil {
+		return err
+	}
+	pc.marC = marsC
+
+	// 下载 helm charts
+	pc.SendMsg(fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
+	split := strings.Split(marsC.LocalChartPath, "|")
+	var (
+		files        []string
+		tmpChartsDir string
+		deleteDirFn  func()
+		dir          string
+	)
+	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
+	if marsC.IsRemoteChart() {
+		pid := split[0]
+		branch := split[1]
+		path := split[2]
+		files = utils.GetDirectoryFiles(pid, branch, path)
+		if len(files) < 1 {
+			return errors.New("charts 文件不存在")
+		}
+		mlog.Warning(files)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
+		dir = path
+
+		loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
+		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
+			for _, dependency := range loadDir.Metadata.Dependencies {
+				if strings.HasPrefix(dependency.Repository, "file://") {
+					depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
+					_, depDeleteFn := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
+					pc.AddAfterInstalledFunc(depDeleteFn)
+					pc.SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
+				}
 			}
 		}
+		pc.SendMsg(fmt.Sprintf("识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
+	} else {
+		dir = marsC.LocalChartPath
+		files = utils.GetDirectoryFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, marsC.LocalChartPath)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pc.input.GitlabProjectId, pc.input.GitlabCommit, files)
 	}
-	return sub
+	pc.AddAfterInstalledFunc(deleteDirFn)
+	chartDir := filepath.Join(tmpChartsDir, dir)
+
+	chart, err := utils.PackageChart(chartDir, chartDir)
+	if err != nil {
+		return err
+	}
+	archive, err := os.Open(chart)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	pc.To(30)
+
+	pc.SendMsg("加载 helm charts...")
+
+	loadArchive, err := loader.LoadArchive(archive)
+	if err != nil {
+		return err
+	}
+	pc.chart = loadArchive
+
+	return nil
+}
+
+func (pc *ProcessControl) CheckImage() error {
+	image := strings.Split(pc.project.DockerImage, ":")
+	if len(image) == 2 {
+		if plugins.GetDockerPlugin().ImageNotExists(image[0], image[1]) {
+			return errors.New(fmt.Sprintf("镜像 %s 不存在！", pc.project.DockerImage))
+		}
+	}
+
+	return nil
+}
+
+func (pc *ProcessControl) Prune() {
+	if pc.new {
+		app.DB().Delete(&pc.project)
+	}
+}
+
+func (pc *ProcessControl) SendStopSignal() {
+	if pc.stopFunc != nil {
+		pc.stopFunc(errors.New("receive canceled signal"))
+	}
+}
+
+func (pc *ProcessControl) NeedStop() bool {
+	if pc.stopCtx == nil {
+		return false
+	}
+	select {
+	case <-pc.stopCtx.Done():
+		return true
+	default:
+		return false
+	}
+}
+
+func (pc *ProcessControl) DoStop() {
+	select {
+	case <-pc.stopCtx.Done():
+		pc.Prune()
+		pc.SendEndMsg(ResultDeployCanceled, "收到停止信号")
+	default:
+		return
+	}
+}
+
+func (pc *ProcessControl) CallAfterInstalledFuncs() {
+	for _, f := range pc.customFuncAfterInstalled {
+		f()
+	}
+}
+
+func (pc *ProcessControl) AddAfterInstalledFunc(fn func()) {
+	pc.customFuncAfterInstalled = append(pc.customFuncAfterInstalled, fn)
 }
 
 func (pc *ProcessControl) Run() {
@@ -1062,15 +944,17 @@ func (pc *ProcessControl) Wait() {
 	}
 }
 
-func (pc *ProcessControl) CheckImage() error {
-	image := strings.Split(pc.project.DockerImage, ":")
-	if len(image) == 2 {
-		if plugins.GetDockerPlugin().ImageNotExists(image[0], image[1]) {
-			return errors.New(fmt.Sprintf("镜像 %s 不存在！", pc.project.DockerImage))
+func getPreOccupiedLen(values []string) int {
+	var sub = 0
+	if len(values) > 0 {
+		for _, value := range values {
+			submatch := hostMatch.FindAllStringSubmatch(value, -1)
+			if len(submatch) == 1 && len(submatch[0]) >= 1 {
+				sub = max(sub, len(submatch[0][1]))
+			}
 		}
 	}
-
-	return nil
+	return sub
 }
 
 type MessageSender struct {
@@ -1101,6 +985,71 @@ func (ms *MessageSender) SendMsg(msg string) {
 
 func (ms *MessageSender) SendEndMsg(result, msg string) {
 	SendEndMsg(ms.conn, result, ms.slugName, ms.wsType, msg)
+}
+
+func SendEndError(conn *WsConn, slug, wsType string, err error) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    true,
+		Uid:    conn.uid,
+		ID:     conn.id,
+	}
+	conn.ps.ToSelf(res)
+}
+
+func SendError(conn *WsConn, slug, wsType string, err error) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultError,
+		Data:   err.Error(),
+		End:    false,
+		Uid:    conn.uid,
+		ID:     conn.id,
+	}
+	conn.ps.ToSelf(res)
+}
+
+func SendProcessPercent(conn *WsConn, slug, percent string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   WsProcessPercent,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   percent,
+		Uid:    conn.uid,
+		ID:     conn.id,
+	}
+	conn.ps.ToSelf(res)
+}
+
+func SendMsg(conn *WsConn, slug, wsType string, msg string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: ResultSuccess,
+		End:    false,
+		Data:   msg,
+		Uid:    conn.uid,
+		ID:     conn.id,
+	}
+	conn.ps.ToSelf(res)
+}
+
+func SendEndMsg(conn *WsConn, result, slug, wsType string, msg string) {
+	res := &WsResponse{
+		Slug:   slug,
+		Type:   wsType,
+		Result: result,
+		End:    true,
+		Data:   msg,
+		Uid:    conn.uid,
+		ID:     conn.id,
+	}
+	conn.ps.ToSelf(res)
 }
 
 func getDomain(project, namespace string, preOccupiedLen int) string {

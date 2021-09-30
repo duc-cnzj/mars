@@ -22,6 +22,14 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 )
 
+type Hook string
+
+const (
+	BeforeRunHook  Hook = "before_run"
+	BeforeDownHook      = "before_down"
+	AfterDownHook       = "after_down"
+)
+
 var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var DefaultBootstrappers = []contracts.Bootstrapper{
@@ -52,8 +60,7 @@ type Application struct {
 	done     context.Context
 	doneFunc func()
 
-	beforeShutdownFunctions []contracts.ShutdownFunc
-	afterShutdownFunctions  []contracts.ShutdownFunc
+	hooks map[Hook][]contracts.Callback
 
 	dispatcher contracts.DispatcherInterface
 
@@ -112,7 +119,7 @@ func (app *Application) SetEventDispatcher(dispatcher contracts.DispatcherInterf
 	app.dispatcher = dispatcher
 }
 
-func NewApplication(config *config.Config, opts ...contracts.Option) *Application {
+func NewApplication(config *config.Config, opts ...contracts.Option) contracts.ApplicationInterface {
 	var mustBooted = []contracts.Bootstrapper{
 		&bootstrappers.LogBootstrapper{},
 		&bootstrappers.EventBootstrapper{},
@@ -124,6 +131,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) *Applicatio
 		config:        config,
 		done:          doneCtx,
 		doneFunc:      cancelFunc,
+		hooks:         map[Hook][]contracts.Callback{},
 	}
 
 	app.dbManager = database.NewManager(app)
@@ -177,6 +185,8 @@ func (app *Application) Run() chan os.Signal {
 	done := make(chan os.Signal)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
+	app.RunServerHooks(BeforeRunHook)
+
 	go func() {
 		mlog.Infof("server running at %s.", app.httpServer.Addr)
 		if err := app.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -201,7 +211,7 @@ func (app *Application) Shutdown() {
 
 	app.doneFunc()
 
-	callBeforeShutdownFunctions(app)
+	app.RunServerHooks(BeforeDownHook)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -210,27 +220,25 @@ func (app *Application) Shutdown() {
 		mlog.Error(err)
 	}
 
-	callAfterShutdownFunctions(app)
+	app.RunServerHooks(AfterDownHook)
 
 	mlog.Info("server graceful shutdown.")
 }
 
-func (app *Application) RegisterAfterShutdownFunc(fn contracts.ShutdownFunc) {
-	app.afterShutdownFunctions = append(app.afterShutdownFunctions, fn)
+func (app *Application) RegisterAfterShutdownFunc(fn contracts.Callback) {
+	app.hooks[AfterDownHook] = append(app.hooks[AfterDownHook], fn)
 }
 
-func (app *Application) RegisterBeforeShutdownFunc(fn contracts.ShutdownFunc) {
-	app.beforeShutdownFunctions = append(app.beforeShutdownFunctions, fn)
+func (app *Application) RegisterBeforeShutdownFunc(fn contracts.Callback) {
+	app.hooks[BeforeDownHook] = append(app.hooks[BeforeDownHook], fn)
 }
 
-func callAfterShutdownFunctions(app *Application) {
-	for _, fn := range app.afterShutdownFunctions {
-		fn(app)
+func (app *Application) RunServerHooks(hook Hook) {
+	for _, cb := range app.hooks[hook] {
+		cb(app)
 	}
 }
 
-func callBeforeShutdownFunctions(app *Application) {
-	for _, fn := range app.beforeShutdownFunctions {
-		fn(app)
-	}
+func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {
+	app.hooks[BeforeRunHook] = append(app.hooks[BeforeRunHook], cb)
 }
