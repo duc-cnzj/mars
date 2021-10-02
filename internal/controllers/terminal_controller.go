@@ -173,6 +173,13 @@ func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
 	sm.Sessions[sessionId] = session
 }
 
+func (sm *SessionMap) CloseAll() {
+	mlog.Debug("[Websocket] close all.")
+	for _, s := range sm.Sessions {
+		sm.Close(s.id, 1, "websocket conn closed")
+	}
+}
+
 // Close shuts down the SockJS connection and sends the status code and reason to the client
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")

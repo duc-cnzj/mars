@@ -229,6 +229,7 @@ func (wc *WebsocketController) Ws(ctx *gin.Context) {
 	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]*MyPtyHandler), conn: wsconn}
 
 	defer func() {
+		wsconn.terminalSessions.CloseAll()
 		ps.Close()
 		c.Close()
 	}()
