@@ -38,4 +38,12 @@ declare namespace API {
     data: string;
     end: boolean;
   }
+
+  interface WsHandleExecShellResponse {
+    data: string;
+    namespace: string;
+    pod: string;
+    container: string;
+    session_id: string;
+  }
 }

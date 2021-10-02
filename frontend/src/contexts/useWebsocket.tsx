@@ -4,15 +4,36 @@ import { handleEvents } from "../store/actions";
 import { isJsonString } from "../utils/json";
 import { getUid } from "../utils/uid";
 
-export const WsContext = React.createContext<WebSocket | null>(null);
+interface State {
+  ws: WebSocket | null;
+  ready: boolean;
+}
+export const WsContext = React.createContext<State | null>({
+  ws: null,
+  ready: false,
+});
 
 export function useWs(): WebSocket | null {
-  return useContext(WsContext);
+  let ctx = useContext(WsContext);
+  if (ctx) {
+    return ctx.ws;
+  }
+  return null;
+}
+
+export function useWsReady(): boolean {
+  let ctx = useContext(WsContext);
+  if (ctx) {
+    return ctx.ready;
+  }
+
+  return false;
 }
 
 export const ProvideWebsocket: React.FC = ({ children }) => {
   const dispatch = useDispatch();
   const [ws, setWs] = useState<any>();
+  const [ready, setReady] = useState(false)
 
   const connectWs = useCallback(() => {
     console.log("ws init");
@@ -28,12 +49,14 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
       url += "?uid=" + uid;
     }
     let conn = new WebSocket(url);
-    setWs(conn);
+    setWs({ws: conn});
     conn.onopen = function (evt) {
+      setReady(true)
       console.log("ws onopen");
     };
     conn.onclose = function (evt) {
       setWs(null);
+      setReady(false)
       console.log("ws closed");
     };
     conn.onmessage = function (evt) {
@@ -46,8 +69,14 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
   }, [dispatch]);
 
   useEffect(() => {
+    setWs((ws: any)=>({...ws, ready: ready}));
+  }, [ready])
+
+  useEffect(() => {
     if (!ws) {
-      connectWs();
+      setTimeout(() => {
+        connectWs();
+      }, 2000);
     }
   }, [connectWs, ws]);
 

@@ -1,6 +1,10 @@
 package enums
 
 const (
+	WsHandleExecShell    string = "handle_exec_shell"
+	WsHandleExecShellMsg string = "handle_exec_shell_msg"
+	WsHandleCloseShell   string = "handle_close_shell"
+
 	WsSetUid string = "set_uid"
 	// WsReloadProjects
 	// TODO 最好是直接把数据返回，而不是让前端再去获取一次

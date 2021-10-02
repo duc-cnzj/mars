@@ -67,14 +67,6 @@ func Init(e *gin.Engine) {
 			api.GET("/gitlab/projects/:project_id/branches/:branch/config_file", gitlabController.ConfigFile)
 		}
 
-		tc := controllers.NewTerminalController()
-		{
-			api.GET("/pod/:namespace/:pod/shell", tc.HandleExecShell)
-			e.Any("/api/sockjs/*action", func(ctx *gin.Context) {
-				tc.HandleSocket("/api/sockjs").ServeHTTP(ctx.Writer, ctx.Request)
-			})
-		}
-
 		marsController := controllers.NewMarsController()
 		{
 			api.GET("/gitlab/projects/:project_id/mars_config", marsController.Show)

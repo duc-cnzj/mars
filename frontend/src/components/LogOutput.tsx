@@ -22,11 +22,11 @@ const LogOutput: React.FC<{ slug: string }> = ({ slug }) => {
       reverse={true}
       style={{ paddingLeft: 2 }}
     >
-      {list[slug]?.output.map((data, index) => (
+      {list[slug]?.output ? list[slug]?.output.map((data, index) => (
         <Timeline.Item key={index} color={getResultColor(data)}>
           {data}
         </Timeline.Item>
-      ))}
+      )) : ""}
     </Timeline>
   );
 };

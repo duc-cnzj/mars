@@ -6,6 +6,8 @@ import {
   SET_NAMESPACE_RELOAD,
   SET_PROCESS_PERCENT,
   SET_CLUSTER_INFO,
+  SET_SHELL_SESSION_ID,
+  SET_SHELL_LOG,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -54,6 +56,20 @@ export const setProcessPercent = (id: string, percent: number) => ({
   data: {
     id: id,
     processPercent: percent,
+  },
+});
+export const setShellSessionId = (id: string, sessionID: string) => ({
+  type: SET_SHELL_SESSION_ID,
+  data: {
+    id: id,
+    sessionID: sessionID,
+  },
+});
+export const setShellLog = (id: string, log: string) => ({
+  type: SET_SHELL_LOG,
+  data: {
+    id: id,
+    log: log,
   },
 });
 
@@ -131,6 +147,20 @@ export const handleEvents = (id: string, data: API.WsResponse) => {
         break;
       case "process_percent":
         dispatch(setProcessPercent(id, Number(data.data)));
+        break;
+      case "handle_exec_shell":
+        console.log(data.data)
+        if (data.result === "error") {
+          message.error(data.data)
+          break
+        }
+        let res = (JSON.parse(data.data) as API.WsHandleExecShellResponse)
+        dispatch(setShellSessionId(`${res.namespace}|${res.pod}|${res.container}`, res.session_id));
+        break;
+      case "handle_exec_shell_msg":
+        console.log("handle_exec_shell_msg", data.data)
+        let logRes = (JSON.parse(data.data) as API.WsHandleExecShellResponse)
+        dispatch(setShellLog(`${logRes.namespace}|${logRes.pod}|${logRes.container}`, data.data))
         break;
       default:
         console.log("unknown event: ", data.type);

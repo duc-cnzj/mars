@@ -140,3 +140,9 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 - grpc-gateway 替换 gin？
 - 重构 ui 创建项目部分代码
 - 重构后端部署部分代码
+
+1. 断开连接使用图标的方式
+2. ~~多容器还没写~~
+3. ~~sessionId 还是要用起来~~
+4. ~~前端shell退出后，后端对应的携程也要退出，防止泄漏~~
+5. 高可用化
