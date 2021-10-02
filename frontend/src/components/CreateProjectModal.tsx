@@ -8,7 +8,7 @@ import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { useWs } from "../contexts/useWebsocket";
+import { useWs,useWsReady } from "../contexts/useWebsocket";
 import { message, Progress } from "antd";
 import { Button } from "antd";
 import {
@@ -151,9 +151,21 @@ const CreateProjectModal: React.FC<{
   }, [data.config]);
 
   const ws = useWs();
+  const wsReady = useWsReady();
+
+  useEffect(() => {
+    if (!wsReady) {
+      setStart(false);
+      dispatch(setCreateProjectLoading(slug, false));
+    }
+  }, [wsReady])
 
   const onOk = useCallback(() => {
     console.log(data);
+    if (!wsReady) {
+      message.error("连接断开了")
+      return
+    }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
       // todo ws connected!
       setEditVisible(false);
@@ -183,7 +195,7 @@ const CreateProjectModal: React.FC<{
     }
 
     message.error("项目id, 分支，提交必填");
-  }, [data, dispatch, slug, ws, namespaceId]);
+  }, [data, dispatch, slug, ws, namespaceId, wsReady]);
   const onRemove = useCallback(() => {
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
       let re = {
@@ -234,7 +246,7 @@ const CreateProjectModal: React.FC<{
           commit={data.gitlabCommit}
         />
         <div className={classNames({ "display-none": !editVisible })}>
-          {list[slug]?.output.length > 0 ? (
+          {list[slug]?.output?.length > 0 ? (
             <Button
               style={{ marginBottom: 20 }}
               type="dashed"

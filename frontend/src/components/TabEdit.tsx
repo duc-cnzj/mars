@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import PipelineInfo from "./PipelineInfo";
-
 import { commit, configFile, projects } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { Button, Skeleton, Progress } from "antd";
+import { Button, Skeleton, Progress, message } from "antd";
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/material.css";
 import "codemirror/theme/dracula.css";
@@ -18,7 +17,7 @@ import {
   setDeployStatus,
 } from "../store/actions";
 import { toSlug } from "../utils/slug";
-import { useWs } from "../contexts/useWebsocket";
+import { useWs, useWsReady } from "../contexts/useWebsocket";
 import {
   ArrowLeftOutlined,
   StopOutlined,
@@ -55,6 +54,7 @@ const ModalSub: React.FC<{
   let id = detail.id;
   let namespaceId = detail.namespace.id;
   const ws = useWs();
+  const wsReady = useWsReady();
 
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
@@ -160,7 +160,17 @@ const ModalSub: React.FC<{
       loadConfigFile();
     }
   };
+  useEffect(() => {
+    if (!wsReady) {
+      setStart(false);
+      dispatch(setCreateProjectLoading(slug, false));
+    }
+  }, [wsReady])
   const updateDeploy = () => {
+    if (!wsReady) {
+      message.error("连接断开了");
+      return
+    }
     if (data.gitlabCommit && data.gitlabBranch) {
       setStart(true);
       setEditVisible(false);
@@ -207,6 +217,10 @@ const ModalSub: React.FC<{
   };
 
   const onRemove = useCallback(() => {
+    if (!wsReady) {
+      message.error("连接断开了");
+      return
+    }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
       let re = {
         type: "cancel_project",
@@ -220,7 +234,7 @@ const ModalSub: React.FC<{
       ws?.send(s);
       return;
     }
-  }, [data, ws, namespaceId]);
+  }, [data, ws, namespaceId, wsReady]);
 
   return (
     <div className="edit-project">
@@ -231,7 +245,7 @@ const ModalSub: React.FC<{
       />
       <div className={classNames({ "display-none": !editVisible })}>
         <div style={{ width: "100%" }}>
-          {list[slug]?.output.length > 0 ? (
+          {list[slug]?.output?.length > 0 ? (
             <Button
               style={{ marginBottom: 20 }}
               type="dashed"

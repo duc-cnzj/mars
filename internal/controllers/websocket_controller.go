@@ -71,6 +71,10 @@ const (
 	WsClusterInfoSync string = enums.WsClusterInfoSync
 
 	WsInternalError string = enums.WsInternalError
+
+	WsHandleExecShell    string = enums.WsHandleExecShell
+	WsHandleExecShellMsg string = enums.WsHandleExecShellMsg
+	WsHandleCloseShell   string = enums.WsHandleCloseShell
 )
 
 var hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
@@ -131,14 +135,35 @@ const (
 )
 
 type WsConn struct {
-	sync.Mutex
-
 	ps plugins.PubSub
 
 	id  string
 	uid string
 	c   *websocket.Conn
 	cs  *CancelSignals
+
+	terminalSessions *SessionMap
+}
+
+func (c *WsConn) GetShellChannel(sessionID string) (chan TerminalMessage, error) {
+	if handler, ok := c.terminalSessions.Sessions[sessionID]; ok {
+		return handler.shellCh, nil
+	}
+
+	return nil, fmt.Errorf("%v not found channel", sessionID)
+}
+
+func (c *WsConn) DeleteShellChannel(sessionID string) {
+	ch := c.terminalSessions.Sessions[sessionID].shellCh
+	for {
+		select {
+		case msg := <-ch:
+			mlog.Warning("session: %v 未消费的数据 %v", sessionID, msg)
+		default:
+			close(ch)
+			return
+		}
+	}
 }
 
 type CancelSignals struct {
@@ -194,7 +219,14 @@ func (wc *WebsocketController) Ws(ctx *gin.Context) {
 	id := uuid.New().String()
 
 	ps := plugins.GetWsSender().New(uid, id)
-	var wsconn = &WsConn{ps: ps, id: id, uid: uid, c: c, cs: &CancelSignals{cs: map[string]*ProcessControl{}}}
+	var wsconn = &WsConn{
+		ps:  ps,
+		id:  id,
+		uid: uid,
+		c:   c,
+		cs:  &CancelSignals{cs: map[string]*ProcessControl{}},
+	}
+	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]*MyPtyHandler), conn: wsconn}
 
 	defer func() {
 		ps.Close()
@@ -268,6 +300,58 @@ func read(wsconn *WsConn) {
 
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 	switch wsRequest.Type {
+	case WsHandleCloseShell:
+		var input TerminalMessage
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+		mlog.Debugf("%v 收到客户端主动断开的消息", input.SessionID)
+		c.terminalSessions.Close(input.SessionID, 0, "client EXIT")
+	case WsHandleExecShellMsg:
+		var input TerminalMessage
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+		go func() {
+			if input.SessionID != "" {
+				messages, err := c.GetShellChannel(input.SessionID)
+				if err != nil {
+					mlog.Error(err)
+					return
+				}
+				mlog.Debugf("%v 收到 WsHandleExecShellMsg 消息: '%v' , op: %v chan size: %v", input.SessionID, input.Data, input.Op, len(messages))
+				messages <- input
+				mlog.Debugf("%v msg send: '%v'", input.SessionID, input.Data)
+			}
+		}()
+	case WsHandleExecShell:
+		var input WsHandleExecShellInput
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+
+		sessionID, err := HandleExecShell(input, c)
+		if err != nil {
+			SendEndMsg(c, ResultError, "", WsHandleExecShell, err.Error())
+			return
+		}
+		mlog.Debugf("收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
+
+		res := struct {
+			WsHandleExecShellInput
+			SessionID string `json:"session_id"`
+		}{
+			WsHandleExecShellInput: input,
+			SessionID:              sessionID,
+		}
+		marshal, _ := json.Marshal(res)
+		SendEndMsg(c, ResultSuccess, "", WsHandleExecShell, string(marshal))
 	case WsCancel:
 		var input CancelInput
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {

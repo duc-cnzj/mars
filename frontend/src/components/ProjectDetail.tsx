@@ -89,6 +89,7 @@ const ItemDetailModal: React.FC<{
           console.log("DraggableModal onResize");
           setResizeAt(new Date().getTime());
         }}
+        destroyOnClose
         className="draggable-modal"
         visible={visible}
         initialWidth={800}

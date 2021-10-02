@@ -6,8 +6,6 @@ import AddNamespace from "./AddNamespace";
 import Setting from "./Setting";
 import "../pkg/DraggableModal/index.css";
 import { listNamespaces, NamespaceItem } from "../api/namespace";
-
-import { useWs } from "../contexts/useWebsocket";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload } from "../store/actions";
 import { selectReload } from "../store/reducers/namespace";
@@ -15,8 +13,6 @@ import { selectReload } from "../store/reducers/namespace";
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const dispatch = useDispatch();
-  const ws = useWs();
-  console.log(ws, "console.log(ws)");
   const [loading, setLoading] = useState(false);
   const [namespaceItems, setNamespaceItems] = useState<NamespaceItem[]>([]);
   const onNamespaceCreated = ({ id, name }: { id: number; name: string }) => {
