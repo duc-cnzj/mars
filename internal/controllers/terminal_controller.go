@@ -66,7 +66,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	if !ok {
 		return 0, fmt.Errorf("%v channel closed", t.id)
 	}
-	mlog.Debugf("%v %v %v 从终端读取消息：%v", t.Namespace, t.Pod, t.Container.Container, msg)
+	mlog.Debugf("[Websocket] %v %v %v 从终端读取消息：%v", t.Namespace, t.Pod, t.Container.Container, msg)
 	switch msg.Op {
 	case "stdin":
 		return copy(p, msg.Data), nil
@@ -184,7 +184,7 @@ func (sm *SessionMap) CloseAll() {
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
-	mlog.Debugf("session %v closed.", sessionId)
+	mlog.Debugf("[Websocket] session %v closed.", sessionId)
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	if _, ok := sm.Sessions[sessionId]; !ok {
@@ -281,7 +281,7 @@ func isValidShell(validShells []string, shell string) bool {
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleMyPtyHandler
 func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
 	defer func() {
-		mlog.Debugf("WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
+		mlog.Debugf("[Websocket] WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
@@ -353,7 +353,6 @@ func HandleExecShell(input WsHandleExecShellInput, conn *WsConn) (string, error)
 		shellCh:  make(chan TerminalMessage, 100),
 	})
 
-	mlog.Info("conn.terminalSessions.Sessions", conn.terminalSessions.Sessions, len(conn.terminalSessions.Sessions))
 	go WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
 		Namespace: input.Namespace,
 		Pod:       input.Pod,

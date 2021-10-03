@@ -103,7 +103,7 @@ func NewWebsocketController() *WebsocketController {
 					Data: string(marshal),
 				})
 			case <-app.App().Done():
-				mlog.Warning("app shutdown and stop WsClusterInfoSync")
+				mlog.Warning("[Websocket] app shutdown and stop WsClusterInfoSync")
 				ticker.Stop()
 				return
 			}
@@ -158,7 +158,7 @@ func (c *WsConn) DeleteShellChannel(sessionID string) {
 	for {
 		select {
 		case msg := <-ch:
-			mlog.Warning("session: %v 未消费的数据 %v", sessionID, msg)
+			mlog.Warning("[Websocket] session: %v 未消费的数据 %v", sessionID, msg)
 		default:
 			close(ch)
 			return
@@ -308,8 +308,8 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			SendEndError(c, "", wsRequest.Type, err)
 			return
 		}
-		mlog.Debugf("%v 收到客户端主动断开的消息", input.SessionID)
-		c.terminalSessions.Close(input.SessionID, 0, "client EXIT")
+		mlog.Debugf("[Websocket] %v 收到客户端主动断开的消息", input.SessionID)
+		c.terminalSessions.Close(input.SessionID, 0, "")
 	case WsHandleExecShellMsg:
 		var input TerminalMessage
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
@@ -324,9 +324,9 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 					mlog.Error(err)
 					return
 				}
-				mlog.Debugf("%v 收到 WsHandleExecShellMsg 消息: '%v' , op: %v chan size: %v", input.SessionID, input.Data, input.Op, len(messages))
+				mlog.Debugf("[Websocket] %v 收到 WsHandleExecShellMsg 消息: '%v' , op: %v chan size: %v", input.SessionID, input.Data, input.Op, len(messages))
 				messages <- input
-				mlog.Debugf("%v msg send: '%v'", input.SessionID, input.Data)
+				mlog.Debugf("[Websocket] %v msg send: '%v'", input.SessionID, input.Data)
 			}
 		}()
 	case WsHandleExecShell:
@@ -342,7 +342,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			SendEndMsg(c, ResultError, "", WsHandleExecShell, err.Error())
 			return
 		}
-		mlog.Debugf("收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
+		mlog.Debugf("[Websocket] 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
 
 		res := struct {
 			WsHandleExecShellInput
@@ -826,8 +826,10 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 		if pc.Current() < 99 {
 			pc.Add()
 		}
+		if pc.Current() >= 95 {
+			format = "[如果长时间未部署成功，建议取消使用 debug 模式]: " + format
+		}
 		msg := fmt.Sprintf(format, v...)
-		mlog.Debug(msg)
 		if pc.running.isSet() {
 			pc.messageCh <- MessageItem{
 				Msg:  msg,
