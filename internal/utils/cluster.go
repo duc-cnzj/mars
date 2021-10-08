@@ -71,22 +71,22 @@ func ClusterInfo() *InfoResponse {
 	)
 
 	var (
-		workerNodes    []v1.Node
-		noExecuteNodes []v1.Node
+		workerNodes  []v1.Node
+		notWorkNodes []v1.Node
 	)
 
 	for _, node := range nodes {
-		noExecute := false
+		notWork := false
 		for _, taint := range node.Spec.Taints {
-			if taint.Effect == v1.TaintEffectNoExecute {
-				noExecute = true
+			if taint.Effect == v1.TaintEffectNoExecute || taint.Effect == v1.TaintEffectNoSchedule {
+				notWork = true
 				break
 			}
 		}
-		if !noExecute {
+		if !notWork {
 			workerNodes = append(workerNodes, node)
 		} else {
-			noExecuteNodes = append(workerNodes, node)
+			notWorkNodes = append(workerNodes, node)
 		}
 	}
 
@@ -96,7 +96,7 @@ func ClusterInfo() *InfoResponse {
 		totalMemory.Add(n.Status.Allocatable.Memory().DeepCopy())
 	}
 
-	requestCpu, requestMemory := getNodeRequestCpuAndMemory(noExecuteNodes)
+	requestCpu, requestMemory := getNodeRequestCpuAndMemory(notWorkNodes)
 	var (
 		usedCpu    = &resource.Quantity{}
 		usedMemory = &resource.Quantity{}
