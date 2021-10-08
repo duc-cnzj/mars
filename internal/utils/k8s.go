@@ -67,6 +67,21 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
 	var m = map[string][]string{}
 
+	isHttp := func(name string) bool {
+		switch {
+		case strings.Contains(name, "web"):
+			fallthrough
+		case strings.Contains(name, "ui"):
+			fallthrough
+		case strings.Contains(name, "api"):
+			fallthrough
+		case strings.Contains(name, "http"):
+			return true
+		default:
+			return false
+		}
+	}
+
 	for _, item := range list.Items {
 		if item.Spec.Type == v1.ServiceTypeNodePort {
 			for _, port := range item.Spec.Ports {
@@ -78,7 +93,7 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 						fallthrough
 					case strings.Contains(port.Name, "tcp"):
 						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
-					case strings.Contains(port.Name, "http"):
+					case isHttp(port.Name):
 						m[projectName] = append(data, fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort))
 					default:
 						m[projectName] = append(data, fmt.Sprintf("[%s] %s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
