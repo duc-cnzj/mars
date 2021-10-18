@@ -96,8 +96,6 @@ func RunApiGateway() func() {
 	ctx, cancel := context.WithCancel(ctx)
 	mux := mux.NewRouter()
 
-	runSwaggerUI(mux)
-
 	gmux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
@@ -124,6 +122,8 @@ func RunApiGateway() func() {
 
 	serveWs(mux)
 	frontend.LoadFrontendRoutes(mux)
+	LoadSwaggerUI(mux)
+
 	mux.PathPrefix("/").Handler(gmux)
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
@@ -154,18 +154,13 @@ func serveWs(mux *mux.Router) {
 	mux.HandleFunc("/ws", ws.Ws)
 }
 
-func runSwaggerUI(mux *mux.Router) {
+func LoadSwaggerUI(mux *mux.Router) {
 	mux.HandleFunc("/doc/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data.SwaggerJson)
 	})
 
 	mux.PathPrefix("/docs/").Handler(http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))))
-
-	//mlog.Info("swagger ui running at: 8888")
-	//go func() {
-	//	http.ListenAndServe(":8888", nil)
-	//}()
 }
 
 func fatalError(err error) {
