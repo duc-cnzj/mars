@@ -53,10 +53,11 @@ message CpuAndMemoryResponse {
 
 message ServiceEndpointsResponse {
   message item {
-    repeated string name = 1;
+    string name = 1;
+    repeated string  url = 2;
   }
 
-  map<string, item> data = 1;
+  repeated item data = 1;
 }
 
 message ServiceEndpointsRequest {

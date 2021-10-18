@@ -3,11 +3,8 @@ package t
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/translator/langs"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -84,18 +81,3 @@ func RTransToError(key string, replace interface{}, locale string) error {
 	return errors.New(RTrans(key, replace, locale))
 }
 
-func I18nMiddleware() gin.HandlerFunc {
-	if Booted {
-		return func(ctx *gin.Context) {
-			if lang := ctx.GetHeader("Accept-Language"); lang != "" {
-				tag, _ := language.MatchStrings(matcher, lang)
-				base, _ := tag.Base()
-				SetLocale(ctx, base.String())
-			}
-
-			ctx.Next()
-		}
-	}
-
-	return func(ctx *gin.Context) { ctx.Next() }
-}

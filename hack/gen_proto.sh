@@ -3,9 +3,8 @@
 PROTO_FILES=$(find ../ \(  -name "*.proto"  -not -path "*/common/*" \) | sort)
 for i in ${PROTO_FILES}; do
 protoc \
-    -I ../server/api/protos \
-    -I ../server/websocket/protos \
-    -I ../server/common/protos \
+    -I ../internal/grpc/protos \
+    -I ../internal/grpc/common/protos \
     --go_out=../pkg \
     --go-grpc_out=../pkg \
     --go_opt=paths=source_relative \
@@ -20,7 +19,7 @@ protoc \
     $i
 done
 
-pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../server/api/protos/**/*.proto --keep-case --no-create --no-encode --no-decode --no-verify --no-convert --no-delimited
+pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../internal/grpc/protos/**/*.proto --keep-case --no-create --no-encode --no-decode --no-verify --no-convert --no-delimited
 pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep-case
 
 #   --no-create      Does not generate create functions used for reflection compatibility.

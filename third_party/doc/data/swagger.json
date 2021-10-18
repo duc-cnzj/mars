@@ -445,6 +445,19 @@
             "name": "project_id",
             "in": "path",
             "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -1250,8 +1263,8 @@
       "type": "object",
       "properties": {
         "data": {
-          "type": "object",
-          "additionalProperties": {
+          "type": "array",
+          "items": {
             "$ref": "#/definitions/ServiceEndpointsResponseitem"
           }
         }
@@ -1261,6 +1274,9 @@
       "type": "object",
       "properties": {
         "name": {
+          "type": "string"
+        },
+        "url": {
           "type": "array",
           "items": {
             "type": "string"

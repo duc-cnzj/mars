@@ -8,7 +8,7 @@ fmt:
 
 .PHONY: serve
 serve:
-	go run main.go serve --debug --app_port 4000
+	go run main.go grpc --debug --app_port 4000
 
 .PHONY: build_web
 build_web:

@@ -79,8 +79,8 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		GitlabCommitDate:   utils.ToHumanizeDatetimeString(commit.CreatedAt),
 		Urls:               urls,
 		Namespace: &project.ProjectShowResponse_Namespace{
-			Id:   int64(projectModal.ID),
-			Name: projectModal.Name,
+			Id:   int64(projectModal.NamespaceId),
+			Name: projectModal.Namespace.Name,
 		},
 		Cpu:            cpu,
 		Memory:         memory,

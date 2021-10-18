@@ -54,7 +54,8 @@ service Mars {
 
   rpc ToggleEnabled(ToggleEnabledRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/api/gitlab/projects/{project_id}/toggle_enabled"
+      post: "/api/gitlab/projects/{project_id}/toggle_enabled",
+      body: "*"
     };
   }
 

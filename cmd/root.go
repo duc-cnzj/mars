@@ -21,7 +21,6 @@ var (
 
 func Execute(configFile []byte) {
 	configExampleFile = configFile
-	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)

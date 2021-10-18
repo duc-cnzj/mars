@@ -2,25 +2,10 @@ package cmd
 
 import (
 	"context"
-	"github.com/duc-cnzj/mars/internal/app"
-	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/controllers"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	"github.com/duc-cnzj/mars/pkg/gitlab"
-	"github.com/duc-cnzj/mars/pkg/mars"
-	"github.com/duc-cnzj/mars/pkg/namespace"
-	"github.com/duc-cnzj/mars/pkg/project"
-	"github.com/duc-cnzj/mars/server/api/services"
-	"github.com/duc-cnzj/mars/third_party/doc/data"
-	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
+	"github.com/duc-cnzj/mars/frontend"
+	"github.com/duc-cnzj/mars/internal/grpc/services"
+	controllers "github.com/duc-cnzj/mars/internal/socket"
+	"github.com/gorilla/mux"
 	"net"
 	"net/http"
 	"os"
@@ -28,7 +13,27 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/app"
+	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
+	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/pkg/cluster"
+	"github.com/duc-cnzj/mars/pkg/gitlab"
+	"github.com/duc-cnzj/mars/pkg/mars"
+	"github.com/duc-cnzj/mars/pkg/namespace"
+	"github.com/duc-cnzj/mars/pkg/project"
+	"github.com/duc-cnzj/mars/third_party/doc/data"
+	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+var endpoint = "localhost:9999"
 
 var apiGatewayCmd = &cobra.Command{
 	Use:   "grpc",
@@ -48,53 +53,62 @@ var apiGatewayCmd = &cobra.Command{
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 
-		listen, _ := net.Listen("tcp", ":9999")
-		server := grpc.NewServer(
-			grpc.ChainUnaryInterceptor(
-				grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-					mlog.Error(err)
-					return nil
-				})),
-			),
-		)
+		doneOne := RUNGrpcServer()
+		doneTwo := RunApiGateway()
 
-		cluster.RegisterClusterServer(server, new(services.Cluster))
-		gitlab.RegisterGitlabServer(server, new(services.Gitlab))
-		mars.RegisterMarsServer(server, new(services.Mars))
-		namespace.RegisterNamespaceServer(server, new(services.Namespace))
-		project.RegisterProjectServer(server, new(services.Project))
-
-		go func() {
-			if err := server.Serve(listen); err != nil {
-				mlog.Error(err)
-			}
-		}()
-		done := RunApiGateway()
 		<-sig
-		server.GracefulStop()
+		doneOne()
+		doneTwo()
 		a.Shutdown()
-		done()
 	},
 }
 
+func RUNGrpcServer() func() {
+	listen, _ := net.Listen("tcp", endpoint)
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
+				mlog.Error(p)
+				return nil
+			})),
+		),
+	)
 
-var endpoint = "localhost:9999"
+	cluster.RegisterClusterServer(server, new(services.Cluster))
+	gitlab.RegisterGitlabServer(server, new(services.Gitlab))
+	mars.RegisterMarsServer(server, new(services.Mars))
+	namespace.RegisterNamespaceServer(server, new(services.Namespace))
+	project.RegisterProjectServer(server, new(services.Project))
+
+	go func() {
+		if err := server.Serve(listen); err != nil {
+			mlog.Error(err)
+		}
+	}()
+
+	return func() {
+		server.GracefulStop()
+	}
+}
 
 func RunApiGateway() func() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 
-	gmux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			UseEnumNumbers:  true,
-			UseProtoNames:   true,
-			EmitUnpopulated: true,
-		},
-		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true,
-		},
-	}))
+	runSwaggerUI(mux)
+
+	gmux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseEnumNumbers:  true,
+				UseProtoNames:   true,
+				EmitUnpopulated: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
@@ -109,9 +123,8 @@ func RunApiGateway() func() {
 	}
 
 	serveWs(mux)
-	mux.Handle("/", gmux)
-
-	runSwaggerUI()
+	frontend.LoadFrontendRoutes(mux)
+	mux.PathPrefix("/").Handler(gmux)
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	s := &http.Server{
@@ -122,7 +135,7 @@ func RunApiGateway() func() {
 	go func() {
 		mlog.Info("api-gateway start at: ", s.Addr)
 		if err := s.ListenAndServe(); err != nil {
-			mlog.Error("error: ", err)
+			mlog.Warning("error: ", err)
 		}
 	}()
 
@@ -135,27 +148,24 @@ func RunApiGateway() func() {
 	}
 }
 
-func serveWs(mux *http.ServeMux) {
-	//e.GET("/ws", wsC.Ws)
-	//api.GET("/ws_info", wsC.Info)
-	//response.Success(ctx, 200, utils.ClusterInfo())
-	//mux.HandleFunc("/ws_info", )
+func serveWs(mux *mux.Router) {
 	ws := &controllers.WebsocketController{}
+	mux.HandleFunc("/ws_info", ws.Info)
 	mux.HandleFunc("/ws", ws.Ws)
 }
 
-func runSwaggerUI() {
-	http.HandleFunc("/doc/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+func runSwaggerUI(mux *mux.Router) {
+	mux.HandleFunc("/doc/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data.SwaggerJson)
 	})
 
-	http.Handle("/", http.FileServer(http.FS(swagger_ui.SwaggerUI)))
+	mux.PathPrefix("/docs/").Handler(http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))))
 
-	mlog.Info("swagger ui running at: 8888")
-	go func() {
-		http.ListenAndServe(":8888", nil)
-	}()
+	//mlog.Info("swagger ui running at: 8888")
+	//go func() {
+	//	http.ListenAndServe(":8888", nil)
+	//}()
 }
 
 func fatalError(err error) {
@@ -174,7 +184,7 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 func routeLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(t time.Time) {
-			mlog.Infof("method: %v, url: %v, use %v", r.Method, r.URL, time.Since(t))
+			mlog.Infof("[GRPC] method: %v, url: %v, use %v", r.Method, r.URL, time.Since(t))
 		}(time.Now())
 		h.ServeHTTP(w, r)
 	})

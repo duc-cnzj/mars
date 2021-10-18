@@ -76,7 +76,9 @@ const ModalSub: React.FC<{
     gitlabCommit: string;
     time?: number;
   }>();
+  console.log("namespaceId, data.name", namespaceId, data.name)
   let slug = toSlug(namespaceId, data.name);
+  console.log("slug: ", slug)
 
   // 初始化，设置 initvalue
   useEffect(() => {

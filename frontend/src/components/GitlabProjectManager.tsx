@@ -94,6 +94,7 @@ const GitlabProjectManager: React.FC = () => {
           dataSource={list.filter(item=> selected ? item.id === selected.id : true)}
           renderItem={(item: pb.GitlabProjectInfo) => (
             <List.Item
+              key={item.id}
               actions={[
                 item.enabled ? (
                   <Button
@@ -118,10 +119,11 @@ const GitlabProjectManager: React.FC = () => {
               ]}
             >
               <List.Item.Meta
+              key={item.id}
                 avatar={<Avatar src={item.avatar_url} />}
                 title={
                   <div>
-                    {item.name}{" "}
+                    {item.name}
                     {item.global_enabled ? (
                       <Tooltip
                         placement="top"

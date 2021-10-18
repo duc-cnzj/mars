@@ -4627,7 +4627,7 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
      * Properties of a ServiceEndpointsResponse.
      * @exports IServiceEndpointsResponse
      * @interface IServiceEndpointsResponse
-     * @property {Object.<string,ServiceEndpointsResponse.Iitem>|null} [data] ServiceEndpointsResponse data
+     * @property {Array.<ServiceEndpointsResponse.Iitem>|null} [data] ServiceEndpointsResponse data
      */
 
     /**
@@ -4639,7 +4639,7 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
      * @param {IServiceEndpointsResponse=} [properties] Properties to set
      */
     function ServiceEndpointsResponse(properties) {
-        this.data = {};
+        this.data = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -4648,11 +4648,11 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
 
     /**
      * ServiceEndpointsResponse data.
-     * @member {Object.<string,ServiceEndpointsResponse.Iitem>} data
+     * @member {Array.<ServiceEndpointsResponse.Iitem>} data
      * @memberof ServiceEndpointsResponse
      * @instance
      */
-    ServiceEndpointsResponse.prototype.data = $util.emptyObject;
+    ServiceEndpointsResponse.prototype.data = $util.emptyArray;
 
     ServiceEndpointsResponse.item = (function() {
 
@@ -4660,7 +4660,8 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
          * Properties of an item.
          * @memberof ServiceEndpointsResponse
          * @interface Iitem
-         * @property {Array.<string>|null} [name] item name
+         * @property {string|null} [name] item name
+         * @property {Array.<string>|null} [url] item url
          */
 
         /**
@@ -4672,7 +4673,7 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
          * @param {ServiceEndpointsResponse.Iitem=} [properties] Properties to set
          */
         function item(properties) {
-            this.name = [];
+            this.url = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -4681,11 +4682,19 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
 
         /**
          * item name.
-         * @member {Array.<string>} name
+         * @member {string} name
          * @memberof ServiceEndpointsResponse.item
          * @instance
          */
-        item.prototype.name = $util.emptyArray;
+        item.prototype.name = "";
+
+        /**
+         * item url.
+         * @member {Array.<string>} url
+         * @memberof ServiceEndpointsResponse.item
+         * @instance
+         */
+        item.prototype.url = $util.emptyArray;
 
         return item;
     })();

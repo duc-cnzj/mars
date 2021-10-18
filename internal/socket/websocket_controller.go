@@ -3,8 +3,10 @@ package controllers
 import (
 	"context"
 	"errors"
+	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"regexp"
 	"sync/atomic"
+
 
 	"github.com/duc-cnzj/mars/internal/enums"
 
@@ -14,8 +16,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/response"
-
 	"helm.sh/helm/v3/pkg/action"
 
 	"helm.sh/helm/v3/pkg/chartutil"
@@ -45,7 +45,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -200,8 +199,10 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 	jobs.cs[id] = pc
 }
 
-func (wc *WebsocketController) Info(ctx *gin.Context) {
-	response.Success(ctx, 200, plugins.GetWsSender().New("", "").Info())
+func (wc *WebsocketController) Info(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	marshal, _ := json.Marshal(utils.ClusterInfo())
+	writer.Write(marshal)
 }
 
 func (wc *WebsocketController) Ws(w http.ResponseWriter, r *http.Request) {
@@ -844,7 +845,7 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 func (pc *ProcessControl) CheckConfig() error {
 	pc.SendMsg("校验项目配置传参...")
 	pc.To(15)
-	marsC, err := GetProjectMarsConfig(pc.input.GitlabProjectId, pc.input.GitlabBranch)
+	marsC, err := services.GetProjectMarsConfig(pc.input.GitlabProjectId, pc.input.GitlabBranch)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ import EditProject from "./TabEdit";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
-import pb from "../api/compiled"
+import pb from "../api/compiled";
 
 const { TabPane } = Tabs;
 
@@ -80,7 +80,10 @@ const ItemDetailModal: React.FC<{
           {item.name}
         </span>
         {item.status === "deployed" ? (
-          <ServiceEndpoint namespaceId={namespaceId} projectName={item.name || ""} />
+          <ServiceEndpoint
+            namespaceId={namespaceId}
+            projectName={item.name || ""}
+          />
         ) : (
           <></>
         )}
@@ -145,10 +148,8 @@ const ItemDetailModal: React.FC<{
             <TabInfo
               detail={detail}
               onDeleted={() => {
-                setTimeout(() => {
-                  dispatch(setNamespaceReload(true));
-                  setVisible(false);
-                }, 500);
+                dispatch(setNamespaceReload(true));
+                setVisible(false);
               }}
             />
           </TabPane>

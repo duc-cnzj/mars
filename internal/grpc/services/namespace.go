@@ -118,7 +118,7 @@ func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.ServiceE
 		return nil, err
 	}
 
-	var res = map[string]*namespace.ServiceEndpointsResponseItem{}
+	var res = []*namespace.ServiceEndpointsResponseItem{}
 	nodePortMapping := utils.GetNodePortMappingByNamespace(ns.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(ns.Name)
 	for projectName, hosts := range nodePortMapping {
@@ -126,25 +126,31 @@ func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.ServiceE
 		if v, ok := ingMapping[projectName]; ok {
 			items = append(v, hosts...)
 		}
-		res[projectName] = &namespace.ServiceEndpointsResponseItem{
-			Name: items,
-		}
+		res = append(res, &namespace.ServiceEndpointsResponseItem{
+			Name: projectName,
+			Url:  items,
+		})
 	}
 	for projectName, hosts := range ingMapping {
-		if _, ok := res[projectName]; ok {
-			continue
+		for _, re := range res {
+			if re.Name == projectName {
+				continue
+			}
 		}
-		res[projectName] = &namespace.ServiceEndpointsResponseItem{Name: append(res[projectName].Name, hosts...)}
+		res = append(res, &namespace.ServiceEndpointsResponseItem{
+			Name: projectName,
+			Url:  hosts,
+		})
 	}
 
 	if id.ProjectName != "" {
-		var data = []string{}
-		if len(res[id.ProjectName].Name) > 0 {
-			data = append(data, res[id.ProjectName].Name...)
+		var data = []*namespace.ServiceEndpointsResponseItem{}
+		for _, re := range res {
+			if re.Name == id.ProjectName {
+				data = []*namespace.ServiceEndpointsResponseItem{re}
+			}
 		}
-		return &namespace.ServiceEndpointsResponse{
-			Data: map[string]*namespace.ServiceEndpointsResponseItem{id.ProjectName: {Name: data}},
-		}, nil
+		return &namespace.ServiceEndpointsResponse{Data: data}, nil
 	}
 
 	return &namespace.ServiceEndpointsResponse{Data: res}, nil

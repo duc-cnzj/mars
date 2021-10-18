@@ -36,11 +36,8 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.GitlabBootstrapper{},
-	&bootstrappers.ValidatorBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.WebBootstrapper{},
-	&bootstrappers.RouterBootstrapper{},
 }
 
 type Application struct {

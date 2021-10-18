@@ -2330,7 +2330,7 @@ export class ServiceEndpointsResponse implements IServiceEndpointsResponse {
     constructor(properties?: IServiceEndpointsResponse);
 
     /** ServiceEndpointsResponse data. */
-    public data: { [k: string]: ServiceEndpointsResponse.Iitem };
+    public data: ServiceEndpointsResponse.Iitem[];
 }
 
 export namespace ServiceEndpointsResponse {
@@ -2339,7 +2339,10 @@ export namespace ServiceEndpointsResponse {
     interface Iitem {
 
         /** item name */
-        name?: (string[]|null);
+        name?: (string|null);
+
+        /** item url */
+        url?: (string[]|null);
     }
 
     /** Represents an item. */
@@ -2352,7 +2355,10 @@ export namespace ServiceEndpointsResponse {
         constructor(properties?: ServiceEndpointsResponse.Iitem);
 
         /** item name. */
-        public name: string[];
+        public name: string;
+
+        /** item url. */
+        public url: string[];
     }
 }
 

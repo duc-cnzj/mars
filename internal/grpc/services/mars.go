@@ -111,8 +111,8 @@ func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledReq
 		}
 		return &emptypb.Empty{}, nil
 	}
-
 	app.DB().Model(&project).UpdateColumn("global_enabled", request.Enabled)
+
 	return &emptypb.Empty{}, nil
 }
 

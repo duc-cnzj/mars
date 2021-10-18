@@ -282,8 +282,8 @@
       "type": "object",
       "properties": {
         "data": {
-          "type": "object",
-          "additionalProperties": {
+          "type": "array",
+          "items": {
             "$ref": "#/definitions/ServiceEndpointsResponseitem"
           }
         }
@@ -293,6 +293,9 @@
       "type": "object",
       "properties": {
         "name": {
+          "type": "string"
+        },
+        "url": {
           "type": "array",
           "items": {
             "type": "string"
