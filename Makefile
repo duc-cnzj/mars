@@ -1,3 +1,7 @@
+.PHONY: gen
+gen:
+	cd hack && ./gen_proto.sh
+
 .PHONY: fmt
 fmt:
 	gofmt -w ./ && goimports -w ./

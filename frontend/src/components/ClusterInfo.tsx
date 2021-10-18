@@ -12,7 +12,7 @@ const ClusterInfo: React.FC = () => {
 
   useEffect(() => {
     clusterInfo().then((res) => {
-      dispatch(setClusterInfo(res.data.data));
+      dispatch(setClusterInfo(res.data));
     });
   }, [dispatch]);
 

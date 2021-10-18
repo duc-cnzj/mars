@@ -1,5 +1,5 @@
 import React, { memo, useState } from "react";
-import { deleteProject, ProjectDetail } from "../api/project";
+import { deleteProject } from "../api/project";
 import { Skeleton, Button, Modal, message } from "antd";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
@@ -12,9 +12,11 @@ import {
   FireOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
+import pb from "../api/compiled"
+
 const { confirm } = Modal;
 
-const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
+const DetailTab: React.FC<{ detail?: pb.ProjectShowResponse; onDeleted: () => void }> =
   ({ detail, onDeleted }) => {
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -230,7 +232,7 @@ const DetailTab: React.FC<{ detail?: ProjectDetail; onDeleted: () => void }> =
               icon: <ExclamationCircleOutlined />,
               onOk() {
                 setLoading(true);
-                deleteProject(detail.namespace.id, detail.id)
+                deleteProject(detail.namespace?.id, detail.id)
                   .then((res) => {
                     message.success("删除成功");
                     setLoading(false);

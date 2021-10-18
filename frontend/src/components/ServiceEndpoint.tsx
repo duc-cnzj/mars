@@ -3,6 +3,7 @@ import { getServiceEndpoints } from "../api/namespace";
 import { Popover, message } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
   ({ namespaceId, projectName }) => {
@@ -40,8 +41,13 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
           style={{ width: 18, height: 18, flexShrink: 0 }}
           stroke="currentColor"
           onMouseEnter={(e) => {
-            getServiceEndpoints(namespaceId, projectName).then((res) => {
-              setEndpoints(res.data.data);
+            getServiceEndpoints({project_name: String(projectName), namespace_id: namespaceId}).then((res) => {
+              // @ts-ignore
+                setEndpoints(res.data.data.map((name: string, item: pb.ServiceEndpointsResponse.Iitem) => {
+                  return {
+                      name: item.name
+                  }
+              }));
             });
           }}
         >

@@ -1,0 +1,109 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "cluster/cluster.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Cluster"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/cluster_info": {
+      "get": {
+        "operationId": "Cluster_Info",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ClusterInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Cluster"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ClusterInfoResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "free_memory": {
+          "type": "string"
+        },
+        "free_cpu": {
+          "type": "string"
+        },
+        "free_request_memory": {
+          "type": "string"
+        },
+        "free_request_cpu": {
+          "type": "string"
+        },
+        "total_memory": {
+          "type": "string"
+        },
+        "total_cpu": {
+          "type": "string"
+        },
+        "usage_memory_rate": {
+          "type": "string"
+        },
+        "usage_cpu_rate": {
+          "type": "string"
+        },
+        "request_memory_rate": {
+          "type": "string"
+        },
+        "request_cpu_rate": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

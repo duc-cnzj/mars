@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 
+import pb from '../api/compiled'
+
 import "codemirror/lib/codemirror.css";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
@@ -22,7 +24,7 @@ import {
   toggleGlobalEnabled as toggleGlobalEnabledApi,
   updateGlobalConfig,
 } from "../api/mars";
-import { branches, Info } from "../api/gitlab";
+import { branches } from "../api/gitlab";
 
 import "codemirror/theme/mdn-like.css";
 import MarsExample from "./MarsExample";
@@ -32,7 +34,7 @@ const { Option } = Select;
 
 const ConfigModal: React.FC<{
   visible: boolean;
-  item: undefined | Info;
+  item: undefined | pb.GitlabProjectInfo;
   onCancel: () => void;
   onChange?: () => void;
 }> = ({ visible, item, onCancel, onChange }) => {
@@ -40,7 +42,7 @@ const ConfigModal: React.FC<{
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [globalConfig, setGlobalConfig] = useState<string>();
   const [modalBranch, setModalBranch] = useState("");
-  const [currentItem, setCurrentItem] = useState<Info | undefined>(item);
+  const [currentItem, setCurrentItem] = useState<pb.GitlabProjectInfo | undefined>(item);
   const [title, setTitle] = useState("");
   const [config, setConfig] = useState<string>();
   const [configVisible, setConfigVisible] = useState(visible);
@@ -49,7 +51,7 @@ const ConfigModal: React.FC<{
 
   const loadConfig = useCallback((id: number, branch = "") => {
     setLoading(true);
-    marsConfig(id, { branch })
+    marsConfig({branch, project_id: id})
       .then((res) => {
         setConfig(res.config);
         setModalBranch(res.branch);
@@ -66,10 +68,10 @@ const ConfigModal: React.FC<{
     if (visible && item) {
       console.log(item);
       setCurrentItem(item);
-      branches(item.id).then((res) =>
+      branches({project_id: String(item.id)}).then((res) =>
         setMbranches(res.data.data.map((op) => op.value))
       );
-      globalConfigApi(item.id).then((res) => {
+      globalConfigApi({project_id: item.id}).then((res) => {
         setGlobalEnabled(res.enabled);
         console.log(res.config);
         setGlobalConfig(res.config);
@@ -102,19 +104,19 @@ const ConfigModal: React.FC<{
       setEditMode(false);
     }
     currentItem &&
-      toggleGlobalEnabledApi(currentItem.id, enabled).then(() => {
+      toggleGlobalEnabledApi({project_id: currentItem.id, enabled}).then(() => {
         message.success("操作成功");
         onChange?.();
         setGlobalEnabled(enabled);
-        globalConfigApi(currentItem.id).then((res) => {
+        globalConfigApi({project_id: currentItem.id}).then((res) => {
           setGlobalEnabled(res.enabled);
           console.log(res.config);
           setGlobalConfig(res.config);
         });
-        branches(currentItem.id).then((res) =>
+        branches({project_id: String(currentItem.id)}).then((res) =>
           setMbranches(res.data.data.map((op) => op.value))
         );
-        marsConfig(currentItem.id, {})
+        marsConfig({project_id: currentItem.id, branch: ""})
           .then((res) => {
             setConfig(res.config);
             setModalBranch(res.branch);
@@ -128,7 +130,7 @@ const ConfigModal: React.FC<{
   };
   const onSave = () => {
     currentItem &&
-      updateGlobalConfig(currentItem.id, globalConfig || "")
+      updateGlobalConfig({project_id: currentItem.id, config: globalConfig || ""})
         .then((res) => {
           message.success("保存成功");
           console.log(res.data.data.global_config);
@@ -137,7 +139,7 @@ const ConfigModal: React.FC<{
         })
         .catch((e) => {
           message.error(e.response.data.message);
-          globalConfigApi(currentItem.id).then((res) => {
+          globalConfigApi({project_id: currentItem.id}).then((res) => {
             setGlobalEnabled(res.enabled);
             console.log(res.config);
             // setGlobalConfig(res.config);

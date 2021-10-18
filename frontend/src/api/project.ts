@@ -1,51 +1,20 @@
 import ajax from "./ajax";
-export interface ProjectDetail {
-  id: number;
-  name: string;
-  gitlab_project_id: string;
-  gitlab_branch: string;
-  docker_image: string;
-  gitlab_commit: string;
-  config: string;
-  namespace: {
-    id: number;
-    name: string;
-  }
-
-  atomic: boolean;
-  urls:string[];
-  cpu:string;
-  memory:string;
-  override_values:string;
-  created_at:string;
-  updated_at:string;
-
-  gitlab_commit_title:string;
-  gitlab_commit_web_url:string;
-  gitlab_commit_author:string;
-  gitlab_commit_date:string;
-}
+import pb from "./compiled"
 
 export function detailProject(namespaceId:number, projectId:number) {
-  return ajax.get<{data: ProjectDetail}>(`/api/namespaces/${namespaceId}/projects/${projectId}`);
+  return ajax.get<pb.ProjectShowResponse>(`/api/namespaces/${namespaceId}/projects/${projectId}`);
 }
 
 export function deleteProject(namespaceId:number, projectId:number) {
   return ajax.delete(`/api/namespaces/${namespaceId}/projects/${projectId}`);
 }
 
-export interface PodContainerItem {
-  pod_name: string;
-  container_name: string;
-  log?: string;
+export function containerList({namespace_id, project_id}: pb.AllPodContainersRequest) {
+  return ajax.get<pb.PodContainerLogResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/containers`);
 }
 
-export function containerList(namespaceId:number, projectId:number) {
-  return ajax.get<{data: PodContainerItem[]}>(`/api/namespaces/${namespaceId}/projects/${projectId}/containers`);
-}
-
-export function containerLog(namespaceId:number, projectId:number, podName:string, containerName:string) {
-  return ajax.get<{data: PodContainerItem}>(`/api/namespaces/${namespaceId}/projects/${projectId}/pods/${podName}/containers/${containerName}/logs`);
+export function containerLog({namespace_id, pod, project_id, container}: pb.PodContainerLogRequest) {
+  return ajax.get<pb.PodContainerLogResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/pods/${pod}/containers/${container}/logs`);
 }
 
 

@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { containerList, PodContainerItem, ProjectDetail } from "../api/project";
+import { containerList } from "../api/project";
 import { message, Radio, Tag, RadioChangeEvent } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -16,11 +16,13 @@ import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
 
-const TabShell: React.FC<{ detail: ProjectDetail; resizeAt: number }> = ({
+import pb from "../api/compiled"
+
+const TabShell: React.FC<{ detail: pb.ProjectShowResponse; resizeAt: number }> = ({
   detail,
   resizeAt,
 }) => {
-  const [list, setList] = useState<PodContainerItem[]>([]);
+  const [list, setList] = useState<pb.PodLog[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
@@ -30,16 +32,16 @@ const TabShell: React.FC<{ detail: ProjectDetail; resizeAt: number }> = ({
   const [fitAddon, _] = useState(new FitAddon());
   const sessions = useSelector(selectSessions);
   let sname = useMemo(
-    () => detail.namespace.name + "|" + value,
+    () => detail.namespace?.name + "|" + value,
     [detail, value]
   );
 
   const listContainer = useCallback(async () => {
-    return containerList(detail.namespace.id, detail.id).then((res) => {
+    return containerList({namespace_id: detail.namespace?.id, project_id: detail.id}).then((res) => {
       setList(res.data.data);
       return res;
     });
-  }, [detail.id, detail.namespace.id]);
+  }, [detail.id, detail.namespace?.id]);
 
   const sendMsg = useCallback(
     (msg: string) => {
@@ -180,13 +182,13 @@ const TabShell: React.FC<{ detail: ProjectDetail; resizeAt: number }> = ({
     let re = {
       type: "handle_exec_shell",
       data: JSON.stringify({
-        namespace: detail.namespace.name,
+        namespace: detail.namespace?.name,
         pod: s[0],
         container: s[1],
       }),
     };
     sendMsg(JSON.stringify(re));
-  }, [value, detail.namespace.name, sendMsg]);
+  }, [value, detail.namespace?.name, sendMsg]);
   useEffect(() => {
     if (value && wsReady) {
       initShell();

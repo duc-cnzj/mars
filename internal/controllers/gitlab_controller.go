@@ -93,7 +93,7 @@ func (*GitlabController) Branches(ctx *gin.Context) {
 		return
 	}
 
-	branches, err := utils.GetAllBranches(uri.ProjectId)
+	branches, err := utils.GetAllBranches(int(uri.ProjectId))
 	if err != nil {
 		response.Error(ctx, 500, err)
 		return

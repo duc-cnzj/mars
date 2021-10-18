@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
-import { detailProject, ProjectDetail } from "../api/project";
+import { detailProject } from "../api/project";
 import { Button, Tabs, Skeleton, Switch } from "antd";
 import DeployStatus from "./DeployStatus";
 import TabInfo from "./TabInfo";
@@ -11,34 +11,35 @@ import EditProject from "./TabEdit";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
+import pb from "../api/compiled"
 
 const { TabPane } = Tabs;
 
 const ItemDetailModal: React.FC<{
-  item: { id: number; name: string; status: string };
+  item: pb.NamespaceItem.ISimpleProjectItem;
   namespace: string;
   namespaceId: number;
 }> = ({ item, namespace, namespaceId }) => {
   const dispatch = useDispatch();
   const [visible, setVisible] = useState(false);
   const onOk = useCallback(() => setVisible(true), []);
-  const [detail, setDetail] = useState<ProjectDetail | undefined>();
+  const [detail, setDetail] = useState<pb.ProjectShowResponse | undefined>();
   const [resizeAt, setResizeAt] = useState<number>(0);
 
   console.log("render ItemDetailModal");
   useEffect(() => {
     if (visible && namespaceId && item.id) {
       detailProject(namespaceId, item.id).then((res) => {
-        console.log(res.data.data);
-        setDetail(res.data.data);
+        console.log(res.data);
+        setDetail(res.data);
       });
     }
   }, [namespaceId, item.id, visible]);
 
   const onSuccess = () => {
     detailProject(namespaceId, item.id).then((res) => {
-      console.log(res.data.data);
-      setDetail(res.data.data);
+      console.log(res.data);
+      setDetail(res.data);
     });
   };
 
@@ -66,9 +67,9 @@ const ItemDetailModal: React.FC<{
         }}
         type="dashed"
       >
-        <DeployStatus status={item.status} />
+        <DeployStatus status={item.status || ""} />
         <span
-          title={item.name}
+          title={item.name || ""}
           style={{
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -79,7 +80,7 @@ const ItemDetailModal: React.FC<{
           {item.name}
         </span>
         {item.status === "deployed" ? (
-          <ServiceEndpoint namespaceId={namespaceId} projectName={item.name} />
+          <ServiceEndpoint namespaceId={namespaceId} projectName={item.name || ""} />
         ) : (
           <></>
         )}
@@ -114,7 +115,7 @@ const ItemDetailModal: React.FC<{
                     updatedAt={detail.updated_at}
                     autoRefresh={autoRefresh}
                     id={detail.id}
-                    namespaceId={detail.namespace.id}
+                    namespaceId={detail.namespace?.id}
                   />
                 ) : (
                   <Skeleton active />

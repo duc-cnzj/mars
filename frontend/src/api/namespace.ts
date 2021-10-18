@@ -1,37 +1,26 @@
 import ajax from "./ajax";
+import pb from "./compiled"
 
 export function createNamespace(namespace: string) {
-  return ajax.post<{ data: {id: number; name: string} }>("/api/namespaces", { namespace });
-}
-
-export interface NamespaceItem {
-    id: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-    projects?: {
-      id: number;
-      name: string;
-      status: string;
-    }[];
+  return ajax.post<pb.NsStoreResponse>("/api/namespaces", { namespace });
 }
 
 export function listNamespaces() {
-  return ajax.get<{data: NamespaceItem[]}>("/api/namespaces");
+  return ajax.get<pb.ProjectListResponse>("/api/namespaces");
 }
 
-export function deleteNamespace(id: number) {
-  return ajax.delete(`/api/namespaces/${id}`);
+export function deleteNamespace({namespace_id}: pb.NamespaceID) {
+  return ajax.delete(`/api/namespaces/${namespace_id}`);
 }
 
-export function getNamespaceCpuAndMemory(id: number) {
-  return ajax.get<{data: {cpu: string, memory: string}}>(`/api/namespaces/${id}/cpu_and_memory`);
+export function getNamespaceCpuAndMemory({namespace_id}: pb.NamespaceID) {
+  return ajax.get<pb.CpuAndMemoryResponse>(`/api/namespaces/${namespace_id}/cpu_and_memory`);
 }
 
-export function getServiceEndpoints(id: number, projectName?: string) {
-  let url = `/api/namespaces/${id}/service_endpoints`
-  if (projectName) {
-    url += "?project_name="+projectName
+export function getServiceEndpoints({project_name, namespace_id}: pb.ServiceEndpointsRequest) {
+  let url = `/api/namespaces/${namespace_id}/service_endpoints`
+  if (project_name) {
+    url += "?project_name="+project_name
   }
-  return ajax.get<{data: {[name:string]:string[];}}>(url);
+  return ajax.get<pb.ServiceEndpointsResponse>(url);
 }

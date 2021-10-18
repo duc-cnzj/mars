@@ -215,9 +215,11 @@ func (app *Application) Shutdown() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = app.httpServer.Shutdown(ctx)
-	if err != nil {
-		mlog.Error(err)
+	if app.httpServer != nil {
+		err = app.httpServer.Shutdown(ctx)
+		if err != nil {
+			mlog.Error(err)
+		}
 	}
 
 	app.RunServerHooks(AfterDownHook)

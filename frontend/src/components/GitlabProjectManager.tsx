@@ -2,15 +2,16 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   disabledProject,
   enabledProject,
-  Info,
   projectList,
 } from "../api/gitlab";
 import { List, Avatar, Card, Button, Select, message, Tooltip } from "antd";
 import ConfigModal from "./ConfigModal";
 import { GlobalOutlined } from "@ant-design/icons";
+import pb from '../api/compiled'
+
 const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
-  const [list, setList] = useState<Info[]>([]);
+  const [list, setList] = useState<pb.GitlabProjectInfo[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
 
@@ -26,16 +27,16 @@ const GitlabProjectManager: React.FC = () => {
     });
   }, [fetchList, setInitLoading]);
 
-  const toggleStatus = async (item: Info) => {
+  const toggleStatus = async (item: pb.GitlabProjectInfo) => {
     setLoadingList((l) => ({ ...l, [item.id]: true }));
     console.log("loadingList", loadingList);
     try {
       if (item.enabled) {
-        await disabledProject(item.id);
+        await disabledProject({gitlab_project_id: String(item.id)});
       } else {
-        await enabledProject(item.id);
+        await enabledProject({gitlab_project_id: String(item.id)});
       }
-    } catch (e) {
+    } catch (e: any) {
       message.error(e.response.data.message);
       setLoadingList((l) => ({ ...l, [item.id]: false }));
       return;
@@ -47,9 +48,9 @@ const GitlabProjectManager: React.FC = () => {
     });
   };
 
-  const [currentItem, setCurrentItem] = useState<Info>();
+  const [currentItem, setCurrentItem] = useState<pb.GitlabProjectInfo>();
   const [configVisible, setConfigVisible] = useState(false);
-  const [selected, setSelected] = useState<Info>();
+  const [selected, setSelected] = useState<pb.GitlabProjectInfo>();
 
   const onChange = (v: any) => {
     console.log(v);
@@ -91,7 +92,7 @@ const GitlabProjectManager: React.FC = () => {
           itemLayout="horizontal"
           loading={initLoading}
           dataSource={list.filter(item=> selected ? item.id === selected.id : true)}
-          renderItem={(item: Info) => (
+          renderItem={(item: pb.GitlabProjectInfo) => (
             <List.Item
               actions={[
                 item.enabled ? (

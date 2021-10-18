@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-type ClusterStatus string
+type ClusterStatus = string
 
 const (
 	StatusBad     ClusterStatus = "bad"

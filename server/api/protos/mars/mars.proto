@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+import "modal/modal.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/mars";
+
+message MarsShowRequest {
+  int64 project_id = 1;
+  string branch = 2;
+}
+
+message MarsShowResponse {
+  string branch = 1;
+  string config = 2;
+}
+
+message GlobalConfigRequest {
+  int64 project_id = 1;
+}
+
+message GlobalConfigResponse {
+  bool enabled = 1;
+  string config = 2;
+}
+
+message MarsUpdateRequest {
+  int64 project_id = 1;
+  string config = 2;
+}
+
+message MarsUpdateResponse {
+   GitlabProjectModal data = 1;
+}
+
+message ToggleEnabledRequest {
+  int64 project_id = 1;
+  bool enabled = 2;
+}
+
+service Mars {
+  rpc Show(MarsShowRequest) returns (MarsShowResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/mars_config"
+    };
+  }
+
+  rpc GlobalConfig(GlobalConfigRequest) returns (GlobalConfigResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/global_config"
+    };
+  }
+
+  rpc ToggleEnabled(ToggleEnabledRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/gitlab/projects/{project_id}/toggle_enabled"
+    };
+  }
+
+  rpc Update(MarsUpdateRequest) returns (MarsUpdateResponse) {
+    option (google.api.http) = {
+      put: "/api/gitlab/projects/{project_id}/mars_config",
+      body: "*"
+    };
+  }
+}

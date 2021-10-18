@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/gitlab;gitlab";
+
+message GitlabDestroyRequest {
+  string namespace_id = 1;
+  string project_id = 2;
+}
+
+message EnableProjectRequest {
+  string gitlab_project_id = 1;
+}
+
+message DisableProjectRequest {
+  string gitlab_project_id = 1;
+}
+
+message GitlabProjectInfo {
+  int64 id = 1;
+  string  name = 2;
+  string path = 3;
+  string web_url = 4;
+  string avatar_url = 5;
+  string description = 6;
+  bool enabled = 7;
+  bool global_enabled = 8;
+}
+
+message ProjectListResponse {
+  repeated GitlabProjectInfo data = 1;
+}
+
+message Option {
+  string value = 1;
+  string label = 2;
+  string type = 3;
+  // isLeaf 兼容 antd
+  bool isLeaf = 4;
+  string projectId = 5;
+  string branch = 6;
+
+  repeated Option children  = 7;
+}
+message ProjectsResponse {
+  repeated Option data = 1;
+}
+
+message BranchesRequest {
+  string project_id = 1;
+}
+message BranchesResponse {
+  repeated Option data = 1;
+}
+message CommitsRequest {
+  string project_id = 1;
+  string branch = 2;
+}
+message CommitsResponse {
+  repeated Option data = 1;
+}
+
+message CommitRequest {
+  string project_id = 1;
+  string branch = 2;
+  string commit = 3;
+}
+
+message CommitResponse {
+  Option data = 1;
+}
+
+message PipelineInfoRequest {
+  string project_id = 1;
+  string branch = 2;
+  string commit = 3;
+}
+
+message PipelineInfoResponse {
+  string status = 1;
+  string web_url = 2;
+}
+
+message ConfigFileRequest {
+  string project_id = 1;
+  string branch = 2;
+}
+
+message ConfigFileResponse {
+  string data = 1;
+  string type = 2;
+}
+
+service Gitlab {
+  rpc EnableProject(EnableProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/gitlab/projects/enable",
+      body: "*"
+    };
+  }
+
+  rpc DisableProject(DisableProjectRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/gitlab/projects/disable",
+      body: "*"
+    };
+  }
+
+  rpc ProjectList(google.protobuf.Empty) returns (ProjectListResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/project_list",
+    };
+  }
+
+  rpc Projects(google.protobuf.Empty) returns (ProjectsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects",
+    };
+  }
+
+  rpc Branches(BranchesRequest) returns (BranchesResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/branches",
+    };
+  }
+
+  rpc Commits(CommitsRequest) returns (CommitsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/branches/{branch}/commits",
+    };
+  }
+  rpc Commit(CommitRequest) returns (CommitResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/branches/{branch}/commits/{commit}",
+    };
+  }
+
+  rpc PipelineInfo(PipelineInfoRequest) returns (PipelineInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info",
+    };
+  }
+
+  rpc ConfigFile(ConfigFileRequest) returns (ConfigFileResponse) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/branches/{branch}/config_file",
+    };
+  }
+}

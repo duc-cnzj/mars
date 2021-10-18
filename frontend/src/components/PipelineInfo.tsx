@@ -31,14 +31,14 @@ const PipelineInfo: React.FC<{
 
   useEffect(() => {
     if (projectId && branch && commit) {
-      pipelineInfo(projectId, branch, commit).then((res) => {
-        console.log(res.data.data);
-        let p = pipelines[res.data.data.status];
+      pipelineInfo({project_id: String(projectId), branch, commit}).then((res) => {
+        console.log(res.data);
+        let p = pipelines[res.data.status];
         if (p) {
           setInfo({
             type: p.type,
             message: p.message,
-            web_url: res.data.data.web_url,
+            web_url: res.data.web_url,
           });
         }
       }).catch(e=>console.log(e));
