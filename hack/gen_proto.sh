@@ -32,3 +32,5 @@ pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep
 #   --no-beautify    Does not beautify generated code.
 #   --no-comments    Does not output any JSDoc comments.
 #   --no-service     Does not output service classes.
+
+swagger mixin --ignore-conflicts ../third_party/doc/data/api.json ../doc/**/*.json > ../third_party/doc/data/swagger.json

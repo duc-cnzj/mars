@@ -204,15 +204,15 @@ func (wc *WebsocketController) Info(ctx *gin.Context) {
 	response.Success(ctx, 200, plugins.GetWsSender().New("", "").Info())
 }
 
-func (wc *WebsocketController) Ws(ctx *gin.Context) {
-	c, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+func (wc *WebsocketController) Ws(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		mlog.Error(err)
 		return
 	}
 
 	var uid string
-	uid = ctx.Query("uid")
+	uid = r.URL.Query().Get("uid")
 	if uid == "" {
 		uid = uuid.New().String()
 	}

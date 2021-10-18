@@ -71,7 +71,7 @@ const ModalSub: React.FC<{
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [initValue, setInitValue] = useState<{
     projectName: string;
-    gitlabProjectId: number;
+    gitlabProjectId: string;
     gitlabBranch: string;
     gitlabCommit: string;
     time?: number;
@@ -94,7 +94,7 @@ const ModalSub: React.FC<{
         }).then((res) => {
           setInitValue({
             projectName: detail.name,
-            gitlabProjectId: Number(detail.gitlab_project_id),
+            gitlabProjectId: detail.gitlab_project_id,
             gitlabBranch: detail.gitlab_branch,
             gitlabCommit: res.data.data.label,
           });

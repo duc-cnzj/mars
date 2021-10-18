@@ -2,6 +2,14 @@ package main
 
 import (
 	"context"
+	"github.com/duc-cnzj/mars/internal/app"
+	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
+	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/controllers"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/third_party/doc/data"
+	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
 	"log"
 	"net/http"
 	"os"
@@ -18,11 +26,26 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	_ "github.com/duc-cnzj/mars/internal/plugins/docker"
+	_ "github.com/duc-cnzj/mars/internal/plugins/domain_resolver"
+	_ "github.com/duc-cnzj/mars/internal/plugins/wssender"
 )
 
 var endpoint = "localhost:9999"
 
 func main() {
+	app.DefaultBootstrappers = []contracts.Bootstrapper{
+		&bootstrappers.PluginsBootstrapper{},
+		&bootstrappers.K8sClientBootstrapper{},
+		&bootstrappers.GitlabBootstrapper{},
+		&bootstrappers.I18nBootstrapper{},
+		&bootstrappers.DBBootstrapper{},
+	}
+	a := app.NewApplication(config.Init("/Users/duc/goMod/mars/config.yaml"))
+	if err := a.Bootstrap(); err != nil {
+		mlog.Fatal(err)
+	}
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -39,19 +62,22 @@ func main() {
 		},
 	}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	var err error
-	err = namespace.RegisterNamespaceHandlerFromEndpoint(ctx, gmux, endpoint, opts)
-	fatalError(err)
-	err = cluster.RegisterClusterHandlerFromEndpoint(ctx, gmux, endpoint, opts)
-	fatalError(err)
-	err = gitlab.RegisterGitlabHandlerFromEndpoint(ctx, gmux, endpoint, opts)
-	fatalError(err)
-	err = mars.RegisterMarsHandlerFromEndpoint(ctx, gmux, endpoint, opts)
-	fatalError(err)
-	err = project.RegisterProjectHandlerFromEndpoint(ctx, gmux, endpoint, opts)
-	fatalError(err)
+	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
+		namespace.RegisterNamespaceHandlerFromEndpoint,
+		cluster.RegisterClusterHandlerFromEndpoint,
+		gitlab.RegisterGitlabHandlerFromEndpoint,
+		mars.RegisterMarsHandlerFromEndpoint,
+		project.RegisterProjectHandlerFromEndpoint,
+	}
 
+	for _, f := range serviceList {
+		fatalError(f(ctx, gmux, endpoint, opts))
+	}
+
+	serveWs(mux)
 	mux.Handle("/", gmux)
+
+	runSwaggerUI()
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	s := &http.Server{
@@ -73,6 +99,29 @@ func main() {
 	defer cancelFunc()
 	s.Shutdown(timeout)
 	log.Println("api-gateway shutdown")
+}
+
+func serveWs(mux *http.ServeMux) {
+	//e.GET("/ws", wsC.Ws)
+	//api.GET("/ws_info", wsC.Info)
+	//response.Success(ctx, 200, utils.ClusterInfo())
+	//mux.HandleFunc("/ws_info", )
+	ws := &controllers.WebsocketController{}
+	mux.HandleFunc("/ws", ws.Ws)
+}
+
+func runSwaggerUI() {
+	http.HandleFunc("/doc/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data.SwaggerJson)
+	})
+
+	http.Handle("/", http.FileServer(http.FS(swagger_ui.SwaggerUI)))
+
+	log.Println("swagger ui running at: 8888")
+	go func() {
+		http.ListenAndServe(":8888", nil)
+	}()
 }
 
 func fatalError(err error) {

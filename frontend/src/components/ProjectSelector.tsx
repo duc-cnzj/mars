@@ -8,7 +8,7 @@ import pb from "../api/compiled";
 const ProjectSelector: React.FC<{
   value?: {
     projectName: string;
-    gitlabProjectId: number;
+    gitlabProjectId: string;
     gitlabBranch: string;
     gitlabCommit: string;
     time?: number;
@@ -117,7 +117,9 @@ const ProjectSelector: React.FC<{
       let o = options.find((item) => item.value === values[0]);
       setValue([o ? o.label : ""]);
       if (gbranch) {
+        // @ts-ignore
         if (o && o.children) {
+          // @ts-ignore
           let b = o.children.find((item: pb.Option) => item.value === gbranch);
           setValue([o.label, b ? b.label : ""]);
           if (gcommit) {

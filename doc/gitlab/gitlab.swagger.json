@@ -420,12 +420,6 @@
         },
         "branch": {
           "type": "string"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Option"
-          }
         }
       }
     },

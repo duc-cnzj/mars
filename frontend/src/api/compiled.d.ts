@@ -201,9 +201,6 @@ export class Option implements IOption {
 
     /** Option branch. */
     public branch: string;
-
-    /** Option children. */
-    public children: IOption[];
 }
 
 /** Represents a ProjectsResponse. */

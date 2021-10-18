@@ -43,7 +43,7 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
           onMouseEnter={(e) => {
             getServiceEndpoints({project_name: String(projectName), namespace_id: namespaceId}).then((res) => {
               // @ts-ignore
-                setEndpoints(res.data.data.map((name: string, item: pb.ServiceEndpointsResponse.Iitem) => {
+                setEndpoints(Array.from(res.data.data).map((name: string, item: pb.ServiceEndpointsResponse.Iitem) => {
                   return {
                       name: item.name
                   }

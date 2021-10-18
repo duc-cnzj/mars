@@ -77,7 +77,7 @@ func Init(e *gin.Engine) {
 
 		wsC := controllers.NewWebsocketController()
 		{
-			e.GET("/ws", wsC.Ws)
+			e.GET("/ws", gin.WrapF(wsC.Ws))
 			api.GET("/ws_info", wsC.Info)
 		}
 

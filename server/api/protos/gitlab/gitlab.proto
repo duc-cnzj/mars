@@ -41,9 +41,8 @@ message Option {
   bool isLeaf = 4;
   string projectId = 5;
   string branch = 6;
-
-  repeated Option children  = 7;
 }
+
 message ProjectsResponse {
   repeated Option data = 1;
 }

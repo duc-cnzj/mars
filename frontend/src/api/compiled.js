@@ -464,7 +464,6 @@ export const Option = $root.Option = (() => {
      * @property {boolean|null} [isLeaf] Option isLeaf
      * @property {string|null} [projectId] Option projectId
      * @property {string|null} [branch] Option branch
-     * @property {Array.<IOption>|null} [children] Option children
      */
 
     /**
@@ -476,7 +475,6 @@ export const Option = $root.Option = (() => {
      * @param {IOption=} [properties] Properties to set
      */
     function Option(properties) {
-        this.children = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -530,14 +528,6 @@ export const Option = $root.Option = (() => {
      * @instance
      */
     Option.prototype.branch = "";
-
-    /**
-     * Option children.
-     * @member {Array.<IOption>} children
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.children = $util.emptyArray;
 
     return Option;
 })();
