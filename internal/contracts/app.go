@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"context"
 	"net/http"
 	"os"
 
@@ -14,6 +15,11 @@ import (
 )
 
 type Callback func(ApplicationInterface)
+
+type Runner interface {
+	Run(context.Context) error
+	Shutdown(context.Context) error
+}
 
 type Bootstrapper interface {
 	Bootstrap(ApplicationInterface) error
@@ -41,6 +47,7 @@ type ApplicationInterface interface {
 
 	DBManager() DBManager
 
+	AddServer(Runner)
 	Run() chan os.Signal
 	Shutdown()
 

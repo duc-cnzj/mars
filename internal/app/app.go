@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -38,6 +38,9 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.GitlabBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
+	&bootstrappers.ApiGatewayBootstrapper{},
+	&bootstrappers.PprofBootstrapper{},
+	&bootstrappers.GrpcBootstrapper{},
 }
 
 type Application struct {
@@ -53,6 +56,8 @@ type Application struct {
 
 	httpHandler http.Handler
 	httpServer  *http.Server
+
+	servers []contracts.Runner
 
 	done     context.Context
 	doneFunc func()
@@ -129,6 +134,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		done:          doneCtx,
 		doneFunc:      cancelFunc,
 		hooks:         map[Hook][]contracts.Callback{},
+		servers:       []contracts.Runner{},
 	}
 
 	app.dbManager = database.NewManager(app)
@@ -178,46 +184,40 @@ func (app *Application) IsDebug() bool {
 	return app.config.Debug
 }
 
+func (app *Application) AddServer(runner contracts.Runner) {
+	app.servers = append(app.servers, runner)
+}
+
 func (app *Application) Run() chan os.Signal {
 	done := make(chan os.Signal)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	app.RunServerHooks(BeforeRunHook)
 
-	go func() {
-		mlog.Infof("server running at %s.", app.httpServer.Addr)
-		if err := app.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	for _, server := range app.servers {
+		if err := server.Run(context.Background()); err != nil {
 			mlog.Fatal(err)
 		}
-	}()
-
-	if app.Config().ProfileEnabled {
-		go func() {
-			mlog.Info("Starting pprof server on localhost:6060.")
-			if err := http.ListenAndServe("localhost:6060", nil); err != nil && err != http.ErrServerClosed {
-				mlog.Error(err)
-			}
-		}()
 	}
 
 	return done
 }
 
 func (app *Application) Shutdown() {
-	var err error
-
 	app.doneFunc()
-
 	app.RunServerHooks(BeforeDownHook)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if app.httpServer != nil {
-		err = app.httpServer.Shutdown(ctx)
-		if err != nil {
-			mlog.Error(err)
-		}
+	wg := &sync.WaitGroup{}
+	for _, server := range app.servers {
+		wg.Add(1)
+		go func(server contracts.Runner) {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+			defer cancel()
+			server.Shutdown(ctx)
+		}(server)
 	}
+	wg.Wait()
 
 	app.RunServerHooks(AfterDownHook)
 

@@ -2,9 +2,10 @@ package frontend
 
 import (
 	"embed"
-	"github.com/gorilla/mux"
 	"io/fs"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 //go:embed build/*

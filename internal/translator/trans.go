@@ -3,6 +3,7 @@ package t
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/translator/langs"
 
@@ -80,4 +81,3 @@ func TransToError(key string, locale string) error {
 func RTransToError(key string, replace interface{}, locale string) error {
 	return errors.New(RTrans(key, replace, locale))
 }
-

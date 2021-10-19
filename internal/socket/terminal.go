@@ -1,4 +1,4 @@
-package controllers
+package socket
 
 import (
 	"context"

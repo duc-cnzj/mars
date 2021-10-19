@@ -1,12 +1,12 @@
-package controllers
+package socket
 
 import (
 	"context"
 	"errors"
-	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"regexp"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars/internal/grpc/services"
 
 	"github.com/duc-cnzj/mars/internal/enums"
 
@@ -84,10 +84,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type WebsocketController struct{}
+type WebsocketManager struct{}
 
-func NewWebsocketController() *WebsocketController {
-	wc := &WebsocketController{}
+func NewWebsocketManager() *WebsocketManager {
+	wc := &WebsocketManager{}
 
 	ticker := time.NewTicker(15 * time.Second)
 	sub := plugins.GetWsSender().New("", "")
@@ -199,13 +199,13 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 	jobs.cs[id] = pc
 }
 
-func (wc *WebsocketController) Info(writer http.ResponseWriter, request *http.Request) {
+func (wc *WebsocketManager) Info(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	marshal, _ := json.Marshal(utils.ClusterInfo())
 	writer.Write(marshal)
 }
 
-func (wc *WebsocketController) Ws(w http.ResponseWriter, r *http.Request) {
+func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		mlog.Error(err)
