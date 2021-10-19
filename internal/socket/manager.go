@@ -201,7 +201,7 @@ func (jobs *CancelSignals) Add(id string, pc *ProcessControl) {
 
 func (wc *WebsocketManager) Info(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
-	marshal, _ := json.Marshal(utils.ClusterInfo())
+	marshal, _ := json.Marshal(plugins.GetWsSender().New("", "").Info())
 	writer.Write(marshal)
 }
 

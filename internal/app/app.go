@@ -159,7 +159,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 }
 
 func printConfig() {
-	mlog.Warningf("imagepullsecrets %#v", app.App().Config().ImagePullSecrets)
+	mlog.Debugf("imagepullsecrets %#v", app.App().Config().ImagePullSecrets)
 }
 
 func (app *Application) Bootstrap() error {

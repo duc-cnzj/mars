@@ -81,7 +81,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	a.server = s
 
 	go func() {
-		mlog.Info("api-gateway start at: ", s.Addr)
+		mlog.Info("api-gateway start at ", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
@@ -102,7 +102,7 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 
 func serveWs(mux *mux.Router) {
 	ws := socket.NewWebsocketManager()
-	mux.HandleFunc("/ws_info", ws.Info)
+	mux.HandleFunc("/api/ws_info", ws.Info)
 	mux.HandleFunc("/ws", ws.Ws)
 }
 
@@ -126,7 +126,7 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 func routeLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(t time.Time) {
-			mlog.Infof("[GRPC] method: %v, url: %v, use %v", r.Method, r.URL, time.Since(t))
+			mlog.Debugf("[Http]: method: %v, url: %v, use %v", r.Method, r.URL, time.Since(t))
 		}(time.Now())
 		h.ServeHTTP(w, r)
 	})

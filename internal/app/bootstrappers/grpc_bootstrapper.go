@@ -45,11 +45,11 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-				mlog.Error("[GRPC]: recovery error: ", p)
+				mlog.Error("[Grpc]: recovery error: ", p)
 				return nil
 			})),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				mlog.Debugf("[GRPC]: Method %v Called.", info.FullMethod)
+				mlog.Debugf("[Grpc]: Method %v Called.", info.FullMethod)
 				return handler(ctx, req)
 			},
 		),
