@@ -66,6 +66,10 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}
 	}
 
+	router.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		writer.Write([]byte("pong"))
+	})
 	serveWs(router)
 	frontend.LoadFrontendRoutes(router)
 	LoadSwaggerUI(router)
