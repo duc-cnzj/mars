@@ -2,7 +2,10 @@ module github.com/duc-cnzj/mars
 
 go 1.17
 
+replace github.com/duc-cnzj/mars/pkg => ./pkg
+
 require (
+	github.com/duc-cnzj/mars/pkg v0.0.0-00010101000000-000000000000
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/google/uuid v1.3.0
@@ -23,7 +26,6 @@ require (
 	go.uber.org/config v1.4.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/text v0.3.7
-	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4
 	google.golang.org/grpc v1.41.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
@@ -159,6 +161,7 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	golang.org/x/tools v0.1.5 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20211018162055-cf77aa76bad2 // indirect
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
