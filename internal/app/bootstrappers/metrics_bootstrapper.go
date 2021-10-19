@@ -3,6 +3,7 @@ package bootstrappers
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -29,32 +30,34 @@ func (m *metricsRunner) Shutdown(ctx context.Context) error {
 }
 
 func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	conns := prometheus.NewGauge(prometheus.GaugeOpts{
+	conns := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "mars",
-		Subsystem: "pubsub",
-		Name:      "current_connections",
+		Subsystem: "websocket",
+		Name:      "connections",
 		Help:      "当前 websocket 连接数",
-	})
+	}, []string{"hostname"})
 	prometheus.MustRegister(conns)
 
-	app.SetMetrics(&metrics{ws: conns})
+	hostname, _ := os.Hostname()
+	app.SetMetrics(&metrics{ws: conns, hostname: hostname})
 	app.AddServer(&metricsRunner{})
 
 	return nil
 }
 
 type metrics struct {
-	ws prometheus.Gauge
+	ws       *prometheus.GaugeVec
+	hostname string
 }
 
 func (m *metrics) IncWebsocketConn() {
-	m.WebsocketConn().Inc()
+	m.WebsocketConn().With(prometheus.Labels{"hostname": m.hostname}).Inc()
 }
 
 func (m *metrics) DecWebsocketConn() {
-	m.WebsocketConn().Dec()
+	m.WebsocketConn().With(prometheus.Labels{"hostname": m.hostname}).Dec()
 }
 
-func (m *metrics) WebsocketConn() prometheus.Gauge {
+func (m *metrics) WebsocketConn() *prometheus.GaugeVec {
 	return m.ws
 }
