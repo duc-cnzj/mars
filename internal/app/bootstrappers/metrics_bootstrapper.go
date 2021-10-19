@@ -39,6 +39,7 @@ func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 	prometheus.MustRegister(conns)
 
 	hostname, _ := os.Hostname()
+	mlog.Debugf("[Metrics]: hostname %v", hostname)
 	app.SetMetrics(&metrics{ws: conns, hostname: hostname})
 	app.AddServer(&metricsRunner{})
 
