@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/gorm/utils"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"gorm.io/gorm/utils"
 )
 
 type GormLoggerAdapter struct {
@@ -43,9 +44,9 @@ func (g *GormLoggerAdapter) Error(ctx context.Context, s string, i ...interface{
 
 func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	const (
-		traceStr      = "[SQL]: %s [%.3fms] [rows:%v] %s"
-		traceWarnStr  = "[SQL]: %s %s [%.3fms] [rows:%v] %s"
-		traceErrStr   = "[SQL]: %s %s [%.3fms] [rows:%v] %s"
+		traceStr      = "[SQL]: [%.3fms] [rows:%v] %s %s"
+		traceWarnStr  = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
+		traceErrStr   = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
 		slowThreshold = 200 * time.Millisecond
 	)
 	if g.level > logger.Silent {
@@ -55,32 +56,32 @@ func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				sql, rows := fc()
 				if rows == -1 {
-					mlog.Debugf(traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+					mlog.Debugf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 				} else {
-					mlog.Debugf(traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+					mlog.Debugf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 				}
 				return
 			}
 			sql, rows := fc()
 			if rows == -1 {
-				mlog.Errorf(traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {
-				mlog.Errorf(traceErrStr, utils.FileWithLineNum(), err, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
 		case elapsed > slowThreshold && g.level >= logger.Warn:
 			sql, rows := fc()
 			slowLog := fmt.Sprintf("SLOW SQL >= %v", slowThreshold)
 			if rows == -1 {
-				mlog.Warningf(traceWarnStr, utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+				mlog.Warningf(traceWarnStr, slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {
-				mlog.Warningf(traceWarnStr, utils.FileWithLineNum(), slowLog, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+				mlog.Warningf(traceWarnStr, slowLog, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
 		case g.level == logger.Info:
 			sql, rows := fc()
 			if rows == -1 {
-				mlog.Infof(traceStr, utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, "-", sql)
+				mlog.Infof(traceStr, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {
-				mlog.Infof(traceStr, utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, rows, sql)
+				mlog.Infof(traceStr, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
 		}
 	}

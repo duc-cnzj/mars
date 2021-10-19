@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/namespace"
 	"github.com/duc-cnzj/mars/pkg/project"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 )
 
@@ -52,8 +53,11 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 				mlog.Debugf("[Grpc]: Method %v Called.", info.FullMethod)
 				return handler(ctx, req)
 			},
+			grpc_prometheus.UnaryServerInterceptor,
 		),
 	)
+
+	grpc_prometheus.Register(server)
 
 	cluster.RegisterClusterServer(server, new(services.Cluster))
 	gitlab.RegisterGitlabServer(server, new(services.Gitlab))

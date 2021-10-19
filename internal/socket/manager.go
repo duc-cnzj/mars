@@ -233,8 +233,10 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 		wsconn.terminalSessions.CloseAll()
 		ps.Close()
 		c.Close()
+		app.Metrics().DecWebsocketConn()
 	}()
 
+	app.Metrics().IncWebsocketConn()
 	go write(wsconn)
 
 	SendMsg(wsconn, "", WsSetUid, uid)

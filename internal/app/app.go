@@ -41,6 +41,17 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.ApiGatewayBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},
+	&bootstrappers.MetricsBootstrapper{},
+}
+
+type emptyMetrics struct{}
+
+func (e *emptyMetrics) IncWebsocketConn() {
+	return
+}
+
+func (e *emptyMetrics) DecWebsocketConn() {
+	return
 }
 
 type Application struct {
@@ -66,7 +77,17 @@ type Application struct {
 
 	dispatcher contracts.DispatcherInterface
 
+	metrics contracts.Metrics
+
 	plugins map[string]contracts.PluginInterface
+}
+
+func (app *Application) SetMetrics(metrics contracts.Metrics) {
+	app.metrics = metrics
+}
+
+func (app *Application) Metrics() contracts.Metrics {
+	return app.metrics
 }
 
 func (app *Application) GetPluginByName(name string) contracts.PluginInterface {
@@ -135,6 +156,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		doneFunc:      cancelFunc,
 		hooks:         map[Hook][]contracts.Callback{},
 		servers:       []contracts.Runner{},
+		metrics:       &emptyMetrics{},
 	}
 
 	app.dbManager = database.NewManager(app)

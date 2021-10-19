@@ -16,6 +16,11 @@ import (
 
 type Callback func(ApplicationInterface)
 
+type Metrics interface {
+	IncWebsocketConn()
+	DecWebsocketConn()
+}
+
 type Runner interface {
 	Run(context.Context) error
 	Shutdown(context.Context) error
@@ -38,6 +43,9 @@ type ApplicationInterface interface {
 
 	GitlabClient() *gitlab.Client
 	SetGitlabClient(*gitlab.Client)
+
+	SetMetrics(Metrics)
+	Metrics() Metrics
 
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
