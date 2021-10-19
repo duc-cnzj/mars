@@ -27,7 +27,7 @@ import (
 type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&apiGateway{endpoint: "localhost:9999"})
+	app.AddServer(&apiGateway{endpoint: grpcEndpoint})
 
 	return nil
 }
@@ -38,7 +38,7 @@ type apiGateway struct {
 }
 
 func (a *apiGateway) Run(ctx context.Context) error {
-	mlog.Debug("[Runner] start apiGateway runner.")
+	mlog.Debug("[Runner]: start apiGateway runner.")
 	router := mux.NewRouter()
 	gmux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
@@ -78,6 +78,8 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		Handler: routeLogger(allowCORS(router)),
 	}
 
+	a.server = s
+
 	go func() {
 		mlog.Info("api-gateway start at: ", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -85,7 +87,6 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}
 	}()
 
-	a.server = s
 	return nil
 }
 
@@ -94,7 +95,7 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 		mlog.Error(err)
 	}
 
-	mlog.Info("[Runner] shutdown api-gateway runner.")
+	mlog.Info("[Runner]: shutdown api-gateway runner.")
 
 	return nil
 }

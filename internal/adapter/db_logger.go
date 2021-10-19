@@ -43,9 +43,9 @@ func (g *GormLoggerAdapter) Error(ctx context.Context, s string, i ...interface{
 
 func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	const (
-		traceStr      = "%s [%.3fms] [rows:%v] %s"
-		traceWarnStr  = "%s %s [%.3fms] [rows:%v] %s"
-		traceErrStr   = "%s %s [%.3fms] [rows:%v] %s"
+		traceStr      = "[SQL]: %s [%.3fms] [rows:%v] %s"
+		traceWarnStr  = "[SQL]: %s %s [%.3fms] [rows:%v] %s"
+		traceErrStr   = "[SQL]: %s %s [%.3fms] [rows:%v] %s"
 		slowThreshold = 200 * time.Millisecond
 	)
 	if g.level > logger.Silent {

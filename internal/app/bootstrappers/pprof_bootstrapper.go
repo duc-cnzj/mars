@@ -22,7 +22,7 @@ func (p *PprofBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 type pprofRunner struct{}
 
 func (p *pprofRunner) Run(ctx context.Context) error {
-	mlog.Debug("[Runner] start pprofRunner runner.")
+	mlog.Debug("[Runner]: start pprofRunner runner.")
 
 	go func() {
 		mlog.Info("Starting pprof server on localhost:6060.")
@@ -35,7 +35,7 @@ func (p *pprofRunner) Run(ctx context.Context) error {
 }
 
 func (p *pprofRunner) Shutdown(ctx context.Context) error {
-	mlog.Info("[Runner] shutdown pprofRunner runner.")
+	mlog.Info("[Runner]: shutdown pprofRunner runner.")
 
 	return nil
 }

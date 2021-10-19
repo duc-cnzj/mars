@@ -16,10 +16,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+var grpcEndpoint = "localhost:9999"
+
 type GrpcBootstrapper struct{}
 
 func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&grpcRunner{endpoint: "localhost:9999"})
+	app.AddServer(&grpcRunner{endpoint: grpcEndpoint})
 
 	return nil
 }
@@ -30,7 +32,7 @@ type grpcRunner struct {
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
-	mlog.Info("[Runner] shutdown grpcRunner runner.")
+	mlog.Info("[Runner]: shutdown grpcRunner runner.")
 
 	g.server.GracefulStop()
 
@@ -38,14 +40,18 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 }
 
 func (g *grpcRunner) Run(ctx context.Context) error {
-	mlog.Debug("[Runner] start grpcRunner runner.")
+	mlog.Debug("[Runner]: start grpcRunner runner.")
 	listen, _ := net.Listen("tcp", g.endpoint)
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-				mlog.Error(p)
+				mlog.Error("[GRPC]: recovery error: ", p)
 				return nil
 			})),
+			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+				mlog.Debugf("[GRPC]: Method %v Called.", info.FullMethod)
+				return handler(ctx, req)
+			},
 		),
 	)
 

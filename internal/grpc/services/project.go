@@ -47,7 +47,6 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		mlog.Error(err)
 		return nil, err
 	}
-	mlog.Debug("commit.LastPipeline", commit.LastPipeline)
 
 	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModal.Namespace.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(projectModal.Namespace.Name)
