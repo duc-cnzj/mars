@@ -22,7 +22,7 @@ func (p *PprofBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 type pprofRunner struct{}
 
 func (p *pprofRunner) Run(ctx context.Context) error {
-	mlog.Debug("[Runner]: start pprofRunner runner.")
+	mlog.Debug("[Server]: start pprofRunner runner.")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
@@ -40,7 +40,7 @@ func (p *pprofRunner) Run(ctx context.Context) error {
 }
 
 func (p *pprofRunner) Shutdown(ctx context.Context) error {
-	mlog.Info("[Runner]: shutdown pprofRunner runner.")
+	mlog.Info("[Server]: shutdown pprofRunner runner.")
 
 	return nil
 }

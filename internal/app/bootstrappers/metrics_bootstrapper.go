@@ -17,7 +17,7 @@ type metricsRunner struct{}
 
 func (m *metricsRunner) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mlog.Debug("[Runner]: metrics running at :9091/metrics")
+	mlog.Debug("[Server]: metrics running at :9091/metrics")
 	mux.Handle("/metrics", promhttp.Handler())
 	go func() {
 		http.ListenAndServe(":9091", mux)

@@ -33,7 +33,7 @@ type grpcRunner struct {
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
-	mlog.Info("[Runner]: shutdown grpcRunner runner.")
+	mlog.Info("[Server]: shutdown grpcRunner runner.")
 
 	g.server.GracefulStop()
 
@@ -41,7 +41,7 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 }
 
 func (g *grpcRunner) Run(ctx context.Context) error {
-	mlog.Debug("[Runner]: start grpcRunner runner.")
+	mlog.Debug("[Server]: start grpcRunner runner.")
 	listen, _ := net.Listen("tcp", g.endpoint)
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(

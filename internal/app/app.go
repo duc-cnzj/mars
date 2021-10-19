@@ -68,7 +68,7 @@ type Application struct {
 	httpHandler http.Handler
 	httpServer  *http.Server
 
-	servers []contracts.Runner
+	servers []contracts.Server
 
 	done     context.Context
 	doneFunc func()
@@ -155,7 +155,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		done:          doneCtx,
 		doneFunc:      cancelFunc,
 		hooks:         map[Hook][]contracts.Callback{},
-		servers:       []contracts.Runner{},
+		servers:       []contracts.Server{},
 		metrics:       &emptyMetrics{},
 	}
 
@@ -206,8 +206,8 @@ func (app *Application) IsDebug() bool {
 	return app.config.Debug
 }
 
-func (app *Application) AddServer(runner contracts.Runner) {
-	app.servers = append(app.servers, runner)
+func (app *Application) AddServer(server contracts.Server) {
+	app.servers = append(app.servers, server)
 }
 
 func (app *Application) Run() chan os.Signal {
@@ -232,7 +232,7 @@ func (app *Application) Shutdown() {
 	wg := &sync.WaitGroup{}
 	for _, server := range app.servers {
 		wg.Add(1)
-		go func(server contracts.Runner) {
+		go func(server contracts.Server) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()

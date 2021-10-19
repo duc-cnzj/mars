@@ -21,7 +21,7 @@ type Metrics interface {
 	DecWebsocketConn()
 }
 
-type Runner interface {
+type Server interface {
 	Run(context.Context) error
 	Shutdown(context.Context) error
 }
@@ -55,7 +55,7 @@ type ApplicationInterface interface {
 
 	DBManager() DBManager
 
-	AddServer(Runner)
+	AddServer(Server)
 	Run() chan os.Signal
 	Shutdown()
 

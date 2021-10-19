@@ -8,7 +8,7 @@ import (
 )
 
 var apiGatewayCmd = &cobra.Command{
-	Use:   "grpc",
+	Use:   "serve",
 	Short: "start mars server use grpc.",
 	Run: func(cmd *cobra.Command, args []string) {
 		a := app.NewApplication(config.Init(cfgFile))
