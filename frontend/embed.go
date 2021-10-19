@@ -15,7 +15,7 @@ var index []byte
 
 func LoadFrontendRoutes(mux *mux.Router) {
 	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		http.Redirect(writer, request, "/web", 301)
+		http.Redirect(writer, request, "/web", http.StatusFound)
 	})
 	sub, _ := fs.Sub(staticFs, "build")
 	mux.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.FS(sub))))

@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
-	gitlab2 "github.com/xanzy/go-gitlab"
+	go_gitlab "github.com/xanzy/go-gitlab"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -25,7 +25,7 @@ type Gitlab struct {
 }
 
 func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjectRequest) (*emptypb.Empty, error) {
-	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &gitlab2.GetProjectOptions{})
+	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
 
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitlabProjectId).First(&gp).Error == nil {
@@ -48,7 +48,7 @@ func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProject
 }
 
 func (g Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProjectRequest) (*emptypb.Empty, error) {
-	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &gitlab2.GetProjectOptions{})
+	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitlabProjectId).First(&gp).Error == nil {
 		app.DB().Model(&gp).Updates(map[string]interface{}{
@@ -70,9 +70,9 @@ func (g Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProje
 }
 
 func (g Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectListResponse, error) {
-	projects, _, err := app.GitlabClient().Projects.ListProjects(&gitlab2.ListProjectsOptions{
-		MinAccessLevel: gitlab2.AccessLevel(gitlab2.DeveloperPermissions),
-		ListOptions: gitlab2.ListOptions{
+	projects, _, err := app.GitlabClient().Projects.ListProjects(&go_gitlab.ListProjectsOptions{
+		MinAccessLevel: go_gitlab.AccessLevel(go_gitlab.DeveloperPermissions),
+		ListOptions: go_gitlab.ListOptions{
 			PerPage: 100,
 		},
 	})
@@ -198,7 +198,7 @@ func (g Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) (
 }
 
 func (g Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*gitlab.CommitsResponse, error) {
-	commits, _, err := app.GitlabClient().Commits.ListCommits(request.ProjectId, &gitlab2.ListCommitsOptions{RefName: gitlab2.String(request.Branch), ListOptions: gitlab2.ListOptions{PerPage: 100}})
+	commits, _, err := app.GitlabClient().Commits.ListCommits(request.ProjectId, &go_gitlab.ListCommitsOptions{RefName: go_gitlab.String(request.Branch), ListOptions: go_gitlab.ListOptions{PerPage: 100}})
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func (g Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileReques
 		filename = configFile
 	}
 
-	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab2.GetFileOptions{Ref: gitlab2.String(branch)})
+	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &go_gitlab.GetFileOptions{Ref: go_gitlab.String(branch)})
 	if err != nil {
 		mlog.Debug(err)
 		return &gitlab.ConfigFileResponse{
