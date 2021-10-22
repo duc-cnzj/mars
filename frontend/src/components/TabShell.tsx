@@ -86,14 +86,14 @@ const TabShell: React.FC<{ detail: pb.ProjectShowResponse; resizeAt: number }> =
     }
   };
 
-  const onTerminalResize = () => {
+  const onTerminalResize = ({cols, rows}: {cols: number, rows: number}) => {
     let re = {
       type: "handle_exec_shell_msg",
       data: JSON.stringify({
         session_id: sessionId,
         op: "resize",
-        cols: term?.cols,
-        rows: term?.rows,
+        cols: cols,
+        rows: rows,
       }),
     };
     sendMsg(JSON.stringify(re));
