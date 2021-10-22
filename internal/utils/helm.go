@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -29,7 +30,19 @@ import (
 
 type DeleteFunc func()
 
-func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
+type internalCloser struct {
+	closeFn func() error
+}
+
+func (i *internalCloser) Close() error {
+	return i.closeFn()
+}
+
+func NewCloser(fn func() error) io.Closer {
+	return &internalCloser{closeFn: fn}
+}
+
+func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	openFile, err := os.CreateTemp("", "mars-*.yaml")
 	if err != nil {
 		return "", nil, err
@@ -39,12 +52,15 @@ func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
 		return "", nil, err
 	}
 
-	return openFile.Name(), func() {
+	return openFile.Name(), NewCloser(func() error {
 		mlog.Debug("delete file: " + openFile.Name())
 		if err := os.Remove(openFile.Name()); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
+			return err
 		}
-	}, nil
+
+		return nil
+	}), nil
 }
 
 func GetSettings(namespace string) *cli.EnvSettings {

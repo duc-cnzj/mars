@@ -676,11 +676,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	if err := encoder.Encode(&mergedDefaultAndConfigYamlValues); err != nil {
 		return err
 	}
-	mergedFile, deleteFn, err := utils.WriteConfigYamlToTmpFile(bf.Bytes())
+	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile(bf.Bytes())
 	if err != nil {
 		return err
 	}
-	pc.AddAfterInstalledFunc(deleteFn)
+	pc.AddAfterInstalledFunc(func() { closer.Close() })
 
 	pc.SendMsg("解析镜像tag")
 	pc.To(45)
