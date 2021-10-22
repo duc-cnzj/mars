@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -55,31 +53,18 @@ func (e *emptyMetrics) DecWebsocketConn() {
 }
 
 type Application struct {
-	config *config.Config
-
+	done          context.Context
+	doneFunc      func()
+	config        *config.Config
+	clientSet     *contracts.K8sClient
+	gitlabClient  *gitlab.Client
+	dbManager     contracts.DBManager
+	dispatcher    contracts.DispatcherInterface
+	metrics       contracts.Metrics
+	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
-
-	dbManager contracts.DBManager
-
-	clientSet *contracts.K8sClient
-
-	gitlabClient *gitlab.Client
-
-	httpHandler http.Handler
-	httpServer  *http.Server
-
-	servers []contracts.Server
-
-	done     context.Context
-	doneFunc func()
-
-	hooks map[Hook][]contracts.Callback
-
-	dispatcher contracts.DispatcherInterface
-
-	metrics contracts.Metrics
-
-	plugins map[string]contracts.PluginInterface
+	hooks         map[Hook][]contracts.Callback
+	plugins       map[string]contracts.PluginInterface
 }
 
 func (app *Application) SetMetrics(metrics contracts.Metrics) {
@@ -120,18 +105,6 @@ func (app *Application) K8sClient() *contracts.K8sClient {
 
 func (app *Application) SetK8sClient(client *contracts.K8sClient) {
 	app.clientSet = client
-}
-
-func (app *Application) HttpHandler() http.Handler {
-	return app.httpHandler
-}
-
-func (app *Application) SetHttpHandler(handler http.Handler) {
-	app.httpHandler = handler
-	app.httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%s", app.Config().AppPort),
-		Handler: handler,
-	}
 }
 
 func (app *Application) EventDispatcher() contracts.DispatcherInterface {

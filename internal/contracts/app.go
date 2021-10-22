@@ -2,7 +2,6 @@ package contracts
 
 import (
 	"context"
-	"net/http"
 	"os"
 
 	restclient "k8s.io/client-go/rest"
@@ -67,9 +66,6 @@ type ApplicationInterface interface {
 
 	EventDispatcher() DispatcherInterface
 	SetEventDispatcher(DispatcherInterface)
-
-	HttpHandler() http.Handler
-	SetHttpHandler(http.Handler)
 
 	SetPlugins(map[string]PluginInterface)
 	GetPlugins() map[string]PluginInterface
