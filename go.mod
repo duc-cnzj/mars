@@ -35,12 +35,12 @@ require (
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.13
-	helm.sh/helm/v3 v3.7.0
-	k8s.io/api v0.22.1
-	k8s.io/apimachinery v0.22.1
+	helm.sh/helm/v3 v3.7.1
+	k8s.io/api v0.22.2
+	k8s.io/apimachinery v0.22.2
 	k8s.io/cli-runtime v0.22.1
-	k8s.io/client-go v0.22.1
-	k8s.io/metrics v0.22.1
+	k8s.io/client-go v0.22.2
+	k8s.io/metrics v0.22.2
 )
 
 require (
@@ -57,7 +57,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/containerd/containerd v1.5.4 // indirect
+	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -97,7 +97,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.8 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
@@ -173,7 +173,7 @@ require (
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 	k8s.io/kubectl v0.22.1 // indirect
-	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9 // indirect
+	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	oras.land/oras-go v0.4.0 // indirect
 	sigs.k8s.io/kustomize/api v0.8.11 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.11.0 // indirect
