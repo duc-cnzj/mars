@@ -3,6 +3,8 @@ import { useLocation, useHistory } from "react-router-dom";
 import { exchange, info } from "../api/auth";
 import { setToken, setLogoutUrl } from "../utils/token";
 import { useAuth } from "../contexts/auth";
+import {getState, removeState} from '../utils/token'
+import {message} from 'antd'
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -19,17 +21,23 @@ const Callback: React.FC = () => {
   }
   useEffect(() => {
     if (code) {
-      console.log("do query");
-      exchange({ code }).then((res) => {
-        setToken(res.data.token);
-        info().then((res) => {
-            setLogoutUrl(res.data.logout_url)
-            auth.setUser(res.data)
+      if (state === getState()) {
+        console.log("do query");
+        exchange({ code }).then((res) => {
+          setToken(res.data.token);
+          info().then((res) => {
+              setLogoutUrl(res.data.logout_url)
+              auth.setUser(res.data)
+          });
+          h.push("/");
         });
-        h.push("/");
-      });
+      } else {
+        message.error("state 不一致，请重新登录")
+        removeState()
+        h.push("/login");
+      }
     }
-  }, [code, h]);
+  }, [code, h, auth, state]);
 
   return <div>login....</div>;
 };

@@ -28,6 +28,7 @@ message SettingsResponse {
   bool sso_enabled = 1;
   string url = 2;
   string end_session_endpoint = 3;
+  string state = 4;
 }
 
 message ExchangeRequest {

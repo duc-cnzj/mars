@@ -6,13 +6,17 @@ import { useAuth } from "../contexts/auth";
 import { useHistory } from "react-router-dom";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
+import {setState} from '../utils/token'
 
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.BackgroundResponse>();
   const [settings, setSettings] = useState<pb.SettingsResponse>();
   useEffect(() => {
     bg({ random: true }).then((res) => setBgInfo(res.data));
-    settingsApi().then((res) => setSettings(res.data));
+    settingsApi().then((res) => {
+      setSettings(res.data)
+      setState(res.data.state)
+    });
   }, []);
 
   const h = useHistory();

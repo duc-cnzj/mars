@@ -190,6 +190,9 @@
         },
         "end_session_endpoint": {
           "type": "string"
+        },
+        "state": {
+          "type": "string"
         }
       }
     },

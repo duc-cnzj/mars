@@ -1496,6 +1496,9 @@
         "sso_enabled": {
           "type": "boolean"
         },
+        "state": {
+          "type": "string"
+        },
         "url": {
           "type": "string"
         }

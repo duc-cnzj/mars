@@ -101,10 +101,13 @@ func (a *Auth) sign(userinfo UserInfo) (string, error) {
 
 func (a *Auth) Settings(ctx context.Context, empty *emptypb.Empty) (*auth.SettingsResponse, error) {
 	if app.Config().OidcEnabled {
+		state := utils.RandomString(32)
+
 		return &auth.SettingsResponse{
 			SsoEnabled:         true,
-			Url:                a.cfg.Config.AuthCodeURL(utils.RandomString(32)),
+			Url:                a.cfg.Config.AuthCodeURL(state),
 			EndSessionEndpoint: a.cfg.EndSessionEndpoint,
+			State:              state,
 		}, nil
 	}
 

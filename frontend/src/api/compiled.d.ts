@@ -106,6 +106,9 @@ export interface ISettingsResponse {
 
     /** SettingsResponse end_session_endpoint */
     end_session_endpoint?: (string|null);
+
+    /** SettingsResponse state */
+    state?: (string|null);
 }
 
 /** Represents a SettingsResponse. */
@@ -125,6 +128,9 @@ export class SettingsResponse implements ISettingsResponse {
 
     /** SettingsResponse end_session_endpoint. */
     public end_session_endpoint: string;
+
+    /** SettingsResponse state. */
+    public state: string;
 }
 
 /** Properties of an ExchangeRequest. */

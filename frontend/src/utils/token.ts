@@ -16,3 +16,12 @@ export const removeLogoutUrl = () => {
 export const getLogoutUrl = (): string => {
   return window.localStorage.getItem("logout_url") || "";
 };
+export const setState = (state: string) => {
+  window.localStorage.setItem("state", state);
+};
+export const removeState = () => {
+  window.localStorage.removeItem("state");
+};
+export const getState = (): string => {
+  return window.localStorage.getItem("state") || "";
+};

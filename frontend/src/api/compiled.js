@@ -175,6 +175,7 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
      * @property {boolean|null} [sso_enabled] SettingsResponse sso_enabled
      * @property {string|null} [url] SettingsResponse url
      * @property {string|null} [end_session_endpoint] SettingsResponse end_session_endpoint
+     * @property {string|null} [state] SettingsResponse state
      */
 
     /**
@@ -215,6 +216,14 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
      * @instance
      */
     SettingsResponse.prototype.end_session_endpoint = "";
+
+    /**
+     * SettingsResponse state.
+     * @member {string} state
+     * @memberof SettingsResponse
+     * @instance
+     */
+    SettingsResponse.prototype.state = "";
 
     return SettingsResponse;
 })();
