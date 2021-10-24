@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"sync/atomic"
 
+	"github.com/golang-jwt/jwt"
+
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 
 	"github.com/duc-cnzj/mars/internal/enums"
@@ -74,6 +76,7 @@ const (
 	WsHandleExecShell    string = enums.WsHandleExecShell
 	WsHandleExecShellMsg string = enums.WsHandleExecShellMsg
 	WsHandleCloseShell   string = enums.WsHandleCloseShell
+	WsAuthorize          string = enums.WsHandleAuthorize
 )
 
 var hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
@@ -134,14 +137,28 @@ const (
 )
 
 type WsConn struct {
-	ps plugins.PubSub
+	userMu sync.RWMutex
 
-	id  string
-	uid string
-	c   *websocket.Conn
-	cs  *CancelSignals
+	user services.UserInfo
+	ps   plugins.PubSub
+	id   string
+	uid  string
+	c    *websocket.Conn
+	cs   *CancelSignals
 
 	terminalSessions *SessionMap
+}
+
+func (c *WsConn) SetUser(info services.UserInfo) {
+	c.userMu.Lock()
+	defer c.userMu.Unlock()
+	c.user = info
+}
+
+func (c *WsConn) GetUser() services.UserInfo {
+	c.userMu.RLock()
+	defer c.userMu.RUnlock()
+	return c.user
 }
 
 func (c *WsConn) GetShellChannel(sessionID string) (chan TerminalMessage, error) {
@@ -302,8 +319,28 @@ func read(wsconn *WsConn) {
 	}
 }
 
+type Token struct {
+	Token string `json:"token"`
+}
+
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
+	mlog.Infof("[Websocket]: user: %v, type: %v", c.GetUser().Name, wsRequest.Type)
 	switch wsRequest.Type {
+	case WsAuthorize:
+		var input Token
+		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
+			mlog.Error(wsRequest.Data, &input)
+			SendEndError(c, "", wsRequest.Type, err)
+			return
+		}
+		var token = strings.TrimSpace(strings.TrimLeft(input.Token, "Bearer"))
+		parse, err := jwt.ParseWithClaims(token, &services.JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return app.Config().Pubkey(), nil
+		})
+		if err == nil && parse.Valid {
+			claims, _ := parse.Claims.(*services.JwtClaims)
+			c.SetUser(claims.UserInfo)
+		}
 	case WsHandleCloseShell:
 		var input TerminalMessage
 		if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {

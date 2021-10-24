@@ -7,6 +7,406 @@ const $util = $protobuf.util;
 // Exported root namespace
 const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
+export const LoginRequest = $root.LoginRequest = (() => {
+
+    /**
+     * Properties of a LoginRequest.
+     * @exports ILoginRequest
+     * @interface ILoginRequest
+     * @property {string|null} [username] LoginRequest username
+     * @property {string|null} [password] LoginRequest password
+     */
+
+    /**
+     * Constructs a new LoginRequest.
+     * @exports LoginRequest
+     * @classdesc Represents a LoginRequest.
+     * @implements ILoginRequest
+     * @constructor
+     * @param {ILoginRequest=} [properties] Properties to set
+     */
+    function LoginRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * LoginRequest username.
+     * @member {string} username
+     * @memberof LoginRequest
+     * @instance
+     */
+    LoginRequest.prototype.username = "";
+
+    /**
+     * LoginRequest password.
+     * @member {string} password
+     * @memberof LoginRequest
+     * @instance
+     */
+    LoginRequest.prototype.password = "";
+
+    return LoginRequest;
+})();
+
+export const LoginResponse = $root.LoginResponse = (() => {
+
+    /**
+     * Properties of a LoginResponse.
+     * @exports ILoginResponse
+     * @interface ILoginResponse
+     * @property {string|null} [token] LoginResponse token
+     * @property {number|Long|null} [expires_in] LoginResponse expires_in
+     */
+
+    /**
+     * Constructs a new LoginResponse.
+     * @exports LoginResponse
+     * @classdesc Represents a LoginResponse.
+     * @implements ILoginResponse
+     * @constructor
+     * @param {ILoginResponse=} [properties] Properties to set
+     */
+    function LoginResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * LoginResponse token.
+     * @member {string} token
+     * @memberof LoginResponse
+     * @instance
+     */
+    LoginResponse.prototype.token = "";
+
+    /**
+     * LoginResponse expires_in.
+     * @member {number|Long} expires_in
+     * @memberof LoginResponse
+     * @instance
+     */
+    LoginResponse.prototype.expires_in = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    return LoginResponse;
+})();
+
+export const InfoResponse = $root.InfoResponse = (() => {
+
+    /**
+     * Properties of an InfoResponse.
+     * @exports IInfoResponse
+     * @interface IInfoResponse
+     * @property {number|Long|null} [id] InfoResponse id
+     * @property {string|null} [username] InfoResponse username
+     * @property {string|null} [name] InfoResponse name
+     * @property {string|null} [email] InfoResponse email
+     * @property {string|null} [logout_url] InfoResponse logout_url
+     */
+
+    /**
+     * Constructs a new InfoResponse.
+     * @exports InfoResponse
+     * @classdesc Represents an InfoResponse.
+     * @implements IInfoResponse
+     * @constructor
+     * @param {IInfoResponse=} [properties] Properties to set
+     */
+    function InfoResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * InfoResponse id.
+     * @member {number|Long} id
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * InfoResponse username.
+     * @member {string} username
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.username = "";
+
+    /**
+     * InfoResponse name.
+     * @member {string} name
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.name = "";
+
+    /**
+     * InfoResponse email.
+     * @member {string} email
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.email = "";
+
+    /**
+     * InfoResponse logout_url.
+     * @member {string} logout_url
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.logout_url = "";
+
+    return InfoResponse;
+})();
+
+export const SettingsResponse = $root.SettingsResponse = (() => {
+
+    /**
+     * Properties of a SettingsResponse.
+     * @exports ISettingsResponse
+     * @interface ISettingsResponse
+     * @property {boolean|null} [sso_enabled] SettingsResponse sso_enabled
+     * @property {string|null} [url] SettingsResponse url
+     * @property {string|null} [end_session_endpoint] SettingsResponse end_session_endpoint
+     */
+
+    /**
+     * Constructs a new SettingsResponse.
+     * @exports SettingsResponse
+     * @classdesc Represents a SettingsResponse.
+     * @implements ISettingsResponse
+     * @constructor
+     * @param {ISettingsResponse=} [properties] Properties to set
+     */
+    function SettingsResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * SettingsResponse sso_enabled.
+     * @member {boolean} sso_enabled
+     * @memberof SettingsResponse
+     * @instance
+     */
+    SettingsResponse.prototype.sso_enabled = false;
+
+    /**
+     * SettingsResponse url.
+     * @member {string} url
+     * @memberof SettingsResponse
+     * @instance
+     */
+    SettingsResponse.prototype.url = "";
+
+    /**
+     * SettingsResponse end_session_endpoint.
+     * @member {string} end_session_endpoint
+     * @memberof SettingsResponse
+     * @instance
+     */
+    SettingsResponse.prototype.end_session_endpoint = "";
+
+    return SettingsResponse;
+})();
+
+export const ExchangeRequest = $root.ExchangeRequest = (() => {
+
+    /**
+     * Properties of an ExchangeRequest.
+     * @exports IExchangeRequest
+     * @interface IExchangeRequest
+     * @property {string|null} [code] ExchangeRequest code
+     */
+
+    /**
+     * Constructs a new ExchangeRequest.
+     * @exports ExchangeRequest
+     * @classdesc Represents an ExchangeRequest.
+     * @implements IExchangeRequest
+     * @constructor
+     * @param {IExchangeRequest=} [properties] Properties to set
+     */
+    function ExchangeRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ExchangeRequest code.
+     * @member {string} code
+     * @memberof ExchangeRequest
+     * @instance
+     */
+    ExchangeRequest.prototype.code = "";
+
+    return ExchangeRequest;
+})();
+
+export const Auth = $root.Auth = (() => {
+
+    /**
+     * Constructs a new Auth service.
+     * @exports Auth
+     * @classdesc Represents an Auth
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Auth(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Auth.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Auth;
+
+    /**
+     * Callback as used by {@link Auth#login}.
+     * @memberof Auth
+     * @typedef LoginCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {LoginResponse} [response] LoginResponse
+     */
+
+    /**
+     * Calls Login.
+     * @function login
+     * @memberof Auth
+     * @instance
+     * @param {ILoginRequest} request LoginRequest message or plain object
+     * @param {Auth.LoginCallback} callback Node-style callback called with the error, if any, and LoginResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Auth.prototype.login = function login(request, callback) {
+        return this.rpcCall(login, $root.LoginRequest, $root.LoginResponse, request, callback);
+    }, "name", { value: "Login" });
+
+    /**
+     * Calls Login.
+     * @function login
+     * @memberof Auth
+     * @instance
+     * @param {ILoginRequest} request LoginRequest message or plain object
+     * @returns {Promise<LoginResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Auth#info}.
+     * @memberof Auth
+     * @typedef InfoCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {InfoResponse} [response] InfoResponse
+     */
+
+    /**
+     * Calls Info.
+     * @function info
+     * @memberof Auth
+     * @instance
+     * @param {google.protobuf.IEmpty} request Empty message or plain object
+     * @param {Auth.InfoCallback} callback Node-style callback called with the error, if any, and InfoResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Auth.prototype.info = function info(request, callback) {
+        return this.rpcCall(info, $root.google.protobuf.Empty, $root.InfoResponse, request, callback);
+    }, "name", { value: "Info" });
+
+    /**
+     * Calls Info.
+     * @function info
+     * @memberof Auth
+     * @instance
+     * @param {google.protobuf.IEmpty} request Empty message or plain object
+     * @returns {Promise<InfoResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Auth#settings}.
+     * @memberof Auth
+     * @typedef SettingsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {SettingsResponse} [response] SettingsResponse
+     */
+
+    /**
+     * Calls Settings.
+     * @function settings
+     * @memberof Auth
+     * @instance
+     * @param {google.protobuf.IEmpty} request Empty message or plain object
+     * @param {Auth.SettingsCallback} callback Node-style callback called with the error, if any, and SettingsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Auth.prototype.settings = function settings(request, callback) {
+        return this.rpcCall(settings, $root.google.protobuf.Empty, $root.SettingsResponse, request, callback);
+    }, "name", { value: "Settings" });
+
+    /**
+     * Calls Settings.
+     * @function settings
+     * @memberof Auth
+     * @instance
+     * @param {google.protobuf.IEmpty} request Empty message or plain object
+     * @returns {Promise<SettingsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Auth#exchange}.
+     * @memberof Auth
+     * @typedef ExchangeCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {LoginResponse} [response] LoginResponse
+     */
+
+    /**
+     * Calls Exchange.
+     * @function exchange
+     * @memberof Auth
+     * @instance
+     * @param {IExchangeRequest} request ExchangeRequest message or plain object
+     * @param {Auth.ExchangeCallback} callback Node-style callback called with the error, if any, and LoginResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Auth.prototype.exchange = function exchange(request, callback) {
+        return this.rpcCall(exchange, $root.ExchangeRequest, $root.LoginResponse, request, callback);
+    }, "name", { value: "Exchange" });
+
+    /**
+     * Calls Exchange.
+     * @function exchange
+     * @memberof Auth
+     * @instance
+     * @param {IExchangeRequest} request ExchangeRequest message or plain object
+     * @returns {Promise<LoginResponse>} Promise
+     * @variation 2
+     */
+
+    return Auth;
+})();
+
 /**
  * ClusterStatus enum.
  * @exports ClusterStatus
@@ -4930,6 +5330,139 @@ export const Namespace = $root.Namespace = (() => {
      */
 
     return Namespace;
+})();
+
+export const BackgroundRequest = $root.BackgroundRequest = (() => {
+
+    /**
+     * Properties of a BackgroundRequest.
+     * @exports IBackgroundRequest
+     * @interface IBackgroundRequest
+     * @property {boolean|null} [random] BackgroundRequest random
+     */
+
+    /**
+     * Constructs a new BackgroundRequest.
+     * @exports BackgroundRequest
+     * @classdesc Represents a BackgroundRequest.
+     * @implements IBackgroundRequest
+     * @constructor
+     * @param {IBackgroundRequest=} [properties] Properties to set
+     */
+    function BackgroundRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * BackgroundRequest random.
+     * @member {boolean} random
+     * @memberof BackgroundRequest
+     * @instance
+     */
+    BackgroundRequest.prototype.random = false;
+
+    return BackgroundRequest;
+})();
+
+export const BackgroundResponse = $root.BackgroundResponse = (() => {
+
+    /**
+     * Properties of a BackgroundResponse.
+     * @exports IBackgroundResponse
+     * @interface IBackgroundResponse
+     * @property {string|null} [url] BackgroundResponse url
+     * @property {string|null} [copyright] BackgroundResponse copyright
+     */
+
+    /**
+     * Constructs a new BackgroundResponse.
+     * @exports BackgroundResponse
+     * @classdesc Represents a BackgroundResponse.
+     * @implements IBackgroundResponse
+     * @constructor
+     * @param {IBackgroundResponse=} [properties] Properties to set
+     */
+    function BackgroundResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * BackgroundResponse url.
+     * @member {string} url
+     * @memberof BackgroundResponse
+     * @instance
+     */
+    BackgroundResponse.prototype.url = "";
+
+    /**
+     * BackgroundResponse copyright.
+     * @member {string} copyright
+     * @memberof BackgroundResponse
+     * @instance
+     */
+    BackgroundResponse.prototype.copyright = "";
+
+    return BackgroundResponse;
+})();
+
+export const Picture = $root.Picture = (() => {
+
+    /**
+     * Constructs a new Picture service.
+     * @exports Picture
+     * @classdesc Represents a Picture
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Picture(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Picture.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Picture;
+
+    /**
+     * Callback as used by {@link Picture#background}.
+     * @memberof Picture
+     * @typedef BackgroundCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {BackgroundResponse} [response] BackgroundResponse
+     */
+
+    /**
+     * Calls Background.
+     * @function background
+     * @memberof Picture
+     * @instance
+     * @param {IBackgroundRequest} request BackgroundRequest message or plain object
+     * @param {Picture.BackgroundCallback} callback Node-style callback called with the error, if any, and BackgroundResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Picture.prototype.background = function background(request, callback) {
+        return this.rpcCall(background, $root.BackgroundRequest, $root.BackgroundResponse, request, callback);
+    }, "name", { value: "Background" });
+
+    /**
+     * Calls Background.
+     * @function background
+     * @memberof Picture
+     * @instance
+     * @param {IBackgroundRequest} request BackgroundRequest message or plain object
+     * @returns {Promise<BackgroundResponse>} Promise
+     * @variation 2
+     */
+
+    return Picture;
 })();
 
 export const ProjectDestroyRequest = $root.ProjectDestroyRequest = (() => {

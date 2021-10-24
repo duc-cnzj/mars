@@ -1,0 +1,68 @@
+@fontcolor: white;
+
+.login {
+  &__use-sso {
+    opacity: 0.5;
+    color: @fontcolor;
+    &:hover {
+      opacity: 1;
+      color: @fontcolor;
+    }
+  }
+  // &__form-item {
+  //   color: @fontcolor; 
+  // }
+  &__title {
+    text-align: center;
+    color: @fontcolor;
+    margin: 10px 0 20px;
+    font-size: 50px;
+  }
+  &__bg {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-position: center center;
+    background-size: cover;
+  }
+  &__card {
+    opacity: 0.8;
+    margin: 20px;
+    padding: 10px 50px;
+    width: 400px;
+    border-radius: 8px;
+    transition: all 0.5s;
+    &:hover {
+      opacity: 1;
+      backdrop-filter: blur(8px);
+      box-shadow: 0px 0px 15px #2c3e50;
+    }
+  }
+  &__copyright {
+    font-size: 15px;
+    font-weight: lighter;
+    color: @fontcolor;
+    position: absolute;
+    bottom: 20px;
+    margin: 0 auto;
+    padding: 3px 15px;
+    backdrop-filter: blur(5px);
+    border-radius: 5px;
+  }
+}
+
+@media (min-width: 640px) { 
+  .login {
+    &__card {
+      margin: 0;
+    }
+    &__copyright {
+      font-size: 20px;
+      bottom: 50px;
+      right: 50px;
+    }
+  }
+}

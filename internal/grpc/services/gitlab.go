@@ -282,7 +282,7 @@ func (g Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileReques
 		branch = split[1]
 		filename = split[2]
 	} else {
-		pid = fmt.Sprintf("%d", request.ProjectId)
+		pid = fmt.Sprintf("%v", request.ProjectId)
 		branch = request.Branch
 		filename = configFile
 	}

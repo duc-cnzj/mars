@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/xanzy/go-gitlab"
@@ -35,6 +38,12 @@ type K8sClient struct {
 	RestConfig    *restclient.Config
 }
 
+type OidcConfig struct {
+	Provider           *oidc.Provider
+	Config             oauth2.Config
+	EndSessionEndpoint string
+}
+
 type Option func(ApplicationInterface)
 
 type ApplicationInterface interface {
@@ -53,6 +62,9 @@ type ApplicationInterface interface {
 	Config() *config.Config
 
 	DBManager() DBManager
+
+	Oidc() *OidcConfig
+	SetOidc(*OidcConfig)
 
 	AddServer(Server)
 	Run() chan os.Signal

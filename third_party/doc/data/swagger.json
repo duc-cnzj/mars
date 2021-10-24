@@ -7,12 +7,122 @@
   ],
   "swagger": "2.0",
   "info": {
-    "title": "swagger docs",
+    "title": "mars api docs",
     "version": "version not set"
   },
   "paths": {
+    "/api/auth/exchange": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_Exchange",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ExchangeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LoginResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/info": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_Info",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/InfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "security": [],
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_Login",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LoginResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/settings": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_Settings",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SettingsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/cluster_info": {
       "get": {
+        "security": [],
         "tags": [
           "Cluster"
         ],
@@ -781,6 +891,36 @@
           }
         }
       }
+    },
+    "/api/picture/background": {
+      "get": {
+        "security": [],
+        "tags": [
+          "Picture"
+        ],
+        "operationId": "Picture_Background",
+        "parameters": [
+          {
+            "type": "boolean",
+            "name": "random",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BackgroundResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -792,6 +932,17 @@
           "items": {
             "$ref": "#/definitions/PodLog"
           }
+        }
+      }
+    },
+    "BackgroundResponse": {
+      "type": "object",
+      "properties": {
+        "copyright": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
         }
       }
     },
@@ -901,6 +1052,14 @@
         }
       }
     },
+    "ExchangeRequest": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        }
+      }
+    },
     "GitlabProjectInfo": {
       "type": "object",
       "properties": {
@@ -979,6 +1138,50 @@
         },
         "enabled": {
           "type": "boolean"
+        }
+      }
+    },
+    "InfoResponse": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "logout_url": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "LoginRequest": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "LoginResponse": {
+      "type": "object",
+      "properties": {
+        "expires_in": {
+          "type": "string",
+          "format": "int64"
+        },
+        "token": {
+          "type": "string"
         }
       }
     },
@@ -1284,6 +1487,20 @@
         }
       }
     },
+    "SettingsResponse": {
+      "type": "object",
+      "properties": {
+        "end_session_endpoint": {
+          "type": "string"
+        },
+        "sso_enabled": {
+          "type": "boolean"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -1312,7 +1529,23 @@
       }
     }
   },
+  "securityDefinitions": {
+    "bearer": {
+      "description": "Authentication token, prefixed by Bearer: Bearer \u003ctoken\u003e",
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
   "tags": [
+    {
+      "name": "Auth"
+    },
     {
       "name": "Cluster"
     },
@@ -1324,6 +1557,9 @@
     },
     {
       "name": "Namespace"
+    },
+    {
+      "name": "Picture"
     },
     {
       "name": "Project"

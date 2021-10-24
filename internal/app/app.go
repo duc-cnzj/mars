@@ -40,6 +40,7 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
+	&bootstrappers.OidcBootstrapper{},
 }
 
 type emptyMetrics struct{}
@@ -65,6 +66,15 @@ type Application struct {
 	bootstrappers []contracts.Bootstrapper
 	hooks         map[Hook][]contracts.Callback
 	plugins       map[string]contracts.PluginInterface
+	oidcProvider  *contracts.OidcConfig
+}
+
+func (app *Application) Oidc() *contracts.OidcConfig {
+	return app.oidcProvider
+}
+
+func (app *Application) SetOidc(provider *contracts.OidcConfig) {
+	app.oidcProvider = provider
 }
 
 func (app *Application) SetMetrics(metrics contracts.Metrics) {

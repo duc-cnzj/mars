@@ -2,9 +2,16 @@ import React, { memo } from "react";
 import { Link } from "react-router-dom";
 import ClusterInfo from "./ClusterInfo";
 import { useWsReady } from "../contexts/useWebsocket";
-import { QuestionCircleOutlined } from "@ant-design/icons";
+import { UserOutlined } from "@ant-design/icons";
+import { useAuth } from "../contexts/auth";
+import { removeToken } from "../utils/token";
+import { useHistory } from "react-router-dom";
+import { Dropdown, Menu } from "antd";
+import { LogoutOutlined } from "@ant-design/icons";
 
 const AppHeader: React.FC = () => {
+  const h = useHistory();
+  const { user } = useAuth();
   return (
     <div
       style={{
@@ -28,11 +35,50 @@ const AppHeader: React.FC = () => {
         }}
       >
         <ClusterInfo />
-        <a href="/docs/index.html" target="_blank">
-          <QuestionCircleOutlined
-            style={{ borderRadius: "50%", background: "white", marginLeft: 10 }}
-          />
-        </a>
+        {user ? (
+          <Dropdown
+            overlay={
+              <Menu>
+                <Menu.Item style={{ fontSize: 12 }} key="0">
+                  <a href="/docs/index.html" target="_blank">
+                    接口文档
+                  </a>
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item style={{ fontSize: 12 }} key="2">
+                  <a
+                    href="javascript(0);"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeToken();
+                      if (user.logout_url) {
+                        window.location.href = user.logout_url;
+                      } else {
+                        h.push("/login");
+                      }
+                    }}
+                  >
+                    <LogoutOutlined />
+                    登出
+                  </a>
+                </Menu.Item>
+              </Menu>
+            }
+            trigger={["click"]}
+          >
+            <a
+              href="javascript(0);"
+              style={{ marginLeft: 20, color: "white" }}
+              className="ant-dropdown-link"
+              onClick={(e) => e.preventDefault()}
+            >
+              <UserOutlined />
+              <span style={{ fontSize: 12, marginLeft: 3 }}>{user.name}</span>
+            </a>
+          </Dropdown>
+        ) : (
+          ""
+        )}
       </div>
     </div>
   );

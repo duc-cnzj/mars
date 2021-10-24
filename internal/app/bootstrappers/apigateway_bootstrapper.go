@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duc-cnzj/mars/pkg/auth"
+	"github.com/duc-cnzj/mars/pkg/picture"
+
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -58,6 +61,8 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		gitlab.RegisterGitlabHandlerFromEndpoint,
 		mars.RegisterMarsHandlerFromEndpoint,
 		project.RegisterProjectHandlerFromEndpoint,
+		picture.RegisterPictureHandlerFromEndpoint,
+		auth.RegisterAuthHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {
@@ -73,7 +78,6 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	serveWs(router)
 	frontend.LoadFrontendRoutes(router)
 	LoadSwaggerUI(router)
-
 	router.PathPrefix("/").Handler(gmux)
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
@@ -120,7 +124,7 @@ func LoadSwaggerUI(mux *mux.Router) {
 }
 
 func preflightHandler(w http.ResponseWriter, r *http.Request) {
-	headers := []string{"Content-Type", "Accept", "X-Requested-With"}
+	headers := []string{"Content-Type", "Accept", "X-Requested-With", "Authorization"}
 	w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
 	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
 	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))

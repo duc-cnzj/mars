@@ -1,4 +1,251 @@
 import * as $protobuf from "protobufjs";
+/** Properties of a LoginRequest. */
+export interface ILoginRequest {
+
+    /** LoginRequest username */
+    username?: (string|null);
+
+    /** LoginRequest password */
+    password?: (string|null);
+}
+
+/** Represents a LoginRequest. */
+export class LoginRequest implements ILoginRequest {
+
+    /**
+     * Constructs a new LoginRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ILoginRequest);
+
+    /** LoginRequest username. */
+    public username: string;
+
+    /** LoginRequest password. */
+    public password: string;
+}
+
+/** Properties of a LoginResponse. */
+export interface ILoginResponse {
+
+    /** LoginResponse token */
+    token?: (string|null);
+
+    /** LoginResponse expires_in */
+    expires_in?: (number|Long|null);
+}
+
+/** Represents a LoginResponse. */
+export class LoginResponse implements ILoginResponse {
+
+    /**
+     * Constructs a new LoginResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ILoginResponse);
+
+    /** LoginResponse token. */
+    public token: string;
+
+    /** LoginResponse expires_in. */
+    public expires_in: (number|Long);
+}
+
+/** Properties of an InfoResponse. */
+export interface IInfoResponse {
+
+    /** InfoResponse id */
+    id?: (number|Long|null);
+
+    /** InfoResponse username */
+    username?: (string|null);
+
+    /** InfoResponse name */
+    name?: (string|null);
+
+    /** InfoResponse email */
+    email?: (string|null);
+
+    /** InfoResponse logout_url */
+    logout_url?: (string|null);
+}
+
+/** Represents an InfoResponse. */
+export class InfoResponse implements IInfoResponse {
+
+    /**
+     * Constructs a new InfoResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IInfoResponse);
+
+    /** InfoResponse id. */
+    public id: (number|Long);
+
+    /** InfoResponse username. */
+    public username: string;
+
+    /** InfoResponse name. */
+    public name: string;
+
+    /** InfoResponse email. */
+    public email: string;
+
+    /** InfoResponse logout_url. */
+    public logout_url: string;
+}
+
+/** Properties of a SettingsResponse. */
+export interface ISettingsResponse {
+
+    /** SettingsResponse sso_enabled */
+    sso_enabled?: (boolean|null);
+
+    /** SettingsResponse url */
+    url?: (string|null);
+
+    /** SettingsResponse end_session_endpoint */
+    end_session_endpoint?: (string|null);
+}
+
+/** Represents a SettingsResponse. */
+export class SettingsResponse implements ISettingsResponse {
+
+    /**
+     * Constructs a new SettingsResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ISettingsResponse);
+
+    /** SettingsResponse sso_enabled. */
+    public sso_enabled: boolean;
+
+    /** SettingsResponse url. */
+    public url: string;
+
+    /** SettingsResponse end_session_endpoint. */
+    public end_session_endpoint: string;
+}
+
+/** Properties of an ExchangeRequest. */
+export interface IExchangeRequest {
+
+    /** ExchangeRequest code */
+    code?: (string|null);
+}
+
+/** Represents an ExchangeRequest. */
+export class ExchangeRequest implements IExchangeRequest {
+
+    /**
+     * Constructs a new ExchangeRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IExchangeRequest);
+
+    /** ExchangeRequest code. */
+    public code: string;
+}
+
+/** Represents an Auth */
+export class Auth extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Auth service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Login.
+     * @param request LoginRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and LoginResponse
+     */
+    public login(request: ILoginRequest, callback: Auth.LoginCallback): void;
+
+    /**
+     * Calls Login.
+     * @param request LoginRequest message or plain object
+     * @returns Promise
+     */
+    public login(request: ILoginRequest): Promise<LoginResponse>;
+
+    /**
+     * Calls Info.
+     * @param request Empty message or plain object
+     * @param callback Node-style callback called with the error, if any, and InfoResponse
+     */
+    public info(request: google.protobuf.IEmpty, callback: Auth.InfoCallback): void;
+
+    /**
+     * Calls Info.
+     * @param request Empty message or plain object
+     * @returns Promise
+     */
+    public info(request: google.protobuf.IEmpty): Promise<InfoResponse>;
+
+    /**
+     * Calls Settings.
+     * @param request Empty message or plain object
+     * @param callback Node-style callback called with the error, if any, and SettingsResponse
+     */
+    public settings(request: google.protobuf.IEmpty, callback: Auth.SettingsCallback): void;
+
+    /**
+     * Calls Settings.
+     * @param request Empty message or plain object
+     * @returns Promise
+     */
+    public settings(request: google.protobuf.IEmpty): Promise<SettingsResponse>;
+
+    /**
+     * Calls Exchange.
+     * @param request ExchangeRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and LoginResponse
+     */
+    public exchange(request: IExchangeRequest, callback: Auth.ExchangeCallback): void;
+
+    /**
+     * Calls Exchange.
+     * @param request ExchangeRequest message or plain object
+     * @returns Promise
+     */
+    public exchange(request: IExchangeRequest): Promise<LoginResponse>;
+}
+
+export namespace Auth {
+
+    /**
+     * Callback as used by {@link Auth#login}.
+     * @param error Error, if any
+     * @param [response] LoginResponse
+     */
+    type LoginCallback = (error: (Error|null), response?: LoginResponse) => void;
+
+    /**
+     * Callback as used by {@link Auth#info}.
+     * @param error Error, if any
+     * @param [response] InfoResponse
+     */
+    type InfoCallback = (error: (Error|null), response?: InfoResponse) => void;
+
+    /**
+     * Callback as used by {@link Auth#settings}.
+     * @param error Error, if any
+     * @param [response] SettingsResponse
+     */
+    type SettingsCallback = (error: (Error|null), response?: SettingsResponse) => void;
+
+    /**
+     * Callback as used by {@link Auth#exchange}.
+     * @param error Error, if any
+     * @param [response] LoginResponse
+     */
+    type ExchangeCallback = (error: (Error|null), response?: LoginResponse) => void;
+}
+
 /** ClusterStatus enum. */
 export enum ClusterStatus {
     StatusUnknown = 0,
@@ -2496,6 +2743,71 @@ export namespace Namespace {
      * @param [response] Empty
      */
     type DestroyCallback = (error: (Error|null), response?: google.protobuf.Empty) => void;
+}
+
+/** Represents a BackgroundRequest. */
+export class BackgroundRequest implements IBackgroundRequest {
+
+    /**
+     * Constructs a new BackgroundRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IBackgroundRequest);
+
+    /** BackgroundRequest random. */
+    public random: boolean;
+}
+
+/** Represents a BackgroundResponse. */
+export class BackgroundResponse implements IBackgroundResponse {
+
+    /**
+     * Constructs a new BackgroundResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IBackgroundResponse);
+
+    /** BackgroundResponse url. */
+    public url: string;
+
+    /** BackgroundResponse copyright. */
+    public copyright: string;
+}
+
+/** Represents a Picture */
+export class Picture extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Picture service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Background.
+     * @param request BackgroundRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and BackgroundResponse
+     */
+    public background(request: IBackgroundRequest, callback: Picture.BackgroundCallback): void;
+
+    /**
+     * Calls Background.
+     * @param request BackgroundRequest message or plain object
+     * @returns Promise
+     */
+    public background(request: IBackgroundRequest): Promise<BackgroundResponse>;
+}
+
+export namespace Picture {
+
+    /**
+     * Callback as used by {@link Picture#background}.
+     * @param error Error, if any
+     * @param [response] BackgroundResponse
+     */
+    type BackgroundCallback = (error: (Error|null), response?: BackgroundResponse) => void;
 }
 
 /** Represents a ProjectDestroyRequest. */

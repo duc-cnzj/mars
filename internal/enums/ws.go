@@ -4,6 +4,7 @@ const (
 	WsHandleExecShell    string = "handle_exec_shell"
 	WsHandleExecShellMsg string = "handle_exec_shell_msg"
 	WsHandleCloseShell   string = "handle_close_shell"
+	WsHandleAuthorize    string = "handle_authorize"
 
 	WsSetUid string = "set_uid"
 	// WsReloadProjects
