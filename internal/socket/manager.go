@@ -324,7 +324,7 @@ type Token struct {
 }
 
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
-	mlog.Infof("[Websocket]: user: %v, type: %v", c.GetUser().Name, wsRequest.Type)
+	mlog.Infof("[Websocket]: user: %v, type: %v, data: %v.", c.GetUser().Name, wsRequest.Type, wsRequest.Data)
 	switch wsRequest.Type {
 	case WsAuthorize:
 		var input Token
