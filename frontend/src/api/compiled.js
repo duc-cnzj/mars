@@ -5585,8 +5585,8 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      * @property {string|null} [cpu] ProjectShowResponse cpu
      * @property {string|null} [memory] ProjectShowResponse memory
      * @property {string|null} [override_values] ProjectShowResponse override_values
-     * @property {google.protobuf.ITimestamp|null} [created_at] ProjectShowResponse created_at
-     * @property {google.protobuf.ITimestamp|null} [updated_at] ProjectShowResponse updated_at
+     * @property {string|null} [created_at] ProjectShowResponse created_at
+     * @property {string|null} [updated_at] ProjectShowResponse updated_at
      */
 
     /**
@@ -5743,19 +5743,19 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
 
     /**
      * ProjectShowResponse created_at.
-     * @member {google.protobuf.ITimestamp|null|undefined} created_at
+     * @member {string} created_at
      * @memberof ProjectShowResponse
      * @instance
      */
-    ProjectShowResponse.prototype.created_at = null;
+    ProjectShowResponse.prototype.created_at = "";
 
     /**
      * ProjectShowResponse updated_at.
-     * @member {google.protobuf.ITimestamp|null|undefined} updated_at
+     * @member {string} updated_at
      * @memberof ProjectShowResponse
      * @instance
      */
-    ProjectShowResponse.prototype.updated_at = null;
+    ProjectShowResponse.prototype.updated_at = "";
 
     ProjectShowResponse.Namespace = (function() {
 

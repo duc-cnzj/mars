@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -90,8 +89,8 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		Cpu:            cpu,
 		Memory:         memory,
 		OverrideValues: projectModal.OverrideValues,
-		CreatedAt:      timestamppb.New(projectModal.CreatedAt),
-		UpdatedAt:      timestamppb.New(projectModal.UpdatedAt),
+		CreatedAt:      utils.ToHumanizeDatetimeString(&projectModal.CreatedAt),
+		UpdatedAt:      utils.ToHumanizeDatetimeString(&projectModal.UpdatedAt),
 	}, nil
 }
 

@@ -2909,10 +2909,10 @@ export class ProjectShowResponse implements IProjectShowResponse {
     public override_values: string;
 
     /** ProjectShowResponse created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at: string;
 
     /** ProjectShowResponse updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at: string;
 }
 
 export namespace ProjectShowResponse {

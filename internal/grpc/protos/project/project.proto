@@ -39,8 +39,8 @@ message ProjectShowResponse {
   string cpu = 15;
   string memory = 16;
   string override_values = 17;
-  google.protobuf.Timestamp created_at = 18;
-  google.protobuf.Timestamp updated_at = 19;
+  string created_at = 18;
+  string updated_at = 19;
 }
 
 message AllPodContainersRequest {

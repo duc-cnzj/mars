@@ -1430,8 +1430,7 @@
           "type": "string"
         },
         "created_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "docker_image": {
           "type": "string"
@@ -1475,8 +1474,7 @@
           "type": "string"
         },
         "updated_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "urls": {
           "type": "array",
