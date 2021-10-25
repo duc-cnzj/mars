@@ -12,14 +12,20 @@ type ZapLogger struct {
 }
 
 func NewZapLogger(app contracts.ApplicationInterface) *ZapLogger {
-	var logger *zap.Logger
+	var (
+		logger *zap.Logger
+		cfg    zap.Config
+	)
 
 	opts := []zap.Option{zap.AddStacktrace(zapcore.ErrorLevel), zap.AddCallerSkip(2)}
 	if app.IsDebug() {
-		logger, _ = zap.NewDevelopment(opts...)
+		cfg = zap.NewDevelopmentConfig()
 	} else {
-		logger, _ = zap.NewProduction(opts...)
+		cfg = zap.NewProductionConfig()
 	}
+	cfg.EncoderConfig.TimeKey = "time"
+	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
+	logger, _ = cfg.Build(opts...)
 
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 		logger.Info("zap synchronized.")
