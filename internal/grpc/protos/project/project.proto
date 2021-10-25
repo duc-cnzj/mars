@@ -2,7 +2,6 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
 

@@ -38,16 +38,26 @@ type JwtClaims struct {
 }
 
 type UserInfo struct {
-	LogoutUrl string `json:"logout_url"`
-	Sub       string `json:"sub"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Username  string `json:"username"`
+	LogoutUrl string   `json:"logout_url"`
+	Sub       string   `json:"sub"`
+	Name      string   `json:"name"`
+	Email     string   `json:"email"`
+	Username  string   `json:"username"`
+	Roles     []string `json:"roles"`
 }
 
 func (ui UserInfo) GetID() int64 {
 	atoi, _ := strconv.Atoi(ui.Sub)
 	return int64(atoi)
+}
+
+func (ui UserInfo) IsAdmin() bool {
+	for _, role := range ui.Roles {
+		if role == "admin" {
+			return true
+		}
+	}
+	return false
 }
 
 const Expired = 8 * time.Hour
@@ -74,6 +84,7 @@ func (a *Auth) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*au
 	var userinfo UserInfo
 	verify.Claims(&userinfo)
 	userinfo.LogoutUrl = a.cfg.EndSessionEndpoint
+	userinfo.Roles = []string{}
 
 	mlog.Debug(userinfo)
 	tokenString, err := a.sign(userinfo)
@@ -121,6 +132,7 @@ func (a *Auth) Login(ctx context.Context, request *auth.LoginRequest) (*auth.Log
 			Name:     "管理员",
 			Email:    "admin@mars.com",
 			Username: "admin",
+			Roles:    []string{"admin"},
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, err.Error())
@@ -152,6 +164,7 @@ func (a *Auth) Info(ctx context.Context, empty *emptypb.Empty) (*auth.InfoRespon
 						Name:      c.Name,
 						Email:     c.Email,
 						LogoutUrl: c.LogoutUrl,
+						Roles:     c.Roles,
 					}, nil
 				}
 			}

@@ -106,6 +106,7 @@ export const InfoResponse = $root.InfoResponse = (() => {
      * @property {string|null} [name] InfoResponse name
      * @property {string|null} [email] InfoResponse email
      * @property {string|null} [logout_url] InfoResponse logout_url
+     * @property {Array.<string>|null} [roles] InfoResponse roles
      */
 
     /**
@@ -117,6 +118,7 @@ export const InfoResponse = $root.InfoResponse = (() => {
      * @param {IInfoResponse=} [properties] Properties to set
      */
     function InfoResponse(properties) {
+        this.roles = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -162,6 +164,14 @@ export const InfoResponse = $root.InfoResponse = (() => {
      * @instance
      */
     InfoResponse.prototype.logout_url = "";
+
+    /**
+     * InfoResponse roles.
+     * @member {Array.<string>} roles
+     * @memberof InfoResponse
+     * @instance
+     */
+    InfoResponse.prototype.roles = $util.emptyArray;
 
     return InfoResponse;
 })();

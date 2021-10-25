@@ -27,8 +27,6 @@ import (
 
 var grpcEndpoint = "localhost:9999"
 
-type CtxTokenInfo struct{}
-
 type GrpcBootstrapper struct{}
 
 func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
@@ -57,10 +55,11 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			grpc_auth.UnaryServerInterceptor(Authenticate),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				claims, ok := ctx.Value(CtxTokenInfo{}).(*services.JwtClaims)
-				if ok {
-					mlog.Infof("[Grpc]: user: %v, visit: %v.", claims.Name, info.FullMethod)
+				user, err := services.GetUser(ctx)
+				if err == nil {
+					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
 				}
+
 				return handler(ctx, req)
 			},
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
@@ -106,8 +105,7 @@ func Authenticate(ctx context.Context) (context.Context, error) {
 	if err == nil && parse.Valid {
 		claims, ok := parse.Claims.(*services.JwtClaims)
 		if ok {
-			newCtx := context.WithValue(ctx, CtxTokenInfo{}, claims)
-			return newCtx, nil
+			return services.SetUser(ctx, &claims.UserInfo), nil
 		}
 	}
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")

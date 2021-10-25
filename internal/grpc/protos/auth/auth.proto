@@ -22,6 +22,7 @@ message InfoResponse {
   string name = 3;
   string email = 4;
   string logout_url = 5;
+  repeated string roles = 6;
 }
 
 message SettingsResponse {

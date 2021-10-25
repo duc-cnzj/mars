@@ -126,7 +126,7 @@ const ConfigModal: React.FC<{
             message.error(e.response.data.message);
             setLoading(false);
           });
-      });
+      }).catch((e) => message.error(e.message));
   };
   const onSave = () => {
     currentItem &&

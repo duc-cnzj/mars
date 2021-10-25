@@ -34,12 +34,13 @@ function useAuth(): {
   user: pb.InfoResponse;
   setUser: (u: pb.InfoResponse) => void;
   logout: (cb: () => void) => {};
+  isAdmin: () => boolean;
 } {
   return useContext(authContext);
 }
 
 function useProvideAuth() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<pb.InfoResponse>();
 
   const h = useHistory();
   useEffect(() => {
@@ -72,15 +73,20 @@ function useProvideAuth() {
 
   const signout = (cb: any) => {
     realAuth.signout().then(() => {
-      setUser(null);
+      setUser(undefined);
       cb();
       message.success("登出成功");
     });
   };
 
+  const isAdmin = () => {
+    return user ? user.roles.filter((item) => item === "admin").length > 0 : false;
+  };
+
   return {
     setUser,
     user,
+    isAdmin,
     login: signin,
     logout: signout,
   };

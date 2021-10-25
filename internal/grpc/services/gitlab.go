@@ -25,6 +25,9 @@ type Gitlab struct {
 }
 
 func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjectRequest) (*emptypb.Empty, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
 	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
 
 	var gp models.GitlabProject
@@ -48,6 +51,9 @@ func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProject
 }
 
 func (g Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProjectRequest) (*emptypb.Empty, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
 	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitlabProjectId).First(&gp).Error == nil {

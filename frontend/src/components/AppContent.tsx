@@ -9,8 +9,9 @@ import { listNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload } from "../store/actions";
 import { selectReload } from "../store/reducers/namespace";
+import { useAuth } from "../contexts/auth";
 
-import pb from '../api/compiled'
+import pb from "../api/compiled";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
@@ -21,6 +22,7 @@ const AppContent: React.FC = () => {
     console.log(id, name);
     fetchNamespaces();
   };
+  const auth = useAuth()
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     listNamespaces()
@@ -49,10 +51,10 @@ const AppContent: React.FC = () => {
     <DraggableModalProvider>
       <div className="content">
         <AddNamespace onCreated={onNamespaceCreated} />
-        <Setting />
+        {auth.isAdmin() ? <Setting /> : <></>}
 
         {namespaceItems.length < 1 ? (
-          <Empty description={false} imageStyle={{height: 300}} />
+          <Empty description={false} imageStyle={{ height: 300 }} />
         ) : (
           <Row gutter={[16, 16]}>
             {namespaceItems.map((item: pb.NamespaceItem) => (

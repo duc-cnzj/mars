@@ -6,6 +6,9 @@ import (
 	"encoding/base64"
 	"errors"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	config "github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -100,6 +103,9 @@ func (m *Mars) GlobalConfig(ctx context.Context, request *mars.GlobalConfigReque
 }
 
 func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledRequest) (*emptypb.Empty, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
 	var project models.GitlabProject
 	if err := app.DB().Where("`gitlab_project_id` = ?", request.ProjectId).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -117,6 +123,9 @@ func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledReq
 }
 
 func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*mars.MarsUpdateResponse, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
 	var project models.GitlabProject
 	if err := app.DB().Where("`gitlab_project_id` = ?", request.ProjectId).First(&project).Error; err != nil {
 		return nil, err

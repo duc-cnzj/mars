@@ -68,6 +68,9 @@ export interface IInfoResponse {
 
     /** InfoResponse logout_url */
     logout_url?: (string|null);
+
+    /** InfoResponse roles */
+    roles?: (string[]|null);
 }
 
 /** Represents an InfoResponse. */
@@ -93,6 +96,9 @@ export class InfoResponse implements IInfoResponse {
 
     /** InfoResponse logout_url. */
     public logout_url: string;
+
+    /** InfoResponse roles. */
+    public roles: string[];
 }
 
 /** Properties of a SettingsResponse. */
