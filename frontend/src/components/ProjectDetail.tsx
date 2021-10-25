@@ -127,7 +127,7 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell">
                 <ErrorBoundary>
                   {detail ? (
-                    <Shell resizeAt={resizeAt} detail={detail} />
+                    <Shell updatedAt={detail.updated_at} resizeAt={resizeAt} detail={detail} />
                   ) : (
                     <Skeleton active />
                   )}

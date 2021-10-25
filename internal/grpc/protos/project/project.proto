@@ -69,6 +69,16 @@ message PodContainerLogResponse {
     PodLog data = 1;
 }
 
+message IsPodRunningRequest {
+  string namespace = 1;
+  string pod = 2;
+}
+
+message IsPodRunningResponse {
+  bool running = 1;
+  string reason = 2;
+}
+
 service Project {
   rpc Destroy(ProjectDestroyRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -79,6 +89,12 @@ service Project {
   rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace_id}/projects/{project_id}"
+    };
+  }
+
+  rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace}/pod/{pod}/status"
     };
   }
 

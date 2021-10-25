@@ -177,6 +177,42 @@
           "Project"
         ]
       }
+    },
+    "/api/namespaces/{namespace}/pod/{pod}/status": {
+      "get": {
+        "operationId": "Project_IsPodRunning",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/IsPodRunningResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
     }
   },
   "definitions": {
@@ -188,6 +224,17 @@
           "items": {
             "$ref": "#/definitions/PodLog"
           }
+        }
+      }
+    },
+    "IsPodRunningResponse": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
         }
       }
     },

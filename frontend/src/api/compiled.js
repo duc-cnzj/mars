@@ -6034,6 +6034,94 @@ export const PodContainerLogResponse = $root.PodContainerLogResponse = (() => {
     return PodContainerLogResponse;
 })();
 
+export const IsPodRunningRequest = $root.IsPodRunningRequest = (() => {
+
+    /**
+     * Properties of an IsPodRunningRequest.
+     * @exports IIsPodRunningRequest
+     * @interface IIsPodRunningRequest
+     * @property {string|null} [namespace] IsPodRunningRequest namespace
+     * @property {string|null} [pod] IsPodRunningRequest pod
+     */
+
+    /**
+     * Constructs a new IsPodRunningRequest.
+     * @exports IsPodRunningRequest
+     * @classdesc Represents an IsPodRunningRequest.
+     * @implements IIsPodRunningRequest
+     * @constructor
+     * @param {IIsPodRunningRequest=} [properties] Properties to set
+     */
+    function IsPodRunningRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * IsPodRunningRequest namespace.
+     * @member {string} namespace
+     * @memberof IsPodRunningRequest
+     * @instance
+     */
+    IsPodRunningRequest.prototype.namespace = "";
+
+    /**
+     * IsPodRunningRequest pod.
+     * @member {string} pod
+     * @memberof IsPodRunningRequest
+     * @instance
+     */
+    IsPodRunningRequest.prototype.pod = "";
+
+    return IsPodRunningRequest;
+})();
+
+export const IsPodRunningResponse = $root.IsPodRunningResponse = (() => {
+
+    /**
+     * Properties of an IsPodRunningResponse.
+     * @exports IIsPodRunningResponse
+     * @interface IIsPodRunningResponse
+     * @property {boolean|null} [running] IsPodRunningResponse running
+     * @property {string|null} [reason] IsPodRunningResponse reason
+     */
+
+    /**
+     * Constructs a new IsPodRunningResponse.
+     * @exports IsPodRunningResponse
+     * @classdesc Represents an IsPodRunningResponse.
+     * @implements IIsPodRunningResponse
+     * @constructor
+     * @param {IIsPodRunningResponse=} [properties] Properties to set
+     */
+    function IsPodRunningResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * IsPodRunningResponse running.
+     * @member {boolean} running
+     * @memberof IsPodRunningResponse
+     * @instance
+     */
+    IsPodRunningResponse.prototype.running = false;
+
+    /**
+     * IsPodRunningResponse reason.
+     * @member {string} reason
+     * @memberof IsPodRunningResponse
+     * @instance
+     */
+    IsPodRunningResponse.prototype.reason = "";
+
+    return IsPodRunningResponse;
+})();
+
 export const Project = $root.Project = (() => {
 
     /**
@@ -6115,6 +6203,39 @@ export const Project = $root.Project = (() => {
      * @instance
      * @param {IProjectShowRequest} request ProjectShowRequest message or plain object
      * @returns {Promise<ProjectShowResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Project#isPodRunning}.
+     * @memberof Project
+     * @typedef IsPodRunningCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {IsPodRunningResponse} [response] IsPodRunningResponse
+     */
+
+    /**
+     * Calls IsPodRunning.
+     * @function isPodRunning
+     * @memberof Project
+     * @instance
+     * @param {IIsPodRunningRequest} request IsPodRunningRequest message or plain object
+     * @param {Project.IsPodRunningCallback} callback Node-style callback called with the error, if any, and IsPodRunningResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype.isPodRunning = function isPodRunning(request, callback) {
+        return this.rpcCall(isPodRunning, $root.IsPodRunningRequest, $root.IsPodRunningResponse, request, callback);
+    }, "name", { value: "IsPodRunning" });
+
+    /**
+     * Calls IsPodRunning.
+     * @function isPodRunning
+     * @memberof Project
+     * @instance
+     * @param {IIsPodRunningRequest} request IsPodRunningRequest message or plain object
+     * @returns {Promise<IsPodRunningResponse>} Promise
      * @variation 2
      */
 

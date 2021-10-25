@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ProjectClient interface {
 	Destroy(ctx context.Context, in *ProjectDestroyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
+	IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error)
 	AllPodContainers(ctx context.Context, in *AllPodContainersRequest, opts ...grpc.CallOption) (*AllPodContainersResponse, error)
 	PodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (*PodContainerLogResponse, error)
 }
@@ -52,6 +53,15 @@ func (c *projectClient) Show(ctx context.Context, in *ProjectShowRequest, opts .
 	return out, nil
 }
 
+func (c *projectClient) IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error) {
+	out := new(IsPodRunningResponse)
+	err := c.cc.Invoke(ctx, "/Project/IsPodRunning", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) AllPodContainers(ctx context.Context, in *AllPodContainersRequest, opts ...grpc.CallOption) (*AllPodContainersResponse, error) {
 	out := new(AllPodContainersResponse)
 	err := c.cc.Invoke(ctx, "/Project/AllPodContainers", in, out, opts...)
@@ -76,6 +86,7 @@ func (c *projectClient) PodContainerLog(ctx context.Context, in *PodContainerLog
 type ProjectServer interface {
 	Destroy(context.Context, *ProjectDestroyRequest) (*emptypb.Empty, error)
 	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
+	IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error)
 	AllPodContainers(context.Context, *AllPodContainersRequest) (*AllPodContainersResponse, error)
 	PodContainerLog(context.Context, *PodContainerLogRequest) (*PodContainerLogResponse, error)
 	mustEmbedUnimplementedProjectServer()
@@ -90,6 +101,9 @@ func (UnimplementedProjectServer) Destroy(context.Context, *ProjectDestroyReques
 }
 func (UnimplementedProjectServer) Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedProjectServer) IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsPodRunning not implemented")
 }
 func (UnimplementedProjectServer) AllPodContainers(context.Context, *AllPodContainersRequest) (*AllPodContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllPodContainers not implemented")
@@ -146,6 +160,24 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_IsPodRunning_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsPodRunningRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).IsPodRunning(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Project/IsPodRunning",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).IsPodRunning(ctx, req.(*IsPodRunningRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Project_AllPodContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AllPodContainersRequest)
 	if err := dec(in); err != nil {
@@ -196,6 +228,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Show",
 			Handler:    _Project_Show_Handler,
+		},
+		{
+			MethodName: "IsPodRunning",
+			Handler:    _Project_IsPodRunning_Handler,
 		},
 		{
 			MethodName: "AllPodContainers",

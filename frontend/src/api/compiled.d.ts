@@ -3027,6 +3027,38 @@ export class PodContainerLogResponse implements IPodContainerLogResponse {
     public data?: (IPodLog|null);
 }
 
+/** Represents an IsPodRunningRequest. */
+export class IsPodRunningRequest implements IIsPodRunningRequest {
+
+    /**
+     * Constructs a new IsPodRunningRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IIsPodRunningRequest);
+
+    /** IsPodRunningRequest namespace. */
+    public namespace: string;
+
+    /** IsPodRunningRequest pod. */
+    public pod: string;
+}
+
+/** Represents an IsPodRunningResponse. */
+export class IsPodRunningResponse implements IIsPodRunningResponse {
+
+    /**
+     * Constructs a new IsPodRunningResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IIsPodRunningResponse);
+
+    /** IsPodRunningResponse running. */
+    public running: boolean;
+
+    /** IsPodRunningResponse reason. */
+    public reason: string;
+}
+
 /** Represents a Project */
 export class Project extends $protobuf.rpc.Service {
 
@@ -3065,6 +3097,20 @@ export class Project extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public show(request: IProjectShowRequest): Promise<ProjectShowResponse>;
+
+    /**
+     * Calls IsPodRunning.
+     * @param request IsPodRunningRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and IsPodRunningResponse
+     */
+    public isPodRunning(request: IIsPodRunningRequest, callback: Project.IsPodRunningCallback): void;
+
+    /**
+     * Calls IsPodRunning.
+     * @param request IsPodRunningRequest message or plain object
+     * @returns Promise
+     */
+    public isPodRunning(request: IIsPodRunningRequest): Promise<IsPodRunningResponse>;
 
     /**
      * Calls AllPodContainers.
@@ -3110,6 +3156,13 @@ export namespace Project {
      * @param [response] ProjectShowResponse
      */
     type ShowCallback = (error: (Error|null), response?: ProjectShowResponse) => void;
+
+    /**
+     * Callback as used by {@link Project#isPodRunning}.
+     * @param error Error, if any
+     * @param [response] IsPodRunningResponse
+     */
+    type IsPodRunningCallback = (error: (Error|null), response?: IsPodRunningResponse) => void;
 
     /**
      * Callback as used by {@link Project#allPodContainers}.

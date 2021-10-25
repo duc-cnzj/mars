@@ -16,5 +16,8 @@ export function containerList({namespace_id, project_id}: pb.AllPodContainersReq
 export function containerLog({namespace_id, pod, project_id, container}: pb.PodContainerLogRequest) {
   return ajax.get<pb.PodContainerLogResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/pods/${pod}/containers/${container}/logs`);
 }
+export function isPodRunning({namespace, pod}: pb.IsPodRunningRequest) {
+  return ajax.get<pb.IsPodRunningResponse>(`/api/namespaces/${namespace}/pod/${pod}/status`);
+}
 
 

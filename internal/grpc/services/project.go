@@ -22,6 +22,12 @@ type Project struct {
 	project.UnimplementedProjectServer
 }
 
+func (p *Project) IsPodRunning(_ context.Context, request *project.IsPodRunningRequest) (*project.IsPodRunningResponse, error) {
+	running, reason := utils.IsPodRunning(request.GetNamespace(), request.GetPod())
+
+	return &project.IsPodRunningResponse{Running: running, Reason: reason}, nil
+}
+
 func (p *Project) Destroy(ctx context.Context, request *project.ProjectDestroyRequest) (*emptypb.Empty, error) {
 	var projectModal models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
