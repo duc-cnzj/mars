@@ -13,12 +13,12 @@ import {
   PushpinOutlined,
 } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
-import { setState, getRandom, toggleRandom } from "../utils/token";
+import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
 
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.BackgroundResponse>();
   const [settings, setSettings] = useState<pb.SettingsResponse>();
-  const [random, setRandom] = useState(getRandom());
+  const [random, setRandom] = useState(isRandomBg());
 
   useEffect(() => {
     bg({ random: random }).then((res) => setBgInfo(res.data));
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
       <div
         className="login__pin"
         onClick={() => {
-          setRandom(toggleRandom());
+          setRandom(toggleRandomBg());
         }}
         title={random ? "固定壁纸" : "取消固定"}
       >

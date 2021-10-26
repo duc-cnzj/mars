@@ -25,16 +25,16 @@ export const removeState = () => {
 export const getState = (): string => {
   return window.localStorage.getItem("state") || "";
 };
-export const getRandom = (): boolean => {
-  return window.localStorage.getItem("random") === "1";
+export const isRandomBg = (): boolean => {
+  return window.localStorage.getItem("random_bg") === "1";
 };
-export const toggleRandom = (): boolean => {
-  let r = window.localStorage.getItem("random");
+export const toggleRandomBg = (): boolean => {
+  let r = window.localStorage.getItem("random_bg");
   if (r === "1") {
-    window.localStorage.setItem("random", "0");
+    window.localStorage.setItem("random_bg", "0");
     return false;
   } else {
-    window.localStorage.setItem("random", "1");
+    window.localStorage.setItem("random_bg", "1");
     return true;
   }
 };
