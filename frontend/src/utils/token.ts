@@ -25,3 +25,16 @@ export const removeState = () => {
 export const getState = (): string => {
   return window.localStorage.getItem("state") || "";
 };
+export const getRandom = (): boolean => {
+  return window.localStorage.getItem("random") === "1";
+};
+export const toggleRandom = (): boolean => {
+  let r = window.localStorage.getItem("random");
+  if (r === "1") {
+    window.localStorage.setItem("random", "0");
+    return false;
+  } else {
+    window.localStorage.setItem("random", "1");
+    return true;
+  }
+};

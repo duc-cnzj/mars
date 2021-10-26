@@ -9,15 +9,19 @@ import {
   GithubOutlined,
   QqOutlined,
   WechatOutlined,
+  PushpinFilled,
+  PushpinOutlined,
 } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
-import { setState } from "../utils/token";
+import { setState, getRandom, toggleRandom } from "../utils/token";
 
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.BackgroundResponse>();
   const [settings, setSettings] = useState<pb.SettingsResponse>();
+  const [random, setRandom] = useState(getRandom());
+
   useEffect(() => {
-    bg({ random: true }).then((res) => setBgInfo(res.data));
+    bg({ random: random }).then((res) => setBgInfo(res.data));
     settingsApi().then((res) => {
       setSettings(res.data);
     });
@@ -64,6 +68,15 @@ const Login: React.FC = () => {
         backgroundImage: "url(" + bgInfo?.url + ")",
       }}
     >
+      <div
+        className="login__pin"
+        onClick={() => {
+          setRandom(toggleRandom());
+        }}
+        title={random ? "固定壁纸" : "取消固定"}
+      >
+        {random ? <PushpinOutlined /> : <PushpinFilled />}
+      </div>
       <div className="login__card">
         <div className="login__title">Mars Login</div>
         <div>
