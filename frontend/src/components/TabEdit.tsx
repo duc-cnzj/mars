@@ -283,7 +283,7 @@ const ModalSub: React.FC<{
           return str;
       }
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -317,7 +317,7 @@ const ModalSub: React.FC<{
         setMode(data.config_type);
         break;
     }
-  }, [data.config_type])
+  }, [data.config_type]);
 
   const highlightSyntax = useCallback(
     (str: string) => (
@@ -394,13 +394,18 @@ const ModalSub: React.FC<{
             <Col
               className="diff-viewer"
               span={detail.config === data.config ? 0 : 12}
-              style={{ fontSize: 13, height: "100%" }}
+              style={{
+                fontSize: 13,
+                height: "100%",
+                maxHeight: 500,
+                overflowY: "scroll",
+              }}
             >
               <ReactDiffViewer
+                styles={{ gutter: { padding: "0 5px", minWidth: 25 } }}
                 useDarkTheme
                 renderContent={highlightSyntax}
                 showDiffOnly={true}
-                hideLineNumbers={true}
                 oldValue={detail.config}
                 newValue={data.config}
                 splitView={false}
