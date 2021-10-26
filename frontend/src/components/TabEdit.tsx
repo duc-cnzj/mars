@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
+import ReactDiffViewer from "react-diff-viewer";
+import Prism from "prismjs";
 import PipelineInfo from "./PipelineInfo";
 import { commit, configFile, projects } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { Button, Skeleton, Progress, message } from "antd";
+import { Button, Skeleton, Progress, message, Row, Col } from "antd";
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/material.css";
 import "codemirror/theme/dracula.css";
@@ -29,13 +31,36 @@ import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
+import "prism-themes/themes/prism-material-dark.css";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
 require("codemirror/mode/javascript/javascript");
 require("codemirror/mode/yaml/yaml");
 require("codemirror/mode/php/php");
+require("codemirror/mode/python/python");
+require("codemirror/mode/properties/properties");
 require("codemirror/mode/textile/textile");
+
+const getLoader = require("prismjs/dependencies");
+const components = require("prismjs/components");
+
+const componentsToLoad = [
+  "markup",
+  "css",
+  "php",
+  "yaml",
+  "go",
+  "ini",
+  "python",
+  "javascript",
+];
+const loadedComponents = [""];
+
+const loader = getLoader(components, componentsToLoad, loadedComponents);
+loader.load((id: string) => {
+  require(`prismjs/components/prism-${id}.min.js`);
+});
 
 interface CreateItemInterface {
   gitlabProjectId: number;
@@ -44,6 +69,7 @@ interface CreateItemInterface {
 
   name: string;
   config: string;
+  config_type: string;
   debug: boolean;
 }
 
@@ -66,6 +92,7 @@ const ModalSub: React.FC<{
     gitlabBranch: detail.gitlab_branch,
     gitlabCommit: detail.gitlab_commit,
     config: detail.config,
+    config_type: "yaml",
     debug: !detail.atomic,
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
@@ -76,9 +103,7 @@ const ModalSub: React.FC<{
     gitlabCommit: string;
     time?: number;
   }>();
-  console.log("namespaceId, data.name", namespaceId, data.name)
   let slug = toSlug(namespaceId, data.name);
-  console.log("slug: ", slug)
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -89,6 +114,12 @@ const ModalSub: React.FC<{
         detail.gitlab_branch &&
         detail.gitlab_commit
       ) {
+        configFile({
+          project_id: String(detail.gitlab_project_id),
+          branch: detail.gitlab_branch,
+        }).then((res) => {
+          setData((d) => ({ ...data, config_type: res.data.type }));
+        });
         commit({
           project_id: detail.gitlab_project_id,
           branch: detail.gitlab_branch,
@@ -118,24 +149,15 @@ const ModalSub: React.FC<{
 
   // 更新 config 文件的类型， TODO 支持动态加载 mode css 文件
   const loadConfigFile = useCallback(() => {
-    configFile({project_id: String(data.gitlabProjectId), branch: data.gitlabBranch}).then((res) => {
-      setData((d) => ({ ...d, config: res.data.data }));
-      switch (res.data.type) {
-        case "dotenv":
-        case "env":
-        case ".env":
-          setMode("text/x-textile");
-          break;
-        case "yaml":
-          setMode("text/x-yaml");
-          break;
-        case "php":
-          setMode("php");
-          break;
-        default:
-          setMode(res.data.type);
-          break;
-      }
+    configFile({
+      project_id: String(data.gitlabProjectId),
+      branch: data.gitlabBranch,
+    }).then((res) => {
+      setData((d) => ({
+        ...d,
+        config: res.data.data,
+        config_type: res.data.type,
+      }));
     });
   }, [data.gitlabProjectId, data.gitlabBranch]);
 
@@ -212,6 +234,7 @@ const ModalSub: React.FC<{
       gitlabCommit: detail.gitlab_commit,
       config: detail.config,
       debug: !detail.atomic,
+      config_type: data.config_type,
     });
     if (initValue) {
       setInitValue({ ...initValue, time: new Date().getUTCSeconds() });
@@ -237,6 +260,75 @@ const ModalSub: React.FC<{
       return;
     }
   }, [data, ws, namespaceId, wsReady]);
+
+  const getHighlightSyntax = useCallback(
+    (str: string, lang: string): string => {
+      switch (lang) {
+        case "yaml":
+          return Prism.highlight(str, Prism.languages.yaml, "yaml");
+        case "php":
+          return Prism.highlight(str, Prism.languages.php, "php");
+        case "py":
+        case "python":
+          return Prism.highlight(str, Prism.languages.python, "python");
+        case "go":
+        case "golang":
+          return Prism.highlight(str, Prism.languages.go, "go");
+        case "js":
+        case "javascript":
+          return Prism.highlight(str, Prism.languages.javascript, "javascript");
+        case "ini":
+          return Prism.highlight(str, Prism.languages.ini, "ini");
+        default:
+          return str;
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    switch (data.config_type) {
+      case "dotenv":
+      case "env":
+      case ".env":
+        setMode("text/x-textile");
+        break;
+      case "yaml":
+        setMode("text/x-yaml");
+        break;
+      case "js":
+      case "javascript":
+        setMode("text/javascript");
+        break;
+      case "ini":
+        setMode("text/x-properties");
+        break;
+      case "php":
+        setMode("php");
+        break;
+      case "go":
+        setMode("text/x-go");
+        break;
+      case "py":
+      case "python":
+        setMode("text/x-python");
+        break;
+      default:
+        setMode(data.config_type);
+        break;
+    }
+  }, [data.config_type])
+
+  const highlightSyntax = useCallback(
+    (str: string) => (
+      <code
+        dangerouslySetInnerHTML={{
+          __html: getHighlightSyntax(str, data.config_type),
+        }}
+      />
+    ),
+    [data.config_type, getHighlightSyntax]
+  );
 
   return (
     <div className="edit-project">
@@ -284,18 +376,37 @@ const ModalSub: React.FC<{
           />
         </div>
         <div style={{ minWidth: 200, marginBottom: 20 }}>
-          <CodeMirror
-            value={data.config}
-            options={{
-              mode: mode,
-              theme: "dracula",
-              lineNumbers: true,
-            }}
-            onBeforeChange={(editor, d, value) => {
-              console.log(editor, d, value);
-              setData({ ...data, config: value });
-            }}
-          />
+          <Row>
+            <Col span={12}>
+              <CodeMirror
+                value={data.config}
+                options={{
+                  mode: mode,
+                  theme: "dracula",
+                  lineNumbers: true,
+                }}
+                onBeforeChange={(editor, d, value) => {
+                  console.log(editor, d, value);
+                  setData({ ...data, config: value });
+                }}
+              />
+            </Col>
+            <Col
+              className="diff-viewer"
+              span={12}
+              style={{ fontSize: 13, height: "100%" }}
+            >
+              <ReactDiffViewer
+                useDarkTheme
+                renderContent={highlightSyntax}
+                showDiffOnly={true}
+                hideLineNumbers={true}
+                oldValue={detail.config}
+                newValue={data.config}
+                splitView={false}
+              />
+            </Col>
+          </Row>
         </div>
         <div
           className={classNames("edit-project__footer", {
