@@ -47,13 +47,13 @@ func (p *redisSender) Initialize() error {
 		return err
 	}
 	p.rds = rdb
-	mlog.Info(p.Name() + " plugin Initialize...")
+	mlog.Info("[Plugin]: " + p.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (p *redisSender) Destroy() error {
 	p.rds.Close()
-	mlog.Info(p.Name() + " plugin Destroy...")
+	mlog.Info("[Plugin]: " + p.Name() + " plugin Destroy...")
 	return nil
 }
 

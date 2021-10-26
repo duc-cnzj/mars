@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/cluster;cluster";
+
+enum ClusterStatus {
+  StatusUnknown = 0;
+  StatusBad = 1;
+  StatusNotGood = 2;
+  StatusHealth = 3;
+}
+
+message ClusterInfoResponse {
+  string status = 1;
+  string free_memory = 2;
+  string free_cpu = 3;
+  string free_request_memory = 4;
+  string free_request_cpu = 5;
+  string total_memory = 6;
+  string total_cpu = 7;
+  string usage_memory_rate = 8;
+  string usage_cpu_rate = 9;
+  string request_memory_rate = 10;
+  string request_cpu_rate = 11;
+}
+
+service Cluster {
+  rpc Info(google.protobuf.Empty) returns (ClusterInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/cluster_info"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: { } // Disable security key
+    };
+  }
+}

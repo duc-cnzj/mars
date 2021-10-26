@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 )
 
 //go:embed build/*
@@ -13,17 +13,24 @@ var staticFs embed.FS
 
 var index []byte
 
-func LoadFrontendRoutes(e *gin.Engine) {
-	e.GET("/", func(ctx *gin.Context) {
-		ctx.Redirect(http.StatusFound, "/web")
-	})
+func LoadFrontendRoutes(mux *mux.Router) {
 	sub, _ := fs.Sub(staticFs, "build")
-	e.StaticFS("/resources/", http.FS(sub))
+	mux.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.FS(sub))))
+
 	index, _ = staticFs.ReadFile("build/index.html")
-	e.Any("/web", serve)
-	e.Any("/web/*action", serve)
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(index)
+	})
+	mux.HandleFunc("/auth/callback", toWebRoute())
+	mux.HandleFunc("/{any}", toWebRoute())
 }
 
-func serve(ctx *gin.Context) {
-	ctx.Data(http.StatusOK, "text/html; charset=utf-8", index)
+func toWebRoute() func(writer http.ResponseWriter, request *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(index)
+	}
 }

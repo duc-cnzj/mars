@@ -1,25 +1,28 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
-import { containerList, containerLog, PodContainerItem } from "../api/project";
+import { containerList, containerLog } from "../api/project";
 import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { xt256 } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import AutoScroll from "./AutoScroll";
+import pb from '../api/compiled'
 
 const ProjectContainerLogs: React.FC<{
-  updatedAt: string;
+  updatedAt: any;
   id: number;
   namespaceId: number;
   autoRefresh: boolean;
 }> = ({ id, namespaceId, autoRefresh, updatedAt }) => {
   const [value, setValue] = useState<string>();
-  const [list, setList] = useState<PodContainerItem[]>();
+  const [list, setList] = useState<pb.PodLog[]>();
   const [log, setLog] = useState<string>();
 
   const listContainer = useCallback(async () => {
-    return containerList(namespaceId, id).then((res) => {
-      setList(res.data.data);
-      return res;
-    });
+    return containerList({ namespace_id: namespaceId, project_id: id }).then(
+      (res) => {
+        setList(res.data.data);
+        return res;
+      }
+    );
   }, [namespaceId, id]);
 
   useEffect(() => {
@@ -27,19 +30,23 @@ const ProjectContainerLogs: React.FC<{
       if (res.data.data.length > 0) {
         let first = res.data.data[0];
         setValue(first.pod_name + "|" + first.container_name);
-        containerLog(
-          namespaceId,
-          id,
-          first.pod_name,
-          first.container_name
-        ).then(({ data: { data } }) => {
-          let log: string = "暂无日志";
-          if (data.log) {
-            log = data.log;
-          }
+        containerLog({
+          namespace_id: namespaceId,
+          pod: first.pod_name,
+          container: first.container_name,
+          project_id: id,
+        })
+          .then(({ data: { data } }) => {
+            let log: string = "暂无日志";
+            if (data.log) {
+              log = data.log;
+            }
 
-          setLog(log);
-        }).catch(e => {message.error(e.response.data.message)})
+            setLog(log);
+          })
+          .catch((e) => {
+            message.error(e.response.data.message);
+          });
       }
     });
   }, [setList, id, namespaceId, updatedAt, listContainer]);
@@ -47,8 +54,7 @@ const ProjectContainerLogs: React.FC<{
   const onChange = (e: RadioChangeEvent) => {
     setValue(e.target.value);
     let [pod, container] = (e.target.value as string).split("|");
-
-    containerLog(namespaceId, id, pod, container)
+    containerLog({namespace_id: namespaceId, project_id: id, pod: pod, container: container})
       .then((res) => {
         setLog(res.data.data.log);
       })
@@ -66,7 +72,7 @@ const ProjectContainerLogs: React.FC<{
         let [pod, container] = (value as string).split("|");
 
         if (pod && container) {
-          containerLog(namespaceId, id, pod, container).then((res) => {
+          containerLog({namespace_id: namespaceId, project_id: id, pod: pod, container: container}).then((res) => {
             setLog(res.data.data.log);
           });
         }
@@ -113,10 +119,7 @@ const ProjectContainerLogs: React.FC<{
         }}
       >
         {log ? (
-          <AutoScroll
-            height={400}
-            className="auto-scroll"
-          >
+          <AutoScroll height={400} className="auto-scroll">
             <SyntaxHighlighter
               wrapLongLines={true}
               showLineNumbers

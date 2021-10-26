@@ -1,12 +1,10 @@
 import ajax from "./ajax";
+import pb from "./compiled";
 
-export async function marsConfig(
-  projectID: number,
-  { branch }: { branch?: string }
-) {
+export async function marsConfig({ project_id, branch }: pb.MarsShowRequest) {
   return ajax
-    .get<{ data: { branch: string; config: string } }>(
-      `/api/gitlab/projects/${projectID}/mars_config?branch=${branch || ""}`
+    .get<pb.MarsShowResponse>(
+      `/api/gitlab/projects/${project_id}/mars_config?branch=${branch || ""}`
     )
     .then(
       (
@@ -16,24 +14,23 @@ export async function marsConfig(
         config: string;
       } => {
         return {
-          branch: res.data.data.branch,
-          config: res.data.data.config,
+          branch: res.data.branch,
+          config: res.data.config,
         };
       }
     );
 }
 
-export async function toggleGlobalEnabled(projectID: number, enabled: boolean) {
-  return ajax.post<{ data: { enabled: boolean; config: string } }>(
-    `/api/gitlab/projects/${projectID}/toggle_enabled`,
-    { enabled }
-  );
+export async function toggleGlobalEnabled({project_id, enabled}: pb.ToggleEnabledRequest) {
+  return ajax.post(`/api/gitlab/projects/${project_id}/toggle_enabled`, {
+    enabled,
+  });
 }
 
-export async function globalConfig(projectID: number) {
+export async function globalConfig({project_id}: pb.GlobalConfigRequest) {
   return ajax
-    .get<{ data: { enabled: boolean; config: string } }>(
-      `/api/gitlab/projects/${projectID}/global_config`
+    .get<pb.GlobalConfigResponse>(
+      `/api/gitlab/projects/${project_id}/global_config`
     )
     .then(
       (
@@ -43,21 +40,16 @@ export async function globalConfig(projectID: number) {
         config: string;
       } => {
         return {
-          enabled: res.data.data.enabled,
-          config: res.data.data.config,
+          enabled: res.data.enabled,
+          config: res.data.config,
         };
       }
     );
 }
 
-interface Config {
-  global_config: string;
-}
-
-export async function updateGlobalConfig(projectID: number, config: string) { 
-  return ajax
-    .put<{ data: Config }>(
-      `/api/gitlab/projects/${projectID}/mars_config`,
-      {config: config}
-    )
+export async function updateGlobalConfig({project_id, config}: pb.MarsUpdateRequest) {
+  return ajax.put<pb.MarsUpdateResponse>(
+    `/api/gitlab/projects/${project_id}/mars_config`,
+    { config: config }
+  );
 }

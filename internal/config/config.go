@@ -1,10 +1,13 @@
 package config
 
 import (
+	"crypto/rsa"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 
 	"github.com/spf13/viper"
 )
@@ -26,6 +29,11 @@ type Config struct {
 	Debug          bool   `mapstructure:"debug"`
 	LogChannel     string `mapstructure:"log_channel"`
 	ProfileEnabled bool   `mapstructure:"profile_enabled"`
+
+	AdminPassword string `mapstructure:"admin_password"`
+	PrivateKey    string `mapstructure:"private_key"`
+	prikey        *rsa.PrivateKey
+	pubkey        *rsa.PublicKey
 
 	DockerPlugin         Plugin `mapstructure:"docker_plugin"`
 	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
@@ -51,6 +59,24 @@ type Config struct {
 	GitlabBaseURL string `mapstructure:"gitlab_baseurl"`
 
 	InstallTimeout time.Duration `mapstructure:"install_timeout"`
+	Oidc           []OidcSetting `mapstructure:"oidc"`
+}
+
+type OidcSetting struct {
+	Name         string `mapstructure:"name"`
+	Enabled      bool   `mapstructure:"enabled"`
+	ProviderUrl  string `mapstructure:"provider_url"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectUrl  string `mapstructure:"redirect_url"`
+}
+
+func (c *Config) Prikey() *rsa.PrivateKey {
+	return c.prikey
+}
+
+func (c *Config) Pubkey() *rsa.PublicKey {
+	return c.pubkey
 }
 
 func Init(cfgFile string) *Config {
@@ -89,6 +115,13 @@ func Init(cfgFile string) *Config {
 	cfg := &Config{NsPrefix: "devops-"}
 
 	viper.Unmarshal(&cfg)
+
+	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.prikey = pem
+	cfg.pubkey = pem.Public().(*rsa.PublicKey)
 
 	return cfg
 }

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
+
+message ProjectDestroyRequest {
+  int64 namespace_id = 1;
+  int64 project_id = 2;
+}
+
+message ProjectShowRequest {
+  int64 namespace_id = 1;
+  int64 project_id = 2;
+}
+
+message ProjectShowResponse {
+  int64 id = 1;
+  string name = 2;
+  int64 gitlab_project_id = 3;
+  string gitlab_branch = 4;
+  string gitlab_commit = 5;
+  string config = 6;
+  string docker_image = 7;
+  bool atomic = 8;
+  string gitlab_commit_web_url = 9;
+  string gitlab_commit_title = 10;
+  string gitlab_commit_author = 11;
+  string gitlab_commit_date = 12;
+
+  repeated string urls = 13;
+  message Namespace {
+    int64 id = 1;
+    string name = 2;
+  }
+  Namespace namespace = 14;
+  string cpu = 15;
+  string memory = 16;
+  string override_values = 17;
+  string created_at = 18;
+  string updated_at = 19;
+}
+
+message AllPodContainersRequest {
+  int64 namespace_id = 1;
+  int64 project_id = 2;
+}
+
+message PodLog {
+  string pod_name = 1;
+  string container_name = 2;
+  string log = 3;
+}
+
+message AllPodContainersResponse {
+  repeated PodLog data = 1;
+}
+
+message PodContainerLogRequest {
+  int64 namespace_id = 1;
+  int64 project_id = 2;
+  string pod = 3;
+  string container = 4;
+}
+
+message PodContainerLogResponse {
+    PodLog data = 1;
+}
+
+message IsPodRunningRequest {
+  string namespace = 1;
+  string pod = 2;
+}
+
+message IsPodRunningResponse {
+  bool running = 1;
+  string reason = 2;
+}
+
+service Project {
+  rpc Destroy(ProjectDestroyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/namespaces/{namespace_id}/projects/{project_id}"
+    };
+  }
+
+  rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/projects/{project_id}"
+    };
+  }
+
+  rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace}/pod/{pod}/status"
+    };
+  }
+
+  rpc AllPodContainers(AllPodContainersRequest) returns (AllPodContainersResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/projects/{project_id}/containers"
+    };
+  }
+
+  rpc PodContainerLog(PodContainerLogRequest) returns (PodContainerLogResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs"
+    };
+  }
+}

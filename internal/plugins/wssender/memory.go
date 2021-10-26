@@ -62,12 +62,12 @@ func (ms *memorySender) Name() string {
 
 func (ms *memorySender) Initialize() error {
 	ms.conns = map[string]map[string]*Conn{}
-	mlog.Info(ms.Name() + " plugin Initialize...")
+	mlog.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (ms *memorySender) Destroy() error {
-	mlog.Info(ms.Name() + " plugin Destroy...")
+	mlog.Info("[Plugin]: " + ms.Name() + " plugin Destroy...")
 	return nil
 }
 

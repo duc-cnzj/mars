@@ -2,11 +2,9 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -36,35 +34,55 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.GitlabBootstrapper{},
-	&bootstrappers.ValidatorBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.WebBootstrapper{},
-	&bootstrappers.RouterBootstrapper{},
+	&bootstrappers.ApiGatewayBootstrapper{},
+	&bootstrappers.PprofBootstrapper{},
+	&bootstrappers.GrpcBootstrapper{},
+	&bootstrappers.MetricsBootstrapper{},
+	&bootstrappers.OidcBootstrapper{},
+}
+
+type emptyMetrics struct{}
+
+func (e *emptyMetrics) IncWebsocketConn() {
+	return
+}
+
+func (e *emptyMetrics) DecWebsocketConn() {
+	return
 }
 
 type Application struct {
-	config *config.Config
-
+	done          context.Context
+	doneFunc      func()
+	config        *config.Config
+	clientSet     *contracts.K8sClient
+	gitlabClient  *gitlab.Client
+	dbManager     contracts.DBManager
+	dispatcher    contracts.DispatcherInterface
+	metrics       contracts.Metrics
+	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
+	hooks         map[Hook][]contracts.Callback
+	plugins       map[string]contracts.PluginInterface
+	oidcProvider  contracts.OidcConfig
+}
 
-	dbManager contracts.DBManager
+func (app *Application) Oidc() contracts.OidcConfig {
+	return app.oidcProvider
+}
 
-	clientSet *contracts.K8sClient
+func (app *Application) SetOidc(provider contracts.OidcConfig) {
+	app.oidcProvider = provider
+}
 
-	gitlabClient *gitlab.Client
+func (app *Application) SetMetrics(metrics contracts.Metrics) {
+	app.metrics = metrics
+}
 
-	httpHandler http.Handler
-	httpServer  *http.Server
-
-	done     context.Context
-	doneFunc func()
-
-	hooks map[Hook][]contracts.Callback
-
-	dispatcher contracts.DispatcherInterface
-
-	plugins map[string]contracts.PluginInterface
+func (app *Application) Metrics() contracts.Metrics {
+	return app.metrics
 }
 
 func (app *Application) GetPluginByName(name string) contracts.PluginInterface {
@@ -99,18 +117,6 @@ func (app *Application) SetK8sClient(client *contracts.K8sClient) {
 	app.clientSet = client
 }
 
-func (app *Application) HttpHandler() http.Handler {
-	return app.httpHandler
-}
-
-func (app *Application) SetHttpHandler(handler http.Handler) {
-	app.httpHandler = handler
-	app.httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%s", app.Config().AppPort),
-		Handler: handler,
-	}
-}
-
 func (app *Application) EventDispatcher() contracts.DispatcherInterface {
 	return app.dispatcher
 }
@@ -132,6 +138,8 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		done:          doneCtx,
 		doneFunc:      cancelFunc,
 		hooks:         map[Hook][]contracts.Callback{},
+		servers:       []contracts.Server{},
+		metrics:       &emptyMetrics{},
 	}
 
 	app.dbManager = database.NewManager(app)
@@ -156,7 +164,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 }
 
 func printConfig() {
-	mlog.Warningf("imagepullsecrets %#v", app.App().Config().ImagePullSecrets)
+	mlog.Debugf("imagepullsecrets %#v", app.App().Config().ImagePullSecrets)
 }
 
 func (app *Application) Bootstrap() error {
@@ -181,44 +189,40 @@ func (app *Application) IsDebug() bool {
 	return app.config.Debug
 }
 
+func (app *Application) AddServer(server contracts.Server) {
+	app.servers = append(app.servers, server)
+}
+
 func (app *Application) Run() chan os.Signal {
 	done := make(chan os.Signal)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	app.RunServerHooks(BeforeRunHook)
 
-	go func() {
-		mlog.Infof("server running at %s.", app.httpServer.Addr)
-		if err := app.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	for _, server := range app.servers {
+		if err := server.Run(context.Background()); err != nil {
 			mlog.Fatal(err)
 		}
-	}()
-
-	if app.Config().ProfileEnabled {
-		go func() {
-			mlog.Info("Starting pprof server on localhost:6060.")
-			if err := http.ListenAndServe("localhost:6060", nil); err != nil && err != http.ErrServerClosed {
-				mlog.Error(err)
-			}
-		}()
 	}
 
 	return done
 }
 
 func (app *Application) Shutdown() {
-	var err error
-
 	app.doneFunc()
-
 	app.RunServerHooks(BeforeDownHook)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err = app.httpServer.Shutdown(ctx)
-	if err != nil {
-		mlog.Error(err)
+	wg := &sync.WaitGroup{}
+	for _, server := range app.servers {
+		wg.Add(1)
+		go func(server contracts.Server) {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+			defer cancel()
+			server.Shutdown(ctx)
+		}(server)
 	}
+	wg.Wait()
 
 	app.RunServerHooks(AfterDownHook)
 

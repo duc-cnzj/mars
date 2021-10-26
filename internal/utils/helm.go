@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -16,7 +18,6 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -29,7 +30,19 @@ import (
 
 type DeleteFunc func()
 
-func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
+type internalCloser struct {
+	closeFn func() error
+}
+
+func (i *internalCloser) Close() error {
+	return i.closeFn()
+}
+
+func NewCloser(fn func() error) io.Closer {
+	return &internalCloser{closeFn: fn}
+}
+
+func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	openFile, err := os.CreateTemp("", "mars-*.yaml")
 	if err != nil {
 		return "", nil, err
@@ -39,12 +52,15 @@ func WriteConfigYamlToTmpFile(data []byte) (string, DeleteFunc, error) {
 		return "", nil, err
 	}
 
-	return openFile.Name(), func() {
+	return openFile.Name(), NewCloser(func() error {
 		mlog.Debug("delete file: " + openFile.Name())
 		if err := os.Remove(openFile.Name()); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
+			return err
 		}
-	}, nil
+
+		return nil
+	}), nil
 }
 
 func GetSettings(namespace string) *cli.EnvSettings {
@@ -181,7 +197,7 @@ func checkIfInstallable(ch *chart.Chart) error {
 	case "", "application":
 		return nil
 	}
-	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return fmt.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 const (

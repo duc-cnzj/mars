@@ -41,3 +41,7 @@ func K8sClientSet() kubernetes.Interface {
 func K8sMetrics() versioned.Interface {
 	return App().K8sClient().MetricsClient
 }
+
+func Metrics() contracts.Metrics {
+	return App().Metrics()
+}
