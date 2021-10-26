@@ -23,12 +23,12 @@ func (d *dockerPlugin) Name() string {
 }
 
 func (d *dockerPlugin) Initialize() error {
-	mlog.Info(d.Name() + " plugin Initialize...")
+	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (d *dockerPlugin) Destroy() error {
-	mlog.Info(d.Name() + " plugin Destroy...")
+	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 

@@ -123,9 +123,9 @@ const CreateProjectModal: React.FC<{
   const cmref = useRef<any>();
 
   const loadConfigFile = useCallback(() => {
-    configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
-      setData((d) => ({ ...d, config: res.data.data.data }));
-      switch (res.data.data.type) {
+    configFile({project_id: String(data.gitlabProjectId), branch: data.gitlabBranch}).then((res) => {
+      setData((d) => ({ ...d, config: res.data.data }));
+      switch (res.data.type) {
         case "dotenv":
         case "env":
         case ".env":
@@ -138,7 +138,7 @@ const CreateProjectModal: React.FC<{
           setMode("php");
           break;
         default:
-          setMode(res.data.data.type);
+          setMode(res.data.type);
           break;
       }
     });

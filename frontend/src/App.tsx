@@ -4,7 +4,8 @@ import AppContent from "./components/AppContent";
 import { ProvideWebsocket } from "./contexts/useWebsocket";
 import { Switch, Route } from "react-router-dom";
 import GitlabProjectManager from "./components/GitlabProjectManager";
-import AppHeader from './components/AppHeader'
+import AppHeader from "./components/AppHeader";
+import { PrivateRoute } from "./contexts/auth";
 const { Header, Content, Footer } = Layout;
 
 const App: FC = () => {
@@ -12,16 +13,18 @@ const App: FC = () => {
     <ProvideWebsocket>
       <Layout className="app">
         <Header style={{ position: "fixed", zIndex: 1, width: "100%" }}>
-          <AppHeader/>
+          <AppHeader />
         </Header>
         <Content className="app-content">
           <Switch>
-            <Route
-              path="/web/gitlab_project_manager"
-              component={GitlabProjectManager}
-            />
-            <Route path="*">
+            <PrivateRoute path={`/gitlab_project_manager`}>
+              <GitlabProjectManager />
+            </PrivateRoute>
+            <PrivateRoute path={`/`} exact>
               <AppContent />
+            </PrivateRoute>
+            <Route path="*" exact>
+              404
             </Route>
           </Switch>
         </Content>

@@ -3,6 +3,8 @@ import { useDispatch } from "react-redux";
 import { handleEvents } from "../store/actions";
 import { isJsonString } from "../utils/json";
 import { getUid } from "../utils/uid";
+import {getToken} from '../utils/token'
+import {message} from 'antd'
 
 interface State {
   ws: WebSocket | null;
@@ -36,6 +38,11 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
   const [ready, setReady] = useState(false)
 
   const connectWs = useCallback(() => {
+    let token = getToken()
+    if (!token) {
+      message.error("用户未登录")
+      return
+    }
     console.log("ws init");
     let url: string = process.env.REACT_APP_WS_URL
       ? process.env.REACT_APP_WS_URL
@@ -52,7 +59,15 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
     setWs({ws: conn});
     conn.onopen = function (evt) {
       setReady(true)
+      let re = {
+        type: "handle_authorize",
+        data: JSON.stringify({
+          token: getToken()
+        }),
+      };
       console.log("ws onopen");
+      let s = JSON.stringify(re);
+      conn.send(s)
     };
     conn.onclose = function (evt) {
       setWs(null);
@@ -74,9 +89,7 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
 
   useEffect(() => {
     if (!ws) {
-      setTimeout(() => {
-        connectWs();
-      }, 2000);
+      connectWs();
     }
   }, [connectWs, ws]);
 

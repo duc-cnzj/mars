@@ -3,21 +3,20 @@ import { getServiceEndpoints } from "../api/namespace";
 import { Popover, message } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
   ({ namespaceId, projectName }) => {
-    const [endpoints, setEndpoints] = useState<{ [name: string]: string[] }>(
-      {}
-    );
+    const [endpoints, setEndpoints] = useState<pb.ServiceEndpointsResponse.Iitem[]>();
 
     return (
       <Popover
         placement="right"
         title={"链接"}
-        content={Object.entries(endpoints)?.map(([k, v]) =>
-          v.map((link) => (
+        content={endpoints?.map((v, k) =>
+          v.url?.map((link) => (
             <div key={link} onClick={(e) => e.stopPropagation()}>
-              <span style={{ marginRight: 5 }}>{k}:</span>
+              <span style={{ marginRight: 5 }}>{v.name}:</span>
               <a href={link} target="_blank" style={{ marginRight: 10 }}>
                 {link}
               </a>
@@ -40,8 +39,9 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
           style={{ width: 18, height: 18, flexShrink: 0 }}
           stroke="currentColor"
           onMouseEnter={(e) => {
-            getServiceEndpoints(namespaceId, projectName).then((res) => {
-              setEndpoints(res.data.data);
+            console.log("projectName", projectName)
+            getServiceEndpoints({project_name: projectName || "", namespace_id: namespaceId}).then((res) => {
+                setEndpoints(res.data.data);
             });
           }}
         >

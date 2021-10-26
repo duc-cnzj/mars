@@ -71,7 +71,7 @@ func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 			mlog.Error(err)
 		}
 
-		mlog.Info("db closed.")
+		mlog.Info("[Database]: db closed.")
 	})
 	app.DBManager().SetDB(db)
 

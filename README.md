@@ -135,14 +135,13 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
-- 全部 restful 使用 websocket 重写(grpc)？
-- ui 美化
-- grpc-gateway 替换 gin？
-- 重构 ui 创建项目部分代码
-- 重构后端部署部分代码
-
-1. 断开连接使用图标的方式
-2. ~~多容器还没写~~
-3. ~~sessionId 还是要用起来~~
-4. ~~前端shell退出后，后端对应的携程也要退出，防止泄漏~~
-5. 高可用化
+- [ ] ui 美化
+- [ ] 断开连接使用图标的方式
+- [x] gin -> grpc ？
+- [x] grpc-gateway 替换 gin, branch: `grpc`
+- [x] 重构 ui 创建项目部分代码
+- [x] 重构后端部署部分代码
+- [x] 多容器还没写
+- [x] sessionId 还是要用起来
+- [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
+- [x] 高可用化

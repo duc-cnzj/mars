@@ -1,8 +1,11 @@
 package contracts
 
 import (
-	"net/http"
+	"context"
 	"os"
+
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
 
 	restclient "k8s.io/client-go/rest"
 
@@ -15,6 +18,16 @@ import (
 
 type Callback func(ApplicationInterface)
 
+type Metrics interface {
+	IncWebsocketConn()
+	DecWebsocketConn()
+}
+
+type Server interface {
+	Run(context.Context) error
+	Shutdown(context.Context) error
+}
+
 type Bootstrapper interface {
 	Bootstrap(ApplicationInterface) error
 }
@@ -25,6 +38,13 @@ type K8sClient struct {
 	RestConfig    *restclient.Config
 }
 
+type OidcConfigItem struct {
+	Provider           *oidc.Provider
+	Config             oauth2.Config
+	EndSessionEndpoint string
+}
+type OidcConfig map[string]OidcConfigItem
+
 type Option func(ApplicationInterface)
 
 type ApplicationInterface interface {
@@ -32,6 +52,9 @@ type ApplicationInterface interface {
 
 	GitlabClient() *gitlab.Client
 	SetGitlabClient(*gitlab.Client)
+
+	SetMetrics(Metrics)
+	Metrics() Metrics
 
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
@@ -41,6 +64,10 @@ type ApplicationInterface interface {
 
 	DBManager() DBManager
 
+	Oidc() OidcConfig
+	SetOidc(OidcConfig)
+
+	AddServer(Server)
 	Run() chan os.Signal
 	Shutdown()
 
@@ -52,9 +79,6 @@ type ApplicationInterface interface {
 
 	EventDispatcher() DispatcherInterface
 	SetEventDispatcher(DispatcherInterface)
-
-	HttpHandler() http.Handler
-	SetHttpHandler(http.Handler)
 
 	SetPlugins(map[string]PluginInterface)
 	GetPlugins() map[string]PluginInterface

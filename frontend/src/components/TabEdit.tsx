@@ -24,11 +24,11 @@ import {
   ArrowRightOutlined,
 } from "@ant-design/icons";
 import classNames from "classnames";
-import { ProjectDetail } from "../api/project";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
-import DebugModeSwitch from './DebugModeSwitch'
+import DebugModeSwitch from "./DebugModeSwitch";
+import pb from "../api/compiled";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -48,11 +48,11 @@ interface CreateItemInterface {
 }
 
 const ModalSub: React.FC<{
-  detail: ProjectDetail;
+  detail: pb.ProjectShowResponse;
   onSuccess: () => void;
 }> = ({ detail, onSuccess }) => {
   let id = detail.id;
-  let namespaceId = detail.namespace.id;
+  let namespaceId = detail.namespace?.id;
   const ws = useWs();
   const wsReady = useWsReady();
 
@@ -71,12 +71,14 @@ const ModalSub: React.FC<{
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [initValue, setInitValue] = useState<{
     projectName: string;
-    gitlabProjectId: number;
+    gitlabProjectId: string;
     gitlabBranch: string;
     gitlabCommit: string;
     time?: number;
   }>();
+  console.log("namespaceId, data.name", namespaceId, data.name)
   let slug = toSlug(namespaceId, data.name);
+  console.log("slug: ", slug)
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -87,14 +89,14 @@ const ModalSub: React.FC<{
         detail.gitlab_branch &&
         detail.gitlab_commit
       ) {
-        commit(
-          Number(detail.gitlab_project_id),
-          detail.gitlab_branch,
-          detail.gitlab_commit
-        ).then((res) => {
+        commit({
+          project_id: detail.gitlab_project_id,
+          branch: detail.gitlab_branch,
+          commit: detail.gitlab_commit,
+        }).then((res) => {
           setInitValue({
             projectName: detail.name,
-            gitlabProjectId: Number(detail.gitlab_project_id),
+            gitlabProjectId: detail.gitlab_project_id,
             gitlabBranch: detail.gitlab_branch,
             gitlabCommit: res.data.data.label,
           });
@@ -106,7 +108,7 @@ const ModalSub: React.FC<{
   // 更新成功，触发 onSuccess
   useEffect(() => {
     if (list[slug]?.deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
-      setStart(false)
+      setStart(false);
       setTimelineVisible(false);
       setEditVisible(true);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
@@ -116,9 +118,9 @@ const ModalSub: React.FC<{
 
   // 更新 config 文件的类型， TODO 支持动态加载 mode css 文件
   const loadConfigFile = useCallback(() => {
-    configFile(data.gitlabProjectId, data.gitlabBranch).then((res) => {
-      setData((d) => ({ ...d, config: res.data.data.data }));
-      switch (res.data.data.type) {
+    configFile({project_id: String(data.gitlabProjectId), branch: data.gitlabBranch}).then((res) => {
+      setData((d) => ({ ...d, config: res.data.data }));
+      switch (res.data.type) {
         case "dotenv":
         case "env":
         case ".env":
@@ -131,7 +133,7 @@ const ModalSub: React.FC<{
           setMode("php");
           break;
         default:
-          setMode(res.data.data.type);
+          setMode(res.data.type);
           break;
       }
     });
@@ -165,11 +167,11 @@ const ModalSub: React.FC<{
       setStart(false);
       dispatch(setCreateProjectLoading(slug, false));
     }
-  }, [wsReady])
+  }, [wsReady]);
   const updateDeploy = () => {
     if (!wsReady) {
       message.error("连接断开了");
-      return
+      return;
     }
     if (data.gitlabCommit && data.gitlabBranch) {
       setStart(true);
@@ -219,7 +221,7 @@ const ModalSub: React.FC<{
   const onRemove = useCallback(() => {
     if (!wsReady) {
       message.error("连接断开了");
-      return
+      return;
     }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
       let re = {
@@ -266,21 +268,21 @@ const ModalSub: React.FC<{
           )}
         </div>
         <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: 10,
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: 10,
+          }}
+        >
+          <span>配置文件:</span>
+          <DebugModeSwitch
+            value={data.debug}
+            onchange={(checked: boolean, event: MouseEvent) => {
+              setData((data) => ({ ...data, debug: checked }));
             }}
-          >
-            <span>配置文件:</span>
-            <DebugModeSwitch
-              value={data.debug}
-              onchange={(checked: boolean, event: MouseEvent) => {
-                setData((data) => ({ ...data, debug: checked }));
-              }}
-            />
-          </div>
+          />
+        </div>
         <div style={{ minWidth: 200, marginBottom: 20 }}>
           <CodeMirror
             value={data.config}

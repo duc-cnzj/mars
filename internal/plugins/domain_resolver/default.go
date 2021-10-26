@@ -30,12 +30,12 @@ func (d *DefaultDomainResolver) Name() string {
 }
 
 func (d *DefaultDomainResolver) Initialize() error {
-	mlog.Info(d.Name() + " plugin Initialize...")
+	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (d *DefaultDomainResolver) Destroy() error {
-	mlog.Info(d.Name() + " plugin Destroy...")
+	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 

@@ -18,11 +18,12 @@ import { CloseOutlined } from "@ant-design/icons";
 import {
   deleteNamespace,
   getNamespaceCpuAndMemory,
-  NamespaceItem,
 } from "../api/namespace";
 
+import pb from '../api/compiled'
+
 const Item: React.FC<{
-  item: NamespaceItem;
+  item: pb.NamespaceItem;
   onNamespaceDeleted: () => void;
   loading: boolean;
 }> = ({ item, onNamespaceDeleted, loading }) => {
@@ -42,10 +43,10 @@ const Item: React.FC<{
               <Tooltip
                 onVisibleChange={(visible) => {
                   if (visible) {
-                    getNamespaceCpuAndMemory(item.id).then((res) => {
+                    getNamespaceCpuAndMemory({namespace_id: item.id}).then((res) => {
                       setCpuAndMemory({
-                        cpu: res.data.data.cpu,
-                        memory: res.data.data.memory,
+                        cpu: res.data.cpu,
+                        memory: res.data.memory,
                       });
                     });
                   }
@@ -93,7 +94,7 @@ const Item: React.FC<{
           cancelText="No"
           onConfirm={() => {
             setDeleting(true);
-            deleteNamespace(item.id)
+            deleteNamespace({namespace_id: item.id})
               .then((res) => {
                 message.success("删除成功");
                 onNamespaceDeleted();

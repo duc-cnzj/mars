@@ -31,7 +31,7 @@ const Setting: React.FC = () => {
           type="ghost"
           shape="circle"
           icon={<SettingOutlined />}
-          onClick={() => h.push("/web/gitlab_project_manager")}
+          onClick={() => h.push("/gitlab_project_manager")}
         />
       </Affix>
     </>
