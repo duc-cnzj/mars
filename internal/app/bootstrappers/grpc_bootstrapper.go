@@ -41,6 +41,9 @@ type grpcRunner struct {
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
+	if g.server == nil {
+		return nil
+	}
 	mlog.Info("[Server]: shutdown grpcRunner runner.")
 
 	g.server.GracefulStop()

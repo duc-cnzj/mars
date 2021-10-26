@@ -99,6 +99,9 @@ func (a *apiGateway) Run(ctx context.Context) error {
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
+	if a.server == nil {
+		return nil
+	}
 	if err := a.server.Shutdown(ctx); err != nil {
 		mlog.Error(err)
 	}
