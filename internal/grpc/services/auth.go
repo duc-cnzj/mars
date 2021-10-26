@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rsa"
+	"sort"
 	"strings"
 	"time"
 
@@ -141,6 +142,10 @@ func (a *Auth) Settings(ctx context.Context, empty *emptypb.Empty) (*auth.Settin
 			State:              state,
 		})
 	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name < items[j].Name
+	})
 
 	return &auth.SettingsResponse{Items: items}, nil
 }

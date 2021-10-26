@@ -54,12 +54,22 @@ imagepullsecrets:
     email: "john@example.com"
     server: "registry.cn-hangzhou.aliyuncs.com"
 
+
+oidc:
+  - name: "sso1"
+    enabled: true
+    provider_url: "http://127.0.0.1:9001"
+    client_id: "sso-xxx"
+    client_secret: "xxxx"
+    redirect_url: "http://127.0.0.1:3000/auth/callback"
+  - name: "sso2"
+    enabled: true
+    provider_url: "http://127.0.0.1:9001"
+    client_id: "sso-xxx"
+    client_secret: "xxxx"
+    redirect_url: "http://127.0.0.1:3000/auth/callback"
+
 admin_password: "123456"
-oidc_enabled: false
-provider_url: "http://127.0.0.1:9001"
-client_id: "sso-9o5vaXfTX46md6sx"
-client_secret: "cJNDanSj0YumR00V2uJ9l3651LBL91MB"
-redirect_url: "http://127.0.0.1:3000/auth/callback"
 private_key: |-
   -----BEGIN RSA PRIVATE KEY-----
   MIIJJwIBAAKCAgBzI/wWLH0Drllr23MmimTz9Ohk8yShfHM02HfP/pJJaC1jnfCY
