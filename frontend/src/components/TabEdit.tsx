@@ -377,7 +377,7 @@ const ModalSub: React.FC<{
         </div>
         <div style={{ minWidth: 200, marginBottom: 20 }}>
           <Row>
-            <Col span={12}>
+            <Col span={detail.config === data.config ? 24 : 12}>
               <CodeMirror
                 value={data.config}
                 options={{
@@ -393,7 +393,7 @@ const ModalSub: React.FC<{
             </Col>
             <Col
               className="diff-viewer"
-              span={12}
+              span={detail.config === data.config ? 0 : 12}
               style={{ fontSize: 13, height: "100%" }}
             >
               <ReactDiffViewer
