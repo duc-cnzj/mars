@@ -101,8 +101,8 @@ export const InfoResponse = $root.InfoResponse = (() => {
      * Properties of an InfoResponse.
      * @exports IInfoResponse
      * @interface IInfoResponse
-     * @property {number|Long|null} [id] InfoResponse id
-     * @property {string|null} [username] InfoResponse username
+     * @property {string|null} [id] InfoResponse id
+     * @property {string|null} [avatar] InfoResponse avatar
      * @property {string|null} [name] InfoResponse name
      * @property {string|null} [email] InfoResponse email
      * @property {string|null} [logout_url] InfoResponse logout_url
@@ -127,19 +127,19 @@ export const InfoResponse = $root.InfoResponse = (() => {
 
     /**
      * InfoResponse id.
-     * @member {number|Long} id
+     * @member {string} id
      * @memberof InfoResponse
      * @instance
      */
-    InfoResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    InfoResponse.prototype.id = "";
 
     /**
-     * InfoResponse username.
-     * @member {string} username
+     * InfoResponse avatar.
+     * @member {string} avatar
      * @memberof InfoResponse
      * @instance
      */
-    InfoResponse.prototype.username = "";
+    InfoResponse.prototype.avatar = "";
 
     /**
      * InfoResponse name.
@@ -176,16 +176,84 @@ export const InfoResponse = $root.InfoResponse = (() => {
     return InfoResponse;
 })();
 
+export const OidcSetting = $root.OidcSetting = (() => {
+
+    /**
+     * Properties of an OidcSetting.
+     * @exports IOidcSetting
+     * @interface IOidcSetting
+     * @property {boolean|null} [enabled] OidcSetting enabled
+     * @property {string|null} [name] OidcSetting name
+     * @property {string|null} [url] OidcSetting url
+     * @property {string|null} [end_session_endpoint] OidcSetting end_session_endpoint
+     * @property {string|null} [state] OidcSetting state
+     */
+
+    /**
+     * Constructs a new OidcSetting.
+     * @exports OidcSetting
+     * @classdesc Represents an OidcSetting.
+     * @implements IOidcSetting
+     * @constructor
+     * @param {IOidcSetting=} [properties] Properties to set
+     */
+    function OidcSetting(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * OidcSetting enabled.
+     * @member {boolean} enabled
+     * @memberof OidcSetting
+     * @instance
+     */
+    OidcSetting.prototype.enabled = false;
+
+    /**
+     * OidcSetting name.
+     * @member {string} name
+     * @memberof OidcSetting
+     * @instance
+     */
+    OidcSetting.prototype.name = "";
+
+    /**
+     * OidcSetting url.
+     * @member {string} url
+     * @memberof OidcSetting
+     * @instance
+     */
+    OidcSetting.prototype.url = "";
+
+    /**
+     * OidcSetting end_session_endpoint.
+     * @member {string} end_session_endpoint
+     * @memberof OidcSetting
+     * @instance
+     */
+    OidcSetting.prototype.end_session_endpoint = "";
+
+    /**
+     * OidcSetting state.
+     * @member {string} state
+     * @memberof OidcSetting
+     * @instance
+     */
+    OidcSetting.prototype.state = "";
+
+    return OidcSetting;
+})();
+
 export const SettingsResponse = $root.SettingsResponse = (() => {
 
     /**
      * Properties of a SettingsResponse.
      * @exports ISettingsResponse
      * @interface ISettingsResponse
-     * @property {boolean|null} [sso_enabled] SettingsResponse sso_enabled
-     * @property {string|null} [url] SettingsResponse url
-     * @property {string|null} [end_session_endpoint] SettingsResponse end_session_endpoint
-     * @property {string|null} [state] SettingsResponse state
+     * @property {Array.<IOidcSetting>|null} [items] SettingsResponse items
      */
 
     /**
@@ -197,6 +265,7 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
      * @param {ISettingsResponse=} [properties] Properties to set
      */
     function SettingsResponse(properties) {
+        this.items = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -204,36 +273,12 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
     }
 
     /**
-     * SettingsResponse sso_enabled.
-     * @member {boolean} sso_enabled
+     * SettingsResponse items.
+     * @member {Array.<IOidcSetting>} items
      * @memberof SettingsResponse
      * @instance
      */
-    SettingsResponse.prototype.sso_enabled = false;
-
-    /**
-     * SettingsResponse url.
-     * @member {string} url
-     * @memberof SettingsResponse
-     * @instance
-     */
-    SettingsResponse.prototype.url = "";
-
-    /**
-     * SettingsResponse end_session_endpoint.
-     * @member {string} end_session_endpoint
-     * @memberof SettingsResponse
-     * @instance
-     */
-    SettingsResponse.prototype.end_session_endpoint = "";
-
-    /**
-     * SettingsResponse state.
-     * @member {string} state
-     * @memberof SettingsResponse
-     * @instance
-     */
-    SettingsResponse.prototype.state = "";
+    SettingsResponse.prototype.items = $util.emptyArray;
 
     return SettingsResponse;
 })();

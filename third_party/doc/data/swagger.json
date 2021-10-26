@@ -1180,12 +1180,14 @@
     "InfoResponse": {
       "type": "object",
       "properties": {
+        "avatar": {
+          "type": "string"
+        },
         "email": {
           "type": "string"
         },
         "id": {
-          "type": "string",
-          "format": "int64"
+          "type": "string"
         },
         "logout_url": {
           "type": "string"
@@ -1198,9 +1200,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "username": {
-          "type": "string"
         }
       }
     },
@@ -1352,6 +1351,26 @@
       "properties": {
         "data": {
           "$ref": "#/definitions/NamespaceResponse"
+        }
+      }
+    },
+    "OidcSetting": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "end_session_endpoint": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
         }
       }
     },
@@ -1541,17 +1560,11 @@
     "SettingsResponse": {
       "type": "object",
       "properties": {
-        "end_session_endpoint": {
-          "type": "string"
-        },
-        "sso_enabled": {
-          "type": "boolean"
-        },
-        "state": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OidcSetting"
+          }
         }
       }
     },

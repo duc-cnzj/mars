@@ -38,11 +38,12 @@ type K8sClient struct {
 	RestConfig    *restclient.Config
 }
 
-type OidcConfig struct {
+type OidcConfigItem struct {
 	Provider           *oidc.Provider
 	Config             oauth2.Config
 	EndSessionEndpoint string
 }
+type OidcConfig map[string]OidcConfigItem
 
 type Option func(ApplicationInterface)
 
@@ -63,8 +64,8 @@ type ApplicationInterface interface {
 
 	DBManager() DBManager
 
-	Oidc() *OidcConfig
-	SetOidc(*OidcConfig)
+	Oidc() OidcConfig
+	SetOidc(OidcConfig)
 
 	AddServer(Server)
 	Run() chan os.Signal

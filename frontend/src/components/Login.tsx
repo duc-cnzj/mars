@@ -4,9 +4,14 @@ import pb from "../api/compiled";
 import { Form, Button, Input } from "antd";
 import { useAuth } from "../contexts/auth";
 import { useHistory } from "react-router-dom";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import {
+  GoogleOutlined,
+  GithubOutlined,
+  QqOutlined,
+  WechatOutlined,
+} from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
-import {setState} from '../utils/token'
+import { setState } from "../utils/token";
 
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.BackgroundResponse>();
@@ -14,13 +19,43 @@ const Login: React.FC = () => {
   useEffect(() => {
     bg({ random: true }).then((res) => setBgInfo(res.data));
     settingsApi().then((res) => {
-      setSettings(res.data)
-      setState(res.data.state)
+      setSettings(res.data);
     });
   }, []);
 
   const h = useHistory();
   const auth = useAuth();
+
+  const renderOidcItem: (name: string) => React.ReactNode = (name: string) => {
+    switch (name) {
+      case "wechat":
+        return (
+          <div className="login__sso-icon-item">
+            <WechatOutlined />
+          </div>
+        );
+      case "qq":
+        return (
+          <div className="login__sso-icon-item">
+            <QqOutlined />
+          </div>
+        );
+      case "github":
+        return (
+          <div className="login__sso-icon-item">
+            <GithubOutlined />
+          </div>
+        );
+      case "google":
+        return (
+          <div className="login__sso-icon-item">
+            <GoogleOutlined />
+          </div>
+        );
+      default:
+        return <div className="login__sso-item__name">{name}</div>;
+    }
+  };
 
   return (
     <div
@@ -66,16 +101,23 @@ const Login: React.FC = () => {
               </Button>
             </Form.Item>
 
-            {settings?.sso_enabled ? (
-              <Form.Item>
-                <a href={settings.url} className="login__use-sso">
-                  单点登录
-                  <ArrowRightOutlined />
-                </a>
-              </Form.Item>
-            ) : (
-              ""
-            )}
+            <div className="login__sso-card">
+              {settings?.items.map((item, index) => (
+                <Form.Item key={index}>
+                  <a
+                    href="javascript(0);"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setState(item.state || "");
+                      window.location.href = item.url || "/login";
+                    }}
+                    className="login__sso-item"
+                  >
+                    {renderOidcItem(item.name || "")}
+                  </a>
+                </Form.Item>
+              ))}
+            </div>
           </Form>
         </div>
       </div>

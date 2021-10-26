@@ -55,10 +55,10 @@ export class LoginResponse implements ILoginResponse {
 export interface IInfoResponse {
 
     /** InfoResponse id */
-    id?: (number|Long|null);
+    id?: (string|null);
 
-    /** InfoResponse username */
-    username?: (string|null);
+    /** InfoResponse avatar */
+    avatar?: (string|null);
 
     /** InfoResponse name */
     name?: (string|null);
@@ -83,10 +83,10 @@ export class InfoResponse implements IInfoResponse {
     constructor(properties?: IInfoResponse);
 
     /** InfoResponse id. */
-    public id: (number|Long);
+    public id: string;
 
-    /** InfoResponse username. */
-    public username: string;
+    /** InfoResponse avatar. */
+    public avatar: string;
 
     /** InfoResponse name. */
     public name: string;
@@ -101,20 +101,55 @@ export class InfoResponse implements IInfoResponse {
     public roles: string[];
 }
 
+/** Properties of an OidcSetting. */
+export interface IOidcSetting {
+
+    /** OidcSetting enabled */
+    enabled?: (boolean|null);
+
+    /** OidcSetting name */
+    name?: (string|null);
+
+    /** OidcSetting url */
+    url?: (string|null);
+
+    /** OidcSetting end_session_endpoint */
+    end_session_endpoint?: (string|null);
+
+    /** OidcSetting state */
+    state?: (string|null);
+}
+
+/** Represents an OidcSetting. */
+export class OidcSetting implements IOidcSetting {
+
+    /**
+     * Constructs a new OidcSetting.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IOidcSetting);
+
+    /** OidcSetting enabled. */
+    public enabled: boolean;
+
+    /** OidcSetting name. */
+    public name: string;
+
+    /** OidcSetting url. */
+    public url: string;
+
+    /** OidcSetting end_session_endpoint. */
+    public end_session_endpoint: string;
+
+    /** OidcSetting state. */
+    public state: string;
+}
+
 /** Properties of a SettingsResponse. */
 export interface ISettingsResponse {
 
-    /** SettingsResponse sso_enabled */
-    sso_enabled?: (boolean|null);
-
-    /** SettingsResponse url */
-    url?: (string|null);
-
-    /** SettingsResponse end_session_endpoint */
-    end_session_endpoint?: (string|null);
-
-    /** SettingsResponse state */
-    state?: (string|null);
+    /** SettingsResponse items */
+    items?: (IOidcSetting[]|null);
 }
 
 /** Represents a SettingsResponse. */
@@ -126,17 +161,8 @@ export class SettingsResponse implements ISettingsResponse {
      */
     constructor(properties?: ISettingsResponse);
 
-    /** SettingsResponse sso_enabled. */
-    public sso_enabled: boolean;
-
-    /** SettingsResponse url. */
-    public url: string;
-
-    /** SettingsResponse end_session_endpoint. */
-    public end_session_endpoint: string;
-
-    /** SettingsResponse state. */
-    public state: string;
+    /** SettingsResponse items. */
+    public items: IOidcSetting[];
 }
 
 /** Properties of an ExchangeRequest. */

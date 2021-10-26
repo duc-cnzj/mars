@@ -72,8 +72,18 @@ const AppHeader: React.FC = () => {
               className="ant-dropdown-link"
               onClick={(e) => e.preventDefault()}
             >
-              <UserOutlined />
-              <span style={{ fontSize: 12, marginLeft: 3 }}>{user.name}</span>
+              {user.avatar ? (
+                <img
+                  className="avatar"
+                  style={{ borderRadius: "50%", width: 20, height: 20 }}
+                  src={user.avatar}
+                  alt="avatar"
+                />
+              ) : (
+                <UserOutlined />
+              )}
+
+              <span style={{ fontSize: 12, marginLeft: 5 }}>{user.name}</span>
             </a>
           </Dropdown>
         ) : (

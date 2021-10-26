@@ -17,19 +17,24 @@ message LoginResponse {
 }
 
 message InfoResponse {
-  int64 id = 1;
-  string username = 2;
+  string id = 1;
+  string avatar = 2;
   string name = 3;
   string email = 4;
   string logout_url = 5;
   repeated string roles = 6;
 }
 
+message OidcSetting {
+  bool enabled = 1;
+  string name = 2;
+  string url = 3;
+  string end_session_endpoint = 4;
+  string state = 5;
+}
+
 message SettingsResponse {
-  bool sso_enabled = 1;
-  string url = 2;
-  string end_session_endpoint = 3;
-  string state = 4;
+  repeated OidcSetting items = 1;
 }
 
 message ExchangeRequest {

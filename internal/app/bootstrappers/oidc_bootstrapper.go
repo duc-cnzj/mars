@@ -12,40 +12,46 @@ type OidcBootstrapper struct{}
 
 func (D *OidcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
-	if !cfg.OidcEnabled {
-		return nil
+	var oidcConfig contracts.OidcConfig = make(contracts.OidcConfig)
+	for _, setting := range cfg.Oidc {
+		if !setting.Enabled {
+			continue
+		}
+		provider, err := oidc.NewProvider(context.TODO(), setting.ProviderUrl)
+		if err != nil {
+			return err
+		}
+
+		var extraValues struct {
+			CheckSessionIFrame string   `json:"check_session_iframe"`
+			ScopesSupported    []string `json:"scopes_supported"`
+			EndSessionEndpoint string   `json:"end_session_endpoint"`
+		}
+		if err := provider.Claims(&extraValues); err != nil {
+			return err
+		}
+
+		scopes := extraValues.ScopesSupported
+
+		if len(scopes) < 1 {
+			scopes = []string{oidc.ScopeOpenID}
+		}
+
+		oauth2Config := oauth2.Config{
+			ClientID:     setting.ClientID,
+			ClientSecret: setting.ClientSecret,
+			RedirectURL:  setting.RedirectUrl,
+			Endpoint:     provider.Endpoint(),
+			Scopes:       scopes,
+		}
+		oidcConfig[setting.Name] = contracts.OidcConfigItem{
+			Provider:           provider,
+			Config:             oauth2Config,
+			EndSessionEndpoint: extraValues.EndSessionEndpoint,
+		}
 	}
 
-	provider, err := oidc.NewProvider(context.TODO(), cfg.ProviderUrl)
-	if err != nil {
-		return err
-	}
-	// Configure an OpenID Connect aware OAuth2 client.
-	oauth2Config := oauth2.Config{
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		RedirectURL:  cfg.RedirectUrl,
-
-		// Discovery returns the OAuth2 endpoints.
-		Endpoint: provider.Endpoint(),
-
-		// "openid" is a required scope for OpenID Connect flows.
-		Scopes: []string{oidc.ScopeOpenID, "offline"},
-	}
-
-	var sessionURLs struct {
-		CheckSessionIFrame string `json:"check_session_iframe"`
-		EndSessionEndpoint string `json:"end_session_endpoint"`
-	}
-	if err := provider.Claims(&sessionURLs); err != nil {
-		return err
-	}
-
-	app.SetOidc(&contracts.OidcConfig{
-		Provider:           provider,
-		Config:             oauth2Config,
-		EndSessionEndpoint: sessionURLs.EndSessionEndpoint,
-	})
+	app.SetOidc(oidcConfig)
 
 	return nil
 }

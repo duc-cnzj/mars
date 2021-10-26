@@ -1,7 +1,38 @@
 @fontcolor: white;
 
 .login {
-  &__use-sso {
+  &__sso-card {
+    display: flex;
+    align-items: center;
+  }
+  &__sso-icon-item {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    transition: .5s;
+    &:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 10px #2c3e50;
+    }
+  }
+  &__sso-item {
+    &__name {
+      margin-right: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      transition: .5s;
+      font-size: 16px;
+      &:hover {
+        transform: scale(1.2);
+        text-shadow: 0 0 10px #2c3e50;
+      }
+    }
     opacity: 0.5;
     color: @fontcolor;
     &:hover {

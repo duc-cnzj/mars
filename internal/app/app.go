@@ -66,14 +66,14 @@ type Application struct {
 	bootstrappers []contracts.Bootstrapper
 	hooks         map[Hook][]contracts.Callback
 	plugins       map[string]contracts.PluginInterface
-	oidcProvider  *contracts.OidcConfig
+	oidcProvider  contracts.OidcConfig
 }
 
-func (app *Application) Oidc() *contracts.OidcConfig {
+func (app *Application) Oidc() contracts.OidcConfig {
 	return app.oidcProvider
 }
 
-func (app *Application) SetOidc(provider *contracts.OidcConfig) {
+func (app *Application) SetOidc(provider contracts.OidcConfig) {
 	app.oidcProvider = provider
 }
 

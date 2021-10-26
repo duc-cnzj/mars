@@ -59,8 +59,12 @@ type Config struct {
 	GitlabBaseURL string `mapstructure:"gitlab_baseurl"`
 
 	InstallTimeout time.Duration `mapstructure:"install_timeout"`
+	Oidc           []OidcSetting `mapstructure:"oidc"`
+}
 
-	OidcEnabled  bool   `mapstructure:"oidc_enabled"`
+type OidcSetting struct {
+	Name         string `mapstructure:"name"`
+	Enabled      bool   `mapstructure:"enabled"`
 	ProviderUrl  string `mapstructure:"provider_url"`
 	ClientID     string `mapstructure:"client_id"`
 	ClientSecret string `mapstructure:"client_secret"`

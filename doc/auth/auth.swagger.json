@@ -139,10 +139,9 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "format": "int64"
+          "type": "string"
         },
-        "username": {
+        "avatar": {
           "type": "string"
         },
         "name": {
@@ -185,11 +184,14 @@
         }
       }
     },
-    "SettingsResponse": {
+    "OidcSetting": {
       "type": "object",
       "properties": {
-        "sso_enabled": {
+        "enabled": {
           "type": "boolean"
+        },
+        "name": {
+          "type": "string"
         },
         "url": {
           "type": "string"
@@ -199,6 +201,17 @@
         },
         "state": {
           "type": "string"
+        }
+      }
+    },
+    "SettingsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OidcSetting"
+          }
         }
       }
     },
