@@ -402,7 +402,7 @@ const ModalSub: React.FC<{
               }}
             >
               <ReactDiffViewer
-                styles={{ gutter: { padding: "0 5px", minWidth: 25 } }}
+                styles={{ gutter: { padding: "0 5px", minWidth: 25 }, contentText: {width: 800, overflowX: "scroll"}}}
                 useDarkTheme
                 renderContent={highlightSyntax}
                 showDiffOnly={true}
