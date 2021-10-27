@@ -146,7 +146,7 @@ const ProjectSelector: React.FC<{
   return (
     <Cascader
       options={options}
-      style={{ width: "100%", marginBottom: "10px" }}
+      style={{ width: "100%" }}
       autoFocus
       value={value}
       allowClear={false}

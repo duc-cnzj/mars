@@ -338,11 +338,18 @@ const ModalSub: React.FC<{
         commit={data.gitlabCommit}
       />
       <div className={classNames({ "display-none": !editVisible })}>
-        <div style={{ width: "100%" }}>
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
           {list[slug]?.output?.length > 0 ? (
             <Button
-              style={{ marginBottom: 20 }}
               type="dashed"
+              style={{ marginRight: 5 }}
               disabled={list[slug]?.isLoading}
               onClick={() => {
                 setEditVisible(false);
@@ -356,7 +363,7 @@ const ModalSub: React.FC<{
           {initValue ? (
             <ProjectSelector value={initValue} onChange={onChange} />
           ) : (
-            <Skeleton.Input active style={{ width: 800 }} size="small" />
+            <Skeleton.Input active style={{ width: 1000 }} size="small" />
           )}
         </div>
         <div
@@ -367,7 +374,32 @@ const ModalSub: React.FC<{
             paddingBottom: 10,
           }}
         >
-          <span>配置文件:</span>
+          <div
+            className={classNames("edit-project__footer", {
+              "edit-project--hidden": list[slug]?.isLoading,
+            })}
+          >
+            <span style={{ marginRight: 5 }}>配置文件:</span>
+
+            <Button
+              size="small"
+              style={{ marginRight: 5, fontSize: 12 }}
+              disabled={list[slug]?.isLoading}
+              onClick={onReset}
+            >
+              重置
+            </Button>
+            <Button
+              style={{ fontSize: 12 }}
+              size="small"
+              type="primary"
+              loading={list[slug]?.isLoading}
+              onClick={updateDeploy}
+            >
+              部署
+            </Button>
+          </div>
+
           <DebugModeSwitch
             value={data.debug}
             onchange={(checked: boolean, event: MouseEvent) => {
@@ -402,7 +434,11 @@ const ModalSub: React.FC<{
               }}
             >
               <ReactDiffViewer
-                styles={{ gutter: { padding: "0 5px", minWidth: 25 }, contentText: {width: 800, overflowX: "scroll"}}}
+                styles={{
+                  gutter: { padding: "0 5px", minWidth: 25 },
+                  contentText: { width: 800, overflowX: "scroll" },
+                  marker: { padding: "0 6px" },
+                }}
                 useDarkTheme
                 renderContent={highlightSyntax}
                 showDiffOnly={true}
@@ -412,26 +448,6 @@ const ModalSub: React.FC<{
               />
             </Col>
           </Row>
-        </div>
-        <div
-          className={classNames("edit-project__footer", {
-            "edit-project--hidden": list[slug]?.isLoading,
-          })}
-        >
-          <Button
-            style={{ marginRight: 5 }}
-            disabled={list[slug]?.isLoading}
-            onClick={onReset}
-          >
-            重置
-          </Button>
-          <Button
-            type="primary"
-            loading={list[slug]?.isLoading}
-            onClick={updateDeploy}
-          >
-            部署
-          </Button>
         </div>
       </div>
       <div
@@ -465,14 +481,17 @@ const ModalSub: React.FC<{
           <TimeCost start={start} />
 
           <Button
+            size="small"
             type="primary"
             loading={list[slug]?.isLoading}
             onClick={updateDeploy}
-            style={{ marginRight: 10, marginLeft: 10 }}
+            style={{ marginRight: 10, marginLeft: 10, fontSize: 12 }}
           >
             部署
           </Button>
           <Button
+            style={{ fontSize: 12 }}
+            size="small"
             hidden={
               list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
             }

@@ -95,8 +95,8 @@ const ItemDetailModal: React.FC<{
         }}
         className="draggable-modal"
         visible={visible}
-        initialWidth={800}
-        initialHeight={600}
+        initialWidth={1000}
+        initialHeight={800}
         footer={null}
         onCancel={onCancel}
         title={item.name + "(" + namespace + ")"}
