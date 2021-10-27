@@ -15,7 +15,7 @@ var apiGatewayCmd = &cobra.Command{
 		if err := app.Bootstrap(); err != nil {
 			mlog.Fatal(err)
 		}
-		<-app.Run()
+		<-app.Run().Done()
 		app.Shutdown()
 	},
 }

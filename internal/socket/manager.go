@@ -105,7 +105,7 @@ func NewWebsocketManager() *WebsocketManager {
 					Data: string(marshal),
 				})
 			case <-app.App().Done():
-				mlog.Warning("[Websocket] app shutdown and stop WsClusterInfoSync")
+				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
 				ticker.Stop()
 				return
 			}

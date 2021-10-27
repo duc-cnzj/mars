@@ -193,9 +193,19 @@ func (app *Application) AddServer(server contracts.Server) {
 	app.servers = append(app.servers, server)
 }
 
-func (app *Application) Run() chan os.Signal {
-	done := make(chan os.Signal)
-	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+func (app *Application) Run() context.Context {
+	sig := make(chan os.Signal, 1)
+	ch, cancel := context.WithCancel(context.TODO())
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		s1 := <-sig
+		cancel()
+		mlog.Warningf("收到系统信号 %v, 再次执行 ctrl+c 强制退出!", s1.String())
+		s2 := <-sig
+		mlog.Warningf("收到 %v 信号，执行强制退出!", s2.String())
+		os.Exit(0)
+	}()
 
 	app.RunServerHooks(BeforeRunHook)
 
@@ -205,7 +215,7 @@ func (app *Application) Run() chan os.Signal {
 		}
 	}
 
-	return done
+	return ch
 }
 
 func (app *Application) Shutdown() {

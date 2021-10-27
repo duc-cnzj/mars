@@ -2,7 +2,6 @@ package contracts
 
 import (
 	"context"
-	"os"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -68,7 +67,7 @@ type ApplicationInterface interface {
 	SetOidc(OidcConfig)
 
 	AddServer(Server)
-	Run() chan os.Signal
+	Run() context.Context
 	Shutdown()
 
 	Done() <-chan struct{}
