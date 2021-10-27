@@ -11,7 +11,7 @@ type ZapLogger struct {
 	sugar *zap.SugaredLogger
 }
 
-func NewZapLogger(app contracts.ApplicationInterface) *ZapLogger {
+func NewZapLogger(app contracts.ApplicationInterface) contracts.LoggerInterface {
 	var (
 		logger *zap.Logger
 		cfg    zap.Config
@@ -24,6 +24,7 @@ func NewZapLogger(app contracts.ApplicationInterface) *ZapLogger {
 		cfg = zap.NewProductionConfig()
 	}
 	cfg.EncoderConfig.TimeKey = "time"
+	cfg.EncoderConfig.CallerKey = "file"
 	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 	logger, _ = cfg.Build(opts...)
 
