@@ -363,7 +363,7 @@ const ModalSub: React.FC<{
           {initValue ? (
             <ProjectSelector value={initValue} onChange={onChange} />
           ) : (
-            <Skeleton.Input active style={{ width: 1000 }} size="small" />
+            <Skeleton.Input active style={{ width: 900 }} size="small" />
           )}
         </div>
         <div
