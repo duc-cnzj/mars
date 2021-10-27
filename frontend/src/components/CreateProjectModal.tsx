@@ -8,7 +8,7 @@ import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { useWs,useWsReady } from "../contexts/useWebsocket";
+import { useWs, useWsReady } from "../contexts/useWebsocket";
 import { message, Progress } from "antd";
 import { Button } from "antd";
 import {
@@ -123,7 +123,10 @@ const CreateProjectModal: React.FC<{
   const cmref = useRef<any>();
 
   const loadConfigFile = useCallback(() => {
-    configFile({project_id: String(data.gitlabProjectId), branch: data.gitlabBranch}).then((res) => {
+    configFile({
+      project_id: String(data.gitlabProjectId),
+      branch: data.gitlabBranch,
+    }).then((res) => {
       setData((d) => ({ ...d, config: res.data.data }));
       switch (res.data.type) {
         case "dotenv":
@@ -158,13 +161,13 @@ const CreateProjectModal: React.FC<{
       setStart(false);
       dispatch(setCreateProjectLoading(slug, false));
     }
-  }, [wsReady])
+  }, [wsReady]);
 
   const onOk = useCallback(() => {
     console.log(data);
     if (!wsReady) {
-      message.error("连接断开了")
-      return
+      message.error("连接断开了");
+      return;
     }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
       // todo ws connected!
@@ -246,21 +249,23 @@ const CreateProjectModal: React.FC<{
           commit={data.gitlabCommit}
         />
         <div className={classNames({ "display-none": !editVisible })}>
-          {list[slug]?.output?.length > 0 ? (
-            <Button
-              style={{ marginBottom: 20 }}
-              type="dashed"
-              disabled={list[slug]?.isLoading}
-              onClick={() => {
-                setEditVisible(false);
-                setTimelineVisible(true);
-              }}
-              icon={<ArrowRightOutlined />}
-            />
-          ) : (
-            ""
-          )}
-          <ProjectSelector onChange={onChange} />
+          <div style={{display: "flex", alignItems: "center", marginBottom: 10}}>
+            {list[slug]?.output?.length > 0 ? (
+              <Button
+                style={{marginRight: 5}}
+                type="dashed"
+                disabled={list[slug]?.isLoading}
+                onClick={() => {
+                  setEditVisible(false);
+                  setTimelineVisible(true);
+                }}
+                icon={<ArrowRightOutlined />}
+              />
+            ) : (
+              ""
+            )}
+            <ProjectSelector onChange={onChange} />
+          </div>
           <div
             style={{
               display: "flex",
