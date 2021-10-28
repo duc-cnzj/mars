@@ -131,7 +131,7 @@ const ProjectContainerLogs: React.FC<{
         {log ? (
           <AutoScroll height={400} className="auto-scroll">
             <SyntaxHighlighter
-              wrapLongLines={true}
+              wrapLongLines={false}
               showLineNumbers
               language="vim"
               style={dracula}
