@@ -1,6 +1,6 @@
 import React, { memo } from "react";
-import { shadesOfPurple } from "react-syntax-highlighter/dist/esm/styles/prism";
-import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { xonokai } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { message, Popover } from "antd";
 import { CopyOutlined, QuestionCircleOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -51,6 +51,7 @@ ingress_overwrite_values:
 
   return (
     <Popover
+      overlayInnerStyle={{ maxHeight: 600, overflowY: "scroll" }}
       placement="bottomLeft"
       title={
         <div>
@@ -67,7 +68,7 @@ ingress_overwrite_values:
         <div className="mars-example">
           <SyntaxHighlighter
             language="yaml"
-            style={shadesOfPurple}
+            style={xonokai}
             customStyle={{
               lineHeight: 1.2,
               padding: "10px",
