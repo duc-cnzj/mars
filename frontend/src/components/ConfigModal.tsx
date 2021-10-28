@@ -4,8 +4,8 @@ import { Controlled as CodeMirror } from "react-codemirror2";
 import pb from '../api/compiled'
 
 import "codemirror/lib/codemirror.css";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
+import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   Tooltip,
   Switch,
@@ -241,7 +241,7 @@ const ConfigModal: React.FC<{
               ) : (
                 <SyntaxHighlighter
                   language="yaml"
-                  style={monokaiSublime}
+                  style={materialDark}
                   customStyle={{
                     minHeight: 200,
                     lineHeight: 1.2,

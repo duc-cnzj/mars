@@ -7,7 +7,7 @@ import TabInfo from "./TabInfo";
 import TabLog from "./TabLog";
 import { setNamespaceReload } from "../store/actions";
 import Shell from "./TabShell";
-import EditProject from "./TabEdit";
+import TabEdit from "./TabEdit";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
@@ -135,7 +135,7 @@ const ItemDetailModal: React.FC<{
               </TabPane>
               <TabPane tab="配置更新" key="update-config">
                 {detail ? (
-                  <EditProject detail={detail} onSuccess={onSuccess} />
+                  <TabEdit detail={detail} onSuccess={onSuccess} />
                 ) : (
                   <Skeleton active />
                 )}
