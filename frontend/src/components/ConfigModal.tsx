@@ -247,7 +247,7 @@ const ConfigModal: React.FC<{
                     lineHeight: 1.2,
                     padding: "10px",
                     fontFamily: '"Fira code", "Fira Mono", monospace',
-                    fontSize: 15,
+                    fontSize: 13,
                   }}
                 >
                   {globalEnabled ? globalConfig : config}
