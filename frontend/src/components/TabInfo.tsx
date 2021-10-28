@@ -1,8 +1,8 @@
 import React, { memo, useState } from "react";
 import { deleteProject } from "../api/project";
 import { Skeleton, Button, Modal, message } from "antd";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { monokaiSublime } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
+import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import {
   BranchesOutlined,
@@ -241,7 +241,7 @@ const DetailTab: React.FC<{ detail?: pb.ProjectShowResponse; onDeleted: () => vo
             <summary style={{ cursor: "pointer" }}>展开查看</summary>
             <SyntaxHighlighter
               language="yaml"
-              style={monokaiSublime}
+              style={materialDark}
               customStyle={{
                 fontFamily: '"Fira code", "Fira Mono", monospace',
                 fontSize: 12,

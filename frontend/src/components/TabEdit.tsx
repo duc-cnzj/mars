@@ -9,9 +9,6 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { Button, Skeleton, Progress, message, Row, Col } from "antd";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/material.css";
-import "codemirror/theme/dracula.css";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCreateProjectLog,
@@ -31,7 +28,7 @@ import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
-import "prism-themes/themes/prism-material-dark.css";
+import 'prism-themes/themes/prism-material-dark.css'
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -62,17 +59,6 @@ loader.load((id: string) => {
   require(`prismjs/components/prism-${id}.min.js`);
 });
 
-interface CreateItemInterface {
-  gitlabProjectId: number;
-  gitlabBranch: string;
-  gitlabCommit: string;
-
-  name: string;
-  config: string;
-  config_type: string;
-  debug: boolean;
-}
-
 const ModalSub: React.FC<{
   detail: pb.ProjectShowResponse;
   onSuccess: () => void;
@@ -86,7 +72,7 @@ const ModalSub: React.FC<{
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
   const list = useSelector(selectList);
   const dispatch = useDispatch();
-  const [data, setData] = useState<CreateItemInterface>({
+  const [data, setData] = useState<Mars.CreateItemInterface>({
     name: detail.name,
     gitlabProjectId: Number(detail.gitlab_project_id),
     gitlabBranch: detail.gitlab_branch,

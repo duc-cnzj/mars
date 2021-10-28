@@ -1,10 +1,10 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
 import { containerList, containerLog } from "../api/project";
 import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { xt256 } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 import AutoScroll from "./AutoScroll";
-import pb from '../api/compiled'
+import pb from "../api/compiled";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
@@ -54,7 +54,12 @@ const ProjectContainerLogs: React.FC<{
   const onChange = (e: RadioChangeEvent) => {
     setValue(e.target.value);
     let [pod, container] = (e.target.value as string).split("|");
-    containerLog({namespace_id: namespaceId, project_id: id, pod: pod, container: container})
+    containerLog({
+      namespace_id: namespaceId,
+      project_id: id,
+      pod: pod,
+      container: container,
+    })
       .then((res) => {
         setLog(res.data.data.log);
       })
@@ -72,7 +77,12 @@ const ProjectContainerLogs: React.FC<{
         let [pod, container] = (value as string).split("|");
 
         if (pod && container) {
-          containerLog({namespace_id: namespaceId, project_id: id, pod: pod, container: container}).then((res) => {
+          containerLog({
+            namespace_id: namespaceId,
+            project_id: id,
+            pod: pod,
+            container: container,
+          }).then((res) => {
             setLog(res.data.data.log);
           });
         }
@@ -123,8 +133,8 @@ const ProjectContainerLogs: React.FC<{
             <SyntaxHighlighter
               wrapLongLines={true}
               showLineNumbers
-              language="shell"
-              style={xt256}
+              language="vim"
+              style={dracula}
             >
               {log}
             </SyntaxHighlighter>

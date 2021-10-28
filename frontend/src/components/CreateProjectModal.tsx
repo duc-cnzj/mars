@@ -9,17 +9,13 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Progress } from "antd";
-import { Button } from "antd";
+import { message, Progress, Button } from "antd";
 import {
   PlusOutlined,
   StopOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
 } from "@ant-design/icons";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/material.css";
-import "codemirror/theme/dracula.css";
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearCreateProjectLog,
@@ -40,31 +36,22 @@ require("codemirror/mode/yaml/yaml");
 require("codemirror/mode/php/php");
 require("codemirror/mode/textile/textile");
 
-const initItemData: CreateItemInterface = {
+const initItemData: Mars.CreateItemInterface = {
   name: "",
   gitlabProjectId: 0,
   gitlabBranch: "",
   gitlabCommit: "",
   config: "",
   debug: false,
+  config_type: "yaml"
 };
-
-interface CreateItemInterface {
-  gitlabProjectId: number;
-  gitlabBranch: string;
-  gitlabCommit: string;
-
-  name: string;
-  config: string;
-  debug: boolean;
-}
 
 const CreateProjectModal: React.FC<{
   namespaceId: number;
 }> = ({ namespaceId }) => {
   const list = useSelector(selectList);
   const dispatch = useDispatch();
-  const [data, setData] = useState<CreateItemInterface>(initItemData);
+  const [data, setData] = useState<Mars.CreateItemInterface>(initItemData);
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
@@ -127,25 +114,42 @@ const CreateProjectModal: React.FC<{
       project_id: String(data.gitlabProjectId),
       branch: data.gitlabBranch,
     }).then((res) => {
-      setData((d) => ({ ...d, config: res.data.data }));
-      switch (res.data.type) {
-        case "dotenv":
-        case "env":
-        case ".env":
-          setMode("text/x-textile");
-          break;
-        case "yaml":
-          setMode("text/x-yaml");
-          break;
-        case "php":
-          setMode("php");
-          break;
-        default:
-          setMode(res.data.type);
-          break;
-      }
+      setData((d) => ({ ...d, config: res.data.data, config_type: res.data.type }));
     });
   }, [data.gitlabBranch, data.gitlabProjectId]);
+
+  useEffect(() => {
+    switch (data.config_type) {
+      case "dotenv":
+      case "env":
+      case ".env":
+        setMode("text/x-textile");
+        break;
+      case "yaml":
+        setMode("text/x-yaml");
+        break;
+      case "js":
+      case "javascript":
+        setMode("text/javascript");
+        break;
+      case "ini":
+        setMode("text/x-properties");
+        break;
+      case "php":
+        setMode("php");
+        break;
+      case "go":
+        setMode("text/x-go");
+        break;
+      case "py":
+      case "python":
+        setMode("text/x-python");
+        break;
+      default:
+        setMode(data.config_type);
+        break;
+    }
+  }, [data.config_type]);
 
   useEffect(() => {
     if (cmref.current && data.config) {

@@ -1,6 +1,6 @@
 import React, { memo } from "react";
-import { shadesOfPurple } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import SyntaxHighlighter from "react-syntax-highlighter";
+import { shadesOfPurple } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
 import { message, Popover } from "antd";
 import { CopyOutlined, QuestionCircleOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
