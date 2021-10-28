@@ -28,7 +28,7 @@ import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
-import 'prism-themes/themes/prism-material-dark.css'
+import "prism-themes/themes/prism-material-dark.css";
 
 require("codemirror/mode/go/go");
 require("codemirror/mode/css/css");
@@ -456,6 +456,10 @@ const ModalSub: React.FC<{
             icon={<ArrowLeftOutlined />}
           />
           <Progress
+            strokeColor={{
+              from: "#108ee9",
+              to: "#87d068",
+            }}
             style={{ padding: "0 10px" }}
             percent={list[slug]?.processPercent}
             status="active"

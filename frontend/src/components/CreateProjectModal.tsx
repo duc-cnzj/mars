@@ -43,7 +43,7 @@ const initItemData: Mars.CreateItemInterface = {
   gitlabCommit: "",
   config: "",
   debug: false,
-  config_type: "yaml"
+  config_type: "yaml",
 };
 
 const CreateProjectModal: React.FC<{
@@ -114,7 +114,11 @@ const CreateProjectModal: React.FC<{
       project_id: String(data.gitlabProjectId),
       branch: data.gitlabBranch,
     }).then((res) => {
-      setData((d) => ({ ...d, config: res.data.data, config_type: res.data.type }));
+      setData((d) => ({
+        ...d,
+        config: res.data.data,
+        config_type: res.data.type,
+      }));
     });
   }, [data.gitlabBranch, data.gitlabProjectId]);
 
@@ -253,10 +257,12 @@ const CreateProjectModal: React.FC<{
           commit={data.gitlabCommit}
         />
         <div className={classNames({ "display-none": !editVisible })}>
-          <div style={{display: "flex", alignItems: "center", marginBottom: 10}}>
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+          >
             {list[slug]?.output?.length > 0 ? (
               <Button
-                style={{marginRight: 5}}
+                style={{ marginRight: 5 }}
                 type="dashed"
                 disabled={list[slug]?.isLoading}
                 onClick={() => {
@@ -329,7 +335,12 @@ const CreateProjectModal: React.FC<{
               }}
               icon={<ArrowLeftOutlined />}
             />
+
             <Progress
+              strokeColor={{
+                from: "#108ee9",
+                to: "#87d068",
+              }}
               style={{ padding: "0 10px" }}
               percent={list[slug]?.processPercent}
               status="active"
