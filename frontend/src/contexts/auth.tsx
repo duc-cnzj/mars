@@ -67,7 +67,7 @@ function useProvideAuth() {
       })
       .catch((e) => {
         console.log(e);
-        message.error("登录失败");
+        message.error("用户名或者密码不正确");
       });
   };
 
