@@ -46,13 +46,13 @@ ajax.interceptors.response.use(
         removeToken();
         message.error("登录过期，请重新登录");
       }
-      if (window.location.pathname !== "/login") {
-        setTimeout(() => {
+      setTimeout(() => {
+        if (window.location.pathname !== "/login") {
           let href = getLogoutUrl() || "/login";
-          removeLogoutUrl()
+          removeLogoutUrl();
           window.location.href = href;
-        }, 1000);
-      }
+        }
+      }, 1000);
     }
     console.log("对响应错误做点什么");
     return Promise.reject(error);
