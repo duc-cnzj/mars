@@ -64,9 +64,7 @@ const Login: React.FC = () => {
   return (
     <div
       className="login__bg"
-      style={{
-        backgroundImage: "url(" + bgInfo?.url + ")",
-      }}
+      style={bgInfo?.url ? { backgroundImage: "url(" + bgInfo.url + ")" } : {}}
     >
       <div
         className="login__pin"
@@ -135,7 +133,7 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {bgInfo ? (
+      {bgInfo?.copyright ? (
         <div className="login__copyright">
           <div>{bgInfo.copyright}</div>
         </div>
