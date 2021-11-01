@@ -2,7 +2,10 @@ package bootstrappers
 
 import (
 	"context"
+	"fmt"
 	"net"
+
+	"github.com/duc-cnzj/mars/internal/utils"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/pkg/auth"
@@ -25,7 +28,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-var grpcEndpoint = "localhost:9999"
+var grpcEndpoint string
+
+func init() {
+	port, err := utils.GetFreePort()
+	if err != nil {
+		panic("There are no free ports for grpc server")
+	}
+	grpcEndpoint = fmt.Sprintf("localhost:%d", port)
+}
 
 type GrpcBootstrapper struct{}
 
@@ -52,7 +63,7 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 }
 
 func (g *grpcRunner) Run(ctx context.Context) error {
-	mlog.Debug("[Server]: start grpcRunner runner.")
+	mlog.Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
 	listen, _ := net.Listen("tcp", g.endpoint)
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(

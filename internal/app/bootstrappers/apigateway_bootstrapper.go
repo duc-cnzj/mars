@@ -41,7 +41,7 @@ type apiGateway struct {
 }
 
 func (a *apiGateway) Run(ctx context.Context) error {
-	mlog.Debug("[Server]: start apiGateway runner.")
+	mlog.Infof("[Server]: start apiGateway runner at %s.", a.endpoint)
 	router := mux.NewRouter()
 	gmux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
