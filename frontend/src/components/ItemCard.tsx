@@ -1,4 +1,4 @@
-import React, { useState, lazy } from "react";
+import React, { useState } from "react";
 import {
   Card,
   Popconfirm,
@@ -12,12 +12,10 @@ import {
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
 import { deleteNamespace, getNamespaceCpuAndMemory } from "../api/namespace";
-
+import ServiceEndpoint from "./ServiceEndpoint";
+import ProjectDetail from "./ProjectDetail";
+import CreateProjectModal from "./CreateProjectModal";
 import pb from "../api/compiled";
-
-const CreateProjectModal = lazy(() => import("./CreateProjectModal"));
-const ProjectDetail = lazy(() => import("./ProjectDetail"));
-const ServiceEndpoint = lazy(() => import("./ServiceEndpoint"));
 
 const Item: React.FC<{
   item: pb.NamespaceItem;

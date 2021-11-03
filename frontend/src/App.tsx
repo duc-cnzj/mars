@@ -1,4 +1,4 @@
-import React, { FC, lazy } from "react";
+import React, { FC, lazy, Suspense } from "react";
 import { Layout } from "antd";
 import AppContent from "./components/AppContent";
 import { ProvideWebsocket } from "./contexts/useWebsocket";
@@ -21,7 +21,9 @@ const App: FC = () => {
         <Content className="app-content">
           <Switch>
             <PrivateRoute path={`/gitlab_project_manager`}>
-              <GitlabProjectManager />
+              <Suspense fallback={null}>
+                <GitlabProjectManager />
+              </Suspense>
             </PrivateRoute>
             <PrivateRoute path={`/`} exact>
               <AppContent />
