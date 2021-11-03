@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { Controlled as CodeMirror } from "react-codemirror2";
+import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
 import Prism from "prismjs";
 import PipelineInfo from "./PipelineInfo";
@@ -29,15 +29,6 @@ import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
 import "prism-themes/themes/prism-material-dark.css";
-
-require("codemirror/mode/go/go");
-require("codemirror/mode/css/css");
-require("codemirror/mode/javascript/javascript");
-require("codemirror/mode/yaml/yaml");
-require("codemirror/mode/php/php");
-require("codemirror/mode/python/python");
-require("codemirror/mode/properties/properties");
-require("codemirror/mode/textile/textile");
 
 const getLoader = require("prismjs/dependencies");
 const components = require("prismjs/components");
@@ -273,36 +264,7 @@ const ModalSub: React.FC<{
   );
 
   useEffect(() => {
-    switch (data.config_type) {
-      case "dotenv":
-      case "env":
-      case ".env":
-        setMode("text/x-textile");
-        break;
-      case "yaml":
-        setMode("text/x-yaml");
-        break;
-      case "js":
-      case "javascript":
-        setMode("text/javascript");
-        break;
-      case "ini":
-        setMode("text/x-properties");
-        break;
-      case "php":
-        setMode("php");
-        break;
-      case "go":
-        setMode("text/x-go");
-        break;
-      case "py":
-      case "python":
-        setMode("text/x-python");
-        break;
-      default:
-        setMode(data.config_type);
-        break;
-    }
+    setMode(getMode(data.config_type))
   }, [data.config_type]);
 
   const highlightSyntax = useCallback(

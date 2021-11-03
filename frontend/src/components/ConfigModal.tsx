@@ -3,7 +3,6 @@ import { Controlled as CodeMirror } from "react-codemirror2";
 
 import pb from '../api/compiled'
 
-import "codemirror/lib/codemirror.css";
 import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
