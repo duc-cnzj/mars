@@ -1,4 +1,11 @@
-import React, { useState, useCallback, useEffect, memo, lazy } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  memo,
+  lazy,
+  Suspense,
+} from "react";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { detailProject } from "../api/project";
 import { Button, Tabs, Skeleton, Switch } from "antd";
@@ -115,12 +122,14 @@ const ItemDetailModal: React.FC<{
                   />
                 </div>
                 {detail ? (
-                  <TabLog
-                    updatedAt={detail.updated_at}
-                    autoRefresh={autoRefresh}
-                    id={detail.id}
-                    namespaceId={detail.namespace?.id}
-                  />
+                  <Suspense fallback={null}>
+                    <TabLog
+                      updatedAt={detail.updated_at}
+                      autoRefresh={autoRefresh}
+                      id={detail.id}
+                      namespaceId={detail.namespace?.id}
+                    />
+                  </Suspense>
                 ) : (
                   <Skeleton active />
                 )}
@@ -128,11 +137,13 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell">
                 <ErrorBoundary>
                   {detail ? (
-                    <Shell
-                      updatedAt={detail.updated_at}
-                      resizeAt={resizeAt}
-                      detail={detail}
-                    />
+                    <Suspense fallback={null}>
+                      <Shell
+                        updatedAt={detail.updated_at}
+                        resizeAt={resizeAt}
+                        detail={detail}
+                      />
+                    </Suspense>
                   ) : (
                     <Skeleton active />
                   )}
@@ -140,7 +151,9 @@ const ItemDetailModal: React.FC<{
               </TabPane>
               <TabPane tab="配置更新" key="update-config">
                 {detail ? (
-                  <TabEdit detail={detail} onSuccess={onSuccess} />
+                  <Suspense fallback={null}>
+                    <TabEdit detail={detail} onSuccess={onSuccess} />
+                  </Suspense>
                 ) : (
                   <Skeleton active />
                 )}
@@ -150,13 +163,15 @@ const ItemDetailModal: React.FC<{
             <></>
           )}
           <TabPane tab="详细信息" key="detail" className="detail-tab">
-            <TabInfo
-              detail={detail}
-              onDeleted={() => {
-                dispatch(setNamespaceReload(true));
-                setVisible(false);
-              }}
-            />
+            <Suspense fallback={null}>
+              <TabInfo
+                detail={detail}
+                onDeleted={() => {
+                  dispatch(setNamespaceReload(true));
+                  setVisible(false);
+                }}
+              />
+            </Suspense>
           </TabPane>
         </Tabs>
       </DraggableModal>
