@@ -1,17 +1,18 @@
-import React, { useState, useCallback, useEffect, memo } from "react";
+import React, { useState, useCallback, useEffect, memo, lazy } from "react";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { detailProject } from "../api/project";
 import { Button, Tabs, Skeleton, Switch } from "antd";
 import DeployStatus from "./DeployStatus";
-import TabInfo from "./TabInfo";
-import TabLog from "./TabLog";
 import { setNamespaceReload } from "../store/actions";
-import Shell from "./TabShell";
-import TabEdit from "./TabEdit";
 import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
 import pb from "../api/compiled";
+
+const TabInfo = lazy(() => import("./TabInfo"));
+const TabLog = lazy(() => import("./TabLog"));
+const Shell = lazy(() => import("./TabShell"));
+const TabEdit = lazy(() => import("./TabEdit"));
 
 const { TabPane } = Tabs;
 
@@ -127,7 +128,11 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell">
                 <ErrorBoundary>
                   {detail ? (
-                    <Shell updatedAt={detail.updated_at} resizeAt={resizeAt} detail={detail} />
+                    <Shell
+                      updatedAt={detail.updated_at}
+                      resizeAt={resizeAt}
+                      detail={detail}
+                    />
                   ) : (
                     <Skeleton active />
                   )}
