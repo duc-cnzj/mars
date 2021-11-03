@@ -1,8 +1,4 @@
-import React, { useState } from "react";
-import CreateProjectModal from "./CreateProjectModal";
-import ProjectDetail from "./ProjectDetail";
-import ServiceEndpoint from "./ServiceEndpoint";
-
+import React, { useState, lazy } from "react";
 import {
   Card,
   Popconfirm,
@@ -15,12 +11,13 @@ import {
 } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
-import {
-  deleteNamespace,
-  getNamespaceCpuAndMemory,
-} from "../api/namespace";
+import { deleteNamespace, getNamespaceCpuAndMemory } from "../api/namespace";
 
-import pb from '../api/compiled'
+import pb from "../api/compiled";
+
+const CreateProjectModal = lazy(() => import("./CreateProjectModal"));
+const ProjectDetail = lazy(() => import("./ProjectDetail"));
+const ServiceEndpoint = lazy(() => import("./ServiceEndpoint"));
 
 const Item: React.FC<{
   item: pb.NamespaceItem;
@@ -43,12 +40,14 @@ const Item: React.FC<{
               <Tooltip
                 onVisibleChange={(visible) => {
                   if (visible) {
-                    getNamespaceCpuAndMemory({namespace_id: item.id}).then((res) => {
-                      setCpuAndMemory({
-                        cpu: res.data.cpu,
-                        memory: res.data.memory,
-                      });
-                    });
+                    getNamespaceCpuAndMemory({ namespace_id: item.id }).then(
+                      (res) => {
+                        setCpuAndMemory({
+                          cpu: res.data.cpu,
+                          memory: res.data.memory,
+                        });
+                      }
+                    );
                   }
                 }}
                 title={
@@ -94,7 +93,7 @@ const Item: React.FC<{
           cancelText="No"
           onConfirm={() => {
             setDeleting(true);
-            deleteNamespace({namespace_id: item.id})
+            deleteNamespace({ namespace_id: item.id })
               .then((res) => {
                 message.success("删除成功");
                 onNamespaceDeleted();

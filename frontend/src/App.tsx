@@ -1,12 +1,15 @@
-import React, { FC } from "react";
+import React, { FC, lazy } from "react";
 import { Layout } from "antd";
 import AppContent from "./components/AppContent";
 import { ProvideWebsocket } from "./contexts/useWebsocket";
 import { Switch, Route } from "react-router-dom";
-import GitlabProjectManager from "./components/GitlabProjectManager";
 import AppHeader from "./components/AppHeader";
 import { PrivateRoute } from "./contexts/auth";
 const { Header, Content, Footer } = Layout;
+
+const GitlabProjectManager = lazy(
+  () => import("./components/GitlabProjectManager")
+);
 
 const App: FC = () => {
   return (

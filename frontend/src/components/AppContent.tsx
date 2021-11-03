@@ -2,16 +2,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
 import { Empty, Row, Col } from "antd";
-import AddNamespace from "./AddNamespace";
-import Setting from "./Setting";
 import "../pkg/DraggableModal/index.css";
 import { listNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload } from "../store/actions";
 import { selectReload } from "../store/reducers/namespace";
 import { useAuth } from "../contexts/auth";
-
 import pb from "../api/compiled";
+import Setting from "./Setting";
+import AddNamespace from "./AddNamespace";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
@@ -22,7 +21,7 @@ const AppContent: React.FC = () => {
     console.log(id, name);
     fetchNamespaces();
   };
-  const auth = useAuth()
+  const auth = useAuth();
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     listNamespaces()
