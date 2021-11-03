@@ -2,7 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
-import { Controlled as CodeMirror } from "react-codemirror2";
+import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
+
 import { configFile } from "../api/gitlab";
 import {
   DeployStatus as DeployStatusEnum,
@@ -28,13 +29,6 @@ import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
-
-require("codemirror/mode/go/go");
-require("codemirror/mode/css/css");
-require("codemirror/mode/javascript/javascript");
-require("codemirror/mode/yaml/yaml");
-require("codemirror/mode/php/php");
-require("codemirror/mode/textile/textile");
 
 const initItemData: Mars.CreateItemInterface = {
   name: "",
@@ -123,36 +117,7 @@ const CreateProjectModal: React.FC<{
   }, [data.gitlabBranch, data.gitlabProjectId]);
 
   useEffect(() => {
-    switch (data.config_type) {
-      case "dotenv":
-      case "env":
-      case ".env":
-        setMode("text/x-textile");
-        break;
-      case "yaml":
-        setMode("text/x-yaml");
-        break;
-      case "js":
-      case "javascript":
-        setMode("text/javascript");
-        break;
-      case "ini":
-        setMode("text/x-properties");
-        break;
-      case "php":
-        setMode("php");
-        break;
-      case "go":
-        setMode("text/x-go");
-        break;
-      case "py":
-      case "python":
-        setMode("text/x-python");
-        break;
-      default:
-        setMode(data.config_type);
-        break;
-    }
+    setMode(getMode(data.config_type))
   }, [data.config_type]);
 
   useEffect(() => {
