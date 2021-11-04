@@ -2,11 +2,18 @@ package bootstrappers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/pkg/auth"
+	"github.com/duc-cnzj/mars/pkg/cp"
 	"github.com/duc-cnzj/mars/pkg/picture"
 
 	"github.com/duc-cnzj/mars/frontend"
@@ -63,6 +70,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		project.RegisterProjectHandlerFromEndpoint,
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,
+		cp.RegisterCpHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {
@@ -71,6 +79,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}
 	}
 
+	handUploadFile(gmux)
 	router.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		writer.Write([]byte("pong"))
@@ -96,6 +105,45 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+const maxFileSize = 1 << 20 * 10 // 10M
+
+func handUploadFile(gmux *runtime.ServeMux) {
+	gmux.HandlePath("POST", "/api/files", handleBinaryFileUpload)
+}
+
+func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+		http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	f, h, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to get file 'attachment': %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+
+	mkdirTemp, _ := os.MkdirTemp("/tmp", "mars-*")
+	temp, _ := os.Create(filepath.Join(mkdirTemp, h.Filename))
+	defer temp.Close()
+	mlog.Warning(temp.Name())
+	io.Copy(temp, f)
+
+	file := models.File{Path: temp.Name()}
+	app.DB().Create(&file)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	var res = struct {
+		ID int `json:"id"`
+	}{
+		ID: file.ID,
+	}
+	marshal, _ := json.Marshal(&res)
+	w.Write(marshal)
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
