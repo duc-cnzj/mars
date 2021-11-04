@@ -223,11 +223,11 @@ const TabShell: React.FC<{
   };
 
   function beforeUpload(file: any) {
-    const isLt10M = file.size / 1024 / 1024 <= 10;
-    if (!isLt10M) {
-      message.error("文件最大不能超过 10MB!");
+    const isLt50M = file.size / 1024 / 1024 <= 50;
+    if (!isLt50M) {
+      message.error("文件最大不能超过 50MB!");
     }
-    return isLt10M;
+    return isLt50M;
   }
 
   const props = {

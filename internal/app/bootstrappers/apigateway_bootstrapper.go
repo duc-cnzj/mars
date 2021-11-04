@@ -107,7 +107,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	return nil
 }
 
-const maxFileSize = 1 << 20 * 10 // 10M
+const maxFileSize = 50 << 20 // 50M
 
 func handUploadFile(gmux *runtime.ServeMux) {
 	gmux.HandlePath("POST", "/api/files", handleBinaryFileUpload)
