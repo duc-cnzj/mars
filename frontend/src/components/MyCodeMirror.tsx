@@ -35,7 +35,7 @@ export const getMode = (mode: string):string => {
   }
 }
 
-export const MyCodeMirror: React.ForwardRefRenderFunction<Controlled, IControlledCodeMirror & React.RefAttributes<Controlled>> = (props, ref) => {
+const myCodeMirror: React.ForwardRefRenderFunction<Controlled, IControlledCodeMirror & React.RefAttributes<Controlled>> = (props, ref) => {
   return (
     <CodeMirror
       ref={ref}
@@ -43,5 +43,6 @@ export const MyCodeMirror: React.ForwardRefRenderFunction<Controlled, IControlle
     />
   );
 };
+export const MyCodeMirror = React.forwardRef(myCodeMirror);
 
-export default React.forwardRef(MyCodeMirror);
+export default MyCodeMirror;
