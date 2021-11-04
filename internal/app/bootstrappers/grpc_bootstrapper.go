@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/duc-cnzj/mars/pkg/cp"
+
 	"github.com/duc-cnzj/mars/internal/utils"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -96,6 +98,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	namespace.RegisterNamespaceServer(server, new(services.Namespace))
 	project.RegisterProjectServer(server, new(services.Project))
 	picture.RegisterPictureServer(server, new(services.Picture))
+	cp.RegisterCpServer(server, new(services.CopyToPod))
 	auth.RegisterAuthServer(server, services.NewAuth(app.Config().Prikey(), app.Config().Pubkey(), app.App().Oidc(), app.Config().AdminPassword))
 
 	g.server = server

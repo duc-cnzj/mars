@@ -20,6 +20,7 @@ var Models = []interface{}{
 	&models.Namespace{},
 	&models.Project{},
 	&models.GitlabProject{},
+	&models.File{},
 }
 
 type DBBootstrapper struct{}

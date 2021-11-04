@@ -371,6 +371,80 @@ export namespace Cluster {
     type InfoCallback = (error: (Error|null), response?: ClusterInfoResponse) => void;
 }
 
+/** Represents a CopyToPodRequest. */
+export class CopyToPodRequest implements ICopyToPodRequest {
+
+    /**
+     * Constructs a new CopyToPodRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ICopyToPodRequest);
+
+    /** CopyToPodRequest file_id. */
+    public file_id: (number|Long);
+
+    /** CopyToPodRequest namespace. */
+    public namespace: string;
+
+    /** CopyToPodRequest pod. */
+    public pod: string;
+
+    /** CopyToPodRequest container. */
+    public container: string;
+}
+
+/** Represents a CopyToPodResponse. */
+export class CopyToPodResponse implements ICopyToPodResponse {
+
+    /**
+     * Constructs a new CopyToPodResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ICopyToPodResponse);
+
+    /** CopyToPodResponse podFilePath. */
+    public podFilePath: string;
+
+    /** CopyToPodResponse output. */
+    public output: string;
+}
+
+/** Represents a Cp */
+export class Cp extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Cp service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls CopyToPod.
+     * @param request CopyToPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and CopyToPodResponse
+     */
+    public copyToPod(request: ICopyToPodRequest, callback: Cp.CopyToPodCallback): void;
+
+    /**
+     * Calls CopyToPod.
+     * @param request CopyToPodRequest message or plain object
+     * @returns Promise
+     */
+    public copyToPod(request: ICopyToPodRequest): Promise<CopyToPodResponse>;
+}
+
+export namespace Cp {
+
+    /**
+     * Callback as used by {@link Cp#copyToPod}.
+     * @param error Error, if any
+     * @param [response] CopyToPodResponse
+     */
+    type CopyToPodCallback = (error: (Error|null), response?: CopyToPodResponse) => void;
+}
+
 /** Represents a GitlabDestroyRequest. */
 export class GitlabDestroyRequest implements IGitlabDestroyRequest {
 

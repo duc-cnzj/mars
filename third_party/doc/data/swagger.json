@@ -143,6 +143,38 @@
         }
       }
     },
+    "/api/copy_to_pod": {
+      "post": {
+        "tags": [
+          "Cp"
+        ],
+        "operationId": "Cp_CopyToPod",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CopyToPodRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CopyToPodResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/gitlab/project_list": {
       "get": {
         "tags": [
@@ -1061,6 +1093,35 @@
         }
       }
     },
+    "CopyToPodRequest": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "file_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "CopyToPodResponse": {
+      "type": "object",
+      "properties": {
+        "output": {
+          "type": "string"
+        },
+        "podFilePath": {
+          "type": "string"
+        }
+      }
+    },
     "CpuAndMemoryResponse": {
       "type": "object",
       "properties": {
@@ -1615,6 +1676,9 @@
     },
     {
       "name": "Cluster"
+    },
+    {
+      "name": "Cp"
     },
     {
       "name": "Gitlab"

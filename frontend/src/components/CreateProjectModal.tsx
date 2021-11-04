@@ -101,7 +101,7 @@ const CreateProjectModal: React.FC<{
       loadConfigFile();
     }
   };
-  const cmref = useRef<any>();
+  const cmref = useRef<any>()
 
   const loadConfigFile = useCallback(() => {
     configFile({
@@ -121,7 +121,7 @@ const CreateProjectModal: React.FC<{
   }, [data.config_type]);
 
   useEffect(() => {
-    if (cmref.current && data.config) {
+    if (cmref && cmref.current && data.config) {
       cmref.current.editor.setSize("100%", "100%");
     }
   }, [data.config]);
