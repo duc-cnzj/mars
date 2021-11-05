@@ -297,8 +297,9 @@ const TabShell: React.FC<{
         ))}
       </Radio.Group>
       <div>
-        <Upload disabled={loading} {...props}>
+        <Upload {...props}>
           <Button
+            disabled={loading}
             loading={loading}
             size="small"
             style={{ fontSize: 12, marginBottom: 5 }}
