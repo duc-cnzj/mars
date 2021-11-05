@@ -230,6 +230,8 @@ const TabShell: React.FC<{
     return isLt50M;
   }
 
+  const [loading, setLoading] = useState(false);
+
   const props = {
     name: "file",
     beforeUpload: beforeUpload,
@@ -246,6 +248,7 @@ const TabShell: React.FC<{
       }
       if (info.file.status === "done") {
         let [pod, container] = value.split("|");
+        setLoading(true);
         copyToPod({
           pod: pod,
           container: container,
@@ -261,6 +264,9 @@ const TabShell: React.FC<{
           })
           .catch((e) => {
             message.error(`文件 ${info.file.name} 上传到容器失败`);
+          })
+          .finally(() => {
+            setLoading(false);
           });
       } else if (info.file.status === "error") {
         message.error(`文件 ${info.file.name} 上传失败`);
@@ -291,11 +297,12 @@ const TabShell: React.FC<{
       <div>
         <Upload {...props}>
           <Button
+            loading={loading}
             size="small"
             style={{ fontSize: 12, marginBottom: 5 }}
             icon={<UploadOutlined />}
           >
-            上传到容器
+            {loading ? "上传中" : "上传到容器"}
           </Button>
         </Upload>
         <div style={{ maxHeight: 400 }}>
