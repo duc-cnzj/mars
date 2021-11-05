@@ -45,8 +45,12 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		return nil, err
 	}
 	go func() {
-		defer outStream.Close()
-		defer src.Close()
+		defer func() {
+			reader.Close()
+			outStream.Close()
+			src.Close()
+		}()
+
 		if _, err := io.Copy(outStream, src); err != nil {
 			mlog.Error(err)
 		}
