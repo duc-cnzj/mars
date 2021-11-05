@@ -184,7 +184,7 @@ func (sm *SessionMap) CloseAll() {
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
-	mlog.Debugf("[Websocket] session %v closed.", sessionId)
+	mlog.Debugf("[Websocket] session %v closed, reason: %s.", sessionId, reason)
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	if _, ok := sm.Sessions[sessionId]; !ok {
@@ -304,7 +304,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 		mlog.Error(err)
 		s := conn.terminalSessions.Get(sessionId)
 		if s == nil {
-			conn.terminalSessions.Close(sessionId, 3, "MyPtyHandler not exist")
+			conn.terminalSessions.Close(sessionId, 3, fmt.Sprintf("[Websocket]: session '%s' MyPtyHandler not exist", sessionId))
 			return
 		}
 
