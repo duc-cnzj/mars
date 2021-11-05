@@ -227,6 +227,8 @@ const TabShell: React.FC<{
     if (!isLt50M) {
       message.error("文件最大不能超过 50MB!");
     }
+    setLoading(true);
+
     return isLt50M;
   }
 
@@ -248,7 +250,6 @@ const TabShell: React.FC<{
       }
       if (info.file.status === "done") {
         let [pod, container] = value.split("|");
-        setLoading(true);
         copyToPod({
           pod: pod,
           container: container,
