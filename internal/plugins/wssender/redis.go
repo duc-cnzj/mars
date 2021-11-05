@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/go-redis/redis/v8"
@@ -28,8 +27,7 @@ func (p *redisSender) Name() string {
 	return redisSenderName
 }
 
-func (p *redisSender) Initialize() error {
-	args := app.Config().WsSenderPlugin.Args
+func (p *redisSender) Initialize(args map[string]interface{}) error {
 	addr := args["addr"]
 	pwd := args["password"]
 	db := args["db"]

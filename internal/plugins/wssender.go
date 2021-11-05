@@ -56,9 +56,10 @@ type PubSub interface {
 }
 
 func GetWsSender() WsSender {
-	p := app.App().GetPluginByName(app.Config().WsSenderPlugin.Name)
+	pcfg := app.Config().WsSenderPlugin
+	p := app.App().GetPluginByName(pcfg.Name)
 	wsSenderOnce.Do(func() {
-		if err := p.Initialize(); err != nil {
+		if err := p.Initialize(pcfg.GetArgs()); err != nil {
 			panic(err)
 		}
 		app.App().RegisterAfterShutdownFunc(func(applicationInterface contracts.ApplicationInterface) {

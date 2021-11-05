@@ -2,6 +2,6 @@ package contracts
 
 type PluginInterface interface {
 	Name() string
-	Initialize() error
+	Initialize(args map[string]interface{}) error
 	Destroy() error
 }

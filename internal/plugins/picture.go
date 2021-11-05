@@ -7,18 +7,23 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 )
 
-var dockerOnce = sync.Once{}
+var pictureOnce = sync.Once{}
 
-type DockerPluginInterface interface {
-	contracts.PluginInterface
-
-	ImageNotExists(repo, tag string) bool
+type Picture struct {
+	Url       string
+	Copyright string
 }
 
-func GetDockerPlugin() DockerPluginInterface {
-	pcfg := app.App().Config().DockerPlugin
+type PictureInterface interface {
+	contracts.PluginInterface
+
+	Get(random bool) (*Picture, error)
+}
+
+func GetPicturePlugin() PictureInterface {
+	pcfg := app.Config().PicturePlugin
 	p := app.App().GetPluginByName(pcfg.Name)
-	dockerOnce.Do(func() {
+	pictureOnce.Do(func() {
 		if err := p.Initialize(pcfg.GetArgs()); err != nil {
 			panic(err)
 		}
@@ -27,5 +32,5 @@ func GetDockerPlugin() DockerPluginInterface {
 		})
 	})
 
-	return p.(DockerPluginInterface)
+	return p.(PictureInterface)
 }
