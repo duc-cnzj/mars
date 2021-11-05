@@ -11,8 +11,13 @@ import (
 var (
 	nameCartoon          = "picture_cartoon"
 	urls        []string = []string{
-		//"https://api.ixiaowai.cn/api/api.php", // sina 防盗链 403 了
 		"https://cloud.qqshabi.cn/api/images/api.php",
+		// 以下全部防盗链
+		//"http://api.btstu.cn/sjbz/?lx=suiji",
+		//"http://api.btstu.cn/sjbz/?lx=dongman",
+		//"https://acg.toubiec.cn/random.php",
+		//"http://www.dmoe.cc/random.php",
+		//"https://api.ixiaowai.cn/api/api.php",
 	}
 )
 
