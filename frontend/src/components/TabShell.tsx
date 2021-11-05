@@ -271,6 +271,7 @@ const TabShell: React.FC<{
           });
       } else if (info.file.status === "error") {
         message.error(`文件 ${info.file.name} 上传失败`);
+        setLoading(false);
       }
     },
   };
