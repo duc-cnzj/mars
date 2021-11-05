@@ -691,9 +691,12 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	}
 
 	// 传入自定义配置必须在默认配置之后，不然会被上面的 default_values 覆盖，导致不管你怎么更新配置文件都无法正正的更新到容器
-	configValues, err := marsC.GenerateConfigYamlByInput(input.Config)
-	if err != nil {
-		return err
+	var configValues string
+	if input.Config != "" {
+		configValues, err = marsC.GenerateConfigYamlByInput(input.Config)
+		if err != nil {
+			return err
+		}
 	}
 
 	base := strings.NewReader(defaultValues)

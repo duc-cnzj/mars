@@ -6,7 +6,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"path"
 	"strings"
 	"sync"
 	"time"
@@ -101,7 +100,7 @@ func (b *Bing) Get(random bool) (*plugins.Picture, error) {
 	}
 
 	return &plugins.Picture{
-		Url:       path.Clean("https://cn.bing.com/" + res[key].URL),
+		Url:       "https://cn.bing.com/" + strings.TrimLeft(res[key].URL, "/"),
 		Copyright: res[key].Copyright[:strings.Index(res[key].Copyright, "(©")],
 	}, nil
 }
