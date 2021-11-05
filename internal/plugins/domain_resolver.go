@@ -20,9 +20,13 @@ type DomainResolverInterface interface {
 }
 
 func GetDomainResolverPlugin() DomainResolverInterface {
-	p := app.App().GetPluginByName(app.App().Config().DomainResolverPlugin.Name)
+	pcfg := app.App().Config().DomainResolverPlugin
+	p := app.App().GetPluginByName(pcfg.Name)
+	args := pcfg.GetArgs()
+	args["ns_prefix"] = app.Config().NsPrefix
+
 	domainResolverOnce.Do(func() {
-		if err := p.Initialize(); err != nil {
+		if err := p.Initialize(args); err != nil {
 			panic(err)
 		}
 		app.App().RegisterAfterShutdownFunc(func(applicationInterface contracts.ApplicationInterface) {

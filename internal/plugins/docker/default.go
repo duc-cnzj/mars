@@ -22,7 +22,7 @@ func (d *dockerPlugin) Name() string {
 	return name
 }
 
-func (d *dockerPlugin) Initialize() error {
+func (d *dockerPlugin) Initialize(args map[string]interface{}) error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }

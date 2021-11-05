@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
@@ -23,13 +22,18 @@ func init() {
 }
 
 // DefaultDomainResolver 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
-type DefaultDomainResolver struct{}
+type DefaultDomainResolver struct {
+	nsPrefix string
+}
 
 func (d *DefaultDomainResolver) Name() string {
 	return name
 }
 
-func (d *DefaultDomainResolver) Initialize() error {
+func (d *DefaultDomainResolver) Initialize(args map[string]interface{}) error {
+	if p, ok := args["ns_prefix"]; ok {
+		d.nsPrefix = p.(string)
+	}
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
@@ -45,7 +49,7 @@ func (d *DefaultDomainResolver) GetDomainByIndex(domainSuffix, projectName, name
 		projectName:  projectName,
 		namespace:    namespace,
 		index:        index,
-		nsPrefix:     app.Config().NsPrefix,
+		nsPrefix:     d.nsPrefix,
 		domainSuffix: domainSuffix,
 	}.SubStr()
 }
@@ -56,7 +60,7 @@ func (d *DefaultDomainResolver) GetDomain(domainSuffix, projectName, namespace s
 		projectName:  projectName,
 		namespace:    namespace,
 		index:        -1,
-		nsPrefix:     app.Config().NsPrefix,
+		nsPrefix:     d.nsPrefix,
 		domainSuffix: domainSuffix,
 	}.SubStr()
 }

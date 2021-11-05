@@ -17,6 +17,14 @@ type Plugin struct {
 	Args map[string]interface{} `mapstructure:"args"`
 }
 
+func (p Plugin) GetArgs() map[string]interface{} {
+	if p.Args == nil {
+		return map[string]interface{}{}
+	}
+
+	return p.Args
+}
+
 type DockerAuth struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
@@ -38,6 +46,7 @@ type Config struct {
 	DockerPlugin         Plugin `mapstructure:"docker_plugin"`
 	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
 	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
+	PicturePlugin        Plugin `mapstructure:"picture_plugin"`
 
 	KubeConfig     string `mapstructure:"kubeconfig"`
 	NsPrefix       string `mapstructure:"ns_prefix"`
@@ -109,6 +118,10 @@ func Init(cfgFile string) *Config {
 	})
 	viper.SetDefault("ws_sender_plugin", map[string]interface{}{
 		"name": "ws_sender_memory",
+		"args": nil,
+	})
+	viper.SetDefault("picture_plugin", map[string]interface{}{
+		"name": "picture_bing",
 		"args": nil,
 	})
 

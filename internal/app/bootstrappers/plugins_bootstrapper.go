@@ -15,6 +15,7 @@ func (a *PluginsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 		plugins.GetWsSender()
 		plugins.GetDomainResolverPlugin()
 		plugins.GetDockerPlugin()
+		plugins.GetPicturePlugin()
 	})
 
 	return nil

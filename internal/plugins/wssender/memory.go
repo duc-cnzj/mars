@@ -60,7 +60,7 @@ func (ms *memorySender) Name() string {
 	return memorySenderName
 }
 
-func (ms *memorySender) Initialize() error {
+func (ms *memorySender) Initialize(args map[string]interface{}) error {
 	ms.conns = map[string]map[string]*Conn{}
 	mlog.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil
