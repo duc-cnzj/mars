@@ -154,7 +154,6 @@ const TabShell: React.FC<{
       fontFamily: '"Fira code", "Fira Mono", monospace',
       bellStyle: "sound",
       cursorBlink: true,
-      logLevel: "debug",
     });
     setTerm(myterm);
     myterm.loadAddon(fitAddon);
@@ -277,7 +276,14 @@ const TabShell: React.FC<{
   };
 
   return (
-    <div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflowY: "auto",
+      }}
+    >
       <Radio.Group
         onChange={onChange}
         value={value}
@@ -296,22 +302,18 @@ const TabShell: React.FC<{
           </Radio>
         ))}
       </Radio.Group>
-      <div>
-        <Upload {...props}>
-          <Button
-            disabled={loading}
-            loading={loading}
-            size="small"
-            style={{ fontSize: 12, marginBottom: 5 }}
-            icon={<UploadOutlined />}
-          >
-            {loading ? "上传中" : "上传到容器"}
-          </Button>
-        </Upload>
-        <div style={{ maxHeight: 400 }}>
-          <div ref={ref} id="terminal"></div>
-        </div>
-      </div>
+      <Upload {...props}>
+        <Button
+          disabled={loading}
+          loading={loading}
+          size="small"
+          style={{ fontSize: 12, marginBottom: 5 }}
+          icon={<UploadOutlined />}
+        >
+          {loading ? "上传中" : "上传到容器"}
+        </Button>
+      </Upload>
+      <div ref={ref} id="terminal" style={{ height: "100%" }}></div>
     </div>
   );
 };
