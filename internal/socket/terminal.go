@@ -55,16 +55,16 @@ type MyPtyHandler struct {
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
-		return 0, fmt.Errorf("%v doneChan closed!", t.id)
+		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("%v doneChan closed!", t.id)
 	default:
 	}
 	ch, err := t.conn.GetShellChannel(t.id)
 	if err != nil {
-		return 0, err
+		return copy(p, END_OF_TRANSMISSION), err
 	}
 	msg, ok := <-ch
 	if !ok {
-		return 0, fmt.Errorf("%v channel closed", t.id)
+		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("%v channel closed", t.id)
 	}
 	mlog.Debugf("[Websocket] %v %v %v 从终端读取消息：%v", t.Namespace, t.Pod, t.Container.Container, msg)
 	switch msg.Op {
