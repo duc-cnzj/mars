@@ -102,7 +102,7 @@ const ItemDetailModal: React.FC<{
         onCancel={onCancel}
         title={item.name + "(" + namespace + ")"}
       >
-        <Tabs defaultActiveKey="1" centered>
+        <Tabs defaultActiveKey="1" centered style={{ height: "100%" }}>
           {item.status === "deployed" ? (
             <>
               <TabPane tab="容器日志" key="container-logs">
@@ -125,7 +125,7 @@ const ItemDetailModal: React.FC<{
                   <Skeleton active />
                 )}
               </TabPane>
-              <TabPane tab="命令行" key="shell">
+              <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
                 <ErrorBoundary>
                   {detail ? (
                     <Shell
