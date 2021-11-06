@@ -41,6 +41,7 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.GrpcBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
 	&bootstrappers.OidcBootstrapper{},
+	&bootstrappers.TracingBootstrapper{},
 }
 
 type emptyMetrics struct{}

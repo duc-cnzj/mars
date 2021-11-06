@@ -54,6 +54,10 @@ type Config struct {
 	ClusterIssuer  string `mapstructure:"cluster_issuer"`
 	ExternalIp     string `mapstructure:"external_ip"`
 
+	JaegerUser          string `mapstructure:"jaeger_user"`
+	JaegerPassword      string `mapstructure:"jaeger_password"`
+	JaegerAgentHostPort string `mapstructure:"jaeger_agent_host_port"`
+
 	// mysql
 	DBDriver   string `mapstructure:"db_driver"`
 	DBHost     string `mapstructure:"db_host"`

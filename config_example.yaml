@@ -34,6 +34,10 @@ db_port: 3306
 db_username: root
 db_password: ""
 
+jaeger_user: ""
+jaeger_password: ""
+jaeger_agent_host_port: ""
+
 # 通配符域名，自动生成对应命名空间下的 https 域名
 wildcard_domain: "*.test.local"
 # cert-manager 的 cluster_issuer 名称
