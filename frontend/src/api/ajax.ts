@@ -20,7 +20,9 @@ const ajax = axios.create({
 ajax.interceptors.request.use(
   (config) => {
     console.log("在发送请求之前做些什么", config.url);
-    config.headers["Authorization"] = getToken();
+    if (config.headers) {
+      config.headers["Authorization"] = getToken();
+    }
 
     return config;
   },

@@ -84,7 +84,7 @@ const GitlabProjectManager: React.FC = () => {
             }
           >
             {list ? list.map((item, key) => (
-              <Option value={item.id}>{item.name}</Option>
+              <Option value={item.id} key={key}>{item.name}</Option>
             )):<></>}
           </Select>
         </div>
@@ -119,7 +119,7 @@ const GitlabProjectManager: React.FC = () => {
               ]}
             >
               <List.Item.Meta
-              key={item.id}
+                key={item.id}
                 avatar={<Avatar src={item.avatar_url} />}
                 title={
                   <div>
