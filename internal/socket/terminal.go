@@ -45,7 +45,6 @@ type MyPtyHandler struct {
 	Container
 	id       string
 	conn     *WsConn
-	bound    chan error
 	sizeChan chan remotecommand.TerminalSize
 	doneChan chan struct{}
 
@@ -55,7 +54,7 @@ type MyPtyHandler struct {
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
-		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("%v doneChan closed!", t.id)
+		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
 	ch, err := t.conn.GetShellChannel(t.id)
@@ -205,6 +204,7 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	SendMsg(sm.Sessions[sessionId].conn, sm.Sessions[sessionId].id, WsHandleExecShellMsg, string(msg))
 	sm.conn.DeleteShellChannel(sessionId)
 	close(sm.Sessions[sessionId].doneChan)
+	close(sm.Sessions[sessionId].sizeChan)
 	delete(sm.Sessions, sessionId)
 }
 
@@ -243,8 +243,6 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *C
 		Tty:               true,
 	})
 	if err != nil {
-		mlog.Error(err)
-
 		return err
 	}
 
@@ -286,35 +284,30 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
 
+	session := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
-		err = startProcess(k8sClient, cfg, container, cmd, conn.terminalSessions.Get(sessionId))
+		err = startProcess(k8sClient, cfg, container, cmd, session)
 	} else {
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
 		for _, testShell := range validShells {
 			cmd := []string{testShell}
-			if err = startProcess(k8sClient, cfg, container, cmd, conn.terminalSessions.Get(sessionId)); err == nil {
+			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {
 				break
 			}
 		}
 	}
 
 	if err != nil {
-		mlog.Error(err)
-		s := conn.terminalSessions.Get(sessionId)
-		if s == nil {
-			conn.terminalSessions.Close(sessionId, 3, fmt.Sprintf("[Websocket]: session '%s' MyPtyHandler not exist", sessionId))
-			return
-		}
-
+		mlog.Errorf("[Websocket]: %v", err)
 		if strings.Contains(err.Error(), "unable to upgrade connection") {
 			if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
 				app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
-				s.Toast(fmt.Sprintf("delete po %s when evicted in namespace %s!", container.Pod, container.Namespace))
+				session.Toast(fmt.Sprintf("delete po %session when evicted in namespace %session!", container.Pod, container.Namespace))
 			}
 		} else {
-			s.Toast(err.Error())
+			session.Toast(err.Error())
 		}
 		conn.terminalSessions.Close(sessionId, 2, err.Error())
 		return
@@ -352,7 +345,6 @@ func HandleExecShell(input WsHandleExecShellInput, conn *WsConn) (string, error)
 		},
 		id:       sessionID,
 		conn:     conn,
-		bound:    make(chan error),
 		sizeChan: make(chan remotecommand.TerminalSize),
 		doneChan: make(chan struct{}),
 		shellCh:  make(chan TerminalMessage, 100),
