@@ -137,6 +137,8 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 - [ ] ui 美化
 - [ ] 断开连接使用图标的方式
+- [ ] 配置可启动之后再添加
+- [x] shell 自适应高度
 - [x] gin -> grpc ？
 - [x] grpc-gateway 替换 gin, branch: `grpc`
 - [x] 重构 ui 创建项目部分代码
