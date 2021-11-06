@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+
 	"github.com/duc-cnzj/mars/pkg/cp"
 
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -69,6 +71,9 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	listen, _ := net.Listen("tcp", g.endpoint)
 	server := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
+			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithOpName(func(method string) string {
+				return "[Tracer]: " + method
+			})),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 				user, err := services.GetUser(ctx)

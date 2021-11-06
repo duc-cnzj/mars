@@ -24,7 +24,7 @@ type Gitlab struct {
 	gitlab.UnimplementedGitlabServer
 }
 
-func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjectRequest) (*emptypb.Empty, error) {
+func (g *Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjectRequest) (*emptypb.Empty, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -50,7 +50,7 @@ func (g Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProject
 	return &emptypb.Empty{}, nil
 }
 
-func (g Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProjectRequest) (*emptypb.Empty, error) {
+func (g *Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProjectRequest) (*emptypb.Empty, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -75,7 +75,7 @@ func (g Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProje
 	return &emptypb.Empty{}, nil
 }
 
-func (g Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectListResponse, error) {
+func (g *Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectListResponse, error) {
 	projects, _, err := app.GitlabClient().Projects.ListProjects(&go_gitlab.ListProjectsOptions{
 		MinAccessLevel: go_gitlab.AccessLevel(go_gitlab.DeveloperPermissions),
 		ListOptions: go_gitlab.ListOptions{
@@ -127,7 +127,7 @@ const (
 	OptionTypeCommit  string = "commit"
 )
 
-func (g Gitlab) Projects(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectsResponse, error) {
+func (g *Gitlab) Projects(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectsResponse, error) {
 	var (
 		enabledProjects []models.GitlabProject
 		ch              = make(chan *gitlab.Option)
@@ -168,7 +168,7 @@ func (g Gitlab) Projects(ctx context.Context, empty *emptypb.Empty) (*gitlab.Pro
 	return &gitlab.ProjectsResponse{Data: res}, nil
 }
 
-func (g Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) (*gitlab.BranchesResponse, error) {
+func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) (*gitlab.BranchesResponse, error) {
 	branches, err := utils.GetAllBranches(request.ProjectId)
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (g Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) (
 	return &gitlab.BranchesResponse{Data: res}, nil
 }
 
-func (g Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*gitlab.CommitsResponse, error) {
+func (g *Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*gitlab.CommitsResponse, error) {
 	commits, _, err := app.GitlabClient().Commits.ListCommits(request.ProjectId, &go_gitlab.ListCommitsOptions{RefName: go_gitlab.String(request.Branch), ListOptions: go_gitlab.ListOptions{PerPage: 100}})
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func (g Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*g
 	return &gitlab.CommitsResponse{Data: res}, nil
 }
 
-func (g Gitlab) Commit(ctx context.Context, request *gitlab.CommitRequest) (*gitlab.CommitResponse, error) {
+func (g *Gitlab) Commit(ctx context.Context, request *gitlab.CommitRequest) (*gitlab.CommitResponse, error) {
 	commit, _, err := app.GitlabClient().Commits.GetCommit(request.ProjectId, request.Commit)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (g Gitlab) Commit(ctx context.Context, request *gitlab.CommitRequest) (*git
 	}, nil
 }
 
-func (g Gitlab) PipelineInfo(ctx context.Context, request *gitlab.PipelineInfoRequest) (*gitlab.PipelineInfoResponse, error) {
+func (g *Gitlab) PipelineInfo(ctx context.Context, request *gitlab.PipelineInfoRequest) (*gitlab.PipelineInfoResponse, error) {
 	commit, _, err := app.GitlabClient().Commits.GetCommit(request.ProjectId, request.Commit)
 	if err != nil {
 		return nil, err
@@ -257,7 +257,7 @@ func (g Gitlab) PipelineInfo(ctx context.Context, request *gitlab.PipelineInfoRe
 	}, nil
 }
 
-func (g Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileRequest) (*gitlab.ConfigFileResponse, error) {
+func (g *Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileRequest) (*gitlab.ConfigFileResponse, error) {
 	marsC, err := GetProjectMarsConfig(request.ProjectId, request.Branch)
 	if err != nil {
 		return nil, err

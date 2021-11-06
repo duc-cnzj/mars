@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/cp"
@@ -49,7 +53,9 @@ type apiGateway struct {
 
 func (a *apiGateway) Run(ctx context.Context) error {
 	mlog.Infof("[Server]: start apiGateway runner at %s.", a.endpoint)
+
 	router := mux.NewRouter()
+
 	gmux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
@@ -61,7 +67,11 @@ func (a *apiGateway) Run(ctx context.Context) error {
 				DiscardUnknown: true,
 			},
 		}))
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(tracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
+	}
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
 		cluster.RegisterClusterHandlerFromEndpoint,
@@ -89,10 +99,9 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	LoadSwaggerUI(router)
 	router.PathPrefix("/").Handler(gmux)
 
-	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	s := &http.Server{
 		Addr:    ":" + app.Config().AppPort,
-		Handler: routeLogger(allowCORS(router)),
+		Handler: tracingWrapper(routeLogger(allowCORS(router))),
 	}
 
 	a.server = s
@@ -202,4 +211,32 @@ func allowCORS(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+var grpcGatewayTag = opentracing.Tag{Key: string(ext.Component), Value: "grpc-gateway"}
+
+func tracingWrapper(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if !tracingIgnoreFn(context.TODO(), url) {
+			parentSpanContext, err := opentracing.GlobalTracer().Extract(
+				opentracing.HTTPHeaders,
+				opentracing.HTTPHeadersCarrier(r.Header))
+			if err == nil || err == opentracing.ErrSpanContextNotFound {
+				serverSpan := opentracing.GlobalTracer().StartSpan(
+					url,
+					ext.RPCServerOption(parentSpanContext),
+					grpcGatewayTag,
+					opentracing.Tags{"url": url},
+				)
+				r = r.WithContext(opentracing.ContextWithSpan(r.Context(), serverSpan))
+				defer serverSpan.Finish()
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func tracingIgnoreFn(ctx context.Context, fullMethodName string) bool {
+	return !strings.HasPrefix(fullMethodName, "/api")
 }
