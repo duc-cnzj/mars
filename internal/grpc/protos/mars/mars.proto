@@ -39,6 +39,15 @@ message ToggleEnabledRequest {
   bool enabled = 2;
 }
 
+message DefaultChartValuesRequest {
+  int64 project_id = 1;
+  string branch = 2;
+}
+
+message DefaultChartValues {
+  string value = 1;
+}
+
 service Mars {
   rpc Show(MarsShowRequest) returns (MarsShowResponse) {
     option (google.api.http) = {
@@ -63,6 +72,12 @@ service Mars {
     option (google.api.http) = {
       put: "/api/gitlab/projects/{project_id}/mars_config",
       body: "*"
+    };
+  }
+
+  rpc GetDefaultChartValues(DefaultChartValuesRequest) returns (DefaultChartValues) {
+    option (google.api.http) = {
+      get: "/api/gitlab/projects/{project_id}/default_values",
     };
   }
 }

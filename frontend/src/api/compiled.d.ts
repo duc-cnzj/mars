@@ -1039,6 +1039,35 @@ export class ToggleEnabledRequest implements IToggleEnabledRequest {
     public enabled: boolean;
 }
 
+/** Represents a DefaultChartValuesRequest. */
+export class DefaultChartValuesRequest implements IDefaultChartValuesRequest {
+
+    /**
+     * Constructs a new DefaultChartValuesRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDefaultChartValuesRequest);
+
+    /** DefaultChartValuesRequest project_id. */
+    public project_id: (number|Long);
+
+    /** DefaultChartValuesRequest branch. */
+    public branch: string;
+}
+
+/** Represents a DefaultChartValues. */
+export class DefaultChartValues implements IDefaultChartValues {
+
+    /**
+     * Constructs a new DefaultChartValues.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDefaultChartValues);
+
+    /** DefaultChartValues value. */
+    public value: string;
+}
+
 /** Represents a Mars */
 export class Mars extends $protobuf.rpc.Service {
 
@@ -1105,6 +1134,20 @@ export class Mars extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public update(request: IMarsUpdateRequest): Promise<MarsUpdateResponse>;
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @param request DefaultChartValuesRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and DefaultChartValues
+     */
+    public getDefaultChartValues(request: IDefaultChartValuesRequest, callback: Mars.GetDefaultChartValuesCallback): void;
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @param request DefaultChartValuesRequest message or plain object
+     * @returns Promise
+     */
+    public getDefaultChartValues(request: IDefaultChartValuesRequest): Promise<DefaultChartValues>;
 }
 
 export namespace Mars {
@@ -1136,6 +1179,13 @@ export namespace Mars {
      * @param [response] MarsUpdateResponse
      */
     type UpdateCallback = (error: (Error|null), response?: MarsUpdateResponse) => void;
+
+    /**
+     * Callback as used by {@link Mars#getDefaultChartValues}.
+     * @param error Error, if any
+     * @param [response] DefaultChartValues
+     */
+    type GetDefaultChartValuesCallback = (error: (Error|null), response?: DefaultChartValues) => void;
 }
 
 /** Represents a GitlabProjectModal. */

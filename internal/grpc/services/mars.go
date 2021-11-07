@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
+
+	gopath "path"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,6 +28,40 @@ import (
 
 type Mars struct {
 	mars.UnimplementedMarsServer
+}
+
+func (m *Mars) GetDefaultChartValues(ctx context.Context, request *mars.DefaultChartValuesRequest) (*mars.DefaultChartValues, error) {
+	marsC, err := GetProjectMarsConfig(fmt.Sprintf("%v", request.ProjectId), request.Branch)
+	if err != nil {
+		return nil, err
+	}
+	var pid, branch, path string
+	if marsC.LocalChartPath == "" {
+		return &mars.DefaultChartValues{Value: ""}, nil
+	}
+
+	if marsC.IsRemoteConfigFile() {
+		split := strings.Split(marsC.LocalChartPath, "|")
+		pid = split[0]
+		branch = split[1]
+		path = split[2]
+	} else {
+		pid = fmt.Sprintf("%v", request.ProjectId)
+		branch = request.Branch
+		path = marsC.LocalChartPath
+	}
+
+	filename := gopath.Join(path, "values.yaml")
+	if branch == "" {
+		branch = "master"
+	}
+	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
+	if err != nil {
+		return nil, err
+	}
+	fdata, _ := base64.StdEncoding.DecodeString(f.Content)
+
+	return &mars.DefaultChartValues{Value: string(fdata)}, nil
 }
 
 func GetProjectMarsConfig(projectId interface{}, branch string) (*config.Config, error) {

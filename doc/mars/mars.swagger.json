@@ -16,6 +16,43 @@
     "application/json"
   ],
   "paths": {
+    "/api/gitlab/projects/{project_id}/default_values": {
+      "get": {
+        "operationId": "Mars_GetDefaultChartValues",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DefaultChartValues"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "branch",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Mars"
+        ]
+      }
+    },
     "/api/gitlab/projects/{project_id}/global_config": {
       "get": {
         "operationId": "Mars_GlobalConfig",
@@ -172,6 +209,14 @@
     }
   },
   "definitions": {
+    "DefaultChartValues": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "GitlabProjectModal": {
       "type": "object",
       "properties": {

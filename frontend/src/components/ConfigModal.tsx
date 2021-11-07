@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 
-import pb from '../api/compiled'
+import pb from "../api/compiled";
 
-import {Prism as SyntaxHighlighter} from "react-syntax-highlighter";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   Tooltip,
@@ -15,6 +15,9 @@ import {
   Skeleton,
   Spin,
   Empty,
+  Row,
+  Badge,
+  Col,
 } from "antd";
 import { QuestionCircleOutlined, EditOutlined } from "@ant-design/icons";
 import {
@@ -22,6 +25,7 @@ import {
   marsConfig,
   toggleGlobalEnabled as toggleGlobalEnabledApi,
   updateGlobalConfig,
+  getDefaultValues,
 } from "../api/mars";
 import { branches } from "../api/gitlab";
 
@@ -41,16 +45,19 @@ const ConfigModal: React.FC<{
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [globalConfig, setGlobalConfig] = useState<string>();
   const [modalBranch, setModalBranch] = useState("");
-  const [currentItem, setCurrentItem] = useState<pb.GitlabProjectInfo | undefined>(item);
+  const [currentItem, setCurrentItem] = useState<
+    pb.GitlabProjectInfo | undefined
+  >(item);
   const [title, setTitle] = useState("");
   const [config, setConfig] = useState<string>();
   const [configVisible, setConfigVisible] = useState(visible);
   const [mbranches, setMbranches] = useState<string[]>([]);
+  const [defaultValues, setDefaultValues] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const loadConfig = useCallback((id: number, branch = "") => {
     setLoading(true);
-    marsConfig({branch, project_id: id})
+    marsConfig({ branch, project_id: id })
       .then((res) => {
         setConfig(res.config);
         setModalBranch(res.branch);
@@ -62,15 +69,31 @@ const ConfigModal: React.FC<{
       });
   }, []);
 
+  const loadDefaultValues = (projectId: string) => {
+    if (projectId) {
+      getDefaultValues({ project_id: projectId, branch: "" })
+        .then((res) => {
+          setDefaultValues(res.data.value);
+        })
+        .catch((e) => message.error(e.message));
+    }
+  };
+
+  useEffect(() => {
+    if (item?.id && globalEnabled) {
+      loadDefaultValues(item.id);
+    }
+  }, [item, globalEnabled]);
+
   useEffect(() => {
     setConfigVisible(visible);
     if (visible && item) {
       console.log(item);
       setCurrentItem(item);
-      branches({project_id: String(item.id)}).then((res) =>
+      branches({ project_id: String(item.id) }).then((res) =>
         setMbranches(res.data.data.map((op) => op.value))
       );
-      globalConfigApi({project_id: item.id}).then((res) => {
+      globalConfigApi({ project_id: item.id }).then((res) => {
         setGlobalEnabled(res.enabled);
         console.log(res.config);
         setGlobalConfig(res.config);
@@ -103,42 +126,48 @@ const ConfigModal: React.FC<{
       setEditMode(false);
     }
     currentItem &&
-      toggleGlobalEnabledApi({project_id: currentItem.id, enabled}).then(() => {
-        message.success("操作成功");
-        onChange?.();
-        setGlobalEnabled(enabled);
-        globalConfigApi({project_id: currentItem.id}).then((res) => {
-          setGlobalEnabled(res.enabled);
-          console.log(res.config);
-          setGlobalConfig(res.config);
-        });
-        branches({project_id: String(currentItem.id)}).then((res) =>
-          setMbranches(res.data.data.map((op) => op.value))
-        );
-        marsConfig({project_id: currentItem.id, branch: ""})
-          .then((res) => {
-            setConfig(res.config);
-            setModalBranch(res.branch);
-            setLoading(false);
-          })
-          .catch((e) => {
-            message.error(e.response.data.message);
-            setLoading(false);
+      toggleGlobalEnabledApi({ project_id: currentItem.id, enabled })
+        .then(() => {
+          message.success("操作成功");
+          onChange?.();
+          setGlobalEnabled(enabled);
+          globalConfigApi({ project_id: currentItem.id }).then((res) => {
+            setGlobalEnabled(res.enabled);
+            console.log(res.config);
+            setGlobalConfig(res.config);
           });
-      }).catch((e) => message.error(e.message));
+          branches({ project_id: String(currentItem.id) }).then((res) =>
+            setMbranches(res.data.data.map((op) => op.value))
+          );
+          marsConfig({ project_id: currentItem.id, branch: "" })
+            .then((res) => {
+              setConfig(res.config);
+              setModalBranch(res.branch);
+              setLoading(false);
+            })
+            .catch((e) => {
+              message.error(e.response.data.message);
+              setLoading(false);
+            });
+        })
+        .catch((e) => message.error(e.message));
   };
   const onSave = () => {
     currentItem &&
-      updateGlobalConfig({project_id: currentItem.id, config: globalConfig || ""})
+      updateGlobalConfig({
+        project_id: currentItem.id,
+        config: globalConfig || "",
+      })
         .then((res) => {
           message.success("保存成功");
           console.log(res.data.data.global_config);
           setGlobalConfig(res.data.data.global_config);
           setEditMode(false);
+          loadDefaultValues(item?.id);
         })
         .catch((e) => {
           message.error(e.response.data.message);
-          globalConfigApi({project_id: currentItem.id}).then((res) => {
+          globalConfigApi({ project_id: currentItem.id }).then((res) => {
             setGlobalEnabled(res.enabled);
             console.log(res.config);
             // setGlobalConfig(res.config);
@@ -149,10 +178,15 @@ const ConfigModal: React.FC<{
 
   return (
     <Modal
-      title={<div><MarsExample/>&nbsp;&nbsp;{title}</div>}
+      title={
+        <div>
+          <MarsExample />
+          &nbsp;&nbsp;{title}
+        </div>
+      }
       visible={configVisible}
       footer={null}
-      width={800}
+      width={"80%"}
       onCancel={resetModal}
     >
       {modalBranch ? (
@@ -216,44 +250,74 @@ const ConfigModal: React.FC<{
               />
             </div>
           </div>
-          {editMode ? (
-            <CodeMirror
-              ref={cmref}
-              value={globalConfig || ""}
-              options={{
-                mode: "yaml",
-                theme: "mdn-like",
-                lineNumbers: true,
-              }}
-              onBeforeChange={(editor, d, value) => {
-                console.log("valuevalue", globalConfig, value);
-                setGlobalConfig(value);
-              }}
-            />
-          ) : (
-            <Spin spinning={loading}>
-              {!globalEnabled && !config ? (
-                <Empty
-                  description="未发现该项目的配置文件"
-                  style={{ height: 220 }}
+          <Row gutter={[3, 12]} className="config-modal__content">
+            <Col
+              span={defaultValues ? 12 : 24}
+              style={{ maxHeight: "500px", overflowY: "scroll" }}
+            >
+              {editMode ? (
+                <CodeMirror
+                  ref={cmref}
+                  value={globalConfig || ""}
+                  options={{
+                    mode: "yaml",
+                    theme: "mdn-like",
+                    lineNumbers: true,
+                  }}
+                  onBeforeChange={(editor, d, value) => {
+                    console.log("valuevalue", globalConfig, value);
+                    setGlobalConfig(value);
+                  }}
                 />
               ) : (
-                <SyntaxHighlighter
-                  language="yaml"
-                  style={materialDark}
-                  customStyle={{
-                    minHeight: 200,
-                    lineHeight: 1.2,
-                    padding: "10px",
-                    fontFamily: '"Fira code", "Fira Mono", monospace',
-                    fontSize: 13,
-                  }}
-                >
-                  {globalEnabled ? globalConfig : config}
-                </SyntaxHighlighter>
+                <Spin spinning={loading} style={{ height: "100%" }}>
+                  {!globalEnabled && !config ? (
+                    <Empty
+                      description="未发现该项目的配置文件"
+                      style={{ height: 220 }}
+                    />
+                  ) : (
+                    <SyntaxHighlighter
+                      language="yaml"
+                      style={materialDark}
+                      customStyle={{
+                        minHeight: 200,
+                        lineHeight: 1.2,
+                        padding: "10px",
+                        fontFamily: '"Fira code", "Fira Mono", monospace',
+                        fontSize: 13,
+                        margin: 0,
+                        height: "100%",
+                      }}
+                    >
+                      {globalEnabled ? globalConfig : config}
+                    </SyntaxHighlighter>
+                  )}
+                </Spin>
               )}
-            </Spin>
-          )}
+            </Col>
+            <Col span={defaultValues ? 12 : 0}>
+              <Badge.Ribbon color="purple" text="default values">
+                <div style={{ maxHeight: "500px", overflowY: "scroll" }}>
+                  <SyntaxHighlighter
+                    language="yaml"
+                    style={materialDark}
+                    customStyle={{
+                      minHeight: 200,
+                      lineHeight: 1.2,
+                      padding: "10px",
+                      fontFamily: '"Fira code", "Fira Mono", monospace',
+                      fontSize: 13,
+                      margin: 0,
+                      height: "100%",
+                    }}
+                  >
+                    {defaultValues}
+                  </SyntaxHighlighter>
+                </div>
+              </Badge.Ribbon>
+            </Col>
+          </Row>
         </>
       ) : (
         <Skeleton active />

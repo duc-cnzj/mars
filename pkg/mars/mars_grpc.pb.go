@@ -24,6 +24,7 @@ type MarsClient interface {
 	GlobalConfig(ctx context.Context, in *GlobalConfigRequest, opts ...grpc.CallOption) (*GlobalConfigResponse, error)
 	ToggleEnabled(ctx context.Context, in *ToggleEnabledRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Update(ctx context.Context, in *MarsUpdateRequest, opts ...grpc.CallOption) (*MarsUpdateResponse, error)
+	GetDefaultChartValues(ctx context.Context, in *DefaultChartValuesRequest, opts ...grpc.CallOption) (*DefaultChartValues, error)
 }
 
 type marsClient struct {
@@ -70,6 +71,15 @@ func (c *marsClient) Update(ctx context.Context, in *MarsUpdateRequest, opts ...
 	return out, nil
 }
 
+func (c *marsClient) GetDefaultChartValues(ctx context.Context, in *DefaultChartValuesRequest, opts ...grpc.CallOption) (*DefaultChartValues, error) {
+	out := new(DefaultChartValues)
+	err := c.cc.Invoke(ctx, "/Mars/GetDefaultChartValues", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MarsServer is the server API for Mars service.
 // All implementations must embed UnimplementedMarsServer
 // for forward compatibility
@@ -78,6 +88,7 @@ type MarsServer interface {
 	GlobalConfig(context.Context, *GlobalConfigRequest) (*GlobalConfigResponse, error)
 	ToggleEnabled(context.Context, *ToggleEnabledRequest) (*emptypb.Empty, error)
 	Update(context.Context, *MarsUpdateRequest) (*MarsUpdateResponse, error)
+	GetDefaultChartValues(context.Context, *DefaultChartValuesRequest) (*DefaultChartValues, error)
 	mustEmbedUnimplementedMarsServer()
 }
 
@@ -96,6 +107,9 @@ func (UnimplementedMarsServer) ToggleEnabled(context.Context, *ToggleEnabledRequ
 }
 func (UnimplementedMarsServer) Update(context.Context, *MarsUpdateRequest) (*MarsUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedMarsServer) GetDefaultChartValues(context.Context, *DefaultChartValuesRequest) (*DefaultChartValues, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDefaultChartValues not implemented")
 }
 func (UnimplementedMarsServer) mustEmbedUnimplementedMarsServer() {}
 
@@ -182,6 +196,24 @@ func _Mars_Update_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Mars_GetDefaultChartValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DefaultChartValuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarsServer).GetDefaultChartValues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Mars/GetDefaultChartValues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarsServer).GetDefaultChartValues(ctx, req.(*DefaultChartValuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Mars_ServiceDesc is the grpc.ServiceDesc for Mars service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -204,6 +236,10 @@ var Mars_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _Mars_Update_Handler,
+		},
+		{
+			MethodName: "GetDefaultChartValues",
+			Handler:    _Mars_GetDefaultChartValues_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -393,6 +393,108 @@ func (x *ToggleEnabledRequest) GetEnabled() bool {
 	return false
 }
 
+type DefaultChartValuesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ProjectId int64  `protobuf:"varint,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Branch    string `protobuf:"bytes,2,opt,name=branch,proto3" json:"branch,omitempty"`
+}
+
+func (x *DefaultChartValuesRequest) Reset() {
+	*x = DefaultChartValuesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mars_mars_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DefaultChartValuesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DefaultChartValuesRequest) ProtoMessage() {}
+
+func (x *DefaultChartValuesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mars_mars_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DefaultChartValuesRequest.ProtoReflect.Descriptor instead.
+func (*DefaultChartValuesRequest) Descriptor() ([]byte, []int) {
+	return file_mars_mars_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DefaultChartValuesRequest) GetProjectId() int64 {
+	if x != nil {
+		return x.ProjectId
+	}
+	return 0
+}
+
+func (x *DefaultChartValuesRequest) GetBranch() string {
+	if x != nil {
+		return x.Branch
+	}
+	return ""
+}
+
+type DefaultChartValues struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *DefaultChartValues) Reset() {
+	*x = DefaultChartValues{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mars_mars_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DefaultChartValues) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DefaultChartValues) ProtoMessage() {}
+
+func (x *DefaultChartValues) ProtoReflect() protoreflect.Message {
+	mi := &file_mars_mars_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DefaultChartValues.ProtoReflect.Descriptor instead.
+func (*DefaultChartValues) Descriptor() ([]byte, []int) {
+	return file_mars_mars_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DefaultChartValues) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 var File_mars_mars_proto protoreflect.FileDescriptor
 
 var file_mars_mars_proto_rawDesc = []byte{
@@ -432,7 +534,15 @@ var file_mars_mars_proto_rawDesc = []byte{
 	0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x49, 0x64, 0x12,
 	0x18, 0x0a, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x32, 0xca, 0x03, 0x0a, 0x04, 0x4d, 0x61,
+	0x52, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x22, 0x52, 0x0a, 0x19, 0x44, 0x65, 0x66,
+	0x61, 0x75, 0x6c, 0x74, 0x43, 0x68, 0x61, 0x72, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x70, 0x72, 0x6f, 0x6a,
+	0x65, 0x63, 0x74, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x62, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x62, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x22, 0x2a, 0x0a,
+	0x12, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x43, 0x68, 0x61, 0x72, 0x74, 0x56, 0x61, 0x6c,
+	0x75, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x32, 0xcf, 0x04, 0x0a, 0x04, 0x4d, 0x61,
 	0x72, 0x73, 0x12, 0x62, 0x0a, 0x04, 0x53, 0x68, 0x6f, 0x77, 0x12, 0x10, 0x2e, 0x4d, 0x61, 0x72,
 	0x73, 0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x4d,
 	0x61, 0x72, 0x73, 0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
@@ -461,10 +571,18 @@ var file_mars_mars_proto_rawDesc = []byte{
 	0xe4, 0x93, 0x02, 0x32, 0x1a, 0x2d, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x69, 0x74, 0x6c, 0x61,
 	0x62, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x6a,
 	0x65, 0x63, 0x74, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x6d, 0x61, 0x72, 0x73, 0x5f, 0x63, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x3a, 0x01, 0x2a, 0x42, 0x23, 0x5a, 0x21, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x75, 0x63, 0x2d, 0x63, 0x6e, 0x7a, 0x6a, 0x2f, 0x6d, 0x61,
-	0x72, 0x73, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x6d, 0x61, 0x72, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x66, 0x69, 0x67, 0x3a, 0x01, 0x2a, 0x12, 0x82, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x44, 0x65,
+	0x66, 0x61, 0x75, 0x6c, 0x74, 0x43, 0x68, 0x61, 0x72, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x73,
+	0x12, 0x1a, 0x2e, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x43, 0x68, 0x61, 0x72, 0x74, 0x56,
+	0x61, 0x6c, 0x75, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x44,
+	0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x43, 0x68, 0x61, 0x72, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x73, 0x22, 0x38, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x32, 0x12, 0x30, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x67, 0x69, 0x74, 0x6c, 0x61, 0x62, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f,
+	0x7b, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x64, 0x65, 0x66,
+	0x61, 0x75, 0x6c, 0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73, 0x42, 0x23, 0x5a, 0x21, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x75, 0x63, 0x2d, 0x63, 0x6e,
+	0x7a, 0x6a, 0x2f, 0x6d, 0x61, 0x72, 0x73, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x6d, 0x61, 0x72, 0x73,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -479,33 +597,37 @@ func file_mars_mars_proto_rawDescGZIP() []byte {
 	return file_mars_mars_proto_rawDescData
 }
 
-var file_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_mars_mars_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_mars_mars_proto_goTypes = []interface{}{
-	(*MarsShowRequest)(nil),          // 0: MarsShowRequest
-	(*MarsShowResponse)(nil),         // 1: MarsShowResponse
-	(*GlobalConfigRequest)(nil),      // 2: GlobalConfigRequest
-	(*GlobalConfigResponse)(nil),     // 3: GlobalConfigResponse
-	(*MarsUpdateRequest)(nil),        // 4: MarsUpdateRequest
-	(*MarsUpdateResponse)(nil),       // 5: MarsUpdateResponse
-	(*ToggleEnabledRequest)(nil),     // 6: ToggleEnabledRequest
-	(*modal.GitlabProjectModal)(nil), // 7: GitlabProjectModal
-	(*emptypb.Empty)(nil),            // 8: google.protobuf.Empty
+	(*MarsShowRequest)(nil),           // 0: MarsShowRequest
+	(*MarsShowResponse)(nil),          // 1: MarsShowResponse
+	(*GlobalConfigRequest)(nil),       // 2: GlobalConfigRequest
+	(*GlobalConfigResponse)(nil),      // 3: GlobalConfigResponse
+	(*MarsUpdateRequest)(nil),         // 4: MarsUpdateRequest
+	(*MarsUpdateResponse)(nil),        // 5: MarsUpdateResponse
+	(*ToggleEnabledRequest)(nil),      // 6: ToggleEnabledRequest
+	(*DefaultChartValuesRequest)(nil), // 7: DefaultChartValuesRequest
+	(*DefaultChartValues)(nil),        // 8: DefaultChartValues
+	(*modal.GitlabProjectModal)(nil),  // 9: GitlabProjectModal
+	(*emptypb.Empty)(nil),             // 10: google.protobuf.Empty
 }
 var file_mars_mars_proto_depIdxs = []int32{
-	7, // 0: MarsUpdateResponse.data:type_name -> GitlabProjectModal
-	0, // 1: Mars.Show:input_type -> MarsShowRequest
-	2, // 2: Mars.GlobalConfig:input_type -> GlobalConfigRequest
-	6, // 3: Mars.ToggleEnabled:input_type -> ToggleEnabledRequest
-	4, // 4: Mars.Update:input_type -> MarsUpdateRequest
-	1, // 5: Mars.Show:output_type -> MarsShowResponse
-	3, // 6: Mars.GlobalConfig:output_type -> GlobalConfigResponse
-	8, // 7: Mars.ToggleEnabled:output_type -> google.protobuf.Empty
-	5, // 8: Mars.Update:output_type -> MarsUpdateResponse
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9,  // 0: MarsUpdateResponse.data:type_name -> GitlabProjectModal
+	0,  // 1: Mars.Show:input_type -> MarsShowRequest
+	2,  // 2: Mars.GlobalConfig:input_type -> GlobalConfigRequest
+	6,  // 3: Mars.ToggleEnabled:input_type -> ToggleEnabledRequest
+	4,  // 4: Mars.Update:input_type -> MarsUpdateRequest
+	7,  // 5: Mars.GetDefaultChartValues:input_type -> DefaultChartValuesRequest
+	1,  // 6: Mars.Show:output_type -> MarsShowResponse
+	3,  // 7: Mars.GlobalConfig:output_type -> GlobalConfigResponse
+	10, // 8: Mars.ToggleEnabled:output_type -> google.protobuf.Empty
+	5,  // 9: Mars.Update:output_type -> MarsUpdateResponse
+	8,  // 10: Mars.GetDefaultChartValues:output_type -> DefaultChartValues
+	6,  // [6:11] is the sub-list for method output_type
+	1,  // [1:6] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_mars_mars_proto_init() }
@@ -598,6 +720,30 @@ func file_mars_mars_proto_init() {
 				return nil
 			}
 		}
+		file_mars_mars_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DefaultChartValuesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mars_mars_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DefaultChartValues); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -605,7 +751,7 @@ func file_mars_mars_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_mars_mars_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
