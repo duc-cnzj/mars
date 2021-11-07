@@ -40,7 +40,7 @@ func (m *Mars) GetDefaultChartValues(ctx context.Context, request *mars.DefaultC
 		return &mars.DefaultChartValues{Value: ""}, nil
 	}
 
-	if marsC.IsRemoteConfigFile() {
+	if marsC.IsRemoteChart() {
 		split := strings.Split(marsC.LocalChartPath, "|")
 		pid = split[0]
 		branch = split[1]
