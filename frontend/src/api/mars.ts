@@ -53,3 +53,9 @@ export async function updateGlobalConfig({project_id, config}: pb.MarsUpdateRequ
     { config: config }
   );
 }
+
+export async function getDefaultValues({project_id, branch}: pb.DefaultChartValuesRequest) {
+  return ajax.get<pb.DefaultChartValues>(
+    `/api/gitlab/projects/${project_id}/default_values?branch=${branch}`,
+  );
+}
