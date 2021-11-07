@@ -137,7 +137,7 @@ const ProjectContainerLogs: React.FC<{
         }}
       >
         {log ? (
-          <AutoScroll className="auto-scroll">
+          <AutoScroll height={600} className="auto-scroll">
             <SyntaxHighlighter
               wrapLongLines={false}
               showLineNumbers
