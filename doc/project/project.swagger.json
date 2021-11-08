@@ -178,6 +178,65 @@
         ]
       }
     },
+    "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
+      "get": {
+        "operationId": "Project_StreamPodContainerLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/PodContainerLogResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of PodContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "container",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
+    },
     "/api/namespaces/{namespace}/pod/{pod}/status": {
       "get": {
         "operationId": "Project_IsPodRunning",

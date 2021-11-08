@@ -108,4 +108,10 @@ service Project {
       get: "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs"
     };
   }
+
+  rpc StreamPodContainerLog(PodContainerLogRequest) returns (stream PodContainerLogResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"
+    };
+  }
 }

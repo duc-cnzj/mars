@@ -384,7 +384,7 @@ const ModalSub: React.FC<{
               <ReactDiffViewer
                 styles={{
                   gutter: { padding: "0 5px", minWidth: 25 },
-                  contentText: { width: 800, overflowX: "scroll" },
+                  contentText: { width: 800 },
                   marker: { padding: "0 6px" },
                 }}
                 useDarkTheme

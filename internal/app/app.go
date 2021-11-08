@@ -230,7 +230,9 @@ func (app *Application) Shutdown() {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()
-			server.Shutdown(ctx)
+			if err := server.Shutdown(ctx); err != nil {
+				mlog.Error(err)
+			}
 		}(server)
 	}
 	wg.Wait()
