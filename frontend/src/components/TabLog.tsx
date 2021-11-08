@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
 import { containerList, containerLog } from "../api/project";
-import { Radio, Skeleton, RadioChangeEvent, Tag, message, Affix } from "antd";
+import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 import AutoScroll from "./AutoScroll";
@@ -18,10 +18,10 @@ const ProjectContainerLogs: React.FC<{
 
   const listContainer = useCallback(async () => {
     return containerList({ namespace_id: namespaceId, project_id: id }).then(
-      (res) => {
-        setList(res.data.data);
-        return res;
-      }
+        (res) => {
+          setList(res.data.data);
+          return res;
+        }
     );
   }, [namespaceId, id]);
 
@@ -36,17 +36,17 @@ const ProjectContainerLogs: React.FC<{
           container: first.container_name,
           project_id: id,
         })
-          .then(({ data: { data } }) => {
-            let log: string = "暂无日志";
-            if (data.log) {
-              log = data.log;
-            }
+            .then(({ data: { data } }) => {
+              let log: string = "暂无日志";
+              if (data.log) {
+                log = data.log;
+              }
 
-            setLog(log);
-          })
-          .catch((e) => {
-            message.error(e.response.data.message);
-          });
+              setLog(log);
+            })
+            .catch((e) => {
+              message.error(e.response.data.message);
+            });
       }
     });
   }, [setList, id, namespaceId, updatedAt, listContainer]);
@@ -60,13 +60,13 @@ const ProjectContainerLogs: React.FC<{
       pod: pod,
       container: container,
     })
-      .then((res) => {
-        setLog(res.data.data.log);
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-        listContainer();
-      });
+        .then((res) => {
+          setLog(res.data.data.log);
+        })
+        .catch((e) => {
+          message.error(e.response.data.message);
+          listContainer();
+        });
     console.log("on change", e.target);
   };
 
@@ -100,58 +100,50 @@ const ProjectContainerLogs: React.FC<{
       }
     };
   }, [autoRefresh, id, namespaceId, value]);
-  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div
-      ref={setContainer}
-      style={{
-        height: "100%",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Affix target={() => container}>
-        <div style={{ width: "100%", background: "white", paddingBottom: 10 }}>
-          <Radio.Group onChange={onChange} value={value}>
-            {list?.map((item) => (
+      <>
+        <Radio.Group
+            onChange={onChange}
+            value={value}
+            style={{ marginBottom: 10 }}
+        >
+          {list?.map((item) => (
               <Radio
-                key={item.pod_name + "|" + item.container_name}
-                value={item.pod_name + "|" + item.container_name}
+                  key={item.pod_name + "|" + item.container_name}
+                  value={item.pod_name + "|" + item.container_name}
               >
                 {item.container_name}
                 <Tag color="magenta" style={{ marginLeft: 10 }}>
                   {item.pod_name}
                 </Tag>
               </Radio>
-            ))}
-          </Radio.Group>
+          ))}
+        </Radio.Group>
+
+        <div
+            className="project-container-logs"
+            style={{
+              fontFamily: '"Fira code", "Fira Mono", monospace',
+              fontSize: 12,
+            }}
+        >
+          {log ? (
+              <AutoScroll height={500} className="auto-scroll">
+                <SyntaxHighlighter
+                    wrapLongLines={false}
+                    showLineNumbers
+                    language="vim"
+                    style={dracula}
+                >
+                  {log}
+                </SyntaxHighlighter>
+              </AutoScroll>
+          ) : (
+              <Skeleton active />
+          )}
         </div>
-      </Affix>
-      <div
-        className="project-container-logs"
-        style={{
-          fontFamily: '"Fira code", "Fira Mono", monospace',
-          fontSize: 12,
-        }}
-      >
-        {log ? (
-          <AutoScroll height={600} className="auto-scroll">
-            <SyntaxHighlighter
-              wrapLongLines={false}
-              showLineNumbers
-              language="vim"
-              style={dracula}
-            >
-              {log}
-            </SyntaxHighlighter>
-          </AutoScroll>
-        ) : (
-          <Skeleton active />
-        )}
-      </div>
-    </div>
+      </>
   );
 };
 
