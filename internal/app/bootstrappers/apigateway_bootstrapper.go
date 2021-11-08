@@ -156,16 +156,12 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request, params map[s
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
+	defer mlog.Info("[Server]: shutdown api-gateway runner.")
 	if a.server == nil {
 		return nil
 	}
-	if err := a.server.Shutdown(ctx); err != nil {
-		mlog.Error(err)
-	}
 
-	mlog.Info("[Server]: shutdown api-gateway runner.")
-
-	return nil
+	return a.server.Shutdown(ctx)
 }
 
 func serveWs(mux *mux.Router) {

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"context"
 	"net/http"
 
@@ -19,6 +20,60 @@ import (
 
 type Project struct {
 	project.UnimplementedProjectServer
+}
+
+func (p *Project) StreamPodContainerLog(request *project.PodContainerLogRequest, server project.Project_StreamPodContainerLogServer) error {
+	var projectModal models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
+		return err
+	}
+
+	if running, reason := utils.IsPodRunning(projectModal.Namespace.Name, request.Pod); !running {
+		return status.Errorf(codes.NotFound, reason)
+	}
+
+	var limit int64 = 2000
+	logs := app.K8sClientSet().CoreV1().Pods(projectModal.Namespace.Name).GetLogs(request.Pod, &v1.PodLogOptions{
+		Follow:    true,
+		Container: request.Container,
+		TailLines: &limit,
+	})
+	stream, _ := logs.Stream(context.TODO())
+	bf := bufio.NewReader(stream)
+
+	ch := make(chan []byte)
+	go func() {
+		defer mlog.Debug("[Stream]:  read exit!")
+		for {
+			bytes, err := bf.ReadBytes('\n')
+			if err != nil {
+				mlog.Debugf("[Stream]: %v", err)
+				close(ch)
+				return
+			}
+			ch <- bytes
+		}
+	}()
+
+	for {
+		select {
+		case <-server.Context().Done():
+			stream.Close()
+			mlog.Debug("[Stream]: client exit with: ", server.Context().Err())
+			return server.Context().Err()
+		case msg := <-ch:
+			if err := server.Send(&project.PodContainerLogResponse{
+				Data: &project.PodLog{
+					PodName:       request.Pod,
+					ContainerName: request.Container,
+					Log:           string(msg),
+				},
+			}); err != nil {
+				stream.Close()
+				return err
+			}
+		}
+	}
 }
 
 func (p *Project) IsPodRunning(_ context.Context, request *project.IsPodRunningRequest) (*project.IsPodRunningResponse, error) {

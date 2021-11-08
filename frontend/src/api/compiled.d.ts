@@ -3295,6 +3295,20 @@ export class Project extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public podContainerLog(request: IPodContainerLogRequest): Promise<PodContainerLogResponse>;
+
+    /**
+     * Calls StreamPodContainerLog.
+     * @param request PodContainerLogRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and PodContainerLogResponse
+     */
+    public streamPodContainerLog(request: IPodContainerLogRequest, callback: Project.StreamPodContainerLogCallback): void;
+
+    /**
+     * Calls StreamPodContainerLog.
+     * @param request PodContainerLogRequest message or plain object
+     * @returns Promise
+     */
+    public streamPodContainerLog(request: IPodContainerLogRequest): Promise<PodContainerLogResponse>;
 }
 
 export namespace Project {
@@ -3333,4 +3347,11 @@ export namespace Project {
      * @param [response] PodContainerLogResponse
      */
     type PodContainerLogCallback = (error: (Error|null), response?: PodContainerLogResponse) => void;
+
+    /**
+     * Callback as used by {@link Project#streamPodContainerLog}.
+     * @param error Error, if any
+     * @param [response] PodContainerLogResponse
+     */
+    type StreamPodContainerLogCallback = (error: (Error|null), response?: PodContainerLogResponse) => void;
 }

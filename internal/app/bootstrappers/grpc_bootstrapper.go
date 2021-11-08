@@ -56,24 +56,48 @@ type grpcRunner struct {
 }
 
 func (g *grpcRunner) Shutdown(ctx context.Context) error {
+	defer mlog.Info("[Server]: shutdown grpcRunner runner.")
 	if g.server == nil {
 		return nil
 	}
-	mlog.Info("[Server]: shutdown grpcRunner runner.")
 
-	g.server.GracefulStop()
+	done := make(chan struct{}, 1)
+	go func() {
+		g.server.GracefulStop()
+		done <- struct{}{}
+	}()
 
-	return nil
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (g *grpcRunner) Run(ctx context.Context) error {
 	mlog.Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
 	listen, _ := net.Listen("tcp", g.endpoint)
 	server := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithOpName(func(method string) string {
-				return "[Tracer]: " + method
+		grpc.ChainStreamInterceptor(
+			grpc_opentracing.StreamServerInterceptor(traceWithOpName()),
+			grpc_auth.StreamServerInterceptor(Authenticate),
+			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
+				mlog.Error("[Grpc]: recovery error: ", p)
+				return nil
 			})),
+			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+				user, err := services.GetUser(ctx)
+				if err == nil {
+					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
+				}
+
+				return handler(srv, ss)
+			},
+			grpc_prometheus.StreamServerInterceptor,
+		),
+		grpc.ChainUnaryInterceptor(
+			grpc_opentracing.UnaryServerInterceptor(traceWithOpName()),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 				user, err := services.GetUser(ctx)
@@ -87,10 +111,6 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 				mlog.Error("[Grpc]: recovery error: ", p)
 				return nil
 			})),
-			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				mlog.Debugf("[Grpc]: Method %v Called.", info.FullMethod)
-				return handler(ctx, req)
-			},
 			grpc_prometheus.UnaryServerInterceptor,
 		),
 	)
@@ -114,6 +134,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+func traceWithOpName() grpc_opentracing.Option {
+	return grpc_opentracing.WithOpName(func(method string) string {
+		return "[Tracer]: " + method
+	})
 }
 
 func Authenticate(ctx context.Context) (context.Context, error) {

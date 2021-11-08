@@ -25,6 +25,7 @@ type ProjectClient interface {
 	IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error)
 	AllPodContainers(ctx context.Context, in *AllPodContainersRequest, opts ...grpc.CallOption) (*AllPodContainersResponse, error)
 	PodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (*PodContainerLogResponse, error)
+	StreamPodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error)
 }
 
 type projectClient struct {
@@ -80,6 +81,38 @@ func (c *projectClient) PodContainerLog(ctx context.Context, in *PodContainerLog
 	return out, nil
 }
 
+func (c *projectClient) StreamPodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[0], "/Project/StreamPodContainerLog", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &projectStreamPodContainerLogClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Project_StreamPodContainerLogClient interface {
+	Recv() (*PodContainerLogResponse, error)
+	grpc.ClientStream
+}
+
+type projectStreamPodContainerLogClient struct {
+	grpc.ClientStream
+}
+
+func (x *projectStreamPodContainerLogClient) Recv() (*PodContainerLogResponse, error) {
+	m := new(PodContainerLogResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ProjectServer is the server API for Project service.
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
@@ -89,6 +122,7 @@ type ProjectServer interface {
 	IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error)
 	AllPodContainers(context.Context, *AllPodContainersRequest) (*AllPodContainersResponse, error)
 	PodContainerLog(context.Context, *PodContainerLogRequest) (*PodContainerLogResponse, error)
+	StreamPodContainerLog(*PodContainerLogRequest, Project_StreamPodContainerLogServer) error
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -110,6 +144,9 @@ func (UnimplementedProjectServer) AllPodContainers(context.Context, *AllPodConta
 }
 func (UnimplementedProjectServer) PodContainerLog(context.Context, *PodContainerLogRequest) (*PodContainerLogResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PodContainerLog not implemented")
+}
+func (UnimplementedProjectServer) StreamPodContainerLog(*PodContainerLogRequest, Project_StreamPodContainerLogServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamPodContainerLog not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
 
@@ -214,6 +251,27 @@ func _Project_PodContainerLog_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_StreamPodContainerLog_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(PodContainerLogRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ProjectServer).StreamPodContainerLog(m, &projectStreamPodContainerLogServer{stream})
+}
+
+type Project_StreamPodContainerLogServer interface {
+	Send(*PodContainerLogResponse) error
+	grpc.ServerStream
+}
+
+type projectStreamPodContainerLogServer struct {
+	grpc.ServerStream
+}
+
+func (x *projectStreamPodContainerLogServer) Send(m *PodContainerLogResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Project_ServiceDesc is the grpc.ServiceDesc for Project service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +300,12 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Project_PodContainerLog_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamPodContainerLog",
+			Handler:       _Project_StreamPodContainerLog_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "project/project.proto",
 }
