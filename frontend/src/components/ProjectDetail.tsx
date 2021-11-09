@@ -44,14 +44,8 @@ const ItemDetailModal: React.FC<{
     });
   };
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const handleAutoRefresh = (f: boolean) => {
-    setAutoRefresh(f);
-  };
-
   const onCancel = useCallback(() => {
     setVisible(false);
-    setAutoRefresh(false);
   }, []);
 
   return (
@@ -106,18 +100,9 @@ const ItemDetailModal: React.FC<{
           {item.status === "deployed" ? (
             <>
               <TabPane tab="容器日志" key="container-logs">
-                <div style={{ marginBottom: 10 }}>
-                  <span style={{ marginRight: 5 }}>自动刷新(2s):</span>
-                  <Switch
-                    checked={autoRefresh}
-                    onChange={handleAutoRefresh}
-                    defaultChecked={autoRefresh}
-                  />
-                </div>
                 {detail ? (
                   <TabLog
                     updatedAt={detail.updated_at}
-                    autoRefresh={autoRefresh}
                     id={detail.id}
                     namespaceId={detail.namespace?.id}
                   />
