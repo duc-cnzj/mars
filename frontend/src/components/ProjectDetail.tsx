@@ -97,7 +97,7 @@ const ItemDetailModal: React.FC<{
         onCancel={onCancel}
         title={item.name + "(" + namespace + ")"}
       >
-        <Tabs defaultActiveKey="1" centered style={{ height: "100%" }}>
+        <Tabs destroyInactiveTabPane defaultActiveKey="1" centered style={{ height: "100%" }}>
           {item.status === "deployed" ? (
             <>
               <TabPane tab="容器日志" key="container-logs">
