@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, memo } from "react";
+import React, { useEffect, memo } from "react";
 import classnames from "classnames";
 import { clusterInfo } from "../api/cluster";
 import { useDispatch, useSelector } from "react-redux";

@@ -113,8 +113,8 @@ const DetailTab: React.FC<{ detail?: pb.ProjectShowResponse; onDeleted: () => vo
           />
           <p>
             地址:
-            {detail.urls.map((item) => (
-              <a href={item} target="_blank" className="detail-data">
+            {detail.urls.map((item, index) => (
+              <a key={index} href={item} target="_blank" className="detail-data">
                 {item}
               </a>
             ))}
