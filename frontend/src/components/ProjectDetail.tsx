@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { detailProject } from "../api/project";
-import { Button, Tabs, Skeleton, Switch } from "antd";
+import { Button, Tabs, Skeleton } from "antd";
 import DeployStatus from "./DeployStatus";
 import { setNamespaceReload } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";

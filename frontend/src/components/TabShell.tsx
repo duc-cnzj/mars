@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useSelector } from "react-redux";
 import { containerList, isPodRunning } from "../api/project";
-import { message, Radio, Tag, RadioChangeEvent, Upload, Button } from "antd";
+import { message, Radio, Tag, Upload, Button } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
 import { Terminal } from "xterm";
