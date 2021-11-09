@@ -1,27 +1,24 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
-import { containerList, containerLog } from "../api/project";
-import { Radio, Skeleton, RadioChangeEvent, Tag, message } from "antd";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
-import AutoScroll from "./AutoScroll";
+import { containerList } from "../api/project";
+import { Radio, Skeleton, RadioChangeEvent, Tag } from "antd";
 import pb from "../api/compiled";
+import LazyLog from "../pkg/lazylog/components/LazyLog";
+import { getToken } from "./../utils/token";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
   id: number;
   namespaceId: number;
-  autoRefresh: boolean;
-}> = ({ id, namespaceId, autoRefresh, updatedAt }) => {
+}> = ({ id, namespaceId, updatedAt }) => {
   const [value, setValue] = useState<string>();
   const [list, setList] = useState<pb.PodLog[]>();
-  const [log, setLog] = useState<string>();
 
   const listContainer = useCallback(async () => {
     return containerList({ namespace_id: namespaceId, project_id: id }).then(
-        (res) => {
-          setList(res.data.data);
-          return res;
-        }
+      (res) => {
+        setList(res.data.data);
+        return res;
+      }
     );
   }, [namespaceId, id]);
 
@@ -30,120 +27,70 @@ const ProjectContainerLogs: React.FC<{
       if (res.data.data.length > 0) {
         let first = res.data.data[0];
         setValue(first.pod_name + "|" + first.container_name);
-        containerLog({
-          namespace_id: namespaceId,
-          pod: first.pod_name,
-          container: first.container_name,
-          project_id: id,
-        })
-            .then(({ data: { data } }) => {
-              let log: string = "暂无日志";
-              if (data.log) {
-                log = data.log;
-              }
-
-              setLog(log);
-            })
-            .catch((e) => {
-              message.error(e.response.data.message);
-            });
       }
     });
   }, [setList, id, namespaceId, updatedAt, listContainer]);
 
   const onChange = (e: RadioChangeEvent) => {
     setValue(e.target.value);
-    let [pod, container] = (e.target.value as string).split("|");
-    containerLog({
-      namespace_id: namespaceId,
-      project_id: id,
-      pod: pod,
-      container: container,
-    })
-        .then((res) => {
-          setLog(res.data.data.log);
-        })
-        .catch((e) => {
-          message.error(e.response.data.message);
-          listContainer();
-        });
-    console.log("on change", e.target);
   };
 
-  useEffect(() => {
-    let intervalId: any;
-    if (autoRefresh) {
-      let fn = () => {
-        let [pod, container] = (value as string).split("|");
+  const getUrl = () => {
+    let [pod, container] = (value as string).split("|");
 
-        if (pod && container) {
-          containerLog({
-            namespace_id: namespaceId,
-            project_id: id,
-            pod: pod,
-            container: container,
-          }).then((res) => {
-            setLog(res.data.data.log);
-          });
-        }
-
-        console.log("setInterval");
-      };
-      fn();
-      intervalId = setInterval(fn, 2000);
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        console.log("clearInterval");
-      }
-    };
-  }, [autoRefresh, id, namespaceId, value]);
+    return `${process.env.REACT_APP_BASE_URL}/api/namespaces/${namespaceId}/projects/${id}/pods/${pod}/containers/${container}/stream_logs`;
+  };
 
   return (
-      <>
-        <Radio.Group
-            onChange={onChange}
-            value={value}
-            style={{ marginBottom: 10 }}
-        >
-          {list?.map((item) => (
-              <Radio
-                  key={item.pod_name + "|" + item.container_name}
-                  value={item.pod_name + "|" + item.container_name}
-              >
-                {item.container_name}
-                <Tag color="magenta" style={{ marginLeft: 10 }}>
-                  {item.pod_name}
-                </Tag>
-              </Radio>
-          ))}
-        </Radio.Group>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Radio.Group
+        onChange={onChange}
+        value={value}
+        style={{ marginBottom: 10 }}
+      >
+        {list?.map((item) => (
+          <Radio
+            key={item.pod_name + "|" + item.container_name}
+            value={item.pod_name + "|" + item.container_name}
+          >
+            {item.container_name}
+            <Tag color="magenta" style={{ marginLeft: 10 }}>
+              {item.pod_name}
+            </Tag>
+          </Radio>
+        ))}
+      </Radio.Group>
 
-        <div
-            className="project-container-logs"
-            style={{
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              fontSize: 12,
+      <div
+        className="project-container-logs"
+        style={{
+          fontFamily: '"Fira code", "Fira Mono", monospace',
+          fontSize: 12,
+          height: "100%",
+        }}
+      >
+        {value ? (
+          <LazyLog
+            fetchOptions={{ headers: { Authorization: getToken() } }}
+            enableSearch
+            selectableLines
+            formatPart={(text: string) => {
+              return JSON.parse(text).result.data.log;
             }}
-        >
-          {log ? (
-              <AutoScroll height={500} className="auto-scroll">
-                <SyntaxHighlighter
-                    wrapLongLines={false}
-                    showLineNumbers
-                    language="vim"
-                    style={dracula}
-                >
-                  {log}
-                </SyntaxHighlighter>
-              </AutoScroll>
-          ) : (
-              <Skeleton active />
-          )}
-        </div>
-      </>
+            stream
+            onError={(e: any)=>{
+              if (e.status === 404) {
+                listContainer()
+              }
+            }}
+            follow={true}
+            url={getUrl()}
+          />
+        ) : (
+          <Skeleton active />
+        )}
+      </div>
+    </div>
   );
 };
 
