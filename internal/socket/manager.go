@@ -262,6 +262,8 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
+	defer utils.HandlePanic()
+
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -324,6 +326,7 @@ type Token struct {
 }
 
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
+	defer utils.HandlePanic()
 	mlog.Infof("[Websocket]: user: %v, type: %v, data: %v.", c.GetUser().Name, wsRequest.Type, wsRequest.Data)
 	switch wsRequest.Type {
 	case WsAuthorize:
@@ -358,6 +361,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 		go func() {
+			defer utils.HandlePanic()
 			if input.SessionID != "" {
 				messages, err := c.GetShellChannel(input.SessionID)
 				if err != nil {
@@ -379,6 +383,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 
 		sessionID, err := HandleExecShell(input, c)
 		if err != nil {
+			mlog.Error(err)
 			SendEndMsg(c, ResultError, "", WsHandleExecShell, err.Error())
 			return
 		}
@@ -1020,6 +1025,7 @@ func (pc *ProcessControl) Run() {
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 	go func() {
+		defer utils.HandlePanic()
 		defer func() {
 			pc.running.setFalse()
 			close(ch)
