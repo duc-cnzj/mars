@@ -247,6 +247,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]*MyPtyHandler), conn: wsconn}
 
 	defer func() {
+		mlog.Debug("[Websocket]: Ws exit ")
 		wsconn.terminalSessions.CloseAll()
 		ps.Close()
 		c.Close()
@@ -258,10 +259,20 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 
 	SendMsg(wsconn, "", WsSetUid, uid)
 
-	go read(wsconn)
+	ch := make(chan struct{}, 1)
+	go func() {
+		var err error
+		defer func() {
+			mlog.Debugf("[Websocket]: go read exit, err: %v", err)
+		}()
+		err = read(wsconn)
+		ch <- struct{}{}
+	}()
 
 	select {
 	case <-app.App().Done():
+		return
+	case <-ch:
 		return
 	}
 }
@@ -271,6 +282,7 @@ func write(wsconn *WsConn) error {
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		mlog.Debugf("[Websocket]: go write exit")
 		ticker.Stop()
 		wsconn.c.Close()
 	}()
@@ -302,7 +314,7 @@ func write(wsconn *WsConn) error {
 	}
 }
 
-func read(wsconn *WsConn) {
+func read(wsconn *WsConn) error {
 	wsconn.c.SetReadLimit(maxMessageSize)
 	wsconn.c.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.c.SetPongHandler(func(string) error {
@@ -314,8 +326,8 @@ func read(wsconn *WsConn) {
 		var wsRequest WsRequest
 		_, message, err := wsconn.c.ReadMessage()
 		if err != nil {
-			mlog.Warning("[Websocket] read error:", err, message)
-			break
+			mlog.Debugf("[Websocket] read error:", err, message)
+			return err
 		}
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
 			SendEndError(wsconn, "", WsInternalError, err)
