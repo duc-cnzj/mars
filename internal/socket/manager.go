@@ -258,7 +258,12 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 
 	SendMsg(wsconn, "", WsSetUid, uid)
 
-	read(wsconn)
+	go read(wsconn)
+
+	select {
+	case <-app.App().Done():
+		return
+	}
 }
 
 func write(wsconn *WsConn) error {
