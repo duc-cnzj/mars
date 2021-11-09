@@ -199,14 +199,15 @@ const TabShell: React.FC<{
     }
   }, [initShell, value, wsReady]);
 
-  const reconnect = () => {
-    let s = value.split("|");
+  const reconnect = (e: any) => {
+    setValue(e.target.value);
+    let s = (e.target.value as string).split("|");
     isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
       (res) => {
         if (res.data.running) {
           initShell();
         } else {
-          message.error(`容器列表有更新，请重试！`);
+          // message.error(`容器列表有更新，请重试！`);
           listContainer().then((res) => {
             let first = res.data.data[0];
             setValue(first.pod_name + "|" + first.container_name);
@@ -214,11 +215,6 @@ const TabShell: React.FC<{
         }
       }
     );
-  };
-
-  const onChange = (e: RadioChangeEvent) => {
-    console.log(e.target.value);
-    setValue(e.target.value);
   };
 
   function beforeUpload(file: any) {
@@ -285,7 +281,7 @@ const TabShell: React.FC<{
       }}
     >
       <Radio.Group
-        onChange={onChange}
+        // onChange={onChange}
         value={value}
         style={{ marginBottom: 10 }}
       >

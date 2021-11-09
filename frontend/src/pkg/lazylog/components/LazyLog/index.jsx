@@ -182,6 +182,11 @@ export default class LazyLog extends Component {
      * Flag to enable/disable case insensitive search
      */
     caseInsensitive: bool,
+    /**
+   * If true, capture system hotkeys for searching the page (Cmd-F, Ctrl-F,
+   * etc.)
+   */
+    captureHotkeys: bool,
   };
 
   static defaultProps = {
@@ -196,6 +201,7 @@ export default class LazyLog extends Component {
     enableSearch: false,
     rowHeight: 19,
     overscanRowCount: 100,
+    captureHotkeys: false,
     containerStyle: {
       width: 'auto',
       maxWidth: 'initial',
@@ -269,6 +275,7 @@ export default class LazyLog extends Component {
 
   componentDidMount() {
     this.request();
+    console.log("componentDidMount")
     this.setState({isBottom: true})
   }
 
@@ -278,6 +285,8 @@ export default class LazyLog extends Component {
       prevState.url !== this.state.url ||
       prevProps.text !== this.props.text
     ) {
+      console.log("url reloaded")
+      this.setState({isBottom: true})
       this.request();
     }
 
@@ -389,7 +398,7 @@ export default class LazyLog extends Component {
       lines,
       offset,
       count,
-      scrollToIndex,
+      scrollToIndex: scrollToIndex,
     });
 
     if (stream || websocket) {
@@ -722,6 +731,7 @@ export default class LazyLog extends Component {
             onFilterLinesWithMatches={this.handleFilterLinesWithMatches}
             resultsCount={resultLines.length}
             disabled={count === 0}
+            captureHotkeys={this.props.captureHotkeys}
           />
         )}
         <AutoSizer
