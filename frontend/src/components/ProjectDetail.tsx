@@ -93,6 +93,7 @@ const ItemDetailModal: React.FC<{
         initialWidth={900}
         initialHeight={600}
         footer={null}
+        keyboard={false}
         onCancel={onCancel}
         title={item.name + "(" + namespace + ")"}
       >
