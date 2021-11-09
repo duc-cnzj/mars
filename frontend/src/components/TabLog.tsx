@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
 import { containerList } from "../api/project";
-import { Radio, Skeleton, RadioChangeEvent, Tag } from "antd";
+import { Radio, Skeleton, Button, Tag } from "antd";
 import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
@@ -31,25 +31,25 @@ const ProjectContainerLogs: React.FC<{
     });
   }, [setList, id, namespaceId, updatedAt, listContainer]);
 
-  const onChange = (e: RadioChangeEvent) => {
-    setValue(e.target.value);
-  };
+  const [timestamp, setTimestamp] = useState(new Date().getTime());
 
   const getUrl = () => {
     let [pod, container] = (value as string).split("|");
 
-    return `${process.env.REACT_APP_BASE_URL}/api/namespaces/${namespaceId}/projects/${id}/pods/${pod}/containers/${container}/stream_logs`;
+    return `${process.env.REACT_APP_BASE_URL}/api/namespaces/${namespaceId}/projects/${id}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
+  };
+
+  const reloadLog = (e: any) => {
+    setValue(e.target.value);
+    setTimestamp(new Date().getTime())
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Radio.Group
-        onChange={onChange}
-        value={value}
-        style={{ marginBottom: 10 }}
-      >
+      <Radio.Group value={value} style={{ marginBottom: 10 }}>
         {list?.map((item) => (
           <Radio
+            onClick={reloadLog}
             key={item.pod_name + "|" + item.container_name}
             value={item.pod_name + "|" + item.container_name}
           >
@@ -74,13 +74,30 @@ const ProjectContainerLogs: React.FC<{
             fetchOptions={{ headers: { Authorization: getToken() } }}
             enableSearch
             selectableLines
+            captureHotkeys
             formatPart={(text: string) => {
-              return JSON.parse(text).result.data.log;
+              let res = JSON.parse(text);
+              if (res.error) {
+                return (
+                  <span style={{ textAlign: "center" }}>
+                    <Button type="text" style={{color: "red", fontSize: 12}} size="small" onClick={() => setTimestamp(new Date().getTime())}>
+                      点击重新加载
+                    </Button>
+                  </span>
+                );
+              }
+              return res.result.data.log;
             }}
             stream
-            onError={(e: any)=>{
+            onError={(e: any) => {
+              console.log(e);
               if (e.status === 404) {
-                listContainer()
+                listContainer().then((res) => {
+                  if (res.data.data.length > 0) {
+                    let first = res.data.data[0];
+                    setValue(first.pod_name + "|" + first.container_name);
+                  }
+                });
               }
             }}
             follow={true}

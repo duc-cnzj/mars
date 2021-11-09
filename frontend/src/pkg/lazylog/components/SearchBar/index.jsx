@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component, createRef } from 'react';
 import { bool, func, number } from 'prop-types';
 import FilterLinesIcon from './FilterLinesIcon';
 import { SEARCH_MIN_KEYWORDS } from '../../utils';
@@ -9,6 +9,7 @@ import {
   active,
   inactive,
 } from './index.module.css';
+import hotkeys from 'hotkeys-js';
 
 export default class SearchBar extends Component {
   static propTypes = {
@@ -38,6 +39,11 @@ export default class SearchBar extends Component {
      * If true, the input field and filter button will be disabled.
      */
     disabled: bool,
+    /**
+   * If true, capture system hotkeys for searching the page (Cmd-F, Ctrl-F,
+   * etc.)
+   */
+    captureHotkeys: bool,
   };
 
   static defaultProps = {
@@ -47,7 +53,28 @@ export default class SearchBar extends Component {
     resultsCount: 0,
     filterActive: false,
     disabled: false,
+    captureHotkeys: false,
   };
+
+  handleSearchHotkey = e => {
+    if (!this.inputRef.current) {
+      return;
+    }
+
+    e.preventDefault();
+    this.inputRef.current.focus();
+  };
+
+  componentDidMount() {
+    if (this.props.captureHotkeys) {
+      hotkeys('ctrl+f,cmd+f', this.handleSearchHotkey);
+    }
+  }
+
+  constructor(props) {
+    super(props);
+    this.inputRef = createRef();
+  }
 
   state = {
     keywords: '',
@@ -97,6 +124,7 @@ export default class SearchBar extends Component {
           onKeyPress={this.handleSearchKeyPress}
           value={this.state.keywords}
           disabled={disabled}
+          ref={this.inputRef}
         />
         <button
           disabled={disabled}
