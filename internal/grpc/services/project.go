@@ -3,6 +3,7 @@ package services
 import (
 	"bufio"
 	"context"
+	"errors"
 	"net/http"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -57,11 +58,21 @@ func (p *Project) StreamPodContainerLog(request *project.PodContainerLogRequest,
 
 	for {
 		select {
+		case <-app.App().Done():
+			stream.Close()
+			err := errors.New("server shutdown")
+			mlog.Debug("[Stream]: client exit with: ", err)
+			return err
 		case <-server.Context().Done():
 			stream.Close()
 			mlog.Debug("[Stream]: client exit with: ", server.Context().Err())
 			return server.Context().Err()
-		case msg := <-ch:
+		case msg, ok := <-ch:
+			if !ok {
+				stream.Close()
+				return errors.New("[Stream]: channel close")
+			}
+
 			if err := server.Send(&project.PodContainerLogResponse{
 				Data: &project.PodLog{
 					PodName:       request.Pod,
