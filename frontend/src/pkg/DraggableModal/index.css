@@ -34,14 +34,10 @@
     padding: 16px;
 }
 
-.ant-design-draggable-modal .ant-design-draggable-modal-title::before {
-    content: '\00a0';
-}
-
 .ant-design-draggable-modal .ant-modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 0;
 }
 
 .ant-design-draggable-modal-resize-handle-inner {

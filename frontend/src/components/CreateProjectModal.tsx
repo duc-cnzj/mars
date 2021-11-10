@@ -212,7 +212,7 @@ const CreateProjectModal: React.FC<{
         onOk={onOk}
         initialWidth={800}
         initialHeight={500}
-        title="创建项目"
+        title={<div style={{textAlign: "center"}}>创建项目</div>}
         className="drag-item-modal"
         onCancel={onCancel}
       >
