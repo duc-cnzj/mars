@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { detailProject } from "../api/project";
-import { Button, Tabs, Skeleton } from "antd";
+import { Button, Tabs, Skeleton, Badge } from "antd";
 import DeployStatus from "./DeployStatus";
 import { setNamespaceReload } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";
@@ -95,9 +95,28 @@ const ItemDetailModal: React.FC<{
         footer={null}
         keyboard={false}
         onCancel={onCancel}
-        title={item.name + "(" + namespace + ")"}
+        title={
+          <Badge.Ribbon
+            style={{
+              top: 0,
+              cursor: "auto",
+              fontFamily: '"Fira code", "Fira Mono", monospace',
+              marginLeft: -16,
+            }}
+            placement="start"
+            text={namespace}
+            color="purple"
+          >
+            <div style={{ textAlign: "center", fontSize: 18 }}>{item.name}</div>
+          </Badge.Ribbon>
+        }
       >
-        <Tabs destroyInactiveTabPane defaultActiveKey="1" centered style={{ height: "100%" }}>
+        <Tabs
+          destroyInactiveTabPane
+          defaultActiveKey="1"
+          centered
+          style={{ height: "100%" }}
+        >
           {item.status === "deployed" ? (
             <>
               <TabPane tab="容器日志" key="container-logs">

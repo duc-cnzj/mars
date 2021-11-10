@@ -103,8 +103,20 @@ function DraggableModalInnerNonMemo({
             visible={visible}
             {...otherProps}
         >
-            {children}
-            <ResizeHandle onMouseDown={onMouseResize} />
+            <div
+                onMouseDown={onMouseDrag}
+                onClick={onFocus}
+                style={{ height: "100%", padding: 16, cursor: "move"}}
+            >
+                <div
+                    style={{ height: "100%", cursor: "auto"}}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {children}
+                    <ResizeHandle onMouseDown={onMouseResize} />
+                </div>
+            </div>
         </Modal>
     )
 }
