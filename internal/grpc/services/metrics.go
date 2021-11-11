@@ -18,8 +18,8 @@ type Metrics struct {
 }
 
 var (
-	tickDuration = 2 * time.Second
-	timeSpan     = 60 * time.Second
+	tickDuration = 5 * time.Second
+	timeSpan     = 5 * time.Second * 30
 	length       = timeSpan / tickDuration
 )
 

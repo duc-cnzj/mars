@@ -30,6 +30,7 @@ const TabShell: React.FC<{
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
   const ref = useRef<HTMLDivElement>(null);
+  const [timestamp, setTimestamp] = useState(new Date().getTime());
   const ws = useWs();
   const wsReady = useWsReady();
   const [fitAddon, _] = useState(new FitAddon());
@@ -201,6 +202,7 @@ const TabShell: React.FC<{
   }, [initShell, value, wsReady]);
 
   const reconnect = (e: any) => {
+    setTimestamp(new Date().getTime())
     setValue(e.target.value);
     let s = (e.target.value as string).split("|");
     isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
@@ -318,6 +320,7 @@ const TabShell: React.FC<{
           <PodMetrics
             namespace={detail.namespace?.name || ""}
             pod={value.split("|")[0]}
+            timestamp={timestamp}
           />
         </div>
       ) : (

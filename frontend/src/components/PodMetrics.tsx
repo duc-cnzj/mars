@@ -14,9 +14,10 @@ interface MemoryM {
   name: number;
   time: string;
 }
-const PodMetrics: React.FC<{ namespace: string; pod: string }> = ({
+const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> = ({
   namespace,
   pod,
+  timestamp,
 }) => {
   const [cpuMetrics, setCpuMetrics] = useState<CpuM[]>([]);
   const [memoryMetrics, setMemoryMetrics] = useState<MemoryM[]>([]);
@@ -67,7 +68,7 @@ const PodMetrics: React.FC<{ namespace: string; pod: string }> = ({
     console.log(e);
   };
   let { close } = useStream(
-    `${process.env.REACT_APP_BASE_URL}/api/metrics/namespace/${namespace}/pods/${pod}`,
+    `${process.env.REACT_APP_BASE_URL}/api/metrics/namespace/${namespace}/pods/${pod}?time=${timestamp}`,
     { onNext, onError, fetchParams: { headers: { Authorization: getToken() } } }
   );
 
