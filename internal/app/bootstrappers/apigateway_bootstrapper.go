@@ -18,6 +18,8 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/cp"
+	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
+
 	"github.com/duc-cnzj/mars/pkg/picture"
 
 	"github.com/duc-cnzj/mars/frontend"
@@ -81,6 +83,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,
 		cp.RegisterCpHandlerFromEndpoint,
+		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {

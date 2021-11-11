@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/metrics;metrics";
+
+message ProjectByIDRequest {
+  string namespace = 1;
+  string pod = 2;
+}
+
+message ProjectByIDResponse {
+  double cpu = 1;
+  double memory = 2;
+  string humanize_cpu = 3;
+  string humanize_memory = 4;
+  string time = 5;
+  int64 length = 6;
+}
+
+service Metrics {
+  rpc ProjectByID(ProjectByIDRequest) returns (stream ProjectByIDResponse) {
+    option (google.api.http) = {
+      get: "/api/metrics/namespace/{namespace}/pods/{pod}",
+    };
+  }
+}

@@ -23,6 +23,24 @@ func GetCpuAndMemory(list []v1beta1.PodMetrics) (string, string) {
 	return analyseMetricsToCpuAndMemory(list)
 }
 
+func GetCpuAndMemoryQuantity(pod v1beta1.PodMetrics) (cpu *resource.Quantity, memory *resource.Quantity) {
+	for _, container := range pod.Containers {
+		if cpu == nil {
+			cpu = container.Usage.Cpu()
+		} else {
+			cpu.Add(*container.Usage.Cpu())
+		}
+
+		if memory == nil {
+			memory = container.Usage.Memory()
+		} else {
+			memory.Add(*container.Usage.Memory())
+		}
+	}
+
+	return cpu, memory
+}
+
 func analyseMetricsToCpuAndMemory(list []v1beta1.PodMetrics) (string, string) {
 	var cpu, memory *resource.Quantity
 

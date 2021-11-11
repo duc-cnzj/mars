@@ -652,6 +652,51 @@
         }
       }
     },
+    "/api/metrics/namespace/{namespace}/pods/{pod}": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "operationId": "Metrics_ProjectByID",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "pod",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of ProjectByIDResponse",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                },
+                "result": {
+                  "$ref": "#/definitions/ProjectByIDResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/namespaces": {
       "get": {
         "tags": [
@@ -1595,6 +1640,32 @@
         }
       }
     },
+    "ProjectByIDResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "number",
+          "format": "double"
+        },
+        "humanize_cpu": {
+          "type": "string"
+        },
+        "humanize_memory": {
+          "type": "string"
+        },
+        "length": {
+          "type": "string",
+          "format": "int64"
+        },
+        "memory": {
+          "type": "number",
+          "format": "double"
+        },
+        "time": {
+          "type": "string"
+        }
+      }
+    },
     "ProjectListResponse": {
       "type": "object",
       "properties": {
@@ -1788,6 +1859,9 @@
     },
     {
       "name": "Mars"
+    },
+    {
+      "name": "Metrics"
     },
     {
       "name": "Namespace"

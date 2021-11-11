@@ -264,7 +264,7 @@ const ModalSub: React.FC<{
   );
 
   useEffect(() => {
-    setMode(getMode(data.config_type))
+    setMode(getMode(data.config_type));
   }, [data.config_type]);
 
   const highlightSyntax = useCallback(
@@ -308,11 +308,16 @@ const ModalSub: React.FC<{
           ) : (
             ""
           )}
-          {initValue ? (
+
+          <Skeleton
+            active
+            paragraph={false}
+            avatar={false}
+            loading={!initValue}
+            title={{style: {marginTop: 0, height: 24}}}
+          >
             <ProjectSelector value={initValue} onChange={onChange} />
-          ) : (
-            <Skeleton.Input active style={{ width: 900 }} size="small" />
-          )}
+          </Skeleton>
         </div>
         <div
           style={{
