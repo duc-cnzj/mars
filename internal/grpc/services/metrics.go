@@ -35,8 +35,13 @@ func (m *Metrics) ProjectByID(request *metrics.ProjectByIDRequest, server metric
 	fn := func() error {
 		podMetrics, err := app.K8sMetrics().MetricsV1beta1().PodMetricses(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
 		if err != nil {
+			running, _ := utils.IsPodRunning(request.Namespace, request.Pod)
+			if running {
+				return nil
+			}
 			return err
 		}
+
 		cpu, memory := utils.GetCpuAndMemoryQuantity(*podMetrics)
 		cpuM := cpu.MilliValue()
 		var HumanizeCpu string = fmt.Sprintf("%v m", float64(cpu.MilliValue()))
