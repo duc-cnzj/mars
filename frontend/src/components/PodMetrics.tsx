@@ -64,6 +64,10 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
     },
     [setCpuMetrics, setMemoryMetrics]
   );
+  useEffect(() => {
+    setCpuMetrics([])
+    setMemoryMetrics([])
+  }, [namespace, pod])
   const onError = (e: any) => {
     console.log(e);
   };
