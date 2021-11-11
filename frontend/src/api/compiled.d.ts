@@ -1188,6 +1188,86 @@ export namespace Mars {
     type GetDefaultChartValuesCallback = (error: (Error|null), response?: DefaultChartValues) => void;
 }
 
+/** Represents a ProjectByIDRequest. */
+export class ProjectByIDRequest implements IProjectByIDRequest {
+
+    /**
+     * Constructs a new ProjectByIDRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectByIDRequest);
+
+    /** ProjectByIDRequest namespace. */
+    public namespace: string;
+
+    /** ProjectByIDRequest pod. */
+    public pod: string;
+}
+
+/** Represents a ProjectByIDResponse. */
+export class ProjectByIDResponse implements IProjectByIDResponse {
+
+    /**
+     * Constructs a new ProjectByIDResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectByIDResponse);
+
+    /** ProjectByIDResponse cpu. */
+    public cpu: number;
+
+    /** ProjectByIDResponse memory. */
+    public memory: number;
+
+    /** ProjectByIDResponse humanize_cpu. */
+    public humanize_cpu: string;
+
+    /** ProjectByIDResponse humanize_memory. */
+    public humanize_memory: string;
+
+    /** ProjectByIDResponse time. */
+    public time: string;
+
+    /** ProjectByIDResponse length. */
+    public length: (number|Long);
+}
+
+/** Represents a Metrics */
+export class Metrics extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Metrics service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls ProjectByID.
+     * @param request ProjectByIDRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectByIDResponse
+     */
+    public projectByID(request: IProjectByIDRequest, callback: Metrics.ProjectByIDCallback): void;
+
+    /**
+     * Calls ProjectByID.
+     * @param request ProjectByIDRequest message or plain object
+     * @returns Promise
+     */
+    public projectByID(request: IProjectByIDRequest): Promise<ProjectByIDResponse>;
+}
+
+export namespace Metrics {
+
+    /**
+     * Callback as used by {@link Metrics#projectByID}.
+     * @param error Error, if any
+     * @param [response] ProjectByIDResponse
+     */
+    type ProjectByIDCallback = (error: (Error|null), response?: ProjectByIDResponse) => void;
+}
+
 /** Represents a GitlabProjectModal. */
 export class GitlabProjectModal implements IGitlabProjectModal {
 

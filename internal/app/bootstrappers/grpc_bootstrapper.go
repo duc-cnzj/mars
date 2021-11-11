@@ -25,6 +25,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"github.com/duc-cnzj/mars/pkg/mars"
+	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
 	"github.com/duc-cnzj/mars/pkg/namespace"
 	"github.com/duc-cnzj/mars/pkg/project"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -125,6 +126,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	picture.RegisterPictureServer(server, new(services.Picture))
 	cp.RegisterCpServer(server, new(services.CopyToPod))
 	auth.RegisterAuthServer(server, services.NewAuth(app.Config().Prikey(), app.Config().Pubkey(), app.App().Oidc(), app.Config().AdminPassword))
+	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 
 	g.server = server
 	go func() {

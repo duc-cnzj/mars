@@ -18,6 +18,7 @@ import { useWs, useWsReady } from "../contexts/useWebsocket";
 import { UploadOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
 import { copyToPod } from "../api/cp";
+import PodMetrics from "./PodMetrics";
 
 const TabShell: React.FC<{
   detail: pb.ProjectShowResponse;
@@ -298,17 +299,30 @@ const TabShell: React.FC<{
           </Radio>
         ))}
       </Radio.Group>
-      <Upload {...props}>
-        <Button
-          disabled={loading}
-          loading={loading}
-          size="small"
-          style={{ fontSize: 12, marginBottom: 5 }}
-          icon={<UploadOutlined />}
+
+      {value.length > 0 && term ? (
+        <div
+          style={{ display: "flex", justifyContent: "start", marginBottom: 8 }}
         >
-          {loading ? "上传中" : "上传到容器"}
-        </Button>
-      </Upload>
+          <Upload {...props}>
+            <Button
+              disabled={loading}
+              loading={loading}
+              size="small"
+              style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
+              icon={<UploadOutlined />}
+            >
+              {loading ? "上传中" : "上传到容器"}
+            </Button>
+          </Upload>
+          <PodMetrics
+            namespace={detail.namespace?.name || ""}
+            pod={value.split("|")[0]}
+          />
+        </div>
+      ) : (
+        ""
+      )}
       <div ref={ref} id="terminal" style={{ height: "100%" }}></div>
     </div>
   );
