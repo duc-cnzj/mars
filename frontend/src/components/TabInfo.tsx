@@ -23,7 +23,7 @@ const DetailTab: React.FC<{
   const [loading, setLoading] = useState<boolean>(false);
 
   return detail ? (
-    <>
+    <div style={{height: "100%", overflowY: "auto"}}>
       <div
         style={{
           display: "flex",
@@ -296,7 +296,7 @@ const DetailTab: React.FC<{
       >
         删除项目
       </Button>
-    </>
+    </div>
   ) : (
     <Skeleton />
   );
