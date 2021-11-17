@@ -758,9 +758,11 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	}
 	var pipelineID int
 
-	if commit.LastPipeline != nil {
-		pipelineID = commit.LastPipeline.ID
+	if commit.LastPipeline == nil {
+		return errors.New("无法获取 Pipeline 信息")
 	}
+
+	pipelineID = commit.LastPipeline.ID
 
 	pc.SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pc.project.GitlabBranch, pc.project.GitlabCommit, pipelineID))
 

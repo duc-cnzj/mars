@@ -135,6 +135,7 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
+- [ ] 插件化 ingress/tls 证书的注入方式
 - [ ] ui 美化
 - [ ] 断开连接使用图标的方式
 - [ ] 配置可启动之后再添加
