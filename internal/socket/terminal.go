@@ -50,6 +50,25 @@ type MyPtyHandler struct {
 	shellCh chan TerminalMessage
 }
 
+func (t *MyPtyHandler) Close(reason string) {
+	msg, _ := json.Marshal(struct {
+		Container
+		TerminalMessage
+	}{
+		TerminalMessage: TerminalMessage{
+			SessionID: t.id,
+			Op:        "stdout",
+			Data:      reason,
+		},
+		Container: t.Container,
+	})
+
+	SendMsg(t.conn, t.id, WsHandleExecShellMsg, string(msg))
+	close(t.shellCh)
+	close(t.sizeChan)
+	close(t.doneChan)
+}
+
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
@@ -158,10 +177,11 @@ type SessionMap struct {
 }
 
 // Get return a given terminalSession by sessionId
-func (sm *SessionMap) Get(sessionId string) *MyPtyHandler {
+func (sm *SessionMap) Get(sessionId string) (*MyPtyHandler, bool) {
 	sm.Lock.RLock()
 	defer sm.Lock.RUnlock()
-	return sm.Sessions[sessionId]
+	h, ok := sm.Sessions[sessionId]
+	return h, ok
 }
 
 // Set store a MyPtyHandler to SessionMap
@@ -173,15 +193,19 @@ func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
 
 func (sm *SessionMap) CloseAll() {
 	mlog.Debug("[Websocket] close all.")
+	sm.Lock.Lock()
+	defer sm.Lock.Unlock()
+
 	wg := sync.WaitGroup{}
 	for _, s := range sm.Sessions {
 		wg.Add(1)
 		go func(s *MyPtyHandler) {
 			defer wg.Done()
-			sm.Close(s.id, 1, "websocket conn closed")
+			s.Close("websocket conn closed")
 		}(s)
 	}
 	wg.Wait()
+	sm.Sessions = map[string]*MyPtyHandler{}
 }
 
 // Close shuts down the SockJS connection and sends the status code and reason to the client
@@ -190,27 +214,11 @@ func (sm *SessionMap) CloseAll() {
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	mlog.Debugf("[Websocket] session %v closed, reason: %s.", sessionId, reason)
 	sm.Lock.Lock()
-	defer sm.Lock.Unlock()
-	if _, ok := sm.Sessions[sessionId]; !ok {
-		return
+	if s, ok := sm.Sessions[sessionId]; ok {
+		s.Close(reason)
+		delete(sm.Sessions, sessionId)
 	}
-	msg, _ := json.Marshal(struct {
-		Container
-		TerminalMessage
-	}{
-		TerminalMessage: TerminalMessage{
-			SessionID: sessionId,
-			Op:        "stdout",
-			Data:      reason,
-		},
-		Container: sm.Sessions[sessionId].Container,
-	})
-
-	SendMsg(sm.Sessions[sessionId].conn, sm.Sessions[sessionId].id, WsHandleExecShellMsg, string(msg))
-	sm.conn.DeleteShellChannel(sessionId)
-	close(sm.Sessions[sessionId].doneChan)
-	close(sm.Sessions[sessionId].sizeChan)
-	delete(sm.Sessions, sessionId)
+	sm.Lock.Unlock()
 }
 
 // startProcess is called by handleAttach
@@ -284,12 +292,13 @@ func isValidShell(validShells []string, shell string) bool {
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleMyPtyHandler
 func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
 	defer func() {
+		utils.HandlePanic("Websocket: WaitForTerminal")
 		mlog.Debugf("[Websocket] WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
 
-	session := conn.terminalSessions.Get(sessionId)
+	session, _ := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
 		err = startProcess(k8sClient, cfg, container, cmd, session)
