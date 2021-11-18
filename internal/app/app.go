@@ -251,9 +251,15 @@ func (app *Application) RegisterBeforeShutdownFunc(fn contracts.Callback) {
 }
 
 func (app *Application) RunServerHooks(hook Hook) {
+	wg := sync.WaitGroup{}
 	for _, cb := range app.hooks[hook] {
-		cb(app)
+		wg.Add(1)
+		go func(cb contracts.Callback) {
+			defer wg.Done()
+			cb(app)
+		}(cb)
 	}
+	wg.Wait()
 }
 
 func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {

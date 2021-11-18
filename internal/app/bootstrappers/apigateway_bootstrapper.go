@@ -44,6 +44,21 @@ type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	app.AddServer(&apiGateway{endpoint: grpcEndpoint})
+	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
+		t := time.NewTimer(5 * time.Second)
+		defer t.Stop()
+		ch := make(chan struct{}, 1)
+		go func() {
+			socket.Wait.Wait()
+			ch <- struct{}{}
+		}()
+		select {
+		case <-ch:
+			mlog.Info("[Websocket]: all socket connection closed")
+		case <-t.C:
+			mlog.Warningf("[Websocket]: 等待超时, 未等待所有 socket 连接退出，当前剩余连接 %v 个。", socket.Wait.Count())
+		}
+	})
 
 	return nil
 }

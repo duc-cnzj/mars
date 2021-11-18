@@ -80,6 +80,7 @@ const (
 )
 
 var hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
+var tagRegex = regexp.MustCompile("{{\\s*(\\.Branch|\\.Commit|\\.Pipeline)\\s*}}")
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -246,12 +247,14 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	}
 	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]*MyPtyHandler), conn: wsconn}
 
+	Wait.Inc()
 	defer func() {
 		mlog.Debug("[Websocket]: Ws exit ")
 		wsconn.terminalSessions.CloseAll()
 		ps.Close()
 		c.Close()
 		app.Metrics().DecWebsocketConn()
+		Wait.Dec()
 	}()
 
 	app.Metrics().IncWebsocketConn()
@@ -278,7 +281,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
-	defer utils.HandlePanic()
+	defer utils.HandlePanic("Websocket: Write")
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -326,7 +329,7 @@ func read(wsconn *WsConn) error {
 		var wsRequest WsRequest
 		_, message, err := wsconn.c.ReadMessage()
 		if err != nil {
-			mlog.Debugf("[Websocket] read error:", err, message)
+			mlog.Debugf("[Websocket] read error: %v", err, message)
 			return err
 		}
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
@@ -343,7 +346,7 @@ type Token struct {
 }
 
 func serveWebsocket(c *WsConn, wsRequest WsRequest) {
-	defer utils.HandlePanic()
+	defer utils.HandlePanic("Websocket: serveWebsocket")
 	mlog.Infof("[Websocket]: user: %v, type: %v, data: %v.", c.GetUser().Name, wsRequest.Type, wsRequest.Data)
 	switch wsRequest.Type {
 	case WsAuthorize:
@@ -378,7 +381,7 @@ func serveWebsocket(c *WsConn, wsRequest WsRequest) {
 			return
 		}
 		go func() {
-			defer utils.HandlePanic()
+			defer utils.HandlePanic("Websocket: WsHandleExecShellMsg")
 			if input.SessionID != "" {
 				messages, err := c.GetShellChannel(input.SessionID)
 				if err != nil {
@@ -758,11 +761,14 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	}
 	var pipelineID int
 
-	if commit.LastPipeline == nil {
-		return errors.New("无法获取 Pipeline 信息")
+	// 如果存在需要传变量的，则必须有流水线信息
+	if commit.LastPipeline != nil {
+		pipelineID = commit.LastPipeline.ID
+	} else {
+		if tagRegex.MatchString(marsC.DockerTagFormat) {
+			return errors.New("无法获取 Pipeline 信息")
+		}
 	}
-
-	pipelineID = commit.LastPipeline.ID
 
 	pc.SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pc.project.GitlabBranch, pc.project.GitlabCommit, pipelineID))
 
@@ -777,6 +783,7 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	}); err != nil {
 		return err
 	}
+	tag := b.String()
 
 	pc.To(60)
 
@@ -862,7 +869,6 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 
 	pc.To(65)
 
-	tag := b.String()
 	var commonValues = []string{
 		"image.pullPolicy=IfNotPresent",
 		"image.repository=" + marsC.DockerRepository,
@@ -1044,7 +1050,7 @@ func (pc *ProcessControl) Run() {
 	loadArchive := pc.chart
 	valueOpts := pc.valueOpts
 	go func() {
-		defer utils.HandlePanic()
+		defer utils.HandlePanic("ProcessControl: Run")
 		defer func() {
 			pc.running.setFalse()
 			close(ch)
