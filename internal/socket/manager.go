@@ -316,7 +316,7 @@ func read(wsconn *WsConn) error {
 		var wsRequest WsRequest
 		_, message, err := wsconn.c.ReadMessage()
 		if err != nil {
-			mlog.Debugf("[Websocket] read error: %v", err, message)
+			mlog.Debugf("[Websocket] read error: %v %v", err, message)
 			return err
 		}
 		if err := json.Unmarshal(message, &wsRequest); err != nil {
