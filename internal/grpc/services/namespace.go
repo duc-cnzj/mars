@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -59,6 +60,7 @@ func (n *Namespace) Store(ctx context.Context, request *namespace.NsStoreRequest
 	request.Namespace = utils.GetMarsNamespace(request.Namespace)
 
 	if app.DB().Where("`name` = ?", request.Namespace).First(&models.Namespace{}).Error == nil {
+		return nil, errors.New("名称空间已存在")
 	}
 
 	// 创建名称空间
@@ -188,16 +190,16 @@ func (n *Namespace) Destroy(ctx context.Context, id *namespace.NamespaceID) (*em
 
 	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
-LABEL:
+loop:
 	for {
 		select {
 		case <-time.After(500 * time.Millisecond):
 			if _, err := app.K8sClientSet().CoreV1().Namespaces().Get(context.Background(), ns.Name, metav1.GetOptions{}); err != nil {
 				mlog.Error(err)
-				break LABEL
+				break loop
 			}
 		case <-timer.C:
-			break LABEL
+			break loop
 		}
 	}
 
