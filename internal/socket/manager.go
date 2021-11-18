@@ -163,24 +163,11 @@ func (c *WsConn) GetUser() services.UserInfo {
 }
 
 func (c *WsConn) GetShellChannel(sessionID string) (chan TerminalMessage, error) {
-	if handler, ok := c.terminalSessions.Sessions[sessionID]; ok {
+	if handler, ok := c.terminalSessions.Get(sessionID); ok {
 		return handler.shellCh, nil
 	}
 
 	return nil, fmt.Errorf("%v not found channel", sessionID)
-}
-
-func (c *WsConn) DeleteShellChannel(sessionID string) {
-	ch := c.terminalSessions.Sessions[sessionID].shellCh
-	for {
-		select {
-		case msg := <-ch:
-			mlog.Warning("[Websocket] session: %v 未消费的数据 %v", sessionID, msg)
-		default:
-			close(ch)
-			return
-		}
-	}
 }
 
 type CancelSignals struct {
