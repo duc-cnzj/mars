@@ -113,7 +113,7 @@ func (a *Auth) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*au
 
 	return &auth.LoginResponse{
 		Token:     tokenString,
-		ExpiresIn: int64(Expired),
+		ExpiresIn: int64(Expired.Seconds()),
 	}, nil
 }
 
@@ -166,7 +166,7 @@ func (a *Auth) Login(ctx context.Context, request *auth.LoginRequest) (*auth.Log
 		}
 		return &auth.LoginResponse{
 			Token:     tokenString,
-			ExpiresIn: int64(Expired),
+			ExpiresIn: int64(Expired.Seconds()),
 		}, nil
 	}
 
