@@ -10,6 +10,10 @@ fmt:
 serve:
 	go run main.go serve --debug --app_port 4000
 
+.PHONY: build_race
+build_race:
+	go build -ldflags="-s -w" -race -o app main.go
+
 .PHONY: build_web
 build_web:
 	cd ./frontend && yarn build
