@@ -1,10 +1,12 @@
 package utils
 
-import "github.com/duc-cnzj/mars/internal/mlog"
+import (
+	"github.com/duc-cnzj/mars/internal/mlog"
+)
 
-func HandlePanic() {
+func HandlePanic(title string) {
 	err := recover()
 	if err != nil {
-		mlog.Errorf("[Panic]: %v", err)
+		mlog.Errorf("[Panic]: title: %v, err: %v", title, err)
 	}
 }

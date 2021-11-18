@@ -13,7 +13,6 @@ import (
 	"sync"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -174,9 +173,15 @@ func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
 
 func (sm *SessionMap) CloseAll() {
 	mlog.Debug("[Websocket] close all.")
+	wg := sync.WaitGroup{}
 	for _, s := range sm.Sessions {
-		sm.Close(s.id, 1, "websocket conn closed")
+		wg.Add(1)
+		go func(s *MyPtyHandler) {
+			defer wg.Done()
+			sm.Close(s.id, 1, "websocket conn closed")
+		}(s)
 	}
+	wg.Wait()
 }
 
 // Close shuts down the SockJS connection and sends the status code and reason to the client
