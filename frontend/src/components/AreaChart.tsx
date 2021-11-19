@@ -1,5 +1,4 @@
 import React from "react";
-import { Skeleton } from "antd";
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
 
 const MyTooltip = ({ active, payload, label }: any) => {
