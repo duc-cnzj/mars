@@ -19,6 +19,7 @@ func init() {
 }
 
 type NsqSender struct {
+	producer    *gonsq.Producer
 	cfg         *gonsq.Config
 	lookupdAddr string
 	addr        string
@@ -39,19 +40,25 @@ func (n *NsqSender) Initialize(args map[string]interface{}) (err error) {
 	if s, ok := args["lookupdAddr"]; ok {
 		n.lookupdAddr = s.(string)
 	}
+	p, err := gonsq.NewProducer(n.addr, n.cfg)
+	if err != nil {
+		return err
+	}
+	setLogLevel(p)
+	err = p.Ping()
+	n.producer = p
 	mlog.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
 	return
 }
 
 func (n *NsqSender) Destroy() error {
+	n.producer.Stop()
 	mlog.Info("[Plugin]: " + n.Name() + " plugin Destroy...")
 	return nil
 }
 
 func (n *NsqSender) New(uid, id string) plugins.PubSub {
-	p, _ := gonsq.NewProducer(n.addr, n.cfg)
-	setLogLevel(p)
-	return &nsq{id: id, uid: uid, cfg: n.cfg, producer: p, addr: n.addr, lookupdAddr: n.lookupdAddr}
+	return &nsq{id: id, uid: uid, cfg: n.cfg, producer: n.producer, addr: n.addr, lookupdAddr: n.lookupdAddr}
 }
 
 type nsq struct {
@@ -127,7 +134,6 @@ func (n *nsq) Close() error {
 			c.DisconnectFromNSQD(n.addr)
 		}
 	}
-	n.producer.Stop()
 	return nil
 }
 
