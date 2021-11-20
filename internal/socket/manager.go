@@ -93,9 +93,9 @@ type WebsocketManager struct{}
 func NewWebsocketManager() *WebsocketManager {
 	wc := &WebsocketManager{}
 
-	ticker := time.NewTicker(15 * time.Second)
-	sub := plugins.GetWsSender().New("", "")
 	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		sub := plugins.GetWsSender().New("", "")
 		for {
 			select {
 			case <-ticker.C:
