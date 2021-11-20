@@ -5,10 +5,10 @@ import (
 
 	"github.com/duc-cnzj/mars/cmd"
 
-	_ "github.com/duc-cnzj/mars/internal/plugins/docker"
-	_ "github.com/duc-cnzj/mars/internal/plugins/domain_resolver"
-	_ "github.com/duc-cnzj/mars/internal/plugins/picture"
-	_ "github.com/duc-cnzj/mars/internal/plugins/wssender"
+	_ "github.com/duc-cnzj/mars/plugins/docker"
+	_ "github.com/duc-cnzj/mars/plugins/domain_resolver"
+	_ "github.com/duc-cnzj/mars/plugins/picture"
+	_ "github.com/duc-cnzj/mars/plugins/wssender"
 )
 
 //go:embed config_example.yaml
