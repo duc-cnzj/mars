@@ -59,7 +59,7 @@ func ClusterInfo() *InfoResponse {
 	var nodes []v1.Node
 
 	// 获取已经使用的 cpu, memory
-	nodeList, _ := app.K8sClient().Client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
+	nodeList, _ := app.K8sClientSet().CoreV1().Nodes().List(context.Background(), metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})
 	nodes = append(nodes, nodeList.Items...)
