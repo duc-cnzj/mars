@@ -272,6 +272,9 @@ func PackageChart(path string, destDir string) (string, error) {
 }
 
 func getActionConfigAndSettings(namespace string, log func(format string, v ...interface{})) (*action.Configuration, *cli.EnvSettings, error) {
+	helmLock.Lock()
+	defer helmLock.Unlock()
+
 	var settings = GetSettings(namespace)
 	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
@@ -287,8 +290,6 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 		settings.KubeToken = string(token)
 	}
 
-	helmLock.Lock()
-	defer helmLock.Unlock()
 	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
 		return nil, nil, err
 	}
