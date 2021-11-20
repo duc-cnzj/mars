@@ -253,6 +253,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		var err error
 		defer func() {
+			utils.HandlePanic("[Websocket]: read recovery")
 			mlog.Debugf("[Websocket]: go read exit, err: %v", err)
 		}()
 		err = read(wsconn)
