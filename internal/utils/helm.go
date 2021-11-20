@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -27,6 +28,8 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
+
+var helmLock sync.Mutex
 
 type DeleteFunc func()
 
@@ -284,6 +287,8 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 		settings.KubeToken = string(token)
 	}
 
+	helmLock.Lock()
+	defer helmLock.Unlock()
 	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
 		return nil, nil, err
 	}
