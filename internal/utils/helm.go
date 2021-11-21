@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"helm.sh/helm/v3/pkg/kube"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/spf13/pflag"
 
@@ -26,6 +28,10 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
+
+func init() {
+	kube.New(nil)
+}
 
 type DeleteFunc func()
 
