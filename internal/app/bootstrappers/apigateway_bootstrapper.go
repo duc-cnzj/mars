@@ -184,6 +184,7 @@ func (a *apiGateway) Shutdown(ctx context.Context) error {
 
 func serveWs(mux *mux.Router) {
 	ws := socket.NewWebsocketManager()
+	ws.TickClusterHealth()
 	mux.HandleFunc("/api/ws_info", ws.Info)
 	mux.HandleFunc("/ws", ws.Ws)
 }

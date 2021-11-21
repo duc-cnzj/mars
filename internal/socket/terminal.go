@@ -64,9 +64,9 @@ func (t *MyPtyHandler) Close(reason string) {
 	})
 
 	SendMsg(t.conn, t.id, WsHandleExecShellMsg, string(msg))
+	close(t.doneChan)
 	close(t.shellCh)
 	close(t.sizeChan)
-	close(t.doneChan)
 }
 
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {

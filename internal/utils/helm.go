@@ -7,12 +7,10 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"reflect"
-	"sync"
 	"time"
-	"unsafe"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/spf13/pflag"
 
 	"helm.sh/helm/v3/pkg/chart/loader"
 
@@ -28,8 +26,6 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
-
-var helmLock sync.Mutex
 
 type DeleteFunc func()
 
@@ -64,19 +60,6 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 
 		return nil
 	}), nil
-}
-
-func GetSettings(namespace string) *cli.EnvSettings {
-	s := cli.New()
-	n := (*string)(unsafe.Pointer(s))
-	*n = namespace
-	config := (*genericclioptions.ConfigFlags)(unsafe.Pointer(s))
-	v := namespace
-	reflect.ValueOf(config).Elem().FieldByName("Namespace").Set(reflect.ValueOf(&v))
-	s.Debug = app.App().IsDebug()
-	mlog.Debugf("%#v", s)
-
-	return s
 }
 
 // UpgradeOrInstall TODO
@@ -272,23 +255,29 @@ func PackageChart(path string, destDir string) (string, error) {
 }
 
 func getActionConfigAndSettings(namespace string, log func(format string, v ...interface{})) (*action.Configuration, *cli.EnvSettings, error) {
-	helmLock.Lock()
-	defer helmLock.Unlock()
+	settings := cli.New()
+	sflags := pflag.NewFlagSet("", pflag.ContinueOnError)
+	settings.AddFlags(sflags)
+	ssets := []string{"--namespace=" + namespace, fmt.Sprintf("--debug=%T", false)}
 
-	var settings = GetSettings(namespace)
-	mlog.Debug("settings ns", settings.Namespace())
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
-	flags.Namespace = &namespace
-
+	set := pflag.NewFlagSet("", pflag.ContinueOnError)
+	flags.AddFlags(set)
+	sets := []string{"--namespace=" + namespace}
 	if app.Config().KubeConfig != "" {
-		*flags.KubeConfig = app.Config().KubeConfig
+		sets = append(sets, "--kubeconfig="+app.Config().KubeConfig)
+		ssets = append(ssets, "--kubeconfig="+app.Config().KubeConfig)
 	} else {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		settings.KubeAPIServer = "https://" + net.JoinHostPort(host, port)
+		server := "https://" + net.JoinHostPort(host, port)
 		token, _ := ioutil.ReadFile(tokenFile)
-		settings.KubeToken = string(token)
+		sets = append(sets, "--server="+server, "--token="+string(token))
+		ssets = append(ssets, "--kube-apiserver="+server, "--kube-token="+string(token))
 	}
+
+	sflags.Parse(ssets)
+	set.Parse(sets)
 
 	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
 		return nil, nil, err

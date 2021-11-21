@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"helm.sh/helm/v3/pkg/kube"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -27,7 +28,6 @@ func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 			return err
 		}
 	}
-
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
@@ -37,6 +37,8 @@ func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	if err != nil {
 		return err
 	}
+
+	kube.New(nil)
 
 	app.SetK8sClient(&contracts.K8sClient{
 		Client:        clientset,
