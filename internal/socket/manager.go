@@ -1,56 +1,44 @@
 package socket
 
 import (
-	"context"
-	"errors"
-	"regexp"
-	"sync/atomic"
-
-	"github.com/golang-jwt/jwt"
-
-	"github.com/duc-cnzj/mars/internal/grpc/services"
-
-	"github.com/duc-cnzj/mars/internal/enums"
-
-	"github.com/duc-cnzj/mars/internal/plugins"
-
-	"go.uber.org/config"
-	"gopkg.in/yaml.v2"
-
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"helm.sh/helm/v3/pkg/action"
-
-	"helm.sh/helm/v3/pkg/chartutil"
-
-	"github.com/google/uuid"
-
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars/internal/mars"
-	"helm.sh/helm/v3/pkg/chart"
-
-	"k8s.io/client-go/kubernetes/scheme"
-
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"text/template"
 	"time"
 
-	v1 "k8s.io/api/apps/v1"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 
+	"github.com/duc-cnzj/mars/internal/enums"
+	"github.com/duc-cnzj/mars/internal/grpc/services"
+	"github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
+	"go.uber.org/config"
+	"gopkg.in/yaml.v2"
+	"gorm.io/gorm"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 const (
@@ -91,8 +79,10 @@ var upgrader = websocket.Upgrader{
 type WebsocketManager struct{}
 
 func NewWebsocketManager() *WebsocketManager {
-	wc := &WebsocketManager{}
+	return &WebsocketManager{}
+}
 
+func (*WebsocketManager) TickClusterHealth() {
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		sub := plugins.GetWsSender().New("", "")
@@ -112,8 +102,6 @@ func NewWebsocketManager() *WebsocketManager {
 			}
 		}
 	}()
-
-	return wc
 }
 
 type WsRequest struct {
