@@ -278,8 +278,8 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
 		server := "https://" + net.JoinHostPort(host, port)
 		token, _ := ioutil.ReadFile(tokenFile)
-		sets = append(sets, "--server="+server, "--token="+string(token))
-		ssets = append(ssets, "--kube-apiserver="+server, "--kube-token="+string(token))
+		sets = append(sets, "--server="+server, "--token="+string(token), "--certificate-authority="+rootCAFile)
+		ssets = append(ssets, "--kube-apiserver="+server, "--kube-token="+string(token), "--kube-ca-file="+rootCAFile)
 	}
 
 	sflags.Parse(ssets)
