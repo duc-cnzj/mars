@@ -735,26 +735,31 @@ func (pc *ProcessControl) PrepareConfigFiles() error {
 	if err != nil {
 		return err
 	}
-	var pipelineID int
+	var (
+		pipelineID     int
+		pipelineBranch string
+		pipelineCommit string = commit.ShortID
+	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
 	if commit.LastPipeline != nil {
 		pipelineID = commit.LastPipeline.ID
+		pipelineBranch = commit.LastPipeline.Ref
 	} else {
 		if tagRegex.MatchString(marsC.DockerTagFormat) {
 			return errors.New("无法获取 Pipeline 信息")
 		}
 	}
 
-	pc.SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pc.project.GitlabBranch, pc.project.GitlabCommit, pipelineID))
+	pc.SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
 
 	if err := parse.Execute(b, struct {
 		Branch   string
 		Commit   string
 		Pipeline int
 	}{
-		Branch:   pc.project.GitlabBranch,
-		Commit:   pc.project.GitlabCommit,
+		Branch:   pipelineBranch,
+		Commit:   pipelineCommit,
 		Pipeline: pipelineID,
 	}); err != nil {
 		return err
