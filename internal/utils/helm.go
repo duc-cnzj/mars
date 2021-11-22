@@ -264,7 +264,7 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 	settings := cli.New()
 	sflags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	settings.AddFlags(sflags)
-	ssets := []string{"--namespace=" + namespace, fmt.Sprintf("--debug=%T", false)}
+	ssets := []string{"--namespace=" + namespace, fmt.Sprintf("--debug=%T", app.App().IsDebug())}
 
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
