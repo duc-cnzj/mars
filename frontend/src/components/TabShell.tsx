@@ -156,6 +156,7 @@ const TabShell: React.FC<{
       fontFamily: '"Fira code", "Fira Mono", monospace',
       bellStyle: "sound",
       cursorBlink: true,
+      cols: 106,
     });
     setTerm(myterm);
     myterm.loadAddon(fitAddon);
@@ -304,7 +305,7 @@ const TabShell: React.FC<{
 
       {value.length > 0 && term ? (
         <div
-          style={{ display: "flex", justifyContent: "start", marginBottom: 8 }}
+          style={{ display: "flex", justifyContent: "start" }}
         >
           <Upload {...props}>
             <Button
@@ -324,7 +325,7 @@ const TabShell: React.FC<{
           />
         </div>
       ) : (
-        ""
+        <></>
       )}
       <div ref={ref} id="terminal" style={{ height: "100%" }}></div>
     </div>

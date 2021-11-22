@@ -83,7 +83,7 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
   }, [close]);
 
   return (
-    <Row gutter={10} style={{ width: "100%", height: "100%", display: "flex" }}>
+    <Row gutter={0} style={{ width: "100%", height: "100%", display: "flex" }}>
       <Col span={12} style={{ width: "100%", height: "100%" }}>
         <div style={{ width: "100%", height: "100%" }}>
           <Area.CpuArea
