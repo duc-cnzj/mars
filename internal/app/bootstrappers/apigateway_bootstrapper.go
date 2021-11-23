@@ -11,31 +11,30 @@ import (
 	"strings"
 	"time"
 
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
-
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/pkg/auth"
-	"github.com/duc-cnzj/mars/pkg/cp"
-	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
-
-	"github.com/duc-cnzj/mars/pkg/picture"
-
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
+	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/cluster"
+	"github.com/duc-cnzj/mars/pkg/cp"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"github.com/duc-cnzj/mars/pkg/mars"
+	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
 	"github.com/duc-cnzj/mars/pkg/namespace"
+	"github.com/duc-cnzj/mars/pkg/picture"
 	"github.com/duc-cnzj/mars/pkg/project"
+	"github.com/duc-cnzj/mars/pkg/version"
 	"github.com/duc-cnzj/mars/third_party/doc/data"
+
 	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
 	"github.com/gorilla/mux"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -99,6 +98,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		auth.RegisterAuthHandlerFromEndpoint,
 		cp.RegisterCpHandlerFromEndpoint,
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
+		version.RegisterVersionHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {

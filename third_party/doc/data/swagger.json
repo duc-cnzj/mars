@@ -1129,6 +1129,28 @@
           }
         }
       }
+    },
+    "/api/version": {
+      "get": {
+        "tags": [
+          "Version"
+        ],
+        "operationId": "Version_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/VersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -1803,6 +1825,44 @@
         }
       }
     },
+    "VersionResponse": {
+      "type": "object",
+      "properties": {
+        "BuildDate": {
+          "type": "string"
+        },
+        "Compiler": {
+          "type": "string"
+        },
+        "GitCommit": {
+          "type": "string"
+        },
+        "GitRepo": {
+          "type": "string"
+        },
+        "GitTag": {
+          "type": "string"
+        },
+        "GoVersion": {
+          "type": "string"
+        },
+        "HelmVersion": {
+          "type": "string"
+        },
+        "KubectlVersion": {
+          "type": "string"
+        },
+        "Platform": {
+          "type": "string"
+        },
+        "Version": {
+          "type": "string"
+        },
+        "gitBranch": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -1871,6 +1931,9 @@
     },
     {
       "name": "Project"
+    },
+    {
+      "name": "Version"
     }
   ]
 }
