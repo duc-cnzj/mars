@@ -73,6 +73,14 @@ function DraggableModalInnerNonMemo({
         dispatch,
         id,
     ])
+    const onDoubleClickWithID = useCallback(() => {
+        onResize?.()
+        dispatch({ type: 'doubleClick', id })
+    }, [
+        onResize,
+        dispatch,
+        id,
+    ])
 
     const onMouseDrag = useDrag(x, y, onDragWithID)
     const onMouseResize = useResize(x, y, width, height, onResizeWithID)
@@ -80,6 +88,9 @@ function DraggableModalInnerNonMemo({
     const titleElement = useMemo(
         () => (
             <div
+                onDoubleClick={() => {
+                    onDoubleClickWithID()
+                }}
                 className="ant-design-draggable-modal-title"
                 onMouseDown={onMouseDrag}
                 onClick={onFocus}

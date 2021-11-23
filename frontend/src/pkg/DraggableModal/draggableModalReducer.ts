@@ -9,6 +9,13 @@ export type ModalID = string
 
 // State for a specific modal.
 export interface ModalState {
+    previous?: {
+        x: number
+        y: number
+        width: number
+        height: number
+        zIndex: number
+    }
     x: number
     y: number
     width: number
@@ -20,6 +27,10 @@ export interface ModalState {
 // State of all modals.
 export interface ModalsState {
     maxZIndex: number
+    initSize: {
+        width: number
+        height: number
+    }
     windowSize: {
         width: number
         height: number
@@ -31,6 +42,7 @@ export interface ModalsState {
 
 export const initialModalsState: ModalsState = {
     maxZIndex: 0,
+    initSize: getWindowSize(),
     windowSize: getWindowSize(),
     modals: {},
 }
@@ -59,6 +71,7 @@ const getInitialModalState = ({
 }
 
 export type Action =
+    | { type: 'doubleClick'; id: ModalID }
     | { type: 'show'; id: ModalID }
     | { type: 'hide'; id: ModalID }
     | { type: 'focus'; id: ModalID }
@@ -122,6 +135,67 @@ const clampResize = (
 
 export const draggableModalReducer = (state: ModalsState, action: Action): ModalsState => {
     switch (action.type) {
+        case 'doubleClick':
+            let curr = state.modals[action.id]
+            let prev = state.modals[action.id].previous
+
+            if (state.modals[action.id].width === state.windowSize.width && state.modals[action.id].height === state.windowSize.height) {
+                if (!prev || (prev.width === state.windowSize.width && prev.height === state.windowSize.height)) {
+                    prev = {
+                        x: 0,
+                        y: 0,
+                        width: state.initSize.width,
+                        height: state.initSize.height,
+                        zIndex: curr.zIndex,
+                    }
+                }
+
+                return {
+                    ...state,
+                    maxZIndex: getNextZIndex(state, action.id),
+                    modals: {
+                        ...state.modals,
+                        [action.id]: {
+                            ...state.modals[action.id],
+                            previous: {
+                                x: 0,
+                                y: 0,
+                                width: state.windowSize.width,
+                                height: state.windowSize.height,
+                                zIndex: curr.zIndex,
+                            },
+                            x: prev.x,
+                            y: prev.y,
+                            zIndex: state.maxZIndex + 1,
+                            width: prev.width,
+                            height: prev.height,
+                        },
+                    },
+                }
+            }
+
+            return {
+                ...state,
+                maxZIndex: getNextZIndex(state, action.id),
+                modals: {
+                    ...state.modals,
+                    [action.id]: {
+                        ...state.modals[action.id],
+                        previous: {
+                            x: curr.x,
+                            y: curr.y,
+                            width: curr.width,
+                            height: curr.height,
+                            zIndex: curr.zIndex,
+                        },
+                        x: 0,
+                        y: 0,
+                        zIndex: state.maxZIndex + 1,
+                        width: state.windowSize.width,
+                        height: state.windowSize.height,
+                    },
+                },
+            }
         case 'resize':
             const size = clampResize(
                 state.windowSize.width,
@@ -228,6 +302,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
             const initialState = getInitialModalState(action.intialState)
             return {
                 ...state,
+                initSize: initialState,
                 maxZIndex: state.maxZIndex + 1,
                 modals: {
                     ...state.modals,
