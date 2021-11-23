@@ -13,14 +13,24 @@ const AppFooter: React.FC = () => {
   useEffect(() => {
     versionApi().then((res) => setVersion(res.data));
   }, []);
+
   return (
     <div className="copyright">
       <div style={{ fontSize: 14, color: "#636e72" }}>created by duc@2021.</div>
-      <div style={{ fontSize: 12, color: "#636e72" }}>
-        version: {version?.Version}, build at
-        {dayjs(version?.BuildDate).format("YYYY-MM-DD HH:mm:ss")}.
-        <Button icon={<GithubOutlined />} target={"_blank"} href={version?.GitRepo} type="link"></Button>
-      </div>
+      {version?.Version ? (
+        <div style={{ fontSize: 12, color: "#636e72" }}>
+          version: {version?.Version}, build at{" "}
+          {dayjs(version?.BuildDate).format("YYYY-MM-DD HH:mm:ss")}
+          <Button
+            icon={<GithubOutlined />}
+            target={"_blank"}
+            href={version?.GitRepo}
+            type="link"
+          ></Button>
+        </div>
+      ) : (
+        <></>
+      )}
     </div>
   );
 };
