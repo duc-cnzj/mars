@@ -88,9 +88,7 @@ function DraggableModalInnerNonMemo({
     const titleElement = useMemo(
         () => (
             <div
-                onDoubleClick={() => {
-                    onDoubleClickWithID()
-                }}
+                onDoubleClick={onDoubleClickWithID}
                 className="ant-design-draggable-modal-title"
                 onMouseDown={onMouseDrag}
                 onClick={onFocus}
@@ -115,6 +113,7 @@ function DraggableModalInnerNonMemo({
             {...otherProps}
         >
             <div
+                onDoubleClick={onDoubleClickWithID}
                 onMouseDown={onMouseDrag}
                 onClick={onFocus}
                 style={{ height: "100%", padding: 16, cursor: "move"}}
@@ -124,7 +123,12 @@ function DraggableModalInnerNonMemo({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {children}
+                    <div
+                        style={{ height: "100%", cursor: "auto"}}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                        {children}
+                    </div>
                     <ResizeHandle onMouseDown={onMouseResize} />
                 </div>
             </div>

@@ -57,5 +57,6 @@
     bottom: -10px;
     cursor: se-resize;
     height: 44px;
+    border-radius: 50%;
     position: absolute;
 }
