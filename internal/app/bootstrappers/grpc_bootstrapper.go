@@ -5,32 +5,30 @@ import (
 	"fmt"
 	"net"
 
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-
-	"github.com/duc-cnzj/mars/pkg/cp"
-
-	"github.com/duc-cnzj/mars/internal/utils"
-
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/pkg/auth"
-	"github.com/duc-cnzj/mars/pkg/picture"
 	"github.com/golang-jwt/jwt"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/cluster"
+	"github.com/duc-cnzj/mars/pkg/cp"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
 	"github.com/duc-cnzj/mars/pkg/namespace"
+	"github.com/duc-cnzj/mars/pkg/picture"
 	"github.com/duc-cnzj/mars/pkg/project"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"google.golang.org/grpc"
+	"github.com/duc-cnzj/mars/pkg/version"
 )
 
 var grpcEndpoint string
@@ -127,6 +125,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	cp.RegisterCpServer(server, new(services.CopyToPod))
 	auth.RegisterAuthServer(server, services.NewAuth(app.Config().Prikey(), app.Config().Pubkey(), app.App().Oidc(), app.Config().AdminPassword))
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
+	version.RegisterVersionServer(server, new(services.VersionService))
 
 	g.server = server
 	go func() {

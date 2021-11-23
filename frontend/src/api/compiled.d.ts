@@ -3435,3 +3435,82 @@ export namespace Project {
      */
     type StreamPodContainerLogCallback = (error: (Error|null), response?: PodContainerLogResponse) => void;
 }
+
+/** Represents a VersionResponse. */
+export class VersionResponse implements IVersionResponse {
+
+    /**
+     * Constructs a new VersionResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IVersionResponse);
+
+    /** VersionResponse Version. */
+    public Version: string;
+
+    /** VersionResponse BuildDate. */
+    public BuildDate: string;
+
+    /** VersionResponse gitBranch. */
+    public gitBranch: string;
+
+    /** VersionResponse GitCommit. */
+    public GitCommit: string;
+
+    /** VersionResponse GitTag. */
+    public GitTag: string;
+
+    /** VersionResponse GoVersion. */
+    public GoVersion: string;
+
+    /** VersionResponse Compiler. */
+    public Compiler: string;
+
+    /** VersionResponse Platform. */
+    public Platform: string;
+
+    /** VersionResponse KubectlVersion. */
+    public KubectlVersion: string;
+
+    /** VersionResponse HelmVersion. */
+    public HelmVersion: string;
+
+    /** VersionResponse GitRepo. */
+    public GitRepo: string;
+}
+
+/** Represents a Version */
+export class Version extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Version service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Get.
+     * @param request Empty message or plain object
+     * @param callback Node-style callback called with the error, if any, and VersionResponse
+     */
+    public get(request: google.protobuf.IEmpty, callback: Version.GetCallback): void;
+
+    /**
+     * Calls Get.
+     * @param request Empty message or plain object
+     * @returns Promise
+     */
+    public get(request: google.protobuf.IEmpty): Promise<VersionResponse>;
+}
+
+export namespace Version {
+
+    /**
+     * Callback as used by {@link Version#get}.
+     * @param error Error, if any
+     * @param [response] VersionResponse
+     */
+    type GetCallback = (error: (Error|null), response?: VersionResponse) => void;
+}

@@ -1,0 +1,109 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "version/version.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Version"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/version": {
+      "get": {
+        "operationId": "Version_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/VersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Version"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "VersionResponse": {
+      "type": "object",
+      "properties": {
+        "Version": {
+          "type": "string"
+        },
+        "BuildDate": {
+          "type": "string"
+        },
+        "gitBranch": {
+          "type": "string"
+        },
+        "GitCommit": {
+          "type": "string"
+        },
+        "GitTag": {
+          "type": "string"
+        },
+        "GoVersion": {
+          "type": "string"
+        },
+        "Compiler": {
+          "type": "string"
+        },
+        "Platform": {
+          "type": "string"
+        },
+        "KubectlVersion": {
+          "type": "string"
+        },
+        "HelmVersion": {
+          "type": "string"
+        },
+        "GitRepo": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

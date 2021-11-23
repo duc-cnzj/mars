@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/duc-cnzj/mars/version"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/util/homedir"
@@ -12,8 +14,9 @@ import (
 var (
 	cfgFile string
 	rootCmd = &cobra.Command{
-		Use:   "app",
-		Short: "mars app.",
+		Use:     "app",
+		Short:   "mars app.",
+		Version: version.GetVersion().String(),
 	}
 
 	configExampleFile []byte
