@@ -43,7 +43,7 @@ func GetVersion() Version {
 	}
 
 	return Version{
-		GitRepo:        gitRepo,
+		GitRepo:        fmt.Sprintf("https://%s", gitRepo),
 		Version:        versionStr,
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,

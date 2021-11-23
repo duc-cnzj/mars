@@ -4,6 +4,7 @@ import AppContent from "./components/AppContent";
 import { ProvideWebsocket } from "./contexts/useWebsocket";
 import { Switch, Route } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
+import AppFooter from "./components/AppFooter";
 import { PrivateRoute } from "./contexts/auth";
 const { Header, Content, Footer } = Layout;
 
@@ -34,7 +35,7 @@ const App: FC = () => {
           </Switch>
         </Content>
         <Footer className="app-footer">
-          <div className="copyright">created by duc@2021.</div>
+          <AppFooter/>
         </Footer>
       </Layout>
     </ProvideWebsocket>
