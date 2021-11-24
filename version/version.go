@@ -5,14 +5,16 @@ import (
 	"runtime"
 )
 
+const unknown = "<unknown>"
+
 var (
-	gitRepo        = ""
-	gitBranch      = ""                     // `git rev-parse --abbrev-ref HEAD`
-	buildDate      = "1970-01-01T00:00:00Z" // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
-	gitCommit      = ""                     // output from `git rev-parse --short HEAD`
-	gitTag         = ""                     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
-	kubectlVersion = ""                     // determined from go.mod file `go list -m all | grep k8s.io/client-go | cut -d " " -f2`
-	helmVersion    = ""                     // determined from go.mod file `go list -m all | grep helm.sh/helm/v3 | cut -d " " -f2`
+	gitRepo        string = unknown
+	gitBranch      string = unknown                // `git rev-parse --abbrev-ref HEAD`
+	gitCommit      string = unknown                // output from `git rev-parse --short HEAD`
+	gitTag         string = unknown                // output from `git describe --exact-match --tags HEAD` (if clean tree state)
+	kubectlVersion string = unknown                // determined from go.mod file `go list -m all | grep k8s.io/client-go | cut -d " " -f2`
+	helmVersion    string = unknown                // determined from go.mod file `go list -m all | grep helm.sh/helm/v3 | cut -d " " -f2`
+	buildDate      string = "1970-01-01T00:00:00Z" // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
 )
 
 // Version contains Argo version information
@@ -38,7 +40,7 @@ func (v Version) String() string {
 func GetVersion() Version {
 	var versionStr string = gitTag
 
-	if versionStr == "" {
+	if versionStr == "" && gitBranch != "" && gitCommit != "" {
 		versionStr = fmt.Sprintf("%s-%s", gitBranch, gitCommit)
 	}
 
