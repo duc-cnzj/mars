@@ -285,9 +285,8 @@ const TabShell: React.FC<{
       }}
     >
       <Radio.Group
-        // onChange={onChange}
         value={value}
-        style={{ marginBottom: 10 }}
+        style={{ marginBottom: 5 }}
       >
         {list.map((item) => (
           <Radio
