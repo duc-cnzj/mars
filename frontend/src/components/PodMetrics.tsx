@@ -84,7 +84,7 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
 
   return (
     <Row gutter={0} style={{ width: "100%", height: "100%", display: "flex" }}>
-      <Col span={12} style={{ width: "100%", height: "100%" }}>
+      <Col span={12} style={{ width: "100%", height: "100%", overflow: "hidden" }}>
         <div style={{ width: "100%", height: "100%" }}>
           <Area.CpuArea
             uniqueKey={`${namespace}-${pod}`}
@@ -94,7 +94,7 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
         </div>
       </Col>
       <Col span={12} style={{ height: "100%", width: "100%" }}>
-        <div style={{ width: "100%", height: "100%" }}>
+        <div style={{ width: "100%", height: "100%" , overflow: "hidden" }}>
           <Area.MemoryArea
             uniqueKey={`${namespace}-${pod}`}
             dataKey={"memory"}
