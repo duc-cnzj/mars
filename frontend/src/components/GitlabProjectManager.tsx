@@ -18,7 +18,7 @@ const GitlabProjectManager: React.FC = () => {
   const fetchList = useCallback(() => {
     return projectList().then((res) => {
       setList(res.data.data);
-    }).catch((e) => message.error(e.message));
+    }).catch((e) => message.error(e.response.data.message));
   }, [setList]);
 
   useEffect(() => {
