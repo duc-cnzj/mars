@@ -285,7 +285,7 @@ const ModalSub: React.FC<{
         branch={data.gitlabBranch}
         commit={data.gitlabCommit}
       />
-      <div className={classNames({ "display-none": !editVisible })}>
+      <div className={classNames({ "display-none": !editVisible })} style={{height: "100%", display: "flex", flexDirection: "column"}}>
         <div
           style={{
             width: "100%",
@@ -360,8 +360,8 @@ const ModalSub: React.FC<{
             }}
           />
         </div>
-        <div style={{ minWidth: 200, marginBottom: 20 }}>
-          <Row>
+        <div style={{ minWidth: 200, marginBottom: 20, height: "100%" }}>
+          <Row style={{height: "100%"}}>
             <Col span={detail.config === data.config ? 24 : 12}>
               <CodeMirror
                 value={data.config}
@@ -382,14 +382,14 @@ const ModalSub: React.FC<{
               style={{
                 fontSize: 13,
                 height: "100%",
-                maxHeight: 500,
                 overflowY: "scroll",
+                overflowX: "auto"
               }}
             >
               <ReactDiffViewer
                 styles={{
                   gutter: { padding: "0 5px", minWidth: 25 },
-                  contentText: { width: 800 },
+                  contentText: { width: "auto" },
                   marker: { padding: "0 6px" },
                 }}
                 useDarkTheme

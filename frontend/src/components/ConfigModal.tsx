@@ -75,7 +75,7 @@ const ConfigModal: React.FC<{
         .then((res) => {
           setDefaultValues(res.data.value);
         })
-        .catch((e) => message.error(e.message));
+        .catch((e) => message.error(e.response.data.message));
     }
   };
 
