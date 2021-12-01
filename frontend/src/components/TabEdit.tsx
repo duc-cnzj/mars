@@ -392,7 +392,7 @@ const ModalSub: React.FC<{
                 }}
                 useDarkTheme
                 renderContent={highlightSyntax}
-                showDiffOnly={true}
+                showDiffOnly={false}
                 oldValue={detail.config}
                 newValue={data.config}
                 splitView={false}
