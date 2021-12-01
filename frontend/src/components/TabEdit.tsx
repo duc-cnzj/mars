@@ -381,7 +381,6 @@ const ModalSub: React.FC<{
               span={detail.config === data.config ? 0 : 12}
               style={{
                 fontSize: 13,
-                height: "100%",
                 overflowX: "auto"
               }}
             >
