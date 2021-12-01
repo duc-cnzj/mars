@@ -382,7 +382,6 @@ const ModalSub: React.FC<{
               style={{
                 fontSize: 13,
                 height: "100%",
-                overflowY: "scroll",
                 overflowX: "auto"
               }}
             >
