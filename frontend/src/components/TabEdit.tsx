@@ -379,16 +379,13 @@ const ModalSub: React.FC<{
             <Col
               className="diff-viewer"
               span={detail.config === data.config ? 0 : 12}
-              style={{
-                fontSize: 13,
-                overflowX: "auto"
-              }}
+              style={{ fontSize: 13 }}
             >
               <ReactDiffViewer
                 styles={{
                   gutter: { padding: "0 5px", minWidth: 25 },
-                  contentText: { width: "auto" },
                   marker: { padding: "0 6px" },
+                  diffContainer: {display: "block", width: "100%", overflowX: "auto"}
                 }}
                 useDarkTheme
                 renderContent={highlightSyntax}
