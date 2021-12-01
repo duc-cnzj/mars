@@ -164,6 +164,8 @@ type CancelSignals struct {
 }
 
 func (jobs *CancelSignals) Remove(id string) {
+	jobs.Lock()
+	defer jobs.Unlock()
 	delete(jobs.cs, id)
 }
 
@@ -182,7 +184,7 @@ func (jobs *CancelSignals) Cancel(id string) {
 	if pc, ok := jobs.cs[id]; ok {
 		pc.SendMsg("收到取消信号，开始停止部署！！！")
 		pc.SendStopSignal()
-		jobs.Remove(id)
+		delete(jobs.cs, id)
 	}
 }
 
