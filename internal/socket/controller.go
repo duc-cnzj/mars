@@ -17,7 +17,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/gosimple/slug"
 )
 
 type HandleRequestFunc func(c *WsConn, wsRequest WsRequest)
@@ -336,7 +335,6 @@ func HandleWsCancel(c *WsConn, wsRequest WsRequest) {
 	// cancel
 	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
 	if c.cancelSignaler.Has(slugName) {
-		input.Name = slug.Make(input.Name)
 		c.cancelSignaler.Cancel(slugName)
 	}
 }

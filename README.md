@@ -151,4 +151,3 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 - [x] sessionId 还是要用起来
 - [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
 - [x] 高可用化
-- [ ] tail shell 不退出的问题
