@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
@@ -101,7 +101,6 @@ const CreateProjectModal: React.FC<{
       loadConfigFile();
     }
   };
-  const cmref = useRef<any>()
 
   const loadConfigFile = useCallback(() => {
     configFile({
@@ -119,12 +118,6 @@ const CreateProjectModal: React.FC<{
   useEffect(() => {
     setMode(getMode(data.config_type))
   }, [data.config_type]);
-
-  useEffect(() => {
-    if (cmref && cmref.current && data.config) {
-      cmref.current.editor.setSize("100%", "100%");
-    }
-  }, [data.config]);
 
   const ws = useWs();
   const wsReady = useWsReady();
@@ -210,10 +203,10 @@ const CreateProjectModal: React.FC<{
         okText={info.status === "bad" ? "集群资源不足" : "部署"}
         cancelText="取消"
         onOk={onOk}
-        initialWidth={800}
-        initialHeight={500}
+        initialWidth={900}
+        initialHeight={600}
         title={<div style={{textAlign: "center"}}>创建项目</div>}
-        className="drag-item-modal"
+        className="draggable-modal drag-item-modal"
         onCancel={onCancel}
       >
         <PipelineInfo
@@ -260,13 +253,11 @@ const CreateProjectModal: React.FC<{
           <div
             style={{
               minWidth: 200,
-              maxWidth: 1280,
               marginBottom: 20,
               height: "100%",
             }}
           >
             <CodeMirror
-              ref={cmref}
               value={data.config}
               options={{
                 mode: mode,
