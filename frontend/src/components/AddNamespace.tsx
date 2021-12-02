@@ -31,7 +31,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
         setIsVisible(false);
         setNamespace("")
       })
-      .catch((e) => message.error(e.message));
+      .catch((e) => message.error(e.response.data.message));
   }, [namespace, onCreated]);
 
   return (

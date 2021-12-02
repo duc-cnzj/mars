@@ -121,7 +121,6 @@ function DraggableModalInnerNonMemo({
                 <div
                     style={{ height: "100%", cursor: "auto"}}
                     onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
                 >
                     <div
                         style={{ height: "100%", cursor: "auto"}}

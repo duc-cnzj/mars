@@ -11,20 +11,20 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
-
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+const ETX = "\u0003"
 const END_OF_TRANSMISSION = "\u0004"
 
 type Container struct {
@@ -48,9 +48,22 @@ type MyPtyHandler struct {
 	doneChan chan struct{}
 
 	shellCh chan TerminalMessage
+
+	closeLock sync.Mutex
+	isClosed  bool
+
+	cacheLock sync.RWMutex
+	cache     []byte
 }
 
 func (t *MyPtyHandler) Close(reason string) {
+	t.closeLock.Lock()
+	if t.isClosed {
+		t.closeLock.Unlock()
+		return
+	}
+	t.isClosed = true
+	t.closeLock.Unlock()
 	msg, _ := json.Marshal(struct {
 		Container
 		TerminalMessage
@@ -63,10 +76,27 @@ func (t *MyPtyHandler) Close(reason string) {
 		Container: t.Container,
 	})
 
-	SendMsg(t.conn, t.id, WsHandleExecShellMsg, string(msg))
-	close(t.doneChan)
+	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendMsg(string(msg))
+
+	t.shellCh <- TerminalMessage{
+		Op:        "stdin",
+		Data:      ETX,
+		SessionID: t.id,
+	}
+	time.Sleep(200 * time.Millisecond)
+	t.shellCh <- TerminalMessage{
+		Op:        "stdin",
+		Data:      END_OF_TRANSMISSION,
+		SessionID: t.id,
+	}
 	close(t.shellCh)
 	close(t.sizeChan)
+	close(t.doneChan)
+	t.cacheLock.RLock()
+	if len(t.cache) > 0 {
+		mlog.Infof("[Websocket]: user %v, send: '%v', namespace: %v, pod: %v.", t.conn.GetUser().Name, string(t.cache), t.Namespace, t.Pod)
+	}
+	t.cacheLock.RUnlock()
 }
 
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
@@ -75,17 +105,24 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
-	ch, err := t.conn.GetShellChannel(t.id)
-	if err != nil {
-		return copy(p, END_OF_TRANSMISSION), err
-	}
-	msg, ok := <-ch
+	msg, ok := <-t.shellCh
 	if !ok {
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("%v channel closed", t.id)
 	}
-	mlog.Debugf("[Websocket] %v %v %v 从终端读取消息：%v", t.Namespace, t.Pod, t.Container.Container, msg)
 	switch msg.Op {
 	case "stdin":
+		t.cacheLock.Lock()
+
+		switch {
+		case msg.Data == "\r":
+			mlog.Infof("[Websocket]: user %v, send: '%v', namespace: %v, pod: %v.", t.conn.GetUser().Name, string(t.cache), t.Namespace, t.Pod)
+			t.cache = make([]byte, 0, 20)
+		case strings.ContainsRune(msg.Data, rune(byte(''))):
+		default:
+			t.cache = append(t.cache, []byte(msg.Data)...)
+		}
+
+		t.cacheLock.Unlock()
 		return copy(p, msg.Data), nil
 	case "resize":
 		t.sizeChan <- remotecommand.TerminalSize{Width: msg.Cols, Height: msg.Rows}
@@ -120,14 +157,26 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	if !strings.HasSuffix(res, "\r\n") {
 		res = res + "\r\n"
 	}
-	SendMsg(t.conn, t.id, WsHandleExecShellMsg, res)
+
+	send := true
+	t.closeLock.Lock()
+	if t.isClosed {
+		send = false
+	}
+	t.closeLock.Unlock()
+	if send {
+		NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendMsg(res)
+	}
 
 	return len(p), nil
 }
 
 func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	select {
-	case size := <-t.sizeChan:
+	case size, ok := <-t.sizeChan:
+		if !ok {
+			return nil
+		}
 		return &size
 	case <-t.doneChan:
 		return nil
@@ -165,8 +214,16 @@ func (t *MyPtyHandler) Toast(p string) error {
 		return err
 	}
 
-	SendMsg(t.conn, t.id, WsHandleExecShellMsg, string(msg))
+	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendMsg(string(msg))
 	return nil
+}
+
+type SessionMapper interface {
+	Send(message TerminalMessage)
+	Get(sessionId string) (*MyPtyHandler, bool)
+	Set(sessionId string, session *MyPtyHandler)
+	CloseAll()
+	Close(sessionId string, status uint32, reason string)
 }
 
 // SessionMap stores a map of all MyPtyHandler objects and a lock to avoid concurrent conflict
@@ -174,6 +231,18 @@ type SessionMap struct {
 	conn     *WsConn
 	Sessions map[string]*MyPtyHandler
 	Lock     sync.RWMutex
+}
+
+func (sm *SessionMap) Send(m TerminalMessage) {
+	sm.Lock.RLock()
+	defer sm.Lock.RUnlock()
+	if h, ok := sm.Sessions[m.SessionID]; ok {
+		select {
+		case h.shellCh <- m:
+		default:
+			mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionID, len(h.shellCh))
+		}
+	}
 }
 
 // Get return a given terminalSession by sessionId
@@ -196,15 +265,9 @@ func (sm *SessionMap) CloseAll() {
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 
-	wg := sync.WaitGroup{}
 	for _, s := range sm.Sessions {
-		wg.Add(1)
-		go func(s *MyPtyHandler) {
-			defer wg.Done()
-			s.Close("websocket conn closed")
-		}(s)
+		s.Close("websocket conn closed")
 	}
-	wg.Wait()
 	sm.Sessions = map[string]*MyPtyHandler{}
 }
 
@@ -214,11 +277,11 @@ func (sm *SessionMap) CloseAll() {
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	mlog.Debugf("[Websocket] session %v closed, reason: %s.", sessionId, reason)
 	sm.Lock.Lock()
+	defer sm.Lock.Unlock()
 	if s, ok := sm.Sessions[sessionId]; ok {
-		s.Close(reason)
 		delete(sm.Sessions, sessionId)
+		go s.Close(reason)
 	}
-	sm.Lock.Unlock()
 }
 
 // startProcess is called by handleAttach
@@ -248,18 +311,13 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *C
 		return err
 	}
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	return exec.Stream(remotecommand.StreamOptions{
 		Stdin:             ptyHandler,
 		Stdout:            ptyHandler,
 		Stderr:            ptyHandler,
 		TerminalSizeQueue: ptyHandler,
 		Tty:               true,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // GenMyPtyHandlerId generates a random session ID string. The format is not really interesting.
@@ -314,7 +372,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}
 
 	if err != nil {
-		mlog.Errorf("[Websocket]: %v", err)
+		mlog.Errorf("[Websocket]: %v", err.Error())
 		if strings.Contains(err.Error(), "unable to upgrade connection") {
 			if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
 				app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
@@ -359,9 +417,10 @@ func HandleExecShell(input WsHandleExecShellInput, conn *WsConn) (string, error)
 		},
 		id:       sessionID,
 		conn:     conn,
-		sizeChan: make(chan remotecommand.TerminalSize),
-		doneChan: make(chan struct{}),
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}, 1),
 		shellCh:  make(chan TerminalMessage, 100),
+		cache:    make([]byte, 0, 20),
 	})
 
 	go WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
