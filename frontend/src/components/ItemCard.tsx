@@ -96,7 +96,7 @@ const Item: React.FC<{
                 message.success("删除成功");
                 onNamespaceDeleted();
               })
-              .catch((e) => message.error(e.message));
+              .catch((e) => message.error(e.response.data.message));
           }}
         >
           <Button type="link" size="middle" icon={<CloseOutlined />} />
