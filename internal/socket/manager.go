@@ -15,6 +15,8 @@ import (
 	"text/template"
 	"time"
 
+	"helm.sh/helm/v3/pkg/chartutil"
+
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
@@ -32,7 +34,6 @@ import (
 	"github.com/gosimple/slug"
 	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 )
@@ -139,9 +140,18 @@ func (cs *CancelSignals) CancelAll() {
 	}
 }
 
+type MessageType uint8
+
+const (
+	_ MessageType = iota
+	MessageSuccess
+	MessageError
+	MessageText
+)
+
 type MessageItem struct {
 	Msg  string
-	Type string
+	Type MessageType
 }
 
 type ReleaseInstaller interface {
@@ -167,35 +177,9 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 }
 
 func (r *releaseInstaller) Run(stopCtx context.Context, messageCh chan MessageItem) (*release.Release, error) {
-	var (
-		err    error
-		result *release.Release
-	)
-	done := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(messageCh)
-			close(done)
-		}()
-		defer utils.HandlePanic("ProcessControl: Run")
+	defer utils.HandlePanic("releaseInstaller: Run")
 
-		if result, err = utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger, r.atomic); err != nil {
-			mlog.Error(err)
-			messageCh <- MessageItem{
-				Msg:  err.Error(),
-				Type: "error",
-			}
-			done <- err
-		} else {
-			messageCh <- MessageItem{
-				Msg:  "部署成功",
-				Type: "success",
-			}
-			done <- nil
-		}
-	}()
-
-	return result, <-done
+	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger, r.atomic)
 }
 
 type ProjectManager interface {
@@ -203,10 +187,6 @@ type ProjectManager interface {
 	IsNew() bool
 	Delete() error
 	Save() error
-}
-
-type ConfigManager interface {
-	Get() *mars.Config
 }
 
 type Messageable interface {
@@ -408,7 +388,11 @@ type Jober struct {
 	destroyFuncLock sync.RWMutex
 	destroyFuncs    []func()
 
-	installer ReleaseInstaller
+	imageTag       string
+	chart          *chart.Chart
+	valuesOptions  *values.Options
+	ingressOptions []string
+	installer      ReleaseInstaller
 
 	messageCh chan MessageItem
 	stopCtx   context.Context
@@ -475,9 +459,9 @@ func (j *Jober) HandleMessage() {
 				return
 			}
 			switch s.Type {
-			case "text":
+			case MessageText:
 				j.Messager().SendMsg(s.Msg)
-			case "error":
+			case MessageError:
 				if j.isNew {
 					app.DB().Delete(&j.project)
 				}
@@ -487,7 +471,7 @@ func (j *Jober) HandleMessage() {
 				default:
 					j.Messager().SendEndMsg(ResultDeployFailed, s.Msg)
 				}
-			case "success":
+			case MessageSuccess:
 				j.Messager().SendEndMsg(ResultDeployed, s.Msg)
 			}
 		}
@@ -505,24 +489,40 @@ func (j *Jober) Run() error {
 	defer j.SetRunning(false)
 
 	go j.HandleMessage()
-	result, err := j.ReleaseInstaller().Run(j.stopCtx, j.messageCh)
-	if err == nil {
-		coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
-		j.project.OverrideValues, _ = coalesceValues.YAML()
-		j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
-		var p models.Project
-		if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == nil {
-			app.DB().Model(&models.Project{}).
-				Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
-				Where("`id` = ?", p.ID).
-				Updates(&j.project)
-		} else {
-			app.DB().Create(&j.project)
-		}
-		j.Percenter().To(100)
-	}
 
-	return err
+	return func() error {
+		defer close(j.messageCh)
+		var (
+			result *release.Release
+			err    error
+		)
+
+		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh); err != nil {
+			j.messageCh <- MessageItem{
+				Msg:  err.Error(),
+				Type: MessageError,
+			}
+		} else {
+			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
+			j.project.OverrideValues, _ = coalesceValues.YAML()
+			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
+			var p models.Project
+			if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == nil {
+				app.DB().Model(&models.Project{}).
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
+					Where("`id` = ?", p.ID).
+					Updates(&j.project)
+			} else {
+				app.DB().Create(&j.project)
+			}
+			j.Percenter().To(100)
+			j.messageCh <- MessageItem{
+				Msg:  "部署成功",
+				Type: MessageSuccess,
+			}
+		}
+		return err
+	}()
 }
 
 func (j *Jober) GetStoppedErrorIfHas() error {
@@ -554,12 +554,14 @@ func (j *Jober) Validate() error {
 	j.stopCtx, j.stopFn = utils.NewCustomErrorContext()
 	j.messageCh = make(chan MessageItem)
 
-	j.Messager().SendMsg("收到请求，开始创建项目")
+	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
 	j.Percenter().To(5)
-	j.Messager().SendMsg("校验名称空间...")
+
+	j.Messager().SendMsg("[Check]: 校验名称空间...")
 
 	var ns models.Namespace
 	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
+		j.Messager().SendMsg(fmt.Sprintf("[FAILED]: 校验名称空间: %s", err.Error()))
 		return err
 	}
 
@@ -574,339 +576,395 @@ func (j *Jober) Validate() error {
 		Atomic:          j.input.Atomic,
 	}
 
-	j.Messager().SendMsg("检查项目是否存在")
+	j.Messager().SendMsg("[Check]: 检查项目是否存在")
 
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
 		app.DB().Create(&j.project)
-		j.Messager().SendMsg("项目不存在新建项目")
+		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
 	}
 
 	return nil
 }
 
+var (
+	defaultLoaders = []Loader{
+		MarsLoader{},
+		ChartFileLoader{},
+		TagLoader{},
+		IngressLoader{},
+		ValuesFileLoader{},
+		ReleaseInstallerLoader{},
+	}
+)
+
 func (j *Jober) LoadConfigs() error {
 	ch := make(chan error)
 	go func() {
 		ch <- func() error {
-			j.Messager().SendMsg("加载项目文件...")
-			j.Percenter().To(15)
-			marsC, err := services.GetProjectMarsConfig(j.input.GitlabProjectId, j.input.GitlabBranch)
-			if err != nil {
-				return err
-			}
-			marsC.ImagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
-			j.config = marsC
+			j.Messager().SendMsg("[Check]: 加载项目文件")
 
-			// 下载 helm charts
-			j.Messager().SendMsg(fmt.Sprintf("下载 helm charts path: %s ...", marsC.LocalChartPath))
-			split := strings.Split(marsC.LocalChartPath, "|")
-			var (
-				files        []string
-				tmpChartsDir string
-				deleteDirFn  func()
-				dir          string
-			)
-			// 如果是这个格式意味着是远程项目, 'uid|branch|path'
-			if marsC.IsRemoteChart() {
-				pid := split[0]
-				branch := split[1]
-				path := split[2]
-				files = utils.GetDirectoryFiles(pid, branch, path)
-				if len(files) < 1 {
-					return errors.New("charts 文件不存在")
+			for _, defaultLoader := range defaultLoaders {
+				if err := j.GetStoppedErrorIfHas(); err != nil {
+					return err
 				}
-				mlog.Warning(files)
-				tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
-				dir = path
-
-				loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
-				if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
-					for _, dependency := range loadDir.Metadata.Dependencies {
-						if strings.HasPrefix(dependency.Repository, "file://") {
-							depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
-							_, depDeleteFn := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
-							j.AddDestroyFunc(depDeleteFn)
-							j.Messager().SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
-						}
-					}
-				}
-				j.Messager().SendMsg(fmt.Sprintf("识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
-			} else {
-				dir = marsC.LocalChartPath
-				files = utils.GetDirectoryFiles(j.input.GitlabProjectId, j.input.GitlabCommit, marsC.LocalChartPath)
-				tmpChartsDir, deleteDirFn = utils.DownloadFiles(j.input.GitlabProjectId, j.input.GitlabCommit, files)
-			}
-
-			j.AddDestroyFunc(deleteDirFn)
-
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-
-			chartDir := filepath.Join(tmpChartsDir, dir)
-
-			chart, err := utils.PackageChart(chartDir, chartDir)
-			if err != nil {
-				return err
-			}
-			archive, err := os.Open(chart)
-			if err != nil {
-				return err
-			}
-			defer archive.Close()
-
-			j.Percenter().To(30)
-			j.Messager().SendMsg("加载 helm charts...")
-
-			loadArchive, err := loader.LoadArchive(archive)
-			if err != nil {
-				return err
-			}
-
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-
-			// ##############
-			j.Messager().SendMsg("生成配置文件...")
-			j.Percenter().To(40)
-
-			var imagePullSecrets []string
-			for k, s := range marsC.ImagePullSecrets {
-				imagePullSecrets = append(imagePullSecrets, fmt.Sprintf("imagePullSecrets[%d].name=%s", k, s))
-			}
-
-			// default_values 也需要一个 file
-			defaultValues, err := marsC.GenerateDefaultValuesYaml()
-			if err != nil {
-				return err
-			}
-
-			// 传入自定义配置必须在默认配置之后，不然会被上面的 default_values 覆盖，导致不管你怎么更新配置文件都无法正正的更新到容器
-			var configValues string
-			if j.input.Config != "" {
-				configValues, err = marsC.GenerateConfigYamlByInput(j.input.Config)
-				if err != nil {
+				if err := defaultLoader.Load(j); err != nil {
 					return err
 				}
 			}
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-			base := strings.NewReader(defaultValues)
-			override := strings.NewReader(configValues)
 
-			provider, err := config.NewYAML(config.Source(base), config.Source(override))
-			if err != nil {
-				return err
-			}
-			var mergedDefaultAndConfigYamlValues map[string]interface{}
-			if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
-				return err
-			}
-
-			bf := &bytes.Buffer{}
-			encoder := yaml.NewEncoder(bf)
-			if err := encoder.Encode(&mergedDefaultAndConfigYamlValues); err != nil {
-				return err
-			}
-			mergedFile, closer, err := utils.WriteConfigYamlToTmpFile(bf.Bytes())
-			if err != nil {
-				return err
-			}
-			j.AddDestroyFunc(func() { closer.Close() })
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-			j.Messager().SendMsg("解析镜像tag")
-			j.Percenter().To(45)
-			t := template.New("tag_parse")
-			parse, err := t.Parse(marsC.DockerTagFormat)
-			if err != nil {
-				return err
-			}
-			b := &bytes.Buffer{}
-			commit, _, err := app.GitlabClient().Commits.GetCommit(j.project.GitlabProjectId, j.project.GitlabCommit)
-			if err != nil {
-				return err
-			}
-			var (
-				pipelineID     int
-				pipelineBranch string
-				pipelineCommit string = commit.ShortID
-			)
-
-			// 如果存在需要传变量的，则必须有流水线信息
-			if commit.LastPipeline != nil {
-				pipelineID = commit.LastPipeline.ID
-				pipelineBranch = commit.LastPipeline.Ref
-			} else {
-				if tagRegex.MatchString(marsC.DockerTagFormat) {
-					return errors.New("无法获取 Pipeline 信息")
-				}
-			}
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-			j.Messager().SendMsg(fmt.Sprintf("镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
-
-			if err := parse.Execute(b, struct {
-				Branch   string
-				Commit   string
-				Pipeline int
-			}{
-				Branch:   pipelineBranch,
-				Commit:   pipelineCommit,
-				Pipeline: pipelineID,
-			}); err != nil {
-				return err
-			}
-			tag := b.String()
-
-			j.Percenter().To(60)
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-			var ingressConfig []string
-
-			if app.Config().HasWildcardDomain() {
-				sub := getPreOccupiedLen(marsC.IngressOverwriteValues)
-				var host, secretName string = getDomain(j.project.Name, j.project.Namespace.Name, sub), fmt.Sprintf("%s-%s-tls", j.project.Name, j.project.Namespace.Name)
-				var vars = map[string]string{}
-				for i := 1; i <= 10; i++ {
-					vars[fmt.Sprintf("Host%d", i)] = getDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
-					vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", j.project.Name, j.project.Namespace.Name, i)
-				}
-				// TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
-				// 旧版长这样
-				// ingress:
-				//  enabled: true
-				//  annotations: {}
-				//    # kubernetes.io/ingress.class: nginx
-				//    # kubernetes.io/tls-acme: "true"
-				//  hosts:
-				//    - host: chart-example.local
-				//      paths: []
-				// 新版长这样
-				// ingress:
-				// enabled: false
-				// annotations: {}
-				// 	# kubernetes.io/ingress.class: nginx
-				// 	# kubernetes.io/tls-acme: "true"
-				// hosts:
-				// 	- host: chart-example.local
-				// paths:
-				// 	- path: /
-				//    backend:
-				//      serviceName: chart-example.local
-				//      servicePort: 80
-				var isOldVersion bool
-				for _, f := range loadArchive.Templates {
-					if strings.Contains(f.Name, "ingress") {
-						if strings.Contains(string(f.Data), "path: {{ . }}") {
-							isOldVersion = true
-							break
-						}
-					}
-				}
-				ingressConfig = []string{
-					"ingress.enabled=true",
-					"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
-				}
-				if app.Config().ClusterIssuer != "" {
-					ingressConfig = append(ingressConfig, "ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer="+app.Config().ClusterIssuer)
-				}
-
-				if len(marsC.IngressOverwriteValues) > 0 {
-					var overwrites []string
-					for _, value := range marsC.IngressOverwriteValues {
-						bb := &bytes.Buffer{}
-						ingressT := template.New("")
-						t2, _ := ingressT.Parse(value)
-						if err := t2.Execute(bb, vars); err != nil {
-							return err
-						}
-						overwrites = append(overwrites, bb.String())
-					}
-					mlog.Warning(overwrites)
-					ingressConfig = append(ingressConfig, overwrites...)
-				} else {
-					ingressConfig = append(ingressConfig, []string{
-						"ingress.hosts[0].host=" + host,
-						"ingress.tls[0].secretName=" + secretName,
-						"ingress.tls[0].hosts[0]=" + host,
-					}...)
-
-					if isOldVersion {
-						ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
-					} else {
-						ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
-					}
-				}
-
-				j.Messager().SendMsg(fmt.Sprintf("已配置域名: %s", host))
-			}
-
-			j.Percenter().To(65)
-			if err := j.GetStoppedErrorIfHas(); err != nil {
-				return err
-			}
-			var commonValues = []string{
-				"image.pullPolicy=IfNotPresent",
-				"image.repository=" + marsC.DockerRepository,
-				"image.tag=" + tag,
-			}
-
-			j.project.DockerImage = fmt.Sprintf("%s:%s", marsC.DockerRepository, tag)
-
-			j.Percenter().To(70)
-
-			var valueOpts = &values.Options{
-				ValueFiles: []string{mergedFile},
-				Values:     append(append(commonValues, ingressConfig...), imagePullSecrets...),
-			}
-
-			indent, _ := json.MarshalIndent(append(append(commonValues, ingressConfig...), imagePullSecrets...), "", "\t")
-			mlog.Debugf("values: %s", string(indent))
-
-			j.Messager().SendMsg(fmt.Sprintf("使用的镜像是: %s", fmt.Sprintf("%s:%s", marsC.DockerRepository, b.String())))
-
-			for key, secret := range marsC.ImagePullSecrets {
-				valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("imagePullSecrets[%d].name=%s", key, secret))
-				j.Messager().SendMsg(fmt.Sprintf("使用的imagepullsecrets是: %s", secret))
-			}
-
-			j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, loadArchive, valueOpts, func(format string, v ...interface{}) {
-				if j.Percenter().Current() < 99 {
-					j.Percenter().Add()
-				}
-				if j.Percenter().Current() >= 95 {
-					format = "[如果长时间未部署成功，建议取消使用 debug 模式]: " + format
-				}
-				msg := fmt.Sprintf(format, v...)
-				if j.IsRunning() {
-					j.messageCh <- MessageItem{
-						Msg:  msg,
-						Type: "text",
-					}
-				}
-			}, j.input.Atomic)
-
-			image := strings.Split(j.project.DockerImage, ":")
-			if len(image) == 2 {
-				if plugins.GetDockerPlugin().ImageNotExists(image[0], image[1]) {
-					return errors.New(fmt.Sprintf("镜像 %s 不存在！", j.project.DockerImage))
-				}
-			}
 			return nil
 		}()
 	}()
+
 	select {
 	case err := <-ch:
 		return err
 	case <-j.stopCtx.Done():
 		return j.stopCtx.Err()
 	}
+}
+
+type Loader interface {
+	Load(*Jober) error
+}
+
+type MarsLoader struct{}
+
+func (m MarsLoader) Load(j *Jober) error {
+	const loaderName = "[MarsLoader]: "
+
+	j.Messager().SendMsg(loaderName + "加载用户配置")
+	j.Percenter().To(10)
+
+	marsC, err := services.GetProjectMarsConfig(j.input.GitlabProjectId, j.input.GitlabBranch)
+	if err != nil {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"加载 mars config 失败: %s", err.Error()))
+		return err
+	}
+	marsC.ImagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
+	j.config = marsC
+
+	return nil
+}
+
+type ChartFileLoader struct{}
+
+func (c ChartFileLoader) Load(j *Jober) error {
+	const loaderName = "[ChartFileLoader]: "
+	j.Messager().SendMsg(loaderName + "加载 helm chart 文件")
+	j.Percenter().To(20)
+
+	// 下载 helm charts
+	split := strings.Split(j.config.LocalChartPath, "|")
+	var (
+		files        []string
+		tmpChartsDir string
+		deleteDirFn  func()
+		dir          string
+	)
+	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
+	j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载 helm charts path: %s", j.config.LocalChartPath))
+
+	if j.config.IsRemoteChart() {
+		pid := split[0]
+		branch := split[1]
+		path := split[2]
+		files = utils.GetDirectoryFiles(pid, branch, path)
+		if len(files) < 1 {
+			return errors.New("charts 文件不存在")
+		}
+		mlog.Warning(files)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(pid, branch, files)
+
+		dir = path
+
+		loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
+		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
+			for _, dependency := range loadDir.Metadata.Dependencies {
+				if strings.HasPrefix(dependency.Repository, "file://") {
+					depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
+					_, depDeleteFn := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
+					j.AddDestroyFunc(depDeleteFn)
+					j.Messager().SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
+				}
+			}
+		}
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
+	} else {
+		dir = j.config.LocalChartPath
+		files = utils.GetDirectoryFiles(j.input.GitlabProjectId, j.input.GitlabCommit, j.config.LocalChartPath)
+		tmpChartsDir, deleteDirFn = utils.DownloadFiles(j.input.GitlabProjectId, j.input.GitlabCommit, files)
+	}
+
+	j.AddDestroyFunc(deleteDirFn)
+
+	chartDir := filepath.Join(tmpChartsDir, dir)
+
+	j.Percenter().To(30)
+	j.Messager().SendMsg(loaderName + "打包 helm charts")
+	chart, err := utils.PackageChart(chartDir, chartDir)
+	if err != nil {
+		return err
+	}
+	archive, err := os.Open(chart)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	if j.chart, err = loader.LoadArchive(archive); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type TagLoader struct{}
+
+func (t TagLoader) Load(j *Jober) error {
+	const loaderName = "[TagLoader]: "
+
+	j.Messager().SendMsg(loaderName + "解析镜像tag")
+	j.Percenter().To(40)
+	tagParse := template.New("tag_parse")
+	parse, err := tagParse.Parse(j.config.DockerTagFormat)
+	if err != nil {
+		return err
+	}
+	b := &bytes.Buffer{}
+	commit, _, err := app.GitlabClient().Commits.GetCommit(j.project.GitlabProjectId, j.project.GitlabCommit)
+	if err != nil {
+		return err
+	}
+	var (
+		pipelineID     int
+		pipelineBranch string
+		pipelineCommit string = commit.ShortID
+	)
+
+	// 如果存在需要传变量的，则必须有流水线信息
+	if commit.LastPipeline != nil {
+		pipelineID = commit.LastPipeline.ID
+		pipelineBranch = commit.LastPipeline.Ref
+	} else {
+		if tagRegex.MatchString(j.config.DockerTagFormat) {
+			return errors.New("无法获取 Pipeline 信息")
+		}
+	}
+	j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
+
+	if err := parse.Execute(b, struct {
+		Branch   string
+		Commit   string
+		Pipeline int
+	}{
+		Branch:   pipelineBranch,
+		Commit:   pipelineCommit,
+		Pipeline: pipelineID,
+	}); err != nil {
+		return err
+	}
+	j.imageTag = b.String()
+	j.project.DockerImage = fmt.Sprintf("%s:%s", j.config.DockerRepository, j.imageTag)
+	j.Messager().SendMsg(fmt.Sprintf(loaderName+"使用的镜像是: %s", fmt.Sprintf("%s:%s", j.config.DockerRepository, j.imageTag)))
+
+	image := strings.Split(j.project.DockerImage, ":")
+	if len(image) == 2 {
+		if plugins.GetDockerPlugin().ImageNotExists(image[0], image[1]) {
+			return errors.New(fmt.Sprintf("镜像 %s 不存在！", j.project.DockerImage))
+		}
+	}
+
+	return nil
+}
+
+type IngressLoader struct{}
+
+func (IngressLoader) Load(j *Jober) error {
+	const loaderName = "[IngressLoader]: "
+
+	j.Messager().SendMsg(loaderName + "解析域名配置")
+	j.Percenter().To(50)
+
+	var ingressConfig []string
+
+	if app.Config().HasWildcardDomain() {
+		sub := getPreOccupiedLen(j.config.IngressOverwriteValues)
+		var host, secretName string = getDomain(j.project.Name, j.project.Namespace.Name, sub), fmt.Sprintf("%s-%s-tls", j.project.Name, j.project.Namespace.Name)
+		var vars = map[string]string{}
+		for i := 1; i <= 10; i++ {
+			vars[fmt.Sprintf("Host%d", i)] = getDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
+			vars[fmt.Sprintf("TlsSecret%d", i)] = fmt.Sprintf("%s-%s-%d-tls", j.project.Name, j.project.Namespace.Name, i)
+		}
+		//TODO: 不同k8s版本 ingress 定义不一样, helm 生成的 template 不一样。
+		//旧版长这样
+		//ingress:
+		// enabled: true
+		// annotations: {}
+		//   # kubernetes.io/ingress.class: nginx
+		//   # kubernetes.io/tls-acme: "true"
+		// hosts:
+		//   - host: chart-example.local
+		//     paths: []
+		//新版长这样
+		//ingress:
+		//enabled: false
+		//annotations: {}
+		//	# kubernetes.io/ingress.class: nginx
+		//	# kubernetes.io/tls-acme: "true"
+		//hosts:
+		//	- host: chart-example.local
+		//paths:
+		//	- path: /
+		//   backend:
+		//     serviceName: chart-example.local
+		//     servicePort: 80
+		var isOldVersion bool
+		for _, f := range j.chart.Templates {
+			if strings.Contains(f.Name, "ingress") {
+				if strings.Contains(string(f.Data), "path: {{ . }}") {
+					isOldVersion = true
+					break
+				}
+			}
+		}
+		ingressConfig = []string{
+			"ingress.enabled=true",
+			"ingress.annotations.kubernetes\\.io\\/ingress\\.class=nginx",
+		}
+		if app.Config().ClusterIssuer != "" {
+			ingressConfig = append(ingressConfig, "ingress.annotations.cert\\-manager\\.io\\/cluster\\-issuer="+app.Config().ClusterIssuer)
+		}
+
+		if len(j.config.IngressOverwriteValues) > 0 {
+			var overwrites []string
+			for _, value := range j.config.IngressOverwriteValues {
+				bb := &bytes.Buffer{}
+				ingressT := template.New("")
+				t2, _ := ingressT.Parse(value)
+				if err := t2.Execute(bb, vars); err != nil {
+					return err
+				}
+				overwrites = append(overwrites, bb.String())
+			}
+			mlog.Warning(overwrites)
+			ingressConfig = append(ingressConfig, overwrites...)
+		} else {
+			ingressConfig = append(ingressConfig, []string{
+				"ingress.hosts[0].host=" + host,
+				"ingress.tls[0].secretName=" + secretName,
+				"ingress.tls[0].hosts[0]=" + host,
+			}...)
+
+			if isOldVersion {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0]=/")
+			} else {
+				ingressConfig = append(ingressConfig, "ingress.hosts[0].paths[0].path=/", "ingress.hosts[0].paths[0].pathType=Prefix")
+			}
+		}
+
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"已配置域名: %s", host))
+	}
+	j.ingressOptions = ingressConfig
+	return nil
+}
+
+type ValuesFileLoader struct{}
+
+func (v ValuesFileLoader) Load(j *Jober) error {
+	const loaderName = "[ValuesFileLoader]: "
+	j.Messager().SendMsg(loaderName + "写入配置文件")
+	j.Percenter().To(60)
+
+	var inputValuesMap = make(map[string]interface{})
+	var err error
+	// 1. 把用户提交的配置变成 yaml 文件
+	if j.input.Config != "" {
+		inputValuesMap, err = j.config.ParseInputConfigToMap(j.input.Config)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 2. 设置自定义的镜像和仓库
+	inputValuesMap["image"] = map[string]interface{}{
+		"tag":        j.imageTag,
+		"repository": j.config.DockerRepository,
+	}
+	var imagePullSecrets = make([]map[string]interface{}, len(j.config.ImagePullSecrets))
+	for i, s := range j.config.ImagePullSecrets {
+		imagePullSecrets[i] = map[string]interface{}{"name": s}
+	}
+	inputValuesMap["imagePullSecrets"] = imagePullSecrets
+
+	// 3. 融合镜像和自定义配置文件
+	inputValues, err := yaml.Marshal(inputValuesMap)
+	if err != nil {
+		return err
+	}
+
+	// 4. default_values 也需要一个 file
+	defaultValues, err := j.config.GenerateDefaultValuesYaml()
+	if err != nil {
+		return err
+	}
+	base := strings.NewReader(defaultValues)
+	override := bytes.NewReader(inputValues)
+
+	// 5. 用用户传入的yaml配置去合并 `default_values`
+	provider, err := config.NewYAML(config.Source(base), config.Source(override))
+	if err != nil {
+		return err
+	}
+	var mergedDefaultAndConfigYamlValues map[string]interface{}
+	if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
+		return err
+	}
+
+	indent, _ := json.MarshalIndent(mergedDefaultAndConfigYamlValues, "", "\t")
+	mlog.Debugf("用户自定义的 values.yaml: \n %v", string(indent))
+
+	bf := &bytes.Buffer{}
+	encoder := yaml.NewEncoder(bf)
+	if err := encoder.Encode(&mergedDefaultAndConfigYamlValues); err != nil {
+		return err
+	}
+	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile(bf.Bytes())
+	if err != nil {
+		return err
+	}
+	j.AddDestroyFunc(func() { closer.Close() })
+
+	j.valuesOptions = &values.Options{
+		ValueFiles: []string{mergedFile},
+		Values:     j.ingressOptions,
+	}
+
+	return nil
+}
+
+type ReleaseInstallerLoader struct{}
+
+func (r ReleaseInstallerLoader) Load(j *Jober) error {
+	const loaderName = "ReleaseInstallerLoader"
+	j.Messager().SendMsg(loaderName + "worker 安装成功, 准备安装")
+	j.Percenter().To(70)
+	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, func(format string, v ...interface{}) {
+		if j.Percenter().Current() < 99 {
+			j.Percenter().Add()
+		}
+		if j.Percenter().Current() >= 95 {
+			format = "[如果长时间未部署成功，建议取消使用 debug 模式]: " + format
+		}
+		msg := fmt.Sprintf(format, v...)
+		if j.IsRunning() {
+			j.messageCh <- MessageItem{
+				Msg:  msg,
+				Type: MessageText,
+			}
+		}
+	}, j.input.Atomic)
+	return nil
 }

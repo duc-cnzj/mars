@@ -427,7 +427,7 @@ func installProject(job Job) {
 	}
 
 	if err = job.LoadConfigs(); err != nil {
-		if job.IsStopped() {
+		if err := job.GetStoppedErrorIfHas(); err != nil {
 			job.Messager().SendEndMsg(ResultDeployCanceled, err.Error())
 			return
 		}
