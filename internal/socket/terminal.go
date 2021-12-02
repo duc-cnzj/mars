@@ -112,7 +112,6 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	switch msg.Op {
 	case "stdin":
 		t.cacheLock.Lock()
-
 		switch {
 		case msg.Data == "\r":
 			mlog.Infof("[Websocket]: user %v, send: '%v', namespace: %v, pod: %v.", t.conn.GetUser().Name, string(t.cache), t.Namespace, t.Pod)
@@ -226,16 +225,17 @@ type SessionMapper interface {
 	Close(sessionId string, status uint32, reason string)
 }
 
-// SessionMap stores a map of all MyPtyHandler objects and a lock to avoid concurrent conflict
+// SessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
 type SessionMap struct {
-	conn     *WsConn
+	conn *WsConn
+
+	sessLock sync.RWMutex
 	Sessions map[string]*MyPtyHandler
-	Lock     sync.RWMutex
 }
 
 func (sm *SessionMap) Send(m TerminalMessage) {
-	sm.Lock.RLock()
-	defer sm.Lock.RUnlock()
+	sm.sessLock.RLock()
+	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionID]; ok {
 		select {
 		case h.shellCh <- m:
@@ -247,23 +247,23 @@ func (sm *SessionMap) Send(m TerminalMessage) {
 
 // Get return a given terminalSession by sessionId
 func (sm *SessionMap) Get(sessionId string) (*MyPtyHandler, bool) {
-	sm.Lock.RLock()
-	defer sm.Lock.RUnlock()
+	sm.sessLock.RLock()
+	defer sm.sessLock.RUnlock()
 	h, ok := sm.Sessions[sessionId]
 	return h, ok
 }
 
 // Set store a MyPtyHandler to SessionMap
 func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
-	sm.Lock.Lock()
-	defer sm.Lock.Unlock()
+	sm.sessLock.Lock()
+	defer sm.sessLock.Unlock()
 	sm.Sessions[sessionId] = session
 }
 
 func (sm *SessionMap) CloseAll() {
 	mlog.Debug("[Websocket] close all.")
-	sm.Lock.Lock()
-	defer sm.Lock.Unlock()
+	sm.sessLock.Lock()
+	defer sm.sessLock.Unlock()
 
 	for _, s := range sm.Sessions {
 		s.Close("websocket conn closed")
@@ -276,8 +276,8 @@ func (sm *SessionMap) CloseAll() {
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 	mlog.Debugf("[Websocket] session %v closed, reason: %s.", sessionId, reason)
-	sm.Lock.Lock()
-	defer sm.Lock.Unlock()
+	sm.sessLock.Lock()
+	defer sm.sessLock.Unlock()
 	if s, ok := sm.Sessions[sessionId]; ok {
 		delete(sm.Sessions, sessionId)
 		go s.Close(reason)
@@ -372,7 +372,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}
 
 	if err != nil {
-		mlog.Errorf("[Websocket]: %v", err.Error())
+		mlog.Warningf("[Websocket]: %v", err.Error())
 		if strings.Contains(err.Error(), "unable to upgrade connection") {
 			if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
 				app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})

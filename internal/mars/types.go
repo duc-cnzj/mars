@@ -104,7 +104,19 @@ func (mars *Config) GenerateDefaultValuesYaml() (string, error) {
 
 }
 
-func (mars *Config) GenerateConfigYamlByInput(input string) (string, error) {
+func (mars *Config) ParseInputConfigToMap(input string) (map[string]interface{}, error) {
+	data, err := mars.ParseInputConfig(input)
+	if err != nil {
+		return nil, err
+	}
+	v := map[string]interface{}{}
+	if err := yaml.Unmarshal([]byte(data), &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func (mars *Config) ParseInputConfig(input string) (string, error) {
 	var (
 		err      error
 		yamlData []byte
