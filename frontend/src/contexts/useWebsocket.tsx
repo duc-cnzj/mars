@@ -1,10 +1,10 @@
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { handleEvents } from "../store/actions";
-import { isJsonString } from "../utils/json";
 import { getUid } from "../utils/uid";
-import {getToken} from '../utils/token'
-import {message} from 'antd'
+import { getToken } from "../utils/token";
+import { message } from "antd";
+import pb from "../api/compiled";
 
 interface State {
   ws: WebSocket | null;
@@ -35,13 +35,12 @@ export function useWsReady(): boolean {
 export const ProvideWebsocket: React.FC = ({ children }) => {
   const dispatch = useDispatch();
   const [ws, setWs] = useState<any>();
-  const [ready, setReady] = useState(false)
 
   const connectWs = useCallback(() => {
-    let token = getToken()
+    let token = getToken();
     if (!token) {
-      message.error("用户未登录")
-      return
+      message.error("用户未登录");
+      return;
     }
     console.log("ws init");
     let url: string = process.env.REACT_APP_WS_URL
@@ -56,39 +55,28 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
       url += "?uid=" + uid;
     }
     let conn = new WebSocket(url);
-    setWs({ws: conn});
+    conn.binaryType = "arraybuffer"
     conn.onopen = function (evt) {
-      setReady(true)
-      let re = {
-        type: "handle_authorize",
-        data: JSON.stringify({
-          token: getToken()
-        }),
-      };
-      console.log("ws onopen");
-      let s = JSON.stringify(re);
-      conn.send(s)
+      setWs({ ws: conn, ready: true });
+      conn.send(
+        pb.AuthorizeTokenInput.encode({
+          token: getToken(),
+          type: pb.Type.HandleAuthorize,
+        }).finish()
+      );
     };
     conn.onclose = function (evt) {
-      setWs(null);
-      setReady(false)
+      setWs({ ws: null, ready: false });
       console.log("ws closed");
     };
     conn.onmessage = function (evt) {
-      if (!isJsonString(evt.data)) {
-        return;
-      }
-      let data: API.WsResponse = JSON.parse(evt.data);
-      dispatch(handleEvents(data.slug, data));
+      let data: pb.WsResponseMetadata = pb.WsResponseMetadata.decode(new Uint8Array(evt.data))
+      data.metadata && dispatch(handleEvents(data.metadata.slug, data.metadata, new Uint8Array(evt.data)));
     };
   }, [dispatch]);
 
   useEffect(() => {
-    setWs((ws: any)=>({...ws, ready: ready}));
-  }, [ready])
-
-  useEffect(() => {
-    if (!ws) {
+    if (!ws?.ws) {
       connectWs();
     }
   }, [connectWs, ws]);

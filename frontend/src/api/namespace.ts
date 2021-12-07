@@ -6,7 +6,7 @@ export function createNamespace(namespace: string) {
 }
 
 export function listNamespaces() {
-  return ajax.get<pb.ProjectListResponse>("/api/namespaces");
+  return ajax.get<pb.NamespaceList>("/api/namespaces");
 }
 
 export function deleteNamespace({namespace_id}: pb.NamespaceID) {

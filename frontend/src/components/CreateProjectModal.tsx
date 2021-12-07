@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
+import pb from "../api/compiled";
 
 import { configFile } from "../api/gitlab";
 import {
@@ -51,7 +52,7 @@ const CreateProjectModal: React.FC<{
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
 
-  let slug = toSlug(namespaceId, data.name);
+  let slug = useMemo(() => toSlug(namespaceId, data.name), [namespaceId, data.name]);
 
   const onCancel = useCallback(() => {
     setVisible(false);
@@ -116,7 +117,7 @@ const CreateProjectModal: React.FC<{
   }, [data.gitlabBranch, data.gitlabProjectId]);
 
   useEffect(() => {
-    setMode(getMode(data.config_type))
+    setMode(getMode(data.config_type));
   }, [data.config_type]);
 
   const ws = useWs();
@@ -127,7 +128,7 @@ const CreateProjectModal: React.FC<{
       setStart(false);
       dispatch(setCreateProjectLoading(slug, false));
     }
-  }, [wsReady]);
+  }, [wsReady, dispatch, slug]);
 
   const onOk = useCallback(() => {
     console.log(data);
@@ -140,22 +141,19 @@ const CreateProjectModal: React.FC<{
       setEditVisible(false);
       setTimelineVisible(true);
 
-      let re = {
-        type: "create_project",
-        data: JSON.stringify({
-          namespace_id: Number(namespaceId),
-          name: data.name,
-          gitlab_project_id: Number(data.gitlabProjectId),
-          gitlab_branch: data.gitlabBranch,
-          gitlab_commit: data.gitlabCommit,
-          config: data.config,
-          atomic: !data.debug,
-        }),
-      };
+      let s = pb.ProjectInput.encode({
+        type: pb.Type.CreateProject,
+        namespace_id: Number(namespaceId),
+        name: data.name,
+        gitlab_project_id: Number(data.gitlabProjectId),
+        gitlab_branch: data.gitlabBranch,
+        gitlab_commit: data.gitlabCommit,
+        config: data.config,
+        atomic: !data.debug,
+      }).finish();
 
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
-      let s = JSON.stringify(re);
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
       setStart(true);
@@ -167,15 +165,11 @@ const CreateProjectModal: React.FC<{
   }, [data, dispatch, slug, ws, namespaceId, wsReady]);
   const onRemove = useCallback(() => {
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
-      let re = {
-        type: "cancel_project",
-        data: JSON.stringify({
-          namespace_id: Number(namespaceId),
-          name: data.name,
-        }),
-      };
-
-      let s = JSON.stringify(re);
+      let s = pb.CancelInput.encode({
+        type: pb.Type.CancelProject,
+        namespace_id: namespaceId,
+        name: data.name,
+      }).finish();
       ws?.send(s);
       return;
     }
@@ -205,7 +199,7 @@ const CreateProjectModal: React.FC<{
         onOk={onOk}
         initialWidth={900}
         initialHeight={600}
-        title={<div style={{textAlign: "center"}}>创建项目</div>}
+        title={<div style={{ textAlign: "center" }}>创建项目</div>}
         className="draggable-modal drag-item-modal"
         onCancel={onCancel}
       >

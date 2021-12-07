@@ -1,7 +1,6 @@
 import React, { useState, useEffect, memo } from "react";
 import { Cascader } from "antd";
 import { branches, commits, projects } from "../api/gitlab";
-import { CascaderOptionType } from "antd/lib/cascader";
 import _ from "lodash";
 import pb from "../api/compiled";
 
@@ -40,7 +39,7 @@ const ProjectSelector: React.FC<{
         setOptions(res.data.data);
       }
     });
-  }, []);
+  }, [v]);
 
   useEffect(() => {
     if (v) {
@@ -48,7 +47,7 @@ const ProjectSelector: React.FC<{
     }
   }, [v]);
 
-  const loadData = (selectedOptions: CascaderOptionType[] | undefined) => {
+  const loadData = (selectedOptions: any | undefined) => {
     if (!selectedOptions) {
       return;
     }
@@ -80,7 +79,7 @@ const ProjectSelector: React.FC<{
 
   const onChange = (
     values: (string | number)[],
-    selectedOptions: CascaderOptionType[] | undefined
+    selectedOptions: any | undefined
   ) => {
     let gitlabId = _.get(values, 0, 0);
     let gbranch = _.get(values, 1, "");

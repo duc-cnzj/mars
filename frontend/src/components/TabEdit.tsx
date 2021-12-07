@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useMemo, useState, useEffect, useCallback, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
 import Prism from "prismjs";
@@ -80,7 +80,7 @@ const ModalSub: React.FC<{
     gitlabCommit: string;
     time?: number;
   }>();
-  let slug = toSlug(namespaceId, data.name);
+  let slug = useMemo(() => toSlug(namespaceId || 0, data.name), [namespaceId, data.name]);
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -95,16 +95,16 @@ const ModalSub: React.FC<{
           project_id: String(detail.gitlab_project_id),
           branch: detail.gitlab_branch,
         }).then((res) => {
-          setData((d) => ({ ...data, config_type: res.data.type }));
+          setData((d) => ({ ...d, config_type: res.data.type }));
         });
         commit({
-          project_id: detail.gitlab_project_id,
+          project_id: String(detail.gitlab_project_id),
           branch: detail.gitlab_branch,
           commit: detail.gitlab_commit,
         }).then((res) => {
-          setInitValue({
+          res.data.data && setInitValue({
             projectName: detail.name,
-            gitlabProjectId: detail.gitlab_project_id,
+            gitlabProjectId: String(detail.gitlab_project_id),
             gitlabBranch: detail.gitlab_branch,
             gitlabCommit: res.data.data.label,
           });
@@ -166,7 +166,7 @@ const ModalSub: React.FC<{
       setStart(false);
       dispatch(setCreateProjectLoading(slug, false));
     }
-  }, [wsReady]);
+  }, [wsReady, dispatch, slug]);
   const updateDeploy = () => {
     if (!wsReady) {
       message.error("连接断开了");
@@ -177,17 +177,15 @@ const ModalSub: React.FC<{
       setEditVisible(false);
       setTimelineVisible(true);
 
-      let re = {
-        type: "update_project",
-        data: JSON.stringify({
-          project_id: Number(id),
-          gitlab_branch: data.gitlabBranch,
-          gitlab_commit: data.gitlabCommit,
-          config: data.config,
-          atomic: !data.debug,
-        }),
-      };
-      let s = JSON.stringify(re);
+      let s = pb.UpdateProjectInput.encode({
+        type: pb.Type.UpdateProject,
+
+        project_id: Number(id),
+        gitlab_branch: data.gitlabBranch,
+        gitlab_commit: data.gitlabCommit,
+        config: data.config,
+        atomic: !data.debug,
+      }).finish();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
       dispatch(clearCreateProjectLog(slug));
@@ -224,15 +222,11 @@ const ModalSub: React.FC<{
       return;
     }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
-      let re = {
-        type: "cancel_project",
-        data: JSON.stringify({
+      let s =  pb.CancelInput.encode({
+          type: pb.Type.CancelProject,
           namespace_id: Number(namespaceId),
           name: data.name,
-        }),
-      };
-
-      let s = JSON.stringify(re);
+        }).finish();
       ws?.send(s);
       return;
     }
@@ -285,7 +279,10 @@ const ModalSub: React.FC<{
         branch={data.gitlabBranch}
         commit={data.gitlabCommit}
       />
-      <div className={classNames({ "display-none": !editVisible })} style={{height: "100%", display: "flex", flexDirection: "column"}}>
+      <div
+        className={classNames({ "display-none": !editVisible })}
+        style={{ height: "100%", display: "flex", flexDirection: "column" }}
+      >
         <div
           style={{
             width: "100%",
@@ -314,7 +311,7 @@ const ModalSub: React.FC<{
             paragraph={false}
             avatar={false}
             loading={!initValue}
-            title={{style: {marginTop: 0, height: 24}}}
+            title={{ style: { marginTop: 0, height: 24 } }}
           >
             <ProjectSelector value={initValue} onChange={onChange} />
           </Skeleton>
@@ -361,7 +358,7 @@ const ModalSub: React.FC<{
           />
         </div>
         <div style={{ minWidth: 200, marginBottom: 20, height: "100%" }}>
-          <Row style={{height: "100%"}}>
+          <Row style={{ height: "100%" }}>
             <Col span={detail.config === data.config ? 24 : 12}>
               <CodeMirror
                 value={data.config}
@@ -385,7 +382,11 @@ const ModalSub: React.FC<{
                 styles={{
                   gutter: { padding: "0 5px", minWidth: 25 },
                   marker: { padding: "0 6px" },
-                  diffContainer: {display: "block", width: "100%", overflowX: "auto"}
+                  diffContainer: {
+                    display: "block",
+                    width: "100%",
+                    overflowX: "auto",
+                  },
                 }}
                 useDarkTheme
                 renderContent={highlightSyntax}

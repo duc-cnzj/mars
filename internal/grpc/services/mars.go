@@ -68,7 +68,8 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*config.Config,
 	var marsC config.Config
 
 	var gp models.GitlabProject
-	if app.DB().Where("`gitlab_project_id` = ?", projectId).First(&gp).Error == nil {
+	pid := fmt.Sprintf("%v", projectId)
+	if app.DB().Where("`gitlab_project_id` = ?", pid).First(&gp).Error == nil {
 		if gp.GlobalEnabled {
 			return gp.GlobalMarsConfig(), nil
 		}
@@ -79,7 +80,7 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*config.Config,
 	if branch != "" {
 		opt.Ref = gitlab.String(branch)
 	}
-	file, _, err := app.GitlabClient().RepositoryFiles.GetFile(projectId, ".mars.yaml", opt)
+	file, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, ".mars.yaml", opt)
 	if err != nil {
 		return nil, err
 	}

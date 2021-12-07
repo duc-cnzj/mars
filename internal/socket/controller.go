@@ -8,6 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/pkg/cluster"
+
+	"google.golang.org/protobuf/proto"
+
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -19,9 +25,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type HandleRequestFunc func(c *WsConn, wsRequest WsRequest)
+type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
 
-var handlers map[string]HandleRequestFunc = map[string]HandleRequestFunc{
+var handlers map[websocket_pb.Type]HandleRequestFunc = map[websocket_pb.Type]HandleRequestFunc{
 	WsAuthorize:          HandleWsAuthorize,
 	WsHandleCloseShell:   HandleWsHandleCloseShell,
 	WsHandleExecShellMsg: HandleWsHandleExecShellMsg,
@@ -89,7 +95,7 @@ func (c *WsConn) GetUser() services.UserInfo {
 	return c.user
 }
 
-func (c *WsConn) GetShellChannel(sessionID string) (chan TerminalMessage, error) {
+func (c *WsConn) GetShellChannel(sessionID string) (chan *websocket_pb.TerminalMessage, error) {
 	if handler, ok := c.terminalSessions.Get(sessionID); ok {
 		return handler.shellCh, nil
 	}
@@ -110,11 +116,24 @@ func (*WebsocketManager) TickClusterHealth() {
 		for {
 			select {
 			case <-ticker.C:
-				marshal, _ := json.Marshal(utils.ClusterInfo())
-
-				sub.ToAll(&WsResponse{
-					Type: WsClusterInfoSync,
-					Data: string(marshal),
+				info := utils.ClusterInfo()
+				sub.ToAll(&websocket_pb.WsHandleClusterResponse{
+					Metadata: &websocket_pb.ResponseMetadata{
+						Type: WsClusterInfoSync,
+					},
+					Info: &cluster.ClusterInfoResponse{
+						Status:            info.Status,
+						FreeMemory:        info.FreeMemory,
+						FreeCpu:           info.FreeCpu,
+						FreeRequestMemory: info.FreeRequestMemory,
+						FreeRequestCpu:    info.FreeRequestCpu,
+						TotalMemory:       info.TotalMemory,
+						TotalCpu:          info.TotalCpu,
+						UsageMemoryRate:   info.UsageMemoryRate,
+						UsageCpuRate:      info.UsageCpuRate,
+						RequestMemoryRate: info.RequestMemoryRate,
+						RequestCpuRate:    info.RequestCpuRate,
+					},
 				})
 			case <-app.App().Done():
 				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
@@ -185,17 +204,17 @@ func write(wsconn *WsConn) error {
 				return wsconn.conn.WriteMessage(websocket.CloseMessage, []byte{})
 			}
 
-			w, err := wsconn.conn.NextWriter(websocket.TextMessage)
+			w, err := wsconn.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return err
 			}
-			w.Write([]byte(message))
+			w.Write(message)
 
 			if err := w.Close(); err != nil {
 				return err
 			}
 		case <-ticker.C:
-			mlog.Debugf("[Websocket] tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
+			mlog.Debugf("[Websocket]: tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
 			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return err
@@ -209,46 +228,41 @@ func read(wsconn *WsConn) error {
 	wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.conn.SetPongHandler(func(string) error {
 		wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
-		mlog.Debugf("[Websocket] 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
+		mlog.Debugf("[Websocket]: 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
 		return nil
 	})
 	for {
-		var wsRequest WsRequest
+		var wsRequest websocket_pb.WsRequestMetadata
 		_, message, err := wsconn.conn.ReadMessage()
 		if err != nil {
-			mlog.Debugf("[Websocket] read error: %v %v", err, message)
+			mlog.Debugf("[Websocket]: read error: %v", err)
 			return err
 		}
-		if err := json.Unmarshal(message, &wsRequest); err != nil {
+		if err := proto.Unmarshal(message, &wsRequest); err != nil {
 			NewMessageSender(wsconn, "", WsInternalError).SendEndError(err)
 
 			continue
 		}
 
-		go func(wsRequest WsRequest) {
-			mlog.Debugf("[Websocket]: user: %v, type: %v", wsconn.GetUser().Name, wsRequest.Type)
-
+		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
-				handler(wsconn, wsRequest)
+				handler(wsconn, wsRequest.Type, message)
 			}
-		}(wsRequest)
+		}(&wsRequest, message)
 	}
 }
 
-type Token struct {
-	Token string `json:"token"`
-}
-
-func HandleWsAuthorize(c *WsConn, wsRequest WsRequest) {
+func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsAuthorize")
 
-	var input Token
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.AuthorizeTokenInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		mlog.Error("[Websocket]: " + err.Error())
+		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
+
 	var token = strings.TrimSpace(strings.TrimLeft(input.Token, "Bearer"))
 	parse, err := jwt.ParseWithClaims(token, &services.JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return app.Config().Pubkey(), nil
@@ -259,75 +273,74 @@ func HandleWsAuthorize(c *WsConn, wsRequest WsRequest) {
 	}
 }
 
-func HandleWsHandleCloseShell(c *WsConn, wsRequest WsRequest) {
+func HandleWsHandleCloseShell(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsHandleCloseShell")
 
-	var input TerminalMessage
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.TerminalMessageInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		mlog.Error(err.Error())
+		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	mlog.Debugf("[Websocket] %v 收到客户端主动断开的消息", input.SessionID)
-	c.terminalSessions.Close(input.SessionID, 0, "")
+	mlog.Debugf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
+	c.terminalSessions.Close(input.Message.SessionId, 0, "")
 }
 
-func HandleWsHandleExecShellMsg(c *WsConn, wsRequest WsRequest) {
+func HandleWsHandleExecShellMsg(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsHandleExecShellMsg")
 
-	var input TerminalMessage
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.TerminalMessageInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	if input.SessionID != "" {
-		c.terminalSessions.Send(input)
+	if input.Message.SessionId != "" {
+		c.terminalSessions.Send(input.Message)
 	}
 }
 
-func HandleWsHandleExecShell(c *WsConn, wsRequest WsRequest) {
-	var input WsHandleExecShellInput
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
+	var input websocket_pb.WsHandleExecShellInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 
-	sessionID, err := HandleExecShell(input, c)
+	sessionID, err := HandleExecShell(&input, c)
 	if err != nil {
 		mlog.Error(err)
 		NewMessageSender(c, "", WsHandleExecShell).SendEndMsg(ResultError, err.Error())
 		return
 	}
 
-	mlog.Debugf("[Websocket] 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
+	mlog.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
 
-	res := struct {
-		WsHandleExecShellInput
-		SessionID string `json:"session_id"`
-	}{
-		WsHandleExecShellInput: input,
-		SessionID:              sessionID,
-	}
-	marshal, _ := json.Marshal(res)
-	NewMessageSender(c, "", WsHandleExecShell).SendEndMsg(ResultSuccess, string(marshal))
+	NewMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+		Metadata: &websocket_pb.ResponseMetadata{
+			Id:     c.id,
+			Uid:    c.uid,
+			Type:   WsHandleExecShell,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket_pb.TerminalMessage{
+			SessionId: sessionID,
+		},
+		Container: &websocket_pb.Container{
+			Namespace: input.Namespace,
+			Pod:       input.Pod,
+			Container: input.Container,
+		},
+	})
 }
 
-type CancelInput struct {
-	NamespaceId int    `uri:"namespace_id" json:"namespace_id"`
-	Name        string `json:"name"`
-}
-
-func HandleWsCancel(c *WsConn, wsRequest WsRequest) {
+func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsCancel")
 
-	var input CancelInput
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.CancelInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
@@ -339,73 +352,49 @@ func HandleWsCancel(c *WsConn, wsRequest WsRequest) {
 	}
 }
 
-type ProjectInput struct {
-	NamespaceId int `uri:"namespace_id" json:"namespace_id"`
-
-	Name            string `json:"name"`
-	GitlabProjectId int    `json:"gitlab_project_id"`
-	GitlabBranch    string `json:"gitlab_branch"`
-	GitlabCommit    string `json:"gitlab_commit"`
-	Config          string `json:"config"`
-	Atomic          bool   `json:"atomic"`
-}
-
-func HandleWsCreateProject(c *WsConn, wsRequest WsRequest) {
+func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsCreateProject")
 
-	var input ProjectInput
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.ProjectInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-
-	job := NewJober(input, wsRequest.Type, wsRequest, c)
+	job := NewJober(&input, t, c)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 	defer c.cancelSignaler.Remove(job.ID())
 	installProject(job)
 }
 
-type UpdateProject struct {
-	ProjectId int `json:"project_id"`
-
-	GitlabBranch string `json:"gitlab_branch"`
-	GitlabCommit string `json:"gitlab_commit"`
-	Config       string `json:"config"`
-	Atomic       bool   `json:"atomic"`
-}
-
-func HandleWsUpdateProject(c *WsConn, wsRequest WsRequest) {
+func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsUpdateProject")
 
-	var input UpdateProject
-	if err := json.Unmarshal([]byte(wsRequest.Data), &input); err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+	var input websocket_pb.UpdateProjectInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 	var p models.Project
 	if err := app.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
-		mlog.Error(wsRequest.Data, &input)
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 
-	job := NewJober(ProjectInput{
-		NamespaceId:     p.NamespaceId,
+	job := NewJober(&websocket_pb.ProjectInput{
+		NamespaceId:     int64(p.NamespaceId),
 		Name:            p.Name,
-		GitlabProjectId: p.GitlabProjectId,
+		GitlabProjectId: int64(p.GitlabProjectId),
 		GitlabBranch:    input.GitlabBranch,
 		GitlabCommit:    input.GitlabCommit,
 		Config:          input.Config,
 		Atomic:          input.Atomic,
-	}, wsRequest.Type, wsRequest, c)
+	}, t, c)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, "", wsRequest.Type).SendEndError(err)
+		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 	defer c.cancelSignaler.Remove(job.ID())
@@ -435,10 +424,11 @@ func installProject(job Job) {
 		return
 	}
 
+	res := &WsResponse{Metadata: &websocket_pb.ResponseMetadata{Type: WsReloadProjects}}
 	if err = job.Run(); err != nil {
-		job.PubSub().ToAll(&WsResponse{Type: WsReloadProjects})
+		job.PubSub().ToAll(res)
 		return
 	}
 
-	job.PubSub().ToOthers(&WsResponse{Type: WsReloadProjects})
+	job.PubSub().ToOthers(res)
 }

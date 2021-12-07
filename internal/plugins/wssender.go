@@ -4,41 +4,48 @@ import (
 	"encoding/json"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 var wsSenderOnce sync.Once
 
-type TO uint8
-
 const (
-	ToSelf TO = iota
-	ToAll
-	ToOthers
+	ToSelf   = websocket_pb.To_ToSelf
+	ToAll    = websocket_pb.To_ToAll
+	ToOthers = websocket_pb.To_ToOthers
 )
 
-type WsResponse struct {
-	// 有可能同一个用户同时部署两个环境, 必须要有 slug 区分
-	Slug   string `json:"slug"`
-	Type   string `json:"type"`
-	Result string `json:"result"`
-	Data   string `json:"data"`
-	End    bool   `json:"end"`
-	Uid    string `json:"uid"`
-	ID     string `json:"id"`
-
-	To TO `json:"to"`
+type Message struct {
+	Data []byte
+	To   websocket_pb.To
+	ID   string
 }
 
-func (r *WsResponse) EncodeToBytes() []byte {
-	marshal, _ := json.Marshal(&r)
+func (m Message) Marshal() []byte {
+	marshal, _ := json.Marshal(&m)
 	return marshal
 }
-func (r *WsResponse) EncodeToString() string {
-	marshal, _ := json.Marshal(&r)
-	return string(marshal)
+
+func DecodeMessage(data []byte) (msg Message, err error) {
+	err = json.Unmarshal(data, &msg)
+	return
 }
+
+func ProtoToMessage(m proto.Message, to websocket_pb.To, id string) Message {
+	marshal, _ := proto.Marshal(m)
+
+	return Message{
+		Data: marshal,
+		To:   to,
+		ID:   id,
+	}
+}
+
+type WsResponseMetadata = websocket_pb.WsResponseMetadata
 
 type WsSender interface {
 	New(uid, id string) PubSub
@@ -48,10 +55,10 @@ type PubSub interface {
 	Info() interface{}
 	Uid() string
 	ID() string
-	ToSelf(*WsResponse) error
-	ToAll(*WsResponse) error
-	ToOthers(*WsResponse) error
-	Subscribe() <-chan string
+	ToSelf(proto.Message) error
+	ToAll(proto.Message) error
+	ToOthers(proto.Message) error
+	Subscribe() <-chan []byte
 	Close() error
 }
 

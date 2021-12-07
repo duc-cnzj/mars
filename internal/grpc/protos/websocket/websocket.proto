@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+import "cluster/cluster.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/websocket;websocket";
+
+enum Type {
+  TypeUnknown = 0;
+  SetUid = 1;
+  ReloadProjects = 2;
+  CancelProject = 3;
+  CreateProject = 4;
+  UpdateProject = 5;
+  ProcessPercent = 6;
+  ClusterInfoSync = 7;
+  InternalError = 8;
+
+  HandleExecShell = 9;
+  HandleExecShellMsg = 10;
+  HandleCloseShell = 11;
+  HandleAuthorize = 12;
+}
+
+enum ResultType {
+  ResultUnknown = 0;
+  Error = 1;
+  Success = 2;
+  Deployed = 3;
+  DeployedFailed = 4;
+  DeployedCanceled = 5;
+}
+
+enum To {
+  ToSelf = 0;
+  ToAll = 1;
+  ToOthers = 2;
+}
+
+// Request
+
+message WsRequestMetadata {
+  Type type = 1;
+}
+
+message AuthorizeTokenInput {
+  Type type = 1;
+
+  string token = 2;
+}
+
+
+// TerminalMessage is the messaging protocol between ShellController and MyPtyHandler.
+//
+// OP      DIRECTION  FIELD(S) USED  DESCRIPTION
+// ---------------------------------------------------------------------
+// bind    fe->be     SessionID      ID sent back from TerminalResponse
+// stdin   fe->be     Data           Keystrokes/paste buffer
+// resize  fe->be     Rows, Cols     New terminal size
+// stdout  be->fe     Data           Output from the process
+// toast   be->fe     Data           OOB message to be shown to the user
+message TerminalMessage {
+  string op = 1;
+  string data = 2;
+  string session_id = 3;
+  uint32 rows = 4;
+  uint32 cols = 5;
+}
+
+message TerminalMessageInput {
+  Type type = 1;
+
+  TerminalMessage message = 2;
+}
+
+message WsHandleExecShellInput {
+  Type type = 1;
+
+  string namespace = 2;
+  string pod = 3;
+  string container = 4;
+}
+
+message CancelInput {
+  Type type = 1;
+
+  int64 namespace_id = 2;
+  string name = 3;
+}
+
+message ProjectInput {
+  Type type = 1;
+
+  int64 namespace_id = 2;
+  string name = 3;
+  int64 gitlab_project_id = 4;
+  string gitlab_branch = 5;
+  string gitlab_commit = 6;
+  string config = 7;
+  bool atomic = 8;
+}
+
+message UpdateProjectInput {
+  Type type = 1;
+
+  int64 project_id = 2;
+  string gitlab_branch = 3;
+  string gitlab_commit = 4;
+  string config = 5;
+  bool atomic = 6;
+}
+
+// Response
+
+message ResponseMetadata {
+  string id = 1;
+  string uid = 2;
+  string slug = 3;
+  Type type = 4;
+  bool end = 5;
+  ResultType result = 6;
+  To to = 7;
+  string data = 8;
+}
+
+message WsResponseMetadata {
+    ResponseMetadata metadata = 1;
+}
+
+message Container {
+  string namespace = 1;
+  string pod = 2;
+  string container = 3;
+}
+
+message WsHandleShellResponse {
+  ResponseMetadata metadata = 1;
+
+  TerminalMessage terminal_message = 2;
+  Container container = 3;
+}
+
+message WsHandleClusterResponse {
+  ResponseMetadata metadata = 1;
+
+  ClusterInfoResponse info = 2;
+}

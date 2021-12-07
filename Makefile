@@ -11,7 +11,7 @@ LDFLAGS = "-w -s  \
 
 .PHONY: gen
 gen:
-	cd hack && ./gen_proto.sh
+	cd hack && ./gen_proto.sh && cd .. && make fmt
 
 .PHONY: fmt
 fmt:

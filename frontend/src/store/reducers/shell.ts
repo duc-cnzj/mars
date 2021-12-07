@@ -1,15 +1,17 @@
 import { SET_SHELL_SESSION_ID, SET_SHELL_LOG } from "./../actionTypes";
+import pb from "../../api/compiled"
+
 const initialState: {
-  [id: string]: { sessionID: string; log: string; logCount: number };
+  [id: string]: { sessionID: string; log: pb.TerminalMessage; logCount: number };
 } = {};
 
 export const selectSessions = (state: {
-  shell: { [id: string]: { sessionID: string; log: string; logCount: number } };
+  shell: { [id: string]: { sessionID: string; log: pb.TerminalMessage; logCount: number } };
 }) => state.shell;
 
 export default function shell(
   state = initialState,
-  action: { type: string; data: { id: string; sessionID: string; log: string } }
+  action: { type: string; data: { id: string; sessionID: string; log: pb.TerminalMessage } }
 ) {
   switch (action.type) {
     case SET_SHELL_LOG:

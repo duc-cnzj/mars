@@ -29,29 +29,33 @@ const TabShell: React.FC<{
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
-  const ref = useRef<HTMLDivElement>(null);
   const [timestamp, setTimestamp] = useState(new Date().getTime());
+  const fitAddon = useMemo(() => new FitAddon(), []);
+
+  const ref = useRef<HTMLDivElement>(null);
+  const sessions = useSelector(selectSessions);
   const ws = useWs();
   const wsReady = useWsReady();
-  const [fitAddon, _] = useState(new FitAddon());
-  const sessions = useSelector(selectSessions);
+
   let sname = useMemo(
     () => detail.namespace?.name + "|" + value,
     [detail, value]
   );
 
-  const listContainer = useCallback(async () => {
-    return containerList({
-      namespace_id: detail.namespace?.id,
-      project_id: detail.id,
-    }).then((res) => {
-      setList(res.data.data);
-      return res;
-    });
-  }, [detail.id, detail.namespace?.id]);
+  const listContainer = useCallback(
+    () =>
+      containerList({
+        namespace_id: detail.namespace?.id || 0,
+        project_id: detail.id,
+      }).then((res) => {
+        setList(res.data.data);
+        return res;
+      }),
+    [detail.id, detail.namespace?.id]
+  );
 
   const sendMsg = useCallback(
-    (msg: string) => {
+    (msg: any) => {
       try {
         ws?.send(msg);
       } catch (e) {
@@ -61,84 +65,84 @@ const TabShell: React.FC<{
     [ws]
   );
 
-  const onTerminalSendString = (str: string) => {
-    let re = {
-      type: "handle_exec_shell_msg",
-      data: JSON.stringify({
-        session_id: sessionId,
-        op: "stdin",
-        data: str,
-        cols: term?.cols,
-        rows: term?.rows,
-      }),
+  const onTerminalSendString = useCallback((id: string, ws: WebSocket) => {
+    return (str: string) => {
+      let s = pb.TerminalMessageInput.encode({
+        type: pb.Type.HandleExecShellMsg,
+        message: {
+          session_id: id,
+          op: "stdin",
+          data: str,
+          cols: 0,
+          rows: 0,
+        },
+      }).finish();
+      ws?.send(s);
     };
+  }, []);
 
-    sendMsg(JSON.stringify(re));
-  };
-  const debouncedFit_ = debounce(() => {
-    try {
-      fitAddon.fit();
-    } catch (e) {
-      console.log(e);
-    }
-  }, 300);
-  const handleConnectionMessage = (frame: any) => {
-    if (frame.op === "stdout") {
-      term?.write(frame.data);
-    }
+  const debouncedFit_ = useCallback(
+    () =>
+      debounce(() => {
+        try {
+          fitAddon.fit();
+        } catch (e) {
+          console.log(e);
+        }
+      }, 300)(),
+    [fitAddon]
+  );
 
-    if (frame.op === "toast") {
-      message.error(frame.data);
-      listContainer();
-    }
-  };
+  const handleConnectionMessage = useCallback(
+    (frame: pb.TerminalMessage, term: Terminal) => {
+      if (!term) {
+        return;
+      }
+      if (frame.op === "stdout") {
+        term.write(frame.data);
+      }
 
-  const onTerminalResize = ({ cols, rows }: { cols: number; rows: number }) => {
-    let re = {
-      type: "handle_exec_shell_msg",
-      data: JSON.stringify({
-        session_id: sessionId,
+      if (frame.op === "toast") {
+        message.error(frame.data);
+        listContainer();
+      }
+    },
+    [listContainer]
+  );
+
+  const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
+    return ({ cols, rows }: { cols: number; rows: number }) => {
+      let s = pb.TerminalMessage.encode({
+        session_id: id,
         op: "resize",
         cols: cols,
         rows: rows,
-      }),
+        data: "",
+      }).finish();
+      ws?.send(s);
     };
-    sendMsg(JSON.stringify(re));
-  };
+  }, []);
 
-  const handleCloseShell = useCallback(() => {
-    if (sessionId) {
-      let re = {
-        type: "handle_close_shell",
-        data: JSON.stringify({
-          session_id: sessionId,
-        }),
-      };
-      sendMsg(JSON.stringify(re));
-    }
-    console.log("closed closed closed closed");
-  }, [sessionId]);
+  const handleCloseShell = useCallback(
+    (id: string) => {
+      if (id) {
+        let s = pb.TerminalMessageInput.encode({
+          type: pb.Type.HandleCloseShell,
+          message: new pb.TerminalMessage({ session_id: id }),
+        }).finish();
+        sendMsg(s);
+      }
+    },
+    [sendMsg]
+  );
 
+  let logCount = useMemo(() => sessions[sname]?.logCount, [sessions, sname]);
+  let log = useMemo(() => sessions[sname]?.log, [sessions, sname]);
   useEffect(() => {
-    return () => {
-      handleCloseShell();
-    };
-  }, [handleCloseShell]);
-
-  useEffect(() => {
-    // 关闭上一个连接如果有的话
-    console.log("handle_close_shell");
-    handleCloseShell();
-    if (sessions[sname]) {
-      setSessionId(sessions[sname].sessionID);
+    if (logCount && term) {
+      handleConnectionMessage(log, term);
     }
-  }, [sessions[sname]?.sessionID]);
-
-  useEffect(() => {
-    if (sessions[sname] && sessions[sname].log !== undefined) {
-      handleConnectionMessage(JSON.parse(sessions[sname].log));
-    }
-  }, [sessions[sname]?.logCount]);
+  }, [logCount, log, handleConnectionMessage, term]);
 
   useEffect(() => {
     listContainer().then((res) => {
@@ -147,55 +151,64 @@ const TabShell: React.FC<{
     });
   }, [updatedAt, listContainer]);
 
-  const initTerm = () => {
-    if (term) {
-      term.dispose();
-    }
-    let myterm = new Terminal({
-      fontSize: 14,
-      fontFamily: '"Fira code", "Fira Mono", monospace',
-      bellStyle: "sound",
-      cursorBlink: true,
-      cols: 106,
-    });
-    setTerm(myterm);
-    myterm.loadAddon(fitAddon);
-    myterm.onResize(onTerminalResize);
-    myterm.onData(onTerminalSendString);
-    myterm.onKey((event: any) => {
-      console.log(event);
-    });
+  const getTerm = useCallback(
+    (id: string, ws: WebSocket) => {
+      let myterm = new Terminal({
+        fontSize: 14,
+        fontFamily: '"Fira code", "Fira Mono", monospace',
+        bellStyle: "sound",
+        cursorBlink: true,
+        cols: 106,
+      });
+      myterm.loadAddon(fitAddon);
+      myterm.onResize(onTerminalResize(id, ws));
+      myterm.onData(onTerminalSendString(id, ws));
+      myterm.onKey((e: { key: string; domEvent: KeyboardEvent }) => {
+        console.log(e.key);
+      });
+      ref.current !== null && myterm.open(ref.current);
+      debouncedFit_();
+      myterm.focus();
+      return myterm;
+    },
+    [onTerminalResize, onTerminalSendString, debouncedFit_, fitAddon]
+  );
 
-    ref.current !== null && myterm.open(ref.current);
-    debouncedFit_();
-    myterm.focus();
-  };
+  let sid = useMemo(() => sessions[sname]?.sessionID, [sessions, sname]);
+  useEffect(() => {
+    if (sid) {
+      setSessionId(sid);
+    }
+  }, [sid]);
 
   useEffect(() => {
-    if (!wsReady || !sessionId) {
-      console.log(ws, wsReady);
-      return;
-    }
+    if (wsReady && sessionId && ws) {
+      const t = getTerm(sessionId, ws);
+      setTerm(t);
 
-    initTerm();
-  }, [value, wsReady, sessionId]);
+      return () => {
+        t.dispose();
+        handleCloseShell(sessionId);
+        console.log("close id: ", sessionId);
+      };
+    }
+  }, [wsReady, sessionId, handleCloseShell, setTerm, ws, getTerm]);
 
   useEffect(() => {
     debouncedFit_();
-  }, [resizeAt, debouncedFit_]);
+  }, [debouncedFit_, resizeAt]);
 
   const initShell = useCallback(() => {
     let s = value.split("|");
-    let re = {
-      type: "handle_exec_shell",
-      data: JSON.stringify({
-        namespace: detail.namespace?.name,
-        pod: s[0],
-        container: s[1],
-      }),
-    };
-    sendMsg(JSON.stringify(re));
+    let ss = pb.WsHandleExecShellInput.encode({
+      type: pb.Type.HandleExecShell,
+      namespace: detail.namespace?.name || "",
+      pod: s[0],
+      container: s[1],
+    }).finish();
+    sendMsg(ss);
   }, [value, detail.namespace?.name, sendMsg]);
+
   useEffect(() => {
     if (value && wsReady) {
       initShell();
@@ -203,7 +216,7 @@ const TabShell: React.FC<{
   }, [initShell, value, wsReady]);
 
   const reconnect = (e: any) => {
-    setTimestamp(new Date().getTime())
+    setTimestamp(new Date().getTime());
     setValue(e.target.value);
     let s = (e.target.value as string).split("|");
     isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
@@ -284,10 +297,7 @@ const TabShell: React.FC<{
         overflowY: "auto",
       }}
     >
-      <Radio.Group
-        value={value}
-        style={{ marginBottom: 5 }}
-      >
+      <Radio.Group value={value} style={{ marginBottom: 5 }}>
         {list.map((item) => (
           <Radio
             onClick={reconnect}
@@ -303,9 +313,7 @@ const TabShell: React.FC<{
       </Radio.Group>
 
       {value.length > 0 && term ? (
-        <div
-          style={{ display: "flex", justifyContent: "start" }}
-        >
+        <div style={{ display: "flex", justifyContent: "start" }}>
           <Upload {...props}>
             <Button
               disabled={loading}

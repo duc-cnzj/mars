@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, memo } from "react";
-import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
+import { DraggableModal } from "../pkg/DraggableModal";
 import { detailProject } from "../api/project";
 import { Button, Tabs, Skeleton, Badge } from "antd";
 import DeployStatus from "./DeployStatus";
@@ -38,7 +38,7 @@ const ItemDetailModal: React.FC<{
   }, [namespaceId, item.id, visible]);
 
   const onSuccess = () => {
-    detailProject(namespaceId, item.id).then((res) => {
+    detailProject(namespaceId, item.id || 0).then((res) => {
       console.log(res.data);
       setDetail(res.data);
     });
@@ -124,7 +124,7 @@ const ItemDetailModal: React.FC<{
                   <TabLog
                     updatedAt={detail.updated_at}
                     id={detail.id}
-                    namespaceId={detail.namespace?.id}
+                    namespaceId={detail.namespace?.id || 0}
                   />
                 ) : (
                   <Skeleton active />

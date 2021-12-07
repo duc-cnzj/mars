@@ -69,7 +69,7 @@ const ConfigModal: React.FC<{
       });
   }, []);
 
-  const loadDefaultValues = (projectId: string) => {
+  const loadDefaultValues = (projectId: number) => {
     if (projectId) {
       getDefaultValues({ project_id: projectId, branch: "" })
         .then((res) => {
@@ -160,10 +160,9 @@ const ConfigModal: React.FC<{
       })
         .then((res) => {
           message.success("保存成功");
-          console.log(res.data.data.global_config);
-          setGlobalConfig(res.data.data.global_config);
+          res.data.data && setGlobalConfig(res.data.data.global_config);
           setEditMode(false);
-          loadDefaultValues(item?.id);
+          item?.id && loadDefaultValues(item.id);
         })
         .catch((e) => {
           message.error(e.response.data.message);

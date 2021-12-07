@@ -239,7 +239,10 @@ func PackageChart(path string, destDir string) (string, error) {
 		newPackage.Destination = destDir
 	}
 
-	chartLocal, _ := loader.LoadDir(path)
+	chartLocal, err := loader.LoadDir(path)
+	if err != nil {
+		return "", err
+	}
 	if chartLocal.Metadata.Dependencies != nil && action.CheckDependencies(chartLocal, chartLocal.Metadata.Dependencies) != nil {
 		// 更新依赖 dependency, 防止没有依赖文件打包失败
 		downloadManager := &downloader.Manager{

@@ -13,6 +13,7 @@ import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
 import { message } from "antd";
 import { setUid } from "../utils/uid";
+import pb from "../api/compiled";
 
 export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
@@ -65,7 +66,7 @@ export const setShellSessionId = (id: string, sessionID: string) => ({
     sessionID: sessionID,
   },
 });
-export const setShellLog = (id: string, log: string) => ({
+export const setShellLog = (id: string, log: pb.TerminalMessage) => ({
   type: SET_SHELL_LOG,
   data: {
     id: id,
@@ -73,40 +74,45 @@ export const setShellLog = (id: string, log: string) => ({
   },
 });
 
-export const setClusterInfo = (info: API.ClusterInfo) => ({
+export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
 
-export const handleEvents = (id: string, data: API.WsResponse) => {
+export const handleEvents = (
+  id: string,
+  data: pb.ResponseMetadata,
+  input: any
+) => {
   return function (dispatch: Dispatch) {
-    switch (data.type) {
-      case "set_uid":
+    switch (data.type.valueOf()) {
+      case pb.Type.SetUid:
         setUid(data.data);
         break;
-      case "cluster_info_sync":
-        dispatch(setClusterInfo(JSON.parse(data.data) as API.ClusterInfo))
+      case pb.Type.ClusterInfoSync:
+        let info = pb.WsHandleClusterResponse.decode(input)
+        info.info && dispatch(setClusterInfo(info.info));
         break;
-      case "reload_projects":
+      case pb.Type.ReloadProjects:
         dispatch(setNamespaceReload(true));
         break;
-      case "update_project":
+      case pb.Type.UpdateProject:
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
         console.log("update_project", data);
 
         if (data.end) {
           switch (data.result) {
-            case "deployed":
+            case pb.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeployUpdateSuccess));
               message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
-            case "deployed_canceled":
+            case pb.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
               message.error("部署已取消");
               break;
-            case "deployed_failed":
+            case pb.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(appendCreateProjectLog(id, "部署失败"));
@@ -116,23 +122,23 @@ export const handleEvents = (id: string, data: API.WsResponse) => {
           dispatch(setCreateProjectLoading(id, false));
         }
         break;
-      case "create_project":
+      case pb.Type.CreateProject:
         console.log("create_project", data);
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
 
         if (data.end) {
           switch (data.result) {
-            case "deployed":
+            case pb.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
               message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
-            case "deployed_canceled":
+            case pb.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
               message.error("部署已取消");
               break;
-            case "deployed_failed":
+            case pb.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(appendCreateProjectLog(id, "部署失败"));
@@ -145,22 +151,31 @@ export const handleEvents = (id: string, data: API.WsResponse) => {
           }, 1000);
         }
         break;
-      case "process_percent":
+      case pb.Type.ProcessPercent:
         dispatch(setProcessPercent(id, Number(data.data)));
         break;
-      case "handle_exec_shell":
-        console.log(data.data)
-        if (data.result === "error") {
-          message.error(data.data)
-          break
+      case pb.Type.HandleExecShell:
+        if (data.result === pb.ResultType.Error) {
+          message.error(data.data);
+          break;
         }
-        let res = (JSON.parse(data.data) as API.WsHandleExecShellResponse)
-        dispatch(setShellSessionId(`${res.namespace}|${res.pod}|${res.container}`, res.session_id));
+        let res = pb.WsHandleShellResponse.decode(input);
+
+        (res.container && res.terminal_message) && dispatch(
+          setShellSessionId(
+            `${res.container.namespace}|${res.container.pod}|${res.container.container}`,
+            res.terminal_message.session_id
+          )
+        );
         break;
-      case "handle_exec_shell_msg":
-        console.log("handle_exec_shell_msg", data.data)
-        let logRes = (JSON.parse(data.data) as API.WsHandleExecShellResponse)
-        dispatch(setShellLog(`${logRes.namespace}|${logRes.pod}|${logRes.container}`, data.data))
+      case pb.Type.HandleExecShellMsg:
+        let logRes = pb.WsHandleShellResponse.decode(input);
+        (logRes.container && logRes.terminal_message)  && dispatch(
+          setShellLog(
+            `${logRes.container.namespace}|${logRes.container.pod}|${logRes.container.container}`,
+            logRes.terminal_message,
+          )
+        );
         break;
       default:
         console.log("unknown event: ", data.type);
