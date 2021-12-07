@@ -201,7 +201,7 @@ func write(wsconn *WsConn) error {
 				return err
 			}
 		case <-ticker.C:
-			mlog.Debugf("[Websocket]:tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
+			mlog.Debugf("[Websocket]: tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
 			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return err
@@ -215,14 +215,14 @@ func read(wsconn *WsConn) error {
 	wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.conn.SetPongHandler(func(string) error {
 		wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
-		mlog.Debugf("[Websocket]:收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
+		mlog.Debugf("[Websocket]: 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
 		return nil
 	})
 	for {
 		var wsRequest websocket_pb.WsRequestMetadata
 		_, message, err := wsconn.conn.ReadMessage()
 		if err != nil {
-			mlog.Debugf("[Websocket]:read error: %v", err)
+			mlog.Debugf("[Websocket]: read error: %v", err)
 			return err
 		}
 		if err := proto.Unmarshal(message, &wsRequest); err != nil {
@@ -270,7 +270,7 @@ func HandleWsHandleCloseShell(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	mlog.Debugf("[Websocket]:%v 收到客户端主动断开的消息", input.Message.SessionId)
+	mlog.Debugf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
 	c.terminalSessions.Close(input.Message.SessionId, 0, "")
 }
 
@@ -302,7 +302,7 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	mlog.Debugf("[Websocket]:收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
+	mlog.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
 
 	NewMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.ResponseMetadata{

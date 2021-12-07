@@ -139,7 +139,7 @@ func (p *memoryPubSub) ToOthers(wsResponse proto.Message) error {
 }
 
 func (p *memoryPubSub) Close() error {
-	mlog.Debugf(fmt.Sprintf("[Websocket]:Closed, uid: %s, id: %s", p.uid, p.id))
+	mlog.Debugf(fmt.Sprintf("[Websocket]: Closed, uid: %s, id: %s", p.uid, p.id))
 	p.manager.Delete(p.uid, p.id)
 	return nil
 }

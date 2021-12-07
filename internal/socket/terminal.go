@@ -264,7 +264,7 @@ func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
 }
 
 func (sm *SessionMap) CloseAll() {
-	mlog.Debug("[Websocket]:close all.")
+	mlog.Debug("[Websocket]: close all.")
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 
@@ -278,7 +278,7 @@ func (sm *SessionMap) CloseAll() {
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
-	mlog.Debugf("[Websocket]:session %v closed, reason: %s.", sessionId, reason)
+	mlog.Debugf("[Websocket]: session %v closed, reason: %s.", sessionId, reason)
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	if s, ok := sm.Sessions[sessionId]; ok {
@@ -367,7 +367,7 @@ func silence(err error) bool {
 func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
 	defer func() {
 		utils.HandlePanic("Websocket: WaitForTerminal")
-		mlog.Debugf("[Websocket]:WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
+		mlog.Debugf("[Websocket]: WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}

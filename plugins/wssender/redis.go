@@ -71,7 +71,7 @@ type rdsPubSub struct {
 }
 
 func (p *rdsPubSub) Close() error {
-	mlog.Debugf("[Websocket]:Closed, uid: %v id: %v", p.uid, p.id)
+	mlog.Debugf("[Websocket]: Closed, uid: %v id: %v", p.uid, p.id)
 	close(p.close)
 	return nil
 }
@@ -105,7 +105,7 @@ func (p *rdsPubSub) ToOthers(wsResponse proto.Message) error {
 func (p *rdsPubSub) Subscribe() <-chan []byte {
 	ps := p.rds.Subscribe(context.TODO(), p.id, BroadcastRoom)
 	channel := ps.Channel()
-	mlog.Debugf("[Websocket]:Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
+	mlog.Debugf("[Websocket]: Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
 	go func() {
 		for {
 			select {
@@ -128,7 +128,7 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 				}
 			case <-p.close:
 				ps.Close()
-				mlog.Debugf("[Websocket]:redis channel closed, uid: %s, id: %v", p.uid, p.id)
+				mlog.Debugf("[Websocket]: redis channel closed, uid: %s, id: %v", p.uid, p.id)
 				return
 			}
 		}
