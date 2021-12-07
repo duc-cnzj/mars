@@ -25,8 +25,8 @@ pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../internal/grp
   --no-convert \
   --no-create \
   --force-number \
-  --force-message
-#  --no-delimited
+  --force-message \
+  --no-delimited
 #  --no-encode \
 #  --no-decode \
 
