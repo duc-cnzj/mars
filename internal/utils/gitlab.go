@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 	var files []string
 
+	id := fmt.Sprintf("%v", pid)
+
 	// TODO: 坑, GitlabClient().Repositories.ListTree 带分页！！凸(艹皿艹 )
 	opt := &gitlab.ListTreeOptions{
 		ListOptions: gitlab.ListOptions{
@@ -27,7 +30,7 @@ func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 		opt.Ref = gitlab.String(commit)
 	}
 
-	tree, _, _ := app.GitlabClient().Repositories.ListTree(pid, opt)
+	tree, _, _ := app.GitlabClient().Repositories.ListTree(id, opt)
 
 	for _, node := range tree {
 		if node.Type == "blob" {
@@ -38,16 +41,17 @@ func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
 	return files
 }
 
-func DownloadFiles(pid interface{}, commit string, files []string) (string, func()) {
+func DownloadFiles(pid interface{}, commit string, files []string) (string, func(), error) {
+	id := fmt.Sprintf("%v", pid)
 	dir, err := os.MkdirTemp("", "mars_tmp_*")
 	if err != nil {
-		return "", nil
+		return "", nil, err
 	}
 
-	return DownloadFilesToDir(pid, commit, files, dir)
+	return DownloadFilesToDir(id, commit, files, dir)
 }
 
-func DownloadFilesToDir(pid interface{}, commit string, files []string, dir string) (string, func()) {
+func DownloadFilesToDir(pid interface{}, commit string, files []string, dir string) (string, func(), error) {
 	wg := &sync.WaitGroup{}
 	wg.Add(len(files))
 	for _, file := range files {
@@ -86,7 +90,7 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 			}
 			mlog.Debug("remove " + dir)
 		}
-	}
+	}, nil
 }
 
 func GetAllBranches(pid interface{}, options ...gitlab.RequestOptionFunc) ([]*gitlab.Branch, error) {

@@ -3,6 +3,10 @@ package wssender
 import (
 	"errors"
 
+	"google.golang.org/protobuf/proto"
+
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+
 	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -67,7 +71,7 @@ type nsq struct {
 	uid, id           string
 	consumers         []*gonsq.Consumer
 	producer          *gonsq.Producer
-	msgCh             chan string
+	msgCh             chan []byte
 }
 
 func (n *nsq) Info() interface{} {
@@ -82,33 +86,30 @@ func (n *nsq) ID() string {
 	return n.id
 }
 
-func (n *nsq) ToSelf(response *plugins.WsResponse) error {
-	response.To = plugins.ToSelf
-	return n.producer.Publish(n.ephemeralID(), response.EncodeToBytes())
+func (n *nsq) ToSelf(response proto.Message) error {
+	return n.producer.Publish(n.ephemeralID(), plugins.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
 }
 
-func (n *nsq) ToAll(response *plugins.WsResponse) error {
-	response.To = plugins.ToAll
-	return n.producer.Publish(ephemeralBroadroom, response.EncodeToBytes())
+func (n *nsq) ToAll(response proto.Message) error {
+	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
 }
 
-func (n *nsq) ToOthers(response *plugins.WsResponse) error {
-	response.To = plugins.ToOthers
-	return n.producer.Publish(ephemeralBroadroom, response.EncodeToBytes())
+func (n *nsq) ToOthers(response proto.Message) error {
+	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
 }
 
 func (n *nsq) ephemeralID() string {
 	return n.ID() + "#ephemeral"
 }
 
-func (n *nsq) Subscribe() <-chan string {
+func (n *nsq) Subscribe() <-chan []byte {
 	consumerAll, _ := gonsq.NewConsumer(ephemeralBroadroom, n.ephemeralID(), n.cfg)
 	consumer, _ := gonsq.NewConsumer(n.ephemeralID(), n.ephemeralID(), n.cfg)
 	setLogLevel(consumer)
 	setLogLevel(consumerAll)
 	n.consumers = []*gonsq.Consumer{consumer, consumerAll}
 
-	ch := make(chan string, messageChSize)
+	ch := make(chan []byte, messageChSize)
 	n.msgCh = ch
 	h := &handler{msgCh: ch, id: n.id}
 	consumer.AddHandler(h)
@@ -139,23 +140,22 @@ func (n *nsq) Close() error {
 
 type handler struct {
 	id    string
-	msgCh chan string
+	msgCh chan []byte
 }
 
 func (h *handler) HandleMessage(m *gonsq.Message) error {
 	if len(m.Body) == 0 {
 		return nil
 	}
-	res := decodeMsg(string(m.Body))
-	mlog.Debugf("[Websocket] receive msg %s", res.Data)
-	switch res.To {
+	message, _ := plugins.DecodeMessage(m.Body)
+	switch message.To {
 	case plugins.ToSelf:
 		fallthrough
 	case plugins.ToAll:
-		h.msgCh <- res.EncodeToString()
+		h.msgCh <- message.Data
 	case plugins.ToOthers:
-		if res.To == plugins.ToOthers && res.ID != h.id {
-			h.msgCh <- res.EncodeToString()
+		if message.To == plugins.ToOthers && message.ID != h.id {
+			h.msgCh <- message.Data
 		}
 	}
 

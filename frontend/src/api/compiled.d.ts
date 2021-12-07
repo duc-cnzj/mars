@@ -23,6 +23,41 @@ export class LoginRequest implements ILoginRequest {
 
     /** LoginRequest password. */
     public password: string;
+
+    /**
+     * Encodes the specified LoginRequest message. Does not implicitly {@link LoginRequest.verify|verify} messages.
+     * @param message LoginRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: LoginRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified LoginRequest message, length delimited. Does not implicitly {@link LoginRequest.verify|verify} messages.
+     * @param message LoginRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: LoginRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a LoginRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns LoginRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): LoginRequest;
+
+    /**
+     * Decodes a LoginRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns LoginRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): LoginRequest;
 }
 
 /** Properties of a LoginResponse. */
@@ -32,7 +67,7 @@ export interface ILoginResponse {
     token?: (string|null);
 
     /** LoginResponse expires_in */
-    expires_in?: (number|Long|null);
+    expires_in?: (number|null);
 }
 
 /** Represents a LoginResponse. */
@@ -48,7 +83,42 @@ export class LoginResponse implements ILoginResponse {
     public token: string;
 
     /** LoginResponse expires_in. */
-    public expires_in: (number|Long);
+    public expires_in: number;
+
+    /**
+     * Encodes the specified LoginResponse message. Does not implicitly {@link LoginResponse.verify|verify} messages.
+     * @param message LoginResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: LoginResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified LoginResponse message, length delimited. Does not implicitly {@link LoginResponse.verify|verify} messages.
+     * @param message LoginResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: LoginResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a LoginResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns LoginResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): LoginResponse;
+
+    /**
+     * Decodes a LoginResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns LoginResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): LoginResponse;
 }
 
 /** Properties of an InfoResponse. */
@@ -99,6 +169,41 @@ export class InfoResponse implements IInfoResponse {
 
     /** InfoResponse roles. */
     public roles: string[];
+
+    /**
+     * Encodes the specified InfoResponse message. Does not implicitly {@link InfoResponse.verify|verify} messages.
+     * @param message InfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: InfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified InfoResponse message, length delimited. Does not implicitly {@link InfoResponse.verify|verify} messages.
+     * @param message InfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: InfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an InfoResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns InfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): InfoResponse;
+
+    /**
+     * Decodes an InfoResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns InfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): InfoResponse;
 }
 
 /** Properties of an OidcSetting. */
@@ -143,13 +248,48 @@ export class OidcSetting implements IOidcSetting {
 
     /** OidcSetting state. */
     public state: string;
+
+    /**
+     * Encodes the specified OidcSetting message. Does not implicitly {@link OidcSetting.verify|verify} messages.
+     * @param message OidcSetting message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: OidcSetting, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified OidcSetting message, length delimited. Does not implicitly {@link OidcSetting.verify|verify} messages.
+     * @param message OidcSetting message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: OidcSetting, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an OidcSetting message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns OidcSetting
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): OidcSetting;
+
+    /**
+     * Decodes an OidcSetting message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns OidcSetting
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): OidcSetting;
 }
 
 /** Properties of a SettingsResponse. */
 export interface ISettingsResponse {
 
     /** SettingsResponse items */
-    items?: (IOidcSetting[]|null);
+    items?: (OidcSetting[]|null);
 }
 
 /** Represents a SettingsResponse. */
@@ -162,7 +302,42 @@ export class SettingsResponse implements ISettingsResponse {
     constructor(properties?: ISettingsResponse);
 
     /** SettingsResponse items. */
-    public items: IOidcSetting[];
+    public items: OidcSetting[];
+
+    /**
+     * Encodes the specified SettingsResponse message. Does not implicitly {@link SettingsResponse.verify|verify} messages.
+     * @param message SettingsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: SettingsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified SettingsResponse message, length delimited. Does not implicitly {@link SettingsResponse.verify|verify} messages.
+     * @param message SettingsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: SettingsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a SettingsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns SettingsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): SettingsResponse;
+
+    /**
+     * Decodes a SettingsResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns SettingsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): SettingsResponse;
 }
 
 /** Properties of an ExchangeRequest. */
@@ -183,6 +358,41 @@ export class ExchangeRequest implements IExchangeRequest {
 
     /** ExchangeRequest code. */
     public code: string;
+
+    /**
+     * Encodes the specified ExchangeRequest message. Does not implicitly {@link ExchangeRequest.verify|verify} messages.
+     * @param message ExchangeRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ExchangeRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ExchangeRequest message, length delimited. Does not implicitly {@link ExchangeRequest.verify|verify} messages.
+     * @param message ExchangeRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ExchangeRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an ExchangeRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ExchangeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExchangeRequest;
+
+    /**
+     * Decodes an ExchangeRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ExchangeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ExchangeRequest;
 }
 
 /** Represents an Auth */
@@ -201,56 +411,56 @@ export class Auth extends $protobuf.rpc.Service {
      * @param request LoginRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and LoginResponse
      */
-    public login(request: ILoginRequest, callback: Auth.LoginCallback): void;
+    public login(request: LoginRequest, callback: Auth.LoginCallback): void;
 
     /**
      * Calls Login.
      * @param request LoginRequest message or plain object
      * @returns Promise
      */
-    public login(request: ILoginRequest): Promise<LoginResponse>;
+    public login(request: LoginRequest): Promise<LoginResponse>;
 
     /**
      * Calls Info.
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and InfoResponse
      */
-    public info(request: google.protobuf.IEmpty, callback: Auth.InfoCallback): void;
+    public info(request: google.protobuf.Empty, callback: Auth.InfoCallback): void;
 
     /**
      * Calls Info.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public info(request: google.protobuf.IEmpty): Promise<InfoResponse>;
+    public info(request: google.protobuf.Empty): Promise<InfoResponse>;
 
     /**
      * Calls Settings.
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and SettingsResponse
      */
-    public settings(request: google.protobuf.IEmpty, callback: Auth.SettingsCallback): void;
+    public settings(request: google.protobuf.Empty, callback: Auth.SettingsCallback): void;
 
     /**
      * Calls Settings.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public settings(request: google.protobuf.IEmpty): Promise<SettingsResponse>;
+    public settings(request: google.protobuf.Empty): Promise<SettingsResponse>;
 
     /**
      * Calls Exchange.
      * @param request ExchangeRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and LoginResponse
      */
-    public exchange(request: IExchangeRequest, callback: Auth.ExchangeCallback): void;
+    public exchange(request: ExchangeRequest, callback: Auth.ExchangeCallback): void;
 
     /**
      * Calls Exchange.
      * @param request ExchangeRequest message or plain object
      * @returns Promise
      */
-    public exchange(request: IExchangeRequest): Promise<LoginResponse>;
+    public exchange(request: ExchangeRequest): Promise<LoginResponse>;
 }
 
 export namespace Auth {
@@ -333,6 +543,41 @@ export class ClusterInfoResponse implements IClusterInfoResponse {
 
     /** ClusterInfoResponse request_cpu_rate. */
     public request_cpu_rate: string;
+
+    /**
+     * Encodes the specified ClusterInfoResponse message. Does not implicitly {@link ClusterInfoResponse.verify|verify} messages.
+     * @param message ClusterInfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ClusterInfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ClusterInfoResponse message, length delimited. Does not implicitly {@link ClusterInfoResponse.verify|verify} messages.
+     * @param message ClusterInfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ClusterInfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ClusterInfoResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ClusterInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ClusterInfoResponse;
+
+    /**
+     * Decodes a ClusterInfoResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ClusterInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ClusterInfoResponse;
 }
 
 /** Represents a Cluster */
@@ -351,14 +596,14 @@ export class Cluster extends $protobuf.rpc.Service {
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and ClusterInfoResponse
      */
-    public info(request: google.protobuf.IEmpty, callback: Cluster.InfoCallback): void;
+    public info(request: google.protobuf.Empty, callback: Cluster.InfoCallback): void;
 
     /**
      * Calls Info.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public info(request: google.protobuf.IEmpty): Promise<ClusterInfoResponse>;
+    public info(request: google.protobuf.Empty): Promise<ClusterInfoResponse>;
 }
 
 export namespace Cluster {
@@ -381,7 +626,7 @@ export class CopyToPodRequest implements ICopyToPodRequest {
     constructor(properties?: ICopyToPodRequest);
 
     /** CopyToPodRequest file_id. */
-    public file_id: (number|Long);
+    public file_id: number;
 
     /** CopyToPodRequest namespace. */
     public namespace: string;
@@ -391,6 +636,41 @@ export class CopyToPodRequest implements ICopyToPodRequest {
 
     /** CopyToPodRequest container. */
     public container: string;
+
+    /**
+     * Encodes the specified CopyToPodRequest message. Does not implicitly {@link CopyToPodRequest.verify|verify} messages.
+     * @param message CopyToPodRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CopyToPodRequest message, length delimited. Does not implicitly {@link CopyToPodRequest.verify|verify} messages.
+     * @param message CopyToPodRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CopyToPodRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CopyToPodRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CopyToPodRequest;
+
+    /**
+     * Decodes a CopyToPodRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CopyToPodRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CopyToPodRequest;
 }
 
 /** Represents a CopyToPodResponse. */
@@ -407,6 +687,41 @@ export class CopyToPodResponse implements ICopyToPodResponse {
 
     /** CopyToPodResponse output. */
     public output: string;
+
+    /**
+     * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
+     * @param message CopyToPodResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CopyToPodResponse message, length delimited. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
+     * @param message CopyToPodResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CopyToPodResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CopyToPodResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CopyToPodResponse;
+
+    /**
+     * Decodes a CopyToPodResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CopyToPodResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CopyToPodResponse;
 }
 
 /** Represents a Cp */
@@ -425,14 +740,14 @@ export class Cp extends $protobuf.rpc.Service {
      * @param request CopyToPodRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and CopyToPodResponse
      */
-    public copyToPod(request: ICopyToPodRequest, callback: Cp.CopyToPodCallback): void;
+    public copyToPod(request: CopyToPodRequest, callback: Cp.CopyToPodCallback): void;
 
     /**
      * Calls CopyToPod.
      * @param request CopyToPodRequest message or plain object
      * @returns Promise
      */
-    public copyToPod(request: ICopyToPodRequest): Promise<CopyToPodResponse>;
+    public copyToPod(request: CopyToPodRequest): Promise<CopyToPodResponse>;
 }
 
 export namespace Cp {
@@ -459,6 +774,41 @@ export class GitlabDestroyRequest implements IGitlabDestroyRequest {
 
     /** GitlabDestroyRequest project_id. */
     public project_id: string;
+
+    /**
+     * Encodes the specified GitlabDestroyRequest message. Does not implicitly {@link GitlabDestroyRequest.verify|verify} messages.
+     * @param message GitlabDestroyRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitlabDestroyRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified GitlabDestroyRequest message, length delimited. Does not implicitly {@link GitlabDestroyRequest.verify|verify} messages.
+     * @param message GitlabDestroyRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: GitlabDestroyRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitlabDestroyRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitlabDestroyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitlabDestroyRequest;
+
+    /**
+     * Decodes a GitlabDestroyRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns GitlabDestroyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): GitlabDestroyRequest;
 }
 
 /** Represents an EnableProjectRequest. */
@@ -472,6 +822,41 @@ export class EnableProjectRequest implements IEnableProjectRequest {
 
     /** EnableProjectRequest gitlab_project_id. */
     public gitlab_project_id: string;
+
+    /**
+     * Encodes the specified EnableProjectRequest message. Does not implicitly {@link EnableProjectRequest.verify|verify} messages.
+     * @param message EnableProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EnableProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified EnableProjectRequest message, length delimited. Does not implicitly {@link EnableProjectRequest.verify|verify} messages.
+     * @param message EnableProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: EnableProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EnableProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EnableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EnableProjectRequest;
+
+    /**
+     * Decodes an EnableProjectRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns EnableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): EnableProjectRequest;
 }
 
 /** Represents a DisableProjectRequest. */
@@ -485,6 +870,41 @@ export class DisableProjectRequest implements IDisableProjectRequest {
 
     /** DisableProjectRequest gitlab_project_id. */
     public gitlab_project_id: string;
+
+    /**
+     * Encodes the specified DisableProjectRequest message. Does not implicitly {@link DisableProjectRequest.verify|verify} messages.
+     * @param message DisableProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DisableProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified DisableProjectRequest message, length delimited. Does not implicitly {@link DisableProjectRequest.verify|verify} messages.
+     * @param message DisableProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: DisableProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DisableProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DisableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DisableProjectRequest;
+
+    /**
+     * Decodes a DisableProjectRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns DisableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): DisableProjectRequest;
 }
 
 /** Represents a GitlabProjectInfo. */
@@ -497,7 +917,7 @@ export class GitlabProjectInfo implements IGitlabProjectInfo {
     constructor(properties?: IGitlabProjectInfo);
 
     /** GitlabProjectInfo id. */
-    public id: (number|Long);
+    public id: number;
 
     /** GitlabProjectInfo name. */
     public name: string;
@@ -519,6 +939,41 @@ export class GitlabProjectInfo implements IGitlabProjectInfo {
 
     /** GitlabProjectInfo global_enabled. */
     public global_enabled: boolean;
+
+    /**
+     * Encodes the specified GitlabProjectInfo message. Does not implicitly {@link GitlabProjectInfo.verify|verify} messages.
+     * @param message GitlabProjectInfo message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitlabProjectInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified GitlabProjectInfo message, length delimited. Does not implicitly {@link GitlabProjectInfo.verify|verify} messages.
+     * @param message GitlabProjectInfo message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: GitlabProjectInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitlabProjectInfo message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitlabProjectInfo
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitlabProjectInfo;
+
+    /**
+     * Decodes a GitlabProjectInfo message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns GitlabProjectInfo
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): GitlabProjectInfo;
 }
 
 /** Represents a ProjectListResponse. */
@@ -531,7 +986,42 @@ export class ProjectListResponse implements IProjectListResponse {
     constructor(properties?: IProjectListResponse);
 
     /** ProjectListResponse data. */
-    public data: IGitlabProjectInfo[];
+    public data: GitlabProjectInfo[];
+
+    /**
+     * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
+     * @param message ProjectListResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectListResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectListResponse message, length delimited. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
+     * @param message ProjectListResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectListResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectListResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectListResponse;
+
+    /**
+     * Decodes a ProjectListResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectListResponse;
 }
 
 /** Represents an Option. */
@@ -560,6 +1050,41 @@ export class Option implements IOption {
 
     /** Option branch. */
     public branch: string;
+
+    /**
+     * Encodes the specified Option message. Does not implicitly {@link Option.verify|verify} messages.
+     * @param message Option message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: Option, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified Option message, length delimited. Does not implicitly {@link Option.verify|verify} messages.
+     * @param message Option message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: Option, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an Option message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Option
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Option;
+
+    /**
+     * Decodes an Option message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns Option
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Option;
 }
 
 /** Represents a ProjectsResponse. */
@@ -572,7 +1097,42 @@ export class ProjectsResponse implements IProjectsResponse {
     constructor(properties?: IProjectsResponse);
 
     /** ProjectsResponse data. */
-    public data: IOption[];
+    public data: Option[];
+
+    /**
+     * Encodes the specified ProjectsResponse message. Does not implicitly {@link ProjectsResponse.verify|verify} messages.
+     * @param message ProjectsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectsResponse message, length delimited. Does not implicitly {@link ProjectsResponse.verify|verify} messages.
+     * @param message ProjectsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectsResponse;
+
+    /**
+     * Decodes a ProjectsResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectsResponse;
 }
 
 /** Represents a BranchesRequest. */
@@ -586,6 +1146,41 @@ export class BranchesRequest implements IBranchesRequest {
 
     /** BranchesRequest project_id. */
     public project_id: string;
+
+    /**
+     * Encodes the specified BranchesRequest message. Does not implicitly {@link BranchesRequest.verify|verify} messages.
+     * @param message BranchesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: BranchesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BranchesRequest message, length delimited. Does not implicitly {@link BranchesRequest.verify|verify} messages.
+     * @param message BranchesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: BranchesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BranchesRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BranchesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BranchesRequest;
+
+    /**
+     * Decodes a BranchesRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BranchesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BranchesRequest;
 }
 
 /** Represents a BranchesResponse. */
@@ -598,7 +1193,42 @@ export class BranchesResponse implements IBranchesResponse {
     constructor(properties?: IBranchesResponse);
 
     /** BranchesResponse data. */
-    public data: IOption[];
+    public data: Option[];
+
+    /**
+     * Encodes the specified BranchesResponse message. Does not implicitly {@link BranchesResponse.verify|verify} messages.
+     * @param message BranchesResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: BranchesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BranchesResponse message, length delimited. Does not implicitly {@link BranchesResponse.verify|verify} messages.
+     * @param message BranchesResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: BranchesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BranchesResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BranchesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BranchesResponse;
+
+    /**
+     * Decodes a BranchesResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BranchesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BranchesResponse;
 }
 
 /** Represents a CommitsRequest. */
@@ -615,6 +1245,41 @@ export class CommitsRequest implements ICommitsRequest {
 
     /** CommitsRequest branch. */
     public branch: string;
+
+    /**
+     * Encodes the specified CommitsRequest message. Does not implicitly {@link CommitsRequest.verify|verify} messages.
+     * @param message CommitsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CommitsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CommitsRequest message, length delimited. Does not implicitly {@link CommitsRequest.verify|verify} messages.
+     * @param message CommitsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CommitsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CommitsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CommitsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CommitsRequest;
+
+    /**
+     * Decodes a CommitsRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CommitsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CommitsRequest;
 }
 
 /** Represents a CommitsResponse. */
@@ -627,7 +1292,42 @@ export class CommitsResponse implements ICommitsResponse {
     constructor(properties?: ICommitsResponse);
 
     /** CommitsResponse data. */
-    public data: IOption[];
+    public data: Option[];
+
+    /**
+     * Encodes the specified CommitsResponse message. Does not implicitly {@link CommitsResponse.verify|verify} messages.
+     * @param message CommitsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CommitsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CommitsResponse message, length delimited. Does not implicitly {@link CommitsResponse.verify|verify} messages.
+     * @param message CommitsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CommitsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CommitsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CommitsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CommitsResponse;
+
+    /**
+     * Decodes a CommitsResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CommitsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CommitsResponse;
 }
 
 /** Represents a CommitRequest. */
@@ -647,6 +1347,41 @@ export class CommitRequest implements ICommitRequest {
 
     /** CommitRequest commit. */
     public commit: string;
+
+    /**
+     * Encodes the specified CommitRequest message. Does not implicitly {@link CommitRequest.verify|verify} messages.
+     * @param message CommitRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CommitRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CommitRequest message, length delimited. Does not implicitly {@link CommitRequest.verify|verify} messages.
+     * @param message CommitRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CommitRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CommitRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CommitRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CommitRequest;
+
+    /**
+     * Decodes a CommitRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CommitRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CommitRequest;
 }
 
 /** Represents a CommitResponse. */
@@ -659,7 +1394,42 @@ export class CommitResponse implements ICommitResponse {
     constructor(properties?: ICommitResponse);
 
     /** CommitResponse data. */
-    public data?: (IOption|null);
+    public data?: (Option|null);
+
+    /**
+     * Encodes the specified CommitResponse message. Does not implicitly {@link CommitResponse.verify|verify} messages.
+     * @param message CommitResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CommitResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CommitResponse message, length delimited. Does not implicitly {@link CommitResponse.verify|verify} messages.
+     * @param message CommitResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CommitResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CommitResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CommitResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CommitResponse;
+
+    /**
+     * Decodes a CommitResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CommitResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CommitResponse;
 }
 
 /** Represents a PipelineInfoRequest. */
@@ -679,6 +1449,41 @@ export class PipelineInfoRequest implements IPipelineInfoRequest {
 
     /** PipelineInfoRequest commit. */
     public commit: string;
+
+    /**
+     * Encodes the specified PipelineInfoRequest message. Does not implicitly {@link PipelineInfoRequest.verify|verify} messages.
+     * @param message PipelineInfoRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: PipelineInfoRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PipelineInfoRequest message, length delimited. Does not implicitly {@link PipelineInfoRequest.verify|verify} messages.
+     * @param message PipelineInfoRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: PipelineInfoRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PipelineInfoRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PipelineInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PipelineInfoRequest;
+
+    /**
+     * Decodes a PipelineInfoRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PipelineInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PipelineInfoRequest;
 }
 
 /** Represents a PipelineInfoResponse. */
@@ -695,6 +1500,41 @@ export class PipelineInfoResponse implements IPipelineInfoResponse {
 
     /** PipelineInfoResponse web_url. */
     public web_url: string;
+
+    /**
+     * Encodes the specified PipelineInfoResponse message. Does not implicitly {@link PipelineInfoResponse.verify|verify} messages.
+     * @param message PipelineInfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: PipelineInfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PipelineInfoResponse message, length delimited. Does not implicitly {@link PipelineInfoResponse.verify|verify} messages.
+     * @param message PipelineInfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: PipelineInfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PipelineInfoResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PipelineInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PipelineInfoResponse;
+
+    /**
+     * Decodes a PipelineInfoResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PipelineInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PipelineInfoResponse;
 }
 
 /** Represents a ConfigFileRequest. */
@@ -711,6 +1551,41 @@ export class ConfigFileRequest implements IConfigFileRequest {
 
     /** ConfigFileRequest branch. */
     public branch: string;
+
+    /**
+     * Encodes the specified ConfigFileRequest message. Does not implicitly {@link ConfigFileRequest.verify|verify} messages.
+     * @param message ConfigFileRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ConfigFileRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ConfigFileRequest message, length delimited. Does not implicitly {@link ConfigFileRequest.verify|verify} messages.
+     * @param message ConfigFileRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ConfigFileRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ConfigFileRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ConfigFileRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ConfigFileRequest;
+
+    /**
+     * Decodes a ConfigFileRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ConfigFileRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ConfigFileRequest;
 }
 
 /** Represents a ConfigFileResponse. */
@@ -727,6 +1602,41 @@ export class ConfigFileResponse implements IConfigFileResponse {
 
     /** ConfigFileResponse type. */
     public type: string;
+
+    /**
+     * Encodes the specified ConfigFileResponse message. Does not implicitly {@link ConfigFileResponse.verify|verify} messages.
+     * @param message ConfigFileResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ConfigFileResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ConfigFileResponse message, length delimited. Does not implicitly {@link ConfigFileResponse.verify|verify} messages.
+     * @param message ConfigFileResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ConfigFileResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ConfigFileResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ConfigFileResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ConfigFileResponse;
+
+    /**
+     * Decodes a ConfigFileResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ConfigFileResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ConfigFileResponse;
 }
 
 /** Represents a Gitlab */
@@ -745,126 +1655,126 @@ export class Gitlab extends $protobuf.rpc.Service {
      * @param request EnableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and Empty
      */
-    public enableProject(request: IEnableProjectRequest, callback: Gitlab.EnableProjectCallback): void;
+    public enableProject(request: EnableProjectRequest, callback: Gitlab.EnableProjectCallback): void;
 
     /**
      * Calls EnableProject.
      * @param request EnableProjectRequest message or plain object
      * @returns Promise
      */
-    public enableProject(request: IEnableProjectRequest): Promise<google.protobuf.Empty>;
+    public enableProject(request: EnableProjectRequest): Promise<google.protobuf.Empty>;
 
     /**
      * Calls DisableProject.
      * @param request DisableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and Empty
      */
-    public disableProject(request: IDisableProjectRequest, callback: Gitlab.DisableProjectCallback): void;
+    public disableProject(request: DisableProjectRequest, callback: Gitlab.DisableProjectCallback): void;
 
     /**
      * Calls DisableProject.
      * @param request DisableProjectRequest message or plain object
      * @returns Promise
      */
-    public disableProject(request: IDisableProjectRequest): Promise<google.protobuf.Empty>;
+    public disableProject(request: DisableProjectRequest): Promise<google.protobuf.Empty>;
 
     /**
      * Calls ProjectList.
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectListResponse
      */
-    public projectList(request: google.protobuf.IEmpty, callback: Gitlab.ProjectListCallback): void;
+    public projectList(request: google.protobuf.Empty, callback: Gitlab.ProjectListCallback): void;
 
     /**
      * Calls ProjectList.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public projectList(request: google.protobuf.IEmpty): Promise<ProjectListResponse>;
+    public projectList(request: google.protobuf.Empty): Promise<ProjectListResponse>;
 
     /**
      * Calls Projects.
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectsResponse
      */
-    public projects(request: google.protobuf.IEmpty, callback: Gitlab.ProjectsCallback): void;
+    public projects(request: google.protobuf.Empty, callback: Gitlab.ProjectsCallback): void;
 
     /**
      * Calls Projects.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public projects(request: google.protobuf.IEmpty): Promise<ProjectsResponse>;
+    public projects(request: google.protobuf.Empty): Promise<ProjectsResponse>;
 
     /**
      * Calls Branches.
      * @param request BranchesRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and BranchesResponse
      */
-    public branches(request: IBranchesRequest, callback: Gitlab.BranchesCallback): void;
+    public branches(request: BranchesRequest, callback: Gitlab.BranchesCallback): void;
 
     /**
      * Calls Branches.
      * @param request BranchesRequest message or plain object
      * @returns Promise
      */
-    public branches(request: IBranchesRequest): Promise<BranchesResponse>;
+    public branches(request: BranchesRequest): Promise<BranchesResponse>;
 
     /**
      * Calls Commits.
      * @param request CommitsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and CommitsResponse
      */
-    public commits(request: ICommitsRequest, callback: Gitlab.CommitsCallback): void;
+    public commits(request: CommitsRequest, callback: Gitlab.CommitsCallback): void;
 
     /**
      * Calls Commits.
      * @param request CommitsRequest message or plain object
      * @returns Promise
      */
-    public commits(request: ICommitsRequest): Promise<CommitsResponse>;
+    public commits(request: CommitsRequest): Promise<CommitsResponse>;
 
     /**
      * Calls Commit.
      * @param request CommitRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and CommitResponse
      */
-    public commit(request: ICommitRequest, callback: Gitlab.CommitCallback): void;
+    public commit(request: CommitRequest, callback: Gitlab.CommitCallback): void;
 
     /**
      * Calls Commit.
      * @param request CommitRequest message or plain object
      * @returns Promise
      */
-    public commit(request: ICommitRequest): Promise<CommitResponse>;
+    public commit(request: CommitRequest): Promise<CommitResponse>;
 
     /**
      * Calls PipelineInfo.
      * @param request PipelineInfoRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and PipelineInfoResponse
      */
-    public pipelineInfo(request: IPipelineInfoRequest, callback: Gitlab.PipelineInfoCallback): void;
+    public pipelineInfo(request: PipelineInfoRequest, callback: Gitlab.PipelineInfoCallback): void;
 
     /**
      * Calls PipelineInfo.
      * @param request PipelineInfoRequest message or plain object
      * @returns Promise
      */
-    public pipelineInfo(request: IPipelineInfoRequest): Promise<PipelineInfoResponse>;
+    public pipelineInfo(request: PipelineInfoRequest): Promise<PipelineInfoResponse>;
 
     /**
      * Calls ConfigFile.
      * @param request ConfigFileRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ConfigFileResponse
      */
-    public configFile(request: IConfigFileRequest, callback: Gitlab.ConfigFileCallback): void;
+    public configFile(request: ConfigFileRequest, callback: Gitlab.ConfigFileCallback): void;
 
     /**
      * Calls ConfigFile.
      * @param request ConfigFileRequest message or plain object
      * @returns Promise
      */
-    public configFile(request: IConfigFileRequest): Promise<ConfigFileResponse>;
+    public configFile(request: ConfigFileRequest): Promise<ConfigFileResponse>;
 }
 
 export namespace Gitlab {
@@ -943,10 +1853,45 @@ export class MarsShowRequest implements IMarsShowRequest {
     constructor(properties?: IMarsShowRequest);
 
     /** MarsShowRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
 
     /** MarsShowRequest branch. */
     public branch: string;
+
+    /**
+     * Encodes the specified MarsShowRequest message. Does not implicitly {@link MarsShowRequest.verify|verify} messages.
+     * @param message MarsShowRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MarsShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified MarsShowRequest message, length delimited. Does not implicitly {@link MarsShowRequest.verify|verify} messages.
+     * @param message MarsShowRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: MarsShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MarsShowRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MarsShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsShowRequest;
+
+    /**
+     * Decodes a MarsShowRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns MarsShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): MarsShowRequest;
 }
 
 /** Represents a MarsShowResponse. */
@@ -963,6 +1908,41 @@ export class MarsShowResponse implements IMarsShowResponse {
 
     /** MarsShowResponse config. */
     public config: string;
+
+    /**
+     * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
+     * @param message MarsShowResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MarsShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified MarsShowResponse message, length delimited. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
+     * @param message MarsShowResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: MarsShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MarsShowResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MarsShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsShowResponse;
+
+    /**
+     * Decodes a MarsShowResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns MarsShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): MarsShowResponse;
 }
 
 /** Represents a GlobalConfigRequest. */
@@ -975,7 +1955,42 @@ export class GlobalConfigRequest implements IGlobalConfigRequest {
     constructor(properties?: IGlobalConfigRequest);
 
     /** GlobalConfigRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
+
+    /**
+     * Encodes the specified GlobalConfigRequest message. Does not implicitly {@link GlobalConfigRequest.verify|verify} messages.
+     * @param message GlobalConfigRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified GlobalConfigRequest message, length delimited. Does not implicitly {@link GlobalConfigRequest.verify|verify} messages.
+     * @param message GlobalConfigRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: GlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GlobalConfigRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GlobalConfigRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GlobalConfigRequest;
+
+    /**
+     * Decodes a GlobalConfigRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns GlobalConfigRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): GlobalConfigRequest;
 }
 
 /** Represents a GlobalConfigResponse. */
@@ -992,6 +2007,41 @@ export class GlobalConfigResponse implements IGlobalConfigResponse {
 
     /** GlobalConfigResponse config. */
     public config: string;
+
+    /**
+     * Encodes the specified GlobalConfigResponse message. Does not implicitly {@link GlobalConfigResponse.verify|verify} messages.
+     * @param message GlobalConfigResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified GlobalConfigResponse message, length delimited. Does not implicitly {@link GlobalConfigResponse.verify|verify} messages.
+     * @param message GlobalConfigResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: GlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GlobalConfigResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GlobalConfigResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GlobalConfigResponse;
+
+    /**
+     * Decodes a GlobalConfigResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns GlobalConfigResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): GlobalConfigResponse;
 }
 
 /** Represents a MarsUpdateRequest. */
@@ -1004,10 +2054,45 @@ export class MarsUpdateRequest implements IMarsUpdateRequest {
     constructor(properties?: IMarsUpdateRequest);
 
     /** MarsUpdateRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
 
     /** MarsUpdateRequest config. */
     public config: string;
+
+    /**
+     * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
+     * @param message MarsUpdateRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MarsUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified MarsUpdateRequest message, length delimited. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
+     * @param message MarsUpdateRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: MarsUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MarsUpdateRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MarsUpdateRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsUpdateRequest;
+
+    /**
+     * Decodes a MarsUpdateRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns MarsUpdateRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): MarsUpdateRequest;
 }
 
 /** Represents a MarsUpdateResponse. */
@@ -1020,7 +2105,42 @@ export class MarsUpdateResponse implements IMarsUpdateResponse {
     constructor(properties?: IMarsUpdateResponse);
 
     /** MarsUpdateResponse data. */
-    public data?: (IGitlabProjectModal|null);
+    public data?: (GitlabProjectModal|null);
+
+    /**
+     * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
+     * @param message MarsUpdateResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MarsUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified MarsUpdateResponse message, length delimited. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
+     * @param message MarsUpdateResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: MarsUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MarsUpdateResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MarsUpdateResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsUpdateResponse;
+
+    /**
+     * Decodes a MarsUpdateResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns MarsUpdateResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): MarsUpdateResponse;
 }
 
 /** Represents a ToggleEnabledRequest. */
@@ -1033,10 +2153,45 @@ export class ToggleEnabledRequest implements IToggleEnabledRequest {
     constructor(properties?: IToggleEnabledRequest);
 
     /** ToggleEnabledRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
 
     /** ToggleEnabledRequest enabled. */
     public enabled: boolean;
+
+    /**
+     * Encodes the specified ToggleEnabledRequest message. Does not implicitly {@link ToggleEnabledRequest.verify|verify} messages.
+     * @param message ToggleEnabledRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ToggleEnabledRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ToggleEnabledRequest message, length delimited. Does not implicitly {@link ToggleEnabledRequest.verify|verify} messages.
+     * @param message ToggleEnabledRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ToggleEnabledRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ToggleEnabledRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ToggleEnabledRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ToggleEnabledRequest;
+
+    /**
+     * Decodes a ToggleEnabledRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ToggleEnabledRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ToggleEnabledRequest;
 }
 
 /** Represents a DefaultChartValuesRequest. */
@@ -1049,10 +2204,45 @@ export class DefaultChartValuesRequest implements IDefaultChartValuesRequest {
     constructor(properties?: IDefaultChartValuesRequest);
 
     /** DefaultChartValuesRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
 
     /** DefaultChartValuesRequest branch. */
     public branch: string;
+
+    /**
+     * Encodes the specified DefaultChartValuesRequest message. Does not implicitly {@link DefaultChartValuesRequest.verify|verify} messages.
+     * @param message DefaultChartValuesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified DefaultChartValuesRequest message, length delimited. Does not implicitly {@link DefaultChartValuesRequest.verify|verify} messages.
+     * @param message DefaultChartValuesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: DefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DefaultChartValuesRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DefaultChartValuesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DefaultChartValuesRequest;
+
+    /**
+     * Decodes a DefaultChartValuesRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns DefaultChartValuesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): DefaultChartValuesRequest;
 }
 
 /** Represents a DefaultChartValues. */
@@ -1066,6 +2256,41 @@ export class DefaultChartValues implements IDefaultChartValues {
 
     /** DefaultChartValues value. */
     public value: string;
+
+    /**
+     * Encodes the specified DefaultChartValues message. Does not implicitly {@link DefaultChartValues.verify|verify} messages.
+     * @param message DefaultChartValues message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DefaultChartValues, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified DefaultChartValues message, length delimited. Does not implicitly {@link DefaultChartValues.verify|verify} messages.
+     * @param message DefaultChartValues message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: DefaultChartValues, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DefaultChartValues message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DefaultChartValues
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DefaultChartValues;
+
+    /**
+     * Decodes a DefaultChartValues message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns DefaultChartValues
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): DefaultChartValues;
 }
 
 /** Represents a Mars */
@@ -1084,70 +2309,70 @@ export class Mars extends $protobuf.rpc.Service {
      * @param request MarsShowRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and MarsShowResponse
      */
-    public show(request: IMarsShowRequest, callback: Mars.ShowCallback): void;
+    public show(request: MarsShowRequest, callback: Mars.ShowCallback): void;
 
     /**
      * Calls Show.
      * @param request MarsShowRequest message or plain object
      * @returns Promise
      */
-    public show(request: IMarsShowRequest): Promise<MarsShowResponse>;
+    public show(request: MarsShowRequest): Promise<MarsShowResponse>;
 
     /**
      * Calls GlobalConfig.
      * @param request GlobalConfigRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GlobalConfigResponse
      */
-    public globalConfig(request: IGlobalConfigRequest, callback: Mars.GlobalConfigCallback): void;
+    public globalConfig(request: GlobalConfigRequest, callback: Mars.GlobalConfigCallback): void;
 
     /**
      * Calls GlobalConfig.
      * @param request GlobalConfigRequest message or plain object
      * @returns Promise
      */
-    public globalConfig(request: IGlobalConfigRequest): Promise<GlobalConfigResponse>;
+    public globalConfig(request: GlobalConfigRequest): Promise<GlobalConfigResponse>;
 
     /**
      * Calls ToggleEnabled.
      * @param request ToggleEnabledRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and Empty
      */
-    public toggleEnabled(request: IToggleEnabledRequest, callback: Mars.ToggleEnabledCallback): void;
+    public toggleEnabled(request: ToggleEnabledRequest, callback: Mars.ToggleEnabledCallback): void;
 
     /**
      * Calls ToggleEnabled.
      * @param request ToggleEnabledRequest message or plain object
      * @returns Promise
      */
-    public toggleEnabled(request: IToggleEnabledRequest): Promise<google.protobuf.Empty>;
+    public toggleEnabled(request: ToggleEnabledRequest): Promise<google.protobuf.Empty>;
 
     /**
      * Calls Update.
      * @param request MarsUpdateRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and MarsUpdateResponse
      */
-    public update(request: IMarsUpdateRequest, callback: Mars.UpdateCallback): void;
+    public update(request: MarsUpdateRequest, callback: Mars.UpdateCallback): void;
 
     /**
      * Calls Update.
      * @param request MarsUpdateRequest message or plain object
      * @returns Promise
      */
-    public update(request: IMarsUpdateRequest): Promise<MarsUpdateResponse>;
+    public update(request: MarsUpdateRequest): Promise<MarsUpdateResponse>;
 
     /**
      * Calls GetDefaultChartValues.
      * @param request DefaultChartValuesRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and DefaultChartValues
      */
-    public getDefaultChartValues(request: IDefaultChartValuesRequest, callback: Mars.GetDefaultChartValuesCallback): void;
+    public getDefaultChartValues(request: DefaultChartValuesRequest, callback: Mars.GetDefaultChartValuesCallback): void;
 
     /**
      * Calls GetDefaultChartValues.
      * @param request DefaultChartValuesRequest message or plain object
      * @returns Promise
      */
-    public getDefaultChartValues(request: IDefaultChartValuesRequest): Promise<DefaultChartValues>;
+    public getDefaultChartValues(request: DefaultChartValuesRequest): Promise<DefaultChartValues>;
 }
 
 export namespace Mars {
@@ -1202,6 +2427,41 @@ export class ProjectByIDRequest implements IProjectByIDRequest {
 
     /** ProjectByIDRequest pod. */
     public pod: string;
+
+    /**
+     * Encodes the specified ProjectByIDRequest message. Does not implicitly {@link ProjectByIDRequest.verify|verify} messages.
+     * @param message ProjectByIDRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectByIDRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectByIDRequest message, length delimited. Does not implicitly {@link ProjectByIDRequest.verify|verify} messages.
+     * @param message ProjectByIDRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectByIDRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectByIDRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectByIDRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectByIDRequest;
+
+    /**
+     * Decodes a ProjectByIDRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectByIDRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectByIDRequest;
 }
 
 /** Represents a ProjectByIDResponse. */
@@ -1229,7 +2489,42 @@ export class ProjectByIDResponse implements IProjectByIDResponse {
     public time: string;
 
     /** ProjectByIDResponse length. */
-    public length: (number|Long);
+    public length: number;
+
+    /**
+     * Encodes the specified ProjectByIDResponse message. Does not implicitly {@link ProjectByIDResponse.verify|verify} messages.
+     * @param message ProjectByIDResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectByIDResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectByIDResponse message, length delimited. Does not implicitly {@link ProjectByIDResponse.verify|verify} messages.
+     * @param message ProjectByIDResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectByIDResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectByIDResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectByIDResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectByIDResponse;
+
+    /**
+     * Decodes a ProjectByIDResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectByIDResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectByIDResponse;
 }
 
 /** Represents a Metrics */
@@ -1248,14 +2543,14 @@ export class Metrics extends $protobuf.rpc.Service {
      * @param request ProjectByIDRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectByIDResponse
      */
-    public projectByID(request: IProjectByIDRequest, callback: Metrics.ProjectByIDCallback): void;
+    public projectByID(request: ProjectByIDRequest, callback: Metrics.ProjectByIDCallback): void;
 
     /**
      * Calls ProjectByID.
      * @param request ProjectByIDRequest message or plain object
      * @returns Promise
      */
-    public projectByID(request: IProjectByIDRequest): Promise<ProjectByIDResponse>;
+    public projectByID(request: ProjectByIDRequest): Promise<ProjectByIDResponse>;
 }
 
 export namespace Metrics {
@@ -1278,7 +2573,7 @@ export class GitlabProjectModal implements IGitlabProjectModal {
     constructor(properties?: IGitlabProjectModal);
 
     /** GitlabProjectModal id. */
-    public id: (number|Long);
+    public id: number;
 
     /** GitlabProjectModal default_branch. */
     public default_branch: string;
@@ -1287,7 +2582,7 @@ export class GitlabProjectModal implements IGitlabProjectModal {
     public name: string;
 
     /** GitlabProjectModal gitlab_project_id. */
-    public gitlab_project_id: (number|Long);
+    public gitlab_project_id: number;
 
     /** GitlabProjectModal enabled. */
     public enabled: boolean;
@@ -1299,13 +2594,48 @@ export class GitlabProjectModal implements IGitlabProjectModal {
     public global_config: string;
 
     /** GitlabProjectModal created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at?: (google.protobuf.Timestamp|null);
 
     /** GitlabProjectModal updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at?: (google.protobuf.Timestamp|null);
 
     /** GitlabProjectModal deleted_at. */
-    public deleted_at?: (google.protobuf.ITimestamp|null);
+    public deleted_at?: (google.protobuf.Timestamp|null);
+
+    /**
+     * Encodes the specified GitlabProjectModal message. Does not implicitly {@link GitlabProjectModal.verify|verify} messages.
+     * @param message GitlabProjectModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitlabProjectModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified GitlabProjectModal message, length delimited. Does not implicitly {@link GitlabProjectModal.verify|verify} messages.
+     * @param message GitlabProjectModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: GitlabProjectModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitlabProjectModal message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitlabProjectModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitlabProjectModal;
+
+    /**
+     * Decodes a GitlabProjectModal message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns GitlabProjectModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): GitlabProjectModal;
 }
 
 /** Represents a NamespaceModal. */
@@ -1318,7 +2648,7 @@ export class NamespaceModal implements INamespaceModal {
     constructor(properties?: INamespaceModal);
 
     /** NamespaceModal id. */
-    public id: (number|Long);
+    public id: number;
 
     /** NamespaceModal name. */
     public name: string;
@@ -1327,16 +2657,51 @@ export class NamespaceModal implements INamespaceModal {
     public image_pull_secrets: string[];
 
     /** NamespaceModal created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceModal updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceModal deleted_at. */
-    public deleted_at?: (google.protobuf.ITimestamp|null);
+    public deleted_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceModal projects. */
-    public projects: IProjectModal[];
+    public projects: ProjectModal[];
+
+    /**
+     * Encodes the specified NamespaceModal message. Does not implicitly {@link NamespaceModal.verify|verify} messages.
+     * @param message NamespaceModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NamespaceModal message, length delimited. Does not implicitly {@link NamespaceModal.verify|verify} messages.
+     * @param message NamespaceModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NamespaceModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceModal message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceModal;
+
+    /**
+     * Decodes a NamespaceModal message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NamespaceModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceModal;
 }
 
 /** Represents a ProjectModal. */
@@ -1349,13 +2714,13 @@ export class ProjectModal implements IProjectModal {
     constructor(properties?: IProjectModal);
 
     /** ProjectModal id. */
-    public id: (number|Long);
+    public id: number;
 
     /** ProjectModal name. */
     public name: string;
 
     /** ProjectModal gitlab_project_id. */
-    public gitlab_project_id: (number|Long);
+    public gitlab_project_id: number;
 
     /** ProjectModal gitlab_branch. */
     public gitlab_branch: string;
@@ -1376,22 +2741,57 @@ export class ProjectModal implements IProjectModal {
     public pod_selectors: string;
 
     /** ProjectModal namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** ProjectModal atomic. */
     public atomic: boolean;
 
     /** ProjectModal created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at?: (google.protobuf.Timestamp|null);
 
     /** ProjectModal updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at?: (google.protobuf.Timestamp|null);
 
     /** ProjectModal deleted_at. */
-    public deleted_at?: (google.protobuf.ITimestamp|null);
+    public deleted_at?: (google.protobuf.Timestamp|null);
 
     /** ProjectModal namespace. */
-    public namespace?: (INamespaceModal|null);
+    public namespace?: (NamespaceModal|null);
+
+    /**
+     * Encodes the specified ProjectModal message. Does not implicitly {@link ProjectModal.verify|verify} messages.
+     * @param message ProjectModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectModal message, length delimited. Does not implicitly {@link ProjectModal.verify|verify} messages.
+     * @param message ProjectModal message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectModal, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectModal message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectModal;
+
+    /**
+     * Decodes a ProjectModal message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectModal
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectModal;
 }
 
 /** Namespace google. */
@@ -1412,13 +2812,48 @@ export namespace google {
              * @param [properties] Properties to set
              */
             constructor(properties?: google.protobuf.IEmpty);
+
+            /**
+             * Encodes the specified Empty message. Does not implicitly {@link google.protobuf.Empty.verify|verify} messages.
+             * @param message Empty message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.Empty, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified Empty message, length delimited. Does not implicitly {@link google.protobuf.Empty.verify|verify} messages.
+             * @param message Empty message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.Empty, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an Empty message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns Empty
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.Empty;
+
+            /**
+             * Decodes an Empty message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns Empty
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.Empty;
         }
 
         /** Properties of a FileDescriptorSet. */
         interface IFileDescriptorSet {
 
             /** FileDescriptorSet file */
-            file?: (google.protobuf.IFileDescriptorProto[]|null);
+            file?: (google.protobuf.FileDescriptorProto[]|null);
         }
 
         /** Represents a FileDescriptorSet. */
@@ -1431,7 +2866,42 @@ export namespace google {
             constructor(properties?: google.protobuf.IFileDescriptorSet);
 
             /** FileDescriptorSet file. */
-            public file: google.protobuf.IFileDescriptorProto[];
+            public file: google.protobuf.FileDescriptorProto[];
+
+            /**
+             * Encodes the specified FileDescriptorSet message. Does not implicitly {@link google.protobuf.FileDescriptorSet.verify|verify} messages.
+             * @param message FileDescriptorSet message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.FileDescriptorSet, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FileDescriptorSet message, length delimited. Does not implicitly {@link google.protobuf.FileDescriptorSet.verify|verify} messages.
+             * @param message FileDescriptorSet message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.FileDescriptorSet, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FileDescriptorSet message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FileDescriptorSet
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileDescriptorSet;
+
+            /**
+             * Decodes a FileDescriptorSet message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FileDescriptorSet
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.FileDescriptorSet;
         }
 
         /** Properties of a FileDescriptorProto. */
@@ -1453,22 +2923,22 @@ export namespace google {
             weak_dependency?: (number[]|null);
 
             /** FileDescriptorProto message_type */
-            message_type?: (google.protobuf.IDescriptorProto[]|null);
+            message_type?: (google.protobuf.DescriptorProto[]|null);
 
             /** FileDescriptorProto enum_type */
-            enum_type?: (google.protobuf.IEnumDescriptorProto[]|null);
+            enum_type?: (google.protobuf.EnumDescriptorProto[]|null);
 
             /** FileDescriptorProto service */
-            service?: (google.protobuf.IServiceDescriptorProto[]|null);
+            service?: (google.protobuf.ServiceDescriptorProto[]|null);
 
             /** FileDescriptorProto extension */
-            extension?: (google.protobuf.IFieldDescriptorProto[]|null);
+            extension?: (google.protobuf.FieldDescriptorProto[]|null);
 
             /** FileDescriptorProto options */
-            options?: (google.protobuf.IFileOptions|null);
+            options?: (google.protobuf.FileOptions|null);
 
             /** FileDescriptorProto source_code_info */
-            source_code_info?: (google.protobuf.ISourceCodeInfo|null);
+            source_code_info?: (google.protobuf.SourceCodeInfo|null);
 
             /** FileDescriptorProto syntax */
             syntax?: (string|null);
@@ -1499,25 +2969,60 @@ export namespace google {
             public weak_dependency: number[];
 
             /** FileDescriptorProto message_type. */
-            public message_type: google.protobuf.IDescriptorProto[];
+            public message_type: google.protobuf.DescriptorProto[];
 
             /** FileDescriptorProto enum_type. */
-            public enum_type: google.protobuf.IEnumDescriptorProto[];
+            public enum_type: google.protobuf.EnumDescriptorProto[];
 
             /** FileDescriptorProto service. */
-            public service: google.protobuf.IServiceDescriptorProto[];
+            public service: google.protobuf.ServiceDescriptorProto[];
 
             /** FileDescriptorProto extension. */
-            public extension: google.protobuf.IFieldDescriptorProto[];
+            public extension: google.protobuf.FieldDescriptorProto[];
 
             /** FileDescriptorProto options. */
-            public options?: (google.protobuf.IFileOptions|null);
+            public options?: (google.protobuf.FileOptions|null);
 
             /** FileDescriptorProto source_code_info. */
-            public source_code_info?: (google.protobuf.ISourceCodeInfo|null);
+            public source_code_info?: (google.protobuf.SourceCodeInfo|null);
 
             /** FileDescriptorProto syntax. */
             public syntax: string;
+
+            /**
+             * Encodes the specified FileDescriptorProto message. Does not implicitly {@link google.protobuf.FileDescriptorProto.verify|verify} messages.
+             * @param message FileDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.FileDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FileDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.FileDescriptorProto.verify|verify} messages.
+             * @param message FileDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.FileDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FileDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FileDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileDescriptorProto;
+
+            /**
+             * Decodes a FileDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FileDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.FileDescriptorProto;
         }
 
         /** Properties of a DescriptorProto. */
@@ -1527,28 +3032,28 @@ export namespace google {
             name?: (string|null);
 
             /** DescriptorProto field */
-            field?: (google.protobuf.IFieldDescriptorProto[]|null);
+            field?: (google.protobuf.FieldDescriptorProto[]|null);
 
             /** DescriptorProto extension */
-            extension?: (google.protobuf.IFieldDescriptorProto[]|null);
+            extension?: (google.protobuf.FieldDescriptorProto[]|null);
 
             /** DescriptorProto nested_type */
-            nested_type?: (google.protobuf.IDescriptorProto[]|null);
+            nested_type?: (google.protobuf.DescriptorProto[]|null);
 
             /** DescriptorProto enum_type */
-            enum_type?: (google.protobuf.IEnumDescriptorProto[]|null);
+            enum_type?: (google.protobuf.EnumDescriptorProto[]|null);
 
             /** DescriptorProto extension_range */
-            extension_range?: (google.protobuf.DescriptorProto.IExtensionRange[]|null);
+            extension_range?: (google.protobuf.DescriptorProto.ExtensionRange[]|null);
 
             /** DescriptorProto oneof_decl */
-            oneof_decl?: (google.protobuf.IOneofDescriptorProto[]|null);
+            oneof_decl?: (google.protobuf.OneofDescriptorProto[]|null);
 
             /** DescriptorProto options */
-            options?: (google.protobuf.IMessageOptions|null);
+            options?: (google.protobuf.MessageOptions|null);
 
             /** DescriptorProto reserved_range */
-            reserved_range?: (google.protobuf.DescriptorProto.IReservedRange[]|null);
+            reserved_range?: (google.protobuf.DescriptorProto.ReservedRange[]|null);
 
             /** DescriptorProto reserved_name */
             reserved_name?: (string[]|null);
@@ -1567,31 +3072,66 @@ export namespace google {
             public name: string;
 
             /** DescriptorProto field. */
-            public field: google.protobuf.IFieldDescriptorProto[];
+            public field: google.protobuf.FieldDescriptorProto[];
 
             /** DescriptorProto extension. */
-            public extension: google.protobuf.IFieldDescriptorProto[];
+            public extension: google.protobuf.FieldDescriptorProto[];
 
             /** DescriptorProto nested_type. */
-            public nested_type: google.protobuf.IDescriptorProto[];
+            public nested_type: google.protobuf.DescriptorProto[];
 
             /** DescriptorProto enum_type. */
-            public enum_type: google.protobuf.IEnumDescriptorProto[];
+            public enum_type: google.protobuf.EnumDescriptorProto[];
 
             /** DescriptorProto extension_range. */
-            public extension_range: google.protobuf.DescriptorProto.IExtensionRange[];
+            public extension_range: google.protobuf.DescriptorProto.ExtensionRange[];
 
             /** DescriptorProto oneof_decl. */
-            public oneof_decl: google.protobuf.IOneofDescriptorProto[];
+            public oneof_decl: google.protobuf.OneofDescriptorProto[];
 
             /** DescriptorProto options. */
-            public options?: (google.protobuf.IMessageOptions|null);
+            public options?: (google.protobuf.MessageOptions|null);
 
             /** DescriptorProto reserved_range. */
-            public reserved_range: google.protobuf.DescriptorProto.IReservedRange[];
+            public reserved_range: google.protobuf.DescriptorProto.ReservedRange[];
 
             /** DescriptorProto reserved_name. */
             public reserved_name: string[];
+
+            /**
+             * Encodes the specified DescriptorProto message. Does not implicitly {@link google.protobuf.DescriptorProto.verify|verify} messages.
+             * @param message DescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.DescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified DescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.DescriptorProto.verify|verify} messages.
+             * @param message DescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.DescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a DescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns DescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto;
+
+            /**
+             * Decodes a DescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns DescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.DescriptorProto;
         }
 
         namespace DescriptorProto {
@@ -1620,6 +3160,41 @@ export namespace google {
 
                 /** ExtensionRange end. */
                 public end: number;
+
+                /**
+                 * Encodes the specified ExtensionRange message. Does not implicitly {@link google.protobuf.DescriptorProto.ExtensionRange.verify|verify} messages.
+                 * @param message ExtensionRange message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: google.protobuf.DescriptorProto.ExtensionRange, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ExtensionRange message, length delimited. Does not implicitly {@link google.protobuf.DescriptorProto.ExtensionRange.verify|verify} messages.
+                 * @param message ExtensionRange message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: google.protobuf.DescriptorProto.ExtensionRange, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an ExtensionRange message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns ExtensionRange
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto.ExtensionRange;
+
+                /**
+                 * Decodes an ExtensionRange message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns ExtensionRange
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.DescriptorProto.ExtensionRange;
             }
 
             /** Properties of a ReservedRange. */
@@ -1646,6 +3221,41 @@ export namespace google {
 
                 /** ReservedRange end. */
                 public end: number;
+
+                /**
+                 * Encodes the specified ReservedRange message. Does not implicitly {@link google.protobuf.DescriptorProto.ReservedRange.verify|verify} messages.
+                 * @param message ReservedRange message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: google.protobuf.DescriptorProto.ReservedRange, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified ReservedRange message, length delimited. Does not implicitly {@link google.protobuf.DescriptorProto.ReservedRange.verify|verify} messages.
+                 * @param message ReservedRange message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: google.protobuf.DescriptorProto.ReservedRange, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a ReservedRange message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns ReservedRange
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto.ReservedRange;
+
+                /**
+                 * Decodes a ReservedRange message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns ReservedRange
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.DescriptorProto.ReservedRange;
             }
         }
 
@@ -1680,7 +3290,7 @@ export namespace google {
             json_name?: (string|null);
 
             /** FieldDescriptorProto options */
-            options?: (google.protobuf.IFieldOptions|null);
+            options?: (google.protobuf.FieldOptions|null);
         }
 
         /** Represents a FieldDescriptorProto. */
@@ -1720,7 +3330,42 @@ export namespace google {
             public json_name: string;
 
             /** FieldDescriptorProto options. */
-            public options?: (google.protobuf.IFieldOptions|null);
+            public options?: (google.protobuf.FieldOptions|null);
+
+            /**
+             * Encodes the specified FieldDescriptorProto message. Does not implicitly {@link google.protobuf.FieldDescriptorProto.verify|verify} messages.
+             * @param message FieldDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.FieldDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FieldDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.FieldDescriptorProto.verify|verify} messages.
+             * @param message FieldDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.FieldDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FieldDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FieldDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FieldDescriptorProto;
+
+            /**
+             * Decodes a FieldDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FieldDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.FieldDescriptorProto;
         }
 
         namespace FieldDescriptorProto {
@@ -1762,7 +3407,7 @@ export namespace google {
             name?: (string|null);
 
             /** OneofDescriptorProto options */
-            options?: (google.protobuf.IOneofOptions|null);
+            options?: (google.protobuf.OneofOptions|null);
         }
 
         /** Represents an OneofDescriptorProto. */
@@ -1778,7 +3423,42 @@ export namespace google {
             public name: string;
 
             /** OneofDescriptorProto options. */
-            public options?: (google.protobuf.IOneofOptions|null);
+            public options?: (google.protobuf.OneofOptions|null);
+
+            /**
+             * Encodes the specified OneofDescriptorProto message. Does not implicitly {@link google.protobuf.OneofDescriptorProto.verify|verify} messages.
+             * @param message OneofDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.OneofDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified OneofDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.OneofDescriptorProto.verify|verify} messages.
+             * @param message OneofDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.OneofDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an OneofDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns OneofDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.OneofDescriptorProto;
+
+            /**
+             * Decodes an OneofDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns OneofDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.OneofDescriptorProto;
         }
 
         /** Properties of an EnumDescriptorProto. */
@@ -1788,10 +3468,10 @@ export namespace google {
             name?: (string|null);
 
             /** EnumDescriptorProto value */
-            value?: (google.protobuf.IEnumValueDescriptorProto[]|null);
+            value?: (google.protobuf.EnumValueDescriptorProto[]|null);
 
             /** EnumDescriptorProto options */
-            options?: (google.protobuf.IEnumOptions|null);
+            options?: (google.protobuf.EnumOptions|null);
         }
 
         /** Represents an EnumDescriptorProto. */
@@ -1807,10 +3487,45 @@ export namespace google {
             public name: string;
 
             /** EnumDescriptorProto value. */
-            public value: google.protobuf.IEnumValueDescriptorProto[];
+            public value: google.protobuf.EnumValueDescriptorProto[];
 
             /** EnumDescriptorProto options. */
-            public options?: (google.protobuf.IEnumOptions|null);
+            public options?: (google.protobuf.EnumOptions|null);
+
+            /**
+             * Encodes the specified EnumDescriptorProto message. Does not implicitly {@link google.protobuf.EnumDescriptorProto.verify|verify} messages.
+             * @param message EnumDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.EnumDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified EnumDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.EnumDescriptorProto.verify|verify} messages.
+             * @param message EnumDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.EnumDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an EnumDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns EnumDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumDescriptorProto;
+
+            /**
+             * Decodes an EnumDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns EnumDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.EnumDescriptorProto;
         }
 
         /** Properties of an EnumValueDescriptorProto. */
@@ -1823,7 +3538,7 @@ export namespace google {
             number?: (number|null);
 
             /** EnumValueDescriptorProto options */
-            options?: (google.protobuf.IEnumValueOptions|null);
+            options?: (google.protobuf.EnumValueOptions|null);
         }
 
         /** Represents an EnumValueDescriptorProto. */
@@ -1842,7 +3557,42 @@ export namespace google {
             public number: number;
 
             /** EnumValueDescriptorProto options. */
-            public options?: (google.protobuf.IEnumValueOptions|null);
+            public options?: (google.protobuf.EnumValueOptions|null);
+
+            /**
+             * Encodes the specified EnumValueDescriptorProto message. Does not implicitly {@link google.protobuf.EnumValueDescriptorProto.verify|verify} messages.
+             * @param message EnumValueDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.EnumValueDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified EnumValueDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.EnumValueDescriptorProto.verify|verify} messages.
+             * @param message EnumValueDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.EnumValueDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an EnumValueDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns EnumValueDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumValueDescriptorProto;
+
+            /**
+             * Decodes an EnumValueDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns EnumValueDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.EnumValueDescriptorProto;
         }
 
         /** Properties of a ServiceDescriptorProto. */
@@ -1852,10 +3602,10 @@ export namespace google {
             name?: (string|null);
 
             /** ServiceDescriptorProto method */
-            method?: (google.protobuf.IMethodDescriptorProto[]|null);
+            method?: (google.protobuf.MethodDescriptorProto[]|null);
 
             /** ServiceDescriptorProto options */
-            options?: (google.protobuf.IServiceOptions|null);
+            options?: (google.protobuf.ServiceOptions|null);
         }
 
         /** Represents a ServiceDescriptorProto. */
@@ -1871,10 +3621,45 @@ export namespace google {
             public name: string;
 
             /** ServiceDescriptorProto method. */
-            public method: google.protobuf.IMethodDescriptorProto[];
+            public method: google.protobuf.MethodDescriptorProto[];
 
             /** ServiceDescriptorProto options. */
-            public options?: (google.protobuf.IServiceOptions|null);
+            public options?: (google.protobuf.ServiceOptions|null);
+
+            /**
+             * Encodes the specified ServiceDescriptorProto message. Does not implicitly {@link google.protobuf.ServiceDescriptorProto.verify|verify} messages.
+             * @param message ServiceDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.ServiceDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified ServiceDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.ServiceDescriptorProto.verify|verify} messages.
+             * @param message ServiceDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.ServiceDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a ServiceDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns ServiceDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.ServiceDescriptorProto;
+
+            /**
+             * Decodes a ServiceDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns ServiceDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.ServiceDescriptorProto;
         }
 
         /** Properties of a MethodDescriptorProto. */
@@ -1890,7 +3675,7 @@ export namespace google {
             output_type?: (string|null);
 
             /** MethodDescriptorProto options */
-            options?: (google.protobuf.IMethodOptions|null);
+            options?: (google.protobuf.MethodOptions|null);
 
             /** MethodDescriptorProto client_streaming */
             client_streaming?: (boolean|null);
@@ -1918,13 +3703,48 @@ export namespace google {
             public output_type: string;
 
             /** MethodDescriptorProto options. */
-            public options?: (google.protobuf.IMethodOptions|null);
+            public options?: (google.protobuf.MethodOptions|null);
 
             /** MethodDescriptorProto client_streaming. */
             public client_streaming: boolean;
 
             /** MethodDescriptorProto server_streaming. */
             public server_streaming: boolean;
+
+            /**
+             * Encodes the specified MethodDescriptorProto message. Does not implicitly {@link google.protobuf.MethodDescriptorProto.verify|verify} messages.
+             * @param message MethodDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.MethodDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified MethodDescriptorProto message, length delimited. Does not implicitly {@link google.protobuf.MethodDescriptorProto.verify|verify} messages.
+             * @param message MethodDescriptorProto message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.MethodDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a MethodDescriptorProto message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns MethodDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MethodDescriptorProto;
+
+            /**
+             * Decodes a MethodDescriptorProto message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns MethodDescriptorProto
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.MethodDescriptorProto;
         }
 
         /** Properties of a FileOptions. */
@@ -1973,7 +3793,7 @@ export namespace google {
             csharp_namespace?: (string|null);
 
             /** FileOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents a FileOptions. */
@@ -2028,7 +3848,42 @@ export namespace google {
             public csharp_namespace: string;
 
             /** FileOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified FileOptions message. Does not implicitly {@link google.protobuf.FileOptions.verify|verify} messages.
+             * @param message FileOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.FileOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FileOptions message, length delimited. Does not implicitly {@link google.protobuf.FileOptions.verify|verify} messages.
+             * @param message FileOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.FileOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FileOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FileOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileOptions;
+
+            /**
+             * Decodes a FileOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FileOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.FileOptions;
         }
 
         namespace FileOptions {
@@ -2057,7 +3912,7 @@ export namespace google {
             map_entry?: (boolean|null);
 
             /** MessageOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents a MessageOptions. */
@@ -2082,7 +3937,42 @@ export namespace google {
             public map_entry: boolean;
 
             /** MessageOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified MessageOptions message. Does not implicitly {@link google.protobuf.MessageOptions.verify|verify} messages.
+             * @param message MessageOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.MessageOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified MessageOptions message, length delimited. Does not implicitly {@link google.protobuf.MessageOptions.verify|verify} messages.
+             * @param message MessageOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.MessageOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a MessageOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns MessageOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MessageOptions;
+
+            /**
+             * Decodes a MessageOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns MessageOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.MessageOptions;
         }
 
         /** Properties of a FieldOptions. */
@@ -2107,7 +3997,7 @@ export namespace google {
             weak?: (boolean|null);
 
             /** FieldOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents a FieldOptions. */
@@ -2138,7 +4028,42 @@ export namespace google {
             public weak: boolean;
 
             /** FieldOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified FieldOptions message. Does not implicitly {@link google.protobuf.FieldOptions.verify|verify} messages.
+             * @param message FieldOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.FieldOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FieldOptions message, length delimited. Does not implicitly {@link google.protobuf.FieldOptions.verify|verify} messages.
+             * @param message FieldOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.FieldOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FieldOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FieldOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FieldOptions;
+
+            /**
+             * Decodes a FieldOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FieldOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.FieldOptions;
         }
 
         namespace FieldOptions {
@@ -2162,7 +4087,7 @@ export namespace google {
         interface IOneofOptions {
 
             /** OneofOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents an OneofOptions. */
@@ -2175,7 +4100,42 @@ export namespace google {
             constructor(properties?: google.protobuf.IOneofOptions);
 
             /** OneofOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified OneofOptions message. Does not implicitly {@link google.protobuf.OneofOptions.verify|verify} messages.
+             * @param message OneofOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.OneofOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified OneofOptions message, length delimited. Does not implicitly {@link google.protobuf.OneofOptions.verify|verify} messages.
+             * @param message OneofOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.OneofOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an OneofOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns OneofOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.OneofOptions;
+
+            /**
+             * Decodes an OneofOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns OneofOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.OneofOptions;
         }
 
         /** Properties of an EnumOptions. */
@@ -2188,7 +4148,7 @@ export namespace google {
             deprecated?: (boolean|null);
 
             /** EnumOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents an EnumOptions. */
@@ -2207,7 +4167,42 @@ export namespace google {
             public deprecated: boolean;
 
             /** EnumOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified EnumOptions message. Does not implicitly {@link google.protobuf.EnumOptions.verify|verify} messages.
+             * @param message EnumOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.EnumOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified EnumOptions message, length delimited. Does not implicitly {@link google.protobuf.EnumOptions.verify|verify} messages.
+             * @param message EnumOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.EnumOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an EnumOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns EnumOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumOptions;
+
+            /**
+             * Decodes an EnumOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns EnumOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.EnumOptions;
         }
 
         /** Properties of an EnumValueOptions. */
@@ -2217,7 +4212,7 @@ export namespace google {
             deprecated?: (boolean|null);
 
             /** EnumValueOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents an EnumValueOptions. */
@@ -2233,7 +4228,42 @@ export namespace google {
             public deprecated: boolean;
 
             /** EnumValueOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified EnumValueOptions message. Does not implicitly {@link google.protobuf.EnumValueOptions.verify|verify} messages.
+             * @param message EnumValueOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.EnumValueOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified EnumValueOptions message, length delimited. Does not implicitly {@link google.protobuf.EnumValueOptions.verify|verify} messages.
+             * @param message EnumValueOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.EnumValueOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an EnumValueOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns EnumValueOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumValueOptions;
+
+            /**
+             * Decodes an EnumValueOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns EnumValueOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.EnumValueOptions;
         }
 
         /** Properties of a ServiceOptions. */
@@ -2243,7 +4273,7 @@ export namespace google {
             deprecated?: (boolean|null);
 
             /** ServiceOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
         }
 
         /** Represents a ServiceOptions. */
@@ -2259,7 +4289,42 @@ export namespace google {
             public deprecated: boolean;
 
             /** ServiceOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified ServiceOptions message. Does not implicitly {@link google.protobuf.ServiceOptions.verify|verify} messages.
+             * @param message ServiceOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.ServiceOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified ServiceOptions message, length delimited. Does not implicitly {@link google.protobuf.ServiceOptions.verify|verify} messages.
+             * @param message ServiceOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.ServiceOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a ServiceOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns ServiceOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.ServiceOptions;
+
+            /**
+             * Decodes a ServiceOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns ServiceOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.ServiceOptions;
         }
 
         /** Properties of a MethodOptions. */
@@ -2269,10 +4334,10 @@ export namespace google {
             deprecated?: (boolean|null);
 
             /** MethodOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.IUninterpretedOption[]|null);
+            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
 
             /** MethodOptions .google.api.http */
-            ".google.api.http"?: (google.api.IHttpRule|null);
+            ".google.api.http"?: (google.api.HttpRule|null);
         }
 
         /** Represents a MethodOptions. */
@@ -2288,23 +4353,58 @@ export namespace google {
             public deprecated: boolean;
 
             /** MethodOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.IUninterpretedOption[];
+            public uninterpreted_option: google.protobuf.UninterpretedOption[];
+
+            /**
+             * Encodes the specified MethodOptions message. Does not implicitly {@link google.protobuf.MethodOptions.verify|verify} messages.
+             * @param message MethodOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.MethodOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified MethodOptions message, length delimited. Does not implicitly {@link google.protobuf.MethodOptions.verify|verify} messages.
+             * @param message MethodOptions message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.MethodOptions, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a MethodOptions message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns MethodOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MethodOptions;
+
+            /**
+             * Decodes a MethodOptions message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns MethodOptions
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.MethodOptions;
         }
 
         /** Properties of an UninterpretedOption. */
         interface IUninterpretedOption {
 
             /** UninterpretedOption name */
-            name?: (google.protobuf.UninterpretedOption.INamePart[]|null);
+            name?: (google.protobuf.UninterpretedOption.NamePart[]|null);
 
             /** UninterpretedOption identifier_value */
             identifier_value?: (string|null);
 
             /** UninterpretedOption positive_int_value */
-            positive_int_value?: (number|Long|null);
+            positive_int_value?: (number|null);
 
             /** UninterpretedOption negative_int_value */
-            negative_int_value?: (number|Long|null);
+            negative_int_value?: (number|null);
 
             /** UninterpretedOption double_value */
             double_value?: (number|null);
@@ -2326,16 +4426,16 @@ export namespace google {
             constructor(properties?: google.protobuf.IUninterpretedOption);
 
             /** UninterpretedOption name. */
-            public name: google.protobuf.UninterpretedOption.INamePart[];
+            public name: google.protobuf.UninterpretedOption.NamePart[];
 
             /** UninterpretedOption identifier_value. */
             public identifier_value: string;
 
             /** UninterpretedOption positive_int_value. */
-            public positive_int_value: (number|Long);
+            public positive_int_value: number;
 
             /** UninterpretedOption negative_int_value. */
-            public negative_int_value: (number|Long);
+            public negative_int_value: number;
 
             /** UninterpretedOption double_value. */
             public double_value: number;
@@ -2345,6 +4445,41 @@ export namespace google {
 
             /** UninterpretedOption aggregate_value. */
             public aggregate_value: string;
+
+            /**
+             * Encodes the specified UninterpretedOption message. Does not implicitly {@link google.protobuf.UninterpretedOption.verify|verify} messages.
+             * @param message UninterpretedOption message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.UninterpretedOption, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified UninterpretedOption message, length delimited. Does not implicitly {@link google.protobuf.UninterpretedOption.verify|verify} messages.
+             * @param message UninterpretedOption message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.UninterpretedOption, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an UninterpretedOption message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns UninterpretedOption
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.UninterpretedOption;
+
+            /**
+             * Decodes an UninterpretedOption message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns UninterpretedOption
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.UninterpretedOption;
         }
 
         namespace UninterpretedOption {
@@ -2373,6 +4508,41 @@ export namespace google {
 
                 /** NamePart is_extension. */
                 public is_extension: boolean;
+
+                /**
+                 * Encodes the specified NamePart message. Does not implicitly {@link google.protobuf.UninterpretedOption.NamePart.verify|verify} messages.
+                 * @param message NamePart message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: google.protobuf.UninterpretedOption.NamePart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified NamePart message, length delimited. Does not implicitly {@link google.protobuf.UninterpretedOption.NamePart.verify|verify} messages.
+                 * @param message NamePart message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: google.protobuf.UninterpretedOption.NamePart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a NamePart message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns NamePart
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.UninterpretedOption.NamePart;
+
+                /**
+                 * Decodes a NamePart message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns NamePart
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.UninterpretedOption.NamePart;
             }
         }
 
@@ -2380,7 +4550,7 @@ export namespace google {
         interface ISourceCodeInfo {
 
             /** SourceCodeInfo location */
-            location?: (google.protobuf.SourceCodeInfo.ILocation[]|null);
+            location?: (google.protobuf.SourceCodeInfo.Location[]|null);
         }
 
         /** Represents a SourceCodeInfo. */
@@ -2393,7 +4563,42 @@ export namespace google {
             constructor(properties?: google.protobuf.ISourceCodeInfo);
 
             /** SourceCodeInfo location. */
-            public location: google.protobuf.SourceCodeInfo.ILocation[];
+            public location: google.protobuf.SourceCodeInfo.Location[];
+
+            /**
+             * Encodes the specified SourceCodeInfo message. Does not implicitly {@link google.protobuf.SourceCodeInfo.verify|verify} messages.
+             * @param message SourceCodeInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.SourceCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified SourceCodeInfo message, length delimited. Does not implicitly {@link google.protobuf.SourceCodeInfo.verify|verify} messages.
+             * @param message SourceCodeInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.SourceCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a SourceCodeInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns SourceCodeInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.SourceCodeInfo;
+
+            /**
+             * Decodes a SourceCodeInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns SourceCodeInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.SourceCodeInfo;
         }
 
         namespace SourceCodeInfo {
@@ -2440,6 +4645,41 @@ export namespace google {
 
                 /** Location leading_detached_comments. */
                 public leading_detached_comments: string[];
+
+                /**
+                 * Encodes the specified Location message. Does not implicitly {@link google.protobuf.SourceCodeInfo.Location.verify|verify} messages.
+                 * @param message Location message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: google.protobuf.SourceCodeInfo.Location, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified Location message, length delimited. Does not implicitly {@link google.protobuf.SourceCodeInfo.Location.verify|verify} messages.
+                 * @param message Location message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: google.protobuf.SourceCodeInfo.Location, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a Location message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns Location
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.SourceCodeInfo.Location;
+
+                /**
+                 * Decodes a Location message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns Location
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.SourceCodeInfo.Location;
             }
         }
 
@@ -2447,7 +4687,7 @@ export namespace google {
         interface IGeneratedCodeInfo {
 
             /** GeneratedCodeInfo annotation */
-            annotation?: (google.protobuf.GeneratedCodeInfo.IAnnotation[]|null);
+            annotation?: (google.protobuf.GeneratedCodeInfo.Annotation[]|null);
         }
 
         /** Represents a GeneratedCodeInfo. */
@@ -2460,7 +4700,42 @@ export namespace google {
             constructor(properties?: google.protobuf.IGeneratedCodeInfo);
 
             /** GeneratedCodeInfo annotation. */
-            public annotation: google.protobuf.GeneratedCodeInfo.IAnnotation[];
+            public annotation: google.protobuf.GeneratedCodeInfo.Annotation[];
+
+            /**
+             * Encodes the specified GeneratedCodeInfo message. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.verify|verify} messages.
+             * @param message GeneratedCodeInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.GeneratedCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified GeneratedCodeInfo message, length delimited. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.verify|verify} messages.
+             * @param message GeneratedCodeInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.GeneratedCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a GeneratedCodeInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns GeneratedCodeInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.GeneratedCodeInfo;
+
+            /**
+             * Decodes a GeneratedCodeInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns GeneratedCodeInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.GeneratedCodeInfo;
         }
 
         namespace GeneratedCodeInfo {
@@ -2501,6 +4776,41 @@ export namespace google {
 
                 /** Annotation end. */
                 public end: number;
+
+                /**
+                 * Encodes the specified Annotation message. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.Annotation.verify|verify} messages.
+                 * @param message Annotation message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: google.protobuf.GeneratedCodeInfo.Annotation, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified Annotation message, length delimited. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.Annotation.verify|verify} messages.
+                 * @param message Annotation message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: google.protobuf.GeneratedCodeInfo.Annotation, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes an Annotation message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns Annotation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.GeneratedCodeInfo.Annotation;
+
+                /**
+                 * Decodes an Annotation message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns Annotation
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.GeneratedCodeInfo.Annotation;
             }
         }
 
@@ -2508,7 +4818,7 @@ export namespace google {
         interface ITimestamp {
 
             /** Timestamp seconds */
-            seconds?: (number|Long|null);
+            seconds?: (number|null);
 
             /** Timestamp nanos */
             nanos?: (number|null);
@@ -2524,10 +4834,45 @@ export namespace google {
             constructor(properties?: google.protobuf.ITimestamp);
 
             /** Timestamp seconds. */
-            public seconds: (number|Long);
+            public seconds: number;
 
             /** Timestamp nanos. */
             public nanos: number;
+
+            /**
+             * Encodes the specified Timestamp message. Does not implicitly {@link google.protobuf.Timestamp.verify|verify} messages.
+             * @param message Timestamp message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.protobuf.Timestamp, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified Timestamp message, length delimited. Does not implicitly {@link google.protobuf.Timestamp.verify|verify} messages.
+             * @param message Timestamp message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.protobuf.Timestamp, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a Timestamp message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns Timestamp
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.Timestamp;
+
+            /**
+             * Decodes a Timestamp message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns Timestamp
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.protobuf.Timestamp;
         }
     }
 
@@ -2538,7 +4883,7 @@ export namespace google {
         interface IHttp {
 
             /** Http rules */
-            rules?: (google.api.IHttpRule[]|null);
+            rules?: (google.api.HttpRule[]|null);
         }
 
         /** Represents a Http. */
@@ -2551,7 +4896,42 @@ export namespace google {
             constructor(properties?: google.api.IHttp);
 
             /** Http rules. */
-            public rules: google.api.IHttpRule[];
+            public rules: google.api.HttpRule[];
+
+            /**
+             * Encodes the specified Http message. Does not implicitly {@link google.api.Http.verify|verify} messages.
+             * @param message Http message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.api.Http, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified Http message, length delimited. Does not implicitly {@link google.api.Http.verify|verify} messages.
+             * @param message Http message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.api.Http, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a Http message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns Http
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.Http;
+
+            /**
+             * Decodes a Http message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns Http
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.api.Http;
         }
 
         /** Properties of a HttpRule. */
@@ -2573,7 +4953,7 @@ export namespace google {
             patch?: (string|null);
 
             /** HttpRule custom */
-            custom?: (google.api.ICustomHttpPattern|null);
+            custom?: (google.api.CustomHttpPattern|null);
 
             /** HttpRule selector */
             selector?: (string|null);
@@ -2582,7 +4962,7 @@ export namespace google {
             body?: (string|null);
 
             /** HttpRule additional_bindings */
-            additional_bindings?: (google.api.IHttpRule[]|null);
+            additional_bindings?: (google.api.HttpRule[]|null);
         }
 
         /** Represents a HttpRule. */
@@ -2610,7 +4990,7 @@ export namespace google {
             public patch?: (string|null);
 
             /** HttpRule custom. */
-            public custom?: (google.api.ICustomHttpPattern|null);
+            public custom?: (google.api.CustomHttpPattern|null);
 
             /** HttpRule selector. */
             public selector: string;
@@ -2619,10 +4999,45 @@ export namespace google {
             public body: string;
 
             /** HttpRule additional_bindings. */
-            public additional_bindings: google.api.IHttpRule[];
+            public additional_bindings: google.api.HttpRule[];
 
             /** HttpRule pattern. */
             public pattern?: ("get"|"put"|"post"|"delete"|"patch"|"custom");
+
+            /**
+             * Encodes the specified HttpRule message. Does not implicitly {@link google.api.HttpRule.verify|verify} messages.
+             * @param message HttpRule message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.api.HttpRule, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified HttpRule message, length delimited. Does not implicitly {@link google.api.HttpRule.verify|verify} messages.
+             * @param message HttpRule message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.api.HttpRule, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a HttpRule message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns HttpRule
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.HttpRule;
+
+            /**
+             * Decodes a HttpRule message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns HttpRule
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.api.HttpRule;
         }
 
         /** Properties of a CustomHttpPattern. */
@@ -2649,6 +5064,41 @@ export namespace google {
 
             /** CustomHttpPattern path. */
             public path: string;
+
+            /**
+             * Encodes the specified CustomHttpPattern message. Does not implicitly {@link google.api.CustomHttpPattern.verify|verify} messages.
+             * @param message CustomHttpPattern message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: google.api.CustomHttpPattern, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified CustomHttpPattern message, length delimited. Does not implicitly {@link google.api.CustomHttpPattern.verify|verify} messages.
+             * @param message CustomHttpPattern message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: google.api.CustomHttpPattern, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a CustomHttpPattern message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns CustomHttpPattern
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.CustomHttpPattern;
+
+            /**
+             * Decodes a CustomHttpPattern message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns CustomHttpPattern
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): google.api.CustomHttpPattern;
         }
     }
 }
@@ -2663,7 +5113,42 @@ export class NamespaceID implements INamespaceID {
     constructor(properties?: INamespaceID);
 
     /** NamespaceID namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified NamespaceID message. Does not implicitly {@link NamespaceID.verify|verify} messages.
+     * @param message NamespaceID message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceID, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NamespaceID message, length delimited. Does not implicitly {@link NamespaceID.verify|verify} messages.
+     * @param message NamespaceID message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NamespaceID, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceID message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceID
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceID;
+
+    /**
+     * Decodes a NamespaceID message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NamespaceID
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceID;
 }
 
 /** Represents a NamespaceResponse. */
@@ -2676,7 +5161,7 @@ export class NamespaceResponse implements INamespaceResponse {
     constructor(properties?: INamespaceResponse);
 
     /** NamespaceResponse id. */
-    public id: (number|Long);
+    public id: number;
 
     /** NamespaceResponse name. */
     public name: string;
@@ -2685,13 +5170,48 @@ export class NamespaceResponse implements INamespaceResponse {
     public image_pull_secrets: string[];
 
     /** NamespaceResponse created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceResponse updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceResponse deleted_at. */
-    public deleted_at?: (google.protobuf.ITimestamp|null);
+    public deleted_at?: (google.protobuf.Timestamp|null);
+
+    /**
+     * Encodes the specified NamespaceResponse message. Does not implicitly {@link NamespaceResponse.verify|verify} messages.
+     * @param message NamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NamespaceResponse message, length delimited. Does not implicitly {@link NamespaceResponse.verify|verify} messages.
+     * @param message NamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceResponse;
+
+    /**
+     * Decodes a NamespaceResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceResponse;
 }
 
 /** Represents a NamespaceItem. */
@@ -2704,19 +5224,54 @@ export class NamespaceItem implements INamespaceItem {
     constructor(properties?: INamespaceItem);
 
     /** NamespaceItem id. */
-    public id: (number|Long);
+    public id: number;
 
     /** NamespaceItem name. */
     public name: string;
 
     /** NamespaceItem created_at. */
-    public created_at?: (google.protobuf.ITimestamp|null);
+    public created_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceItem updated_at. */
-    public updated_at?: (google.protobuf.ITimestamp|null);
+    public updated_at?: (google.protobuf.Timestamp|null);
 
     /** NamespaceItem projects. */
-    public projects: NamespaceItem.ISimpleProjectItem[];
+    public projects: NamespaceItem.SimpleProjectItem[];
+
+    /**
+     * Encodes the specified NamespaceItem message. Does not implicitly {@link NamespaceItem.verify|verify} messages.
+     * @param message NamespaceItem message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceItem, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NamespaceItem message, length delimited. Does not implicitly {@link NamespaceItem.verify|verify} messages.
+     * @param message NamespaceItem message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NamespaceItem, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceItem message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceItem;
+
+    /**
+     * Decodes a NamespaceItem message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NamespaceItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceItem;
 }
 
 export namespace NamespaceItem {
@@ -2725,7 +5280,7 @@ export namespace NamespaceItem {
     interface ISimpleProjectItem {
 
         /** SimpleProjectItem id */
-        id?: (number|Long|null);
+        id?: (number|null);
 
         /** SimpleProjectItem name */
         name?: (string|null);
@@ -2744,13 +5299,48 @@ export namespace NamespaceItem {
         constructor(properties?: NamespaceItem.ISimpleProjectItem);
 
         /** SimpleProjectItem id. */
-        public id: (number|Long);
+        public id: number;
 
         /** SimpleProjectItem name. */
         public name: string;
 
         /** SimpleProjectItem status. */
         public status: string;
+
+        /**
+         * Encodes the specified SimpleProjectItem message. Does not implicitly {@link NamespaceItem.SimpleProjectItem.verify|verify} messages.
+         * @param message SimpleProjectItem message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: NamespaceItem.SimpleProjectItem, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified SimpleProjectItem message, length delimited. Does not implicitly {@link NamespaceItem.SimpleProjectItem.verify|verify} messages.
+         * @param message SimpleProjectItem message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: NamespaceItem.SimpleProjectItem, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a SimpleProjectItem message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns SimpleProjectItem
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceItem.SimpleProjectItem;
+
+        /**
+         * Decodes a SimpleProjectItem message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns SimpleProjectItem
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceItem.SimpleProjectItem;
     }
 }
 
@@ -2764,7 +5354,42 @@ export class NamespaceList implements INamespaceList {
     constructor(properties?: INamespaceList);
 
     /** NamespaceList data. */
-    public data: INamespaceItem[];
+    public data: NamespaceItem[];
+
+    /**
+     * Encodes the specified NamespaceList message. Does not implicitly {@link NamespaceList.verify|verify} messages.
+     * @param message NamespaceList message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceList, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NamespaceList message, length delimited. Does not implicitly {@link NamespaceList.verify|verify} messages.
+     * @param message NamespaceList message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NamespaceList, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceList message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceList
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceList;
+
+    /**
+     * Decodes a NamespaceList message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NamespaceList
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NamespaceList;
 }
 
 /** Represents a NsStoreRequest. */
@@ -2778,6 +5403,41 @@ export class NsStoreRequest implements INsStoreRequest {
 
     /** NsStoreRequest namespace. */
     public namespace: string;
+
+    /**
+     * Encodes the specified NsStoreRequest message. Does not implicitly {@link NsStoreRequest.verify|verify} messages.
+     * @param message NsStoreRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NsStoreRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NsStoreRequest message, length delimited. Does not implicitly {@link NsStoreRequest.verify|verify} messages.
+     * @param message NsStoreRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NsStoreRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NsStoreRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NsStoreRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NsStoreRequest;
+
+    /**
+     * Decodes a NsStoreRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NsStoreRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NsStoreRequest;
 }
 
 /** Represents a NsStoreResponse. */
@@ -2790,7 +5450,42 @@ export class NsStoreResponse implements INsStoreResponse {
     constructor(properties?: INsStoreResponse);
 
     /** NsStoreResponse data. */
-    public data?: (INamespaceResponse|null);
+    public data?: (NamespaceResponse|null);
+
+    /**
+     * Encodes the specified NsStoreResponse message. Does not implicitly {@link NsStoreResponse.verify|verify} messages.
+     * @param message NsStoreResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NsStoreResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NsStoreResponse message, length delimited. Does not implicitly {@link NsStoreResponse.verify|verify} messages.
+     * @param message NsStoreResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: NsStoreResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NsStoreResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NsStoreResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NsStoreResponse;
+
+    /**
+     * Decodes a NsStoreResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NsStoreResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NsStoreResponse;
 }
 
 /** Represents a CpuAndMemoryResponse. */
@@ -2807,6 +5502,41 @@ export class CpuAndMemoryResponse implements ICpuAndMemoryResponse {
 
     /** CpuAndMemoryResponse memory. */
     public memory: string;
+
+    /**
+     * Encodes the specified CpuAndMemoryResponse message. Does not implicitly {@link CpuAndMemoryResponse.verify|verify} messages.
+     * @param message CpuAndMemoryResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CpuAndMemoryResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CpuAndMemoryResponse message, length delimited. Does not implicitly {@link CpuAndMemoryResponse.verify|verify} messages.
+     * @param message CpuAndMemoryResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CpuAndMemoryResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CpuAndMemoryResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CpuAndMemoryResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CpuAndMemoryResponse;
+
+    /**
+     * Decodes a CpuAndMemoryResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CpuAndMemoryResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CpuAndMemoryResponse;
 }
 
 /** Represents a ServiceEndpointsResponse. */
@@ -2819,7 +5549,42 @@ export class ServiceEndpointsResponse implements IServiceEndpointsResponse {
     constructor(properties?: IServiceEndpointsResponse);
 
     /** ServiceEndpointsResponse data. */
-    public data: ServiceEndpointsResponse.Iitem[];
+    public data: ServiceEndpointsResponse.item[];
+
+    /**
+     * Encodes the specified ServiceEndpointsResponse message. Does not implicitly {@link ServiceEndpointsResponse.verify|verify} messages.
+     * @param message ServiceEndpointsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ServiceEndpointsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ServiceEndpointsResponse message, length delimited. Does not implicitly {@link ServiceEndpointsResponse.verify|verify} messages.
+     * @param message ServiceEndpointsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ServiceEndpointsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ServiceEndpointsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ServiceEndpointsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServiceEndpointsResponse;
+
+    /**
+     * Decodes a ServiceEndpointsResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ServiceEndpointsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ServiceEndpointsResponse;
 }
 
 export namespace ServiceEndpointsResponse {
@@ -2848,6 +5613,41 @@ export namespace ServiceEndpointsResponse {
 
         /** item url. */
         public url: string[];
+
+        /**
+         * Encodes the specified item message. Does not implicitly {@link ServiceEndpointsResponse.item.verify|verify} messages.
+         * @param message item message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: ServiceEndpointsResponse.item, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified item message, length delimited. Does not implicitly {@link ServiceEndpointsResponse.item.verify|verify} messages.
+         * @param message item message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: ServiceEndpointsResponse.item, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes an item message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns item
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServiceEndpointsResponse.item;
+
+        /**
+         * Decodes an item message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns item
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ServiceEndpointsResponse.item;
     }
 }
 
@@ -2861,10 +5661,45 @@ export class ServiceEndpointsRequest implements IServiceEndpointsRequest {
     constructor(properties?: IServiceEndpointsRequest);
 
     /** ServiceEndpointsRequest namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** ServiceEndpointsRequest project_name. */
     public project_name: string;
+
+    /**
+     * Encodes the specified ServiceEndpointsRequest message. Does not implicitly {@link ServiceEndpointsRequest.verify|verify} messages.
+     * @param message ServiceEndpointsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ServiceEndpointsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ServiceEndpointsRequest message, length delimited. Does not implicitly {@link ServiceEndpointsRequest.verify|verify} messages.
+     * @param message ServiceEndpointsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ServiceEndpointsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ServiceEndpointsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ServiceEndpointsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServiceEndpointsRequest;
+
+    /**
+     * Decodes a ServiceEndpointsRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ServiceEndpointsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ServiceEndpointsRequest;
 }
 
 /** Represents a Namespace */
@@ -2883,70 +5718,70 @@ export class Namespace extends $protobuf.rpc.Service {
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and NamespaceList
      */
-    public index(request: google.protobuf.IEmpty, callback: Namespace.IndexCallback): void;
+    public index(request: google.protobuf.Empty, callback: Namespace.IndexCallback): void;
 
     /**
      * Calls Index.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public index(request: google.protobuf.IEmpty): Promise<NamespaceList>;
+    public index(request: google.protobuf.Empty): Promise<NamespaceList>;
 
     /**
      * Calls Store.
      * @param request NsStoreRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and NsStoreResponse
      */
-    public store(request: INsStoreRequest, callback: Namespace.StoreCallback): void;
+    public store(request: NsStoreRequest, callback: Namespace.StoreCallback): void;
 
     /**
      * Calls Store.
      * @param request NsStoreRequest message or plain object
      * @returns Promise
      */
-    public store(request: INsStoreRequest): Promise<NsStoreResponse>;
+    public store(request: NsStoreRequest): Promise<NsStoreResponse>;
 
     /**
      * Calls CpuAndMemory.
      * @param request NamespaceID message or plain object
      * @param callback Node-style callback called with the error, if any, and CpuAndMemoryResponse
      */
-    public cpuAndMemory(request: INamespaceID, callback: Namespace.CpuAndMemoryCallback): void;
+    public cpuAndMemory(request: NamespaceID, callback: Namespace.CpuAndMemoryCallback): void;
 
     /**
      * Calls CpuAndMemory.
      * @param request NamespaceID message or plain object
      * @returns Promise
      */
-    public cpuAndMemory(request: INamespaceID): Promise<CpuAndMemoryResponse>;
+    public cpuAndMemory(request: NamespaceID): Promise<CpuAndMemoryResponse>;
 
     /**
      * Calls ServiceEndpoints.
      * @param request ServiceEndpointsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ServiceEndpointsResponse
      */
-    public serviceEndpoints(request: IServiceEndpointsRequest, callback: Namespace.ServiceEndpointsCallback): void;
+    public serviceEndpoints(request: ServiceEndpointsRequest, callback: Namespace.ServiceEndpointsCallback): void;
 
     /**
      * Calls ServiceEndpoints.
      * @param request ServiceEndpointsRequest message or plain object
      * @returns Promise
      */
-    public serviceEndpoints(request: IServiceEndpointsRequest): Promise<ServiceEndpointsResponse>;
+    public serviceEndpoints(request: ServiceEndpointsRequest): Promise<ServiceEndpointsResponse>;
 
     /**
      * Calls Destroy.
      * @param request NamespaceID message or plain object
      * @param callback Node-style callback called with the error, if any, and Empty
      */
-    public destroy(request: INamespaceID, callback: Namespace.DestroyCallback): void;
+    public destroy(request: NamespaceID, callback: Namespace.DestroyCallback): void;
 
     /**
      * Calls Destroy.
      * @param request NamespaceID message or plain object
      * @returns Promise
      */
-    public destroy(request: INamespaceID): Promise<google.protobuf.Empty>;
+    public destroy(request: NamespaceID): Promise<google.protobuf.Empty>;
 }
 
 export namespace Namespace {
@@ -2998,6 +5833,41 @@ export class BackgroundRequest implements IBackgroundRequest {
 
     /** BackgroundRequest random. */
     public random: boolean;
+
+    /**
+     * Encodes the specified BackgroundRequest message. Does not implicitly {@link BackgroundRequest.verify|verify} messages.
+     * @param message BackgroundRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: BackgroundRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BackgroundRequest message, length delimited. Does not implicitly {@link BackgroundRequest.verify|verify} messages.
+     * @param message BackgroundRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: BackgroundRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BackgroundRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BackgroundRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BackgroundRequest;
+
+    /**
+     * Decodes a BackgroundRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BackgroundRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BackgroundRequest;
 }
 
 /** Represents a BackgroundResponse. */
@@ -3014,6 +5884,41 @@ export class BackgroundResponse implements IBackgroundResponse {
 
     /** BackgroundResponse copyright. */
     public copyright: string;
+
+    /**
+     * Encodes the specified BackgroundResponse message. Does not implicitly {@link BackgroundResponse.verify|verify} messages.
+     * @param message BackgroundResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: BackgroundResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BackgroundResponse message, length delimited. Does not implicitly {@link BackgroundResponse.verify|verify} messages.
+     * @param message BackgroundResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: BackgroundResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BackgroundResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BackgroundResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BackgroundResponse;
+
+    /**
+     * Decodes a BackgroundResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BackgroundResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BackgroundResponse;
 }
 
 /** Represents a Picture */
@@ -3032,14 +5937,14 @@ export class Picture extends $protobuf.rpc.Service {
      * @param request BackgroundRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and BackgroundResponse
      */
-    public background(request: IBackgroundRequest, callback: Picture.BackgroundCallback): void;
+    public background(request: BackgroundRequest, callback: Picture.BackgroundCallback): void;
 
     /**
      * Calls Background.
      * @param request BackgroundRequest message or plain object
      * @returns Promise
      */
-    public background(request: IBackgroundRequest): Promise<BackgroundResponse>;
+    public background(request: BackgroundRequest): Promise<BackgroundResponse>;
 }
 
 export namespace Picture {
@@ -3062,10 +5967,45 @@ export class ProjectDestroyRequest implements IProjectDestroyRequest {
     constructor(properties?: IProjectDestroyRequest);
 
     /** ProjectDestroyRequest namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** ProjectDestroyRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
+
+    /**
+     * Encodes the specified ProjectDestroyRequest message. Does not implicitly {@link ProjectDestroyRequest.verify|verify} messages.
+     * @param message ProjectDestroyRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectDestroyRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectDestroyRequest message, length delimited. Does not implicitly {@link ProjectDestroyRequest.verify|verify} messages.
+     * @param message ProjectDestroyRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectDestroyRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectDestroyRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectDestroyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectDestroyRequest;
+
+    /**
+     * Decodes a ProjectDestroyRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectDestroyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectDestroyRequest;
 }
 
 /** Represents a ProjectShowRequest. */
@@ -3078,10 +6018,45 @@ export class ProjectShowRequest implements IProjectShowRequest {
     constructor(properties?: IProjectShowRequest);
 
     /** ProjectShowRequest namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** ProjectShowRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
+
+    /**
+     * Encodes the specified ProjectShowRequest message. Does not implicitly {@link ProjectShowRequest.verify|verify} messages.
+     * @param message ProjectShowRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectShowRequest message, length delimited. Does not implicitly {@link ProjectShowRequest.verify|verify} messages.
+     * @param message ProjectShowRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectShowRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectShowRequest;
+
+    /**
+     * Decodes a ProjectShowRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectShowRequest;
 }
 
 /** Represents a ProjectShowResponse. */
@@ -3094,13 +6069,13 @@ export class ProjectShowResponse implements IProjectShowResponse {
     constructor(properties?: IProjectShowResponse);
 
     /** ProjectShowResponse id. */
-    public id: (number|Long);
+    public id: number;
 
     /** ProjectShowResponse name. */
     public name: string;
 
     /** ProjectShowResponse gitlab_project_id. */
-    public gitlab_project_id: (number|Long);
+    public gitlab_project_id: number;
 
     /** ProjectShowResponse gitlab_branch. */
     public gitlab_branch: string;
@@ -3133,7 +6108,7 @@ export class ProjectShowResponse implements IProjectShowResponse {
     public urls: string[];
 
     /** ProjectShowResponse namespace. */
-    public namespace?: (ProjectShowResponse.INamespace|null);
+    public namespace?: (ProjectShowResponse.Namespace|null);
 
     /** ProjectShowResponse cpu. */
     public cpu: string;
@@ -3149,6 +6124,41 @@ export class ProjectShowResponse implements IProjectShowResponse {
 
     /** ProjectShowResponse updated_at. */
     public updated_at: string;
+
+    /**
+     * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
+     * @param message ProjectShowResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectShowResponse message, length delimited. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
+     * @param message ProjectShowResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectShowResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectShowResponse;
+
+    /**
+     * Decodes a ProjectShowResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectShowResponse;
 }
 
 export namespace ProjectShowResponse {
@@ -3157,7 +6167,7 @@ export namespace ProjectShowResponse {
     interface INamespace {
 
         /** Namespace id */
-        id?: (number|Long|null);
+        id?: (number|null);
 
         /** Namespace name */
         name?: (string|null);
@@ -3173,10 +6183,45 @@ export namespace ProjectShowResponse {
         constructor(properties?: ProjectShowResponse.INamespace);
 
         /** Namespace id. */
-        public id: (number|Long);
+        public id: number;
 
         /** Namespace name. */
         public name: string;
+
+        /**
+         * Encodes the specified Namespace message. Does not implicitly {@link ProjectShowResponse.Namespace.verify|verify} messages.
+         * @param message Namespace message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: ProjectShowResponse.Namespace, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified Namespace message, length delimited. Does not implicitly {@link ProjectShowResponse.Namespace.verify|verify} messages.
+         * @param message Namespace message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: ProjectShowResponse.Namespace, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a Namespace message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns Namespace
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectShowResponse.Namespace;
+
+        /**
+         * Decodes a Namespace message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns Namespace
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectShowResponse.Namespace;
     }
 }
 
@@ -3190,10 +6235,45 @@ export class AllPodContainersRequest implements IAllPodContainersRequest {
     constructor(properties?: IAllPodContainersRequest);
 
     /** AllPodContainersRequest namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** AllPodContainersRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
+
+    /**
+     * Encodes the specified AllPodContainersRequest message. Does not implicitly {@link AllPodContainersRequest.verify|verify} messages.
+     * @param message AllPodContainersRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: AllPodContainersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified AllPodContainersRequest message, length delimited. Does not implicitly {@link AllPodContainersRequest.verify|verify} messages.
+     * @param message AllPodContainersRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: AllPodContainersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an AllPodContainersRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns AllPodContainersRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): AllPodContainersRequest;
+
+    /**
+     * Decodes an AllPodContainersRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns AllPodContainersRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): AllPodContainersRequest;
 }
 
 /** Represents a PodLog. */
@@ -3213,6 +6293,41 @@ export class PodLog implements IPodLog {
 
     /** PodLog log. */
     public log: string;
+
+    /**
+     * Encodes the specified PodLog message. Does not implicitly {@link PodLog.verify|verify} messages.
+     * @param message PodLog message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: PodLog, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PodLog message, length delimited. Does not implicitly {@link PodLog.verify|verify} messages.
+     * @param message PodLog message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: PodLog, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PodLog message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PodLog
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PodLog;
+
+    /**
+     * Decodes a PodLog message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PodLog
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PodLog;
 }
 
 /** Represents an AllPodContainersResponse. */
@@ -3225,7 +6340,42 @@ export class AllPodContainersResponse implements IAllPodContainersResponse {
     constructor(properties?: IAllPodContainersResponse);
 
     /** AllPodContainersResponse data. */
-    public data: IPodLog[];
+    public data: PodLog[];
+
+    /**
+     * Encodes the specified AllPodContainersResponse message. Does not implicitly {@link AllPodContainersResponse.verify|verify} messages.
+     * @param message AllPodContainersResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: AllPodContainersResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified AllPodContainersResponse message, length delimited. Does not implicitly {@link AllPodContainersResponse.verify|verify} messages.
+     * @param message AllPodContainersResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: AllPodContainersResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an AllPodContainersResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns AllPodContainersResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): AllPodContainersResponse;
+
+    /**
+     * Decodes an AllPodContainersResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns AllPodContainersResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): AllPodContainersResponse;
 }
 
 /** Represents a PodContainerLogRequest. */
@@ -3238,16 +6388,51 @@ export class PodContainerLogRequest implements IPodContainerLogRequest {
     constructor(properties?: IPodContainerLogRequest);
 
     /** PodContainerLogRequest namespace_id. */
-    public namespace_id: (number|Long);
+    public namespace_id: number;
 
     /** PodContainerLogRequest project_id. */
-    public project_id: (number|Long);
+    public project_id: number;
 
     /** PodContainerLogRequest pod. */
     public pod: string;
 
     /** PodContainerLogRequest container. */
     public container: string;
+
+    /**
+     * Encodes the specified PodContainerLogRequest message. Does not implicitly {@link PodContainerLogRequest.verify|verify} messages.
+     * @param message PodContainerLogRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: PodContainerLogRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PodContainerLogRequest message, length delimited. Does not implicitly {@link PodContainerLogRequest.verify|verify} messages.
+     * @param message PodContainerLogRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: PodContainerLogRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PodContainerLogRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PodContainerLogRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PodContainerLogRequest;
+
+    /**
+     * Decodes a PodContainerLogRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PodContainerLogRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PodContainerLogRequest;
 }
 
 /** Represents a PodContainerLogResponse. */
@@ -3260,7 +6445,42 @@ export class PodContainerLogResponse implements IPodContainerLogResponse {
     constructor(properties?: IPodContainerLogResponse);
 
     /** PodContainerLogResponse data. */
-    public data?: (IPodLog|null);
+    public data?: (PodLog|null);
+
+    /**
+     * Encodes the specified PodContainerLogResponse message. Does not implicitly {@link PodContainerLogResponse.verify|verify} messages.
+     * @param message PodContainerLogResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: PodContainerLogResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PodContainerLogResponse message, length delimited. Does not implicitly {@link PodContainerLogResponse.verify|verify} messages.
+     * @param message PodContainerLogResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: PodContainerLogResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PodContainerLogResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PodContainerLogResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PodContainerLogResponse;
+
+    /**
+     * Decodes a PodContainerLogResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PodContainerLogResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PodContainerLogResponse;
 }
 
 /** Represents an IsPodRunningRequest. */
@@ -3277,6 +6497,41 @@ export class IsPodRunningRequest implements IIsPodRunningRequest {
 
     /** IsPodRunningRequest pod. */
     public pod: string;
+
+    /**
+     * Encodes the specified IsPodRunningRequest message. Does not implicitly {@link IsPodRunningRequest.verify|verify} messages.
+     * @param message IsPodRunningRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IsPodRunningRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified IsPodRunningRequest message, length delimited. Does not implicitly {@link IsPodRunningRequest.verify|verify} messages.
+     * @param message IsPodRunningRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IsPodRunningRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an IsPodRunningRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns IsPodRunningRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): IsPodRunningRequest;
+
+    /**
+     * Decodes an IsPodRunningRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns IsPodRunningRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): IsPodRunningRequest;
 }
 
 /** Represents an IsPodRunningResponse. */
@@ -3293,6 +6548,41 @@ export class IsPodRunningResponse implements IIsPodRunningResponse {
 
     /** IsPodRunningResponse reason. */
     public reason: string;
+
+    /**
+     * Encodes the specified IsPodRunningResponse message. Does not implicitly {@link IsPodRunningResponse.verify|verify} messages.
+     * @param message IsPodRunningResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IsPodRunningResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified IsPodRunningResponse message, length delimited. Does not implicitly {@link IsPodRunningResponse.verify|verify} messages.
+     * @param message IsPodRunningResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IsPodRunningResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an IsPodRunningResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns IsPodRunningResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): IsPodRunningResponse;
+
+    /**
+     * Decodes an IsPodRunningResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns IsPodRunningResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): IsPodRunningResponse;
 }
 
 /** Represents a Project */
@@ -3311,84 +6601,84 @@ export class Project extends $protobuf.rpc.Service {
      * @param request ProjectDestroyRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and Empty
      */
-    public destroy(request: IProjectDestroyRequest, callback: Project.DestroyCallback): void;
+    public destroy(request: ProjectDestroyRequest, callback: Project.DestroyCallback): void;
 
     /**
      * Calls Destroy.
      * @param request ProjectDestroyRequest message or plain object
      * @returns Promise
      */
-    public destroy(request: IProjectDestroyRequest): Promise<google.protobuf.Empty>;
+    public destroy(request: ProjectDestroyRequest): Promise<google.protobuf.Empty>;
 
     /**
      * Calls Show.
      * @param request ProjectShowRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectShowResponse
      */
-    public show(request: IProjectShowRequest, callback: Project.ShowCallback): void;
+    public show(request: ProjectShowRequest, callback: Project.ShowCallback): void;
 
     /**
      * Calls Show.
      * @param request ProjectShowRequest message or plain object
      * @returns Promise
      */
-    public show(request: IProjectShowRequest): Promise<ProjectShowResponse>;
+    public show(request: ProjectShowRequest): Promise<ProjectShowResponse>;
 
     /**
      * Calls IsPodRunning.
      * @param request IsPodRunningRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and IsPodRunningResponse
      */
-    public isPodRunning(request: IIsPodRunningRequest, callback: Project.IsPodRunningCallback): void;
+    public isPodRunning(request: IsPodRunningRequest, callback: Project.IsPodRunningCallback): void;
 
     /**
      * Calls IsPodRunning.
      * @param request IsPodRunningRequest message or plain object
      * @returns Promise
      */
-    public isPodRunning(request: IIsPodRunningRequest): Promise<IsPodRunningResponse>;
+    public isPodRunning(request: IsPodRunningRequest): Promise<IsPodRunningResponse>;
 
     /**
      * Calls AllPodContainers.
      * @param request AllPodContainersRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and AllPodContainersResponse
      */
-    public allPodContainers(request: IAllPodContainersRequest, callback: Project.AllPodContainersCallback): void;
+    public allPodContainers(request: AllPodContainersRequest, callback: Project.AllPodContainersCallback): void;
 
     /**
      * Calls AllPodContainers.
      * @param request AllPodContainersRequest message or plain object
      * @returns Promise
      */
-    public allPodContainers(request: IAllPodContainersRequest): Promise<AllPodContainersResponse>;
+    public allPodContainers(request: AllPodContainersRequest): Promise<AllPodContainersResponse>;
 
     /**
      * Calls PodContainerLog.
      * @param request PodContainerLogRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and PodContainerLogResponse
      */
-    public podContainerLog(request: IPodContainerLogRequest, callback: Project.PodContainerLogCallback): void;
+    public podContainerLog(request: PodContainerLogRequest, callback: Project.PodContainerLogCallback): void;
 
     /**
      * Calls PodContainerLog.
      * @param request PodContainerLogRequest message or plain object
      * @returns Promise
      */
-    public podContainerLog(request: IPodContainerLogRequest): Promise<PodContainerLogResponse>;
+    public podContainerLog(request: PodContainerLogRequest): Promise<PodContainerLogResponse>;
 
     /**
      * Calls StreamPodContainerLog.
      * @param request PodContainerLogRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and PodContainerLogResponse
      */
-    public streamPodContainerLog(request: IPodContainerLogRequest, callback: Project.StreamPodContainerLogCallback): void;
+    public streamPodContainerLog(request: PodContainerLogRequest, callback: Project.StreamPodContainerLogCallback): void;
 
     /**
      * Calls StreamPodContainerLog.
      * @param request PodContainerLogRequest message or plain object
      * @returns Promise
      */
-    public streamPodContainerLog(request: IPodContainerLogRequest): Promise<PodContainerLogResponse>;
+    public streamPodContainerLog(request: PodContainerLogRequest): Promise<PodContainerLogResponse>;
 }
 
 export namespace Project {
@@ -3477,6 +6767,41 @@ export class VersionResponse implements IVersionResponse {
 
     /** VersionResponse GitRepo. */
     public GitRepo: string;
+
+    /**
+     * Encodes the specified VersionResponse message. Does not implicitly {@link VersionResponse.verify|verify} messages.
+     * @param message VersionResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: VersionResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified VersionResponse message, length delimited. Does not implicitly {@link VersionResponse.verify|verify} messages.
+     * @param message VersionResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: VersionResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a VersionResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns VersionResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): VersionResponse;
+
+    /**
+     * Decodes a VersionResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns VersionResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): VersionResponse;
 }
 
 /** Represents a Version */
@@ -3495,14 +6820,14 @@ export class Version extends $protobuf.rpc.Service {
      * @param request Empty message or plain object
      * @param callback Node-style callback called with the error, if any, and VersionResponse
      */
-    public get(request: google.protobuf.IEmpty, callback: Version.GetCallback): void;
+    public get(request: google.protobuf.Empty, callback: Version.GetCallback): void;
 
     /**
      * Calls Get.
      * @param request Empty message or plain object
      * @returns Promise
      */
-    public get(request: google.protobuf.IEmpty): Promise<VersionResponse>;
+    public get(request: google.protobuf.Empty): Promise<VersionResponse>;
 }
 
 export namespace Version {
@@ -3513,4 +6838,716 @@ export namespace Version {
      * @param [response] VersionResponse
      */
     type GetCallback = (error: (Error|null), response?: VersionResponse) => void;
+}
+
+/** Type enum. */
+export enum Type {
+    TypeUnknown = 0,
+    SetUid = 1,
+    ReloadProjects = 2,
+    CancelProject = 3,
+    CreateProject = 4,
+    UpdateProject = 5,
+    ProcessPercent = 6,
+    ClusterInfoSync = 7,
+    InternalError = 8,
+    HandleExecShell = 9,
+    HandleExecShellMsg = 10,
+    HandleCloseShell = 11,
+    HandleAuthorize = 12
+}
+
+/** ResultType enum. */
+export enum ResultType {
+    ResultUnknown = 0,
+    Error = 1,
+    Success = 2,
+    Deployed = 3,
+    DeployedFailed = 4,
+    DeployedCanceled = 5
+}
+
+/** To enum. */
+export enum To {
+    ToSelf = 0,
+    ToAll = 1,
+    ToOthers = 2
+}
+
+/** Represents a WsRequestMetadata. */
+export class WsRequestMetadata implements IWsRequestMetadata {
+
+    /**
+     * Constructs a new WsRequestMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWsRequestMetadata);
+
+    /** WsRequestMetadata type. */
+    public type: Type;
+
+    /**
+     * Encodes the specified WsRequestMetadata message. Does not implicitly {@link WsRequestMetadata.verify|verify} messages.
+     * @param message WsRequestMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: WsRequestMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WsRequestMetadata message, length delimited. Does not implicitly {@link WsRequestMetadata.verify|verify} messages.
+     * @param message WsRequestMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: WsRequestMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WsRequestMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsRequestMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WsRequestMetadata;
+
+    /**
+     * Decodes a WsRequestMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WsRequestMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsRequestMetadata;
+}
+
+/** Represents an AuthorizeTokenInput. */
+export class AuthorizeTokenInput implements IAuthorizeTokenInput {
+
+    /**
+     * Constructs a new AuthorizeTokenInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IAuthorizeTokenInput);
+
+    /** AuthorizeTokenInput type. */
+    public type: Type;
+
+    /** AuthorizeTokenInput token. */
+    public token: string;
+
+    /**
+     * Encodes the specified AuthorizeTokenInput message. Does not implicitly {@link AuthorizeTokenInput.verify|verify} messages.
+     * @param message AuthorizeTokenInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: AuthorizeTokenInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified AuthorizeTokenInput message, length delimited. Does not implicitly {@link AuthorizeTokenInput.verify|verify} messages.
+     * @param message AuthorizeTokenInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: AuthorizeTokenInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an AuthorizeTokenInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns AuthorizeTokenInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): AuthorizeTokenInput;
+
+    /**
+     * Decodes an AuthorizeTokenInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns AuthorizeTokenInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): AuthorizeTokenInput;
+}
+
+/** Represents a TerminalMessage. */
+export class TerminalMessage implements ITerminalMessage {
+
+    /**
+     * Constructs a new TerminalMessage.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ITerminalMessage);
+
+    /** TerminalMessage op. */
+    public op: string;
+
+    /** TerminalMessage data. */
+    public data: string;
+
+    /** TerminalMessage session_id. */
+    public session_id: string;
+
+    /** TerminalMessage rows. */
+    public rows: number;
+
+    /** TerminalMessage cols. */
+    public cols: number;
+
+    /**
+     * Encodes the specified TerminalMessage message. Does not implicitly {@link TerminalMessage.verify|verify} messages.
+     * @param message TerminalMessage message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: TerminalMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified TerminalMessage message, length delimited. Does not implicitly {@link TerminalMessage.verify|verify} messages.
+     * @param message TerminalMessage message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: TerminalMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a TerminalMessage message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns TerminalMessage
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): TerminalMessage;
+
+    /**
+     * Decodes a TerminalMessage message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns TerminalMessage
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): TerminalMessage;
+}
+
+/** Represents a TerminalMessageInput. */
+export class TerminalMessageInput implements ITerminalMessageInput {
+
+    /**
+     * Constructs a new TerminalMessageInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ITerminalMessageInput);
+
+    /** TerminalMessageInput type. */
+    public type: Type;
+
+    /** TerminalMessageInput message. */
+    public message?: (TerminalMessage|null);
+
+    /**
+     * Encodes the specified TerminalMessageInput message. Does not implicitly {@link TerminalMessageInput.verify|verify} messages.
+     * @param message TerminalMessageInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: TerminalMessageInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified TerminalMessageInput message, length delimited. Does not implicitly {@link TerminalMessageInput.verify|verify} messages.
+     * @param message TerminalMessageInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: TerminalMessageInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a TerminalMessageInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns TerminalMessageInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): TerminalMessageInput;
+
+    /**
+     * Decodes a TerminalMessageInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns TerminalMessageInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): TerminalMessageInput;
+}
+
+/** Represents a WsHandleExecShellInput. */
+export class WsHandleExecShellInput implements IWsHandleExecShellInput {
+
+    /**
+     * Constructs a new WsHandleExecShellInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWsHandleExecShellInput);
+
+    /** WsHandleExecShellInput type. */
+    public type: Type;
+
+    /** WsHandleExecShellInput namespace. */
+    public namespace: string;
+
+    /** WsHandleExecShellInput pod. */
+    public pod: string;
+
+    /** WsHandleExecShellInput container. */
+    public container: string;
+
+    /**
+     * Encodes the specified WsHandleExecShellInput message. Does not implicitly {@link WsHandleExecShellInput.verify|verify} messages.
+     * @param message WsHandleExecShellInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: WsHandleExecShellInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WsHandleExecShellInput message, length delimited. Does not implicitly {@link WsHandleExecShellInput.verify|verify} messages.
+     * @param message WsHandleExecShellInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: WsHandleExecShellInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WsHandleExecShellInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsHandleExecShellInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WsHandleExecShellInput;
+
+    /**
+     * Decodes a WsHandleExecShellInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WsHandleExecShellInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsHandleExecShellInput;
+}
+
+/** Represents a CancelInput. */
+export class CancelInput implements ICancelInput {
+
+    /**
+     * Constructs a new CancelInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ICancelInput);
+
+    /** CancelInput type. */
+    public type: Type;
+
+    /** CancelInput namespace_id. */
+    public namespace_id: number;
+
+    /** CancelInput name. */
+    public name: string;
+
+    /**
+     * Encodes the specified CancelInput message. Does not implicitly {@link CancelInput.verify|verify} messages.
+     * @param message CancelInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: CancelInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CancelInput message, length delimited. Does not implicitly {@link CancelInput.verify|verify} messages.
+     * @param message CancelInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: CancelInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CancelInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CancelInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CancelInput;
+
+    /**
+     * Decodes a CancelInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CancelInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CancelInput;
+}
+
+/** Represents a ProjectInput. */
+export class ProjectInput implements IProjectInput {
+
+    /**
+     * Constructs a new ProjectInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectInput);
+
+    /** ProjectInput type. */
+    public type: Type;
+
+    /** ProjectInput namespace_id. */
+    public namespace_id: number;
+
+    /** ProjectInput name. */
+    public name: string;
+
+    /** ProjectInput gitlab_project_id. */
+    public gitlab_project_id: number;
+
+    /** ProjectInput gitlab_branch. */
+    public gitlab_branch: string;
+
+    /** ProjectInput gitlab_commit. */
+    public gitlab_commit: string;
+
+    /** ProjectInput config. */
+    public config: string;
+
+    /** ProjectInput atomic. */
+    public atomic: boolean;
+
+    /**
+     * Encodes the specified ProjectInput message. Does not implicitly {@link ProjectInput.verify|verify} messages.
+     * @param message ProjectInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ProjectInput message, length delimited. Does not implicitly {@link ProjectInput.verify|verify} messages.
+     * @param message ProjectInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ProjectInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectInput;
+
+    /**
+     * Decodes a ProjectInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ProjectInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ProjectInput;
+}
+
+/** Represents an UpdateProjectInput. */
+export class UpdateProjectInput implements IUpdateProjectInput {
+
+    /**
+     * Constructs a new UpdateProjectInput.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IUpdateProjectInput);
+
+    /** UpdateProjectInput type. */
+    public type: Type;
+
+    /** UpdateProjectInput project_id. */
+    public project_id: number;
+
+    /** UpdateProjectInput gitlab_branch. */
+    public gitlab_branch: string;
+
+    /** UpdateProjectInput gitlab_commit. */
+    public gitlab_commit: string;
+
+    /** UpdateProjectInput config. */
+    public config: string;
+
+    /** UpdateProjectInput atomic. */
+    public atomic: boolean;
+
+    /**
+     * Encodes the specified UpdateProjectInput message. Does not implicitly {@link UpdateProjectInput.verify|verify} messages.
+     * @param message UpdateProjectInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: UpdateProjectInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified UpdateProjectInput message, length delimited. Does not implicitly {@link UpdateProjectInput.verify|verify} messages.
+     * @param message UpdateProjectInput message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: UpdateProjectInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an UpdateProjectInput message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns UpdateProjectInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): UpdateProjectInput;
+
+    /**
+     * Decodes an UpdateProjectInput message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns UpdateProjectInput
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): UpdateProjectInput;
+}
+
+/** Represents a ResponseMetadata. */
+export class ResponseMetadata implements IResponseMetadata {
+
+    /**
+     * Constructs a new ResponseMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IResponseMetadata);
+
+    /** ResponseMetadata id. */
+    public id: string;
+
+    /** ResponseMetadata uid. */
+    public uid: string;
+
+    /** ResponseMetadata slug. */
+    public slug: string;
+
+    /** ResponseMetadata type. */
+    public type: Type;
+
+    /** ResponseMetadata end. */
+    public end: boolean;
+
+    /** ResponseMetadata result. */
+    public result: ResultType;
+
+    /** ResponseMetadata to. */
+    public to: To;
+
+    /** ResponseMetadata data. */
+    public data: string;
+
+    /**
+     * Encodes the specified ResponseMetadata message. Does not implicitly {@link ResponseMetadata.verify|verify} messages.
+     * @param message ResponseMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ResponseMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ResponseMetadata message, length delimited. Does not implicitly {@link ResponseMetadata.verify|verify} messages.
+     * @param message ResponseMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ResponseMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ResponseMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ResponseMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ResponseMetadata;
+
+    /**
+     * Decodes a ResponseMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ResponseMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ResponseMetadata;
+}
+
+/** Represents a WsResponseMetadata. */
+export class WsResponseMetadata implements IWsResponseMetadata {
+
+    /**
+     * Constructs a new WsResponseMetadata.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWsResponseMetadata);
+
+    /** WsResponseMetadata metadata. */
+    public metadata?: (ResponseMetadata|null);
+
+    /**
+     * Encodes the specified WsResponseMetadata message. Does not implicitly {@link WsResponseMetadata.verify|verify} messages.
+     * @param message WsResponseMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: WsResponseMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WsResponseMetadata message, length delimited. Does not implicitly {@link WsResponseMetadata.verify|verify} messages.
+     * @param message WsResponseMetadata message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: WsResponseMetadata, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WsResponseMetadata message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsResponseMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WsResponseMetadata;
+
+    /**
+     * Decodes a WsResponseMetadata message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WsResponseMetadata
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsResponseMetadata;
+}
+
+/** Represents a Container. */
+export class Container implements IContainer {
+
+    /**
+     * Constructs a new Container.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainer);
+
+    /** Container namespace. */
+    public namespace: string;
+
+    /** Container pod. */
+    public pod: string;
+
+    /** Container container. */
+    public container: string;
+
+    /**
+     * Encodes the specified Container message. Does not implicitly {@link Container.verify|verify} messages.
+     * @param message Container message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: Container, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified Container message, length delimited. Does not implicitly {@link Container.verify|verify} messages.
+     * @param message Container message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: Container, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a Container message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Container
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Container;
+
+    /**
+     * Decodes a Container message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns Container
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Container;
+}
+
+/** Represents a WsHandleShellResponse. */
+export class WsHandleShellResponse implements IWsHandleShellResponse {
+
+    /**
+     * Constructs a new WsHandleShellResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWsHandleShellResponse);
+
+    /** WsHandleShellResponse metadata. */
+    public metadata?: (ResponseMetadata|null);
+
+    /** WsHandleShellResponse terminal_message. */
+    public terminal_message?: (TerminalMessage|null);
+
+    /** WsHandleShellResponse container. */
+    public container?: (Container|null);
+
+    /**
+     * Encodes the specified WsHandleShellResponse message. Does not implicitly {@link WsHandleShellResponse.verify|verify} messages.
+     * @param message WsHandleShellResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: WsHandleShellResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WsHandleShellResponse message, length delimited. Does not implicitly {@link WsHandleShellResponse.verify|verify} messages.
+     * @param message WsHandleShellResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: WsHandleShellResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WsHandleShellResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsHandleShellResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WsHandleShellResponse;
+
+    /**
+     * Decodes a WsHandleShellResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WsHandleShellResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsHandleShellResponse;
 }

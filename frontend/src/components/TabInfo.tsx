@@ -269,7 +269,7 @@ const DetailTab: React.FC<{
             icon: <ExclamationCircleOutlined />,
             onOk() {
               setLoading(true);
-              deleteProject(detail.namespace?.id, detail.id)
+              deleteProject(detail.namespace?.id || 0, detail.id)
                 .then((res) => {
                   message.success("删除成功");
                   setLoading(false);

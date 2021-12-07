@@ -10,7 +10,7 @@ export function deleteProject(namespaceId:number, projectId:number) {
 }
 
 export function containerList({namespace_id, project_id}: pb.AllPodContainersRequest) {
-  return ajax.get<pb.PodContainerLogResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/containers`);
+  return ajax.get<pb.AllPodContainersResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/containers`);
 }
 
 export function containerLog({namespace_id, pod, project_id, container}: pb.PodContainerLogRequest) {

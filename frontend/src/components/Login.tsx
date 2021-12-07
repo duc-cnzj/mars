@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   const [random, setRandom] = useState(isRandomBg());
 
   useEffect(() => {
-    bg({ random: random }).then((res) => setBgInfo(res.data));
+    bg({ random: isRandomBg() }).then((res) => setBgInfo(res.data));
     settingsApi().then((res) => {
       setSettings(res.data);
     });

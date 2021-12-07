@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
@@ -18,7 +20,7 @@ func init() {
 type Conn struct {
 	id  string
 	uid string
-	ch  chan string
+	ch  chan []byte
 }
 
 type memorySender struct {
@@ -33,7 +35,7 @@ func (ms *memorySender) Add(uid, id string) {
 
 	ms.Lock()
 	defer ms.Unlock()
-	st := &Conn{id: id, uid: uid, ch: make(chan string, messageChSize)}
+	st := &Conn{id: id, uid: uid, ch: make(chan []byte, messageChSize)}
 	if _, ok := ms.conns[uid]; ok {
 		ms.conns[uid][id] = st
 	} else {
@@ -96,38 +98,40 @@ func (p *memoryPubSub) ID() string {
 	return p.id
 }
 
-func (p *memoryPubSub) ToSelf(wsResponse *plugins.WsResponse) error {
+func (p *memoryPubSub) ToSelf(wsResponse proto.Message) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	wsResponse.To = plugins.ToSelf
+	marshal, _ := proto.Marshal(wsResponse)
 	if pp, ok := p.manager.conns[p.uid]; ok {
 		if c, ok := pp[p.id]; ok {
-			c.ch <- wsResponse.EncodeToString()
+			c.ch <- marshal
 		}
 	}
 	return nil
 }
 
-func (p *memoryPubSub) ToAll(wsResponse *plugins.WsResponse) error {
+func (p *memoryPubSub) ToAll(wsResponse proto.Message) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	wsResponse.To = plugins.ToAll
+	marshal, _ := proto.Marshal(wsResponse)
+
 	for _, m := range p.manager.conns {
 		for _, s := range m {
-			s.ch <- wsResponse.EncodeToString()
+			s.ch <- marshal
 		}
 	}
 	return nil
 }
 
-func (p *memoryPubSub) ToOthers(wsResponse *plugins.WsResponse) error {
+func (p *memoryPubSub) ToOthers(wsResponse proto.Message) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	wsResponse.To = plugins.ToOthers
+	marshal, _ := proto.Marshal(wsResponse)
+
 	for _, m := range p.manager.conns {
 		for _, s := range m {
 			if s.id != p.id {
-				s.ch <- wsResponse.EncodeToString()
+				s.ch <- marshal
 			}
 		}
 	}
@@ -135,12 +139,12 @@ func (p *memoryPubSub) ToOthers(wsResponse *plugins.WsResponse) error {
 }
 
 func (p *memoryPubSub) Close() error {
-	mlog.Debugf(fmt.Sprintf("[Websocket] Closed, uid: %s, id: %s", p.uid, p.id))
+	mlog.Debugf(fmt.Sprintf("[Websocket]:Closed, uid: %s, id: %s", p.uid, p.id))
 	p.manager.Delete(p.uid, p.id)
 	return nil
 }
 
-func (p *memoryPubSub) Subscribe() <-chan string {
+func (p *memoryPubSub) Subscribe() <-chan []byte {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	m := p.manager.conns[p.Uid()]

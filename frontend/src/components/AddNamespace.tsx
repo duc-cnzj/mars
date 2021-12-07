@@ -18,18 +18,15 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
 
     if (!new RegExp(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/).test(namespace)) {
       message.error("名称空间格式有问题, (e.g. 'my-name',  or '123-abc')");
-      return
+      return;
     }
 
     createNamespace(namespace)
       .then(({ data }) => {
-        const {
-          data: { id, name },
-        } = data;
-        onCreated({ id: id, name: name });
+        data.data && onCreated({ id: data.data.id, name: data.data.name });
         message.success("名称空间创建成功");
         setIsVisible(false);
-        setNamespace("")
+        setNamespace("");
       })
       .catch((e) => message.error(e.response.data.message));
   }, [namespace, onCreated]);

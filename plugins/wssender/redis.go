@@ -2,8 +2,11 @@ package wssender
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+
+	"google.golang.org/protobuf/proto"
+
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -56,11 +59,11 @@ func (p *redisSender) Destroy() error {
 }
 
 func (p *redisSender) New(uid, id string) plugins.PubSub {
-	return &rdsPubSub{uid: uid, id: id, rds: p.rds, ch: make(chan string, messageChSize), close: make(chan struct{})}
+	return &rdsPubSub{uid: uid, id: id, rds: p.rds, ch: make(chan []byte, messageChSize), close: make(chan struct{})}
 }
 
 type rdsPubSub struct {
-	ch    chan string
+	ch    chan []byte
 	close chan struct{}
 	rds   *redis.Client
 	uid   string
@@ -68,7 +71,7 @@ type rdsPubSub struct {
 }
 
 func (p *rdsPubSub) Close() error {
-	mlog.Debugf("[Websocket] Closed, uid: %v id: %v", p.uid, p.id)
+	mlog.Debugf("[Websocket]:Closed, uid: %v id: %v", p.uid, p.id)
 	close(p.close)
 	return nil
 }
@@ -84,34 +87,25 @@ func (p *rdsPubSub) ID() string {
 	return p.id
 }
 
-func (p *rdsPubSub) ToSelf(wsResponse *plugins.WsResponse) error {
-	mlog.Debugf("ToSelf id: %s msg: %v ch len: %d", p.id, wsResponse.EncodeToString(), len(p.ch))
-	wsResponse.To = plugins.ToSelf
-	p.rds.Publish(context.TODO(), p.id, wsResponse.EncodeToBytes())
+func (p *rdsPubSub) ToSelf(wsResponse proto.Message) error {
+	p.rds.Publish(context.TODO(), p.id, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToAll(wsResponse *plugins.WsResponse) error {
-	wsResponse.To = plugins.ToAll
-	p.rds.Publish(context.TODO(), BroadcastRoom, wsResponse.EncodeToBytes())
+func (p *rdsPubSub) ToAll(wsResponse proto.Message) error {
+	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToOthers(wsResponse *plugins.WsResponse) error {
-	wsResponse.To = plugins.ToOthers
-	p.rds.Publish(context.TODO(), BroadcastRoom, wsResponse.EncodeToBytes())
+func (p *rdsPubSub) ToOthers(wsResponse proto.Message) error {
+	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
 	return nil
 }
 
-func decodeMsg(msg string) (res *plugins.WsResponse) {
-	json.Unmarshal([]byte(msg), &res)
-	return res
-}
-
-func (p *rdsPubSub) Subscribe() <-chan string {
+func (p *rdsPubSub) Subscribe() <-chan []byte {
 	ps := p.rds.Subscribe(context.TODO(), p.id, BroadcastRoom)
 	channel := ps.Channel()
-	mlog.Debugf("[Websocket] Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
+	mlog.Debugf("[Websocket]:Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
 	go func() {
 		for {
 			select {
@@ -121,21 +115,20 @@ func (p *rdsPubSub) Subscribe() <-chan string {
 					p.Close()
 					return
 				}
-				res := decodeMsg(msg.Payload)
-				mlog.Debugf("[Websocket] receive msg %s", res.Data)
-				switch res.To {
+				message, _ := plugins.DecodeMessage([]byte(msg.Payload))
+				switch message.To {
 				case plugins.ToSelf:
 					fallthrough
 				case plugins.ToAll:
-					p.ch <- res.EncodeToString()
+					p.ch <- message.Data
 				case plugins.ToOthers:
-					if res.To == plugins.ToOthers && res.ID != p.id {
-						p.ch <- res.EncodeToString()
+					if message.To == plugins.ToOthers && message.ID != p.id {
+						p.ch <- message.Data
 					}
 				}
 			case <-p.close:
 				ps.Close()
-				mlog.Debugf("[Websocket] redis channel closed, uid: %s, id: %v", p.uid, p.id)
+				mlog.Debugf("[Websocket]:redis channel closed, uid: %s, id: %v", p.uid, p.id)
 				return
 			}
 		}

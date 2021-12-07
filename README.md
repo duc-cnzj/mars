@@ -137,6 +137,8 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
+- [ ] 引入 values 字段替换掉之前的 DockerRepository、DockerTagFormat、IngressOverwriteValues。
+- [ ] ws 部分也是用 proto 定义，input 和 response 都通过 proto。
 - [ ] 插件化 ingress/tls 证书的注入方式
 - [ ] ui 美化
 - [ ] 断开连接使用图标的方式

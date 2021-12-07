@@ -23,11 +23,7 @@ type Config struct {
 	ConfigFileValues string `json:"config_file_values" yaml:"config_file_values"`
 
 	// ConfigFileType 配置文件类型，php/env/yaml...
-	ConfigFileType   string `json:"config_file_type" yaml:"config_file_type"`
-	DockerRepository string `json:"docker_repository" yaml:"docker_repository"`
-
-	// DockerTagFormat 可用变量 {{.Branch}} {{.Commit}} {{.Pipeline}}
-	DockerTagFormat string `json:"docker_tag_format" yaml:"docker_tag_format"`
+	ConfigFileType string `json:"config_file_type" yaml:"config_file_type"`
 
 	// LocalChartPath helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
 	LocalChartPath string `json:"local_chart_path" yaml:"local_chart_path"`
@@ -40,6 +36,10 @@ type Config struct {
 	// Branches 启用的分支
 	Branches []string `json:"branches" yaml:"branches"`
 
+	// DockerRepository 镜像仓库
+	DockerRepository string `json:"docker_repository" yaml:"docker_repository"`
+	// DockerTagFormat 可用变量 {{.Branch}} {{.Commit}} {{.Pipeline}}
+	DockerTagFormat string `json:"docker_tag_format" yaml:"docker_tag_format"`
 	// 如果默认的ingress 规则不符合，你可以通过这个重写
 	// 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
 	IngressOverwriteValues []string `json:"ingress_overwrite_values" yaml:"ingress_overwrite_values"`

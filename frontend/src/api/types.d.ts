@@ -29,20 +29,4 @@ declare namespace API {
     free_request_memory: string;
     free_request_cpu: string;
   }
-
-  interface WsResponse {
-    type: string;
-    slug: string;
-    result: string;
-    data: string;
-    end: boolean;
-  }
-
-  interface WsHandleExecShellResponse {
-    data: string;
-    namespace: string;
-    pod: string;
-    container: string;
-    session_id: string;
-  }
 }
