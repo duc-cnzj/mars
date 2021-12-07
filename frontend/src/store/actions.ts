@@ -74,7 +74,7 @@ export const setShellLog = (id: string, log: pb.TerminalMessage) => ({
   },
 });
 
-export const setClusterInfo = (info: API.ClusterInfo) => ({
+export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
@@ -90,7 +90,8 @@ export const handleEvents = (
         setUid(data.data);
         break;
       case pb.Type.ClusterInfoSync:
-        dispatch(setClusterInfo(JSON.parse(data.data) as API.ClusterInfo));
+        let info = pb.WsHandleClusterResponse.decode(input)
+        info.info && dispatch(setClusterInfo(info.info));
         break;
       case pb.Type.ReloadProjects:
         dispatch(setNamespaceReload(true));

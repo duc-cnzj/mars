@@ -190,7 +190,7 @@ type Messageable interface {
 	SendError(error)
 	SendProcessPercent(string)
 	SendMsg(string)
-	SendProtoMsg( proto.Message)
+	SendProtoMsg(proto.Message)
 	SendEndMsg(websocket_pb.ResultType, string)
 }
 

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/pkg/cluster"
+
 	"google.golang.org/protobuf/proto"
 
 	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
@@ -114,12 +116,23 @@ func (*WebsocketManager) TickClusterHealth() {
 		for {
 			select {
 			case <-ticker.C:
-				marshal, _ := json.Marshal(utils.ClusterInfo())
-
-				sub.ToAll(&WsResponse{
+				info := utils.ClusterInfo()
+				sub.ToAll(&websocket_pb.WsHandleClusterResponse{
 					Metadata: &websocket_pb.ResponseMetadata{
 						Type: WsClusterInfoSync,
-						Data: string(marshal),
+					},
+					Info: &cluster.ClusterInfoResponse{
+						Status:            info.Status,
+						FreeMemory:        info.FreeMemory,
+						FreeCpu:           info.FreeCpu,
+						FreeRequestMemory: info.FreeRequestMemory,
+						FreeRequestCpu:    info.FreeRequestCpu,
+						TotalMemory:       info.TotalMemory,
+						TotalCpu:          info.TotalCpu,
+						UsageMemoryRate:   info.UsageMemoryRate,
+						UsageCpuRate:      info.UsageCpuRate,
+						RequestMemoryRate: info.RequestMemoryRate,
+						RequestCpuRate:    info.RequestCpuRate,
 					},
 				})
 			case <-app.App().Done():

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "cluster/cluster.proto";
+
 option go_package = "github.com/duc-cnzj/mars/pkg/websocket;websocket";
 
 enum Type {
@@ -135,4 +137,10 @@ message WsHandleShellResponse {
 
   TerminalMessage terminal_message = 2;
   Container container = 3;
+}
+
+message WsHandleClusterResponse {
+  ResponseMetadata metadata = 1;
+
+  ClusterInfoResponse info = 2;
 }

@@ -7551,3 +7551,54 @@ export class WsHandleShellResponse implements IWsHandleShellResponse {
      */
     public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsHandleShellResponse;
 }
+
+/** Represents a WsHandleClusterResponse. */
+export class WsHandleClusterResponse implements IWsHandleClusterResponse {
+
+    /**
+     * Constructs a new WsHandleClusterResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWsHandleClusterResponse);
+
+    /** WsHandleClusterResponse metadata. */
+    public metadata?: (ResponseMetadata|null);
+
+    /** WsHandleClusterResponse info. */
+    public info?: (ClusterInfoResponse|null);
+
+    /**
+     * Encodes the specified WsHandleClusterResponse message. Does not implicitly {@link WsHandleClusterResponse.verify|verify} messages.
+     * @param message WsHandleClusterResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: WsHandleClusterResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WsHandleClusterResponse message, length delimited. Does not implicitly {@link WsHandleClusterResponse.verify|verify} messages.
+     * @param message WsHandleClusterResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: WsHandleClusterResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WsHandleClusterResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsHandleClusterResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WsHandleClusterResponse;
+
+    /**
+     * Decodes a WsHandleClusterResponse message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WsHandleClusterResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WsHandleClusterResponse;
+}

@@ -76,7 +76,7 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!ws) {
+    if (!ws?.ws) {
       connectWs();
     }
   }, [connectWs, ws]);
