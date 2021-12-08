@@ -1,4 +1,11 @@
-import React, { useState, useCallback, useEffect, memo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  memo,
+  lazy,
+  Suspense,
+} from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
 import { detailProject } from "../api/project";
 import { Button, Tabs, Skeleton, Badge } from "antd";
@@ -9,10 +16,10 @@ import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
 import pb from "../api/compiled";
 
-import TabInfo from "./TabInfo";
 import TabLog from "./TabLog";
-import Shell from "./TabShell";
-import TabEdit from "./TabEdit";
+const TabInfo = lazy(() => import("./TabInfo"));
+const TabEdit = lazy(() => import("./TabEdit"));
+const Shell = lazy(() => import("./TabShell"));
 
 const { TabPane } = Tabs;
 
@@ -131,37 +138,47 @@ const ItemDetailModal: React.FC<{
                 )}
               </TabPane>
               <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
-                <ErrorBoundary>
-                  {detail ? (
-                    <Shell
-                      updatedAt={detail.updated_at}
-                      resizeAt={resizeAt}
-                      detail={detail}
-                    />
-                  ) : (
-                    <Skeleton active />
-                  )}
-                </ErrorBoundary>
+                <Suspense fallback={<Skeleton active />}>
+                  <ErrorBoundary>
+                    {detail ? (
+                      <Shell
+                        updatedAt={detail.updated_at}
+                        resizeAt={resizeAt}
+                        detail={detail}
+                      />
+                    ) : (
+                      <></>
+                    )}
+                  </ErrorBoundary>
+                </Suspense>
               </TabPane>
               <TabPane tab="配置更新" key="update-config">
-                {detail ? (
-                  <TabEdit detail={detail} onSuccess={onSuccess} />
-                ) : (
-                  <Skeleton active />
-                )}
+                <Suspense fallback={<Skeleton active />}>
+                  {detail ? (
+                    <TabEdit detail={detail} onSuccess={onSuccess} />
+                  ) : (
+                    <></>
+                  )}
+                </Suspense>
               </TabPane>
             </>
           ) : (
             <></>
           )}
           <TabPane tab="详细信息" key="detail" className="detail-tab">
-            <TabInfo
-              detail={detail}
-              onDeleted={() => {
-                dispatch(setNamespaceReload(true));
-                setVisible(false);
-              }}
-            />
+            <Suspense fallback={<Skeleton active />}>
+              {detail ? (
+                <TabInfo
+                  detail={detail}
+                  onDeleted={() => {
+                    dispatch(setNamespaceReload(true));
+                    setVisible(false);
+                  }}
+                />
+              ) : (
+                <></>
+              )}
+            </Suspense>
           </TabPane>
         </Tabs>
       </DraggableModal>
