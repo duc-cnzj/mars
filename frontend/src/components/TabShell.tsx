@@ -112,12 +112,14 @@ const TabShell: React.FC<{
 
   const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
     return ({ cols, rows }: { cols: number; rows: number }) => {
-      let s = pb.TerminalMessage.encode({
-        session_id: id,
-        op: "resize",
-        cols: cols,
-        rows: rows,
-        data: "",
+      let s = pb.TerminalMessageInput.encode({
+        type: pb.Type.HandleExecShellMsg,
+        message: new pb.TerminalMessage({
+          session_id: id,
+          op: "resize",
+          cols: cols,
+          rows: rows,
+        }),
       }).finish();
       ws?.send(s);
     };

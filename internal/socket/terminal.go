@@ -139,6 +139,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 		t.cacheLock.Unlock()
 		return copy(p, msg.Data), nil
 	case OpResize:
+		mlog.Debugf("[Websocket]: resize cols: %v  rows: %v", msg.Cols, msg.Rows)
 		t.sizeChan <- remotecommand.TerminalSize{Width: uint16(msg.Cols), Height: uint16(msg.Rows)}
 		return 0, nil
 	default:
