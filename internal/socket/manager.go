@@ -385,6 +385,18 @@ func (run *running) IsRunning() bool {
 	return run.running
 }
 
+type vars map[string]interface{}
+
+func (v vars) MustGetString(key string) string {
+	if v != nil {
+		if value, ok := v[key]; ok {
+			return value.(string)
+		}
+	}
+
+	return ""
+}
+
 type Jober struct {
 	running
 
@@ -398,6 +410,7 @@ type Jober struct {
 	destroyFuncs    []func()
 
 	imagePullSecrets  []string
+	vars              vars
 	dynamicConfigYaml string
 	valuesYaml        string
 	chart             *chart.Chart
@@ -417,6 +430,7 @@ type Jober struct {
 
 func NewJober(input *websocket_pb.ProjectInput, wsType websocket_pb.Type, conn *WsConn) Job {
 	return &Jober{
+		vars:          vars{},
 		valuesOptions: &values.Options{},
 		slugName:      utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name)),
 		input:         input,
@@ -516,6 +530,11 @@ func (j *Jober) Run() error {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
+			j.project.DockerImage = matchDockerImage(pipelineVars{
+				Pipeline: j.vars.MustGetString("Pipeline"),
+				Commit:   j.vars.MustGetString("Commit"),
+				Branch:   j.vars.MustGetString("Branch"),
+			}, result.Manifest)
 			var p models.Project
 			if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == nil {
 				app.DB().Model(&models.Project{}).
@@ -778,7 +797,7 @@ const (
 )
 
 type VariableLoader struct {
-	values map[string]interface{}
+	values vars
 }
 
 func (v *VariableLoader) Load(j *Jober) error {
@@ -792,7 +811,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	}
 
 	if v.values == nil {
-		v.values = map[string]interface{}{}
+		v.values = vars{}
 	}
 
 	//ImagePullSecrets
@@ -856,6 +875,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	bf := bytes.Buffer{}
 	tpl.Execute(&bf, v.values)
 	j.valuesYaml = bf.String()
+	j.vars = v.values
 
 	return nil
 }
@@ -877,10 +897,13 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	// 5. 用用户传入的yaml配置去合并 `default_values`
 	provider, err := config.NewYAML(config.Source(base), config.Source(override))
 	if err != nil {
+		mlog.Error(loaderName, err, j.valuesYaml, j.dynamicConfigYaml)
+
 		return err
 	}
 	var mergedDefaultAndConfigYamlValues map[string]interface{}
 	if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
+		mlog.Error(loaderName, mergedDefaultAndConfigYamlValues, err)
 		return err
 	}
 
