@@ -875,6 +875,9 @@ export class BranchesRequest implements IBranchesRequest {
     /** BranchesRequest project_id. */
     public project_id: string;
 
+    /** BranchesRequest all. */
+    public all: boolean;
+
     /**
      * Encodes the specified BranchesRequest message. Does not implicitly {@link BranchesRequest.verify|verify} messages.
      * @param message BranchesRequest message or plain object to encode
@@ -1401,6 +1404,58 @@ export namespace Gitlab {
     type ConfigFileCallback = (error: (Error|null), response?: ConfigFileResponse) => void;
 }
 
+/** Represents a Config. */
+export class Config implements IConfig {
+
+    /**
+     * Constructs a new Config.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IConfig);
+
+    /** Config config_file. */
+    public config_file: string;
+
+    /** Config config_file_values. */
+    public config_file_values: string;
+
+    /** Config config_field. */
+    public config_field: string;
+
+    /** Config is_simple_env. */
+    public is_simple_env: boolean;
+
+    /** Config config_file_type. */
+    public config_file_type: string;
+
+    /** Config local_chart_path. */
+    public local_chart_path: string;
+
+    /** Config branches. */
+    public branches: string[];
+
+    /** Config values_yaml. */
+    public values_yaml: string;
+
+    /**
+     * Encodes the specified Config message. Does not implicitly {@link Config.verify|verify} messages.
+     * @param message Config message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: Config, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a Config message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Config
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Config;
+}
+
 /** Represents a MarsShowRequest. */
 export class MarsShowRequest implements IMarsShowRequest {
 
@@ -1448,7 +1503,7 @@ export class MarsShowResponse implements IMarsShowResponse {
     public branch: string;
 
     /** MarsShowResponse config. */
-    public config: string;
+    public config?: (Config|null);
 
     /**
      * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
@@ -1513,7 +1568,7 @@ export class GlobalConfigResponse implements IGlobalConfigResponse {
     public enabled: boolean;
 
     /** GlobalConfigResponse config. */
-    public config: string;
+    public config?: (Config|null);
 
     /**
      * Encodes the specified GlobalConfigResponse message. Does not implicitly {@link GlobalConfigResponse.verify|verify} messages.
@@ -1547,7 +1602,7 @@ export class MarsUpdateRequest implements IMarsUpdateRequest {
     public project_id: number;
 
     /** MarsUpdateRequest config. */
-    public config: string;
+    public config?: (Config|null);
 
     /**
      * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
@@ -1577,8 +1632,8 @@ export class MarsUpdateResponse implements IMarsUpdateResponse {
      */
     constructor(properties?: IMarsUpdateResponse);
 
-    /** MarsUpdateResponse data. */
-    public data?: (GitlabProjectModal|null);
+    /** MarsUpdateResponse config. */
+    public config?: (Config|null);
 
     /**
      * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.

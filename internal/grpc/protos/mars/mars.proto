@@ -1,10 +1,26 @@
 syntax = "proto3";
 
-import "modal/modal.proto";
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/mars";
+
+message Config {
+  // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
+  string config_file = 1;
+  // config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
+  string config_file_values = 2;
+  string config_field = 3;
+  bool is_simple_env = 4;
+  // config_file_type 配置文件类型，php/env/yaml...
+  string config_file_type = 5;
+  // local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
+  string local_chart_path = 6;
+  // branches 启用的分支
+  repeated string branches = 7;
+  // values_yaml 和 values.yaml 一样
+  string values_yaml = 8;
+}
 
 message MarsShowRequest {
   int64 project_id = 1;
@@ -13,7 +29,7 @@ message MarsShowRequest {
 
 message MarsShowResponse {
   string branch = 1;
-  string config = 2;
+  Config config = 2;
 }
 
 message GlobalConfigRequest {
@@ -22,16 +38,16 @@ message GlobalConfigRequest {
 
 message GlobalConfigResponse {
   bool enabled = 1;
-  string config = 2;
+  Config config = 2;
 }
 
 message MarsUpdateRequest {
   int64 project_id = 1;
-  string config = 2;
+  Config config = 2;
 }
 
 message MarsUpdateResponse {
-   GitlabProjectModal data = 1;
+  Config config = 1;
 }
 
 message ToggleEnabledRequest {

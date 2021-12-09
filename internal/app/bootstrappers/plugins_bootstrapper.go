@@ -14,7 +14,6 @@ func (a *PluginsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 		// 预加载插件
 		plugins.GetWsSender()
 		plugins.GetDomainResolverPlugin()
-		plugins.GetDockerPlugin()
 		plugins.GetPicturePlugin()
 	})
 

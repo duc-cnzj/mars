@@ -2,6 +2,7 @@ package socket
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -11,6 +12,59 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
+
+type pipelineVars struct {
+	Pipeline string
+	Commit   string
+	Branch   string
+}
+
+var matchTag = regexp.MustCompile("image:\\s+(\\S+)")
+
+func matchDockerImage(v pipelineVars, manifest string) string {
+	var (
+		candidateImages []string
+		all             []string
+	)
+	submatch := matchTag.FindAllStringSubmatch(manifest, -1)
+	for _, matches := range submatch {
+		if len(matches) == 2 {
+			image := strings.Trim(matches[1], "\"")
+
+			all = append(all, image)
+			if imageUsedPipelineVars(v, image) {
+				candidateImages = append(candidateImages, image)
+			}
+		}
+	}
+	// 如果找到至少一个镜像就直接返回，如果未找到，则返回所有匹配到的镜像
+	if len(candidateImages) > 0 {
+		return strings.Join(candidateImages, " ")
+	}
+
+	return strings.Join(all, " ")
+}
+
+// imageUsedPipelineVars 使用的流水线变量的镜像，都把他当成是我们的目标镜像
+func imageUsedPipelineVars(v pipelineVars, s string) bool {
+	var pipelineVarsSlice []string
+	if v.Pipeline != "" {
+		pipelineVarsSlice = append(pipelineVarsSlice, v.Pipeline)
+	}
+	if v.Commit != "" {
+		pipelineVarsSlice = append(pipelineVarsSlice, v.Commit)
+	}
+	if v.Branch != "" {
+		pipelineVarsSlice = append(pipelineVarsSlice, v.Branch)
+	}
+	for _, pvar := range pipelineVarsSlice {
+		if strings.Contains(s, pvar) {
+			return true
+		}
+	}
+
+	return false
+}
 
 // getPodSelectorsInDeploymentAndStatefulSetByManifest FIXME: 比较 hack
 // 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
@@ -40,25 +94,15 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []stri
 	return selectors
 }
 
-func getPreOccupiedLen(values []string) int {
+func getPreOccupiedLenByValuesYaml(values string) int {
 	var sub = 0
 	if len(values) > 0 {
-		for _, value := range values {
-			submatch := hostMatch.FindAllStringSubmatch(value, -1)
-			if len(submatch) == 1 && len(submatch[0]) >= 1 {
-				sub = max(sub, len(submatch[0][1]))
-			}
+		submatch := hostMatch.FindAllStringSubmatch(values, -1)
+		if len(submatch) == 1 && len(submatch[0]) >= 1 {
+			sub = max(sub, len(submatch[0][1]))
 		}
 	}
 	return sub
-}
-
-func getDomain(project, namespace string, preOccupiedLen int) string {
-	if !app.Config().HasWildcardDomain() {
-		return ""
-	}
-
-	return plugins.GetDomainResolverPlugin().GetDomain(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, preOccupiedLen)
 }
 
 func getDomainByIndex(project, namespace string, index, preOccupiedLen int) string {

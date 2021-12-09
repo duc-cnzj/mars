@@ -19,35 +19,51 @@ config_file_type: yaml
 # config:
 #   app_name: xxxx
 config_field: conf
-# 镜像仓库(必填)
-docker_repository: nginx
-# tag 可以使用的变量有 {{.Commit}} {{.Branch}} {{.Pipeline}}(必填)
-docker_tag_format: "{{.Branch}}-{{.Pipeline}}"
 # charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
 local_chart_path: charts
 # 是不是单字段的配置(如果有config_file，必填)
 is_simple_env: false
-# default_values 会合并其他配置(可选), 可用变量 "$imagePullSecrets", 会和 'config_field' deep merge
-default_values:
-  db:
-    imagePullSecrets: $imagePullSecrets
-  service:
-    type: ClusterIP
-  ingess:
-    enabled: false
 # 若配置则只会显示配置的分支, 默认 "*"(可选)
 branches:
   - dev
   - master
-# 如果默认的ingress 规则不符合，你可以通过这个重写
-# 可用变量 {{Host1}} {{TlsSecret1}} {{Host2}} {{TlsSecret2}} {{Host3}} {{TlsSecret3}} ... {{Host10}} {{TlsSecret10}}
-ingress_overwrite_values:
-  - ingress.hosts.hostone={{.Host1}}
-  - ingress.hosts.hosttwo={{.Host2}}
-  - ingress.tls[0].hosts[0]={{.Host1}}
-  - ingress.tls[0].secretName={{.TlsSecret1}}
-  - ingress.tls[1].hosts[0]={{.Host2}}
-  - ingress.tls[1].secretName={{.TlsSecret2}}`;
+# values_yaml 和 helm 的 values.yaml 用法一模一样，但是可以使用变量
+# 目前支持的变量有，使用 \`<>\` 作为 Delim，避免和内置模板语法冲突
+# \`<.ImagePullSecrets>\` \`<.Branch>\` \`<.Commit>\` \`<.Pipeline>\` \`<.ClusterIssuer>\`
+# \`<.Host1>...<.Host10>\` \`<.TlsSecret1>...<.TlsSecret10>\`
+values_yaml: |
+  # Default values for charts.
+  # This is a YAML-formatted file.
+  # Declare variables to be passed into your templates.
+  
+  replicaCount: 1
+  
+  image:
+    repository: xxx
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "<.Branch>-<.Pipeline>"
+  
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: 
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+      cert-manager.io/cluster-issuer: "<.ClusterIssuer>"
+    hosts:
+      - host: <.Host1>
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: 
+      - secretName: <.TlsSecret1>
+        hosts:
+          - <.Host1>`;
 
   return (
     <Popover

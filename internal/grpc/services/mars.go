@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -14,14 +15,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	config "github.com/duc-cnzj/mars/internal/mars"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/mars"
-	"github.com/duc-cnzj/mars/pkg/modal"
 	"github.com/xanzy/go-gitlab"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 )
@@ -40,7 +39,7 @@ func (m *Mars) GetDefaultChartValues(ctx context.Context, request *mars.DefaultC
 		return &mars.DefaultChartValues{Value: ""}, nil
 	}
 
-	if marsC.IsRemoteChart() {
+	if utils.IsRemoteChart(marsC) {
 		split := strings.Split(marsC.LocalChartPath, "|")
 		pid = split[0]
 		branch = split[1]
@@ -64,8 +63,8 @@ func (m *Mars) GetDefaultChartValues(ctx context.Context, request *mars.DefaultC
 	return &mars.DefaultChartValues{Value: string(fdata)}, nil
 }
 
-func GetProjectMarsConfig(projectId interface{}, branch string) (*config.Config, error) {
-	var marsC config.Config
+func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.Config, error) {
+	var marsC mars.Config
 
 	var gp models.GitlabProject
 	pid := fmt.Sprintf("%v", projectId)
@@ -80,15 +79,22 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*config.Config,
 	if branch != "" {
 		opt.Ref = gitlab.String(branch)
 	}
+	// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
 	file, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, ".mars.yaml", opt)
 	if err != nil {
 		return nil, err
 	}
 	data, _ := base64.StdEncoding.DecodeString(file.Content)
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&marsC); err != nil {
+	var m map[string]interface{}
+	if err := decoder.Decode(&m); err != nil {
 		return nil, err
 	}
+	marshal, err := json.Marshal(&m)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(marshal, &marsC)
 
 	return &marsC, nil
 }
@@ -111,18 +117,13 @@ func (m *Mars) Show(ctx context.Context, request *mars.MarsShowRequest) (*mars.M
 	if err != nil {
 		return &mars.MarsShowResponse{
 			Branch: branch,
-			Config: "",
+			Config: &mars.Config{},
 		}, nil
-	}
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-	if err := encoder.Encode(config); err != nil {
-		return nil, err
 	}
 
 	return &mars.MarsShowResponse{
 		Branch: branch,
-		Config: bf.String(),
+		Config: config,
 	}, nil
 }
 
@@ -131,13 +132,13 @@ func (m *Mars) GlobalConfig(ctx context.Context, request *mars.GlobalConfigReque
 	if app.DB().Where("`gitlab_project_id` = ?", request.ProjectId).First(&project).Error != nil {
 		return &mars.GlobalConfigResponse{
 			Enabled: false,
-			Config:  project.GlobalConfigString(),
+			Config:  project.GlobalMarsConfig(),
 		}, nil
 	}
 
 	return &mars.GlobalConfigResponse{
 		Enabled: project.GlobalEnabled,
-		Config:  project.GlobalConfigString(),
+		Config:  project.GlobalMarsConfig(),
 	}, nil
 }
 
@@ -170,24 +171,15 @@ func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*ma
 		return nil, err
 	}
 
-	mc := config.Config{}
-	if err := yaml.Unmarshal([]byte(request.Config), &mc); err != nil {
+	if len(request.Config.Branches) == 0 {
+		request.Config.Branches = []string{"*"}
+	}
+	marshal, err := json.Marshal(request.Config)
+	if err != nil {
 		return nil, err
 	}
 
-	app.DB().Model(&project).UpdateColumn("global_config", request.Config)
-	return &mars.MarsUpdateResponse{
-		Data: &modal.GitlabProjectModal{
-			Id:              int64(project.ID),
-			DefaultBranch:   project.DefaultBranch,
-			Name:            project.Name,
-			GitlabProjectId: int64(project.GitlabProjectId),
-			Enabled:         project.Enabled,
-			GlobalEnabled:   project.GlobalEnabled,
-			GlobalConfig:    project.GlobalConfig,
-			CreatedAt:       timestamppb.New(project.CreatedAt),
-			UpdatedAt:       timestamppb.New(project.UpdatedAt),
-			DeletedAt:       timestamppb.New(project.DeletedAt.Time),
-		},
-	}, nil
+	app.DB().Model(&project).UpdateColumn("global_config", string(marshal))
+
+	return &mars.MarsUpdateResponse{Config: project.GlobalMarsConfig()}, nil
 }

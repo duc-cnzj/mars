@@ -1,10 +1,11 @@
 package models
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/mars"
+	"github.com/duc-cnzj/mars/pkg/mars"
 	"gopkg.in/yaml.v2"
 
 	"gorm.io/gorm"
@@ -33,20 +34,12 @@ type GitlabProject struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-func (g *GitlabProject) GlobalConfigString() string {
-	if g.GlobalConfig != "" {
-		return g.GlobalConfig
-	}
-
-	return emptyConfigString
-}
-
 func (g *GitlabProject) GlobalMarsConfig() *mars.Config {
 	if g.GlobalConfig == "" {
 		return &mars.Config{}
 	}
 
 	var c = &mars.Config{}
-	yaml.Unmarshal([]byte(g.GlobalConfig), &c)
+	json.Unmarshal([]byte(g.GlobalConfig), c)
 	return c
 }

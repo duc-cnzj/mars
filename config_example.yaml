@@ -18,8 +18,6 @@ ws_sender_plugin:
 #    addr: 127.0.0.1:6379
 #    password: ""
 #    db: 1
-docker_plugin:
-  name: docker_default
 domain_resolver_plugin:
   name: domain_resolver_default
 picture_plugin:

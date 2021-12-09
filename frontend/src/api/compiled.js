@@ -2137,6 +2137,7 @@ export const BranchesRequest = $root.BranchesRequest = (() => {
      * @exports IBranchesRequest
      * @interface IBranchesRequest
      * @property {string|null} [project_id] BranchesRequest project_id
+     * @property {boolean|null} [all] BranchesRequest all
      */
 
     /**
@@ -2163,6 +2164,14 @@ export const BranchesRequest = $root.BranchesRequest = (() => {
     BranchesRequest.prototype.project_id = "";
 
     /**
+     * BranchesRequest all.
+     * @member {boolean} all
+     * @memberof BranchesRequest
+     * @instance
+     */
+    BranchesRequest.prototype.all = false;
+
+    /**
      * Encodes the specified BranchesRequest message. Does not implicitly {@link BranchesRequest.verify|verify} messages.
      * @function encode
      * @memberof BranchesRequest
@@ -2176,6 +2185,8 @@ export const BranchesRequest = $root.BranchesRequest = (() => {
             writer = $Writer.create();
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.all != null && Object.hasOwnProperty.call(message, "all"))
+            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.all);
         return writer;
     };
 
@@ -2199,6 +2210,9 @@ export const BranchesRequest = $root.BranchesRequest = (() => {
             switch (tag >>> 3) {
             case 1:
                 message.project_id = reader.string();
+                break;
+            case 2:
+                message.all = reader.bool();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -3378,6 +3392,189 @@ export const Gitlab = $root.Gitlab = (() => {
     return Gitlab;
 })();
 
+export const Config = $root.Config = (() => {
+
+    /**
+     * Properties of a Config.
+     * @exports IConfig
+     * @interface IConfig
+     * @property {string|null} [config_file] Config config_file
+     * @property {string|null} [config_file_values] Config config_file_values
+     * @property {string|null} [config_field] Config config_field
+     * @property {boolean|null} [is_simple_env] Config is_simple_env
+     * @property {string|null} [config_file_type] Config config_file_type
+     * @property {string|null} [local_chart_path] Config local_chart_path
+     * @property {Array.<string>|null} [branches] Config branches
+     * @property {string|null} [values_yaml] Config values_yaml
+     */
+
+    /**
+     * Constructs a new Config.
+     * @exports Config
+     * @classdesc Represents a Config.
+     * @implements IConfig
+     * @constructor
+     * @param {IConfig=} [properties] Properties to set
+     */
+    function Config(properties) {
+        this.branches = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Config config_file.
+     * @member {string} config_file
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.config_file = "";
+
+    /**
+     * Config config_file_values.
+     * @member {string} config_file_values
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.config_file_values = "";
+
+    /**
+     * Config config_field.
+     * @member {string} config_field
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.config_field = "";
+
+    /**
+     * Config is_simple_env.
+     * @member {boolean} is_simple_env
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.is_simple_env = false;
+
+    /**
+     * Config config_file_type.
+     * @member {string} config_file_type
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.config_file_type = "";
+
+    /**
+     * Config local_chart_path.
+     * @member {string} local_chart_path
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.local_chart_path = "";
+
+    /**
+     * Config branches.
+     * @member {Array.<string>} branches
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.branches = $util.emptyArray;
+
+    /**
+     * Config values_yaml.
+     * @member {string} values_yaml
+     * @memberof Config
+     * @instance
+     */
+    Config.prototype.values_yaml = "";
+
+    /**
+     * Encodes the specified Config message. Does not implicitly {@link Config.verify|verify} messages.
+     * @function encode
+     * @memberof Config
+     * @static
+     * @param {Config} message Config message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Config.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.config_file != null && Object.hasOwnProperty.call(message, "config_file"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.config_file);
+        if (message.config_file_values != null && Object.hasOwnProperty.call(message, "config_file_values"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config_file_values);
+        if (message.config_field != null && Object.hasOwnProperty.call(message, "config_field"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.config_field);
+        if (message.is_simple_env != null && Object.hasOwnProperty.call(message, "is_simple_env"))
+            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_simple_env);
+        if (message.config_file_type != null && Object.hasOwnProperty.call(message, "config_file_type"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.config_file_type);
+        if (message.local_chart_path != null && Object.hasOwnProperty.call(message, "local_chart_path"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.local_chart_path);
+        if (message.branches != null && message.branches.length)
+            for (let i = 0; i < message.branches.length; ++i)
+                writer.uint32(/* id 7, wireType 2 =*/58).string(message.branches[i]);
+        if (message.values_yaml != null && Object.hasOwnProperty.call(message, "values_yaml"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.values_yaml);
+        return writer;
+    };
+
+    /**
+     * Decodes a Config message from the specified reader or buffer.
+     * @function decode
+     * @memberof Config
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {Config} Config
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Config.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Config();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.config_file = reader.string();
+                break;
+            case 2:
+                message.config_file_values = reader.string();
+                break;
+            case 3:
+                message.config_field = reader.string();
+                break;
+            case 4:
+                message.is_simple_env = reader.bool();
+                break;
+            case 5:
+                message.config_file_type = reader.string();
+                break;
+            case 6:
+                message.local_chart_path = reader.string();
+                break;
+            case 7:
+                if (!(message.branches && message.branches.length))
+                    message.branches = [];
+                message.branches.push(reader.string());
+                break;
+            case 8:
+                message.values_yaml = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return Config;
+})();
+
 export const MarsShowRequest = $root.MarsShowRequest = (() => {
 
     /**
@@ -3480,7 +3677,7 @@ export const MarsShowResponse = $root.MarsShowResponse = (() => {
      * @exports IMarsShowResponse
      * @interface IMarsShowResponse
      * @property {string|null} [branch] MarsShowResponse branch
-     * @property {string|null} [config] MarsShowResponse config
+     * @property {Config|null} [config] MarsShowResponse config
      */
 
     /**
@@ -3508,11 +3705,11 @@ export const MarsShowResponse = $root.MarsShowResponse = (() => {
 
     /**
      * MarsShowResponse config.
-     * @member {string} config
+     * @member {Config|null|undefined} config
      * @memberof MarsShowResponse
      * @instance
      */
-    MarsShowResponse.prototype.config = "";
+    MarsShowResponse.prototype.config = null;
 
     /**
      * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
@@ -3529,7 +3726,7 @@ export const MarsShowResponse = $root.MarsShowResponse = (() => {
         if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.branch);
         if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config);
+            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
     };
 
@@ -3555,7 +3752,7 @@ export const MarsShowResponse = $root.MarsShowResponse = (() => {
                 message.branch = reader.string();
                 break;
             case 2:
-                message.config = reader.string();
+                message.config = $root.Config.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -3656,7 +3853,7 @@ export const GlobalConfigResponse = $root.GlobalConfigResponse = (() => {
      * @exports IGlobalConfigResponse
      * @interface IGlobalConfigResponse
      * @property {boolean|null} [enabled] GlobalConfigResponse enabled
-     * @property {string|null} [config] GlobalConfigResponse config
+     * @property {Config|null} [config] GlobalConfigResponse config
      */
 
     /**
@@ -3684,11 +3881,11 @@ export const GlobalConfigResponse = $root.GlobalConfigResponse = (() => {
 
     /**
      * GlobalConfigResponse config.
-     * @member {string} config
+     * @member {Config|null|undefined} config
      * @memberof GlobalConfigResponse
      * @instance
      */
-    GlobalConfigResponse.prototype.config = "";
+    GlobalConfigResponse.prototype.config = null;
 
     /**
      * Encodes the specified GlobalConfigResponse message. Does not implicitly {@link GlobalConfigResponse.verify|verify} messages.
@@ -3705,7 +3902,7 @@ export const GlobalConfigResponse = $root.GlobalConfigResponse = (() => {
         if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
             writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
         if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config);
+            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
     };
 
@@ -3731,7 +3928,7 @@ export const GlobalConfigResponse = $root.GlobalConfigResponse = (() => {
                 message.enabled = reader.bool();
                 break;
             case 2:
-                message.config = reader.string();
+                message.config = $root.Config.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -3751,7 +3948,7 @@ export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
      * @exports IMarsUpdateRequest
      * @interface IMarsUpdateRequest
      * @property {number|null} [project_id] MarsUpdateRequest project_id
-     * @property {string|null} [config] MarsUpdateRequest config
+     * @property {Config|null} [config] MarsUpdateRequest config
      */
 
     /**
@@ -3779,11 +3976,11 @@ export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
 
     /**
      * MarsUpdateRequest config.
-     * @member {string} config
+     * @member {Config|null|undefined} config
      * @memberof MarsUpdateRequest
      * @instance
      */
-    MarsUpdateRequest.prototype.config = "";
+    MarsUpdateRequest.prototype.config = null;
 
     /**
      * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
@@ -3800,7 +3997,7 @@ export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
             writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
         if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config);
+            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
     };
 
@@ -3826,7 +4023,7 @@ export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
                 message.project_id = reader.int64();
                 break;
             case 2:
-                message.config = reader.string();
+                message.config = $root.Config.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -3845,7 +4042,7 @@ export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
      * Properties of a MarsUpdateResponse.
      * @exports IMarsUpdateResponse
      * @interface IMarsUpdateResponse
-     * @property {GitlabProjectModal|null} [data] MarsUpdateResponse data
+     * @property {Config|null} [config] MarsUpdateResponse config
      */
 
     /**
@@ -3864,12 +4061,12 @@ export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
     }
 
     /**
-     * MarsUpdateResponse data.
-     * @member {GitlabProjectModal|null|undefined} data
+     * MarsUpdateResponse config.
+     * @member {Config|null|undefined} config
      * @memberof MarsUpdateResponse
      * @instance
      */
-    MarsUpdateResponse.prototype.data = null;
+    MarsUpdateResponse.prototype.config = null;
 
     /**
      * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
@@ -3883,8 +4080,8 @@ export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
     MarsUpdateResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-            $root.GitlabProjectModal.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            $root.Config.encode(message.config, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
@@ -3907,7 +4104,7 @@ export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.data = $root.GitlabProjectModal.decode(reader, reader.uint32());
+                message.config = $root.Config.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);

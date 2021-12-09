@@ -49,6 +49,7 @@ message ProjectsResponse {
 
 message BranchesRequest {
   string project_id = 1;
+  bool all = 2;
 }
 message BranchesResponse {
   repeated Option data = 1;

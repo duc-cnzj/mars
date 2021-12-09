@@ -43,7 +43,6 @@ type Config struct {
 	prikey        *rsa.PrivateKey
 	pubkey        *rsa.PublicKey
 
-	DockerPlugin         Plugin `mapstructure:"docker_plugin"`
 	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
 	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
 	PicturePlugin        Plugin `mapstructure:"picture_plugin"`
@@ -112,10 +111,6 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
-	viper.SetDefault("docker_plugin", map[string]interface{}{
-		"name": "docker_default",
-		"args": nil,
-	})
 	viper.SetDefault("domain_resolver_plugin", map[string]interface{}{
 		"name": "domain_resolver_default",
 		"args": nil,
