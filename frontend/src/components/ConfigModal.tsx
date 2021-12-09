@@ -328,7 +328,10 @@ const ConfigModal: React.FC<{
                   wrapperCol={{ span: 20 }}
                   autoComplete="off"
                 >
-                  <Form.Item label="默认配置文件名称">
+                  <Form.Item
+                    label="配置文件相对位置"
+                    tooltip="config_file 的位置，只接受相对路径，作为用户输入的默认配置"
+                  >
                     <Input
                       disabled={!editMode || !globalEnabled}
                       value={config.config_file}
@@ -340,7 +343,10 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
-                  <Form.Item label="配置文件映射的字段">
+                  <Form.Item
+                    label="values 中 config_file 的位置"
+                    tooltip={`用户配置对应到 helm values.yaml 中的哪个字段`}
+                  >
                     <Input
                       disabled={!editMode || !globalEnabled}
                       value={config.config_field}
@@ -352,7 +358,7 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
-                  <Form.Item label="配置文件类型">
+                  <Form.Item label="config_file 文件类型">
                     <Select
                       showArrow={editMode}
                       disabled={!editMode || !globalEnabled}
@@ -369,6 +375,7 @@ const ConfigModal: React.FC<{
                       <Select.Option value="js">js</Select.Option>
                       <Select.Option value="ini">ini</Select.Option>
                       <Select.Option value="php">php</Select.Option>
+                      <Select.Option value="sql">sql</Select.Option>
                       <Select.Option value="go">go</Select.Option>
                       <Select.Option value="python">python</Select.Option>
                       <Select.Option value="json">json</Select.Option>
@@ -376,7 +383,8 @@ const ConfigModal: React.FC<{
                     </Select>
                   </Form.Item>
 
-                  <Form.Item label="文件在项目中存放的目录">
+                  <Form.Item label="charts 的目录"
+                  tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'">
                     <Input
                       disabled={!editMode || !globalEnabled}
                       value={config.local_chart_path}
@@ -408,7 +416,7 @@ const ConfigModal: React.FC<{
                     </Select>
                   </Form.Item>
 
-                  <Form.Item label="是不是单字段的配置">
+                  <Form.Item label="单字段" tooltip="是不是单字段的配置">
                     <Switch
                       disabled={!editMode || !globalEnabled}
                       defaultChecked={config.is_simple_env}
@@ -420,7 +428,7 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
-                  <Form.Item label="全局配置文件">
+                  <Form.Item label="全局配置文件" tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个">
                     <CodeMirror
                       options={{
                         readOnly:
@@ -437,7 +445,12 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
-                  <Form.Item label="helm的values.yaml">
+                  <Form.Item label={
+                    <div>
+                      <div>values.yaml</div>
+                      <div style={{fontSize: 12}}>自动补全: 'alt+enter'</div>
+                    </div>
+                  } tooltip="等同于 helm 的 values.yaml">
                     <Row gutter={3}>
                       <Col
                         span={12}
