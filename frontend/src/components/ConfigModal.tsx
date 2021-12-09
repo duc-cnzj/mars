@@ -185,7 +185,11 @@ const ConfigModal: React.FC<{
               config_file_values: "",
             }));
           }
+
           if (!config.config_file_values && data !== "") {
+            if (typeof data === "object") {
+              data = yaml.dump(data)
+            }
             setConfig((c) => ({
               ...c,
               config_file_values: data,
