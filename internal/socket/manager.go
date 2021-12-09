@@ -390,7 +390,7 @@ type vars map[string]interface{}
 func (v vars) MustGetString(key string) string {
 	if v != nil {
 		if value, ok := v[key]; ok {
-			return value.(string)
+			return fmt.Sprintf("%v", value)
 		}
 	}
 

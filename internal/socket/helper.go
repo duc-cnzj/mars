@@ -22,23 +22,27 @@ type pipelineVars struct {
 var matchTag = regexp.MustCompile("image:\\s+(\\S+)")
 
 func matchDockerImage(v pipelineVars, manifest string) string {
-	var candidateImages []string
-	var all []string
+	var (
+		candidateImages []string
+		all             []string
+	)
 	submatch := matchTag.FindAllStringSubmatch(manifest, -1)
 	for _, matches := range submatch {
 		if len(matches) == 2 {
-			all = append(all, matches[1])
-			if imageUsedPipelineVars(v, matches[1]) {
-				candidateImages = append(candidateImages, matches[1])
+			image := strings.Trim(matches[1], "\"")
+
+			all = append(all, image)
+			if imageUsedPipelineVars(v, image) {
+				candidateImages = append(candidateImages, image)
 			}
 		}
 	}
 	// 如果找到至少一个镜像就直接返回，如果未找到，则返回所有匹配到的镜像
 	if len(candidateImages) > 0 {
-		return strings.Join(candidateImages, ",")
+		return strings.Join(candidateImages, " ")
 	}
 
-	return strings.Join(all, ",")
+	return strings.Join(all, " ")
 }
 
 // imageUsedPipelineVars 使用的流水线变量的镜像，都把他当成是我们的目标镜像
