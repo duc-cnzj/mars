@@ -147,6 +147,12 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
           }
         ],
         "tags": [

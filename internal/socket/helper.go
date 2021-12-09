@@ -40,25 +40,15 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []stri
 	return selectors
 }
 
-func getPreOccupiedLen(values []string) int {
+func getPreOccupiedLenByValuesYaml(values string) int {
 	var sub = 0
 	if len(values) > 0 {
-		for _, value := range values {
-			submatch := hostMatch.FindAllStringSubmatch(value, -1)
-			if len(submatch) == 1 && len(submatch[0]) >= 1 {
-				sub = max(sub, len(submatch[0][1]))
-			}
+		submatch := hostMatch.FindAllStringSubmatch(values, -1)
+		if len(submatch) == 1 && len(submatch[0]) >= 1 {
+			sub = max(sub, len(submatch[0][1]))
 		}
 	}
 	return sub
-}
-
-func getDomain(project, namespace string, preOccupiedLen int) string {
-	if !app.Config().HasWildcardDomain() {
-		return ""
-	}
-
-	return plugins.GetDomainResolverPlugin().GetDomain(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, preOccupiedLen)
 }
 
 func getDomainByIndex(project, namespace string, index, preOccupiedLen int) string {

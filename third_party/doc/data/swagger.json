@@ -291,6 +291,11 @@
             "name": "project_id",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "name": "all",
+            "in": "query"
           }
         ],
         "responses": {
@@ -588,7 +593,7 @@
               "type": "object",
               "properties": {
                 "config": {
-                  "type": "string"
+                  "$ref": "#/definitions/Config"
                 }
               }
             }
@@ -1244,6 +1249,44 @@
         }
       }
     },
+    "Config": {
+      "type": "object",
+      "properties": {
+        "branches": {
+          "type": "array",
+          "title": "branches 启用的分支",
+          "items": {
+            "type": "string"
+          }
+        },
+        "config_field": {
+          "type": "string"
+        },
+        "config_file": {
+          "type": "string",
+          "title": "config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 \"pid|branch|filename\""
+        },
+        "config_file_type": {
+          "description": "config_file_type 配置文件类型，php/env/yaml...",
+          "type": "string"
+        },
+        "config_file_values": {
+          "type": "string",
+          "title": "config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个"
+        },
+        "is_simple_env": {
+          "type": "boolean"
+        },
+        "local_chart_path": {
+          "type": "string",
+          "title": "local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 \"pid|branch|path\""
+        },
+        "values_yaml": {
+          "type": "string",
+          "title": "values_yaml 和 values.yaml 一样"
+        }
+      }
+    },
     "ConfigFileResponse": {
       "type": "object",
       "properties": {
@@ -1357,51 +1400,11 @@
         }
       }
     },
-    "GitlabProjectModal": {
-      "type": "object",
-      "properties": {
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "default_branch": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "enabled": {
-          "type": "boolean"
-        },
-        "gitlab_project_id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "global_config": {
-          "type": "string"
-        },
-        "global_enabled": {
-          "type": "boolean"
-        },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
     "GlobalConfigResponse": {
       "type": "object",
       "properties": {
         "config": {
-          "type": "string"
+          "$ref": "#/definitions/Config"
         },
         "enabled": {
           "type": "boolean"
@@ -1475,15 +1478,15 @@
           "type": "string"
         },
         "config": {
-          "type": "string"
+          "$ref": "#/definitions/Config"
         }
       }
     },
     "MarsUpdateResponse": {
       "type": "object",
       "properties": {
-        "data": {
-          "$ref": "#/definitions/GitlabProjectModal"
+        "config": {
+          "$ref": "#/definitions/Config"
         }
       }
     },

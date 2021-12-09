@@ -150,7 +150,6 @@ const GitlabProjectManager: React.FC = () => {
           visible={configVisible}
           item={currentItem}
           onCancel={() => setConfigVisible(false)}
-          onChange={() => fetchList()}
         />
       </Card>
     </>

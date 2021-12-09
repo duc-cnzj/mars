@@ -174,6 +174,21 @@ func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) 
 		return nil, err
 	}
 
+	res := make([]*gitlab.Option, 0, len(branches))
+	for _, branch := range branches {
+		res = append(res, &gitlab.Option{
+			Value:     branch.Name,
+			Label:     branch.Name,
+			IsLeaf:    false,
+			Type:      OptionTypeBranch,
+			Branch:    branch.Name,
+			ProjectId: request.ProjectId,
+		})
+	}
+	if request.All {
+		return &gitlab.BranchesResponse{Data: res}, nil
+	}
+
 	var defaultBranch string
 	for _, branch := range branches {
 		if branch.Default {
@@ -186,21 +201,14 @@ func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) 
 		return &gitlab.BranchesResponse{Data: make([]*gitlab.Option, 0)}, nil
 	}
 
-	res := make([]*gitlab.Option, 0, len(branches))
-	for _, branch := range branches {
-		if config.BranchPass(branch.Name) {
-			res = append(res, &gitlab.Option{
-				Value:     branch.Name,
-				Label:     branch.Name,
-				IsLeaf:    false,
-				Type:      OptionTypeBranch,
-				Branch:    branch.Name,
-				ProjectId: request.ProjectId,
-			})
+	filteredRes := make([]*gitlab.Option, 0)
+	for _, op := range res {
+		if utils.BranchPass(config, op.Value) {
+			filteredRes = append(filteredRes, op)
 		}
 	}
 
-	return &gitlab.BranchesResponse{Data: res}, nil
+	return &gitlab.BranchesResponse{Data: filteredRes}, nil
 }
 
 func (g *Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*gitlab.CommitsResponse, error) {
@@ -282,7 +290,7 @@ func (g *Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileReque
 		filename string
 	)
 
-	if marsC.IsRemoteConfigFile() {
+	if utils.IsRemoteConfigFile(marsC) {
 		split := strings.Split(configFile, "|")
 		pid = split[0]
 		branch = split[1]

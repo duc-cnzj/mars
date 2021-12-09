@@ -58,7 +58,7 @@ const ProjectSelector: React.FC<{
 
     switch (targetOption.type) {
       case "project":
-        branches({ project_id: String(targetOption.value) }).then((res) => {
+        branches({ project_id: String(targetOption.value), all: false }).then((res) => {
           targetOption.loading = false;
           targetOption.children = res.data.data;
           setOptions([...options]);
@@ -92,7 +92,7 @@ const ProjectSelector: React.FC<{
         targetOption.children = undefined;
         switch (targetOption.type) {
           case "project":
-            branches({ project_id: String(targetOption.value) }).then((res) => {
+            branches({ project_id: String(targetOption.value), all: false }).then((res) => {
               targetOption.loading = false;
               targetOption.children = res.data.data;
               setOptions([...options]);

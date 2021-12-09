@@ -26,6 +26,8 @@
     "hotkeys-js": "^3.8.7",
     "immutable": "^4.0.0",
     "js-yaml": "^4.1.0",
+    "jshint": "^2.13.1",
+    "jsonlint": "^1.6.3",
     "lodash": "^4.17.21",
     "mitt": "^3.0.0",
     "normalize.css": "^8.0.1",
@@ -83,6 +85,7 @@
   "devDependencies": {
     "@types/blueimp-md5": "^2.18.0",
     "@types/js-yaml": "^4.0.2",
+    "@types/jshint": "^2.12.1",
     "@types/lodash": "^4.14.169",
     "@types/prismjs": "^1.16.6",
     "@types/react-copy-to-clipboard": "^5.0.1",

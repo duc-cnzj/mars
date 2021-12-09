@@ -3,12 +3,11 @@ package main
 import (
 	_ "embed"
 
-	"github.com/duc-cnzj/mars/cmd"
-
-	_ "github.com/duc-cnzj/mars/plugins/docker"
 	_ "github.com/duc-cnzj/mars/plugins/domain_resolver"
 	_ "github.com/duc-cnzj/mars/plugins/picture"
 	_ "github.com/duc-cnzj/mars/plugins/wssender"
+
+	"github.com/duc-cnzj/mars/cmd"
 )
 
 //go:embed config_example.yaml

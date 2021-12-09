@@ -9,8 +9,8 @@ export function projects() {
   return ajax.get<pb.ProjectsResponse>("/api/gitlab/projects");
 }
 
-export function branches({project_id}: pb.BranchesRequest) {
-  return ajax.get<pb.BranchesResponse>(`/api/gitlab/projects/${project_id}/branches`);
+export function branches({project_id, all}: pb.BranchesRequest) {
+  return ajax.get<pb.BranchesResponse>(`/api/gitlab/projects/${project_id}/branches?all=${all}`);
 }
 
 export function commits({project_id, branch}: pb.CommitsRequest) {
