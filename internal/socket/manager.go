@@ -882,20 +882,39 @@ func (v *VariableLoader) Load(j *Jober) error {
 
 type MergeValuesLoader struct{}
 
+// Load
+// imagePullSecrets 会自动注入到 imagePullSecrets 中
 func (m *MergeValuesLoader) Load(j *Jober) error {
 	const loaderName = "[MergeValuesLoader]: "
 	j.Percenter().To(60)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
-	if j.valuesYaml == "" && j.dynamicConfigYaml == "" {
+	// 自动注入 imagePullSecrets
+	var imagePullSecrets = make([]map[string]interface{}, len(j.imagePullSecrets))
+	for i, s := range j.imagePullSecrets {
+		imagePullSecrets[i] = map[string]interface{}{"name": s}
+	}
+	yamlImagePullSecrets, _ := yaml.Marshal(map[string]interface{}{
+		"imagePullSecrets": imagePullSecrets,
+	})
+
+	var opts []config.YAMLOption
+	if j.valuesYaml != "" {
+		opts = append(opts, config.Source(strings.NewReader(j.valuesYaml)))
+	}
+	if j.dynamicConfigYaml != "" {
+		opts = append(opts, config.Source(strings.NewReader(j.dynamicConfigYaml)))
+	}
+	if len(yamlImagePullSecrets) != 0 {
+		opts = append(opts, config.Source(bytes.NewReader(yamlImagePullSecrets)))
+	}
+
+	if len(opts) < 1 {
 		return nil
 	}
 
-	base := strings.NewReader(j.valuesYaml)
-	override := strings.NewReader(j.dynamicConfigYaml)
-
 	// 5. 用用户传入的yaml配置去合并 `default_values`
-	provider, err := config.NewYAML(config.Source(base), config.Source(override))
+	provider, err := config.NewYAML(opts...)
 	if err != nil {
 		mlog.Error(loaderName, err, j.valuesYaml, j.dynamicConfigYaml)
 
@@ -919,6 +938,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	}
 	j.AddDestroyFunc(func() { closer.Close() })
 	j.valuesOptions.ValueFiles = append(j.valuesOptions.ValueFiles, mergedFile)
+
 	return nil
 }
 
