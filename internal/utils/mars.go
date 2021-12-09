@@ -1,14 +1,11 @@
 package utils
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/pkg/mars"
-	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v2"
 )
 
@@ -52,45 +49,23 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 		err      error
 		yamlData []byte
 	)
+	if input == "" {
+		return "", nil
+	}
+
 	if mars.IsSimpleEnv {
 		if yamlData, err = YamlDeepSetKey(mars.ConfigField, input); err != nil {
 			return "", err
 		}
 	} else {
-		switch mars.ConfigFileType {
-		case "":
-			return "", nil
-		case "yaml":
-			var data map[string]interface{}
-			decoder := yaml.NewDecoder(strings.NewReader(input))
-			if err := decoder.Decode(&data); err != nil {
-				return "", err
-			}
+		var data map[string]interface{}
+		decoder := yaml.NewDecoder(strings.NewReader(input))
+		if err := decoder.Decode(&data); err != nil {
+			return "", err
+		}
 
-			if yamlData, err = YamlDeepSetKey(mars.ConfigField, data); err != nil {
-				return "", err
-			}
-		case "json":
-			var data map[string]interface{}
-			if err := json.Unmarshal([]byte(input), &data); err != nil {
-				return "", err
-			}
-
-			if yamlData, err = YamlDeepSetKey(mars.ConfigField, data); err != nil {
-				return "", err
-			}
-		case "env", "dotenv", ".env":
-			parse, err := godotenv.Parse(strings.NewReader(input))
-			if err != nil {
-				return "", err
-			}
-
-			if yamlData, err = YamlDeepSetKey(mars.ConfigField, parse); err != nil {
-				return "", err
-			}
-		default:
-			mlog.Error("unsupport type: " + mars.ConfigFileType)
-			return "", nil
+		if yamlData, err = YamlDeepSetKey(mars.ConfigField, data); err != nil {
+			return "", err
 		}
 	}
 
