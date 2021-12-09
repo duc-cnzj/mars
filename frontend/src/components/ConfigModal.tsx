@@ -188,7 +188,7 @@ const ConfigModal: React.FC<{
           if (!config.config_file_values && data !== "") {
             setConfig((c) => ({
               ...c,
-              config_file_values: yaml.dump(data),
+              config_file_values: data,
             }));
           }
         }
@@ -383,8 +383,10 @@ const ConfigModal: React.FC<{
                     </Select>
                   </Form.Item>
 
-                  <Form.Item label="charts 的目录"
-                  tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'">
+                  <Form.Item
+                    label="charts 的目录"
+                    tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
+                  >
                     <Input
                       disabled={!editMode || !globalEnabled}
                       value={config.local_chart_path}
@@ -428,29 +430,39 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
-                  <Form.Item label="全局配置文件" tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个">
-                    <CodeMirror
-                      options={{
-                        readOnly:
-                          !editMode || !globalEnabled ? "nocursor" : false,
-                        mode: mode,
-                        theme: "dracula",
-                      }}
-                      value={config.config_file_values || ""}
-                      onBeforeChange={(editor, d, value) => {
-                        setConfig((c) => ({
-                          ...c,
-                          config_file_values: value,
-                        }));
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item label={
-                    <div>
-                      <div>values.yaml</div>
-                      <div style={{fontSize: 12}}>自动补全: 'alt+enter'</div>
+                  <Form.Item
+                    label="全局配置文件"
+                    tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
+                  >
+                    <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+                      <CodeMirror
+                        options={{
+                          readOnly:
+                            !editMode || !globalEnabled ? "nocursor" : false,
+                          mode: mode,
+                          theme: "dracula",
+                        }}
+                        value={config.config_file_values || ""}
+                        onBeforeChange={(editor, d, value) => {
+                          setConfig((c) => ({
+                            ...c,
+                            config_file_values: value,
+                          }));
+                        }}
+                      />
                     </div>
-                  } tooltip="等同于 helm 的 values.yaml">
+                  </Form.Item>
+                  <Form.Item
+                    label={
+                      <div>
+                        <div>values.yaml</div>
+                        <div style={{ fontSize: 12 }}>
+                          自动补全: 'alt+enter'
+                        </div>
+                      </div>
+                    }
+                    tooltip="等同于 helm 的 values.yaml"
+                  >
                     <Row gutter={3}>
                       <Col
                         span={12}
