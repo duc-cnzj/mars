@@ -750,13 +750,16 @@ func (d *DynamicLoader) Load(j *Jober) error {
 	j.Percenter().To(40)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查到用户传入的配置"))
 
-	if j.input.Config != "" {
-		dynamicConfigYaml, err := utils.ParseInputConfig(j.config, j.input.Config)
-		if err != nil {
-			return err
-		}
-		j.dynamicConfigYaml = dynamicConfigYaml
+	if j.input.Config == "" {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现用户自定义配置"))
+		return nil
 	}
+
+	dynamicConfigYaml, err := utils.ParseInputConfig(j.config, j.input.Config)
+	if err != nil {
+		return err
+	}
+	j.dynamicConfigYaml = dynamicConfigYaml
 
 	return nil
 }
@@ -783,6 +786,11 @@ func (v *VariableLoader) Load(j *Jober) error {
 	j.Percenter().To(50)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
 
+	if j.config.ValuesYaml == "" {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现可用的 values.yaml"))
+		return nil
+	}
+
 	if v.values == nil {
 		v.values = map[string]interface{}{}
 	}
@@ -808,7 +816,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	sub := getPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	for i := 1; i <= 10; i++ {
 		v.values[fmt.Sprintf("%s%d", VarHost, i)] = getDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
-		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = fmt.Sprintf("%s-%s-%d-tls", j.project.Name, j.project.Namespace.Name, i)
+		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", j.project.Name, i)))
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
@@ -859,10 +867,10 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	j.Percenter().To(60)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
-	if j.valuesYaml == "" || j.dynamicConfigYaml == "" {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "not found valuesYaml/dynamicConfigYaml"))
+	if j.valuesYaml == "" && j.dynamicConfigYaml == "" {
 		return nil
 	}
+
 	base := strings.NewReader(j.valuesYaml)
 	override := strings.NewReader(j.dynamicConfigYaml)
 
@@ -895,7 +903,7 @@ type ReleaseInstallerLoader struct{}
 
 func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
-	j.Messager().SendMsg(loaderName + "worker 安装成功, 准备安装")
+	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(70)
 	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, func(format string, v ...interface{}) {
 		if j.Percenter().Current() < 99 {
