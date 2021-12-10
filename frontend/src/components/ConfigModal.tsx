@@ -72,7 +72,10 @@ const ConfigModal: React.FC<{
     setLoading(true);
     marsConfig({ branch, project_id: id })
       .then(({ data }) => {
-        data.config && setConfig(data.config);
+        if (data.config) {
+          setConfig(data.config);
+          setOld(data.config);
+        }
         setModalBranch(data.branch);
         setLoading(false);
         loadDefaultValues(id, data.branch);
@@ -93,7 +96,10 @@ const ConfigModal: React.FC<{
     setLoading(true);
     globalConfigApi({ project_id: id })
       .then(({ data }) => {
-        data.config && setConfig(data.config);
+        if (data.config) {
+          setConfig(data.config);
+          setOld(data.config);
+        }
         loadDefaultValues(id, "");
         setLoading(false);
       })
@@ -116,7 +122,10 @@ const ConfigModal: React.FC<{
           loadConfig(item.id);
         } else {
           console.log(data.config, !!data.config);
-          data.config && setConfig(data.config);
+          if (data.config) {
+            setOld(data.config);
+            setConfig(data.config);
+          }
           loadDefaultValues(item.id, "");
           setLoading(false);
         }
@@ -142,6 +151,8 @@ const ConfigModal: React.FC<{
     setConfig(initConfig);
     setConfigVisible(false);
     setEditMode(false);
+    setConfigFileContent("");
+    setConfigFileTip(false);
     onCancel();
   }, [onCancel]);
 
@@ -216,9 +227,10 @@ const ConfigModal: React.FC<{
         })
         .catch((e) => {
           message.error(e.response.data.message);
-          globalConfigApi({ project_id: item.id }).then((res) => {
-            setGlobalEnabled(res.data.enabled);
-            console.log(res.config);
+          globalConfigApi({ project_id: item.id }).then(({data}) => {
+            setGlobalEnabled(data.enabled);
+            data.config && setOld(data.config)
+            console.log(data.config);
             // setConfig(res.config);
           });
         });
@@ -277,9 +289,9 @@ const ConfigModal: React.FC<{
                   onClick={() => {
                     setEditMode((editMode) => {
                       if (editMode) {
+                        setConfigFileTip(false);
+                        setConfigFileContent("");
                         old && setConfig({ ...old });
-                      } else {
-                        !old && setOld({ ...config });
                       }
                       console.log(old, config);
                       return !editMode;
@@ -349,6 +361,10 @@ const ConfigModal: React.FC<{
                     tooltip={`用户配置对应到 helm values.yaml 中的哪个字段`}
                   >
                     <Popover
+                      overlayInnerStyle={{
+                        maxHeight: 600,
+                        overflowY: "scroll",
+                      }}
                       content={
                         <div>
                           <SyntaxHighlighter
