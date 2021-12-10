@@ -25,12 +25,17 @@ func matchDockerImage(v pipelineVars, manifest string) string {
 	var (
 		candidateImages []string
 		all             []string
+		existsMap       = make(map[string]struct{})
 	)
 	submatch := matchTag.FindAllStringSubmatch(manifest, -1)
 	for _, matches := range submatch {
 		if len(matches) == 2 {
 			image := strings.Trim(matches[1], "\"")
 
+			if _, ok := existsMap[image]; ok {
+				continue
+			}
+			existsMap[image] = struct{}{}
 			all = append(all, image)
 			if imageUsedPipelineVars(v, image) {
 				candidateImages = append(candidateImages, image)
