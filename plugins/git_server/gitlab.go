@@ -398,9 +398,9 @@ func getDirectoryFiles(g *gitlab.Client, pid interface{}, commit string, path st
 }
 
 func (g *GitlabServer) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
-	return getDirectoryFiles(g.client, pid, branch, pid, recursive)
+	return getDirectoryFiles(g.client, pid, branch, path, recursive)
 }
 
 func (g *GitlabServer) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
-	return getDirectoryFiles(g.client, pid, sha, pid, recursive)
+	return getDirectoryFiles(g.client, pid, sha, path, recursive)
 }
