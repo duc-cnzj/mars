@@ -10,8 +10,6 @@ import (
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 
-	"github.com/xanzy/go-gitlab"
-
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
@@ -33,7 +31,6 @@ var _ contracts.ApplicationInterface = (*Application)(nil)
 var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
-	&bootstrappers.GitlabBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
@@ -59,7 +56,6 @@ type Application struct {
 	doneFunc      func()
 	config        *config.Config
 	clientSet     *contracts.K8sClient
-	gitlabClient  *gitlab.Client
 	dbManager     contracts.DBManager
 	dispatcher    contracts.DispatcherInterface
 	metrics       contracts.Metrics
@@ -100,14 +96,6 @@ func (app *Application) GetPlugins() map[string]contracts.PluginInterface {
 
 func (app *Application) Done() <-chan struct{} {
 	return app.done.Done()
-}
-
-func (app *Application) GitlabClient() *gitlab.Client {
-	return app.gitlabClient
-}
-
-func (app *Application) SetGitlabClient(client *gitlab.Client) {
-	app.gitlabClient = client
 }
 
 func (app *Application) K8sClient() *contracts.K8sClient {

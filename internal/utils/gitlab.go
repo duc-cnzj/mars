@@ -4,39 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/plugins"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/xanzy/go-gitlab"
 )
 
 func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
-	var files []string
-
-	id := fmt.Sprintf("%v", pid)
-
-	// TODO: 坑, GitlabClient().Repositories.ListTree 带分页！！凸(艹皿艹 )
-	opt := &gitlab.ListTreeOptions{
-		ListOptions: gitlab.ListOptions{
-			PerPage: 100,
-		},
-		Path:      gitlab.String(path),
-		Recursive: gitlab.Bool(true),
-	}
-	if commit != "" {
-		opt.Ref = gitlab.String(commit)
-	}
-
-	tree, _, _ := app.GitlabClient().Repositories.ListTree(id, opt)
-
-	for _, node := range tree {
-		if node.Type == "blob" {
-			files = append(files, node.Path)
-		}
-	}
+	files, _ := plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%v", pid), commit, path, true)
 
 	return files
 }
@@ -57,11 +33,7 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 	for _, file := range files {
 		go func(file string) {
 			defer wg.Done()
-			opt := gitlab.GetRawFileOptions{}
-			if commit != "" {
-				opt.Ref = gitlab.String(commit)
-			}
-			raw, _, err := app.GitlabClient().RepositoryFiles.GetRawFile(pid, file, &opt)
+			raw, err := plugins.GetGitServer().GetFileContentWithSha(fmt.Sprintf("%d", pid), commit, file)
 			if err != nil {
 				mlog.Error(err)
 			}
@@ -76,7 +48,7 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 				return
 			}
 			defer openFile.Close()
-			openFile.Write(raw)
+			openFile.Write([]byte(raw))
 		}(file)
 	}
 	wg.Wait()
@@ -91,24 +63,4 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 			mlog.Debug("remove " + dir)
 		}
 	}, nil
-}
-
-func GetAllBranches(pid interface{}, options ...gitlab.RequestOptionFunc) ([]*gitlab.Branch, error) {
-	var branches []*gitlab.Branch
-	page := 1
-	for page != -1 {
-		b, r, e := app.GitlabClient().Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 100, Page: page}}, options...)
-		if e != nil {
-			return nil, e
-		}
-		nextPage := r.Header.Get("x-next-page")
-		if nextPage == "" {
-			page = -1
-		} else {
-			page, _ = strconv.Atoi(nextPage)
-		}
-		branches = append(branches, b...)
-	}
-
-	return branches, nil
 }

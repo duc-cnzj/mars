@@ -8,7 +8,6 @@ import (
 
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/xanzy/go-gitlab"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 
@@ -48,9 +47,6 @@ type Option func(ApplicationInterface)
 
 type ApplicationInterface interface {
 	IsDebug() bool
-
-	GitlabClient() *gitlab.Client
-	SetGitlabClient(*gitlab.Client)
 
 	SetMetrics(Metrics)
 	Metrics() Metrics

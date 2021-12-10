@@ -2,19 +2,19 @@ package services
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/duc-cnzj/mars/internal/plugins"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
-	go_gitlab "github.com/xanzy/go-gitlab"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -28,20 +28,20 @@ func (g *Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjec
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
-	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
+	project, _ := plugins.GetGitServer().GetProject(request.GitlabProjectId)
 
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitlabProjectId).First(&gp).Error == nil {
 		app.DB().Model(&gp).Updates(map[string]interface{}{
 			"enabled":        true,
-			"default_branch": project.DefaultBranch,
-			"name":           project.Name,
+			"default_branch": project.GetDefaultBranch(),
+			"name":           project.GetName(),
 		})
 	} else {
 		atoi, _ := strconv.Atoi(request.GitlabProjectId)
 		app.DB().Create(&models.GitlabProject{
-			DefaultBranch:   project.DefaultBranch,
-			Name:            project.Name,
+			DefaultBranch:   project.GetDefaultBranch(),
+			Name:            project.GetName(),
 			GitlabProjectId: atoi,
 			Enabled:         true,
 		})
@@ -54,19 +54,19 @@ func (g *Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProj
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
-	project, _, _ := app.GitlabClient().Projects.GetProject(request.GitlabProjectId, &go_gitlab.GetProjectOptions{})
+	project, _ := plugins.GetGitServer().GetProject(request.GitlabProjectId)
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitlabProjectId).First(&gp).Error == nil {
 		app.DB().Model(&gp).Updates(map[string]interface{}{
 			"enabled":        false,
-			"default_branch": project.DefaultBranch,
-			"name":           project.Name,
+			"default_branch": project.GetDefaultBranch(),
+			"name":           project.GetName(),
 		})
 	} else {
 		itoa, _ := strconv.Atoi(request.GitlabProjectId)
 		app.DB().Create(&models.GitlabProject{
-			DefaultBranch:   project.DefaultBranch,
-			Name:            project.Name,
+			DefaultBranch:   project.GetDefaultBranch(),
+			Name:            project.GetName(),
 			GitlabProjectId: itoa,
 			Enabled:         false,
 		})
@@ -76,12 +76,7 @@ func (g *Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProj
 }
 
 func (g *Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectListResponse, error) {
-	projects, _, err := app.GitlabClient().Projects.ListProjects(&go_gitlab.ListProjectsOptions{
-		MinAccessLevel: go_gitlab.AccessLevel(go_gitlab.DeveloperPermissions),
-		ListOptions: go_gitlab.ListOptions{
-			PerPage: 100,
-		},
-	})
+	projects, err := plugins.GetGitServer().AllProjects()
 	if err != nil {
 		return nil, err
 	}
@@ -98,17 +93,17 @@ func (g *Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab
 
 	for _, project := range projects {
 		var enabled, GlobalEnabled bool
-		if gitlabProject, ok := m[project.ID]; ok {
+		if gitlabProject, ok := m[int(project.GetID())]; ok {
 			enabled = gitlabProject.Enabled
 			GlobalEnabled = gitlabProject.GlobalEnabled
 		}
 		infos = append(infos, &gitlab.GitlabProjectInfo{
-			Id:            int64(project.ID),
-			Name:          project.Name,
-			Path:          project.Path,
-			WebUrl:        project.WebURL,
-			AvatarUrl:     project.AvatarURL,
-			Description:   project.Description,
+			Id:            project.GetID(),
+			Name:          project.GetName(),
+			Path:          project.GetPath(),
+			WebUrl:        project.GetWebURL(),
+			AvatarUrl:     project.GetAvatarURL(),
+			Description:   project.GetDescription(),
 			Enabled:       enabled,
 			GlobalEnabled: GlobalEnabled,
 		})
@@ -169,7 +164,7 @@ func (g *Gitlab) Projects(ctx context.Context, empty *emptypb.Empty) (*gitlab.Pr
 }
 
 func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) (*gitlab.BranchesResponse, error) {
-	branches, err := utils.GetAllBranches(request.ProjectId)
+	branches, err := plugins.GetGitServer().AllBranches(request.ProjectId)
 	if err != nil {
 		return nil, err
 	}
@@ -177,11 +172,11 @@ func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) 
 	res := make([]*gitlab.Option, 0, len(branches))
 	for _, branch := range branches {
 		res = append(res, &gitlab.Option{
-			Value:     branch.Name,
-			Label:     branch.Name,
+			Value:     branch.GetName(),
+			Label:     branch.GetName(),
 			IsLeaf:    false,
 			Type:      OptionTypeBranch,
-			Branch:    branch.Name,
+			Branch:    branch.GetName(),
 			ProjectId: request.ProjectId,
 		})
 	}
@@ -191,8 +186,8 @@ func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) 
 
 	var defaultBranch string
 	for _, branch := range branches {
-		if branch.Default {
-			defaultBranch = branch.Name
+		if branch.IsDefault() {
+			defaultBranch = branch.GetName()
 		}
 	}
 
@@ -212,7 +207,7 @@ func (g *Gitlab) Branches(ctx context.Context, request *gitlab.BranchesRequest) 
 }
 
 func (g *Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*gitlab.CommitsResponse, error) {
-	commits, _, err := app.GitlabClient().Commits.ListCommits(request.ProjectId, &go_gitlab.ListCommitsOptions{RefName: go_gitlab.String(request.Branch), ListOptions: go_gitlab.ListOptions{PerPage: 100}})
+	commits, err := plugins.GetGitServer().ListCommits(request.ProjectId, request.Branch)
 	if err != nil {
 		return nil, err
 	}
@@ -220,9 +215,9 @@ func (g *Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*
 	res := make([]*gitlab.Option, 0, len(commits))
 	for _, commit := range commits {
 		res = append(res, &gitlab.Option{
-			Value:     commit.ID,
+			Value:     commit.GetID(),
 			IsLeaf:    true,
-			Label:     fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.CommittedDate), commit.Title),
+			Label:     fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
 			Type:      OptionTypeCommit,
 			ProjectId: request.ProjectId,
 			Branch:    request.Branch,
@@ -233,16 +228,16 @@ func (g *Gitlab) Commits(ctx context.Context, request *gitlab.CommitsRequest) (*
 }
 
 func (g *Gitlab) Commit(ctx context.Context, request *gitlab.CommitRequest) (*gitlab.CommitResponse, error) {
-	commit, _, err := app.GitlabClient().Commits.GetCommit(request.ProjectId, request.Commit)
+	commit, err := plugins.GetGitServer().GetCommit(request.ProjectId, request.Commit)
 	if err != nil {
 		return nil, err
 	}
 
 	return &gitlab.CommitResponse{
 		Data: &gitlab.Option{
-			Value:     commit.ID,
+			Value:     commit.GetID(),
 			IsLeaf:    true,
-			Label:     fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.CommittedDate), commit.Title),
+			Label:     fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
 			Type:      OptionTypeCommit,
 			ProjectId: request.ProjectId,
 			Branch:    request.Branch,
@@ -251,17 +246,17 @@ func (g *Gitlab) Commit(ctx context.Context, request *gitlab.CommitRequest) (*gi
 }
 
 func (g *Gitlab) PipelineInfo(ctx context.Context, request *gitlab.PipelineInfoRequest) (*gitlab.PipelineInfoResponse, error) {
-	commit, _, err := app.GitlabClient().Commits.GetCommit(request.ProjectId, request.Commit)
+	commit, err := plugins.GetGitServer().GetCommit(request.ProjectId, request.Commit)
 	if err != nil {
 		return nil, err
 	}
-	if commit.LastPipeline == nil {
+	if commit.GetLastPipeline() == nil {
 		return nil, status.Errorf(codes.NotFound, "pipeline not found")
 	}
 
 	return &gitlab.PipelineInfoResponse{
-		Status: commit.LastPipeline.Status,
-		WebUrl: commit.LastPipeline.WebURL,
+		Status: commit.GetLastPipeline().GetStatus(),
+		WebUrl: commit.GetLastPipeline().GetWebURL(),
 	}, nil
 }
 
@@ -301,7 +296,7 @@ func (g *Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileReque
 		filename = configFile
 	}
 
-	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &go_gitlab.GetFileOptions{Ref: go_gitlab.String(branch)})
+	content, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, filename)
 	if err != nil {
 		mlog.Debug(err)
 		return &gitlab.ConfigFileResponse{
@@ -309,9 +304,9 @@ func (g *Gitlab) ConfigFile(ctx context.Context, request *gitlab.ConfigFileReque
 			Type: marsC.ConfigFileType,
 		}, nil
 	}
-	fdata, _ := base64.StdEncoding.DecodeString(f.Content)
+
 	return &gitlab.ConfigFileResponse{
-		Data: string(fdata),
+		Data: content,
 		Type: marsC.ConfigFileType,
 	}, nil
 }

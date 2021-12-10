@@ -17,7 +17,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
-	github.com/joho/godotenv v1.3.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	github.com/nsqio/go-nsq v1.1.0

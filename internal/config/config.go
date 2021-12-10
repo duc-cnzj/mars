@@ -46,6 +46,7 @@ type Config struct {
 	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
 	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
 	PicturePlugin        Plugin `mapstructure:"picture_plugin"`
+	GitServerPlugin      Plugin `mapstructure:"git_server_plugin"`
 
 	KubeConfig     string `mapstructure:"kubeconfig"`
 	NsPrefix       string `mapstructure:"ns_prefix"`

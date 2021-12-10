@@ -4,7 +4,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/xanzy/go-gitlab"
 	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
@@ -20,10 +19,6 @@ func Config() *config.Config {
 
 func DB() *gorm.DB {
 	return App().DBManager().DB()
-}
-
-func GitlabClient() *gitlab.Client {
-	return App().GitlabClient()
 }
 
 func Event() contracts.DispatcherInterface {

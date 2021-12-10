@@ -1,0 +1,87 @@
+package plugins
+
+import (
+	"sync"
+	"time"
+
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
+)
+
+var gitServerOnce = sync.Once{}
+
+type ProjectInterface interface {
+	GetID() int64
+	GetName() string
+	GetDefaultBranch() string
+	GetPath() string
+	GetWebURL() string
+	GetAvatarURL() string
+	GetDescription() string
+}
+
+type BranchInterface interface {
+	GetName() string
+	IsDefault() bool
+	GetWebURL() string
+}
+
+type PipelineInterface interface {
+	GetID() int64
+	GetProjectID() int64
+	GetStatus() string
+	GetRef() string
+	GetSHA() string
+	GetWebURL() string
+	GetUpdatedAt() *time.Time
+	GetCreatedAt() *time.Time
+}
+
+type CommitInterface interface {
+	GetID() string
+	GetShortID() string
+	GetTitle() string
+	GetCommittedDate() *time.Time
+	GetAuthorName() string
+	GetAuthorEmail() string
+	GetCommitterName() string
+	GetCommitterEmail() string
+	GetCreatedAt() *time.Time
+	GetMessage() string
+	GetProjectID() int64
+	GetWebURL() string
+	GetLastPipeline() PipelineInterface
+}
+
+type GitServerPlugin interface {
+	contracts.PluginInterface
+
+	GetProject(pid string) (ProjectInterface, error)
+	AllProjects() ([]ProjectInterface, error)
+
+	AllBranches(pid string) ([]BranchInterface, error)
+
+	GetCommit(pid string, sha string) (CommitInterface, error)
+	ListCommits(pid string, branch string) ([]CommitInterface, error)
+
+	GetFileContentWithBranch(pid string, branch string, filename string) (string, error)
+	GetFileContentWithSha(pid string, sha string, filename string) (string, error)
+
+	GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error)
+	GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error)
+}
+
+func GetGitServer() GitServerPlugin {
+	pcfg := app.Config().GitServerPlugin
+	p := app.App().GetPluginByName(pcfg.Name)
+	gitServerOnce.Do(func() {
+		if err := p.Initialize(pcfg.GetArgs()); err != nil {
+			panic(err)
+		}
+		app.App().RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
+			p.Destroy()
+		})
+	})
+
+	return p.(GitServerPlugin)
+}
