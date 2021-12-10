@@ -493,7 +493,8 @@ const ConfigModal: React.FC<{
                   <Form.Item label="单字段" tooltip="是不是单字段的配置">
                     <Switch
                       disabled={!editMode || !globalEnabled}
-                      defaultChecked={config.is_simple_env}
+                      defaultChecked
+                      checked={config.is_simple_env}
                       onChange={(checked: boolean, event: MouseEvent) => {
                         setConfig((c) => ({
                           ...c,
