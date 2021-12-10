@@ -698,7 +698,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		pid := split[0]
 		branch := split[1]
 		path := split[2]
-		files, _ = plugins.GetGitServer().GetDirectoryFilesWithBranch(fmt.Sprintf("%v", pid), branch, path, true)
+		files, _ = plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
