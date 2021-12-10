@@ -116,6 +116,14 @@ func (c *commit) GetWebURL() string {
 	return c.c.WebURL
 }
 
+func (c *commit) GetLastPipeline() plugins.PipelineInterface {
+	if c.c.LastPipeline == nil {
+		return nil
+	}
+
+	return &pipeline{p: c.c.LastPipeline}
+}
+
 type pipeline struct {
 	p *gitlab.PipelineInfo
 }
@@ -150,10 +158,6 @@ func (p *pipeline) GetUpdatedAt() *time.Time {
 
 func (p *pipeline) GetCreatedAt() *time.Time {
 	return p.p.CreatedAt
-}
-
-func (c *commit) GetLastPipeline() plugins.PipelineInterface {
-	return &pipeline{p: c.c.LastPipeline}
 }
 
 type GitlabServer struct {
