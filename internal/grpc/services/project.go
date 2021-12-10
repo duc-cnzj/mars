@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+
+	"github.com/duc-cnzj/mars/internal/plugins"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
@@ -113,7 +116,7 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		return nil, err
 	}
 	cpu, memory := utils.GetCpuAndMemory(projectModal.GetAllPodMetrics())
-	commit, _, err := app.GitlabClient().Commits.GetCommit(projectModal.GitlabProjectId, projectModal.GitlabCommit)
+	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModal.GitlabProjectId), projectModal.GitlabCommit)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
@@ -143,10 +146,10 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		Config:             projectModal.Config,
 		DockerImage:        projectModal.DockerImage,
 		Atomic:             projectModal.Atomic,
-		GitlabCommitWebUrl: commit.WebURL,
-		GitlabCommitTitle:  commit.Title,
-		GitlabCommitAuthor: commit.AuthorName,
-		GitlabCommitDate:   utils.ToHumanizeDatetimeString(commit.CreatedAt),
+		GitlabCommitWebUrl: commit.GetWebURL(),
+		GitlabCommitTitle:  commit.GetTitle(),
+		GitlabCommitAuthor: commit.GetAuthorName(),
+		GitlabCommitDate:   utils.ToHumanizeDatetimeString(commit.GetCreatedAt()),
 		Urls:               urls,
 		Namespace: &project.ProjectShowResponse_Namespace{
 			Id:   int64(projectModal.NamespaceId),

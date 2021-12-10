@@ -839,20 +839,20 @@ func (v *VariableLoader) Load(j *Jober) error {
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
-	commit, _, err := app.GitlabClient().Commits.GetCommit(j.project.GitlabProjectId, j.project.GitlabCommit)
+	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit)
 	if err != nil {
 		return err
 	}
 	var (
-		pipelineID     int
+		pipelineID     int64
 		pipelineBranch string
-		pipelineCommit string = commit.ShortID
+		pipelineCommit string = commit.GetShortID()
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
-	if commit.LastPipeline != nil {
-		pipelineID = commit.LastPipeline.ID
-		pipelineBranch = commit.LastPipeline.Ref
+	if commit.GetLastPipeline() != nil {
+		pipelineID = commit.GetLastPipeline().GetID()
+		pipelineBranch = commit.GetLastPipeline().GetRef()
 
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
 	} else {

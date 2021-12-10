@@ -1,12 +1,12 @@
 package services
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/duc-cnzj/mars/internal/plugins"
 
 	gopath "path"
 	"strings"
@@ -54,13 +54,12 @@ func (m *Mars) GetDefaultChartValues(ctx context.Context, request *mars.DefaultC
 	if branch == "" {
 		branch = "master"
 	}
-	f, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, filename, &gitlab.GetFileOptions{Ref: gitlab.String(branch)})
+	f, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, filename)
 	if err != nil {
 		return nil, err
 	}
-	fdata, _ := base64.StdEncoding.DecodeString(f.Content)
 
-	return &mars.DefaultChartValues{Value: string(fdata)}, nil
+	return &mars.DefaultChartValues{Value: f}, nil
 }
 
 func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.Config, error) {
@@ -80,12 +79,11 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.Config, e
 		opt.Ref = gitlab.String(branch)
 	}
 	// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
-	file, _, err := app.GitlabClient().RepositoryFiles.GetFile(pid, ".mars.yaml", opt)
+	data, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, ".mars.yaml")
 	if err != nil {
 		return nil, err
 	}
-	data, _ := base64.StdEncoding.DecodeString(file.Content)
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder := yaml.NewDecoder(strings.NewReader(data))
 	var m map[string]interface{}
 	if err := decoder.Decode(&m); err != nil {
 		return nil, err
@@ -100,12 +98,12 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.Config, e
 }
 
 func getDefaultBranch(projectId int) (string, error) {
-	p, _, err := app.GitlabClient().Projects.GetProject(projectId, &gitlab.GetProjectOptions{})
+	p, err := plugins.GetGitServer().GetProject(fmt.Sprintf("%d", projectId))
 	if err != nil {
 		mlog.Error(err)
 		return "", err
 	}
-	return p.DefaultBranch, nil
+	return p.GetDefaultBranch(), nil
 }
 
 func (m *Mars) Show(ctx context.Context, request *mars.MarsShowRequest) (*mars.MarsShowResponse, error) {

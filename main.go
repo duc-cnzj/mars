@@ -4,6 +4,7 @@ import (
 	_ "embed"
 
 	_ "github.com/duc-cnzj/mars/plugins/domain_resolver"
+	_ "github.com/duc-cnzj/mars/plugins/git_server"
 	_ "github.com/duc-cnzj/mars/plugins/picture"
 	_ "github.com/duc-cnzj/mars/plugins/wssender"
 
