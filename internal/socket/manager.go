@@ -698,7 +698,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		pid := split[0]
 		branch := split[1]
 		path := split[2]
-		files = utils.GetDirectoryFiles(pid, branch, path)
+		files, _ = plugins.GetGitServer().GetDirectoryFilesWithBranch(fmt.Sprintf("%v", pid), branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
@@ -715,7 +715,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
 			for _, dependency := range loadDir.Metadata.Dependencies {
 				if strings.HasPrefix(dependency.Repository, "file://") {
-					depFiles := utils.GetDirectoryFiles(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")))
+					depFiles, _ := plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
 					_, depDeleteFn, err := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
 					if err != nil {
 						return err
@@ -729,7 +729,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	} else {
 		var err error
 		dir = j.config.LocalChartPath
-		files = utils.GetDirectoryFiles(j.input.GitlabProjectId, j.input.GitlabCommit, j.config.LocalChartPath)
+		files, _ = plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitlabProjectId), j.input.GitlabCommit, j.config.LocalChartPath, true)
 		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(j.input.GitlabProjectId, j.input.GitlabCommit, files)
 		if err != nil {
 			return err

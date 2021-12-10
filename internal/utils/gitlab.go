@@ -11,12 +11,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 )
 
-func GetDirectoryFiles(pid interface{}, commit string, path string) []string {
-	files, _ := plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%v", pid), commit, path, true)
-
-	return files
-}
-
 func DownloadFiles(pid interface{}, commit string, files []string) (string, func(), error) {
 	id := fmt.Sprintf("%v", pid)
 	dir, err := os.MkdirTemp("", "mars_tmp_*")
