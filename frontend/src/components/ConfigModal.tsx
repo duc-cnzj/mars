@@ -246,6 +246,7 @@ const ConfigModal: React.FC<{
 
   return (
     <Modal
+      maskClosable={false}
       title={
         <div>
           <MarsExample />
