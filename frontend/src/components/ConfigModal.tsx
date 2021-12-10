@@ -197,6 +197,8 @@ const ConfigModal: React.FC<{
             data = yaml.dump(data);
           }
           setConfigFileContent(data);
+        } else {
+          setConfigFileContent("");
         }
       }, 1000);
       d();
