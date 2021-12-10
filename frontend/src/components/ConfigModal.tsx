@@ -363,7 +363,7 @@ const ConfigModal: React.FC<{
                               height: "100%",
                             }}
                           >
-                            {configFileContent}
+                            {String(configFileContent)}
                           </SyntaxHighlighter>
                           <Button
                             size="small"
