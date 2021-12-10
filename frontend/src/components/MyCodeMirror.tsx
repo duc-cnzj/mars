@@ -14,6 +14,8 @@ import "codemirror/mode/python/python";
 import "codemirror/mode/properties/properties";
 import "codemirror/mode/textile/textile";
 
+import "codemirror/addon/comment/comment";
+
 import "codemirror/addon/hint/show-hint";
 import "codemirror/addon/hint/anyword-hint";
 import "codemirror/addon/hint/javascript-hint";
@@ -33,31 +35,35 @@ require("./autorefresh.ext");
 var cm = require("codemirror");
 
 const list = [
-  "<.ImagePullSecrets>",
-  "<.Branch>",
-  "<.Commit>",
-  "<.Pipeline>",
-  "<.ClusterIssuer>",
-  "<.Host1>",
-  "<.Host2>",
-  "<.Host3>",
-  "<.Host4>",
-  "<.Host5>",
-  "<.Host6>",
-  "<.Host7>",
-  "<.Host8>",
-  "<.Host9>",
-  "<.Host10>",
-  "<.TlsSecret1>",
-  "<.TlsSecret2>",
-  "<.TlsSecret3>",
-  "<.TlsSecret4>",
-  "<.TlsSecret5>",
-  "<.TlsSecret6>",
-  "<.TlsSecret7>",
-  "<.TlsSecret8>",
-  "<.TlsSecret9>",
-  "<.TlsSecret10>",
+  { text: "<.ImagePullSecrets>", displayText: "imagePullSecrets" },
+  { text: "<.Branch>", displayText: "branch" },
+  { text: "<.Commit>", displayText: "commit" },
+  { text: "<.Pipeline>", displayText: "pipeline" },
+  { text: "<.ClusterIssuer>", displayText: "clusterIssuer" },
+  { text: "<.Host1>", displayText: "host1" },
+  { text: "<.Host2>", displayText: "host2" },
+  { text: "<.Host3>", displayText: "host3" },
+  { text: "<.Host4>", displayText: "host4" },
+  { text: "<.Host5>", displayText: "host5" },
+  { text: "<.Host6>", displayText: "host6" },
+  { text: "<.Host7>", displayText: "host7" },
+  { text: "<.Host8>", displayText: "host8" },
+  { text: "<.Host9>", displayText: "host9" },
+  { text: "<.Host10>", displayText: "host10" },
+  { text: "<.TlsSecret1>", displayText: "tlsSecret1" },
+  { text: "<.TlsSecret2>", displayText: "tlsSecret2" },
+  { text: "<.TlsSecret3>", displayText: "tlsSecret3" },
+  { text: "<.TlsSecret4>", displayText: "tlsSecret4" },
+  { text: "<.TlsSecret5>", displayText: "tlsSecret5" },
+  { text: "<.TlsSecret6>", displayText: "tlsSecret6" },
+  { text: "<.TlsSecret7>", displayText: "tlsSecret7" },
+  { text: "<.TlsSecret8>", displayText: "tlsSecret8" },
+  { text: "<.TlsSecret9>", displayText: "tlsSecret9" },
+  { text: "<.TlsSecret10>", displayText: "tlsSecret10" },
+  {
+    text: 'cert-manager.io/cluster-issuer: "<.ClusterIssuer>"',
+    displayText: "certManager",
+  },
 ];
 
 var wordRegexp = /[^"\s>\-_]+/;
@@ -74,7 +80,7 @@ cm.hint.yaml = function (e: any) {
   let filteredList =
     curWord.length > 0
       ? list.filter((item) => {
-          return lowerCase(item).includes(lowerCase(curWord));
+          return lowerCase(item.text).includes(lowerCase(curWord));
         })
       : list;
   let innter = orig(e) || {
@@ -124,7 +130,11 @@ const defaultOpt = {
   lineNumbers: true,
   lint: true,
   gutters: ["CodeMirror-lint-markers"],
-  extraKeys: { "Alt-Enter": "autocomplete" },
+  extraKeys: {
+    "Alt-Enter": "autocomplete",
+    "Ctrl-/": (editor: any) => editor.execCommand("toggleComment"),
+    "Cmd-/": (editor: any) => editor.execCommand("toggleComment"),
+  },
   hintOptions: {
     completeSingle: false,
   },

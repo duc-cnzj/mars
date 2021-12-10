@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
 import pb from "../api/compiled";
@@ -11,6 +11,7 @@ import yaml from "js-yaml";
 
 import {
   Tooltip,
+  Popover,
   Switch,
   Select,
   Button,
@@ -56,7 +57,7 @@ const ConfigModal: React.FC<{
   item: undefined | pb.GitlabProjectInfo;
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(true);
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [config, setConfig] = useState<Config>(initConfig);
   const [modalBranch, setModalBranch] = useState("");
@@ -151,6 +152,7 @@ const ConfigModal: React.FC<{
   };
 
   const toggleGlobalEnabled = (enabled: boolean) => {
+    setConfigFileContent("");
     if (!enabled) {
       setEditMode(false);
     }
@@ -169,6 +171,7 @@ const ConfigModal: React.FC<{
           message.error(e.message);
         });
   };
+
   useEffect(() => {
     if (editMode) {
       let d = debounce(() => {
@@ -179,22 +182,10 @@ const ConfigModal: React.FC<{
             config.config_field.split("->"),
             ""
           );
-          if (config.config_file_values !== "" && data === "") {
-            setConfig((c) => ({
-              ...c,
-              config_file_values: "",
-            }));
+          if (typeof data === "object") {
+            data = yaml.dump(data);
           }
-
-          if (!config.config_file_values && data !== "") {
-            if (typeof data === "object") {
-              data = yaml.dump(data)
-            }
-            setConfig((c) => ({
-              ...c,
-              config_file_values: data,
-            }));
-          }
+          setConfigFileContent(data);
         }
       }, 1000);
       d();
@@ -203,7 +194,7 @@ const ConfigModal: React.FC<{
         console.log("cancel called");
       };
     }
-  }, [editMode, config.config_field, defaultValues, config.config_file_values]);
+  }, [editMode, config.config_field, defaultValues]);
 
   const onSave = () => {
     item &&
@@ -232,6 +223,12 @@ const ConfigModal: React.FC<{
           });
         });
   };
+
+  const [configFileContent, setConfigFileContent] = useState("");
+  const [configFileTip, setConfigFileTip] = useState(false);
+  useEffect(() => {
+    setConfigFileTip(!!configFileContent && !config.config_file_values);
+  }, [configFileContent, config.config_file_values]);
 
   return (
     <Modal
@@ -280,7 +277,6 @@ const ConfigModal: React.FC<{
                   onClick={() => {
                     setEditMode((editMode) => {
                       if (editMode) {
-                        console.log("取消", old);
                         old && setConfig({ ...old });
                       } else {
                         !old && setOld({ ...config });
@@ -347,10 +343,65 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
+
                   <Form.Item
                     label="values 中 config_file 的位置"
                     tooltip={`用户配置对应到 helm values.yaml 中的哪个字段`}
                   >
+                    <Popover
+                      content={
+                        <div>
+                          <SyntaxHighlighter
+                            language="yaml"
+                            style={materialDark}
+                            customStyle={{
+                              lineHeight: 1.2,
+                              padding: "10px",
+                              fontFamily: '"Fira code", "Fira Mono", monospace',
+                              fontSize: 12,
+                              margin: 0,
+                              height: "100%",
+                            }}
+                          >
+                            {configFileContent}
+                          </SyntaxHighlighter>
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              setConfig((c) => ({
+                                ...c,
+                                config_file_values: configFileContent,
+                              }));
+                              setConfigFileTip(false);
+                            }}
+                            type="dashed"
+                            style={{ marginTop: 3, fontSize: 12 }}
+                          >
+                            使用该配置
+                          </Button>
+                        </div>
+                      }
+                      title={
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <div>检测到可用配置</div>
+                          <Button
+                            size="small"
+                            type="link"
+                            onClick={() => setConfigFileTip(false)}
+                            icon={<CloseOutlined />}
+                          ></Button>
+                        </div>
+                      }
+                      trigger="focus"
+                      visible={configFileTip && editMode}
+                      onVisibleChange={(v) => setConfigFileTip(v)}
+                    ></Popover>
                     <Input
                       disabled={!editMode || !globalEnabled}
                       value={config.config_field}
@@ -362,6 +413,7 @@ const ConfigModal: React.FC<{
                       }}
                     />
                   </Form.Item>
+
                   <Form.Item label="config_file 文件类型">
                     <Select
                       showArrow={editMode}
