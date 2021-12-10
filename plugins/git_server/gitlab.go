@@ -186,37 +186,148 @@ func (g *GitlabServer) GetProject(pid string) (plugins.ProjectInterface, error) 
 	return &project{p: p}, err
 }
 
-func (g *GitlabServer) AllProjects() ([]plugins.ProjectInterface, error) {
-	res, _, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
+type listProjectResponse struct {
+	items                    []plugins.ProjectInterface
+	page, pageSize, nextPage int
+	hasMore                  bool
+}
+
+func (l *listProjectResponse) NextPage() int {
+	return l.nextPage
+}
+
+func (l *listProjectResponse) HasMore() bool {
+	return l.hasMore
+}
+
+func (l *listProjectResponse) GetItems() []plugins.ProjectInterface {
+	return l.items
+}
+
+func (l *listProjectResponse) Page() int {
+	return l.page
+}
+
+func (l *listProjectResponse) PageSize() int {
+	return l.pageSize
+}
+
+func (g *GitlabServer) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
+	res, r, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
-		ListOptions:    gitlab.ListOptions{PerPage: 100},
+		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
 	})
+	nextPage := r.Header.Get("x-next-page")
 	var projects = make([]plugins.ProjectInterface, 0, len(res))
 	for _, re := range res {
 		projects = append(projects, &project{p: re})
 	}
 
-	return projects, err
+	var next int
+	if nextPage != "" {
+		next, _ = strconv.Atoi(nextPage)
+	}
+
+	return &listProjectResponse{
+		items:    projects,
+		page:     page,
+		pageSize: pageSize,
+		nextPage: next,
+		hasMore:  nextPage != "",
+	}, err
+}
+
+func (g *GitlabServer) AllProjects() ([]plugins.ProjectInterface, error) {
+	var branches []plugins.ProjectInterface
+	page := 1
+	for page != -1 {
+		projects, err := g.ListProjects(page, 100)
+		if err != nil {
+			return nil, err
+		}
+		if projects.HasMore() {
+			page = projects.NextPage()
+		} else {
+			page = -1
+		}
+		for _, p := range projects.GetItems() {
+			branches = append(branches, p)
+		}
+	}
+
+	return branches, nil
+}
+
+type listBranchResponse struct {
+	items                    []plugins.BranchInterface
+	page, pageSize, nextPage int
+	hasMore                  bool
+}
+
+func (l *listBranchResponse) NextPage() int {
+	return l.nextPage
+}
+
+func (l *listBranchResponse) HasMore() bool {
+	return l.hasMore
+}
+
+func (l *listBranchResponse) GetItems() []plugins.BranchInterface {
+	return l.items
+}
+
+func (l *listBranchResponse) Page() int {
+	return l.page
+}
+
+func (l *listBranchResponse) PageSize() int {
+	return l.pageSize
+}
+
+func (g *GitlabServer) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
+	var (
+		branches []plugins.BranchInterface
+		next     int
+	)
+
+	gitlabBranches, r, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: pageSize, Page: page}})
+	if e != nil {
+		return nil, e
+	}
+	nextPage := r.Header.Get("x-next-page")
+	for _, gitlabBranch := range gitlabBranches {
+		branches = append(branches, &branch{b: gitlabBranch})
+	}
+	if nextPage != "" {
+		next, _ = strconv.Atoi(nextPage)
+	}
+	return &listBranchResponse{
+		items:    branches,
+		page:     page,
+		pageSize: pageSize,
+		nextPage: next,
+		hasMore:  nextPage != "",
+	}, nil
 }
 
 func (g *GitlabServer) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 	var branches []plugins.BranchInterface
 	page := 1
 	for page != -1 {
-		gitlabBranches, r, e := g.client.Branches.ListBranches(pid, &gitlab.ListBranchesOptions{ListOptions: gitlab.ListOptions{PerPage: 100, Page: page}})
-		if e != nil {
-			return nil, e
+		gitlabBranches, err := g.ListBranches(pid, page, 100)
+		if err != nil {
+			return nil, err
 		}
-		nextPage := r.Header.Get("x-next-page")
-		if nextPage == "" {
-			page = -1
+		if gitlabBranches.HasMore() {
+			page = gitlabBranches.NextPage()
 		} else {
-			page, _ = strconv.Atoi(nextPage)
+			page = -1
 		}
-		for _, gitlabBranch := range gitlabBranches {
-			branches = append(branches, &branch{b: gitlabBranch})
+		for _, gitlabBranch := range gitlabBranches.GetItems() {
+			branches = append(branches, gitlabBranch)
 		}
 	}
+
 	return branches, nil
 }
 

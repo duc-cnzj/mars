@@ -76,7 +76,7 @@ func (g *Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProj
 }
 
 func (g *Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab.ProjectListResponse, error) {
-	projects, err := plugins.GetGitServer().AllProjects()
+	projects, err := plugins.GetGitServer().ListProjects(1, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (g *Gitlab) ProjectList(ctx context.Context, empty *emptypb.Empty) (*gitlab
 
 	var infos = make([]*gitlab.GitlabProjectInfo, 0)
 
-	for _, project := range projects {
+	for _, project := range projects.GetItems() {
 		var enabled, GlobalEnabled bool
 		if gitlabProject, ok := m[int(project.GetID())]; ok {
 			enabled = gitlabProject.Enabled

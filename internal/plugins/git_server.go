@@ -53,12 +53,31 @@ type CommitInterface interface {
 	GetLastPipeline() PipelineInterface
 }
 
+type paginate interface {
+	Page() int
+	PageSize() int
+	HasMore() bool
+	NextPage() int
+}
+
+type ListProjectResponseInterface interface {
+	paginate
+	GetItems() []ProjectInterface
+}
+
+type ListBranchResponseInterface interface {
+	paginate
+	GetItems() []BranchInterface
+}
+
 type GitServerPlugin interface {
 	contracts.PluginInterface
 
 	GetProject(pid string) (ProjectInterface, error)
+	ListProjects(page, pageSize int) (ListProjectResponseInterface, error)
 	AllProjects() ([]ProjectInterface, error)
 
+	ListBranches(pid string, page, pageSize int) (ListBranchResponseInterface, error)
 	AllBranches(pid string) ([]BranchInterface, error)
 
 	GetCommit(pid string, sha string) (CommitInterface, error)
