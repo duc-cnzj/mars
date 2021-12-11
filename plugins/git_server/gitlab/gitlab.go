@@ -1,4 +1,4 @@
-package git_server
+package gitlab
 
 import (
 	"strconv"
@@ -9,7 +9,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-var gitlab_name = "gitlab"
+var name = "gitlab"
 
 func init() {
 	dr := &GitlabServer{}
@@ -165,7 +165,7 @@ type GitlabServer struct {
 }
 
 func (g *GitlabServer) Name() string {
-	return gitlab_name
+	return name
 }
 
 func (g *GitlabServer) Initialize(args map[string]interface{}) error {
@@ -242,7 +242,7 @@ func (g *GitlabServer) ListProjects(page, pageSize int) (plugins.ListProjectResp
 }
 
 func (g *GitlabServer) AllProjects() ([]plugins.ProjectInterface, error) {
-	var branches []plugins.ProjectInterface
+	var ps []plugins.ProjectInterface
 	page := 1
 	for page != -1 {
 		projects, err := g.ListProjects(page, 100)
@@ -255,11 +255,11 @@ func (g *GitlabServer) AllProjects() ([]plugins.ProjectInterface, error) {
 			page = -1
 		}
 		for _, p := range projects.GetItems() {
-			branches = append(branches, p)
+			ps = append(ps, p)
 		}
 	}
 
-	return branches, nil
+	return ps, nil
 }
 
 type listBranchResponse struct {

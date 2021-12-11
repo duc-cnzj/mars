@@ -6,6 +6,14 @@ debug: false
 
 profile_enabled: true
 
+git_server_plugin:
+  name: gitlab
+  args:
+    token: ""
+    baseurl: "https://gitlab.com/api/v4"
+#  name: github
+#  args:
+#    token: ""
 ws_sender_plugin:
   name: ws_sender_nsq
   args:
