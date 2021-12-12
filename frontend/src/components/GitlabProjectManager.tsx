@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  disabledProject,
-  enabledProject,
-  projectList,
-} from "../api/gitlab";
+import { disabledProject, enabledProject, projectList } from "../api/gitlab";
+import { CopyOutlined } from "@ant-design/icons";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import { List, Avatar, Card, Button, Select, message, Tooltip } from "antd";
 import ConfigModal from "./ConfigModal";
 import { GlobalOutlined } from "@ant-design/icons";
-import pb from '../api/compiled'
+import pb from "../api/compiled";
 
 const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
@@ -16,9 +14,11 @@ const GitlabProjectManager: React.FC = () => {
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
 
   const fetchList = useCallback(() => {
-    return projectList().then((res) => {
-      setList(res.data.data);
-    }).catch((e) => message.error(e.response.data.message));
+    return projectList()
+      .then((res) => {
+        setList(res.data.data);
+      })
+      .catch((e) => message.error(e.response.data.message));
   }, [setList]);
 
   useEffect(() => {
@@ -32,9 +32,9 @@ const GitlabProjectManager: React.FC = () => {
     console.log("loadingList", loadingList);
     try {
       if (item.enabled) {
-        await disabledProject({gitlab_project_id: String(item.id)});
+        await disabledProject({ gitlab_project_id: String(item.id) });
       } else {
-        await enabledProject({gitlab_project_id: String(item.id)});
+        await enabledProject({ gitlab_project_id: String(item.id) });
       }
     } catch (e: any) {
       message.error(e.response.data.message);
@@ -61,7 +61,7 @@ const GitlabProjectManager: React.FC = () => {
     let item = list.find((item) => item.id === v);
     if (item) {
       setSelected(item);
-      console.log(item)
+      console.log(item);
     }
   };
 
@@ -83,15 +83,23 @@ const GitlabProjectManager: React.FC = () => {
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
-            {list ? list.map((item, key) => (
-              <Option value={item.id} key={key}>{item.name}</Option>
-            )):<></>}
+            {list ? (
+              list.map((item, key) => (
+                <Option value={item.id} key={key}>
+                  {item.name}
+                </Option>
+              ))
+            ) : (
+              <></>
+            )}
           </Select>
         </div>
         <List
           itemLayout="horizontal"
           loading={initLoading}
-          dataSource={list.filter(item=> selected ? item.id === selected.id : true)}
+          dataSource={list.filter((item) =>
+            selected ? item.id === selected.id : true
+          )}
           renderItem={(item: pb.GitlabProjectInfo) => (
             <List.Item
               key={item.id}
@@ -122,8 +130,26 @@ const GitlabProjectManager: React.FC = () => {
                 key={item.id}
                 avatar={<Avatar src={item.avatar_url} />}
                 title={
-                  <div>
+                  <div style={{ fontSize: 16 }}>
                     {item.name}
+                    <div
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        marginLeft: 3,
+                        marginRight: 1,
+                        fontWeight: "normal",
+                      }}
+                    >
+                      (id: <span style={{ marginRight: 1 }}>{item.id}</span>
+                      <CopyToClipboard
+                        text={String(item.id)}
+                        onCopy={() => message.success("已复制项目id！")}
+                      >
+                        <CopyOutlined />
+                      </CopyToClipboard>
+                      )
+                    </div>
                     {item.global_enabled ? (
                       <Tooltip
                         placement="top"
@@ -131,7 +157,10 @@ const GitlabProjectManager: React.FC = () => {
                         overlayStyle={{ fontSize: "10px" }}
                       >
                         <GlobalOutlined
-                          style={{ color: item.enabled ? "green" : "red" }}
+                          style={{
+                            color: item.enabled ? "green" : "red",
+                            marginLeft: 3,
+                          }}
                         />
                       </Tooltip>
                     ) : (
