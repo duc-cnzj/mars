@@ -104,7 +104,7 @@ const Content: React.FC<{
               <ReactDiffViewer
                 disableWordDiff
                 styles={{
-                  line: {fontSize: 12},
+                  line: { fontSize: 12 },
                   gutter: { padding: "0 5px", minWidth: 20 },
                   marker: { padding: "0 6px" },
                   diffContainer: {
