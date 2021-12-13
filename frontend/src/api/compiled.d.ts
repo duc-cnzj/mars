@@ -392,6 +392,183 @@ export namespace Auth {
     type ExchangeCallback = (error: (Error|null), response?: LoginResponse) => void;
 }
 
+/** Properties of a ChangelogGetRequest. */
+export interface IChangelogGetRequest {
+
+    /** ChangelogGetRequest project_id */
+    project_id?: (number|null);
+
+    /** ChangelogGetRequest only_changed */
+    only_changed?: (boolean|null);
+}
+
+/** Represents a ChangelogGetRequest. */
+export class ChangelogGetRequest implements IChangelogGetRequest {
+
+    /**
+     * Constructs a new ChangelogGetRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangelogGetRequest);
+
+    /** ChangelogGetRequest project_id. */
+    public project_id: number;
+
+    /** ChangelogGetRequest only_changed. */
+    public only_changed: boolean;
+
+    /**
+     * Encodes the specified ChangelogGetRequest message. Does not implicitly {@link ChangelogGetRequest.verify|verify} messages.
+     * @param message ChangelogGetRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ChangelogGetRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangelogGetRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangelogGetRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangelogGetRequest;
+}
+
+/** Properties of a ChangelogGetResponse. */
+export interface IChangelogGetResponse {
+
+    /** ChangelogGetResponse items */
+    items?: (ChangelogGetResponse.Item[]|null);
+}
+
+/** Represents a ChangelogGetResponse. */
+export class ChangelogGetResponse implements IChangelogGetResponse {
+
+    /**
+     * Constructs a new ChangelogGetResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangelogGetResponse);
+
+    /** ChangelogGetResponse items. */
+    public items: ChangelogGetResponse.Item[];
+
+    /**
+     * Encodes the specified ChangelogGetResponse message. Does not implicitly {@link ChangelogGetResponse.verify|verify} messages.
+     * @param message ChangelogGetResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ChangelogGetResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangelogGetResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangelogGetResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangelogGetResponse;
+}
+
+export namespace ChangelogGetResponse {
+
+    /** Properties of an Item. */
+    interface IItem {
+
+        /** Item version */
+        version?: (number|null);
+
+        /** Item config */
+        config?: (string|null);
+
+        /** Item date */
+        date?: (string|null);
+
+        /** Item username */
+        username?: (string|null);
+    }
+
+    /** Represents an Item. */
+    class Item implements IItem {
+
+        /**
+         * Constructs a new Item.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: ChangelogGetResponse.IItem);
+
+        /** Item version. */
+        public version: number;
+
+        /** Item config. */
+        public config: string;
+
+        /** Item date. */
+        public date: string;
+
+        /** Item username. */
+        public username: string;
+
+        /**
+         * Encodes the specified Item message. Does not implicitly {@link ChangelogGetResponse.Item.verify|verify} messages.
+         * @param message Item message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: ChangelogGetResponse.Item, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes an Item message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns Item
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangelogGetResponse.Item;
+    }
+}
+
+/** Represents a Changelog */
+export class Changelog extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Changelog service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Get.
+     * @param request ChangelogGetRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ChangelogGetResponse
+     */
+    public get(request: ChangelogGetRequest, callback: Changelog.GetCallback): void;
+
+    /**
+     * Calls Get.
+     * @param request ChangelogGetRequest message or plain object
+     * @returns Promise
+     */
+    public get(request: ChangelogGetRequest): Promise<ChangelogGetResponse>;
+}
+
+export namespace Changelog {
+
+    /**
+     * Callback as used by {@link Changelog#get}.
+     * @param error Error, if any
+     * @param [response] ChangelogGetResponse
+     */
+    type GetCallback = (error: (Error|null), response?: ChangelogGetResponse) => void;
+}
+
 /** ClusterStatus enum. */
 export enum ClusterStatus {
     StatusUnknown = 0,
@@ -4734,6 +4911,9 @@ export class ProjectShowResponse implements IProjectShowResponse {
 
     /** ProjectShowResponse updated_at. */
     public updated_at: string;
+
+    /** ProjectShowResponse updated_timestamp. */
+    public updated_timestamp: number;
 
     /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.

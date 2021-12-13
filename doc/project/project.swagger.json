@@ -383,6 +383,10 @@
         },
         "updated_at": {
           "type": "string"
+        },
+        "updated_timestamp": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

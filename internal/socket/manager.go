@@ -14,11 +14,10 @@ import (
 	"text/template"
 	"time"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/action"
@@ -29,6 +28,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -537,13 +537,19 @@ func (j *Jober) Run() error {
 			}, result.Manifest)
 			var p models.Project
 			if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == nil {
-				app.DB().Model(&models.Project{}).
+				j.project.ID = p.ID
+				app.DB().Model(j.project).
 					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
-					Where("`id` = ?", p.ID).
 					Updates(&j.project)
 			} else {
 				app.DB().Create(&j.project)
 			}
+			app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
+				Project:  j.project,
+				Manifest: result.Manifest,
+				Config:   j.input.Config,
+				Username: j.conn.user.Name,
+			})
 			j.Percenter().To(100)
 			j.messageCh <- MessageItem{
 				Msg:  "部署成功",

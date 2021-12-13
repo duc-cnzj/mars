@@ -18,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/pkg/auth"
+	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/cp"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
@@ -99,6 +100,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		cp.RegisterCpHandlerFromEndpoint,
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 		version.RegisterVersionHandlerFromEndpoint,
+		changelog.RegisterChangelogHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {

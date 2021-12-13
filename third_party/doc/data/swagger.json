@@ -1135,6 +1135,42 @@
         }
       }
     },
+    "/api/projects/{project_id}/changelogs": {
+      "get": {
+        "tags": [
+          "Changelog"
+        ],
+        "operationId": "Changelog_Get",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "project_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "boolean",
+            "name": "only_changed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ChangelogGetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/version": {
       "get": {
         "tags": [
@@ -1189,6 +1225,35 @@
           "items": {
             "$ref": "#/definitions/Option"
           }
+        }
+      }
+    },
+    "ChangelogGetResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChangelogGetResponseItem"
+          }
+        }
+      }
+    },
+    "ChangelogGetResponseItem": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -1761,6 +1826,10 @@
         "updated_at": {
           "type": "string"
         },
+        "updated_timestamp": {
+          "type": "string",
+          "format": "int64"
+        },
         "urls": {
           "type": "array",
           "items": {
@@ -1910,6 +1979,9 @@
   "tags": [
     {
       "name": "Auth"
+    },
+    {
+      "name": "Changelog"
     },
     {
       "name": "Cluster"

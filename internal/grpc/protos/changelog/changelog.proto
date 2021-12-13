@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/changelog;changelog";
+
+message ChangelogGetRequest {
+  int64 project_id = 1;
+  bool only_changed = 2;
+}
+
+message ChangelogGetResponse {
+  message Item {
+    int32 version = 1;
+    string config = 2;
+    string date = 3;
+    string username = 4;
+  }
+  repeated Item items = 1;
+}
+
+service Changelog {
+  rpc Get(ChangelogGetRequest) returns (ChangelogGetResponse) {
+    option (google.api.http) = {
+      get: "/api/projects/{project_id}/changelogs"
+    };
+  }
+}

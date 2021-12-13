@@ -129,7 +129,7 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="容器日志" key="container-logs">
                 {detail ? (
                   <TabLog
-                    updatedAt={detail.updated_at}
+                    updatedAt={detail.updated_timestamp}
                     id={detail.id}
                     namespaceId={detail.namespace?.id || 0}
                   />
@@ -142,7 +142,7 @@ const ItemDetailModal: React.FC<{
                   <ErrorBoundary>
                     {detail ? (
                       <Shell
-                        updatedAt={detail.updated_at}
+                        updatedAt={detail.updated_timestamp}
                         resizeAt={resizeAt}
                         detail={detail}
                       />
