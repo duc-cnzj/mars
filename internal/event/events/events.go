@@ -57,7 +57,7 @@ func HandleProjectChanged(data interface{}, e contracts.Event) error {
 		app.DB().Select("ID", "GitlabProjectId").Where("`gitlab_project_id` = ?", changedData.Project.GitlabProjectId).First(&gp)
 		var (
 			configChanged bool
-			version       uint8
+			version       uint8 = 1
 		)
 		if last != nil {
 			if last.Config != changedData.Config {
