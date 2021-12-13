@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { memo, useEffect, useCallback, useState } from "react";
 import { Popover, Button, Collapse } from "antd";
 import { HistoryOutlined } from "@ant-design/icons";
 import ReactDiffViewer from "react-diff-viewer";
@@ -96,7 +96,7 @@ const Content: React.FC<{
             key={item.version}
             header={
               <>
-                [{item.date} {item.username}]: version {item.version}
+                {item.username}: [{item.date}]: version {item.version}
               </>
             }
           >
@@ -141,4 +141,4 @@ const Content: React.FC<{
   );
 };
 
-export default ConfigHistory;
+export default memo(ConfigHistory);
