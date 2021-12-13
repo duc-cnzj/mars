@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect, useCallback, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
-import Prism from "prismjs";
 import PipelineInfo from "./PipelineInfo";
+import ConfigHistory from "./ConfigHistory";
 import { commit, configFile, projects } from "../api/gitlab";
+import { getHighlightSyntax } from "../utils/highlight";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -80,7 +81,10 @@ const ModalSub: React.FC<{
     gitlabCommit: string;
     time?: number;
   }>();
-  let slug = useMemo(() => toSlug(namespaceId || 0, data.name), [namespaceId, data.name]);
+  let slug = useMemo(
+    () => toSlug(namespaceId || 0, data.name),
+    [namespaceId, data.name]
+  );
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -102,12 +106,13 @@ const ModalSub: React.FC<{
           branch: detail.gitlab_branch,
           commit: detail.gitlab_commit,
         }).then((res) => {
-          res.data.data && setInitValue({
-            projectName: detail.name,
-            gitlabProjectId: String(detail.gitlab_project_id),
-            gitlabBranch: detail.gitlab_branch,
-            gitlabCommit: res.data.data.label,
-          });
+          res.data.data &&
+            setInitValue({
+              projectName: detail.name,
+              gitlabProjectId: String(detail.gitlab_project_id),
+              gitlabBranch: detail.gitlab_branch,
+              gitlabCommit: res.data.data.label,
+            });
         });
       }
     });
@@ -222,40 +227,15 @@ const ModalSub: React.FC<{
       return;
     }
     if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
-      let s =  pb.CancelInput.encode({
-          type: pb.Type.CancelProject,
-          namespace_id: Number(namespaceId),
-          name: data.name,
-        }).finish();
+      let s = pb.CancelInput.encode({
+        type: pb.Type.CancelProject,
+        namespace_id: Number(namespaceId),
+        name: data.name,
+      }).finish();
       ws?.send(s);
       return;
     }
   }, [data, ws, namespaceId, wsReady]);
-
-  const getHighlightSyntax = useCallback(
-    (str: string, lang: string): string => {
-      switch (lang) {
-        case "yaml":
-          return Prism.highlight(str, Prism.languages.yaml, "yaml");
-        case "php":
-          return Prism.highlight(str, Prism.languages.php, "php");
-        case "py":
-        case "python":
-          return Prism.highlight(str, Prism.languages.python, "python");
-        case "go":
-        case "golang":
-          return Prism.highlight(str, Prism.languages.go, "go");
-        case "js":
-        case "javascript":
-          return Prism.highlight(str, Prism.languages.javascript, "javascript");
-        case "ini":
-          return Prism.highlight(str, Prism.languages.ini, "ini");
-        default:
-          return str;
-      }
-    },
-    []
-  );
 
   useEffect(() => {
     setMode(getMode(data.config_type));
@@ -269,7 +249,7 @@ const ModalSub: React.FC<{
         }}
       />
     ),
-    [data.config_type, getHighlightSyntax]
+    [data.config_type]
   );
 
   return (
@@ -340,7 +320,7 @@ const ModalSub: React.FC<{
               重置
             </Button>
             <Button
-              style={{ fontSize: 12 }}
+              style={{ fontSize: 12, marginRight: 5 }}
               size="small"
               type="primary"
               loading={list[slug]?.isLoading}
@@ -348,6 +328,16 @@ const ModalSub: React.FC<{
             >
               部署
             </Button>
+            <ConfigHistory
+              show={editVisible}
+              onDataChange={(s: string) =>
+                setData((data) => ({ ...data, config: s }))
+              }
+              projectID={detail.id}
+              configType={data.config_type}
+              currentConfig={data.config}
+              updatedAt={detail.updated_timestamp}
+            />
           </div>
 
           <DebugModeSwitch
@@ -389,6 +379,7 @@ const ModalSub: React.FC<{
                   },
                 }}
                 useDarkTheme
+                disableWordDiff
                 renderContent={highlightSyntax}
                 showDiffOnly={false}
                 oldValue={detail.config}

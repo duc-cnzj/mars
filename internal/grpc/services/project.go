@@ -105,7 +105,7 @@ func (p *Project) Destroy(ctx context.Context, request *project.ProjectDestroyRe
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModal)
-	app.Event().Dispatch(events.EventProjectedDeleted, map[string]interface{}{"data": &projectModal})
+	app.Event().Dispatch(events.EventProjectDeleted, map[string]interface{}{"data": &projectModal})
 
 	return &emptypb.Empty{}, nil
 }
@@ -155,11 +155,12 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 			Id:   int64(projectModal.NamespaceId),
 			Name: projectModal.Namespace.Name,
 		},
-		Cpu:            cpu,
-		Memory:         memory,
-		OverrideValues: projectModal.OverrideValues,
-		CreatedAt:      utils.ToHumanizeDatetimeString(&projectModal.CreatedAt),
-		UpdatedAt:      utils.ToHumanizeDatetimeString(&projectModal.UpdatedAt),
+		Cpu:              cpu,
+		Memory:           memory,
+		OverrideValues:   projectModal.OverrideValues,
+		CreatedAt:        utils.ToHumanizeDatetimeString(&projectModal.CreatedAt),
+		UpdatedAt:        utils.ToHumanizeDatetimeString(&projectModal.UpdatedAt),
+		UpdatedTimestamp: projectModal.UpdatedAt.Unix(),
 	}, nil
 }
 

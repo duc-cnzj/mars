@@ -21,6 +21,7 @@ var Models = []interface{}{
 	&models.Project{},
 	&models.GitlabProject{},
 	&models.File{},
+	&models.Changelog{},
 }
 
 type DBBootstrapper struct{}

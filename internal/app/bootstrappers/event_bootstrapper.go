@@ -10,11 +10,14 @@ import (
 type EventBootstrapper struct{}
 
 var events map[contracts.Event][]contracts.Listener = map[contracts.Event][]contracts.Listener{
-	mevent.EventNamespaceDeleted: []contracts.Listener{
+	mevent.EventNamespaceDeleted: {
 		mevent.HandleNamespaceDeleted,
 	},
-	mevent.EventProjectedDeleted: []contracts.Listener{
+	mevent.EventProjectDeleted: {
 		mevent.HandleProjectDeleted,
+	},
+	mevent.EventProjectChanged: {
+		mevent.HandleProjectChanged,
 	},
 }
 

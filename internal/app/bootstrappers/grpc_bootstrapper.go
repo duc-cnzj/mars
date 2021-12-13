@@ -20,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/auth"
+	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/cp"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
@@ -126,6 +127,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	auth.RegisterAuthServer(server, services.NewAuth(app.Config().Prikey(), app.Config().Pubkey(), app.App().Oidc(), app.Config().AdminPassword))
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 	version.RegisterVersionServer(server, new(services.VersionService))
+	changelog.RegisterChangelogServer(server, new(services.Changelog))
 
 	g.server = server
 	go func() {
