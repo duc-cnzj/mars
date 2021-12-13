@@ -68,9 +68,14 @@ const Content: React.FC<{
   const [data, setData] = useState("");
   useEffect(() => {
     changelogs({ project_id: projectID, only_changed: true }).then((res) =>
-      setList(res.data.items.filter((i) => i.config !== currentConfig))
+      setList(res.data.items)
     );
-  }, [projectID, updatedAt, currentConfig]);
+  }, [projectID, updatedAt]);
+  useEffect(() => {
+    if (list) {
+      setList(list.filter((item) => item.config !== currentConfig));
+    }
+  }, [currentConfig, list]);
 
   const highlightSyntax = useCallback(
     (str: string) => (
@@ -124,7 +129,7 @@ const Content: React.FC<{
                 <Button
                   onClick={() => {
                     onDataChange(data);
-                    setData("");
+                    setData(data);
                   }}
                   size="small"
                   type="dashed"
