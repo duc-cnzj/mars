@@ -16,12 +16,13 @@ import (
 
 type CopyFileToPodResult struct {
 	TargetDir string
-	Output    string
+	ErrOut    string
+	StdOut    string
 }
 
 func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
 	var (
-		bf                = bytes.NewBuffer([]byte{})
+		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 		reader, outStream = io.Pipe()
 	)
 	if targetContainerDir == "" {
@@ -39,12 +40,13 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	if err := archiver.Archive([]string{fpath}, path); err != nil {
 		return nil, err
 	}
+	defer app.Uploader().Delete(path)
 	src, err := os.Open(path)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
 	}
-	go func() {
+	go func(reader *io.PipeReader, outStream *io.PipeWriter, src *os.File) {
 		defer func() {
 			reader.Close()
 			outStream.Close()
@@ -54,7 +56,8 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		if _, err := io.Copy(outStream, src); err != nil {
 			mlog.Error(err)
 		}
-	}()
+	}(reader, outStream, src)
+
 	peo := &v1.PodExecOptions{
 		Stdin:     true,
 		Stdout:    true,
@@ -79,12 +82,13 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  reader,
-		Stdout: bf,
-		Stderr: bf,
+		Stdout: outbf,
+		Stderr: errbf,
 	})
 
 	return &CopyFileToPodResult{
 		TargetDir: targetContainerDir,
-		Output:    bf.String(),
+		ErrOut:    errbf.String(),
+		StdOut:    outbf.String(),
 	}, err
 }

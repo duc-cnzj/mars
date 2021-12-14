@@ -32,18 +32,6 @@ func BranchPass(mars *mars.Config, name string) bool {
 	return false
 }
 
-func ParseInputConfigToMap(mars *mars.Config, input string) (map[string]interface{}, error) {
-	data, err := ParseInputConfig(mars, input)
-	if err != nil {
-		return nil, err
-	}
-	v := map[string]interface{}{}
-	if err := yaml.Unmarshal([]byte(data), &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
 func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 	var (
 		err      error

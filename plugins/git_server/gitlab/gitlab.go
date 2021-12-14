@@ -136,8 +136,17 @@ func (p *pipeline) GetProjectID() int64 {
 	return int64(p.p.ProjectID)
 }
 
-func (p *pipeline) GetStatus() string {
-	return p.p.Status
+func (p *pipeline) GetStatus() plugins.Status {
+	switch p.p.Status {
+	case "failed":
+		return plugins.StatusFailed
+	case "running":
+		return plugins.StatusRunning
+	case "success":
+		return plugins.StatusSuccess
+	default:
+		return plugins.StatusUnknown
+	}
 }
 
 func (p *pipeline) GetRef() string {

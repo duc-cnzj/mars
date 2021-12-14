@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -155,13 +152,14 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request, params map[s
 	}
 	defer f.Close()
 
-	mkdirTemp, _ := os.MkdirTemp("/tmp", "mars-*")
-	temp, _ := os.Create(filepath.Join(mkdirTemp, h.Filename))
-	defer temp.Close()
-	mlog.Warning(temp.Name())
-	io.Copy(temp, f)
+	var uploader contracts.Uploader = app.Uploader()
+	put, err := uploader.Disk("users").Put(fmt.Sprintf("%d-%s", time.Now().Unix(), h.Filename), f)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to upload file %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
 
-	file := models.File{Path: temp.Name()}
+	file := models.File{Path: put.Name()}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

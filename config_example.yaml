@@ -34,6 +34,7 @@ picture_plugin:
 
 # 如果在集群外部，则需要配置，否则不用
 kubeconfig: ""
+upload_dir: ""
 
 # database
 # 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径
