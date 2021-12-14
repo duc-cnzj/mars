@@ -54,6 +54,9 @@ type ApplicationInterface interface {
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
 
+	SetUploader(Uploader)
+	Uploader() Uploader
+
 	Bootstrap() error
 	Config() *config.Config
 

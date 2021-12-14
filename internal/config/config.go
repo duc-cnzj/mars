@@ -49,6 +49,7 @@ type Config struct {
 	GitServerPlugin      Plugin `mapstructure:"git_server_plugin"`
 
 	KubeConfig     string `mapstructure:"kubeconfig"`
+	UploadDir      string `mapstructure:"upload_dir"`
 	NsPrefix       string `mapstructure:"ns_prefix"`
 	WildcardDomain string `mapstructure:"wildcard_domain"`
 	ClusterIssuer  string `mapstructure:"cluster_issuer"`

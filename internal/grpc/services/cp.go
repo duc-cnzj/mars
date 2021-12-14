@@ -28,10 +28,9 @@ func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest)
 	if err != nil {
 		return nil, err
 	}
-	file.DeleteFile()
 
 	return &cp.CopyToPodResponse{
 		PodFilePath: res.TargetDir,
-		Output:      res.Output,
+		Output:      res.ErrOut,
 	}, err
 }

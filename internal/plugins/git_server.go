@@ -10,6 +10,15 @@ import (
 
 var gitServerOnce = sync.Once{}
 
+type Status = string
+
+const (
+	StatusUnknown Status = "unknown"
+	StatusSuccess        = "success"
+	StatusFailed         = "failed"
+	StatusRunning        = "running"
+)
+
 type ProjectInterface interface {
 	GetID() int64
 	GetName() string
@@ -29,7 +38,7 @@ type BranchInterface interface {
 type PipelineInterface interface {
 	GetID() int64
 	GetProjectID() int64
-	GetStatus() string
+	GetStatus() Status
 	GetRef() string
 	GetSHA() string
 	GetWebURL() string

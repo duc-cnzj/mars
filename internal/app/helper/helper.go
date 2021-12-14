@@ -21,6 +21,10 @@ func DB() *gorm.DB {
 	return App().DBManager().DB()
 }
 
+func Uploader() contracts.Uploader {
+	return App().Uploader()
+}
+
 func Event() contracts.DispatcherInterface {
 	return App().EventDispatcher()
 }

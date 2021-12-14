@@ -2,26 +2,28 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
-	"github.com/duc-cnzj/mars/internal/plugins"
-
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/plugins"
 )
 
 func DownloadFiles(pid interface{}, commit string, files []string) (string, func(), error) {
 	id := fmt.Sprintf("%v", pid)
-	dir, err := os.MkdirTemp("", "mars_tmp_*")
-	if err != nil {
+	dir := fmt.Sprintf("mars_tmp_%s", RandomString(10))
+	if err := app.Uploader().MkDir(dir, false); err != nil {
 		return "", nil, err
 	}
 
-	return DownloadFilesToDir(id, commit, files, dir)
+	return DownloadFilesToDir(id, commit, files, app.Uploader().AbsolutePath(dir))
 }
 
 func DownloadFilesToDir(pid interface{}, commit string, files []string, dir string) (string, func(), error) {
+	uploader := app.Uploader()
+
 	wg := &sync.WaitGroup{}
 	wg.Add(len(files))
 	for _, file := range files {
@@ -32,29 +34,19 @@ func DownloadFilesToDir(pid interface{}, commit string, files []string, dir stri
 				mlog.Error(err)
 			}
 			fp := filepath.Join(dir, file)
-			s := filepath.Dir(fp)
-			if !FileExists(s) {
-				os.MkdirAll(s, 0700)
+			if _, err := uploader.Put(fp, strings.NewReader(raw)); err != nil {
+				mlog.Errorf("[DownloadFilesToDir]: err '%s'", err.Error())
 			}
-			openFile, err := os.OpenFile(fp, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
-			if err != nil {
-				mlog.Error(err)
-				return
-			}
-			defer openFile.Close()
-			openFile.Write([]byte(raw))
 		}(file)
 	}
 	wg.Wait()
 
 	return dir, func() {
-		if FileExists(dir) {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				mlog.Warning(err)
-				return
-			}
-			mlog.Debug("remove " + dir)
+		err := app.Uploader().DeleteDir(dir)
+		if err != nil {
+			mlog.Warning(err)
+			return
 		}
+		mlog.Debug("remove " + dir)
 	}, nil
 }

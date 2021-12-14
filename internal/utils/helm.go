@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -48,18 +49,15 @@ func NewCloser(fn func() error) io.Closer {
 }
 
 func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
-	openFile, err := os.CreateTemp("", "mars-*.yaml")
+	file := fmt.Sprintf("mars-%s-%s.yaml", time.Now().Format("2006-01-02"), RandomString(20))
+	info, err := app.Uploader().Put(file, bytes.NewReader(data))
 	if err != nil {
 		return "", nil, err
 	}
-	defer openFile.Close()
-	if _, err := openFile.Write(data); err != nil {
-		return "", nil, err
-	}
 
-	return openFile.Name(), NewCloser(func() error {
-		mlog.Debug("delete file: " + openFile.Name())
-		if err := os.Remove(openFile.Name()); err != nil {
+	return info.Name(), NewCloser(func() error {
+		mlog.Debug("delete file: " + info.Name())
+		if err := app.Uploader().Delete(info.Name()); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 			return err
 		}

@@ -1,9 +1,6 @@
 package models
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -26,10 +23,10 @@ func (f *File) DeleteFile() {
 	if f.Path == "" {
 		return
 	}
-	dir := filepath.Dir(f.Path)
-	if strings.HasPrefix(dir, "/tmp") {
-		os.RemoveAll(dir)
-		app.DB().Delete(f)
-		mlog.Debug("[File]: remove all: " + dir)
+	if err := app.Uploader().Delete(f.Path); err != nil {
+		mlog.Errorf("[File]: delete file err: '%s'", err.Error())
+		return
 	}
+	app.DB().Delete(f)
+	mlog.Debugf("[File]: deleted '%s' ", f.Path)
 }
