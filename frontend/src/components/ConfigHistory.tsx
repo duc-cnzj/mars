@@ -65,17 +65,20 @@ const Content: React.FC<{
   onDataChange: (s: string) => void;
 }> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
   const [list, setList] = useState<pb.ChangelogGetResponse.Item[]>();
+  const [initlist, setInitList] = useState<pb.ChangelogGetResponse.Item[]>();
   const [data, setData] = useState("");
   useEffect(() => {
-    changelogs({ project_id: projectID, only_changed: true }).then((res) =>
-      setList(res.data.items)
-    );
+    changelogs({ project_id: projectID, only_changed: true }).then((res) => {
+      setList(res.data.items);
+      setInitList(res.data.items);
+    });
   }, [projectID, updatedAt]);
+
   useEffect(() => {
-    if (list) {
-      setList(list.filter((item) => item.config !== currentConfig));
+    if (initlist) {
+      setList(initlist.filter((item) => item.config !== currentConfig));
     }
-  }, [currentConfig, list]);
+  }, [currentConfig, initlist]);
 
   const highlightSyntax = useCallback(
     (str: string) => (
