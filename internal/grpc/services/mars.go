@@ -19,7 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/mars"
-	"github.com/xanzy/go-gitlab"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
@@ -73,11 +72,6 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.Config, e
 		}
 	}
 
-	// 获取 .mars.yaml
-	opt := &gitlab.GetFileOptions{}
-	if branch != "" {
-		opt.Ref = gitlab.String(branch)
-	}
 	// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
 	data, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, ".mars.yaml")
 	if err != nil {
