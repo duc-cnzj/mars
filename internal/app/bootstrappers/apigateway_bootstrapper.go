@@ -136,10 +136,26 @@ func (a *apiGateway) Run(ctx context.Context) error {
 const maxFileSize = 50 << 20 // 50M
 
 func handUploadFile(gmux *runtime.ServeMux) {
-	gmux.HandlePath("POST", "/api/files", handleBinaryFileUpload)
+	gmux.HandlePath("POST", "/api/files", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		if req, ok := authenticated(r); ok {
+			handleBinaryFileUpload(w, req)
+			return
+		}
+		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+	})
 }
 
-func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request, params map[string]string) {
+type authCtx struct{}
+
+func authenticated(r *http.Request) (*http.Request, bool) {
+	if verifyToken, b := app.Auth().VerifyToken(r.Header.Get("Authorization")); b {
+		return r.WithContext(context.WithValue(r.Context(), authCtx{}, &verifyToken.UserInfo)), true
+	}
+
+	return nil, false
+}
+
+func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxFileSize); err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
 		return
@@ -158,8 +174,9 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request, params map[s
 		http.Error(w, fmt.Sprintf("failed to upload file %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
+	info := r.Context().Value(authCtx{}).(*contracts.UserInfo)
 
-	file := models.File{Path: put.Name()}
+	file := models.File{Path: put.Name(), Username: info.Name}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

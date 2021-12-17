@@ -19,6 +19,7 @@ import { UploadOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
 import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
+import { getToken } from "../utils/token";
 
 const TabShell: React.FC<{
   detail: pb.ProjectShowResponse;
@@ -252,9 +253,8 @@ const TabShell: React.FC<{
     name: "file",
     beforeUpload: beforeUpload,
     action: process.env.REACT_APP_BASE_URL + "/api/files",
-    // TODO: 需要认证
     headers: {
-      // authorization: "authorization-text",
+      authorization: getToken(),
     },
     showUploadList: false,
     onChange(info: any) {

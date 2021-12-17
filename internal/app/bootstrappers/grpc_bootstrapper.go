@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/golang-jwt/jwt"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -124,7 +123,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	project.RegisterProjectServer(server, new(services.Project))
 	picture.RegisterPictureServer(server, new(services.Picture))
 	cp.RegisterCpServer(server, new(services.CopyToPod))
-	auth.RegisterAuthServer(server, services.NewAuth(app.Config().Prikey(), app.Config().Pubkey(), app.App().Oidc(), app.Config().AdminPassword))
+	auth.RegisterAuthServer(server, services.NewAuth(app.App().Auth(), app.App().Oidc(), app.Config().AdminPassword))
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 	version.RegisterVersionServer(server, new(services.VersionService))
 	changelog.RegisterChangelogServer(server, new(services.Changelog))
@@ -150,14 +149,10 @@ func Authenticate(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	parse, err := jwt.ParseWithClaims(token, &services.JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return app.Config().Pubkey(), nil
-	})
-	if err == nil && parse.Valid {
-		claims, ok := parse.Claims.(*services.JwtClaims)
-		if ok {
-			return services.SetUser(ctx, &claims.UserInfo), nil
-		}
+	if verifyToken, b := app.Auth().VerifyToken(token); b {
+		return services.SetUser(ctx, &verifyToken.UserInfo), nil
+
 	}
+
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }

@@ -1,13 +1,10 @@
 package config
 
 import (
-	"crypto/rsa"
 	"log"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/golang-jwt/jwt"
 
 	"github.com/spf13/viper"
 )
@@ -40,8 +37,6 @@ type Config struct {
 
 	AdminPassword string `mapstructure:"admin_password"`
 	PrivateKey    string `mapstructure:"private_key"`
-	prikey        *rsa.PrivateKey
-	pubkey        *rsa.PublicKey
 
 	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
 	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
@@ -85,14 +80,6 @@ type OidcSetting struct {
 	RedirectUrl  string `mapstructure:"redirect_url"`
 }
 
-func (c *Config) Prikey() *rsa.PrivateKey {
-	return c.prikey
-}
-
-func (c *Config) Pubkey() *rsa.PublicKey {
-	return c.pubkey
-}
-
 func Init(cfgFile string) *Config {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
@@ -129,13 +116,6 @@ func Init(cfgFile string) *Config {
 	cfg := &Config{NsPrefix: "devops-"}
 
 	viper.Unmarshal(&cfg)
-
-	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg.prikey = pem
-	cfg.pubkey = pem.Public().(*rsa.PublicKey)
 
 	return cfg
 }

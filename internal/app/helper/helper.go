@@ -13,6 +13,10 @@ func App() contracts.ApplicationInterface {
 	return instance.App()
 }
 
+func Auth() contracts.AuthInterface {
+	return App().Auth()
+}
+
 func Config() *config.Config {
 	return App().Config()
 }

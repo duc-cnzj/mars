@@ -29,8 +29,9 @@ const (
 var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var DefaultBootstrappers = []contracts.Bootstrapper{
-	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
+	&bootstrappers.AuthBootstrapper{},
+	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
@@ -66,6 +67,15 @@ type Application struct {
 	plugins       map[string]contracts.PluginInterface
 	oidcProvider  contracts.OidcConfig
 	uploader      contracts.Uploader
+	auth          contracts.AuthInterface
+}
+
+func (app *Application) Auth() contracts.AuthInterface {
+	return app.auth
+}
+
+func (app *Application) SetAuth(auth contracts.AuthInterface) {
+	app.auth = auth
 }
 
 func (app *Application) SetUploader(uploader contracts.Uploader) {

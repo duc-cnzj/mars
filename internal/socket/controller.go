@@ -4,25 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/pkg/cluster"
-
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/grpc/services"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
+	"github.com/duc-cnzj/mars/pkg/cluster"
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
@@ -43,7 +39,7 @@ type WsConn struct {
 	conn *websocket.Conn
 
 	userMu           sync.RWMutex
-	user             services.UserInfo
+	user             contracts.UserInfo
 	pubSub           plugins.PubSub
 	cancelSignaler   CancelSignaler
 	terminalSessions SessionMapper
@@ -83,13 +79,13 @@ func (c *WsConn) Shutdown() {
 	Wait.Dec()
 }
 
-func (c *WsConn) SetUser(info services.UserInfo) {
+func (c *WsConn) SetUser(info contracts.UserInfo) {
 	c.userMu.Lock()
 	defer c.userMu.Unlock()
 	c.user = info
 }
 
-func (c *WsConn) GetUser() services.UserInfo {
+func (c *WsConn) GetUser() contracts.UserInfo {
 	c.userMu.RLock()
 	defer c.userMu.RUnlock()
 	return c.user
@@ -263,12 +259,7 @@ func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	var token = strings.TrimSpace(strings.TrimLeft(input.Token, "Bearer"))
-	parse, err := jwt.ParseWithClaims(token, &services.JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return app.Config().Pubkey(), nil
-	})
-	if err == nil && parse.Valid {
-		claims, _ := parse.Claims.(*services.JwtClaims)
+	if claims, b := app.Auth().VerifyToken(input.Token); b {
 		c.SetUser(claims.UserInfo)
 	}
 }

@@ -54,6 +54,9 @@ type ApplicationInterface interface {
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
 
+	Auth() AuthInterface
+	SetAuth(AuthInterface)
+
 	SetUploader(Uploader)
 	Uploader() Uploader
 

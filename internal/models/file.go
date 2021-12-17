@@ -12,7 +12,8 @@ import (
 type File struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Path string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
+	Path     string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
+	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
