@@ -29,6 +29,12 @@ func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest)
 		return nil, err
 	}
 
+	app.DB().Model(&file).Updates(map[string]interface{}{
+		"namespace": request.Namespace,
+		"pod":       request.Pod,
+		"container": request.Container,
+	})
+
 	return &cp.CopyToPodResponse{
 		PodFilePath: res.TargetDir,
 		Output:      res.ErrOut,

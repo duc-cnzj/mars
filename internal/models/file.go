@@ -15,6 +15,10 @@ type File struct {
 	Path     string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 
+	Namespace string `json:"namespace" gorm:"size:100;not null;default:'';"`
+	Pod       string `json:"pod" gorm:"size:100;not null;default:'';"`
+	Container string `json:"container" gorm:"size:100;not null;default:'';"`
+
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
