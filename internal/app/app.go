@@ -33,7 +33,6 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.AuthBootstrapper{},
 	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
-	&bootstrappers.I18nBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},

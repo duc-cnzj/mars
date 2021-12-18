@@ -5,8 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 
 	v1 "k8s.io/api/apps/v1"
@@ -71,23 +72,23 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 	return false
 }
 
-// getPodSelectorsInDeploymentAndStatefulSetByManifest FIXME: 比较 hack
+// getPodSelectorsInDeploymentAndStatefulSetByManifest
 // 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
+// 参考源码
 func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []string {
 	var selectors []string
 	split := strings.Split(manifest, "---")
+	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	for _, f := range split {
-		obj, _, _ := scheme.Codecs.UniversalDeserializer().Decode([]byte(f), nil, nil)
+		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
 		switch a := obj.(type) {
 		case *v1.Deployment:
-			mlog.Debug("############### getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) ###############")
 			var labels []string
 			for k, v := range a.Spec.Selector.MatchLabels {
 				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
 			}
 			selectors = append(selectors, strings.Join(labels, ","))
 		case *v1.StatefulSet:
-			mlog.Debug("############### getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) ###############")
 			var labels []string
 			for k, v := range a.Spec.Selector.MatchLabels {
 				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
