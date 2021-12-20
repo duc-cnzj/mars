@@ -123,7 +123,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	project.RegisterProjectServer(server, new(services.Project))
 	picture.RegisterPictureServer(server, new(services.Picture))
 	cp.RegisterCpServer(server, new(services.CopyToPod))
-	auth.RegisterAuthServer(server, services.NewAuth(app.App().Auth(), app.App().Oidc(), app.Config().AdminPassword))
+	auth.RegisterAuthServer(server, services.NewAuth(app.Auth(), app.Oidc(), app.Config().AdminPassword))
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 	version.RegisterVersionServer(server, new(services.VersionService))
 	changelog.RegisterChangelogServer(server, new(services.Changelog))

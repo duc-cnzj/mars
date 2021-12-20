@@ -20,7 +20,7 @@ type DomainResolverInterface interface {
 }
 
 func GetDomainResolverPlugin() DomainResolverInterface {
-	pcfg := app.App().Config().DomainResolverPlugin
+	pcfg := app.Config().DomainResolverPlugin
 	p := app.App().GetPluginByName(pcfg.Name)
 	args := pcfg.GetArgs()
 	args["ns_prefix"] = app.Config().NsPrefix
