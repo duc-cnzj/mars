@@ -102,7 +102,7 @@ const EventList: React.FC = () => {
     setIsModalVisible(false);
   };
   const getHeight = () => {
-    let h = window.innerHeight - 200;
+    let h = window.innerHeight - 260;
     if (h < 400) {
       return 400;
     }
@@ -111,58 +111,68 @@ const EventList: React.FC = () => {
 
   return (
     <Card
-      id="scrollableDiv"
       title={<div>事件日志: {paginate.count} 条</div>}
       bordered={false}
+      bodyStyle={{
+        height: getHeight(),
+        overflowY: "auto",
+        padding: 0,
+      }}
       style={{
         marginTop: 20,
         marginBottom: 30,
-        height: getHeight(),
-        overflowY: "auto",
       }}
     >
-      <InfiniteScroll
-        dataLength={data.length}
-        next={loadMoreData}
-        hasMore={paginate.count > data.length}
-        loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
-        endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
-        scrollableTarget="scrollableDiv"
+      <div
+        id="scrollableDiv"
+        style={{ height: "100%", overflowY: "auto", padding: 24 }}
       >
-        <List
-          dataSource={data}
-          renderItem={(item: pb.EventList.item) => (
-            <List.Item key={item.id}>
-              <List.Item.Meta
-                title={
-                  <div>
-                    {item.username}
-                    {getActionStyle(item.action)}
-                  </div>
-                }
-                description={item.message}
-              />
-              {item.action === pb.ActionType.Update ? (
-                <Button
-                  type="dashed"
-                  onClick={() => {
-                    setConfig({
-                      old: item.old,
-                      new: item.new,
-                      title: `[${item.username}]: ` + item.message,
-                    });
-                    showModal();
-                  }}
-                >
-                  查看改动
-                </Button>
-              ) : (
-                <></>
-              )}
-            </List.Item>
-          )}
-        />
-      </InfiniteScroll>
+        <InfiniteScroll
+          dataLength={data.length}
+          next={loadMoreData}
+          hasMore={paginate.count > data.length}
+          loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
+          endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
+          scrollableTarget="scrollableDiv"
+        >
+          <List
+            dataSource={data}
+            renderItem={(item: pb.EventList.item) => (
+              <List.Item key={item.id}>
+                <List.Item.Meta
+                  title={
+                    <div>
+                      {item.username}
+                      {getActionStyle(item.action)}
+                      <span style={{ fontSize: 10, fontWeight: "normal" }}>
+                        (id: {item.id})
+                      </span>
+                    </div>
+                  }
+                  description={item.message}
+                />
+                {item.action === pb.ActionType.Update ? (
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      setConfig({
+                        old: item.old,
+                        new: item.new,
+                        title: `[${item.username}]: ` + item.message,
+                      });
+                      showModal();
+                    }}
+                  >
+                    查看改动
+                  </Button>
+                ) : (
+                  <></>
+                )}
+              </List.Item>
+            )}
+          />
+        </InfiniteScroll>
+      </div>
       <Modal
         width={"100%"}
         title={config.title}
@@ -186,7 +196,7 @@ const EventList: React.FC = () => {
           }}
           useDarkTheme
           renderContent={highlightSyntax}
-          showDiffOnly
+          showDiffOnly={false}
           oldValue={config.old}
           newValue={config.new}
         />
