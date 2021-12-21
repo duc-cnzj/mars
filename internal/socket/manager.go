@@ -579,7 +579,7 @@ func (j *Jober) Run() error {
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic").
+				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
