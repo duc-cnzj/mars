@@ -1,9 +1,6 @@
 import React, { memo, useState } from "react";
 import { deleteProject } from "../api/project";
 import { Skeleton, Button, Modal, message } from "antd";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-
 import {
   BranchesOutlined,
   PushpinOutlined,
@@ -13,6 +10,11 @@ import {
   LinkOutlined,
 } from "@ant-design/icons";
 import pb from "../api/compiled";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+
+SyntaxHighlighter.registerLanguage('yaml', yaml);
 
 const { confirm } = Modal;
 

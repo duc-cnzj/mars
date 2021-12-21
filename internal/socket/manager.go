@@ -28,12 +28,14 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
@@ -354,6 +356,11 @@ type Job interface {
 	Runnable
 	Stoppable
 
+	User() contracts.UserInfo
+	IsNew() bool
+	Project() *models.Project
+	Commit() plugins.CommitInterface
+
 	ID() string
 	Validate() error
 	LoadConfigs() error
@@ -416,6 +423,7 @@ type Jober struct {
 	chart             *chart.Chart
 	valuesOptions     *values.Options
 	installer         ReleaseInstaller
+	commit            plugins.CommitInterface
 
 	messageCh chan MessageItem
 	stopCtx   context.Context
@@ -443,6 +451,22 @@ func (j *Jober) ID() string {
 	return j.slugName
 }
 
+func (j *Jober) IsNew() bool {
+	return j.isNew
+}
+
+func (j *Jober) Commit() plugins.CommitInterface {
+	return j.commit
+}
+
+func (j *Jober) User() contracts.UserInfo {
+	return j.conn.GetUser()
+}
+
+func (j *Jober) Project() *models.Project {
+	return j.project
+}
+
 func (j *Jober) Stop(err error) {
 	j.stopFn(err)
 }
@@ -458,7 +482,7 @@ func (j *Jober) IsStopped() bool {
 }
 
 func (j *Jober) Prune() {
-	if j.isNew {
+	if j.IsNew() {
 		mlog.Debug("清理项目")
 		app.DB().Delete(&j.project)
 	}
@@ -486,7 +510,7 @@ func (j *Jober) HandleMessage() {
 			case MessageText:
 				j.Messager().SendMsg(s.Msg)
 			case MessageError:
-				if j.isNew {
+				if j.IsNew() {
 					app.DB().Delete(&j.project)
 				}
 				select {
@@ -506,6 +530,20 @@ func (j *Jober) AddDestroyFunc(fn func()) {
 	j.destroyFuncLock.Lock()
 	defer j.destroyFuncLock.Unlock()
 	j.destroyFuncs = append(j.destroyFuncs, fn)
+}
+
+type userConfig struct {
+	Config string `yaml:"config"`
+	Branch string `yaml:"branch"`
+	Commit string `yaml:"commit"`
+	Atomic bool   `yaml:"atomic"`
+	WebUrl string `yaml:"web_url"`
+}
+
+func (u userConfig) PrettyYaml() string {
+	bf := bytes.Buffer{}
+	yaml.NewEncoder(&bf).Encode(&u)
+	return bf.String()
 }
 
 func (j *Jober) Run() error {
@@ -535,14 +573,38 @@ func (j *Jober) Run() error {
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest)
-			var p models.Project
-			if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == nil {
+
+			var (
+				p                models.Project
+				oldConf, newConf userConfig
+			)
+			if app.DB().
+				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic").
+				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
+				First(&p).Error == nil {
 				j.project.ID = p.ID
 				app.DB().Model(j.project).
 					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
 					Updates(&j.project)
+				oldConf = userConfig{
+					Config: p.Config,
+					Branch: p.GitlabBranch,
+					Commit: p.GitlabCommit,
+					Atomic: p.Atomic,
+				}
+				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitlabProjectId), p.GitlabCommit)
+				if err == nil {
+					oldConf.WebUrl = commit.GetWebURL()
+				}
 			} else {
 				app.DB().Create(&j.project)
+			}
+			newConf = userConfig{
+				Config: j.project.Config,
+				Branch: j.project.GitlabBranch,
+				Commit: j.project.GitlabCommit,
+				Atomic: j.project.Atomic,
+				WebUrl: j.Commit().GetWebURL(),
 			}
 			app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
 				Project:  j.project,
@@ -550,6 +612,13 @@ func (j *Jober) Run() error {
 				Config:   j.input.Config,
 				Username: j.conn.user.Name,
 			})
+			var act event.ActionType = event.ActionType_Create
+			if !j.IsNew() {
+				act = event.ActionType_Update
+			}
+			AuditLogWithChange(j.User().Name, act,
+				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
+				oldConf, newConf)
 			j.Percenter().To(100)
 			j.messageCh <- MessageItem{
 				Msg:  "部署成功",
@@ -849,6 +918,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	if err != nil {
 		return err
 	}
+	j.commit = commit
 	var (
 		pipelineID     int64
 		pipelineBranch string

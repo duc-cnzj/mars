@@ -784,6 +784,201 @@ export namespace Cp {
     type CopyToPodCallback = (error: (Error|null), response?: CopyToPodResponse) => void;
 }
 
+/** Represents an EventRequest. */
+export class EventRequest implements IEventRequest {
+
+    /**
+     * Constructs a new EventRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEventRequest);
+
+    /** EventRequest page. */
+    public page: number;
+
+    /** EventRequest page_size. */
+    public page_size: number;
+
+    /**
+     * Encodes the specified EventRequest message. Does not implicitly {@link EventRequest.verify|verify} messages.
+     * @param message EventRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EventRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EventRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EventRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EventRequest;
+}
+
+/** ActionType enum. */
+export enum ActionType {
+    Unknown = 0,
+    Create = 1,
+    Update = 2,
+    Delete = 3
+}
+
+/** Represents an EventList. */
+export class EventList implements IEventList {
+
+    /**
+     * Constructs a new EventList.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEventList);
+
+    /** EventList page. */
+    public page: number;
+
+    /** EventList page_size. */
+    public page_size: number;
+
+    /** EventList items. */
+    public items: EventList.item[];
+
+    /** EventList count. */
+    public count: number;
+
+    /**
+     * Encodes the specified EventList message. Does not implicitly {@link EventList.verify|verify} messages.
+     * @param message EventList message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EventList, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EventList message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EventList
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EventList;
+}
+
+export namespace EventList {
+
+    /** Properties of an item. */
+    interface Iitem {
+
+        /** item id */
+        id?: (number|null);
+
+        /** item action */
+        action?: (ActionType|null);
+
+        /** item username */
+        username?: (string|null);
+
+        /** item message */
+        message?: (string|null);
+
+        /** item old */
+        old?: (string|null);
+
+        /** item new */
+        "new"?: (string|null);
+
+        /** item event_at */
+        event_at?: (string|null);
+    }
+
+    /** Represents an item. */
+    class item implements Iitem {
+
+        /**
+         * Constructs a new item.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: EventList.Iitem);
+
+        /** item id. */
+        public id: number;
+
+        /** item action. */
+        public action: ActionType;
+
+        /** item username. */
+        public username: string;
+
+        /** item message. */
+        public message: string;
+
+        /** item old. */
+        public old: string;
+
+        /** item new. */
+        public new: string;
+
+        /** item event_at. */
+        public event_at: string;
+
+        /**
+         * Encodes the specified item message. Does not implicitly {@link EventList.item.verify|verify} messages.
+         * @param message item message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: EventList.item, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes an item message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns item
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EventList.item;
+    }
+}
+
+/** Represents an Event */
+export class Event extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Event service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls List.
+     * @param request EventRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and EventList
+     */
+    public list(request: EventRequest, callback: Event.ListCallback): void;
+
+    /**
+     * Calls List.
+     * @param request EventRequest message or plain object
+     * @returns Promise
+     */
+    public list(request: EventRequest): Promise<EventList>;
+}
+
+export namespace Event {
+
+    /**
+     * Callback as used by {@link Event#list}.
+     * @param error Error, if any
+     * @param [response] EventList
+     */
+    type ListCallback = (error: (Error|null), response?: EventList) => void;
+}
+
 /** Represents a GitlabDestroyRequest. */
 export class GitlabDestroyRequest implements IGitlabDestroyRequest {
 

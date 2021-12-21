@@ -17,6 +17,10 @@ func Auth() contracts.AuthInterface {
 	return App().Auth()
 }
 
+func Oidc() contracts.OidcConfig {
+	return App().Oidc()
+}
+
 func Config() *config.Config {
 	return App().Config()
 }

@@ -1730,6 +1730,465 @@ export const Cp = $root.Cp = (() => {
     return Cp;
 })();
 
+export const EventRequest = $root.EventRequest = (() => {
+
+    /**
+     * Properties of an EventRequest.
+     * @exports IEventRequest
+     * @interface IEventRequest
+     * @property {number|null} [page] EventRequest page
+     * @property {number|null} [page_size] EventRequest page_size
+     */
+
+    /**
+     * Constructs a new EventRequest.
+     * @exports EventRequest
+     * @classdesc Represents an EventRequest.
+     * @implements IEventRequest
+     * @constructor
+     * @param {IEventRequest=} [properties] Properties to set
+     */
+    function EventRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EventRequest page.
+     * @member {number} page
+     * @memberof EventRequest
+     * @instance
+     */
+    EventRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventRequest page_size.
+     * @member {number} page_size
+     * @memberof EventRequest
+     * @instance
+     */
+    EventRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EventRequest message. Does not implicitly {@link EventRequest.verify|verify} messages.
+     * @function encode
+     * @memberof EventRequest
+     * @static
+     * @param {EventRequest} message EventRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EventRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        return writer;
+    };
+
+    /**
+     * Decodes an EventRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof EventRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EventRequest} EventRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EventRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EventRequest;
+})();
+
+/**
+ * ActionType enum.
+ * @exports ActionType
+ * @enum {number}
+ * @property {number} Unknown=0 Unknown value
+ * @property {number} Create=1 Create value
+ * @property {number} Update=2 Update value
+ * @property {number} Delete=3 Delete value
+ */
+export const ActionType = $root.ActionType = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
+    values[valuesById[0] = "Unknown"] = 0;
+    values[valuesById[1] = "Create"] = 1;
+    values[valuesById[2] = "Update"] = 2;
+    values[valuesById[3] = "Delete"] = 3;
+    return values;
+})();
+
+export const EventList = $root.EventList = (() => {
+
+    /**
+     * Properties of an EventList.
+     * @exports IEventList
+     * @interface IEventList
+     * @property {number|null} [page] EventList page
+     * @property {number|null} [page_size] EventList page_size
+     * @property {Array.<EventList.item>|null} [items] EventList items
+     * @property {number|null} [count] EventList count
+     */
+
+    /**
+     * Constructs a new EventList.
+     * @exports EventList
+     * @classdesc Represents an EventList.
+     * @implements IEventList
+     * @constructor
+     * @param {IEventList=} [properties] Properties to set
+     */
+    function EventList(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EventList page.
+     * @member {number} page
+     * @memberof EventList
+     * @instance
+     */
+    EventList.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventList page_size.
+     * @member {number} page_size
+     * @memberof EventList
+     * @instance
+     */
+    EventList.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventList items.
+     * @member {Array.<EventList.item>} items
+     * @memberof EventList
+     * @instance
+     */
+    EventList.prototype.items = $util.emptyArray;
+
+    /**
+     * EventList count.
+     * @member {number} count
+     * @memberof EventList
+     * @instance
+     */
+    EventList.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EventList message. Does not implicitly {@link EventList.verify|verify} messages.
+     * @function encode
+     * @memberof EventList
+     * @static
+     * @param {EventList} message EventList message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EventList.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.EventList.item.encode(message.items[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.count);
+        return writer;
+    };
+
+    /**
+     * Decodes an EventList message from the specified reader or buffer.
+     * @function decode
+     * @memberof EventList
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EventList} EventList
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EventList.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventList();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.EventList.item.decode(reader, reader.uint32()));
+                break;
+            case 4:
+                message.count = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    EventList.item = (function() {
+
+        /**
+         * Properties of an item.
+         * @memberof EventList
+         * @interface Iitem
+         * @property {number|null} [id] item id
+         * @property {ActionType|null} [action] item action
+         * @property {string|null} [username] item username
+         * @property {string|null} [message] item message
+         * @property {string|null} [old] item old
+         * @property {string|null} ["new"] item new
+         * @property {string|null} [event_at] item event_at
+         */
+
+        /**
+         * Constructs a new item.
+         * @memberof EventList
+         * @classdesc Represents an item.
+         * @implements Iitem
+         * @constructor
+         * @param {EventList.Iitem=} [properties] Properties to set
+         */
+        function item(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * item id.
+         * @member {number} id
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * item action.
+         * @member {ActionType} action
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.action = 0;
+
+        /**
+         * item username.
+         * @member {string} username
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.username = "";
+
+        /**
+         * item message.
+         * @member {string} message
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.message = "";
+
+        /**
+         * item old.
+         * @member {string} old
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.old = "";
+
+        /**
+         * item new.
+         * @member {string} new
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype["new"] = "";
+
+        /**
+         * item event_at.
+         * @member {string} event_at
+         * @memberof EventList.item
+         * @instance
+         */
+        item.prototype.event_at = "";
+
+        /**
+         * Encodes the specified item message. Does not implicitly {@link EventList.item.verify|verify} messages.
+         * @function encode
+         * @memberof EventList.item
+         * @static
+         * @param {EventList.item} message item message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        item.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+            if (message.action != null && Object.hasOwnProperty.call(message, "action"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int32(message.action);
+            if (message.username != null && Object.hasOwnProperty.call(message, "username"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.username);
+            if (message.message != null && Object.hasOwnProperty.call(message, "message"))
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.message);
+            if (message.old != null && Object.hasOwnProperty.call(message, "old"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.old);
+            if (message["new"] != null && Object.hasOwnProperty.call(message, "new"))
+                writer.uint32(/* id 6, wireType 2 =*/50).string(message["new"]);
+            if (message.event_at != null && Object.hasOwnProperty.call(message, "event_at"))
+                writer.uint32(/* id 7, wireType 2 =*/58).string(message.event_at);
+            return writer;
+        };
+
+        /**
+         * Decodes an item message from the specified reader or buffer.
+         * @function decode
+         * @memberof EventList.item
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {EventList.item} item
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        item.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventList.item();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.id = reader.int64();
+                    break;
+                case 2:
+                    message.action = reader.int32();
+                    break;
+                case 3:
+                    message.username = reader.string();
+                    break;
+                case 4:
+                    message.message = reader.string();
+                    break;
+                case 5:
+                    message.old = reader.string();
+                    break;
+                case 6:
+                    message["new"] = reader.string();
+                    break;
+                case 7:
+                    message.event_at = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return item;
+    })();
+
+    return EventList;
+})();
+
+export const Event = $root.Event = (() => {
+
+    /**
+     * Constructs a new Event service.
+     * @exports Event
+     * @classdesc Represents an Event
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Event(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Event.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Event;
+
+    /**
+     * Callback as used by {@link Event#list}.
+     * @memberof Event
+     * @typedef ListCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {EventList} [response] EventList
+     */
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Event
+     * @instance
+     * @param {EventRequest} request EventRequest message or plain object
+     * @param {Event.ListCallback} callback Node-style callback called with the error, if any, and EventList
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Event.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.EventRequest, $root.EventList, request, callback);
+    }, "name", { value: "List" });
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Event
+     * @instance
+     * @param {EventRequest} request EventRequest message or plain object
+     * @returns {Promise<EventList>} Promise
+     * @variation 2
+     */
+
+    return Event;
+})();
+
 export const GitlabDestroyRequest = $root.GitlabDestroyRequest = (() => {
 
     /**

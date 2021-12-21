@@ -1,9 +1,12 @@
 import React, { memo } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { xonokai } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { message, Popover } from "antd";
 import { CopyOutlined, QuestionCircleOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+
+SyntaxHighlighter.registerLanguage('yaml', pyaml);
 
 const MarsExample: React.FC = () => {
   const example = `# 项目默认的配置文件(可选)

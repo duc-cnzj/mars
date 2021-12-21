@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo } from "react";
 import { Cascader } from "antd";
 import { branches, commits, projects } from "../api/gitlab";
-import _ from "lodash";
+import {get} from "lodash";
 import pb from "../api/compiled";
 
 const ProjectSelector: React.FC<{
@@ -81,9 +81,9 @@ const ProjectSelector: React.FC<{
     values: (string | number)[],
     selectedOptions: any | undefined
   ) => {
-    let gitlabId = _.get(values, 0, 0);
-    let gbranch = _.get(values, 1, "");
-    let gcommit = _.get(values, 2, "");
+    let gitlabId = get(values, 0, 0);
+    let gbranch = get(values, 1, "");
+    let gcommit = get(values, 2, "");
 
     if (selectedOptions) {
       const targetOption = selectedOptions[selectedOptions.length - 1];
@@ -131,7 +131,7 @@ const ProjectSelector: React.FC<{
       }
     }
     onCh({
-      projectName: _.get(
+      projectName: get(
         options.find((item) => item.value === values[0]),
         "label",
         ""

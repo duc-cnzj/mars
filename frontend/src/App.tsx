@@ -12,6 +12,8 @@ const GitlabProjectManager = lazy(
   () => import("./components/GitlabProjectManager")
 );
 
+const Events = lazy(() => import("./components/Events"));
+
 const App: FC = () => {
   return (
     <ProvideWebsocket>
@@ -26,6 +28,11 @@ const App: FC = () => {
                 <GitlabProjectManager />
               </Suspense>
             </PrivateRoute>
+            <PrivateRoute path={`/events`}>
+              <Suspense fallback={null}>
+                <Events />
+              </Suspense>
+            </PrivateRoute>
             <PrivateRoute path={`/`} exact>
               <AppContent />
             </PrivateRoute>
@@ -35,7 +42,7 @@ const App: FC = () => {
           </Switch>
         </Content>
         <Footer className="app-footer">
-          <AppFooter/>
+          <AppFooter />
         </Footer>
       </Layout>
     </ProvideWebsocket>

@@ -175,6 +175,42 @@
         }
       }
     },
+    "/api/events": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "operationId": "Event_List",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page_size",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EventList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/gitlab/project_list": {
       "get": {
         "tags": [
@@ -1195,6 +1231,16 @@
     }
   },
   "definitions": {
+    "ActionType": {
+      "type": "string",
+      "default": "Unknown",
+      "enum": [
+        "Unknown",
+        "Create",
+        "Update",
+        "Delete"
+      ]
+    },
     "AllPodContainersResponse": {
       "type": "object",
       "properties": {
@@ -1423,6 +1469,56 @@
       "type": "object",
       "properties": {
         "gitlab_project_id": {
+          "type": "string"
+        }
+      }
+    },
+    "EventList": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventListitem"
+          }
+        },
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "EventListitem": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/ActionType"
+        },
+        "event_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "message": {
+          "type": "string"
+        },
+        "new": {
+          "type": "string"
+        },
+        "old": {
+          "type": "string"
+        },
+        "username": {
           "type": "string"
         }
       }
@@ -1988,6 +2084,9 @@
     },
     {
       "name": "Cp"
+    },
+    {
+      "name": "Event"
     },
     {
       "name": "Gitlab"

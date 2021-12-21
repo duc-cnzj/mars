@@ -3,9 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/pkg/event"
+	"github.com/dustin/go-humanize"
 
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/cp"
@@ -34,6 +37,16 @@ func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest)
 		"pod":       request.Pod,
 		"container": request.Container,
 	})
+
+	AuditLog(MustGetUser(ctx).Name,
+		event.ActionType_Create,
+		fmt.Sprintf("上传文件到 pod: %s/%s/%s 路径: %s, 大小: %s。",
+			request.Namespace,
+			request.Pod,
+			request.Container,
+			file.Path,
+			humanize.Bytes(file.Size),
+		))
 
 	return &cp.CopyToPodResponse{
 		PodFilePath: res.TargetDir,

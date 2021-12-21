@@ -105,7 +105,20 @@ func dirExists(dir string) bool {
 	return false
 }
 
-func (u *Uploader) Put(path string, content io.Reader) (*os.File, error) {
+type fileInfo struct {
+	f    *os.File
+	size uint64
+}
+
+func (f *fileInfo) GetFile() *os.File {
+	return f.f
+}
+
+func (f *fileInfo) Size() uint64 {
+	return f.size
+}
+
+func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, error) {
 	fullpath := u.getPath(path)
 
 	if u.Exists(fullpath) {
@@ -126,6 +139,10 @@ func (u *Uploader) Put(path string, content io.Reader) (*os.File, error) {
 	if _, err := io.Copy(create, bufio.NewReaderSize(content, 4*1024*1024)); err != nil {
 		return nil, err
 	}
+	stat, _ := create.Stat()
 
-	return create, nil
+	return &fileInfo{
+		f:    create,
+		size: uint64(stat.Size()),
+	}, nil
 }

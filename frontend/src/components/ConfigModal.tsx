@@ -1,7 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
@@ -34,6 +32,11 @@ import {
 } from "../api/mars";
 import { branches } from "../api/gitlab";
 import MarsExample from "./MarsExample";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+
+SyntaxHighlighter.registerLanguage('yaml', pyaml);
 
 interface Config extends pb.Config {}
 
