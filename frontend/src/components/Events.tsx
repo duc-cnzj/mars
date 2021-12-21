@@ -6,7 +6,6 @@ import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
 
-const defaultPage = 1;
 const defaultPageSize = 15;
 
 const EventList: React.FC = () => {
@@ -39,16 +38,14 @@ const EventList: React.FC = () => {
   };
 
   useEffect(() => {
-    events({ page: defaultPage, page_size: defaultPageSize }).then(
-      ({ data: res }) => {
-        setData((data) => [...data, ...res.items]);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-          count: Number(res.count),
-        });
-      }
-    );
+    events({ page: 1, page_size: defaultPageSize }).then(({ data: res }) => {
+      setData((data) => [...data, ...res.items]);
+      setPaginate({
+        page: Number(res.page),
+        page_size: Number(res.page_size),
+        count: Number(res.count),
+      });
+    });
   }, []);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
@@ -115,9 +112,7 @@ const EventList: React.FC = () => {
   return (
     <Card
       id="scrollableDiv"
-      title={
-        <div>事件日志: {paginate.count} 条</div>
-      }
+      title={<div>事件日志: {paginate.count} 条</div>}
       bordered={false}
       style={{
         marginTop: 20,
