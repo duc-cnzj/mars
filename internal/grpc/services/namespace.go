@@ -12,7 +12,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/namespace"
@@ -28,7 +27,7 @@ type Namespace struct {
 
 func (n *Namespace) Index(ctx context.Context, empty *emptypb.Empty) (*namespace.NamespaceList, error) {
 	var namespaces []*models.Namespace
-	app.DB().Preload("Projects").Scopes(scopes.OrderByIdDesc()).Find(&namespaces)
+	app.DB().Preload("Projects").Find(&namespaces)
 	var res = &namespace.NamespaceList{Data: make([]*namespace.NamespaceItem, 0, len(namespaces))}
 	for _, ns := range namespaces {
 		var projects = make([]*namespace.NamespaceItem_SimpleProjectItem, 0, len(ns.Projects))

@@ -114,7 +114,10 @@ const EventList: React.FC = () => {
 
   return (
     <Card
-      title="事件日志"
+      id="scrollableDiv"
+      title={
+        <div>事件日志: {paginate.count} 条</div>
+      }
       bordered={false}
       style={{
         marginTop: 20,
@@ -128,7 +131,8 @@ const EventList: React.FC = () => {
         next={loadMoreData}
         hasMore={paginate.count > data.length}
         loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
-        endMessage={<Divider plain>没有更多数据了 🤐</Divider>}
+        endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
+        scrollableTarget="scrollableDiv"
       >
         <List
           dataSource={data}
@@ -150,7 +154,7 @@ const EventList: React.FC = () => {
                     setConfig({
                       old: item.old,
                       new: item.new,
-                      title: item.message,
+                      title: `[${item.username}]: ` + item.message,
                     });
                     showModal();
                   }}
