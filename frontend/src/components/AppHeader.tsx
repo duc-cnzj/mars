@@ -7,11 +7,16 @@ import { useAuth } from "../contexts/auth";
 import { removeToken } from "../utils/token";
 import { useHistory } from "react-router-dom";
 import { Dropdown, Menu } from "antd";
-import { LogoutOutlined } from "@ant-design/icons";
+import {
+  LogoutOutlined,
+  SettingOutlined,
+  ReadOutlined,
+  NotificationOutlined,
+} from "@ant-design/icons";
 
 const AppHeader: React.FC = () => {
   const h = useHistory();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   return (
     <div
       style={{
@@ -41,11 +46,40 @@ const AppHeader: React.FC = () => {
               <Menu>
                 <Menu.Item style={{ fontSize: 12 }} key="0">
                   <a href="/docs/index.html" target="_blank">
-                    接口文档
+                    <ReadOutlined /> 接口文档
                   </a>
                 </Menu.Item>
+                {isAdmin() ? (
+                  <>
+                    <Menu.Item style={{ fontSize: 12 }} key="1">
+                      <a
+                        href="javascript(0);"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          h.push("/gitlab_project_manager");
+                        }}
+                      >
+                        <SettingOutlined /> 项目配置
+                      </a>
+                    </Menu.Item>
+                    <Menu.Item style={{ fontSize: 12 }} key="2">
+                      <a
+                        href="javascript(0);"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          h.push("/events");
+                        }}
+                      >
+                        <NotificationOutlined /> 查看事件
+                      </a>
+                    </Menu.Item>
+                  </>
+                ) : (
+                  <></>
+                )}
+
                 <Menu.Divider />
-                <Menu.Item style={{ fontSize: 12 }} key="2">
+                <Menu.Item style={{ fontSize: 12 }} key="100">
                   <a
                     href="javascript(0);"
                     onClick={(e) => {

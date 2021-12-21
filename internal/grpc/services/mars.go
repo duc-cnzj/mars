@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/duc-cnzj/mars/internal/plugins"
-
 	gopath "path"
 	"strings"
 
@@ -17,7 +14,9 @@ import (
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v2"
@@ -150,6 +149,7 @@ func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledReq
 		return &emptypb.Empty{}, nil
 	}
 	app.DB().Model(&project).UpdateColumn("global_enabled", request.Enabled)
+	AuditLogWithChange(MustGetUser(ctx).Name, event.ActionType_Update, fmt.Sprintf("打开/关闭 %s 的全局配置: %t", project.Name, request.Enabled), nil, nil)
 
 	return &emptypb.Empty{}, nil
 }
@@ -171,7 +171,12 @@ func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*ma
 		return nil, err
 	}
 
+	var oldConf models.GitlabProject = project
+
 	app.DB().Model(&project).UpdateColumn("global_config", string(marshal))
+
+	AuditLogWithChange(MustGetUser(ctx).Name, event.ActionType_Update,
+		fmt.Sprintf("更新项目 %s (id: %d) 全局配置", project.Name, project.ID), oldConf, project)
 
 	return &mars.MarsUpdateResponse{Config: project.GlobalMarsConfig()}, nil
 }

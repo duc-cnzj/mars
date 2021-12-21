@@ -1,5 +1,25 @@
 import Prism from "prismjs";
 
+const getLoader = require("prismjs/dependencies");
+const components = require("prismjs/components");
+
+const componentsToLoad = [
+  "markup",
+  "css",
+  "php",
+  "yaml",
+  "go",
+  "ini",
+  "python",
+  "javascript",
+];
+const loadedComponents = [""];
+
+const loader = getLoader(components, componentsToLoad, loadedComponents);
+loader.load((id: string) => {
+  require(`prismjs/components/prism-${id}.min.js`);
+});
+
 export const getHighlightSyntax = (str: string, lang: string): string => {
   switch (lang) {
     case "yaml":

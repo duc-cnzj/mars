@@ -6,6 +6,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	eventpb "github.com/duc-cnzj/mars/pkg/event"
 	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 	v1 "k8s.io/api/core/v1"
 )
@@ -16,7 +17,15 @@ var (
 
 	EventProjectDeleted contracts.Event = "project_deleted"
 	EventProjectChanged contracts.Event = "project_changed"
+
+	EventAuditLog contracts.Event = "audit_log"
 )
+
+type EventAuditLogData struct {
+	Username        string
+	Action          eventpb.ActionType
+	Msg, OldS, NewS string
+}
 
 type ProjectChangedData struct {
 	Project *models.Project
@@ -33,6 +42,44 @@ type NamespaceCreatedData struct {
 
 type NamespaceDeletedData struct {
 	NsModel *models.Namespace
+}
+
+func HandleAuditLog(data interface{}, e contracts.Event) error {
+	logData := data.(EventAuditLogData)
+	app.DB().Create(&models.Event{
+		Action:   int32(logData.Action),
+		Username: logData.Username,
+		Message:  logData.Msg,
+		Old:      logData.OldS,
+		New:      logData.NewS,
+	})
+
+	return nil
+}
+
+type YamlPrettier interface {
+	PrettyYaml() string
+}
+type emptyYamlPrettier struct{}
+
+func (e *emptyYamlPrettier) PrettyYaml() string {
+	return ""
+}
+
+func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS YamlPrettier) {
+	if oldS == nil {
+		oldS = &emptyYamlPrettier{}
+	}
+	if newS == nil {
+		newS = &emptyYamlPrettier{}
+	}
+	app.Event().Dispatch(EventAuditLog, EventAuditLogData{
+		Username: username,
+		Action:   action,
+		Msg:      msg,
+		OldS:     oldS.PrettyYaml(),
+		NewS:     newS.PrettyYaml(),
+	})
 }
 
 func HandleNamespaceDeleted(data interface{}, e contracts.Event) error {

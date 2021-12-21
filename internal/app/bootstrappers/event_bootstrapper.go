@@ -19,6 +19,9 @@ var events map[contracts.Event][]contracts.Listener = map[contracts.Event][]cont
 	mevent.EventProjectChanged: {
 		mevent.HandleProjectChanged,
 	},
+	mevent.EventAuditLog: {
+		mevent.HandleAuditLog,
+	},
 }
 
 func (e *EventBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/namespace"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -87,6 +89,7 @@ func (n *Namespace) Store(ctx context.Context, request *namespace.NsStoreRequest
 		NsModel:  &data,
 		NsK8sObj: create,
 	})
+	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("创建项目空间: %d: %s", data.ID, data.Name))
 
 	return &namespace.NsStoreResponse{
 		Data: &namespace.NamespaceResponse{
@@ -204,6 +207,8 @@ loop:
 	}
 
 	app.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &ns})
+
+	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete, fmt.Sprintf("删除项目空间: id: %d %s", ns.ID, ns.Name))
 
 	return &emptypb.Empty{}, nil
 }

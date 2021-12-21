@@ -29,27 +29,6 @@ import ProjectSelector from "./ProjectSelector";
 import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
-import "prism-themes/themes/prism-material-dark.css";
-
-const getLoader = require("prismjs/dependencies");
-const components = require("prismjs/components");
-
-const componentsToLoad = [
-  "markup",
-  "css",
-  "php",
-  "yaml",
-  "go",
-  "ini",
-  "python",
-  "javascript",
-];
-const loadedComponents = [""];
-
-const loader = getLoader(components, componentsToLoad, loadedComponents);
-loader.load((id: string) => {
-  require(`prismjs/components/prism-${id}.min.js`);
-});
 
 const ModalSub: React.FC<{
   detail: pb.ProjectShowResponse;

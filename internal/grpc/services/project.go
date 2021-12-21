@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/internal/plugins"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/project"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -106,6 +106,9 @@ func (p *Project) Destroy(ctx context.Context, request *project.ProjectDestroyRe
 	}
 	app.DB().Delete(&projectModal)
 	app.Event().Dispatch(events.EventProjectDeleted, map[string]interface{}{"data": &projectModal})
+
+	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete,
+		fmt.Sprintf("删除项目: %d: %s/%s ", projectModal.ID, projectModal.Namespace.Name, projectModal.Name))
 
 	return &emptypb.Empty{}, nil
 }

@@ -55,9 +55,9 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 		return "", nil, err
 	}
 
-	return info.Name(), NewCloser(func() error {
-		mlog.Debug("delete file: " + info.Name())
-		if err := app.Uploader().Delete(info.Name()); err != nil {
+	return info.GetFile().Name(), NewCloser(func() error {
+		mlog.Debug("delete file: " + info.GetFile().Name())
+		if err := app.Uploader().Delete(info.GetFile().Name()); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 			return err
 		}

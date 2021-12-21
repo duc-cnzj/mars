@@ -22,6 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/cp"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
@@ -127,6 +128,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 	version.RegisterVersionServer(server, new(services.VersionService))
 	changelog.RegisterChangelogServer(server, new(services.Changelog))
+	event.RegisterEventServer(server, new(services.EventSvc))
 
 	g.server = server
 	go func() {

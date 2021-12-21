@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/event;event";
+
+message EventRequest {
+  int64 page = 1;
+  int64 page_size = 2;
+}
+
+enum ActionType {
+  Unknown = 0;
+  Create = 1;
+  Update = 2;
+  Delete = 3;
+}
+
+message EventList {
+  message item {
+    int64 id = 1;
+    ActionType action = 2;
+    string username = 3;
+    string message = 4;
+    string old = 5;
+    string new = 6;
+    string event_at = 7;
+  }
+  int64 page = 1;
+  int64 page_size = 2;
+  repeated item items = 3;
+  int64 count = 4;
+}
+
+service Event {
+  rpc EnableProject(EventRequest) returns (EventList) {
+    option (google.api.http) = {
+      get: "/api/events"
+    };
+  }
+}

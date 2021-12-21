@@ -18,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/cp"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
@@ -98,6 +99,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 		version.RegisterVersionHandlerFromEndpoint,
 		changelog.RegisterChangelogHandlerFromEndpoint,
+		event.RegisterEventHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {
@@ -176,7 +178,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	info := r.Context().Value(authCtx{}).(*contracts.UserInfo)
 
-	file := models.File{Path: put.Name(), Username: info.Name}
+	file := models.File{Path: put.GetFile().Name(), Username: info.Name, Size: put.Size()}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

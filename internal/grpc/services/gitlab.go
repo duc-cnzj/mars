@@ -8,12 +8,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/duc-cnzj/mars/internal/plugins"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/gitlab"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -46,6 +46,7 @@ func (g *Gitlab) EnableProject(ctx context.Context, request *gitlab.EnableProjec
 			Enabled:         true,
 		})
 	}
+	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("启用项目: %s", project.GetName()))
 
 	return &emptypb.Empty{}, nil
 }
@@ -71,6 +72,7 @@ func (g *Gitlab) DisableProject(ctx context.Context, request *gitlab.DisableProj
 			Enabled:         false,
 		})
 	}
+	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("关闭项目: %s", project.GetName()))
 
 	return &emptypb.Empty{}, nil
 }

@@ -13,6 +13,7 @@ type File struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
 	Path     string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
+	Size     uint64 `json:"size" gorm:"not null;default:0;comment:文件大小"`
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 
 	Namespace string `json:"namespace" gorm:"size:100;not null;default:'';"`
