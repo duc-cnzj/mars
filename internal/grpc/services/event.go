@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -47,9 +46,4 @@ func (e *EventSvc) EnableProject(ctx context.Context, request *event.EventReques
 		Items:    res,
 		Count:    count,
 	}, nil
-}
-
-func (e *EventSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }
