@@ -2154,31 +2154,31 @@ export const Event = $root.Event = (() => {
     (Event.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Event;
 
     /**
-     * Callback as used by {@link Event#enableProject}.
+     * Callback as used by {@link Event#list}.
      * @memberof Event
-     * @typedef EnableProjectCallback
+     * @typedef ListCallback
      * @type {function}
      * @param {Error|null} error Error, if any
      * @param {EventList} [response] EventList
      */
 
     /**
-     * Calls EnableProject.
-     * @function enableProject
+     * Calls List.
+     * @function list
      * @memberof Event
      * @instance
      * @param {EventRequest} request EventRequest message or plain object
-     * @param {Event.EnableProjectCallback} callback Node-style callback called with the error, if any, and EventList
+     * @param {Event.ListCallback} callback Node-style callback called with the error, if any, and EventList
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Event.prototype.enableProject = function enableProject(request, callback) {
-        return this.rpcCall(enableProject, $root.EventRequest, $root.EventList, request, callback);
-    }, "name", { value: "EnableProject" });
+    Object.defineProperty(Event.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.EventRequest, $root.EventList, request, callback);
+    }, "name", { value: "List" });
 
     /**
-     * Calls EnableProject.
-     * @function enableProject
+     * Calls List.
+     * @function list
      * @memberof Event
      * @instance
      * @param {EventRequest} request EventRequest message or plain object

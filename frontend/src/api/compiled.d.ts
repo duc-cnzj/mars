@@ -955,28 +955,28 @@ export class Event extends $protobuf.rpc.Service {
     constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
 
     /**
-     * Calls EnableProject.
+     * Calls List.
      * @param request EventRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and EventList
      */
-    public enableProject(request: EventRequest, callback: Event.EnableProjectCallback): void;
+    public list(request: EventRequest, callback: Event.ListCallback): void;
 
     /**
-     * Calls EnableProject.
+     * Calls List.
      * @param request EventRequest message or plain object
      * @returns Promise
      */
-    public enableProject(request: EventRequest): Promise<EventList>;
+    public list(request: EventRequest): Promise<EventList>;
 }
 
 export namespace Event {
 
     /**
-     * Callback as used by {@link Event#enableProject}.
+     * Callback as used by {@link Event#list}.
      * @param error Error, if any
      * @param [response] EventList
      */
-    type EnableProjectCallback = (error: (Error|null), response?: EventList) => void;
+    type ListCallback = (error: (Error|null), response?: EventList) => void;
 }
 
 /** Represents a GitlabDestroyRequest. */

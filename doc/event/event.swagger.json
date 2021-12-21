@@ -18,7 +18,7 @@
   "paths": {
     "/api/events": {
       "get": {
-        "operationId": "Event_EnableProject",
+        "operationId": "Event_List",
         "responses": {
           "200": {
             "description": "A successful response.",

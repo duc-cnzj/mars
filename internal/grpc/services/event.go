@@ -15,7 +15,7 @@ type EventSvc struct {
 	event.UnsafeEventServer
 }
 
-func (e *EventSvc) EnableProject(ctx context.Context, request *event.EventRequest) (*event.EventList, error) {
+func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*event.EventList, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)

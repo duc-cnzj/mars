@@ -180,7 +180,7 @@
         "tags": [
           "Event"
         ],
-        "operationId": "Event_EnableProject",
+        "operationId": "Event_List",
         "parameters": [
           {
             "type": "string",

@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
-	EnableProject(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error)
+	List(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error)
 }
 
 type eventClient struct {
@@ -30,9 +30,9 @@ func NewEventClient(cc grpc.ClientConnInterface) EventClient {
 	return &eventClient{cc}
 }
 
-func (c *eventClient) EnableProject(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error) {
+func (c *eventClient) List(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error) {
 	out := new(EventList)
-	err := c.cc.Invoke(ctx, "/Event/EnableProject", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Event/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (c *eventClient) EnableProject(ctx context.Context, in *EventRequest, opts 
 // All implementations must embed UnimplementedEventServer
 // for forward compatibility
 type EventServer interface {
-	EnableProject(context.Context, *EventRequest) (*EventList, error)
+	List(context.Context, *EventRequest) (*EventList, error)
 	mustEmbedUnimplementedEventServer()
 }
 
@@ -51,8 +51,8 @@ type EventServer interface {
 type UnimplementedEventServer struct {
 }
 
-func (UnimplementedEventServer) EnableProject(context.Context, *EventRequest) (*EventList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EnableProject not implemented")
+func (UnimplementedEventServer) List(context.Context, *EventRequest) (*EventList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
 
@@ -67,20 +67,20 @@ func RegisterEventServer(s grpc.ServiceRegistrar, srv EventServer) {
 	s.RegisterService(&Event_ServiceDesc, srv)
 }
 
-func _Event_EnableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EventRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(EventServer).EnableProject(ctx, in)
+		return srv.(EventServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Event/EnableProject",
+		FullMethod: "/Event/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServer).EnableProject(ctx, req.(*EventRequest))
+		return srv.(EventServer).List(ctx, req.(*EventRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -93,8 +93,8 @@ var Event_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*EventServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EnableProject",
-			Handler:    _Event_EnableProject_Handler,
+			MethodName: "List",
+			Handler:    _Event_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

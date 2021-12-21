@@ -33,7 +33,7 @@ message EventList {
 }
 
 service Event {
-  rpc EnableProject(EventRequest) returns (EventList) {
+  rpc List(EventRequest) returns (EventList) {
     option (google.api.http) = {
       get: "/api/events"
     };
