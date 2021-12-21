@@ -9,7 +9,7 @@ import (
 type Event struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Action   int32  `json:"action" gorm:"type:tinyint;not null;default:0;"`
+	Action   uint8  `json:"action" gorm:"type:tinyint;not null;default:0;"`
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 	Message  string `json:"message" gorm:"size:255;not null;default:'';"`
 

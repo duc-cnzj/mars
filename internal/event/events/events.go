@@ -47,7 +47,7 @@ type NamespaceDeletedData struct {
 func HandleAuditLog(data interface{}, e contracts.Event) error {
 	logData := data.(EventAuditLogData)
 	app.DB().Create(&models.Event{
-		Action:   int32(logData.Action),
+		Action:   uint8(logData.Action),
 		Username: logData.Username,
 		Message:  logData.Msg,
 		Old:      logData.OldS,
