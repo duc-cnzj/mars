@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
-import { Card, Skeleton, Divider, List, Tag, Button, Modal } from "antd";
+import { Card, Skeleton, Divider, List, Tag, Button, Modal, message } from "antd";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
@@ -33,7 +33,8 @@ const EventList: React.FC = () => {
         });
         setLoading(false);
       })
-      .catch(() => {
+      .catch((e) => {
+        message.error(e.response.data.message);
         setLoading(false);
       });
   };
@@ -46,7 +47,10 @@ const EventList: React.FC = () => {
         page_size: Number(res.page_size),
         count: Number(res.count),
       });
-    });
+    })
+    .catch((e) => {
+      message.error(e.response.data.message);
+    })
   }, []);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });

@@ -132,6 +132,9 @@ const ConfigModal: React.FC<{
           loadDefaultValues(item.id, "");
           setLoading(false);
         }
+      })
+      .catch((e) => {
+        message.error(e.response.data.message);
       });
     }
   }, [item, loadConfig, visible]);

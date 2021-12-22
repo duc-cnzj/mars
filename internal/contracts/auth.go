@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -64,4 +65,8 @@ type SignData struct {
 type AuthInterface interface {
 	VerifyToken(string) (*JwtClaims, bool)
 	Sign(UserInfo) (*SignData, error)
+}
+
+type AuthorizeInterface interface {
+	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
 }

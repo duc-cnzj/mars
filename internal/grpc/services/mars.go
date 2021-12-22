@@ -134,9 +134,6 @@ func (m *Mars) GlobalConfig(ctx context.Context, request *mars.GlobalConfigReque
 }
 
 func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledRequest) (*emptypb.Empty, error) {
-	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
-	}
 	var project models.GitlabProject
 	if err := app.DB().Where("`gitlab_project_id` = ?", request.ProjectId).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -155,9 +152,6 @@ func (m *Mars) ToggleEnabled(ctx context.Context, request *mars.ToggleEnabledReq
 }
 
 func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*mars.MarsUpdateResponse, error) {
-	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
-	}
 	var project models.GitlabProject
 	if err := app.DB().Where("`gitlab_project_id` = ?", request.ProjectId).First(&project).Error; err != nil {
 		return nil, err
@@ -179,4 +173,13 @@ func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*ma
 		fmt.Sprintf("更新项目 %s (id: %d) 全局配置", project.Name, project.ID), oldConf, project)
 
 	return &mars.MarsUpdateResponse{Config: project.GlobalMarsConfig()}, nil
+}
+
+func (m *Mars) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		mlog.Warning(fullMethodName)
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
+
+	return ctx, nil
 }

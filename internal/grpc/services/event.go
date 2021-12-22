@@ -6,11 +6,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/duc-cnzj/mars/internal/utils"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
+	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/event"
 )
 
@@ -25,10 +24,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*even
 		events   []models.Event
 		count    int64
 	)
-
-	if !MustGetUser(ctx).IsAdmin() {
-		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
-	}
 
 	if err := app.DB().Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
@@ -53,4 +48,12 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*even
 		Items:    res,
 		Count:    count,
 	}, nil
+}
+
+func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
+
+	return ctx, nil
 }

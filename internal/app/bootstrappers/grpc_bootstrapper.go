@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	marsauth "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -82,12 +83,13 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			grpc_opentracing.StreamServerInterceptor(traceWithOpName()),
 			grpc_auth.StreamServerInterceptor(Authenticate),
+			marsauth.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 				mlog.Error("[Grpc]: recovery error: ", p)
 				return nil
 			})),
 			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-				user, err := services.GetUser(ctx)
+				user, err := marsauth.GetUser(ctx)
 				if err == nil {
 					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
 				}
@@ -99,8 +101,9 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			grpc_opentracing.UnaryServerInterceptor(traceWithOpName()),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
+			marsauth.UnaryServerInterceptor(),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				user, err := services.GetUser(ctx)
+				user, err := marsauth.GetUser(ctx)
 				if err == nil {
 					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
 				}
@@ -152,8 +155,7 @@ func Authenticate(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 	if verifyToken, b := app.Auth().VerifyToken(token); b {
-		return services.SetUser(ctx, &verifyToken.UserInfo), nil
-
+		return marsauth.SetUser(ctx, &verifyToken.UserInfo), nil
 	}
 
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
