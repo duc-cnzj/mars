@@ -208,9 +208,9 @@ const EventList: React.FC = () => {
               },
             }}
             useDarkTheme
+            showDiffOnly
             splitView={false}
             renderContent={highlightSyntax}
-            showDiffOnly={false}
             oldValue={config.old}
             newValue={config.new}
           />
