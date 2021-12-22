@@ -5,6 +5,7 @@ import { Card, Skeleton, Divider, List, Tag, Button, Modal } from "antd";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 const defaultPageSize = 15;
 
@@ -145,7 +146,7 @@ const EventList: React.FC = () => {
                       {item.username}
                       {getActionStyle(item.action)}
                       <span style={{ fontSize: 10, fontWeight: "normal" }}>
-                        (id: {item.id})
+                        (id: {item.id}){item.event_at}
                       </span>
                     </div>
                   }
@@ -181,25 +182,28 @@ const EventList: React.FC = () => {
         cancelText={"取消"}
         onOk={handleOk}
         onCancel={handleCancel}
+        bodyStyle={{ width: "100%" }}
       >
-        <ReactDiffViewer
-          disableWordDiff
-          styles={{
-            line: { fontSize: 12 },
-            gutter: { padding: "0 5px", minWidth: 20 },
-            marker: { padding: "0 6px" },
-            diffContainer: {
-              display: "block",
-              width: "100%",
-              overflowX: "auto",
-            },
-          }}
-          useDarkTheme
-          renderContent={highlightSyntax}
-          showDiffOnly={false}
-          oldValue={config.old}
-          newValue={config.new}
-        />
+        <ErrorBoundary>
+          <ReactDiffViewer
+            disableWordDiff
+            styles={{
+              line: { fontSize: 12 },
+              gutter: { padding: "0 5px", minWidth: 20 },
+              marker: { padding: "0 6px" },
+              diffContainer: {
+                display: "block",
+                width: "100%",
+              },
+            }}
+            useDarkTheme
+            splitView={false}
+            renderContent={highlightSyntax}
+            showDiffOnly={false}
+            oldValue={config.old}
+            newValue={config.new}
+          />
+        </ErrorBoundary>
       </Modal>
     </Card>
   );
