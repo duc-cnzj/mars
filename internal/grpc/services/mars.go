@@ -177,7 +177,6 @@ func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*ma
 
 func (m *Mars) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
-		mlog.Warning(fullMethodName)
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
 
