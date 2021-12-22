@@ -33,18 +33,19 @@ func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest)
 	}
 
 	app.DB().Model(&file).Updates(map[string]interface{}{
-		"namespace": request.Namespace,
-		"pod":       request.Pod,
-		"container": request.Container,
+		"namespace":      request.Namespace,
+		"pod":            request.Pod,
+		"container":      request.Container,
+		"container_path": res.ContainerPath,
 	})
 
 	AuditLog(MustGetUser(ctx).Name,
 		event.ActionType_Create,
-		fmt.Sprintf("上传文件到 pod: %s/%s/%s 路径: %s, 大小: %s。",
+		fmt.Sprintf("上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
 			request.Namespace,
 			request.Pod,
 			request.Container,
-			file.Path,
+			res.ContainerPath,
 			humanize.Bytes(file.Size),
 		))
 

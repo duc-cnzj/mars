@@ -389,7 +389,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}
 
 	if err != nil {
-		mlog.Warningf("[Websocket]: %v", err.Error())
+		mlog.Debugf("[Websocket]: %v", err.Error())
 		if strings.Contains(err.Error(), "unable to upgrade connection") {
 			if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
 				app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
-import { Card, Skeleton, Divider, List, Tag, Button, Modal, message } from "antd";
+import {
+  Card,
+  Skeleton,
+  Divider,
+  List,
+  Tag,
+  Button,
+  Modal,
+  message,
+} from "antd";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
@@ -40,17 +49,18 @@ const EventList: React.FC = () => {
   };
 
   useEffect(() => {
-    events({ page: 1, page_size: defaultPageSize }).then(({ data: res }) => {
-      setData((data) => [...data, ...res.items]);
-      setPaginate({
-        page: Number(res.page),
-        page_size: Number(res.page_size),
-        count: Number(res.count),
+    events({ page: 1, page_size: defaultPageSize })
+      .then(({ data: res }) => {
+        setData((data) => [...data, ...res.items]);
+        setPaginate({
+          page: Number(res.page),
+          page_size: Number(res.page_size),
+          count: Number(res.count),
+        });
+      })
+      .catch((e) => {
+        message.error(e.response.data.message);
       });
-    })
-    .catch((e) => {
-      message.error(e.response.data.message);
-    })
   }, []);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
@@ -60,19 +70,19 @@ const EventList: React.FC = () => {
     switch (type) {
       case pb.ActionType.Create:
         return (
-          <Tag color="#2db7f5" style={style}>
+          <Tag color="#1890ff" style={style}>
             创建
           </Tag>
         );
       case pb.ActionType.Update:
         return (
-          <Tag color="#87d068" style={style}>
+          <Tag color="#52c41a" style={style}>
             更新
           </Tag>
         );
       case pb.ActionType.Delete:
         return (
-          <Tag color="#f50" style={style}>
+          <Tag color="#f5222d" style={style}>
             删除
           </Tag>
         );
@@ -153,15 +163,13 @@ const EventList: React.FC = () => {
                         style={{
                           fontSize: 10,
                           fontWeight: "normal",
-                          marginRight: 5,
                         }}
                       >
-                        (id: {item.id})
+                        {item.event_at}
                       </span>
-                      {item.event_at}
                     </div>
                   }
-                  description={item.message}
+                  description={`${item.message}`}
                 />
                 {item.action === pb.ActionType.Update ? (
                   <Button

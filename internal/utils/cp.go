@@ -15,9 +15,10 @@ import (
 )
 
 type CopyFileToPodResult struct {
-	TargetDir string
-	ErrOut    string
-	StdOut    string
+	TargetDir     string
+	ErrOut        string
+	StdOut        string
+	ContainerPath string
 }
 
 func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
@@ -87,8 +88,9 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	})
 
 	return &CopyFileToPodResult{
-		TargetDir: targetContainerDir,
-		ErrOut:    errbf.String(),
-		StdOut:    outbf.String(),
+		ContainerPath: filepath.Join(targetContainerDir, base),
+		TargetDir:     targetContainerDir,
+		ErrOut:        errbf.String(),
+		StdOut:        outbf.String(),
 	}, err
 }

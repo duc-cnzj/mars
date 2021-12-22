@@ -16,9 +16,10 @@ type File struct {
 	Size     uint64 `json:"size" gorm:"not null;default:0;comment:文件大小"`
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 
-	Namespace string `json:"namespace" gorm:"size:100;not null;default:'';"`
-	Pod       string `json:"pod" gorm:"size:100;not null;default:'';"`
-	Container string `json:"container" gorm:"size:100;not null;default:'';"`
+	Namespace     string `json:"namespace" gorm:"size:100;not null;default:'';"`
+	Pod           string `json:"pod" gorm:"size:100;not null;default:'';"`
+	Container     string `json:"container" gorm:"size:100;not null;default:'';"`
+	ContainerPath string `json:"container_path" gorm:"size:255;not null;default:'';comment:容器中的文件路径"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
