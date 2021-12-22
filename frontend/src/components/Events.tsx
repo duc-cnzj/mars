@@ -145,9 +145,16 @@ const EventList: React.FC = () => {
                     <div>
                       {item.username}
                       {getActionStyle(item.action)}
-                      <span style={{ fontSize: 10, fontWeight: "normal" }}>
-                        (id: {item.id}){item.event_at}
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: "normal",
+                          marginRight: 5,
+                        }}
+                      >
+                        (id: {item.id})
                       </span>
+                      {item.event_at}
                     </div>
                   }
                   description={item.message}
