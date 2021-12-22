@@ -3,6 +3,9 @@ package services
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/duc-cnzj/mars/internal/utils"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -22,6 +25,10 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*even
 		events   []models.Event
 		count    int64
 	)
+
+	if !MustGetUser(ctx).IsAdmin() {
+		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
+	}
 
 	if err := app.DB().Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
