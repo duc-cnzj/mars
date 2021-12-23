@@ -214,18 +214,17 @@ func serveWs(mux *mux.Router) {
 }
 
 func LoadSwaggerUI(mux *mux.Router) {
-	mux.Handle("/doc/swagger.json",
-		middlewares.HttpCache(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(data.SwaggerJson)
-			}),
-		),
+	subrouter := mux.PathPrefix("").Subrouter()
+	subrouter.Use(middlewares.HttpCache)
+
+	subrouter.Handle("/doc/swagger.json",
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data.SwaggerJson)
+		}),
 	)
 
-	mux.PathPrefix("/docs/").Handler(
-		middlewares.HttpCache(
-			http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
-		),
+	subrouter.PathPrefix("/docs/").Handler(
+		http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
 	)
 }
