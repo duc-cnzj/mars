@@ -5,16 +5,19 @@ import (
 	"runtime"
 )
 
-const unknown = "<unknown>"
+const (
+	unknown     = "<unknown>"
+	defaultDate = "1970-01-01T00:00:00Z"
+)
 
 var (
 	gitRepo        string = unknown
-	gitBranch      string = unknown                // `git rev-parse --abbrev-ref HEAD`
-	gitCommit      string = unknown                // output from `git rev-parse --short HEAD`
-	gitTag         string = unknown                // output from `git describe --exact-match --tags HEAD` (if clean tree state)
-	kubectlVersion string = unknown                // determined from go.mod file `go list -m all | grep k8s.io/client-go | cut -d " " -f2`
-	helmVersion    string = unknown                // determined from go.mod file `go list -m all | grep helm.sh/helm/v3 | cut -d " " -f2`
-	buildDate      string = "1970-01-01T00:00:00Z" // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
+	gitBranch      string = unknown     // `git rev-parse --abbrev-ref HEAD`
+	gitCommit      string = unknown     // output from `git rev-parse --short HEAD`
+	gitTag         string = unknown     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
+	kubectlVersion string = unknown     // determined from go.mod file `go list -m all | grep k8s.io/client-go | cut -d " " -f2`
+	helmVersion    string = unknown     // determined from go.mod file `go list -m all | grep helm.sh/helm/v3 | cut -d " " -f2`
+	buildDate      string = defaultDate // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
 )
 
 // Version contains Argo version information
@@ -34,6 +37,10 @@ type Version struct {
 
 func (v Version) String() string {
 	return v.Version
+}
+
+func (v Version) HasBuildInfo() bool {
+	return v.BuildDate != defaultDate
 }
 
 // GetVersion returns the version information

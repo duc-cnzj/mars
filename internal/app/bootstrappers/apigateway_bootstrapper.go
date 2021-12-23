@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/middlewares"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
@@ -33,7 +33,6 @@ import (
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -85,7 +84,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(tracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
+		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
 	}
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
@@ -119,8 +118,14 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
-		Addr:    ":" + app.Config().AppPort,
-		Handler: tracingWrapper(routeLogger(allowCORS(router))),
+		Addr: ":" + app.Config().AppPort,
+		Handler: middlewares.TracingWrapper(
+			middlewares.RouteLogger(
+				middlewares.AllowCORS(
+					router,
+				),
+			),
+		),
 	}
 
 	a.server = s
@@ -209,68 +214,18 @@ func serveWs(mux *mux.Router) {
 }
 
 func LoadSwaggerUI(mux *mux.Router) {
-	mux.HandleFunc("/doc/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data.SwaggerJson)
-	})
+	mux.Handle("/doc/swagger.json",
+		middlewares.HttpCache(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(data.SwaggerJson)
+			}),
+		),
+	)
 
-	mux.PathPrefix("/docs/").Handler(http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))))
-}
-
-func preflightHandler(w http.ResponseWriter, r *http.Request) {
-	headers := []string{"Content-Type", "Accept", "X-Requested-With", "Authorization"}
-	w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
-	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
-	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
-	return
-}
-
-func routeLogger(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func(t time.Time) {
-			mlog.Debugf("[Http]: method: %v, url: %v, use %v", r.Method, r.URL, time.Since(t))
-		}(time.Now())
-		h.ServeHTTP(w, r)
-	})
-}
-
-func allowCORS(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				preflightHandler(w, r)
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
-var grpcGatewayTag = opentracing.Tag{Key: string(ext.Component), Value: "grpc-gateway"}
-
-func tracingWrapper(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		url := r.URL.String()
-		if !tracingIgnoreFn(context.TODO(), url) {
-			parentSpanContext, err := opentracing.GlobalTracer().Extract(
-				opentracing.HTTPHeaders,
-				opentracing.HTTPHeadersCarrier(r.Header))
-			if err == nil || err == opentracing.ErrSpanContextNotFound {
-				serverSpan := opentracing.GlobalTracer().StartSpan(
-					url,
-					ext.RPCServerOption(parentSpanContext),
-					grpcGatewayTag,
-					opentracing.Tags{"url": url},
-				)
-				r = r.WithContext(opentracing.ContextWithSpan(r.Context(), serverSpan))
-				defer serverSpan.Finish()
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
-func tracingIgnoreFn(ctx context.Context, fullMethodName string) bool {
-	return !strings.HasPrefix(fullMethodName, "/api")
+	mux.PathPrefix("/docs/").Handler(
+		middlewares.HttpCache(
+			http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
+		),
+	)
 }
