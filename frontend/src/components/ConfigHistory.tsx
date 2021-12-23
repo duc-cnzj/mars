@@ -91,7 +91,14 @@ const Content: React.FC<{
     [configType]
   );
   return (
-    <div style={{ width: 600, maxHeight: 600, overflowY: "auto" }}>
+    <div
+      style={{
+        width: 600,
+        maxHeight: 600,
+        overflowY: "auto",
+        pointerEvents: "auto",
+      }}
+    >
       <Collapse
         accordion
         onChange={(k) => {
