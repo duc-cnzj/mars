@@ -13,8 +13,8 @@ type Event struct {
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 	Message  string `json:"message" gorm:"size:255;not null;default:'';"`
 
-	Old string `json:"namespace" gorm:"type:text;"`
-	New string `json:"pod" gorm:"type:text;"`
+	Old string `json:"old" gorm:"type:text;"`
+	New string `json:"new" gorm:"type:text;"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
