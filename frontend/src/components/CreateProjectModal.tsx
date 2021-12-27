@@ -37,7 +37,7 @@ const initItemData: Mars.CreateItemInterface = {
   gitlabBranch: "",
   gitlabCommit: "",
   config: "",
-  debug: false,
+  debug: true,
   config_type: "yaml",
 };
 
