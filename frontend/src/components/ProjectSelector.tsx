@@ -33,18 +33,13 @@ const ProjectSelector: React.FC<{
           let r = res.data.data.find(
             (item) => item.projectId === v.gitlabProjectId
           );
+          (r as any).children = []
           setOptions(r ? [r] : []);
         }
       } else {
         setOptions(res.data.data);
       }
     });
-  }, [v]);
-
-  useEffect(() => {
-    if (v) {
-      setValue([v.projectName, v.gitlabBranch, v.gitlabCommit]);
-    }
   }, [v]);
 
   const loadData = (selectedOptions: any | undefined) => {

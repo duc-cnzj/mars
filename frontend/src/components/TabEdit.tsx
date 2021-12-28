@@ -122,29 +122,32 @@ const ModalSub: React.FC<{
     });
   }, [data.gitlabProjectId, data.gitlabBranch]);
 
-  const onChange = ({
-    projectName,
-    gitlabProjectId,
-    gitlabBranch,
-    gitlabCommit,
-  }: {
-    projectName: string;
-    gitlabProjectId: number;
-    gitlabBranch: string;
-    gitlabCommit: string;
-  }) => {
-    setData((d) => ({
-      ...d,
-      name: projectName,
-      gitlabProjectId: gitlabProjectId,
-      gitlabBranch: gitlabBranch,
-      gitlabCommit: gitlabCommit,
-    }));
+  const onChange = useCallback(
+    ({
+      projectName,
+      gitlabProjectId,
+      gitlabBranch,
+      gitlabCommit,
+    }: {
+      projectName: string;
+      gitlabProjectId: number;
+      gitlabBranch: string;
+      gitlabCommit: string;
+    }) => {
+      setData((d) => ({
+        ...d,
+        name: projectName,
+        gitlabProjectId: gitlabProjectId,
+        gitlabBranch: gitlabBranch,
+        gitlabCommit: gitlabCommit,
+      }));
 
-    if (gitlabCommit !== "" && data.config === "") {
-      loadConfigFile();
-    }
-  };
+      if (gitlabCommit !== "" && data.config === "") {
+        loadConfigFile();
+      }
+    },
+    [loadConfigFile, data.config],
+  )
   useEffect(() => {
     if (!wsReady) {
       setStart(false);
