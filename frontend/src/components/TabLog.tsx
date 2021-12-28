@@ -39,10 +39,10 @@ const ProjectContainerLogs: React.FC<{
     return `${process.env.REACT_APP_BASE_URL}/api/namespaces/${namespaceId}/projects/${id}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
   };
 
-  const reloadLog = (e: any) => {
+  const reloadLog = useCallback((e: any) => {
     setValue(e.target.value);
-    setTimestamp(new Date().getTime())
-  };
+    setTimestamp(new Date().getTime());
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -80,7 +80,12 @@ const ProjectContainerLogs: React.FC<{
               if (res.error) {
                 return (
                   <span style={{ textAlign: "center" }}>
-                    <Button type="text" style={{color: "red", fontSize: 12}} size="small" onClick={() => setTimestamp(new Date().getTime())}>
+                    <Button
+                      type="text"
+                      style={{ color: "red", fontSize: 12 }}
+                      size="small"
+                      onClick={() => setTimestamp(new Date().getTime())}
+                    >
                       点击重新加载
                     </Button>
                   </span>

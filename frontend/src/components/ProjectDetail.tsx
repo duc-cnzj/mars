@@ -44,12 +44,12 @@ const ItemDetailModal: React.FC<{
     }
   }, [namespaceId, item.id, visible]);
 
-  const onSuccess = () => {
+  const onSuccess = useCallback(() => {
     detailProject(namespaceId, item.id || 0).then((res) => {
       console.log(res.data);
       setDetail(res.data);
     });
-  };
+  }, [item.id, namespaceId]);
 
   const onCancel = useCallback(() => {
     setVisible(false);

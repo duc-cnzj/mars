@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { bg } from "../api/background";
 import pb from "../api/compiled";
 import { Form, Button, Input } from "antd";
@@ -30,36 +30,39 @@ const Login: React.FC = () => {
   const h = useHistory();
   const auth = useAuth();
 
-  const renderOidcItem: (name: string) => React.ReactNode = (name: string) => {
-    switch (name) {
-      case "wechat":
-        return (
-          <div className="login__sso-icon-item">
-            <WechatOutlined />
-          </div>
-        );
-      case "qq":
-        return (
-          <div className="login__sso-icon-item">
-            <QqOutlined />
-          </div>
-        );
-      case "github":
-        return (
-          <div className="login__sso-icon-item">
-            <GithubOutlined />
-          </div>
-        );
-      case "google":
-        return (
-          <div className="login__sso-icon-item">
-            <GoogleOutlined />
-          </div>
-        );
-      default:
-        return <div className="login__sso-item__name">{name}</div>;
-    }
-  };
+  const renderOidcItem: (name: string) => React.ReactNode = useCallback(
+    (name: string) => {
+      switch (name) {
+        case "wechat":
+          return (
+            <div className="login__sso-icon-item">
+              <WechatOutlined />
+            </div>
+          );
+        case "qq":
+          return (
+            <div className="login__sso-icon-item">
+              <QqOutlined />
+            </div>
+          );
+        case "github":
+          return (
+            <div className="login__sso-icon-item">
+              <GithubOutlined />
+            </div>
+          );
+        case "google":
+          return (
+            <div className="login__sso-icon-item">
+              <GoogleOutlined />
+            </div>
+          );
+        default:
+          return <div className="login__sso-item__name">{name}</div>;
+      }
+    },
+    []
+  );
 
   return (
     <div

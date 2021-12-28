@@ -218,26 +218,29 @@ const TabShell: React.FC<{
     }
   }, [initShell, value, wsReady]);
 
-  const reconnect = (e: any) => {
-    setTimestamp(new Date().getTime());
-    setValue(e.target.value);
-    let s = (e.target.value as string).split("|");
-    isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
-      (res) => {
-        if (res.data.running) {
-          initShell();
-        } else {
-          // message.error(`容器列表有更新，请重试！`);
-          listContainer().then((res) => {
-            let first = res.data.data[0];
-            setValue(first.pod_name + "|" + first.container_name);
-          });
+  const reconnect = useCallback(
+    (e: any) => {
+      setTimestamp(new Date().getTime());
+      setValue(e.target.value);
+      let s = (e.target.value as string).split("|");
+      isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
+        (res) => {
+          if (res.data.running) {
+            initShell();
+          } else {
+            // message.error(`容器列表有更新，请重试！`);
+            listContainer().then((res) => {
+              let first = res.data.data[0];
+              setValue(first.pod_name + "|" + first.container_name);
+            });
+          }
         }
-      }
-    );
-  };
+      );
+    },
+    [detail.namespace?.name, initShell, listContainer]
+  );
 
-  function beforeUpload(file: any) {
+  const beforeUpload = useCallback((file: any) => {
     const isLt50M = file.size / 1024 / 1024 <= 50;
     if (!isLt50M) {
       message.error("文件最大不能超过 50MB!");
@@ -245,7 +248,7 @@ const TabShell: React.FC<{
     setLoading(true);
 
     return isLt50M;
-  }
+  }, []);
 
   const [loading, setLoading] = useState(false);
 

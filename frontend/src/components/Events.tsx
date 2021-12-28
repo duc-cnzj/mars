@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
 import {
@@ -65,7 +65,7 @@ const EventList: React.FC = () => {
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
 
-  const getActionStyle = (type: pb.ActionType): React.ReactNode => {
+  const getActionStyle = useCallback((type: pb.ActionType): React.ReactNode => {
     let style = { fontSize: 12, marginLeft: 5 };
     switch (type) {
       case pb.ActionType.Create:
@@ -93,7 +93,7 @@ const EventList: React.FC = () => {
           </Tag>
         );
     }
-  };
+  }, []);
 
   const highlightSyntax = (str: string) => (
     <code
@@ -105,17 +105,17 @@ const EventList: React.FC = () => {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const showModal = () => {
+  const showModal = useCallback(() => {
     setIsModalVisible(true);
-  };
+  }, []);
 
-  const handleOk = () => {
+  const handleOk = useCallback(() => {
     setIsModalVisible(false);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setIsModalVisible(false);
-  };
+  }, []);
   const getHeight = () => {
     let h = window.innerHeight - 260;
     if (h < 400) {

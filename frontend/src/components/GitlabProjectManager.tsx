@@ -52,18 +52,21 @@ const GitlabProjectManager: React.FC = () => {
   const [configVisible, setConfigVisible] = useState(false);
   const [selected, setSelected] = useState<pb.GitlabProjectInfo>();
 
-  const onChange = (v: any) => {
-    console.log(v);
-    if (!v) {
-      setSelected(undefined);
-      return;
-    }
-    let item = list.find((item) => item.id === v);
-    if (item) {
-      setSelected(item);
-      console.log(item);
-    }
-  };
+  const onChange = useCallback(
+    (v: any) => {
+      console.log(v);
+      if (!v) {
+        setSelected(undefined);
+        return;
+      }
+      let item = list.find((item) => item.id === v);
+      if (item) {
+        setSelected(item);
+        console.log(item);
+      }
+    },
+    [list]
+  );
 
   return (
     <>

@@ -34,9 +34,9 @@ import { branches } from "../api/gitlab";
 import MarsExample from "./MarsExample";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 
-SyntaxHighlighter.registerLanguage('yaml', pyaml);
+SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
 interface Config extends pb.Config {}
 
@@ -71,75 +71,7 @@ const ConfigModal: React.FC<{
   const [mode, setMode] = useState("");
   const [old, setOld] = useState<Config>();
 
-  const loadConfig = useCallback((id: number, branch = "") => {
-    setLoading(true);
-    marsConfig({ branch, project_id: id })
-      .then(({ data }) => {
-        if (data.config) {
-          setConfig(data.config);
-          setOld(data.config);
-        }
-        setModalBranch(data.branch);
-        setLoading(false);
-        loadDefaultValues(id, data.branch);
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (config) {
-      setMode(getMode(config.config_file_type));
-    }
-  }, [config]);
-
-  const loadGlobalConfig = useCallback((id: number) => {
-    setLoading(true);
-    globalConfigApi({ project_id: id })
-      .then(({ data }) => {
-        if (data.config) {
-          setConfig(data.config);
-          setOld(data.config);
-        }
-        loadDefaultValues(id, "");
-        setLoading(false);
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    setConfigVisible(visible);
-    if (item && visible) {
-      setLoading(true);
-      branches({ project_id: String(item.id), all: true }).then((res) => {
-        setMbranches(res.data.data.map((op) => op.value));
-      });
-      globalConfigApi({ project_id: item.id }).then(({ data }) => {
-        setGlobalEnabled(data.enabled);
-        if (!data.enabled) {
-          loadConfig(item.id);
-        } else {
-          console.log(data.config, !!data.config);
-          if (data.config) {
-            setOld(data.config);
-            setConfig(data.config);
-          }
-          loadDefaultValues(item.id, "");
-          setLoading(false);
-        }
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-      });
-    }
-  }, [item, loadConfig, visible]);
-
-  const loadDefaultValues = (projectId: number, branch: string) => {
+  const loadDefaultValues = useCallback((projectId: number, branch: string) => {
     if (projectId) {
       getDefaultValues({ project_id: projectId, branch: branch })
         .then((res) => {
@@ -149,7 +81,82 @@ const ConfigModal: React.FC<{
           setDefaultValues(initDefaultValues);
         });
     }
-  };
+  }, []);
+
+  const loadConfig = useCallback(
+    (id: number, branch = "") => {
+      setLoading(true);
+      marsConfig({ branch, project_id: id })
+        .then(({ data }) => {
+          if (data.config) {
+            setConfig(data.config);
+            setOld(data.config);
+          }
+          setModalBranch(data.branch);
+          setLoading(false);
+          loadDefaultValues(id, data.branch);
+        })
+        .catch((e) => {
+          message.error(e.response.data.message);
+          setLoading(false);
+        });
+    },
+    [loadDefaultValues]
+  );
+
+  useEffect(() => {
+    if (config) {
+      setMode(getMode(config.config_file_type));
+    }
+  }, [config]);
+
+  const loadGlobalConfig = useCallback(
+    (id: number) => {
+      setLoading(true);
+      globalConfigApi({ project_id: id })
+        .then(({ data }) => {
+          if (data.config) {
+            setConfig(data.config);
+            setOld(data.config);
+          }
+          loadDefaultValues(id, "");
+          setLoading(false);
+        })
+        .catch((e) => {
+          message.error(e.response.data.message);
+          setLoading(false);
+        });
+    },
+    [loadDefaultValues]
+  );
+
+  useEffect(() => {
+    setConfigVisible(visible);
+    if (item && visible) {
+      setLoading(true);
+      branches({ project_id: String(item.id), all: true }).then((res) => {
+        setMbranches(res.data.data.map((op) => op.value));
+      });
+      globalConfigApi({ project_id: item.id })
+        .then(({ data }) => {
+          setGlobalEnabled(data.enabled);
+          if (!data.enabled) {
+            loadConfig(item.id);
+          } else {
+            console.log(data.config, !!data.config);
+            if (data.config) {
+              setOld(data.config);
+              setConfig(data.config);
+            }
+            loadDefaultValues(item.id, "");
+            setLoading(false);
+          }
+        })
+        .catch((e) => {
+          message.error(e.response.data.message);
+        });
+    }
+  }, [item, loadConfig, visible, loadDefaultValues]);
 
   const resetModal = useCallback(() => {
     setMbranches([]);
@@ -162,32 +169,38 @@ const ConfigModal: React.FC<{
     onCancel();
   }, [onCancel]);
 
-  const selectBranch = (value: string) => {
-    if (item) {
-      loadConfig(item.id, value);
-    }
-  };
+  const selectBranch = useCallback(
+    (value: string) => {
+      if (item) {
+        loadConfig(item.id, value);
+      }
+    },
+    [item, loadConfig]
+  );
 
-  const toggleGlobalEnabled = (enabled: boolean) => {
-    setConfigFileContent("");
-    if (!enabled) {
-      setEditMode(false);
-    }
-    item &&
-      toggleGlobalEnabledApi({ project_id: item.id, enabled })
-        .then(() => {
-          message.success("操作成功");
-          setGlobalEnabled(enabled);
-          if (enabled) {
-            loadGlobalConfig(item.id);
-          } else {
-            loadConfig(item.id, "");
-          }
-        })
-        .catch((e) => {
-          message.error(e.message);
-        });
-  };
+  const toggleGlobalEnabled = useCallback(
+    (enabled: boolean) => {
+      setConfigFileContent("");
+      if (!enabled) {
+        setEditMode(false);
+      }
+      item &&
+        toggleGlobalEnabledApi({ project_id: item.id, enabled })
+          .then(() => {
+            message.success("操作成功");
+            setGlobalEnabled(enabled);
+            if (enabled) {
+              loadGlobalConfig(item.id);
+            } else {
+              loadConfig(item.id, "");
+            }
+          })
+          .catch((e) => {
+            message.error(e.message);
+          });
+    },
+    [loadGlobalConfig, loadConfig, item]
+  );
 
   useEffect(() => {
     if (editMode) {
@@ -235,9 +248,9 @@ const ConfigModal: React.FC<{
         })
         .catch((e) => {
           message.error(e.response.data.message);
-          globalConfigApi({ project_id: item.id }).then(({data}) => {
+          globalConfigApi({ project_id: item.id }).then(({ data }) => {
             setGlobalEnabled(data.enabled);
-            data.config && setOld(data.config)
+            data.config && setOld(data.config);
             console.log(data.config);
             // setConfig(res.config);
           });

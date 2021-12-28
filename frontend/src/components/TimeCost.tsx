@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
 const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
@@ -16,7 +16,7 @@ const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
     }
   }, [start, setSeconds]);
 
-  const getColor = (seconds: number): string => {
+  const getColor = useCallback((seconds: number): string => {
     if (seconds < 10) {
       return "#6EE7B7";
     }
@@ -31,7 +31,7 @@ const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
     }
 
     return "#DC2626";
-  };
+  }, []);
 
   return (
     <div style={{ paddingTop: 10, paddingBottom: 10 }}>

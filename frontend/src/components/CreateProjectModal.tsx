@@ -52,7 +52,10 @@ const CreateProjectModal: React.FC<{
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
 
-  let slug = useMemo(() => toSlug(namespaceId, data.name), [namespaceId, data.name]);
+  let slug = useMemo(
+    () => toSlug(namespaceId, data.name),
+    [namespaceId, data.name]
+  );
 
   const onCancel = useCallback(() => {
     setVisible(false);
@@ -79,30 +82,6 @@ const CreateProjectModal: React.FC<{
     }
   }, [list, slug]);
 
-  const onChange = ({
-    projectName,
-    gitlabProjectId,
-    gitlabBranch,
-    gitlabCommit,
-  }: {
-    projectName: string;
-    gitlabProjectId: number;
-    gitlabBranch: string;
-    gitlabCommit: string;
-  }) => {
-    setData((d) => ({
-      ...d,
-      name: projectName,
-      gitlabProjectId: gitlabProjectId,
-      gitlabBranch: gitlabBranch,
-      gitlabCommit: gitlabCommit,
-    }));
-
-    if (gitlabCommit !== "" && data.config === "") {
-      loadConfigFile();
-    }
-  };
-
   const loadConfigFile = useCallback(() => {
     configFile({
       project_id: String(data.gitlabProjectId),
@@ -115,6 +94,33 @@ const CreateProjectModal: React.FC<{
       }));
     });
   }, [data.gitlabBranch, data.gitlabProjectId]);
+
+  const onChange = useCallback(
+    ({
+      projectName,
+      gitlabProjectId,
+      gitlabBranch,
+      gitlabCommit,
+    }: {
+      projectName: string;
+      gitlabProjectId: number;
+      gitlabBranch: string;
+      gitlabCommit: string;
+    }) => {
+      setData((d) => ({
+        ...d,
+        name: projectName,
+        gitlabProjectId: gitlabProjectId,
+        gitlabBranch: gitlabBranch,
+        gitlabCommit: gitlabCommit,
+      }));
+
+      if (gitlabCommit !== "" && data.config === "") {
+        loadConfigFile();
+      }
+    },
+    [data.config, loadConfigFile]
+  );
 
   useEffect(() => {
     setMode(getMode(data.config_type));
