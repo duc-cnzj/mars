@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/version;version";
 
@@ -23,6 +24,10 @@ service Version {
   rpc Get(google.protobuf.Empty) returns (VersionResponse) {
     option (google.api.http) = {
       get: "/api/version"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: { } // Disable security key
     };
   }
 }

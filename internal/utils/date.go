@@ -13,7 +13,7 @@ var magnitudes = []humanize.RelTimeMagnitude{
 	{time.Minute, "%d 秒%s", time.Second},
 	{2 * time.Minute, "1 分钟%s", 1},
 	{time.Hour, "%d 分钟%s", time.Minute},
-	{2 * time.Hour, "1 小时 %s", 1},
+	{2 * time.Hour, "1 小时%s", 1},
 	{humanize.Day, "%d 小时%s", time.Hour},
 	{2 * humanize.Day, "1 天%s", 1},
 	{humanize.Week, "%d 天%s", humanize.Day},
