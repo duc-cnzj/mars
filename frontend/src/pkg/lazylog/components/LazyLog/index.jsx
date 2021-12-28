@@ -29,7 +29,7 @@ import request from '../../request';
 import stream from '../../stream';
 import websocket from '../../websocket';
 import { searchLines } from '../../search';
-import { lazyLog, searchMatch } from './index.module.css';
+import styles from './index.module.css';
 
 // Setting a hard limit on lines since browsers have trouble with heights
 // starting at around 16.7 million pixels and up
@@ -546,7 +546,7 @@ export default class LazyLog extends Component {
         nextFormatPart: this.props.formatPart,
         caseInsensitive: this.props.caseInsensitive,
         replaceJsx: (text, key) => (
-          <span key={key} className={searchMatch}>
+          <span key={key} className={styles.searchMatch}>
             {text}
           </span>
         ),
@@ -744,7 +744,7 @@ export default class LazyLog extends Component {
                   isBottom: e.scrollTop + e.clientHeight === e.scrollHeight,
                 });
               }}
-              className={`react-lazylog ${lazyLog}`}
+              className={`react-lazylog ${styles.lazyLog}`}
               rowCount={
                 rowCount === 0 ? rowCount : rowCount + this.props.extraLines
               }

@@ -1,9 +1,14 @@
-const CracoAntDesignPlugin = require("craco-antd");
-
+const CracoLessPlugin = require("craco-less");
 const plugins = process.env.NODE_ENV === "production" ? ["transform-remove-console"] : []
 
 module.exports = {
   webpack: {
+    resolve: {
+      fallback: {
+        "util": require.resolve("util/"),
+        "assert": require.resolve("assert/")
+       }
+    },
     configure: (webpackConfig, {
       env, paths
     }) => {
@@ -16,10 +21,13 @@ module.exports = {
   },
   plugins: [
     {
-      plugin: CracoAntDesignPlugin,
+      plugin: CracoLessPlugin,
       options: {
-        customizeTheme: {
-          //   '@primary-color': '#1DA57A',
+        lessLoaderOptions: {
+          lessOptions: {
+            // modifyVars: { '@primary-color': '#1DA57A' },
+            javascriptEnabled: true,
+          },
         },
       },
     },

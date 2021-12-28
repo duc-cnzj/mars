@@ -2,13 +2,7 @@ import { Component, createRef } from 'react';
 import { bool, func, number } from 'prop-types';
 import FilterLinesIcon from './FilterLinesIcon';
 import { SEARCH_MIN_KEYWORDS } from '../../utils';
-import {
-  searchBar,
-  searchInput,
-  button,
-  active,
-  inactive,
-} from './index.module.css';
+import styles from './index.module.css';
 import hotkeys from 'hotkeys-js';
 
 export default class SearchBar extends Component {
@@ -110,16 +104,16 @@ export default class SearchBar extends Component {
   render() {
     const { resultsCount, filterActive, disabled } = this.props;
     const matchesLabel = `match${resultsCount === 1 ? '' : 'es'}`;
-    const filterIcon = filterActive ? active : inactive;
+    const filterIcon = filterActive ? styles.active : styles.inactive;
 
     return (
-      <div className={`react-lazylog-searchbar ${searchBar}`}>
+      <div className={`react-lazylog-searchbar ${styles.searchBar}`}>
         <input
           autoComplete="off"
           type="text"
           name="search"
           placeholder="Search"
-          className={`react-lazylog-searchbar-input ${searchInput}`}
+          className={`react-lazylog-searchbar-input ${styles.searchInput}`}
           onChange={this.handleSearchChange}
           onKeyPress={this.handleSearchKeyPress}
           value={this.state.keywords}
@@ -130,14 +124,14 @@ export default class SearchBar extends Component {
           disabled={disabled}
           className={`react-lazylog-searchbar-filter ${
             filterActive ? 'active' : 'inactive'
-          } ${button} ${filterIcon}`}
+          } ${styles.button} ${filterIcon}`}
           onClick={this.handleFilterToggle}>
           <FilterLinesIcon />
         </button>
         <span
           className={`react-lazylog-searchbar-matches ${
             resultsCount ? 'active' : 'inactive'
-          } ${resultsCount ? active : inactive}`}>
+          } ${resultsCount ? styles.active : styles.inactive}`}>
           {resultsCount} {matchesLabel}
         </span>
       </div>

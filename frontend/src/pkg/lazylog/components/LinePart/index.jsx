@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { func, object, shape, string } from 'prop-types';
-import * as styles from './index.module.css';
+import styles from './index.module.css';
 
 const getClassName = part => {
   const className = [];

@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { loading } from './index.module.css';
+import styles from './index.module.css';
 
 /**
  * Just a loading spinner.
@@ -12,7 +12,7 @@ export default class Loading extends Component {
         height="44"
         viewBox="0 0 44 44"
         stroke="#fff"
-        className={loading}
+        className={styles.loading}
         {...this.props}>
         <g fill="none" fillRule="evenodd" strokeWidth="2">
           <circle cx="22" cy="22" r="1">

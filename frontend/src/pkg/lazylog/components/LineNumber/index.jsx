@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { bool, func, number, object } from 'prop-types';
-import { lineNumber, lineNumberHighlight } from './index.module.css';
+import styles from './index.module.css';
 
 /* eslint-disable jsx-a11y/anchor-has-content, jsx-a11y/anchor-is-valid */
 
@@ -39,7 +39,7 @@ export default class LineNumber extends Component {
       <a
         id={number}
         onClick={onClick}
-        className={highlight ? lineNumberHighlight : lineNumber}
+        className={highlight ? styles.lineNumberHighlight : styles.lineNumber}
         style={style}
       />
     );

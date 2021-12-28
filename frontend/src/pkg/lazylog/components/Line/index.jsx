@@ -2,7 +2,7 @@ import { Component } from 'react';
 import { arrayOf, bool, func, number, object, shape, string } from 'prop-types';
 import LineNumber from '../LineNumber';
 import LineContent from '../LineContent';
-import { line, lineHighlight, lineSelectable } from './index.module.css';
+import styles from './index.module.css';
 
 /**
  * A single row of content, containing both the line number
@@ -52,11 +52,11 @@ export default class Line extends Component {
       className,
       highlightClassName,
     } = this.props;
-    const selectableClass = selectable ? ` ${lineSelectable}` : '';
+    const selectableClass = selectable ? ` ${styles.lineSelectable}` : '';
     const highlightClass = highlight
-      ? ` ${lineHighlight} ${highlightClassName}`
+      ? ` ${styles.lineHighlight} ${highlightClassName}`
       : '';
-    const classes = `${line}${selectableClass}${highlightClass} ${className}`;
+    const classes = `${styles.line}${selectableClass}${highlightClass} ${className}`;
     const lineStyle = {
       ...style,
       lineHeight: `${style ? style.height || rowHeight : rowHeight}px`,

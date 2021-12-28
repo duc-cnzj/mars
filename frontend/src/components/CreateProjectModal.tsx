@@ -187,6 +187,7 @@ const CreateProjectModal: React.FC<{
         icon={<PlusOutlined />}
       ></Button>
       <DraggableModal
+        destroyOnClose
         visible={visible}
         okButtonProps={{
           loading: list[slug]?.isLoading,
