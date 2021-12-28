@@ -70,7 +70,7 @@ func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 			}
 		case elapsed > slowThreshold && g.level >= logger.Warn:
 			sql, rows := fc()
-			slowLog := fmt.Sprintf("SLOW SQL >= %v", slowThreshold)
+			slowLog := fmt.Sprintf("(SLOW SQL) >= %v", slowThreshold)
 			if rows == -1 {
 				mlog.Warningf(traceWarnStr, slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {

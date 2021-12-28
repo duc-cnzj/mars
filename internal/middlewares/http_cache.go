@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -12,7 +13,7 @@ var Etag string
 func init() {
 	v := version.GetVersion()
 	if v.HasBuildInfo() {
-		Etag = utils.Md5(v.BuildDate)
+		Etag = utils.Md5(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate))
 	}
 }
 

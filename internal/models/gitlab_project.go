@@ -3,7 +3,6 @@ package models
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -12,14 +11,6 @@ import (
 
 	"github.com/duc-cnzj/mars/pkg/mars"
 )
-
-var emptyConfigString string
-
-func init() {
-	sb := strings.Builder{}
-	yaml.NewEncoder(&sb).Encode(&mars.Config{})
-	emptyConfigString = sb.String()
-}
 
 type GitlabProject struct {
 	ID int `json:"id" gorm:"primaryKey;"`
