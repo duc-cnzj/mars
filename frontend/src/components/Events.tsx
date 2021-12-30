@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
 import {
@@ -95,14 +95,16 @@ const EventList: React.FC = () => {
     }
   }, []);
 
-  const highlightSyntax = (str: string) => (
-    <code
-      dangerouslySetInnerHTML={{
-        __html: getHighlightSyntax(str, "yaml"),
-      }}
-    />
+  const highlightSyntax = useCallback(
+    (str: string) => (
+      <code
+        dangerouslySetInnerHTML={{
+          __html: getHighlightSyntax(str, "yaml"),
+        }}
+      />
+    ),
+    []
   );
-
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const showModal = useCallback(() => {
@@ -140,7 +142,7 @@ const EventList: React.FC = () => {
     >
       <div
         id="scrollableDiv"
-        style={{ height: "100%", overflowY: "auto", padding: 24 }}
+        style={{ height: "100%", overflowY: "auto" }}
       >
         <InfiniteScroll
           dataLength={data.length}
@@ -153,7 +155,7 @@ const EventList: React.FC = () => {
           <List
             dataSource={data}
             renderItem={(item: pb.EventList.item) => (
-              <List.Item key={item.id}>
+              <List.Item key={item.id} className="events__list-item">
                 <List.Item.Meta
                   title={
                     <div>
@@ -194,14 +196,13 @@ const EventList: React.FC = () => {
         </InfiniteScroll>
       </div>
       <Modal
-        width={"100%"}
+        width={"80%"}
         title={config.title}
         visible={isModalVisible}
         okText={"确定"}
         cancelText={"取消"}
         onOk={handleOk}
         onCancel={handleCancel}
-        bodyStyle={{ width: "100%" }}
       >
         <ErrorBoundary>
           <ReactDiffViewer
@@ -228,4 +229,4 @@ const EventList: React.FC = () => {
   );
 };
 
-export default EventList;
+export default memo(EventList);

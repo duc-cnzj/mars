@@ -34,7 +34,6 @@ const ItemDetailModal: React.FC<{
   const [detail, setDetail] = useState<pb.ProjectShowResponse | undefined>();
   const [resizeAt, setResizeAt] = useState<number>(0);
 
-  console.log("render ItemDetailModal");
   useEffect(() => {
     if (visible && namespaceId && item.id) {
       detailProject(namespaceId, item.id).then((res) => {
@@ -61,12 +60,7 @@ const ItemDetailModal: React.FC<{
         onClick={() => {
           onOk();
         }}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className="project-detail__show-button"
         type="dashed"
       >
         <DeployStatus status={item.status || ""} />
@@ -104,15 +98,9 @@ const ItemDetailModal: React.FC<{
         onCancel={onCancel}
         title={
           <Badge.Ribbon
-            style={{
-              top: 0,
-              cursor: "auto",
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              marginLeft: -16,
-            }}
+            className="project-detail__badge"
             placement="start"
             text={namespace}
-            color="purple"
           >
             <div style={{ textAlign: "center", fontSize: 18 }}>{item.name}</div>
           </Badge.Ribbon>

@@ -16,8 +16,8 @@ const AppFooter: React.FC = () => {
 
   return (
     <div className="copyright">
-      <div style={{ fontSize: 14, color: "#636e72" }}>created by duc@2021.</div>
-      <div style={{ fontSize: 12, color: "#636e72" }}>
+      <div style={{ fontSize: 14 }}>created by duc@2021.</div>
+      <div style={{ fontSize: 12 }}>
         version: {version?.Version}, build at{" "}
         {dayjs(version?.BuildDate).format("YYYY-MM-DD HH:mm:ss")}
         <Button

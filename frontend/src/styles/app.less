@@ -1,8 +1,9 @@
-@main-bg: #001529;
-@main-color: white;
 .app {
+  &__header {
+    background-image: @main-linear;
+  }
   &-title {
-    color: @main-color;
+    color: @main-font-color;
     font-size: 18px;
   }
   &-content {
@@ -11,11 +12,11 @@
     min-height: calc(100vh - 128px) !important;
   }
   &-footer {
+    background-image: @footer-linear;
     padding: 8px 50px 2px !important;
-    background: @main-bg !important;
     text-align: center;
     .copyright {
-      color: @main-color;
+      color: @main-font-color;
     }
   }
 }

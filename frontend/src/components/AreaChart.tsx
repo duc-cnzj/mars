@@ -1,4 +1,4 @@
-import React from "react";
+import React, {memo} from "react";
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
 
 const MyTooltip = ({ active, payload, label }: any) => {
@@ -52,7 +52,7 @@ const MyArea: React.FC<{
   );
 };
 
-const MemoryArea: React.FC<{
+const Memory: React.FC<{
   data: any[];
   dataKey: string;
   uniqueKey: string;
@@ -82,7 +82,7 @@ const MemoryArea: React.FC<{
   );
 };
 
-const CpuArea: React.FC<{
+const Cpu: React.FC<{
   data: any[];
   dataKey: string;
   uniqueKey: string;
@@ -112,6 +112,8 @@ const CpuArea: React.FC<{
   );
 };
 
+const CpuArea = memo(Cpu)
+const MemoryArea = memo(Memory)
 const MarsArea = { CpuArea, MemoryArea };
 
 export default MarsArea;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { bg } from "../api/background";
 import pb from "../api/compiled";
 import { Form, Button, Input } from "antd";
@@ -147,4 +147,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default memo(Login);

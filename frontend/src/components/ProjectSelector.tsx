@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import { Cascader } from "antd";
 import { branches, commits, projects } from "../api/gitlab";
 import {get} from "lodash";
@@ -42,35 +42,36 @@ const ProjectSelector: React.FC<{
     });
   }, [v]);
 
-  const loadData = (selectedOptions: any | undefined) => {
-    if (!selectedOptions) {
-      return;
-    }
-    const targetOption = selectedOptions[selectedOptions.length - 1];
-    targetOption.loading = true;
-
-    console.log(targetOption);
-
-    switch (targetOption.type) {
-      case "project":
-        branches({ project_id: String(targetOption.value), all: false }).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
+  const loadData = useCallback(
+    (selectedOptions: any | undefined) => {
+      if (!selectedOptions) {
         return;
-      case "branch":
-        commits({
-          project_id: String(targetOption.projectId),
-          branch: String(targetOption.value),
-        }).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions([...options]);
-        });
-        return;
-    }
-  };
+      }
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      targetOption.loading = true;
+
+      switch (targetOption.type) {
+        case "project":
+          branches({ project_id: String(targetOption.value), all: false }).then((res) => {
+            targetOption.loading = false;
+            targetOption.children = res.data.data;
+            setOptions(opts => [...opts]);
+          });
+          return;
+        case "branch":
+          commits({
+            project_id: String(targetOption.projectId),
+            branch: String(targetOption.value),
+          }).then((res) => {
+            targetOption.loading = false;
+            targetOption.children = res.data.data;
+            setOptions(opts => [...opts]);
+          });
+          return;
+      }
+    },
+    [],
+  )
 
   const onChange = (
     values: (string | number)[],

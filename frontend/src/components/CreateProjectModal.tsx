@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
@@ -329,4 +329,4 @@ const CreateProjectModal: React.FC<{
   );
 };
 
-export default CreateProjectModal;
+export default memo(CreateProjectModal);

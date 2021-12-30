@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react";
 import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProvider";
 import ItemCard from "./ItemCard";
 import { Empty, Row, Col } from "antd";
@@ -15,10 +15,6 @@ const AppContent: React.FC = () => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [namespaceItems, setNamespaceItems] = useState<pb.NamespaceItem[]>([]);
-  const onNamespaceCreated = ({ id, name }: { id: number; name: string }) => {
-    console.log(id, name);
-    fetchNamespaces();
-  };
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     listNamespaces()
@@ -31,12 +27,18 @@ const AppContent: React.FC = () => {
       });
   }, []);
 
+  const onNamespaceCreated = useCallback(
+    ({ id, name }: { id: number; name: string }) => {
+      fetchNamespaces();
+    },
+    [fetchNamespaces]
+  );
+
   useEffect(() => {
     fetchNamespaces();
   }, [fetchNamespaces]);
 
   useEffect(() => {
-    console.log("reloadNamespace", reloadNamespace);
     if (reloadNamespace) {
       fetchNamespaces();
       dispatch(setNamespaceReload(false));
@@ -68,4 +70,4 @@ const AppContent: React.FC = () => {
   );
 };
 
-export default AppContent;
+export default memo(AppContent);

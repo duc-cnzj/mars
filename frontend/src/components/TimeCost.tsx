@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
 const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
@@ -42,4 +42,4 @@ const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
   );
 };
 
-export default TimeCost;
+export default memo(TimeCost);

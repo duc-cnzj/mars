@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, memo } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { exchange, info } from "../api/auth";
 import { setToken, setLogoutUrl } from "../utils/token";
 import { useAuth } from "../contexts/auth";
-import {getState, removeState} from '../utils/token'
-import {message} from 'antd'
+import { getState, removeState } from "../utils/token";
+import { message } from "antd";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -15,7 +15,6 @@ const Callback: React.FC = () => {
   let code = query.get("code");
   let state = query.get("state");
   const auth = useAuth();
-  console.log(query.get("code"), query);
   if (!code) {
     h.push("/login");
   }
@@ -26,14 +25,14 @@ const Callback: React.FC = () => {
         exchange({ code }).then((res) => {
           setToken(res.data.token);
           info().then((res) => {
-              setLogoutUrl(res.data.logout_url)
-              auth.setUser(res.data)
+            setLogoutUrl(res.data.logout_url);
+            auth.setUser(res.data);
           });
           h.push("/");
         });
       } else {
-        message.error("state 不一致，请重新登录")
-        removeState()
+        message.error("state 不一致，请重新登录");
+        removeState();
         h.push("/login");
       }
     }
@@ -42,4 +41,4 @@ const Callback: React.FC = () => {
   return <div>login....</div>;
 };
 
-export default Callback;
+export default memo(Callback);

@@ -38,6 +38,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
           size="large"
           type="primary"
           shape="circle"
+          className="add-namespace__button"
           icon={<PlusOutlined />}
           onClick={() => setIsVisible(true)}
         />

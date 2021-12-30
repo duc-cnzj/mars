@@ -1,8 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { disabledProject, enabledProject, projectList } from "../api/gitlab";
 import { CopyOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { List, Avatar, Card, Button, Select, message, Tooltip } from "antd";
+import {
+  List,
+  Avatar,
+  Card,
+  Button,
+  Select,
+  message,
+  Tooltip,
+  Divider,
+} from "antd";
 import ConfigModal from "./ConfigModal";
 import { GlobalOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
@@ -71,14 +80,16 @@ const GitlabProjectManager: React.FC = () => {
   return (
     <>
       <Card
+        className="gitlab"
         title={"gitlab项目管理"}
         style={{ marginTop: 20, marginBottom: 30 }}
+        bodyStyle={{ padding: 0 }}
       >
-        <div>
+        <div style={{ padding: "24px 24px 0 24px" }}>
           <Select
             showSearch
             allowClear
-            style={{ width: 500, marginBottom: 10 }}
+            style={{ width: 500 }}
             placeholder="搜索项目"
             optionFilterProp="children"
             onChange={onChange}
@@ -97,6 +108,7 @@ const GitlabProjectManager: React.FC = () => {
             )}
           </Select>
         </div>
+        <Divider />
         <List
           itemLayout="horizontal"
           loading={initLoading}
@@ -105,6 +117,7 @@ const GitlabProjectManager: React.FC = () => {
           )}
           renderItem={(item: pb.GitlabProjectInfo) => (
             <List.Item
+              className="gitlab__list-item"
               key={item.id}
               actions={[
                 item.enabled ? (
@@ -188,4 +201,4 @@ const GitlabProjectManager: React.FC = () => {
   );
 };
 
-export default GitlabProjectManager;
+export default memo(GitlabProjectManager);

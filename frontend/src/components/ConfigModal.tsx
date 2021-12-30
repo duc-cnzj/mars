@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -163,7 +163,7 @@ const ConfigModal: React.FC<{
     setLoading(false);
     setConfig(initConfig);
     setConfigVisible(false);
-    setEditMode(false);
+    setEditMode(true);
     setConfigFileContent("");
     setConfigFileTip(false);
     onCancel();
@@ -640,4 +640,4 @@ const ConfigModal: React.FC<{
   );
 };
 
-export default ConfigModal;
+export default memo(ConfigModal);

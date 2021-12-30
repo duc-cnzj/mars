@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import {
   Card,
   Popconfirm,
@@ -125,4 +125,4 @@ const Item: React.FC<{
   );
 };
 
-export default Item;
+export default memo(Item);
