@@ -71,8 +71,8 @@ const (
 )
 
 var (
-	hostMatch = regexp.MustCompile(".*?=(.*?){{\\s*.Host\\d\\s*}}")
-	tagRegex  = regexp.MustCompile("{{\\s*(\\.Branch|\\.Commit|\\.Pipeline)\\s*}}")
+	hostMatch = regexp.MustCompile(`.*?=(.*?){{\s*.Host\d\s*}}`)
+	tagRegex  = regexp.MustCompile(`{{\s*(\.Branch|\.Commit|\.Pipeline)\s*}}`)
 
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {

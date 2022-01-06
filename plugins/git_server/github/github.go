@@ -121,7 +121,7 @@ func (l *listProjectResponse) PageSize() int {
 func (g *githubServer) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
 	list, _, err := g.client.Repositories.List(context.TODO(), g.username, &github.RepositoryListOptions{
 		Sort:        "updated",
-		ListOptions: github.ListOptions{page, pageSize},
+		ListOptions: github.ListOptions{Page: page, PerPage: pageSize},
 	})
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (g *githubServer) ListBranches(pid string, page, pageSize int) (plugins.Lis
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 
 	branches, _, err := g.client.Repositories.ListBranches(context.TODO(), g.username, p.GetName(), &github.BranchListOptions{
-		ListOptions: github.ListOptions{page, pageSize},
+		ListOptions: github.ListOptions{Page: page, PerPage: pageSize},
 	})
 	if err != nil {
 		return nil, err

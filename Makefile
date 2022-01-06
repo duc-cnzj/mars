@@ -15,7 +15,7 @@ gen:
 
 .PHONY: fmt
 fmt:
-	gofmt -s -w ./ && goimports -w ./
+	go vet ./... && gofmt -s -w ./ && goimports -w ./
 
 .PHONY: serve
 serve:

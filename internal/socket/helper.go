@@ -20,7 +20,7 @@ type pipelineVars struct {
 	Branch   string
 }
 
-var matchTag = regexp.MustCompile("image:\\s+(\\S+)")
+var matchTag = regexp.MustCompile(`image:\s+(\S+)`)
 
 func matchDockerImage(v pipelineVars, manifest string) string {
 	var (
