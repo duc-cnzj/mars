@@ -154,11 +154,11 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 ## TODO
 
 - [ ] 外部接口调用优化
-- [ ] 接口验证
 - [ ] namespace all -> list
 - [ ] 增加 basic? or CA? auth，参考 k8s 的做法
 - [ ] grpc 可配置使用 tls
 - [ ] client 集成 copy to pod & uploader
+- [x] 接口验证
 - [x] 前端 namespace 页面 margin-bottom
 - [x] 缺一个 project list
 - [x] 打开modal无法下滑页面的问题 `ant-scrolling-effect` overflow: hidden 引起的，从 modal click 给 body 加 class 入手解决

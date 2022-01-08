@@ -21,7 +21,6 @@ import (
 	"github.com/duc-cnzj/mars/client/version"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -264,12 +263,13 @@ func WithTokenAuthRefresh() Option {
 	}
 }
 
-func WithTransportCredentials(tls *tls.Config) Option {
-	return func(c *Client) {
-		c.tls = tls
-		c.dialOptions = append(c.dialOptions, grpc.WithTransportCredentials(credentials.NewTLS(tls)))
-	}
-}
+// WithTransportCredentials 暂时不支持
+//func WithTransportCredentials(tls *tls.Config) Option {
+//	return func(c *Client) {
+//		c.tls = tls
+//		c.dialOptions = append(c.dialOptions, grpc.WithTransportCredentials(credentials.NewTLS(tls)))
+//	}
+//}
 
 func WithUnaryClientInterceptor(op grpc.UnaryClientInterceptor) Option {
 	return func(c *Client) {

@@ -71,23 +71,7 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 func (g *grpcRunner) Run(ctx context.Context) error {
 	mlog.Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
 	listen, _ := net.Listen("tcp", g.endpoint)
-	//p := x509.NewCertPool()
-	//file, err := os.ReadFile("../certs/ca.pem")
-	//if err != nil {
-	//	return err
-	//}
-	//p.AppendCertsFromPEM(file)
-	//cert, err := tls.LoadX509KeyPair("../certs/server.pem", "../certs/server-key.pem")
-	//if err != nil {
-	//	return err
-	//}
-	//c := credentials.NewTLS(&tls.Config{
-	//	Certificates: []tls.Certificate{cert},
-	//	ClientAuth:   tls.RequireAndVerifyClientCert,
-	//	ClientCAs:    p,
-	//})
 	server := grpc.NewServer(
-		//grpc.Creds(c),
 		grpc.ChainStreamInterceptor(
 			grpc_opentracing.StreamServerInterceptor(traceWithOpName()),
 			grpc_auth.StreamServerInterceptor(Authenticate),

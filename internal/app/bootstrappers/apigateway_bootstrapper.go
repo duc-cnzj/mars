@@ -82,23 +82,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 			},
 		}))
 
-	//p := x509.NewCertPool()
-	//file, err := os.ReadFile("../certs/ca.pem")
-	//if err != nil {
-	//	return err
-	//}
-	//p.AppendCertsFromPEM(file)
-	//pair, err := tls.LoadX509KeyPair("../certs/server.pem", "../certs/server-key.pem")
-	//if err != nil {
-	//	return err
-	//}
-	//newTLS := credentials.NewTLS(&tls.Config{
-	//	ClientCAs:    p,
-	//	RootCAs:      p,
-	//	Certificates: []tls.Certificate{pair},
-	//})
 	opts := []grpc.DialOption{
-		//grpc.WithTransportCredentials(newTLS),
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
 	}
