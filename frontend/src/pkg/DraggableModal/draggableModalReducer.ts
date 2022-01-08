@@ -147,7 +147,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 }
             }
             if (hidden) {
-                document.body.classList.remove("ant-design-draggable-modal-force-scroll")
+                document.body.classList.remove("ant-design-draggable-modal-body-overflow")
             }
     }
     switch (action.type) {
@@ -254,7 +254,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'show': {
-            document.body.classList.add("ant-design-draggable-modal-force-scroll")
+            document.body.classList.add("ant-design-draggable-modal-body-overflow")
             const modalState = state.modals[action.id]
             const centerX = state.windowSize.width / 2 - modalState.width / 2
             const centerY = state.windowSize.height / 2 - modalState.height / 2
