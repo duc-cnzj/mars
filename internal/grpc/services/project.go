@@ -9,21 +9,21 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/scopes"
 
-	"github.com/duc-cnzj/mars/client/model"
+	"github.com/duc-cnzj/mars/pkg/model"
 
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars/client/websocket"
 	"github.com/duc-cnzj/mars/internal/socket"
+	"github.com/duc-cnzj/mars/pkg/websocket"
 
-	"github.com/duc-cnzj/mars/client/event"
-	"github.com/duc-cnzj/mars/client/project"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
+	"github.com/duc-cnzj/mars/pkg/project"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"

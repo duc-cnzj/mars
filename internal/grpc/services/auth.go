@@ -5,10 +5,10 @@ import (
 	"sort"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/client/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/auth"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

@@ -3,7 +3,7 @@ package wssender
 import (
 	"errors"
 
-	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/mlog"

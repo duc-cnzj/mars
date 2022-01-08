@@ -5,7 +5,7 @@ import "websocket/websocket.proto";
 import "model/model.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/project;project";
+option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
 
 message ProjectDeleteRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];

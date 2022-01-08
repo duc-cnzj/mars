@@ -2,11 +2,11 @@ module github.com/duc-cnzj/mars
 
 go 1.17
 
-replace github.com/duc-cnzj/mars/client => ./pkg
+replace github.com/duc-cnzj/mars/pkg => ./pkg
 
 require (
 	github.com/coreos/go-oidc/v3 v3.1.0
-	github.com/duc-cnzj/mars/client v0.0.0-00010101000000-000000000000
+	github.com/duc-cnzj/mars/pkg v0.0.0-00010101000000-000000000000
 	github.com/dustin/go-humanize v1.0.0
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/go-redis/redis/v8 v8.11.3

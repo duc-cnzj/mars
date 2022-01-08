@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/metrics;metrics";
+option go_package = "github.com/duc-cnzj/mars/pkg/metrics;metrics";
 
 message MetricsShowRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];

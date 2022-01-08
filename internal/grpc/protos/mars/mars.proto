@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/mars";
+option go_package = "github.com/duc-cnzj/mars/pkg/mars";
 
 message MarsConfig {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"

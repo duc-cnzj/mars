@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/container_copy;container_copy";
+option go_package = "github.com/duc-cnzj/mars/pkg/container_copy;container_copy";
 
 message CopyToPodRequest {
   int64 file_id = 1 [(validate.rules).int64.gt = 0];

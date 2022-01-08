@@ -5,10 +5,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars/client/changelog"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/changelog"
 )
 
 type Changelog struct {

@@ -4,7 +4,7 @@ import "google/api/annotations.proto";
 import "model/model.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/namespace;namespace";
+option go_package = "github.com/duc-cnzj/mars/pkg/namespace;namespace";
 
 message NamespaceCreateRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];

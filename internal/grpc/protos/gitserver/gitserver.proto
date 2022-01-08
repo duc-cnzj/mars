@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/client/gitserver;gitserver";
+option go_package = "github.com/duc-cnzj/mars/pkg/gitserver;gitserver";
 
 message GitDestroyRequest {
   string namespace_id = 1 [(validate.rules).string.min_bytes = 1];

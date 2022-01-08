@@ -7,13 +7,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/duc-cnzj/mars/client/event"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/dustin/go-humanize"
 
-	cp "github.com/duc-cnzj/mars/client/container_copy"
 	"github.com/duc-cnzj/mars/internal/utils"
+	cp "github.com/duc-cnzj/mars/pkg/container_copy"
 )
 
 type ContainerCopy struct {

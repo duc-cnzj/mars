@@ -1,4 +1,4 @@
-module github.com/duc-cnzj/mars/client
+module github.com/duc-cnzj/mars/pkg
 
 go 1.17
 

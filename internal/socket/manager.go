@@ -26,9 +26,6 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/duc-cnzj/mars/client/event"
-	"github.com/duc-cnzj/mars/client/mars"
-	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
@@ -36,6 +33,9 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/event"
+	"github.com/duc-cnzj/mars/pkg/mars"
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 const (

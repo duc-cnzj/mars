@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars/client/mars"
+	"github.com/duc-cnzj/mars/pkg/mars"
 )
 
 type GitlabProject struct {
