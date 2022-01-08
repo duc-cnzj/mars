@@ -92,6 +92,7 @@ message ProjectApplyRequest {
   string gitlab_commit = 5;
   string config = 6;
   bool atomic = 7;
+  bool websocket_sync = 8;
 }
 
 message ProjectDeleteResponse {}

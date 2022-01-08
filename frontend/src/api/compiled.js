@@ -14441,6 +14441,7 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
      * @property {string|null} [gitlab_commit] ProjectApplyRequest gitlab_commit
      * @property {string|null} [config] ProjectApplyRequest config
      * @property {boolean|null} [atomic] ProjectApplyRequest atomic
+     * @property {boolean|null} [websocket_sync] ProjectApplyRequest websocket_sync
      */
 
     /**
@@ -14515,6 +14516,14 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
     ProjectApplyRequest.prototype.atomic = false;
 
     /**
+     * ProjectApplyRequest websocket_sync.
+     * @member {boolean} websocket_sync
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.websocket_sync = false;
+
+    /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
      * @function encode
      * @memberof ProjectApplyRequest
@@ -14540,6 +14549,8 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
             writer.uint32(/* id 6, wireType 2 =*/50).string(message.config);
         if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
             writer.uint32(/* id 7, wireType 0 =*/56).bool(message.atomic);
+        if (message.websocket_sync != null && Object.hasOwnProperty.call(message, "websocket_sync"))
+            writer.uint32(/* id 8, wireType 0 =*/64).bool(message.websocket_sync);
         return writer;
     };
 
@@ -14581,6 +14592,9 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
                 break;
             case 7:
                 message.atomic = reader.bool();
+                break;
+            case 8:
+                message.websocket_sync = reader.bool();
                 break;
             default:
                 reader.skipType(tag & 7);

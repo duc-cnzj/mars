@@ -5880,6 +5880,9 @@ export class ProjectApplyRequest implements IProjectApplyRequest {
     /** ProjectApplyRequest atomic. */
     public atomic: boolean;
 
+    /** ProjectApplyRequest websocket_sync. */
+    public websocket_sync: boolean;
+
     /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
      * @param message ProjectApplyRequest message or plain object to encode

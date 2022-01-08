@@ -33,6 +33,10 @@ type Project struct {
 }
 
 func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Project_ApplyServer) error {
+	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
+	if input.WebsocketSync {
+		pubsub = plugins.GetWsSender().New("", "")
+	}
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{}, 1)
 	t := websocket.Type_ApplyProject
@@ -49,7 +53,7 @@ func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Proje
 		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
 		t:        t,
 		server:   server,
-	}, &plugins.EmptyPubSub{})
+	}, pubsub)
 
 	go func() {
 		select {
