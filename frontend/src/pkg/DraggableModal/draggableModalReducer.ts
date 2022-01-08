@@ -134,6 +134,22 @@ const clampResize = (
 }
 
 export const draggableModalReducer = (state: ModalsState, action: Action): ModalsState => {
+    const removeOverflow = (exceptID: string) => {
+        let hidden = true
+            for (const key in state.modals) {
+                if (Object.prototype.hasOwnProperty.call(state.modals, key)) {
+                    const element = state.modals[key];
+                    console.log(element)
+                    if (element.visible && exceptID != key) {
+                        hidden = false
+                        break
+                    }
+                }
+            }
+            if (hidden) {
+                document.body.classList.remove("ant-design-draggable-modal-force-scroll")
+            }
+    }
     switch (action.type) {
         case 'doubleClick':
             let curr = state.modals[action.id]
@@ -287,20 +303,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'hide': {
-            let hidden = true
-            for (const key in state.modals) {
-                if (Object.prototype.hasOwnProperty.call(state.modals, key)) {
-                    const element = state.modals[key];
-                    console.log(element)
-                    if (element.visible && action.id != key) {
-                        hidden = false
-                        break
-                    }
-                }
-            }
-            if (hidden) {
-                document.body.classList.remove("ant-design-draggable-modal-force-scroll")
-            }
+            removeOverflow(action.id)
             const modalState = state.modals[action.id]
             return {
                 ...state,
@@ -330,6 +333,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'unmount':
+            removeOverflow(action.id)
             const modalsClone = { ...state.modals }
             delete modalsClone[action.id]
             return {
