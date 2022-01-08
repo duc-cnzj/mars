@@ -24,7 +24,7 @@ message MarsConfig {
 
 message MarsShowRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string branch = 2;
 }
 
 message MarsShowResponse {

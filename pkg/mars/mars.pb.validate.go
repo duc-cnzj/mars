@@ -180,16 +180,7 @@ func (m *MarsShowRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetBranch()) < 1 {
-		err := MarsShowRequestValidationError{
-			field:  "Branch",
-			reason: "value length must be at least 1 bytes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Branch
 
 	if len(errors) > 0 {
 		return MarsShowRequestMultiError(errors)
