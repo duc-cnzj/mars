@@ -7,17 +7,23 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/duc-cnzj/mars/client/model"
+
+	"gorm.io/gorm"
+
+	"github.com/duc-cnzj/mars/client/websocket"
+	"github.com/duc-cnzj/mars/internal/socket"
+
+	"github.com/duc-cnzj/mars/client/event"
+	"github.com/duc-cnzj/mars/client/project"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/project"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -26,18 +32,51 @@ type Project struct {
 	project.UnimplementedProjectServer
 }
 
-func (p *Project) StreamPodContainerLog(request *project.PodContainerLogRequest, server project.Project_StreamPodContainerLogServer) error {
-	var projectModal models.Project
-	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
+func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Project_ApplyServer) error {
+	user := MustGetUser(server.Context())
+	ch := make(chan struct{}, 1)
+	t := websocket.Type_ApplyProject
+	job := socket.NewJober(&websocket.ProjectInput{
+		Type:            t,
+		NamespaceId:     input.NamespaceId,
+		Name:            input.Name,
+		GitlabProjectId: input.GitlabProjectId,
+		GitlabBranch:    input.GitlabBranch,
+		GitlabCommit:    input.GitlabCommit,
+		Config:          input.Config,
+		Atomic:          input.Atomic,
+	}, *user, "", &messager{
+		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
+		t:        t,
+		server:   server,
+	}, &plugins.EmptyPubSub{})
+
+	go func() {
+		select {
+		case <-server.Context().Done():
+			job.Stop(server.Context().Err())
+		case <-ch:
+			return
+		}
+	}()
+	socket.InstallProject(job)
+	ch <- struct{}{}
+
+	return nil
+}
+
+func (p *Project) StreamPodContainerLog(request *project.ProjectPodContainerLogRequest, server project.Project_StreamPodContainerLogServer) error {
+	var projectModel models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return err
 	}
 
-	if running, reason := utils.IsPodRunning(projectModal.Namespace.Name, request.Pod); !running {
+	if running, reason := utils.IsPodRunning(projectModel.Namespace.Name, request.Pod); !running {
 		return status.Errorf(codes.NotFound, reason)
 	}
 
 	var limit int64 = 2000
-	logs := app.K8sClientSet().CoreV1().Pods(projectModal.Namespace.Name).GetLogs(request.Pod, &v1.PodLogOptions{
+	logs := app.K8sClientSet().CoreV1().Pods(projectModel.Namespace.Name).GetLogs(request.Pod, &v1.PodLogOptions{
 		Follow:    true,
 		Container: request.Container,
 		TailLines: &limit,
@@ -76,8 +115,9 @@ func (p *Project) StreamPodContainerLog(request *project.PodContainerLogRequest,
 				return errors.New("[Stream]: channel close")
 			}
 
-			if err := server.Send(&project.PodContainerLogResponse{
-				Data: &project.PodLog{
+			if err := server.Send(&project.ProjectPodContainerLogResponse{
+				Data: &project.ProjectPodLog{
+					Namespace:     projectModel.Namespace.Name,
 					PodName:       request.Pod,
 					ContainerName: request.Container,
 					Log:           string(msg),
@@ -90,96 +130,102 @@ func (p *Project) StreamPodContainerLog(request *project.PodContainerLogRequest,
 	}
 }
 
-func (p *Project) IsPodRunning(_ context.Context, request *project.IsPodRunningRequest) (*project.IsPodRunningResponse, error) {
+func (p *Project) IsPodRunning(_ context.Context, request *project.ProjectIsPodRunningRequest) (*project.ProjectIsPodRunningResponse, error) {
 	running, reason := utils.IsPodRunning(request.GetNamespace(), request.GetPod())
 
-	return &project.IsPodRunningResponse{Running: running, Reason: reason}, nil
+	return &project.ProjectIsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
-func (p *Project) Destroy(ctx context.Context, request *project.ProjectDestroyRequest) (*emptypb.Empty, error) {
-	var projectModal models.Project
-	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
+func (p *Project) Delete(ctx context.Context, request *project.ProjectDeleteRequest) (*project.ProjectDeleteResponse, error) {
+	var projectModel models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := utils.UninstallRelease(projectModal.Name, projectModal.Namespace.Name, mlog.Debugf); err != nil {
+	if err := utils.UninstallRelease(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
-	app.DB().Delete(&projectModal)
-	app.Event().Dispatch(events.EventProjectDeleted, map[string]interface{}{"data": &projectModal})
+	app.DB().Delete(&projectModel)
+	app.Event().Dispatch(events.EventProjectDeleted, map[string]interface{}{"data": &projectModel})
 
 	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete,
-		fmt.Sprintf("删除项目: %d: %s/%s ", projectModal.ID, projectModal.Namespace.Name, projectModal.Name))
+		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name))
 
-	return &emptypb.Empty{}, nil
+	return &project.ProjectDeleteResponse{}, nil
 }
 
 func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest) (*project.ProjectShowResponse, error) {
-	var projectModal models.Project
-	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
-		return nil, err
+	var projectModel models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-	cpu, memory := utils.GetCpuAndMemory(projectModal.GetAllPodMetrics())
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModal.GitlabProjectId), projectModal.GitlabCommit)
+
+	cpu, memory := utils.GetCpuAndMemory(projectModel.GetAllPodMetrics())
+	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModel.GitlabProjectId), projectModel.GitlabCommit)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
 	}
 
-	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModal.Namespace.Name)
-	ingMapping := utils.GetIngressMappingByNamespace(projectModal.Namespace.Name)
+	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModel.Namespace.Name)
+	ingMapping := utils.GetIngressMappingByNamespace(projectModel.Namespace.Name)
 
 	var urls = make([]string, 0)
 	for key, values := range ingMapping {
-		if projectModal.Name == key {
+		if projectModel.Name == key {
 			urls = append(urls, values...)
 		}
 	}
 	for key, values := range nodePortMapping {
-		if projectModal.Name == key {
+		if projectModel.Name == key {
 			urls = append(urls, values...)
 		}
 	}
 
 	return &project.ProjectShowResponse{
-		Id:                 int64(projectModal.ID),
-		Name:               projectModal.Name,
-		GitlabProjectId:    int64(projectModal.GitlabProjectId),
-		GitlabBranch:       projectModal.GitlabBranch,
-		GitlabCommit:       projectModal.GitlabCommit,
-		Config:             projectModal.Config,
-		DockerImage:        projectModal.DockerImage,
-		Atomic:             projectModal.Atomic,
+		Id:                 int64(projectModel.ID),
+		Name:               projectModel.Name,
+		GitlabProjectId:    int64(projectModel.GitlabProjectId),
+		GitlabBranch:       projectModel.GitlabBranch,
+		GitlabCommit:       projectModel.GitlabCommit,
+		Config:             projectModel.Config,
+		DockerImage:        projectModel.DockerImage,
+		Atomic:             projectModel.Atomic,
 		GitlabCommitWebUrl: commit.GetWebURL(),
 		GitlabCommitTitle:  commit.GetTitle(),
 		GitlabCommitAuthor: commit.GetAuthorName(),
 		GitlabCommitDate:   utils.ToHumanizeDatetimeString(commit.GetCreatedAt()),
 		Urls:               urls,
 		Namespace: &project.ProjectShowResponse_Namespace{
-			Id:   int64(projectModal.NamespaceId),
-			Name: projectModal.Namespace.Name,
+			Id:   int64(projectModel.NamespaceId),
+			Name: projectModel.Namespace.Name,
 		},
-		Cpu:              cpu,
-		Memory:           memory,
-		OverrideValues:   projectModal.OverrideValues,
-		CreatedAt:        utils.ToHumanizeDatetimeString(&projectModal.CreatedAt),
-		UpdatedAt:        utils.ToHumanizeDatetimeString(&projectModal.UpdatedAt),
-		UpdatedTimestamp: projectModal.UpdatedAt.Unix(),
+		Cpu:               cpu,
+		Memory:            memory,
+		OverrideValues:    projectModel.OverrideValues,
+		CreatedAt:         utils.ToRFC3339DatetimeString(&projectModel.CreatedAt),
+		UpdatedAt:         utils.ToRFC3339DatetimeString(&projectModel.UpdatedAt),
+		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
+		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
 	}, nil
 }
 
-func (p *Project) AllPodContainers(ctx context.Context, request *project.AllPodContainersRequest) (*project.AllPodContainersResponse, error) {
-	var projectModal models.Project
-	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
+func (p *Project) AllPodContainers(ctx context.Context, request *project.ProjectAllPodContainersRequest) (*project.ProjectAllPodContainersResponse, error) {
+	var projectModel models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
 
-	var list = projectModal.GetAllPods()
+	var list = projectModel.GetAllPods()
 
-	var containerList []*project.PodLog
+	var containerList []*project.ProjectPodLog
 	for _, item := range list {
 		for _, c := range item.Spec.Containers {
 			containerList = append(containerList,
-				&project.PodLog{
+				&project.ProjectPodLog{
+					Namespace:     projectModel.Namespace.Name,
 					PodName:       item.Name,
 					ContainerName: c.Name,
 					Log:           "",
@@ -188,21 +234,21 @@ func (p *Project) AllPodContainers(ctx context.Context, request *project.AllPodC
 		}
 	}
 
-	return &project.AllPodContainersResponse{Data: containerList}, nil
+	return &project.ProjectAllPodContainersResponse{Data: containerList}, nil
 }
 
-func (p *Project) PodContainerLog(ctx context.Context, request *project.PodContainerLogRequest) (*project.PodContainerLogResponse, error) {
-	var projectModal models.Project
-	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModal).Error; err != nil {
+func (p *Project) PodContainerLog(ctx context.Context, request *project.ProjectPodContainerLogRequest) (*project.ProjectPodContainerLogResponse, error) {
+	var projectModel models.Project
+	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
 
-	if running, reason := utils.IsPodRunning(projectModal.Namespace.Name, request.Pod); !running {
+	if running, reason := utils.IsPodRunning(projectModel.Namespace.Name, request.Pod); !running {
 		return nil, status.Errorf(codes.NotFound, reason)
 	}
 
 	var limit int64 = 2000
-	logs := app.K8sClientSet().CoreV1().Pods(projectModal.Namespace.Name).GetLogs(request.Pod, &v1.PodLogOptions{
+	logs := app.K8sClientSet().CoreV1().Pods(projectModel.Namespace.Name).GetLogs(request.Pod, &v1.PodLogOptions{
 		Container: request.Container,
 		TailLines: &limit,
 	})
@@ -213,19 +259,102 @@ func (p *Project) PodContainerLog(ctx context.Context, request *project.PodConta
 		if status, ok := err.(apierrors.APIStatus); ok {
 			if status.Status().Code == http.StatusBadRequest {
 				mlog.Warningf("CleanEvictedPods code: %d message: %s", status.Status().Code, status.Status().Reason)
-				for _, selector := range projectModal.GetPodSelectors() {
-					utils.CleanEvictedPods(projectModal.Namespace.Name, selector)
+				for _, selector := range projectModel.GetPodSelectors() {
+					utils.CleanEvictedPods(projectModel.Namespace.Name, selector)
 				}
 			}
 		}
 		return nil, err
 	}
 
-	return &project.PodContainerLogResponse{
-		Data: &project.PodLog{
+	return &project.ProjectPodContainerLogResponse{
+		Data: &project.ProjectPodLog{
+			Namespace:     projectModel.Namespace.Name,
 			PodName:       request.Pod,
 			ContainerName: request.Container,
 			Log:           string(raw),
 		},
 	}, nil
+}
+
+type messager struct {
+	slugName string
+	t        websocket.Type
+	server   project.Project_ApplyServer
+}
+
+func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string, p *models.Project) {
+	var ns model.NamespaceModel
+	if p.Namespace.ID != 0 {
+		ns = model.NamespaceModel{
+			Id:               int64(p.Namespace.ID),
+			Name:             p.Namespace.Name,
+			ImagePullSecrets: p.Namespace.ImagePullSecretsArray(),
+			CreatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
+			UpdatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
+		}
+	}
+	m.server.Send(&project.ProjectApplyResponse{
+		Metadata: &websocket.Metadata{
+			Slug:   m.slugName,
+			Type:   m.t,
+			Result: resultType,
+			End:    true,
+			Data:   s,
+		},
+		Project: &model.ProjectModel{
+			Id:              int64(p.ID),
+			Name:            p.Name,
+			GitlabProjectId: int64(p.GitlabProjectId),
+			GitlabBranch:    p.GitlabBranch,
+			GitlabCommit:    p.GitlabCommit,
+			Config:          p.Config,
+			OverrideValues:  p.OverrideValues,
+			DockerImage:     p.DockerImage,
+			PodSelectors:    p.PodSelectors,
+			NamespaceId:     int64(p.NamespaceId),
+			Atomic:          p.Atomic,
+			CreatedAt:       utils.ToRFC3339DatetimeString(&p.CreatedAt),
+			UpdatedAt:       utils.ToRFC3339DatetimeString(&p.UpdatedAt),
+			Namespace:       &ns,
+		},
+	})
+}
+
+func (m *messager) SendEndError(err error) {
+	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+		Slug:   m.slugName,
+		Type:   m.t,
+		Result: websocket.ResultType_Error,
+		End:    true,
+		Data:   err.Error(),
+	}})
+}
+
+func (m *messager) SendError(err error) {
+	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+		Slug:   m.slugName,
+		Type:   m.t,
+		Result: websocket.ResultType_Error,
+		End:    false,
+		Data:   err.Error(),
+	}})
+}
+
+func (m *messager) SendProcessPercent(s string) {
+	// 不需要
+}
+
+func (m *messager) SendMsg(s string) {
+	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+		Slug:   m.slugName,
+		Type:   m.t,
+		Result: websocket.ResultType_Success,
+		End:    false,
+		Data:   s,
+	}})
+}
+
+func (m *messager) SendProtoMsg(message plugins.WebsocketMessage) {
+	m.server.Send(&project.ProjectApplyResponse{Metadata: message.GetMetadata()})
 }

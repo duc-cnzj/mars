@@ -18,7 +18,7 @@ const App: FC = () => {
   return (
     <ProvideWebsocket>
       <Layout className="app">
-        <Header className="app__header" style={{ position: "fixed", zIndex: 1, width: "100%" }}>
+        <Header className="app__header" style={{ position: "fixed", zIndex: 1, width: "100%", overflow: "hidden" }}>
           <AppHeader />
         </Header>
         <Content className="app-content">

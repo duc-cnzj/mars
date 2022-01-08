@@ -18,7 +18,43 @@
   "paths": {
     "/api/metrics/namespace/{namespace}/pods/{pod}": {
       "get": {
-        "operationId": "Metrics_ProjectByID",
+        "operationId": "Metrics_Show",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MetricsShowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Metrics"
+        ]
+      }
+    },
+    "/api/metrics/namespace/{namespace}/pods/{pod}/stream": {
+      "get": {
+        "operationId": "Metrics_StreamShow",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
@@ -26,13 +62,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/ProjectByIDResponse"
+                  "$ref": "#/definitions/MetricsShowResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 }
               },
-              "title": "Stream result of ProjectByIDResponse"
+              "title": "Stream result of MetricsShowResponse"
             }
           },
           "default": {
@@ -63,7 +99,7 @@
     }
   },
   "definitions": {
-    "ProjectByIDResponse": {
+    "MetricsShowResponse": {
       "type": "object",
       "properties": {
         "cpu": {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import { Cascader } from "antd";
-import { branches, commits, projects } from "../api/gitlab";
+import { branchOptions, commitOptions, projectOptions } from "../api/gitlab";
 import {get} from "lodash";
 import pb from "../api/compiled";
 
@@ -19,7 +19,7 @@ const ProjectSelector: React.FC<{
     gitlabCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh }) => {
-  const [options, setOptions] = useState<pb.Option[]>([]);
+  const [options, setOptions] = useState<pb.GitOption[]>([]);
   let initValue: (string | number)[] = [];
   if (v) {
     initValue = [v.projectName, v.gitlabBranch, v.gitlabCommit];
@@ -27,7 +27,7 @@ const ProjectSelector: React.FC<{
   const [value, setValue] = useState<(string | number)[]>(initValue);
 
   useEffect(() => {
-    projects().then((res) => {
+    projectOptions().then((res) => {
       if (v) {
         if (v.gitlabProjectId) {
           let r = res.data.data.find(
@@ -52,14 +52,14 @@ const ProjectSelector: React.FC<{
 
       switch (targetOption.type) {
         case "project":
-          branches({ project_id: String(targetOption.value), all: false }).then((res) => {
+          branchOptions({ project_id: String(targetOption.value), all: false }).then((res) => {
             targetOption.loading = false;
             targetOption.children = res.data.data;
             setOptions(opts => [...opts]);
           });
           return;
         case "branch":
-          commits({
+          commitOptions({
             project_id: String(targetOption.projectId),
             branch: String(targetOption.value),
           }).then((res) => {
@@ -88,14 +88,14 @@ const ProjectSelector: React.FC<{
         targetOption.children = undefined;
         switch (targetOption.type) {
           case "project":
-            branches({ project_id: String(targetOption.value), all: false }).then((res) => {
+            branchOptions({ project_id: String(targetOption.value), all: false }).then((res) => {
               targetOption.loading = false;
               targetOption.children = res.data.data;
               setOptions([...options]);
             });
             return;
           case "branch":
-            commits({
+            commitOptions({
               project_id: String(targetOption.projectId),
               branch: String(targetOption.value),
             }).then((res) => {
@@ -115,11 +115,11 @@ const ProjectSelector: React.FC<{
         // @ts-ignore
         if (o && o.children) {
           // @ts-ignore
-          let b = o.children.find((item: pb.Option) => item.value === gbranch);
+          let b = o.children.find((item: pb.GitOption) => item.value === gbranch);
           setValue([o.label, b ? b.label : ""]);
           if (gcommit) {
             if (b && b.children) {
-              let c = b.children.find((item: pb.Option) => item.value === gcommit);
+              let c = b.children.find((item: pb.GitOption) => item.value === gcommit);
               setValue([o.label, b.label, c ? c.label : ""]);
             }
           }

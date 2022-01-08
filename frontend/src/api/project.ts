@@ -1,23 +1,24 @@
 import ajax from "./ajax";
 import pb from "./compiled"
 
-export function detailProject(namespaceId:number, projectId:number) {
-  return ajax.get<pb.ProjectShowResponse>(`/api/namespaces/${namespaceId}/projects/${projectId}`);
+export function detailProject(projectId:number) {
+  return ajax.get<pb.ProjectShowResponse>(`/api/projects/${projectId}`);
 }
 
-export function deleteProject(namespaceId:number, projectId:number) {
-  return ajax.delete(`/api/namespaces/${namespaceId}/projects/${projectId}`);
+export function deleteProject(projectId:number) {
+  return ajax.delete<pb.ProjectDeleteResponse>(`/api/projects/${projectId}`);
 }
 
-export function containerList({namespace_id, project_id}: pb.AllPodContainersRequest) {
-  return ajax.get<pb.AllPodContainersResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/containers`);
+export function allPodContainers({project_id}: pb.ProjectAllPodContainersRequest) {
+  return ajax.get<pb.ProjectAllPodContainersResponse>(`/api/projects/${project_id}/containers`);
 }
 
-export function containerLog({namespace_id, pod, project_id, container}: pb.PodContainerLogRequest) {
-  return ajax.get<pb.PodContainerLogResponse>(`/api/namespaces/${namespace_id}/projects/${project_id}/pods/${pod}/containers/${container}/logs`);
+export function containerLog({pod, project_id, container}: pb.ProjectPodContainerLogRequest) {
+  return ajax.get<pb.ProjectPodContainerLogResponse>(`/api/projects/${project_id}/pods/${pod}/containers/${container}/logs`);
 }
-export function isPodRunning({namespace, pod}: pb.IsPodRunningRequest) {
-  return ajax.get<pb.IsPodRunningResponse>(`/api/namespaces/${namespace}/pod/${pod}/status`);
+
+export function isPodRunning({namespace, pod}: pb.ProjectIsPodRunningRequest) {
+  return ajax.get<pb.ProjectIsPodRunningResponse>(`/api/namespaces/${namespace}/pod/${pod}/status`);
 }
 
 

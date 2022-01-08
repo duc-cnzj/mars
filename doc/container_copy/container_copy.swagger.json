@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "cp/cp.proto",
+    "title": "container_copy/container_copy.proto",
     "version": "version not set"
   },
   "tags": [
     {
-      "name": "Cp"
+      "name": "ContainerCopy"
     }
   ],
   "consumes": [
@@ -16,9 +16,9 @@
     "application/json"
   ],
   "paths": {
-    "/api/copy_to_pod": {
+    "/api/container_copy/copy_to_pod": {
       "post": {
-        "operationId": "Cp_CopyToPod",
+        "operationId": "ContainerCopy_CopyToPod",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -44,7 +44,7 @@
           }
         ],
         "tags": [
-          "Cp"
+          "ContainerCopy"
         ]
       }
     }

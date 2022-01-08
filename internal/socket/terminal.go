@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -74,7 +74,7 @@ func (t *MyPtyHandler) Close(reason string) {
 	t.closeLock.Unlock()
 
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
 			Uid:    t.conn.uid,
 			Slug:   t.id,
@@ -161,7 +161,7 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	t.closeLock.Unlock()
 	if send {
 		NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-			Metadata: &websocket_pb.ResponseMetadata{
+			Metadata: &websocket_pb.Metadata{
 				Id:     t.conn.id,
 				Uid:    t.conn.uid,
 				Slug:   t.id,
@@ -200,7 +200,7 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 // hterm puts these in the center of the terminal
 func (t *MyPtyHandler) Toast(p string) error {
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
 			Uid:    t.conn.uid,
 			Slug:   t.id,

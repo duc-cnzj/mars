@@ -153,10 +153,18 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
-- [ ] 增加修改记录，能清楚的记录谁在什么时候修改了什么
-- [ ] ui 美化
-- [ ] 断开连接使用图标的方式
-- [ ] 配置可启动之后再添加
+- [ ] 缺一个 project list
+- [ ] 接口验证
+- [ ] namespace all -> list
+- [ ] 前端 namespace 页面 margin-bottom
+- [ ] 增加 basic? or CA? auth，参考 k8s 的做法
+- [ ] grpc 可配置使用 tls
+- [ ] client 集成 copy to pod & uploader
+- [x] 打开modal无法下滑页面的问题 `ant-scrolling-effect` overflow: hidden 引起的，从 modal click 给 body 加 class 入手解决
+- [x] c.GitServer().ProjectList 不应该叫list，因为拿到的是全部，要叫 all
+- [x] add current metrics
+- [x] 增加修改记录，能清楚的记录谁在什么时候修改了什么
+- [x] ui 美化
 - [x] 引入 values 字段替换掉之前的 DockerRepository、DockerTagFormat、IngressOverwriteValues。
 - [x] ws 部分也是用 proto 定义，input 和 response 都通过 proto。
 - [x] 插件化 ingress/tls 证书的注入方式
@@ -170,3 +178,8 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 - [x] sessionId 还是要用起来
 - [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
 - [x] 高可用化
+
+- ~~socket install 方法剥离出来~~
+- ~~分离 ResponseMetadata 中的 Data~~
+- ~~断开连接使用图标的方式~~
+- ~~配置可启动之后再添加~~

@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Suppress "imported and not used" errors
@@ -33,7 +32,7 @@ var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
 func request_Auth_Login_0(ctx context.Context, marshaler runtime.Marshaler, client AuthClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq LoginRequest
+	var protoReq AuthLoginRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -50,7 +49,7 @@ func request_Auth_Login_0(ctx context.Context, marshaler runtime.Marshaler, clie
 }
 
 func local_request_Auth_Login_0(ctx context.Context, marshaler runtime.Marshaler, server AuthServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq LoginRequest
+	var protoReq AuthLoginRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -67,7 +66,7 @@ func local_request_Auth_Login_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func request_Auth_Info_0(ctx context.Context, marshaler runtime.Marshaler, client AuthClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+	var protoReq AuthInfoRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.Info(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -76,7 +75,7 @@ func request_Auth_Info_0(ctx context.Context, marshaler runtime.Marshaler, clien
 }
 
 func local_request_Auth_Info_0(ctx context.Context, marshaler runtime.Marshaler, server AuthServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+	var protoReq AuthInfoRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.Info(ctx, &protoReq)
@@ -85,7 +84,7 @@ func local_request_Auth_Info_0(ctx context.Context, marshaler runtime.Marshaler,
 }
 
 func request_Auth_Settings_0(ctx context.Context, marshaler runtime.Marshaler, client AuthClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+	var protoReq AuthSettingsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.Settings(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -94,7 +93,7 @@ func request_Auth_Settings_0(ctx context.Context, marshaler runtime.Marshaler, c
 }
 
 func local_request_Auth_Settings_0(ctx context.Context, marshaler runtime.Marshaler, server AuthServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+	var protoReq AuthSettingsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.Settings(ctx, &protoReq)
@@ -103,7 +102,7 @@ func local_request_Auth_Settings_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func request_Auth_Exchange_0(ctx context.Context, marshaler runtime.Marshaler, client AuthClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ExchangeRequest
+	var protoReq AuthExchangeRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -120,7 +119,7 @@ func request_Auth_Exchange_0(ctx context.Context, marshaler runtime.Marshaler, c
 }
 
 func local_request_Auth_Exchange_0(ctx context.Context, marshaler runtime.Marshaler, server AuthServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ExchangeRequest
+	var protoReq AuthExchangeRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)

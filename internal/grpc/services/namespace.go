@@ -8,15 +8,18 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
+
+	"github.com/duc-cnzj/mars/client/event"
+	modelspb "github.com/duc-cnzj/mars/client/model"
+	"github.com/duc-cnzj/mars/client/namespace"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/namespace"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,12 +28,12 @@ type Namespace struct {
 	namespace.UnimplementedNamespaceServer
 }
 
-func (n *Namespace) Index(ctx context.Context, empty *emptypb.Empty) (*namespace.NamespaceList, error) {
+func (n *Namespace) All(ctx context.Context, request *namespace.NamespaceAllRequest) (*namespace.NamespaceAllResponse, error) {
 	var namespaces []*models.Namespace
 	app.DB().Preload("Projects").Find(&namespaces)
-	var res = &namespace.NamespaceList{Data: make([]*namespace.NamespaceItem, 0, len(namespaces))}
+	var res = &namespace.NamespaceAllResponse{Data: make([]*namespace.NamespaceItem, 0, len(namespaces))}
 	for _, ns := range namespaces {
-		var projects = make([]*namespace.NamespaceItem_SimpleProjectItem, 0, len(ns.Projects))
+		var projects = make([]*namespace.NamespaceSimpleProject, 0, len(ns.Projects))
 
 		for _, project := range ns.Projects {
 			status, err := utils.ReleaseStatus(project.Name, ns.Name)
@@ -38,7 +41,7 @@ func (n *Namespace) Index(ctx context.Context, empty *emptypb.Empty) (*namespace
 				mlog.Error(err)
 				status = utils.StatusUnknown
 			}
-			projects = append(projects, &namespace.NamespaceItem_SimpleProjectItem{
+			projects = append(projects, &namespace.NamespaceSimpleProject{
 				Id:     int64(project.ID),
 				Name:   project.Name,
 				Status: status,
@@ -48,8 +51,8 @@ func (n *Namespace) Index(ctx context.Context, empty *emptypb.Empty) (*namespace
 		res.Data = append(res.Data, &namespace.NamespaceItem{
 			Id:        int64(ns.ID),
 			Name:      ns.Name,
-			CreatedAt: timestamppb.New(ns.CreatedAt),
-			UpdatedAt: timestamppb.New(ns.UpdatedAt),
+			CreatedAt: utils.ToRFC3339DatetimeString(&ns.CreatedAt),
+			UpdatedAt: utils.ToRFC3339DatetimeString(&ns.UpdatedAt),
 			Projects:  projects,
 		})
 	}
@@ -57,11 +60,11 @@ func (n *Namespace) Index(ctx context.Context, empty *emptypb.Empty) (*namespace
 	return res, nil
 }
 
-func (n *Namespace) Store(ctx context.Context, request *namespace.NsStoreRequest) (*namespace.NsStoreResponse, error) {
+func (n *Namespace) Create(ctx context.Context, request *namespace.NamespaceCreateRequest) (*namespace.NamespaceCreateResponse, error) {
 	request.Namespace = utils.GetMarsNamespace(request.Namespace)
 
 	if app.DB().Where("`name` = ?", request.Namespace).First(&models.Namespace{}).Error == nil {
-		return nil, errors.New("名称空间已存在")
+		return nil, status.Error(codes.AlreadyExists, "名称空间已存在")
 	}
 
 	// 创建名称空间
@@ -90,19 +93,16 @@ func (n *Namespace) Store(ctx context.Context, request *namespace.NsStoreRequest
 	})
 	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("创建项目空间: %d: %s", data.ID, data.Name))
 
-	return &namespace.NsStoreResponse{
-		Data: &namespace.NamespaceResponse{
-			Id:               int64(data.ID),
-			Name:             data.Name,
-			ImagePullSecrets: data.ImagePullSecretsArray(),
-			CreatedAt:        timestamppb.New(data.CreatedAt),
-			UpdatedAt:        timestamppb.New(data.UpdatedAt),
-			DeletedAt:        timestamppb.New(data.DeletedAt.Time),
-		},
+	return &namespace.NamespaceCreateResponse{
+		Id:               int64(data.ID),
+		Name:             data.Name,
+		ImagePullSecrets: data.ImagePullSecretsArray(),
+		CreatedAt:        utils.ToRFC3339DatetimeString(&data.CreatedAt),
+		UpdatedAt:        utils.ToRFC3339DatetimeString(&data.UpdatedAt),
 	}, nil
 }
 
-func (n *Namespace) CpuAndMemory(ctx context.Context, id *namespace.NamespaceID) (*namespace.CpuAndMemoryResponse, error) {
+func (n *Namespace) CpuMemory(ctx context.Context, id *namespace.NamespaceCpuMemoryRequest) (*namespace.NamespaceCpuMemoryResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
@@ -110,19 +110,19 @@ func (n *Namespace) CpuAndMemory(ctx context.Context, id *namespace.NamespaceID)
 
 	cpu, memory := utils.GetCpuAndMemoryInNamespace(ns.Name)
 
-	return &namespace.CpuAndMemoryResponse{
+	return &namespace.NamespaceCpuMemoryResponse{
 		Cpu:    cpu,
 		Memory: memory,
 	}, nil
 }
 
-func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.ServiceEndpointsRequest) (*namespace.ServiceEndpointsResponse, error) {
+func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.NamespaceServiceEndpointsRequest) (*namespace.NamespaceServiceEndpointsResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
 	}
 
-	var res = []*namespace.ServiceEndpointsResponseItem{}
+	var res = []*namespace.NamespaceServiceEndpointsResponseItem{}
 	nodePortMapping := utils.GetNodePortMappingByNamespace(ns.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(ns.Name)
 	for projectName, hosts := range nodePortMapping {
@@ -130,7 +130,7 @@ func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.ServiceE
 		if v, ok := ingMapping[projectName]; ok {
 			items = append(v, hosts...)
 		}
-		res = append(res, &namespace.ServiceEndpointsResponseItem{
+		res = append(res, &namespace.NamespaceServiceEndpointsResponseItem{
 			Name: projectName,
 			Url:  items,
 		})
@@ -141,26 +141,26 @@ func (n *Namespace) ServiceEndpoints(ctx context.Context, id *namespace.ServiceE
 				continue
 			}
 		}
-		res = append(res, &namespace.ServiceEndpointsResponseItem{
+		res = append(res, &namespace.NamespaceServiceEndpointsResponseItem{
 			Name: projectName,
 			Url:  hosts,
 		})
 	}
 
 	if id.ProjectName != "" {
-		var data = []*namespace.ServiceEndpointsResponseItem{}
+		var data = []*namespace.NamespaceServiceEndpointsResponseItem{}
 		for _, re := range res {
 			if re.Name == id.ProjectName {
-				data = []*namespace.ServiceEndpointsResponseItem{re}
+				data = []*namespace.NamespaceServiceEndpointsResponseItem{re}
 			}
 		}
-		return &namespace.ServiceEndpointsResponse{Data: data}, nil
+		return &namespace.NamespaceServiceEndpointsResponse{Data: data}, nil
 	}
 
-	return &namespace.ServiceEndpointsResponse{Data: res}, nil
+	return &namespace.NamespaceServiceEndpointsResponse{Data: res}, nil
 }
 
-func (n *Namespace) Destroy(ctx context.Context, id *namespace.NamespaceID) (*emptypb.Empty, error) {
+func (n *Namespace) Delete(ctx context.Context, id *namespace.NamespaceDeleteRequest) (*namespace.NamespaceDeleteResponse, error) {
 	var ns models.Namespace
 	// 删除空间前，要先删除空间下的项目
 	if app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error == nil {
@@ -209,5 +209,60 @@ loop:
 
 	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete, fmt.Sprintf("删除项目空间: id: %d %s", ns.ID, ns.Name))
 
-	return &emptypb.Empty{}, nil
+	return &namespace.NamespaceDeleteResponse{}, nil
+}
+
+func (n *Namespace) IsExists(ctx context.Context, input *namespace.NamespaceIsExistsRequest) (*namespace.NamespaceIsExistsResponse, error) {
+	var ns models.Namespace
+
+	err := app.DB().Select("ID", "Name").Where("`name` = ?", utils.GetMarsNamespace(input.Name)).First(&ns).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &namespace.NamespaceIsExistsResponse{Exists: false}, nil
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &namespace.NamespaceIsExistsResponse{Exists: true, Id: int64(ns.ID)}, nil
+}
+
+func (n *Namespace) Show(ctx context.Context, id *namespace.NamespaceShowRequest) (*namespace.NamespaceShowResponse, error) {
+	var ns models.Namespace
+
+	err := app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	ps := make([]*modelspb.ProjectModel, 0, len(ns.Projects))
+	for _, project := range ns.Projects {
+		ps = append(ps, &modelspb.ProjectModel{
+			Id:              int64(project.ID),
+			Name:            project.Name,
+			GitlabProjectId: int64(project.GitlabProjectId),
+			GitlabBranch:    project.GitlabBranch,
+			GitlabCommit:    project.GitlabCommit,
+			Config:          project.Config,
+			OverrideValues:  project.OverrideValues,
+			DockerImage:     project.DockerImage,
+			PodSelectors:    project.PodSelectors,
+			NamespaceId:     int64(project.NamespaceId),
+			Atomic:          project.Atomic,
+			CreatedAt:       utils.ToRFC3339DatetimeString(&project.CreatedAt),
+			UpdatedAt:       utils.ToRFC3339DatetimeString(&project.UpdatedAt),
+		})
+	}
+
+	return &namespace.NamespaceShowResponse{
+		Id:               int64(ns.ID),
+		Name:             ns.Name,
+		ImagePullSecrets: ns.ImagePullSecretsArray(),
+		CreatedAt:        utils.ToRFC3339DatetimeString(&ns.CreatedAt),
+		UpdatedAt:        utils.ToRFC3339DatetimeString(&ns.UpdatedAt),
+		Projects:         ps,
+	}, nil
 }

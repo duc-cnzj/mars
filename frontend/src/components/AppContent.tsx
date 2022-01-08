@@ -3,7 +3,7 @@ import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProv
 import ItemCard from "./ItemCard";
 import { Empty, Row, Col } from "antd";
 import "../pkg/DraggableModal/index.css";
-import { listNamespaces } from "../api/namespace";
+import { allNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload } from "../store/actions";
 import { selectReload } from "../store/reducers/namespace";
@@ -17,7 +17,7 @@ const AppContent: React.FC = () => {
   const [namespaceItems, setNamespaceItems] = useState<pb.NamespaceItem[]>([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
-    listNamespaces()
+    allNamespaces()
       .then((res) => {
         setNamespaceItems(res.data.data);
         setLoading(false);
@@ -47,7 +47,7 @@ const AppContent: React.FC = () => {
 
   return (
     <DraggableModalProvider>
-      <div className="content">
+      <div className="content" style={{marginBottom: 30}}>
         <AddNamespace onCreated={onNamespaceCreated} />
 
         {namespaceItems.length < 1 ? (

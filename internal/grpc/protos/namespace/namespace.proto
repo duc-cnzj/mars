@@ -1,99 +1,131 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "model/model.proto";
 
-option go_package="github.com/duc-cnzj/mars/pkg/namespace;namespace";
+option go_package = "github.com/duc-cnzj/mars/client/namespace;namespace";
 
-message NamespaceID {
+message NamespaceCreateRequest {
+  string namespace = 1;
+}
+
+message NamespaceShowRequest {
   int64 namespace_id = 1;
 }
 
-message NamespaceResponse {
-  int64 id = 1;
-  string name = 2;
-  repeated string image_pull_secrets = 3;
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
-  google.protobuf.Timestamp deleted_at = 6;
+message NamespaceDeleteRequest {
+  int64 namespace_id = 1;
 }
 
+message NamespaceIsExistsRequest {
+  string name = 1;
+}
+
+message NamespaceCpuMemoryRequest {
+  int64 namespace_id = 1;
+}
+
+message NamespaceServiceEndpointsRequest {
+  int64 namespace_id = 1;
+  string project_name = 2;
+}
+
+message NamespaceSimpleProject {
+  int64 id = 1;
+  string name = 2;
+  string status = 3;
+}
 message NamespaceItem {
-  message SimpleProjectItem {
-    int64 id = 1;
-    string name = 2;
-    string status = 3;
-  }
-
   int64 id = 1;
   string name = 2;
-  google.protobuf.Timestamp created_at = 3;
-  google.protobuf.Timestamp updated_at = 4;
+  string created_at = 3;
+  string updated_at = 4;
 
-  repeated SimpleProjectItem projects = 5;
+  repeated NamespaceSimpleProject projects = 5;
 }
-
-message NamespaceList {
+message NamespaceAllResponse {
   repeated NamespaceItem data = 1;
 }
 
-message NsStoreRequest {
-    string namespace = 1;
+message NamespaceCreateResponse {
+  int64 id = 1;
+  string name = 2;
+  repeated string image_pull_secrets = 3;
+  string created_at = 4;
+  string updated_at = 5;
 }
 
-message NsStoreResponse {
-  NamespaceResponse data = 1;
+message NamespaceShowResponse {
+  int64 id = 1;
+  string name = 2;
+  repeated string image_pull_secrets = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  repeated ProjectModel projects = 6;
 }
 
-message CpuAndMemoryResponse {
+message NamespaceCpuMemoryResponse {
   string cpu = 1;
   string memory = 2;
 }
 
-message ServiceEndpointsResponse {
+message NamespaceServiceEndpointsResponse {
   message item {
     string name = 1;
-    repeated string  url = 2;
+    repeated string url = 2;
   }
 
   repeated item data = 1;
 }
 
-message ServiceEndpointsRequest {
-  int64 namespace_id = 1;
-  string project_name = 2;
+message NamespaceIsExistsResponse {
+  bool exists = 1;
+  int64 id = 2;
 }
+message NamespaceAllRequest {}
+message NamespaceDeleteResponse {}
 
 service Namespace {
-  rpc Index(google.protobuf.Empty) returns (NamespaceList) {
+  rpc All(NamespaceAllRequest) returns (NamespaceAllResponse) {
     option (google.api.http) = {
       get: "/api/namespaces"
     };
   }
 
-  rpc Store(NsStoreRequest) returns (NsStoreResponse) {
+  rpc Create(NamespaceCreateRequest) returns (NamespaceCreateResponse) {
     option (google.api.http) = {
       post: "/api/namespaces",
       body: "*"
     };
   }
 
-  rpc CpuAndMemory(NamespaceID) returns (CpuAndMemoryResponse) {
+  rpc Show(NamespaceShowRequest) returns (NamespaceShowResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/cpu_and_memory"
+      get: "/api/namespaces/{namespace_id}"
     };
   }
 
-  rpc ServiceEndpoints(ServiceEndpointsRequest) returns (ServiceEndpointsResponse) {
-    option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/service_endpoints"
-    };
-  }
-
-  rpc Destroy(NamespaceID) returns (google.protobuf.Empty) {
+  rpc Delete(NamespaceDeleteRequest) returns (NamespaceDeleteResponse) {
     option (google.api.http) = {
       delete: "/api/namespaces/{namespace_id}"
+    };
+  }
+
+  rpc IsExists(NamespaceIsExistsRequest) returns (NamespaceIsExistsResponse) {
+    option (google.api.http) = {
+      post: "/api/namespaces/exists"
+    };
+  }
+
+  rpc CpuMemory(NamespaceCpuMemoryRequest) returns (NamespaceCpuMemoryResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/cpu_memory"
+    };
+  }
+
+  rpc ServiceEndpoints(NamespaceServiceEndpointsRequest) returns (NamespaceServiceEndpointsResponse) {
+    option (google.api.http) = {
+      get: "/api/namespaces/{namespace_id}/service_endpoints"
     };
   }
 }

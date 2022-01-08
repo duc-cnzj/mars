@@ -17,7 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
-	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/action"
@@ -27,17 +26,16 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 
+	"github.com/duc-cnzj/mars/client/event"
+	"github.com/duc-cnzj/mars/client/mars"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/mars"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 const (
@@ -81,7 +79,7 @@ var (
 	}
 )
 
-type WsResponse = websocket_pb.WsResponseMetadata
+type WsResponse = websocket_pb.WsMetadataResponse
 
 type CancelSignaler interface {
 	Remove(id string)
@@ -186,13 +184,21 @@ type ProjectManager interface {
 	Save() error
 }
 
-type Messageable interface {
+type Msger interface {
 	SendEndError(error)
 	SendError(error)
-	SendProcessPercent(string)
 	SendMsg(string)
-	SendProtoMsg(proto.Message)
-	SendEndMsg(websocket_pb.ResultType, string)
+	SendProtoMsg(plugins.WebsocketMessage)
+}
+
+type DeployMsger interface {
+	Msger
+	ProcessPercentMsger
+	SendDeployedResult(websocket_pb.ResultType, string, *models.Project)
+}
+
+type ProcessPercentMsger interface {
+	SendProcessPercent(string)
 }
 
 type MessageSender struct {
@@ -201,20 +207,35 @@ type MessageSender struct {
 	wsType   websocket_pb.Type
 }
 
-func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) *MessageSender {
+func (ms *MessageSender) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
+	res := &WsResponse{
+		Metadata: &websocket_pb.Metadata{
+			Slug:   ms.slugName,
+			Type:   ms.wsType,
+			Result: result,
+			End:    true,
+			Uid:    ms.conn.uid,
+			Id:     ms.conn.id,
+			Data:   msg,
+		},
+	}
+	ms.send(res)
+}
+
+func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) DeployMsger {
 	return &MessageSender{conn: conn, slugName: slugName, wsType: wsType}
 }
 
 func (ms *MessageSender) SendEndError(err error) {
 	res := &WsResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
 			Type:   ms.wsType,
 			Result: ResultError,
-			Data:   err.Error(),
 			End:    true,
 			Uid:    ms.conn.uid,
 			Id:     ms.conn.id,
+			Data:   err.Error(),
 		},
 	}
 	ms.send(res)
@@ -222,14 +243,14 @@ func (ms *MessageSender) SendEndError(err error) {
 
 func (ms *MessageSender) SendError(err error) {
 	res := &WsResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
 			Type:   ms.wsType,
 			Result: ResultError,
-			Data:   err.Error(),
 			End:    false,
 			Uid:    ms.conn.uid,
 			Id:     ms.conn.id,
+			Data:   err.Error(),
 		},
 	}
 	ms.send(res)
@@ -237,14 +258,14 @@ func (ms *MessageSender) SendError(err error) {
 
 func (ms *MessageSender) SendProcessPercent(percent string) {
 	res := &WsResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
 			Type:   WsProcessPercent,
 			Result: ResultSuccess,
 			End:    false,
-			Data:   percent,
 			Uid:    ms.conn.uid,
 			Id:     ms.conn.id,
+			Data:   percent,
 		},
 	}
 	ms.send(res)
@@ -252,39 +273,24 @@ func (ms *MessageSender) SendProcessPercent(percent string) {
 
 func (ms *MessageSender) SendMsg(msg string) {
 	res := &WsResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
 			Type:   ms.wsType,
 			Result: ResultSuccess,
 			End:    false,
-			Data:   msg,
 			Uid:    ms.conn.uid,
 			Id:     ms.conn.id,
+			Data:   msg,
 		},
 	}
 	ms.send(res)
 }
 
-func (ms *MessageSender) SendProtoMsg(msg proto.Message) {
+func (ms *MessageSender) SendProtoMsg(msg plugins.WebsocketMessage) {
 	ms.send(msg)
 }
 
-func (ms *MessageSender) SendEndMsg(result websocket_pb.ResultType, msg string) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: result,
-			End:    true,
-			Data:   msg,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *MessageSender) send(res proto.Message) {
+func (ms *MessageSender) send(res plugins.WebsocketMessage) {
 	ms.conn.pubSub.ToSelf(res)
 }
 
@@ -295,16 +301,16 @@ type Percentable interface {
 }
 
 type ProcessPercent struct {
-	Messageable
+	ProcessPercentMsger
 
 	percentLock sync.RWMutex
 	percent     int64
 }
 
-func NewProcessPercent(sender Messageable) Percentable {
+func NewProcessPercent(sender ProcessPercentMsger) Percentable {
 	return &ProcessPercent{
-		percent:     0,
-		Messageable: sender,
+		percent:             0,
+		ProcessPercentMsger: sender,
 	}
 }
 
@@ -370,7 +376,7 @@ type Job interface {
 	CallDestroyFuncs()
 
 	ReleaseInstaller() ReleaseInstaller
-	Messager() Messageable
+	Messager() DeployMsger
 	PubSub() plugins.PubSub
 	Percenter() Percentable
 }
@@ -407,10 +413,8 @@ func (v vars) MustGetString(key string) string {
 type Jober struct {
 	running
 
-	id       string
 	input    *websocket_pb.ProjectInput
 	wsType   websocket_pb.Type
-	conn     *WsConn
 	slugName string
 
 	destroyFuncLock sync.RWMutex
@@ -429,21 +433,34 @@ type Jober struct {
 	stopCtx   context.Context
 	stopFn    func(error)
 
-	isNew     bool
-	config    *mars.Config
-	messager  Messageable
-	project   *models.Project
+	isNew   bool
+	config  *mars.MarsConfig
+	project *models.Project
+
 	percenter Percentable
+	messager  DeployMsger
+
+	pubsub plugins.PubSub
+
+	user contracts.UserInfo
 }
 
-func NewJober(input *websocket_pb.ProjectInput, wsType websocket_pb.Type, conn *WsConn) Job {
+func NewJober(
+	input *websocket_pb.ProjectInput,
+	user contracts.UserInfo,
+	slugName string,
+	messager DeployMsger,
+	pubsub plugins.PubSub,
+) Job {
 	return &Jober{
+		user:          user,
+		pubsub:        pubsub,
+		messager:      messager,
 		vars:          vars{},
 		valuesOptions: &values.Options{},
-		slugName:      utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name)),
+		slugName:      slugName,
 		input:         input,
-		wsType:        wsType,
-		conn:          conn,
+		wsType:        input.Type,
 	}
 }
 
@@ -460,7 +477,7 @@ func (j *Jober) Commit() plugins.CommitInterface {
 }
 
 func (j *Jober) User() contracts.UserInfo {
-	return j.conn.GetUser()
+	return j.user
 }
 
 func (j *Jober) Project() *models.Project {
@@ -515,12 +532,12 @@ func (j *Jober) HandleMessage() {
 				}
 				select {
 				case <-j.stopCtx.Done():
-					j.Messager().SendEndMsg(ResultDeployCanceled, j.stopCtx.Err().Error())
+					j.Messager().SendDeployedResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.Project())
 				default:
-					j.Messager().SendEndMsg(ResultDeployFailed, s.Msg)
+					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.Project())
 				}
 			case MessageSuccess:
-				j.Messager().SendEndMsg(ResultDeployed, s.Msg)
+				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.Project())
 			}
 		}
 	}
@@ -548,12 +565,14 @@ func (u userConfig) PrettyYaml() string {
 
 func (j *Jober) Run() error {
 	j.SetRunning(true)
-	defer j.SetRunning(false)
 
 	go j.HandleMessage()
 
 	return func() error {
-		defer close(j.messageCh)
+		defer func() {
+			j.SetRunning(false)
+			close(j.messageCh)
+		}()
 		var (
 			result *release.Release
 			err    error
@@ -610,7 +629,7 @@ func (j *Jober) Run() error {
 				Project:  j.project,
 				Manifest: result.Manifest,
 				Config:   j.input.Config,
-				Username: j.conn.user.Name,
+				Username: j.User().Name,
 			})
 			var act event.ActionType = event.ActionType_Create
 			if !j.IsNew() {
@@ -640,12 +659,12 @@ func (j *Jober) ReleaseInstaller() ReleaseInstaller {
 	return j.installer
 }
 
-func (j *Jober) Messager() Messageable {
+func (j *Jober) Messager() DeployMsger {
 	return j.messager
 }
 
 func (j *Jober) PubSub() plugins.PubSub {
-	return j.conn.pubSub
+	return j.pubsub
 }
 
 func (j *Jober) Percenter() Percentable {
@@ -653,7 +672,10 @@ func (j *Jober) Percenter() Percentable {
 }
 
 func (j *Jober) Validate() error {
-	j.messager = NewMessageSender(j.conn, j.slugName, j.wsType)
+	if !(j.wsType == websocket_pb.Type_CreateProject || j.wsType == websocket_pb.Type_UpdateProject || j.wsType == websocket_pb.Type_ApplyProject) {
+		return errors.New("type error: " + j.wsType.String())
+	}
+
 	j.percenter = NewProcessPercent(j.messager)
 	j.stopCtx, j.stopFn = utils.NewCustomErrorContext()
 	j.messageCh = make(chan MessageItem)
@@ -690,16 +712,23 @@ func (j *Jober) Validate() error {
 	}
 	j.imagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
 
+	status, _ := utils.ReleaseStatus(j.project.Name, j.project.Namespace.Name)
+	if status == utils.StatusPending {
+		return errors.New("有别人也在操作这个项目，等等哦~")
+	}
+
 	return nil
 }
 
-var defaultLoaders = []Loader{
-	&MarsLoader{},
-	&ChartFileLoader{},
-	&VariableLoader{},
-	&DynamicLoader{},
-	&MergeValuesLoader{},
-	&ReleaseInstallerLoader{},
+func defaultLoaders() []Loader {
+	return []Loader{
+		&MarsLoader{},
+		&ChartFileLoader{},
+		&VariableLoader{},
+		&DynamicLoader{},
+		&MergeValuesLoader{},
+		&ReleaseInstallerLoader{},
+	}
 }
 
 func (j *Jober) LoadConfigs() error {
@@ -708,7 +737,7 @@ func (j *Jober) LoadConfigs() error {
 		ch <- func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 
-			for _, defaultLoader := range defaultLoaders {
+			for _, defaultLoader := range defaultLoaders() {
 				if err := j.GetStoppedErrorIfHas(); err != nil {
 					return err
 				}
@@ -741,7 +770,7 @@ func (m *MarsLoader) Load(j *Jober) error {
 	j.Messager().SendMsg(loaderName + "加载用户配置")
 	j.Percenter().To(10)
 
-	marsC, err := services.GetProjectMarsConfig(j.input.GitlabProjectId, j.input.GitlabBranch)
+	marsC, err := utils.GetProjectMarsConfig(j.input.GitlabProjectId, j.input.GitlabBranch)
 	if err != nil {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"加载 mars config 失败: %s", err.Error()))
 		return err
@@ -1033,9 +1062,12 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 		}
 		msg := fmt.Sprintf(format, v...)
 		if j.IsRunning() {
-			j.messageCh <- MessageItem{
+			select {
+			case j.messageCh <- MessageItem{
 				Msg:  msg,
 				Type: MessageText,
+			}:
+			default:
 			}
 		}
 	}, j.input.Atomic)

@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 var wsSenderOnce sync.Once
@@ -45,7 +45,14 @@ func ProtoToMessage(m proto.Message, to websocket_pb.To, id string) Message {
 	}
 }
 
-type WsResponseMetadata = websocket_pb.WsResponseMetadata
+type WsMetadataResponse = websocket_pb.WsMetadataResponse
+
+type WebsocketMessage interface {
+	proto.Message
+	GetMetadata() *websocket_pb.Metadata
+}
+
+var _ WebsocketMessage = (*WsMetadataResponse)(nil)
 
 type WsSender interface {
 	New(uid, id string) PubSub
@@ -55,9 +62,9 @@ type PubSub interface {
 	Info() interface{}
 	Uid() string
 	ID() string
-	ToSelf(proto.Message) error
-	ToAll(proto.Message) error
-	ToOthers(proto.Message) error
+	ToSelf(WebsocketMessage) error
+	ToAll(WebsocketMessage) error
+	ToOthers(WebsocketMessage) error
 	Subscribe() <-chan []byte
 	Close() error
 }
@@ -75,4 +82,38 @@ func GetWsSender() WsSender {
 	})
 
 	return p.(WsSender)
+}
+
+type EmptyPubSub struct{}
+
+func (e *EmptyPubSub) Info() interface{} {
+	return nil
+}
+
+func (e *EmptyPubSub) Uid() string {
+	return ""
+}
+
+func (e *EmptyPubSub) ID() string {
+	return ""
+}
+
+func (e *EmptyPubSub) ToSelf(message WebsocketMessage) error {
+	return nil
+}
+
+func (e *EmptyPubSub) ToAll(message WebsocketMessage) error {
+	return nil
+}
+
+func (e *EmptyPubSub) ToOthers(message WebsocketMessage) error {
+	return nil
+}
+
+func (e *EmptyPubSub) Subscribe() <-chan []byte {
+	return nil
+}
+
+func (e *EmptyPubSub) Close() error {
+	return nil
 }

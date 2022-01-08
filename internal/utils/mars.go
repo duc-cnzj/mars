@@ -1,15 +1,21 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/duc-cnzj/mars/pkg/mars"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
+
+	"github.com/duc-cnzj/mars/client/mars"
 	"gopkg.in/yaml.v2"
 )
 
-func BranchPass(mars *mars.Config, name string) bool {
+func BranchPass(mars *mars.MarsConfig, name string) bool {
 	if len(mars.Branches) < 1 {
 		return true
 	}
@@ -32,7 +38,37 @@ func BranchPass(mars *mars.Config, name string) bool {
 	return false
 }
 
-func ParseInputConfig(mars *mars.Config, input string) (string, error) {
+func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.MarsConfig, error) {
+	var marsC mars.MarsConfig
+
+	var gp models.GitlabProject
+	pid := fmt.Sprintf("%v", projectId)
+	if app.DB().Where("`gitlab_project_id` = ?", pid).First(&gp).Error == nil {
+		if gp.GlobalEnabled {
+			return gp.GlobalMarsConfig(), nil
+		}
+	}
+
+	// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
+	data, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, ".mars.yaml")
+	if err != nil {
+		return nil, err
+	}
+	decoder := yaml.NewDecoder(strings.NewReader(data))
+	var m map[string]interface{}
+	if err := decoder.Decode(&m); err != nil {
+		return nil, err
+	}
+	marshal, err := json.Marshal(&m)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(marshal, &marsC)
+
+	return &marsC, nil
+}
+
+func ParseInputConfig(mars *mars.MarsConfig, input string) (string, error) {
 	var (
 		err      error
 		yamlData []byte
@@ -61,13 +97,13 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 }
 
 // IsRemoteConfigFile 如果是这个格式意味着是远程项目, "pid|branch|filename"
-func IsRemoteConfigFile(mars *mars.Config) bool {
+func IsRemoteConfigFile(mars *mars.MarsConfig) bool {
 	split := strings.Split(mars.ConfigFile, "|")
 
 	return len(split) == 3 && intPid(split[0])
 }
 
-func IsRemoteChart(mars *mars.Config) bool {
+func IsRemoteChart(mars *mars.MarsConfig) bool {
 	split := strings.Split(mars.LocalChartPath, "|")
 	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
 

@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "gitlab/gitlab.proto",
+    "title": "gitserver/gitserver.proto",
     "version": "version not set"
   },
   "tags": [
     {
-      "name": "Gitlab"
+      "name": "GitServer"
     }
   ],
   "consumes": [
@@ -16,14 +16,14 @@
     "application/json"
   ],
   "paths": {
-    "/api/gitlab/project_list": {
+    "/api/gitserver/project_options": {
       "get": {
-        "operationId": "Gitlab_ProjectList",
+        "operationId": "GitServer_ProjectOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectListResponse"
+              "$ref": "#/definitions/GitProjectOptionsResponse"
             }
           },
           "default": {
@@ -34,18 +34,18 @@
           }
         },
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects": {
+    "/api/gitserver/projects": {
       "get": {
-        "operationId": "Gitlab_Projects",
+        "operationId": "GitServer_All",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectsResponse"
+              "$ref": "#/definitions/GitAllProjectsResponse"
             }
           },
           "default": {
@@ -56,18 +56,18 @@
           }
         },
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/disable": {
+    "/api/gitserver/projects/disable": {
       "post": {
-        "operationId": "Gitlab_DisableProject",
+        "operationId": "GitServer_DisableProject",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "properties": {}
+              "$ref": "#/definitions/GitDisableProjectResponse"
             }
           },
           "default": {
@@ -83,23 +83,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/DisableProjectRequest"
+              "$ref": "#/definitions/GitDisableProjectRequest"
             }
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/enable": {
+    "/api/gitserver/projects/enable": {
       "post": {
-        "operationId": "Gitlab_EnableProject",
+        "operationId": "GitServer_EnableProject",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "properties": {}
+              "$ref": "#/definitions/GitEnableProjectResponse"
             }
           },
           "default": {
@@ -115,23 +115,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/EnableProjectRequest"
+              "$ref": "#/definitions/GitEnableProjectRequest"
             }
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/{project_id}/branches": {
+    "/api/gitserver/projects/{project_id}/branch_options": {
       "get": {
-        "operationId": "Gitlab_Branches",
+        "operationId": "GitServer_BranchOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/BranchesResponse"
+              "$ref": "#/definitions/GitBranchOptionsResponse"
             }
           },
           "default": {
@@ -156,18 +156,18 @@
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/{project_id}/branches/{branch}/commits": {
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options": {
       "get": {
-        "operationId": "Gitlab_Commits",
+        "operationId": "GitServer_CommitOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/CommitsResponse"
+              "$ref": "#/definitions/GitCommitOptionsResponse"
             }
           },
           "default": {
@@ -192,60 +192,18 @@
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/{project_id}/branches/{branch}/commits/{commit}": {
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}": {
       "get": {
-        "operationId": "Gitlab_Commit",
+        "operationId": "GitServer_Commit",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/CommitResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "branch",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "commit",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Gitlab"
-        ]
-      }
-    },
-    "/api/gitlab/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
-      "get": {
-        "operationId": "Gitlab_PipelineInfo",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/PipelineInfoResponse"
+              "$ref": "#/definitions/GitCommitResponse"
             }
           },
           "default": {
@@ -276,18 +234,60 @@
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     },
-    "/api/gitlab/projects/{project_id}/branches/{branch}/config_file": {
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
-        "operationId": "Gitlab_ConfigFile",
+        "operationId": "GitServer_PipelineInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ConfigFileResponse"
+              "$ref": "#/definitions/GitPipelineInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "commit",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branches/{branch}/config_file": {
+      "get": {
+        "operationId": "GitServer_MarsConfigFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitConfigFileResponse"
             }
           },
           "default": {
@@ -312,43 +312,54 @@
           }
         ],
         "tags": [
-          "Gitlab"
+          "GitServer"
         ]
       }
     }
   },
   "definitions": {
-    "BranchesResponse": {
+    "GitAllProjectsResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Option"
+            "$ref": "#/definitions/GitProjectItem"
           }
         }
       }
     },
-    "CommitResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/Option"
-        }
-      }
-    },
-    "CommitsResponse": {
+    "GitBranchOptionsResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Option"
+            "$ref": "#/definitions/GitOption"
           }
         }
       }
     },
-    "ConfigFileResponse": {
+    "GitCommitOptionsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitOption"
+          }
+        }
+      }
+    },
+    "GitCommitResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/GitOption"
+        }
+      }
+    },
+    "GitConfigFileResponse": {
       "type": "object",
       "properties": {
         "data": {
@@ -359,23 +370,64 @@
         }
       }
     },
-    "DisableProjectRequest": {
+    "GitDisableProjectRequest": {
       "type": "object",
       "properties": {
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string"
         }
       }
     },
-    "EnableProjectRequest": {
+    "GitDisableProjectResponse": {
+      "type": "object"
+    },
+    "GitEnableProjectRequest": {
       "type": "object",
       "properties": {
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string"
         }
       }
     },
-    "GitlabProjectInfo": {
+    "GitEnableProjectResponse": {
+      "type": "object"
+    },
+    "GitOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "isLeaf": {
+          "type": "boolean",
+          "title": "isLeaf 兼容 antd"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        }
+      }
+    },
+    "GitPipelineInfoResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "web_url": {
+          "type": "string"
+        }
+      }
+    },
+    "GitProjectItem": {
       "type": "object",
       "properties": {
         "id": {
@@ -405,59 +457,13 @@
         }
       }
     },
-    "Option": {
-      "type": "object",
-      "properties": {
-        "value": {
-          "type": "string"
-        },
-        "label": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        },
-        "isLeaf": {
-          "type": "boolean",
-          "title": "isLeaf 兼容 antd"
-        },
-        "projectId": {
-          "type": "string"
-        },
-        "branch": {
-          "type": "string"
-        }
-      }
-    },
-    "PipelineInfoResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "web_url": {
-          "type": "string"
-        }
-      }
-    },
-    "ProjectListResponse": {
+    "GitProjectOptionsResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GitlabProjectInfo"
-          }
-        }
-      }
-    },
-    "ProjectsResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Option"
+            "$ref": "#/definitions/GitOption"
           }
         }
       }

@@ -292,3 +292,7 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 
 	return actionConfig, settings, nil
 }
+
+func GetSlugName(namespaceId int64, name string) string {
+	return Md5(fmt.Sprintf("%d-%s", namespaceId, name))
+}

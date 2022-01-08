@@ -1,13 +1,13 @@
 package events
 
 import (
+	eventpb "github.com/duc-cnzj/mars/client/event"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
-	eventpb "github.com/duc-cnzj/mars/pkg/event"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -83,14 +83,14 @@ func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS
 }
 
 func HandleNamespaceDeleted(data interface{}, e contracts.Event) error {
-	plugins.GetWsSender().New("", "").ToAll(&plugins.WsResponseMetadata{Metadata: &websocket_pb.ResponseMetadata{Type: websocket_pb.Type_ReloadProjects}})
+	plugins.GetWsSender().New("", "").ToAll(&plugins.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects}})
 	mlog.Debug("event handled: ", e.String())
 
 	return nil
 }
 
 func HandleProjectDeleted(data interface{}, e contracts.Event) error {
-	plugins.GetWsSender().New("", "").ToAll(&plugins.WsResponseMetadata{Metadata: &websocket_pb.ResponseMetadata{Type: websocket_pb.Type_ReloadProjects}})
+	plugins.GetWsSender().New("", "").ToAll(&plugins.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects}})
 	mlog.Debug("event handled: ", e.String(), data)
 
 	return nil

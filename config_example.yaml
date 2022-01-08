@@ -1,4 +1,5 @@
 app_port: 6000
+grpc_port: 50000
 debug: false
 
 # 'logrus' | 'zap'

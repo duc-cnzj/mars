@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
-	List(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error)
+	List(ctx context.Context, in *EventListRequest, opts ...grpc.CallOption) (*EventListResponse, error)
 }
 
 type eventClient struct {
@@ -30,8 +30,8 @@ func NewEventClient(cc grpc.ClientConnInterface) EventClient {
 	return &eventClient{cc}
 }
 
-func (c *eventClient) List(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventList, error) {
-	out := new(EventList)
+func (c *eventClient) List(ctx context.Context, in *EventListRequest, opts ...grpc.CallOption) (*EventListResponse, error) {
+	out := new(EventListResponse)
 	err := c.cc.Invoke(ctx, "/Event/List", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (c *eventClient) List(ctx context.Context, in *EventRequest, opts ...grpc.C
 // All implementations must embed UnimplementedEventServer
 // for forward compatibility
 type EventServer interface {
-	List(context.Context, *EventRequest) (*EventList, error)
+	List(context.Context, *EventListRequest) (*EventListResponse, error)
 	mustEmbedUnimplementedEventServer()
 }
 
@@ -51,7 +51,7 @@ type EventServer interface {
 type UnimplementedEventServer struct {
 }
 
-func (UnimplementedEventServer) List(context.Context, *EventRequest) (*EventList, error) {
+func (UnimplementedEventServer) List(context.Context, *EventListRequest) (*EventListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
@@ -68,7 +68,7 @@ func RegisterEventServer(s grpc.ServiceRegistrar, srv EventServer) {
 }
 
 func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EventRequest)
+	in := new(EventListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		FullMethod: "/Event/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServer).List(ctx, req.(*EventRequest))
+		return srv.(EventServer).List(ctx, req.(*EventListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

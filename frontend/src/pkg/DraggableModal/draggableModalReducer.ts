@@ -238,6 +238,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'show': {
+            document.body.classList.add("ant-design-draggable-modal-force-scroll")
             const modalState = state.modals[action.id]
             const centerX = state.windowSize.width / 2 - modalState.width / 2
             const centerY = state.windowSize.height / 2 - modalState.height / 2
@@ -286,6 +287,20 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'hide': {
+            let hidden = true
+            for (const key in state.modals) {
+                if (Object.prototype.hasOwnProperty.call(state.modals, key)) {
+                    const element = state.modals[key];
+                    console.log(element)
+                    if (element.visible && action.id != key) {
+                        hidden = false
+                        break
+                    }
+                }
+            }
+            if (hidden) {
+                document.body.classList.remove("ant-design-draggable-modal-force-scroll")
+            }
             const modalState = state.modals[action.id]
             return {
                 ...state,

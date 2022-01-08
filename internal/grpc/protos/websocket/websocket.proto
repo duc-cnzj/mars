@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "cluster/cluster.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/websocket;websocket";
+option go_package = "github.com/duc-cnzj/mars/client/websocket;websocket";
 
 enum Type {
   TypeUnknown = 0;
@@ -14,11 +14,12 @@ enum Type {
   ProcessPercent = 6;
   ClusterInfoSync = 7;
   InternalError = 8;
+  ApplyProject = 9;
 
-  HandleExecShell = 9;
-  HandleExecShellMsg = 10;
-  HandleCloseShell = 11;
-  HandleAuthorize = 12;
+  HandleExecShell = 50;
+  HandleExecShellMsg = 51;
+  HandleCloseShell = 52;
+  HandleAuthorize = 53;
 }
 
 enum ResultType {
@@ -111,7 +112,7 @@ message UpdateProjectInput {
 
 // Response
 
-message ResponseMetadata {
+message Metadata {
   string id = 1;
   string uid = 2;
   string slug = 3;
@@ -122,25 +123,25 @@ message ResponseMetadata {
   string data = 8;
 }
 
-message WsResponseMetadata {
-    ResponseMetadata metadata = 1;
-}
-
 message Container {
   string namespace = 1;
   string pod = 2;
   string container = 3;
 }
 
+message WsMetadataResponse {
+  Metadata metadata = 1;
+}
+
 message WsHandleShellResponse {
-  ResponseMetadata metadata = 1;
+  Metadata metadata = 1;
 
   TerminalMessage terminal_message = 2;
   Container container = 3;
 }
 
 message WsHandleClusterResponse {
-  ResponseMetadata metadata = 1;
+  Metadata metadata = 1;
 
   ClusterInfoResponse info = 2;
 }

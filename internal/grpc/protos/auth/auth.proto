@@ -1,22 +1,32 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/auth;auth";
+option go_package = "github.com/duc-cnzj/mars/client/auth;auth";
 
-message LoginRequest {
+message AuthLoginRequest {
   string username = 1;
   string password = 2;
 }
 
-message LoginResponse {
+message AuthLoginResponse {
   string token = 1;
   int64 expires_in = 2;
 }
 
-message InfoResponse {
+message AuthExchangeRequest {
+  string code = 1;
+}
+
+message AuthExchangeResponse {
+  string token = 1;
+  int64 expires_in = 2;
+}
+
+message AuthInfoRequest {
+}
+message AuthInfoResponse {
   string id = 1;
   string avatar = 2;
   string name = 3;
@@ -25,24 +35,22 @@ message InfoResponse {
   repeated string roles = 6;
 }
 
-message OidcSetting {
-  bool enabled = 1;
-  string name = 2;
-  string url = 3;
-  string end_session_endpoint = 4;
-  string state = 5;
+message AuthSettingsRequest {
 }
+message AuthSettingsResponse {
+  message OidcSetting {
+    bool enabled = 1;
+    string name = 2;
+    string url = 3;
+    string end_session_endpoint = 4;
+    string state = 5;
+  }
 
-message SettingsResponse {
   repeated OidcSetting items = 1;
 }
 
-message ExchangeRequest {
-  string code = 1;
-}
-
 service Auth {
-  rpc Login(LoginRequest) returns (LoginResponse) {
+  rpc Login(AuthLoginRequest) returns (AuthLoginResponse) {
     option (google.api.http) = {
       post: "/api/auth/login",
       body: "*"
@@ -53,19 +61,19 @@ service Auth {
     };
   }
 
-  rpc Info(google.protobuf.Empty) returns (InfoResponse) {
+  rpc Info(AuthInfoRequest) returns (AuthInfoResponse) {
     option (google.api.http) = {
       get: "/api/auth/info"
     };
   }
 
-  rpc Settings(google.protobuf.Empty) returns (SettingsResponse) {
+  rpc Settings(AuthSettingsRequest) returns (AuthSettingsResponse) {
     option (google.api.http) = {
       get: "/api/auth/settings"
     };
   }
 
-  rpc Exchange(ExchangeRequest) returns (LoginResponse) {
+  rpc Exchange(AuthExchangeRequest) returns (AuthExchangeResponse) {
     option (google.api.http) = {
       post: "/api/auth/exchange",
       body: "*"

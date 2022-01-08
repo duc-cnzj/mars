@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/LoginResponse"
+              "$ref": "#/definitions/AuthExchangeResponse"
             }
           },
           "default": {
@@ -39,7 +39,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ExchangeRequest"
+              "$ref": "#/definitions/AuthExchangeRequest"
             }
           }
         ],
@@ -55,7 +55,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/InfoResponse"
+              "$ref": "#/definitions/AuthInfoResponse"
             }
           },
           "default": {
@@ -77,7 +77,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/LoginResponse"
+              "$ref": "#/definitions/AuthLoginResponse"
             }
           },
           "default": {
@@ -93,7 +93,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/LoginRequest"
+              "$ref": "#/definitions/AuthLoginRequest"
             }
           }
         ],
@@ -110,7 +110,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/SettingsResponse"
+              "$ref": "#/definitions/AuthSettingsResponse"
             }
           },
           "default": {
@@ -127,7 +127,7 @@
     }
   },
   "definitions": {
-    "ExchangeRequest": {
+    "AuthExchangeRequest": {
       "type": "object",
       "properties": {
         "code": {
@@ -135,7 +135,19 @@
         }
       }
     },
-    "InfoResponse": {
+    "AuthExchangeResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "expires_in": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "AuthInfoResponse": {
       "type": "object",
       "properties": {
         "id": {
@@ -161,7 +173,7 @@
         }
       }
     },
-    "LoginRequest": {
+    "AuthLoginRequest": {
       "type": "object",
       "properties": {
         "username": {
@@ -172,7 +184,7 @@
         }
       }
     },
-    "LoginResponse": {
+    "AuthLoginResponse": {
       "type": "object",
       "properties": {
         "token": {
@@ -184,7 +196,18 @@
         }
       }
     },
-    "OidcSetting": {
+    "AuthSettingsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AuthSettingsResponseOidcSetting"
+          }
+        }
+      }
+    },
+    "AuthSettingsResponseOidcSetting": {
       "type": "object",
       "properties": {
         "enabled": {
@@ -201,17 +224,6 @@
         },
         "state": {
           "type": "string"
-        }
-      }
-    },
-    "SettingsResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/OidcSetting"
-          }
         }
       }
     },

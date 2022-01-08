@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Suppress "imported and not used" errors
@@ -32,20 +31,20 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_Cluster_Info_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+func request_Cluster_ClusterInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ClusterInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.Info(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ClusterInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Cluster_Info_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
+func local_request_Cluster_ClusterInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ClusterInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.Info(ctx, &protoReq)
+	msg, err := server.ClusterInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -56,18 +55,18 @@ func local_request_Cluster_Info_0(ctx context.Context, marshaler runtime.Marshal
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterClusterHandlerFromEndpoint instead.
 func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ClusterServer) error {
 
-	mux.Handle("GET", pattern_Cluster_Info_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Cluster_ClusterInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Cluster/Info", runtime.WithHTTPPathPattern("/api/cluster_info"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Cluster_Info_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Cluster_ClusterInfo_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -75,7 +74,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_Cluster_Info_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Cluster_ClusterInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -120,23 +119,23 @@ func RegisterClusterHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // "ClusterClient" to call the correct interceptors.
 func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ClusterClient) error {
 
-	mux.Handle("GET", pattern_Cluster_Info_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Cluster_ClusterInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Cluster/Info", runtime.WithHTTPPathPattern("/api/cluster_info"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Cluster_Info_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Cluster_ClusterInfo_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Cluster_Info_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Cluster_ClusterInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -144,9 +143,9 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Cluster_Info_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "cluster_info"}, ""))
+	pattern_Cluster_ClusterInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "cluster_info"}, ""))
 )
 
 var (
-	forward_Cluster_Info_0 = runtime.ForwardResponseMessage
+	forward_Cluster_ClusterInfo_0 = runtime.ForwardResponseMessage
 )

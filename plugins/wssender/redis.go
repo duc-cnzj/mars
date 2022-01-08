@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"google.golang.org/protobuf/proto"
-
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -87,17 +85,17 @@ func (p *rdsPubSub) ID() string {
 	return p.id
 }
 
-func (p *rdsPubSub) ToSelf(wsResponse proto.Message) error {
+func (p *rdsPubSub) ToSelf(wsResponse plugins.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), p.id, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToAll(wsResponse proto.Message) error {
+func (p *rdsPubSub) ToAll(wsResponse plugins.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToOthers(wsResponse proto.Message) error {
+func (p *rdsPubSub) ToOthers(wsResponse plugins.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
 	return nil
 }

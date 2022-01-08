@@ -30,3 +30,7 @@ var magnitudes = []humanize.RelTimeMagnitude{
 func ToHumanizeDatetimeString(t *time.Time) string {
 	return humanize.CustomRelTime(*t, time.Now(), "以前", "从现在起", magnitudes)
 }
+
+func ToRFC3339DatetimeString(t *time.Time) string {
+	return t.Format(time.RFC3339)
+}

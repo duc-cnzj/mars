@@ -11,7 +11,7 @@ import {
 } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
-import { deleteNamespace, getNamespaceCpuAndMemory } from "../api/namespace";
+import { deleteNamespace, getNamespaceCpuMemory } from "../api/namespace";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
@@ -38,7 +38,7 @@ const Item: React.FC<{
               <Tooltip
                 onVisibleChange={(visible) => {
                   if (visible) {
-                    getNamespaceCpuAndMemory({ namespace_id: item.id }).then(
+                    getNamespaceCpuMemory({ namespace_id: item.id }).then(
                       (res) => {
                         setCpuAndMemory({
                           cpu: res.data.cpu,

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/api/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/cp;cp";
+option go_package = "github.com/duc-cnzj/mars/client/container_copy;container_copy";
 
 message CopyToPodRequest {
   int64 file_id = 1;
@@ -16,10 +16,10 @@ message CopyToPodResponse {
   string output = 2;
 }
 
-service Cp {
+service ContainerCopy {
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
     option (google.api.http) = {
-      post: "/api/copy_to_pod",
+      post: "/api/container_copy/copy_to_pod",
       body: "*"
     };
   }

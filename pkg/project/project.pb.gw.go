@@ -31,8 +31,33 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_Project_Destroy_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectDestroyRequest
+func request_Project_Apply_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (Project_ApplyClient, runtime.ServerMetadata, error) {
+	var protoReq ProjectApplyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.Apply(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
+func request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProjectDeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -41,16 +66,6 @@ func request_Project_Destroy_0(ctx context.Context, marshaler runtime.Marshaler,
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -62,13 +77,13 @@ func request_Project_Destroy_0(ctx context.Context, marshaler runtime.Marshaler,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
 
-	msg, err := client.Destroy(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.Delete(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Project_Destroy_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectDestroyRequest
+func local_request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProjectDeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -77,16 +92,6 @@ func local_request_Project_Destroy_0(ctx context.Context, marshaler runtime.Mars
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -98,7 +103,7 @@ func local_request_Project_Destroy_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
 
-	msg, err := server.Destroy(ctx, &protoReq)
+	msg, err := server.Delete(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -113,16 +118,6 @@ func request_Project_Show_0(ctx context.Context, marshaler runtime.Marshaler, cl
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -150,16 +145,6 @@ func local_request_Project_Show_0(ctx context.Context, marshaler runtime.Marshal
 		_   = err
 	)
 
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
-
 	val, ok = pathParams["project_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
@@ -176,7 +161,7 @@ func local_request_Project_Show_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func request_Project_IsPodRunning_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IsPodRunningRequest
+	var protoReq ProjectIsPodRunningRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -212,7 +197,7 @@ func request_Project_IsPodRunning_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func local_request_Project_IsPodRunning_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IsPodRunningRequest
+	var protoReq ProjectIsPodRunningRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -248,7 +233,7 @@ func local_request_Project_IsPodRunning_0(ctx context.Context, marshaler runtime
 }
 
 func request_Project_AllPodContainers_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllPodContainersRequest
+	var protoReq ProjectAllPodContainersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -257,16 +242,6 @@ func request_Project_AllPodContainers_0(ctx context.Context, marshaler runtime.M
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -284,7 +259,7 @@ func request_Project_AllPodContainers_0(ctx context.Context, marshaler runtime.M
 }
 
 func local_request_Project_AllPodContainers_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllPodContainersRequest
+	var protoReq ProjectAllPodContainersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -293,16 +268,6 @@ func local_request_Project_AllPodContainers_0(ctx context.Context, marshaler run
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -320,7 +285,7 @@ func local_request_Project_AllPodContainers_0(ctx context.Context, marshaler run
 }
 
 func request_Project_PodContainerLog_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PodContainerLogRequest
+	var protoReq ProjectPodContainerLogRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -329,16 +294,6 @@ func request_Project_PodContainerLog_0(ctx context.Context, marshaler runtime.Ma
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -376,7 +331,7 @@ func request_Project_PodContainerLog_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func local_request_Project_PodContainerLog_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PodContainerLogRequest
+	var protoReq ProjectPodContainerLogRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -385,16 +340,6 @@ func local_request_Project_PodContainerLog_0(ctx context.Context, marshaler runt
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -432,7 +377,7 @@ func local_request_Project_PodContainerLog_0(ctx context.Context, marshaler runt
 }
 
 func request_Project_StreamPodContainerLog_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (Project_StreamPodContainerLogClient, runtime.ServerMetadata, error) {
-	var protoReq PodContainerLogRequest
+	var protoReq ProjectPodContainerLogRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -441,16 +386,6 @@ func request_Project_StreamPodContainerLog_0(ctx context.Context, marshaler runt
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
-	}
-
-	protoReq.NamespaceId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
-	}
 
 	val, ok = pathParams["project_id"]
 	if !ok {
@@ -501,18 +436,25 @@ func request_Project_StreamPodContainerLog_0(ctx context.Context, marshaler runt
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterProjectHandlerFromEndpoint instead.
 func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ProjectServer) error {
 
-	mux.Handle("DELETE", pattern_Project_Destroy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Project_Apply_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
+	mux.Handle("DELETE", pattern_Project_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Destroy", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Project_Destroy_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Project_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -520,7 +462,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_Project_Destroy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Project_Delete_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -530,7 +472,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -576,7 +518,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/AllPodContainers", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}/containers"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/AllPodContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -599,7 +541,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/PodContainerLog", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/PodContainerLog", runtime.WithHTTPPathPattern("/api/projects/{project_id}/pods/{pod}/containers/{container}/logs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -664,23 +606,43 @@ func RegisterProjectHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // "ProjectClient" to call the correct interceptors.
 func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ProjectClient) error {
 
-	mux.Handle("DELETE", pattern_Project_Destroy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Project_Apply_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/Destroy", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/Apply", runtime.WithHTTPPathPattern("/Project/Apply"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Project_Destroy_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Project_Apply_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Project_Destroy_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Project_Apply_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("DELETE", pattern_Project_Delete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Project_Delete_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Project_Delete_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -688,7 +650,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -728,7 +690,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/AllPodContainers", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}/containers"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/AllPodContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -748,7 +710,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/PodContainerLog", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/PodContainerLog", runtime.WithHTTPPathPattern("/api/projects/{project_id}/pods/{pod}/containers/{container}/logs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -768,7 +730,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/StreamPodContainerLog", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Project/StreamPodContainerLog", runtime.WithHTTPPathPattern("/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -788,21 +750,25 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Project_Destroy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "namespaces", "namespace_id", "projects", "project_id"}, ""))
+	pattern_Project_Apply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Project", "Apply"}, ""))
 
-	pattern_Project_Show_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "namespaces", "namespace_id", "projects", "project_id"}, ""))
+	pattern_Project_Delete_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "projects", "project_id"}, ""))
+
+	pattern_Project_Show_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "projects", "project_id"}, ""))
 
 	pattern_Project_IsPodRunning_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "namespaces", "namespace", "pod", "status"}, ""))
 
-	pattern_Project_AllPodContainers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "namespaces", "namespace_id", "projects", "project_id", "containers"}, ""))
+	pattern_Project_AllPodContainers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"api", "projects", "project_id", "containers"}, ""))
 
-	pattern_Project_PodContainerLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8, 2, 9}, []string{"api", "namespaces", "namespace_id", "projects", "project_id", "pods", "pod", "containers", "container", "logs"}, ""))
+	pattern_Project_PodContainerLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"api", "projects", "project_id", "pods", "pod", "containers", "container", "logs"}, ""))
 
-	pattern_Project_StreamPodContainerLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8, 2, 9}, []string{"api", "namespaces", "namespace_id", "projects", "project_id", "pods", "pod", "containers", "container", "stream_logs"}, ""))
+	pattern_Project_StreamPodContainerLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"api", "projects", "project_id", "pods", "pod", "containers", "container", "stream_logs"}, ""))
 )
 
 var (
-	forward_Project_Destroy_0 = runtime.ForwardResponseMessage
+	forward_Project_Apply_0 = runtime.ForwardResponseStream
+
+	forward_Project_Delete_0 = runtime.ForwardResponseMessage
 
 	forward_Project_Show_0 = runtime.ForwardResponseMessage
 

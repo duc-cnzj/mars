@@ -11,14 +11,14 @@ export async function marsConfig({ project_id, branch }: pb.MarsShowRequest) {
 export async function toggleGlobalEnabled({
   project_id,
   enabled,
-}: pb.ToggleEnabledRequest) {
-  return ajax.post(`/api/gitlab/projects/${project_id}/toggle_enabled`, {
+}: pb.MarsToggleEnabledRequest) {
+  return ajax.post<pb.MarsToggleEnabledResponse>(`/api/gitlab/projects/${project_id}/toggle_enabled`, {
     enabled,
   });
 }
 
-export async function globalConfig({ project_id }: pb.GlobalConfigRequest) {
-  return ajax.get<pb.GlobalConfigResponse>(
+export async function globalConfig({ project_id }: pb.MarsGlobalConfigRequest) {
+  return ajax.get<pb.MarsGlobalConfigResponse>(
     `/api/gitlab/projects/${project_id}/global_config`
   );
 }
@@ -36,8 +36,8 @@ export async function updateGlobalConfig({
 export async function getDefaultValues({
   project_id,
   branch,
-}: pb.DefaultChartValuesRequest) {
-  return ajax.get<pb.DefaultChartValues>(
+}: pb.MarsDefaultChartValuesRequest) {
+  return ajax.get<pb.MarsDefaultChartValuesResponse>(
     `/api/gitlab/projects/${project_id}/default_values?branch=${branch}`
   );
 }

@@ -30,7 +30,7 @@ import {
   updateGlobalConfig,
   getDefaultValues,
 } from "../api/mars";
-import { branches } from "../api/gitlab";
+import { branchOptions as branches } from "../api/gitlab";
 import MarsExample from "./MarsExample";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -38,7 +38,7 @@ import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 
 SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
-interface Config extends pb.Config {}
+interface Config extends pb.MarsConfig {}
 
 const { Option } = Select;
 
@@ -57,7 +57,7 @@ const initDefaultValues = "# 没找到对应的 values.yaml";
 
 const ConfigModal: React.FC<{
   visible: boolean;
-  item: undefined | pb.GitlabProjectInfo;
+  item: undefined | pb.GitProjectItem;
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
   const [editMode, setEditMode] = useState(true);

@@ -196,7 +196,7 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          部署日期: <span className="detail-data">{detail.created_at}</span>
+          部署日期: <span className="detail-data">{detail.humanize_created_at}</span>
         </p>
       </div>
       <div
@@ -225,7 +225,7 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          更新日期: <span className="detail-data">{detail.updated_at}</span>
+          更新日期: <span className="detail-data">{detail.humanize_updated_at}</span>
         </p>
       </div>
 
@@ -271,7 +271,7 @@ const DetailTab: React.FC<{
             icon: <ExclamationCircleOutlined />,
             onOk() {
               setLoading(true);
-              deleteProject(detail.namespace?.id || 0, detail.id)
+              deleteProject(detail.id)
                 .then((res) => {
                   message.success("删除成功");
                   setLoading(false);

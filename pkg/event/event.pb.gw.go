@@ -36,7 +36,7 @@ var (
 )
 
 func request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, client EventClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EventRequest
+	var protoReq EventListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -52,7 +52,7 @@ func request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, clie
 }
 
 func local_request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, server EventServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EventRequest
+	var protoReq EventListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {

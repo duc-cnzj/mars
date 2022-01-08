@@ -41,8 +41,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
 	rootCmd.PersistentFlags().BoolP("debug", "", true, "debug mode.")
 	rootCmd.PersistentFlags().StringP("app_port", "", "6000", "app port.")
+	rootCmd.PersistentFlags().StringP("grpc_port", "", "50000", "grpc port.")
 	rootCmd.PersistentFlags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("app_port", rootCmd.PersistentFlags().Lookup("app_port"))
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
+	viper.BindPFlag("grpc_port", rootCmd.PersistentFlags().Lookup("grpc_port"))
 }

@@ -7,7 +7,7 @@ import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
   ({ namespaceId, projectName }) => {
-    const [endpoints, setEndpoints] = useState<pb.ServiceEndpointsResponse.Iitem[]>();
+    const [endpoints, setEndpoints] = useState<pb.NamespaceServiceEndpointsResponse.Iitem[]>();
 
     return (
       <Popover

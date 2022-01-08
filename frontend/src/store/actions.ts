@@ -81,7 +81,7 @@ export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
 
 export const handleEvents = (
   id: string,
-  data: pb.ResponseMetadata,
+  data: pb.Metadata,
   input: any
 ) => {
   return function (dispatch: Dispatch) {
@@ -98,7 +98,7 @@ export const handleEvents = (
         break;
       case pb.Type.UpdateProject:
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
-        console.log("update_project", data);
+      console.log("update_project", data);
 
         if (data.end) {
           switch (data.result) {

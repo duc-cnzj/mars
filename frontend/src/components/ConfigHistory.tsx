@@ -64,8 +64,8 @@ const Content: React.FC<{
   updatedAt: any;
   onDataChange: (s: string) => void;
 }> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
-  const [list, setList] = useState<pb.ChangelogGetResponse.Item[]>();
-  const [initlist, setInitList] = useState<pb.ChangelogGetResponse.Item[]>();
+  const [list, setList] = useState<pb.ChangelogShowItem[]>();
+  const [initlist, setInitList] = useState<pb.ChangelogShowItem[]>();
   const [data, setData] = useState("");
   useEffect(() => {
     changelogs({ project_id: projectID, only_changed: true }).then((res) => {

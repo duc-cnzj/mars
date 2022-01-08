@@ -5,16 +5,15 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 
+	"github.com/duc-cnzj/mars/client/cluster"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Cluster struct {
 	cluster.UnimplementedClusterServer
 }
 
-func (c *Cluster) Info(ctx context.Context, empty *emptypb.Empty) (*cluster.ClusterInfoResponse, error) {
+func (c *Cluster) ClusterInfo(ctx context.Context, req *cluster.ClusterInfoRequest) (*cluster.ClusterInfoResponse, error) {
 	info := utils.ClusterInfo()
 
 	return &cluster.ClusterInfoResponse{

@@ -16,227 +16,6 @@
     "application/json"
   ],
   "paths": {
-    "/api/namespaces/{namespace_id}/projects/{project_id}": {
-      "get": {
-        "operationId": "Project_Show",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectShowResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      },
-      "delete": {
-        "operationId": "Project_Destroy",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/namespaces/{namespace_id}/projects/{project_id}/containers": {
-      "get": {
-        "operationId": "Project_AllPodContainers",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/AllPodContainersResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs": {
-      "get": {
-        "operationId": "Project_PodContainerLog",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/PodContainerLogResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "container",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
-      "get": {
-        "operationId": "Project_StreamPodContainerLog",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/PodContainerLogResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of PodContainerLogResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "container",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
     "/api/namespaces/{namespace}/pod/{pod}/status": {
       "get": {
         "operationId": "Project_IsPodRunning",
@@ -244,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/IsPodRunningResponse"
+              "$ref": "#/definitions/ProjectIsPodRunningResponse"
             }
           },
           "default": {
@@ -272,21 +51,280 @@
           "Project"
         ]
       }
+    },
+    "/api/projects/{project_id}": {
+      "get": {
+        "operationId": "Project_Show",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectShowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      },
+      "delete": {
+        "operationId": "Project_Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectDeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/containers": {
+      "get": {
+        "operationId": "Project_AllPodContainers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectAllPodContainersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs": {
+      "get": {
+        "operationId": "Project_PodContainerLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectPodContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "container",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
+      "get": {
+        "operationId": "Project_StreamPodContainerLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/ProjectPodContainerLogResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of ProjectPodContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "container",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
     }
   },
   "definitions": {
-    "AllPodContainersResponse": {
+    "Metadata": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/Type"
+        },
+        "end": {
+          "type": "boolean"
+        },
+        "result": {
+          "$ref": "#/definitions/ResultType"
+        },
+        "to": {
+          "$ref": "#/definitions/To"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "NamespaceModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "image_pull_secrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectModel"
+          }
+        }
+      }
+    },
+    "ProjectAllPodContainersResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/PodLog"
+            "$ref": "#/definitions/ProjectPodLog"
           }
         }
       }
     },
-    "IsPodRunningResponse": {
+    "ProjectApplyResponse": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/Metadata"
+        },
+        "project": {
+          "$ref": "#/definitions/ProjectModel"
+        }
+      }
+    },
+    "ProjectDeleteResponse": {
+      "type": "object"
+    },
+    "ProjectIsPodRunningResponse": {
       "type": "object",
       "properties": {
         "running": {
@@ -297,17 +335,70 @@
         }
       }
     },
-    "PodContainerLogResponse": {
+    "ProjectModel": {
       "type": "object",
       "properties": {
-        "data": {
-          "$ref": "#/definitions/PodLog"
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "gitlab_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gitlab_branch": {
+          "type": "string"
+        },
+        "gitlab_commit": {
+          "type": "string"
+        },
+        "config": {
+          "type": "string"
+        },
+        "override_values": {
+          "type": "string"
+        },
+        "docker_image": {
+          "type": "string"
+        },
+        "pod_selectors": {
+          "type": "string"
+        },
+        "namespace_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "atomic": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "namespace": {
+          "$ref": "#/definitions/NamespaceModel"
         }
       }
     },
-    "PodLog": {
+    "ProjectPodContainerLogResponse": {
       "type": "object",
       "properties": {
+        "data": {
+          "$ref": "#/definitions/ProjectPodLog"
+        }
+      }
+    },
+    "ProjectPodLog": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
         "pod_name": {
           "type": "string"
         },
@@ -384,9 +475,11 @@
         "updated_at": {
           "type": "string"
         },
-        "updated_timestamp": {
-          "type": "string",
-          "format": "int64"
+        "humanize_created_at": {
+          "type": "string"
+        },
+        "humanize_updated_at": {
+          "type": "string"
         }
       }
     },
@@ -401,6 +494,47 @@
           "type": "string"
         }
       }
+    },
+    "ResultType": {
+      "type": "string",
+      "enum": [
+        "ResultUnknown",
+        "Error",
+        "Success",
+        "Deployed",
+        "DeployedFailed",
+        "DeployedCanceled"
+      ],
+      "default": "ResultUnknown"
+    },
+    "To": {
+      "type": "string",
+      "enum": [
+        "ToSelf",
+        "ToAll",
+        "ToOthers"
+      ],
+      "default": "ToSelf"
+    },
+    "Type": {
+      "type": "string",
+      "enum": [
+        "TypeUnknown",
+        "SetUid",
+        "ReloadProjects",
+        "CancelProject",
+        "CreateProject",
+        "UpdateProject",
+        "ProcessPercent",
+        "ClusterInfoSync",
+        "InternalError",
+        "ApplyProject",
+        "HandleExecShell",
+        "HandleExecShellMsg",
+        "HandleCloseShell",
+        "HandleAuthorize"
+      ],
+      "default": "TypeUnknown"
     },
     "protobufAny": {
       "type": "object",

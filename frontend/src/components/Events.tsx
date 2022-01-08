@@ -25,7 +25,7 @@ const EventList: React.FC = () => {
     page_size: number;
     count: number;
   }>({ page: 0, page_size: defaultPageSize, count: 0 });
-  const [data, setData] = useState<pb.EventList.item[]>([]);
+  const [data, setData] = useState<pb.EventListItem[]>([]);
 
   const loadMoreData = () => {
     if (loading) {
@@ -154,7 +154,7 @@ const EventList: React.FC = () => {
         >
           <List
             dataSource={data}
-            renderItem={(item: pb.EventList.item) => (
+            renderItem={(item: pb.EventListItem) => (
               <List.Item key={item.id} className="events__list-item">
                 <List.Item.Meta
                   title={

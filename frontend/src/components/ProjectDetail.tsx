@@ -24,7 +24,7 @@ const Shell = lazy(() => import("./TabShell"));
 const { TabPane } = Tabs;
 
 const ItemDetailModal: React.FC<{
-  item: pb.NamespaceItem.ISimpleProjectItem;
+  item: pb.NamespaceSimpleProject;
   namespace: string;
   namespaceId: number;
 }> = ({ item, namespace, namespaceId }) => {
@@ -36,19 +36,19 @@ const ItemDetailModal: React.FC<{
 
   useEffect(() => {
     if (visible && namespaceId && item.id) {
-      detailProject(namespaceId, item.id).then((res) => {
+      detailProject(item.id).then((res) => {
         console.log(res.data);
         setDetail(res.data);
       });
     }
-  }, [namespaceId, item.id, visible]);
+  }, [item.id, visible, namespaceId]);
 
   const onSuccess = useCallback(() => {
-    detailProject(namespaceId, item.id || 0).then((res) => {
+    detailProject(item.id || 0).then((res) => {
       console.log(res.data);
       setDetail(res.data);
     });
-  }, [item.id, namespaceId]);
+  }, [item.id]);
 
   const onCancel = useCallback(() => {
     setVisible(false);
@@ -117,7 +117,7 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="容器日志" key="container-logs">
                 {detail ? (
                   <TabLog
-                    updatedAt={detail.updated_timestamp}
+                    updatedAt={detail.updated_at}
                     id={detail.id}
                     namespaceId={detail.namespace?.id || 0}
                   />
@@ -130,7 +130,7 @@ const ItemDetailModal: React.FC<{
                   <ErrorBoundary>
                     {detail ? (
                       <Shell
-                        updatedAt={detail.updated_timestamp}
+                        updatedAt={detail.updated_at}
                         resizeAt={resizeAt}
                         detail={detail}
                       />

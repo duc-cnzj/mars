@@ -18,12 +18,12 @@
   "paths": {
     "/api/projects/{project_id}/changelogs": {
       "get": {
-        "operationId": "Changelog_Get",
+        "operationId": "Changelog_Show",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ChangelogGetResponse"
+              "$ref": "#/definitions/ChangelogShowResponse"
             }
           },
           "default": {
@@ -55,18 +55,7 @@
     }
   },
   "definitions": {
-    "ChangelogGetResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ChangelogGetResponseItem"
-          }
-        }
-      }
-    },
-    "ChangelogGetResponseItem": {
+    "ChangelogShowItem": {
       "type": "object",
       "properties": {
         "version": {
@@ -81,6 +70,17 @@
         },
         "username": {
           "type": "string"
+        }
+      }
+    },
+    "ChangelogShowResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChangelogShowItem"
+          }
         }
       }
     },

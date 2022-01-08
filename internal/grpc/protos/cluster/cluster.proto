@@ -1,10 +1,9 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/cluster;cluster";
+option go_package = "github.com/duc-cnzj/mars/client/cluster;cluster";
 
 enum ClusterStatus {
   StatusUnknown = 0;
@@ -26,9 +25,10 @@ message ClusterInfoResponse {
   string request_memory_rate = 10;
   string request_cpu_rate = 11;
 }
+message ClusterInfoRequest {}
 
 service Cluster {
-  rpc Info(google.protobuf.Empty) returns (ClusterInfoResponse) {
+  rpc ClusterInfo(ClusterInfoRequest) returns (ClusterInfoResponse) {
     option (google.api.http) = {
       get: "/api/cluster_info"
     };

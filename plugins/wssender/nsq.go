@@ -3,9 +3,7 @@ package wssender
 import (
 	"errors"
 
-	"google.golang.org/protobuf/proto"
-
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -86,15 +84,15 @@ func (n *nsq) ID() string {
 	return n.id
 }
 
-func (n *nsq) ToSelf(response proto.Message) error {
+func (n *nsq) ToSelf(response plugins.WebsocketMessage) error {
 	return n.producer.Publish(n.ephemeralID(), plugins.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
 }
 
-func (n *nsq) ToAll(response proto.Message) error {
+func (n *nsq) ToAll(response plugins.WebsocketMessage) error {
 	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
 }
 
-func (n *nsq) ToOthers(response proto.Message) error {
+func (n *nsq) ToOthers(response plugins.WebsocketMessage) error {
 	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
 }
 

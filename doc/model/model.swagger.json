@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "modal/modal.proto",
+    "title": "model/model.proto",
     "version": "version not set"
   },
   "consumes": [

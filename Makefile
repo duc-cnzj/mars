@@ -13,13 +13,17 @@ LDFLAGS = "-w -s  \
 gen:
 	cd hack && ./gen_proto.sh && cd .. && make fmt
 
+.PHONY: vet
+vet:
+	go vet ./...
+
 .PHONY: fmt
 fmt:
-	go vet ./... && gofmt -s -w ./ && goimports -w ./
+	gofmt -s -w ./ && goimports -w ./
 
 .PHONY: serve
 serve:
-	go run main.go serve --debug --app_port 4000
+	go run main.go serve --debug --app_port 4000 --grpc_port 30000
 
 .PHONY: build_race
 build_race:

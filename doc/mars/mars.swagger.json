@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DefaultChartValues"
+              "$ref": "#/definitions/MarsDefaultChartValuesResponse"
             }
           },
           "default": {
@@ -60,7 +60,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GlobalConfigResponse"
+              "$ref": "#/definitions/MarsGlobalConfigResponse"
             }
           },
           "default": {
@@ -152,7 +152,7 @@
               "type": "object",
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/Config"
+                  "$ref": "#/definitions/MarsConfig"
                 }
               }
             }
@@ -170,7 +170,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "properties": {}
+              "$ref": "#/definitions/MarsToggleEnabledResponse"
             }
           },
           "default": {
@@ -209,7 +209,7 @@
     }
   },
   "definitions": {
-    "Config": {
+    "MarsConfig": {
       "type": "object",
       "properties": {
         "config_file": {
@@ -247,7 +247,7 @@
         }
       }
     },
-    "DefaultChartValues": {
+    "MarsDefaultChartValuesResponse": {
       "type": "object",
       "properties": {
         "value": {
@@ -255,14 +255,14 @@
         }
       }
     },
-    "GlobalConfigResponse": {
+    "MarsGlobalConfigResponse": {
       "type": "object",
       "properties": {
         "enabled": {
           "type": "boolean"
         },
         "config": {
-          "$ref": "#/definitions/Config"
+          "$ref": "#/definitions/MarsConfig"
         }
       }
     },
@@ -273,15 +273,18 @@
           "type": "string"
         },
         "config": {
-          "$ref": "#/definitions/Config"
+          "$ref": "#/definitions/MarsConfig"
         }
       }
+    },
+    "MarsToggleEnabledResponse": {
+      "type": "object"
     },
     "MarsUpdateResponse": {
       "type": "object",
       "properties": {
         "config": {
-          "$ref": "#/definitions/Config"
+          "$ref": "#/definitions/MarsConfig"
         }
       }
     },

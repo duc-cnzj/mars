@@ -3,7 +3,7 @@ import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
 import PipelineInfo from "./PipelineInfo";
 import ConfigHistory from "./ConfigHistory";
-import { commit, configFile, projects } from "../api/gitlab";
+import { commit, configFile, allProjects } from "../api/gitlab";
 import { getHighlightSyntax } from "../utils/highlight";
 import {
   DeployStatus as DeployStatusEnum,
@@ -67,7 +67,7 @@ const ModalSub: React.FC<{
 
   // 初始化，设置 initvalue
   useEffect(() => {
-    projects().then((res) => {
+    allProjects().then((res) => {
       if (
         detail &&
         detail.gitlab_project_id &&
@@ -318,7 +318,7 @@ const ModalSub: React.FC<{
               projectID={detail.id}
               configType={data.config_type}
               currentConfig={data.config}
-              updatedAt={detail.updated_timestamp}
+              updatedAt={detail.updated_at}
             />
           </div>
 

@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
-import { containerList } from "../api/project";
+import { allPodContainers } from "../api/project";
 import { Radio, Skeleton, Button, Tag } from "antd";
 import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
@@ -11,16 +11,16 @@ const ProjectContainerLogs: React.FC<{
   namespaceId: number;
 }> = ({ id, namespaceId, updatedAt }) => {
   const [value, setValue] = useState<string>();
-  const [list, setList] = useState<pb.PodLog[]>();
+  const [list, setList] = useState<pb.ProjectPodLog[]>();
 
   const listContainer = useCallback(async () => {
-    return containerList({ namespace_id: namespaceId, project_id: id }).then(
+    return allPodContainers({project_id: id }).then(
       (res) => {
         setList(res.data.data);
         return res;
       }
     );
-  }, [namespaceId, id]);
+  }, [id]);
 
   useEffect(() => {
     listContainer().then((res) => {
@@ -36,7 +36,7 @@ const ProjectContainerLogs: React.FC<{
   const getUrl = () => {
     let [pod, container] = (value as string).split("|");
 
-    return `${process.env.REACT_APP_BASE_URL}/api/namespaces/${namespaceId}/projects/${id}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
+    return `${process.env.REACT_APP_BASE_URL}/api/projects/${id}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
   };
 
   const reloadLog = useCallback((e: any) => {
