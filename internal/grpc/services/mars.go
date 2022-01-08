@@ -127,7 +127,7 @@ func (m *Mars) Update(ctx context.Context, request *mars.MarsUpdateRequest) (*ma
 		return nil, err
 	}
 
-	if len(request.Config.Branches) == 0 {
+	if request.Config != nil && len(request.Config.Branches) == 0 {
 		request.Config.Branches = []string{"*"}
 	}
 	marshal, err := json.Marshal(request.Config)

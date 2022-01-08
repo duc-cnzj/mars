@@ -119,7 +119,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 				bf := make([]byte, 1024*5)
 				runtime.Stack(bf, false)
-				mlog.Error("[Grpc]: recovery error: ", string(bf))
+				mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 				return nil
 			})),
 			grpc_prometheus.UnaryServerInterceptor,

@@ -8,10 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
-
 	"github.com/duc-cnzj/mars/client/event"
 	modelspb "github.com/duc-cnzj/mars/client/model"
 	"github.com/duc-cnzj/mars/client/namespace"
@@ -20,9 +16,16 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
+	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var sf utils.SingleflightGroup
 
 type Namespace struct {
 	namespace.UnimplementedNamespaceServer
@@ -32,19 +35,22 @@ func (n *Namespace) All(ctx context.Context, request *namespace.NamespaceAllRequ
 	var namespaces []*models.Namespace
 	app.DB().Preload("Projects").Find(&namespaces)
 	var res = &namespace.NamespaceAllResponse{Data: make([]*namespace.NamespaceItem, 0, len(namespaces))}
+	releaseStatus := utils.ReleaseList{}
+	if len(namespaces) > 0 {
+		do, _, _ := sf.Do("ListRelease", func() (interface{}, error) {
+			mlog.Debug("ListRelease.....")
+			return utils.ListRelease()
+		})
+		releaseStatus = do.(utils.ReleaseList)
+	}
 	for _, ns := range namespaces {
 		var projects = make([]*namespace.NamespaceSimpleProject, 0, len(ns.Projects))
 
 		for _, project := range ns.Projects {
-			status, err := utils.ReleaseStatus(project.Name, ns.Name)
-			if err != nil {
-				mlog.Error(err)
-				status = utils.StatusUnknown
-			}
 			projects = append(projects, &namespace.NamespaceSimpleProject{
 				Id:     int64(project.ID),
 				Name:   project.Name,
-				Status: status,
+				Status: releaseStatus.GetStatus(ns.Name, project.Name),
 			})
 		}
 
@@ -70,7 +76,13 @@ func (n *Namespace) Create(ctx context.Context, request *namespace.NamespaceCrea
 	// 创建名称空间
 	create, err := app.K8sClientSet().CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: request.Namespace}}, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		if !k8sapierrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+		create, err = app.K8sClientSet().CoreV1().Namespaces().Get(context.TODO(), request.Namespace, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var imagePullSecrets []string
