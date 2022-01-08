@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/mars";
 
@@ -22,8 +23,8 @@ message MarsConfig {
 }
 
 message MarsShowRequest {
-  int64 project_id = 1;
-  string branch = 2;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message MarsShowResponse {
@@ -32,7 +33,7 @@ message MarsShowResponse {
 }
 
 message MarsGlobalConfigRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message MarsGlobalConfigResponse {
@@ -41,7 +42,7 @@ message MarsGlobalConfigResponse {
 }
 
 message MarsUpdateRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   MarsConfig config = 2;
 }
 
@@ -50,12 +51,12 @@ message MarsUpdateResponse {
 }
 
 message MarsToggleEnabledRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   bool enabled = 2;
 }
 
 message MarsDefaultChartValuesRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 

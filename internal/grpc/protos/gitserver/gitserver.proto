@@ -1,20 +1,21 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/gitserver;gitserver";
 
 message GitDestroyRequest {
-  string namespace_id = 1;
-  string project_id = 2;
+  string namespace_id = 1 [(validate.rules).string.min_bytes = 1];
+  string project_id = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitEnableProjectRequest {
-  string git_project_id = 1;
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitDisableProjectRequest {
-  string git_project_id = 1;
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitProjectItem {
@@ -47,7 +48,7 @@ message GitProjectOptionsResponse {
 }
 
 message GitBranchOptionsRequest {
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
   bool all = 2;
 }
 message GitBranchOptionsResponse {
@@ -62,9 +63,9 @@ message GitCommitOptionsResponse {
 }
 
 message GitCommitRequest {
-  string project_id = 1;
-  string branch = 2;
-  string commit = 3;
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitCommitResponse {
@@ -72,9 +73,9 @@ message GitCommitResponse {
 }
 
 message GitPipelineInfoRequest {
-  string project_id = 1;
-  string branch = 2;
-  string commit = 3;
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitPipelineInfoResponse {
@@ -83,8 +84,8 @@ message GitPipelineInfoResponse {
 }
 
 message GitConfigFileRequest {
-  string project_id = 1;
-  string branch = 2;
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitConfigFileResponse {

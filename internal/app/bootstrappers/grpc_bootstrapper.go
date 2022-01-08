@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/validator"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -110,6 +111,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			grpc_opentracing.UnaryServerInterceptor(traceWithOpName()),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
+			validator.UnaryServerInterceptor(),
 			marsauth.UnaryServerInterceptor(),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 				defer func(t time.Time) {

@@ -1,12 +1,13 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/metrics;metrics";
 
 message MetricsShowRequest {
-  string namespace = 1;
-  string pod = 2;
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message MetricsShowResponse {

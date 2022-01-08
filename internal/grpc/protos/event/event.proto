@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/event;event";
 
@@ -12,8 +13,8 @@ enum ActionType {
 }
 
 message EventListRequest {
-  int64 page = 1;
-  int64 page_size = 2;
+  int64 page = 1 [(validate.rules).int64.gte = 1];
+  int64 page_size = 2 [(validate.rules).int64.gte = 1];
 }
 
 message EventListItem {

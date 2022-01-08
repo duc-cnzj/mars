@@ -1047,6 +1047,42 @@
         }
       }
     },
+    "/api/projects": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "operationId": "Project_List",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page_size",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/projects/{project_id}": {
       "get": {
         "tags": [

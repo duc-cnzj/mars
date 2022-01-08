@@ -3,15 +3,16 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "websocket/websocket.proto";
 import "model/model.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/project;project";
 
 message ProjectDeleteRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectShowRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectShowResponse {
@@ -44,7 +45,7 @@ message ProjectShowResponse {
 }
 
 message ProjectAllPodContainersRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectPodLog {
@@ -59,9 +60,9 @@ message ProjectAllPodContainersResponse {
 }
 
 message ProjectPodContainerLogRequest {
-  int64 project_id = 1;
-  string pod = 2;
-  string container = 3;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string container = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message ProjectPodContainerLogResponse {
@@ -69,8 +70,8 @@ message ProjectPodContainerLogResponse {
 }
 
 message ProjectIsPodRunningRequest {
-  string namespace = 1;
-  string pod = 2;
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message ProjectIsPodRunningResponse {
@@ -85,11 +86,11 @@ message ProjectApplyResponse {
 
 // ProjectApplyRequest same as ProjectInput
 message ProjectApplyRequest {
-  int64 namespace_id = 1;
-  string name = 2;
-  int64 gitlab_project_id = 3;
-  string gitlab_branch = 4;
-  string gitlab_commit = 5;
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+  string name = 2 [(validate.rules).string.min_bytes = 1];
+  int64 gitlab_project_id = 3 [(validate.rules).int64.gt = 0];
+  string gitlab_branch = 4 [(validate.rules).string.min_bytes = 1];
+  string gitlab_commit = 5 [(validate.rules).string.min_bytes = 1];
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;
@@ -98,8 +99,8 @@ message ProjectApplyRequest {
 message ProjectDeleteResponse {}
 
 message ProjectListRequest {
-  int64 page = 1;
-  int64 page_size = 2;
+  int64 page = 1 [(validate.rules).int64.gt = 0];
+  int64 page_size = 2 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectListResponse {

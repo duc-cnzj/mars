@@ -2,32 +2,33 @@ syntax = "proto3";
 
 import "google/api/annotations.proto";
 import "model/model.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/client/namespace;namespace";
 
 message NamespaceCreateRequest {
-  string namespace = 1;
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
 }
 
 message NamespaceShowRequest {
-  int64 namespace_id = 1;
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message NamespaceDeleteRequest {
-  int64 namespace_id = 1;
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message NamespaceIsExistsRequest {
-  string name = 1;
+  string name = 1 [(validate.rules).string.min_bytes = 1];
 }
 
 message NamespaceCpuMemoryRequest {
-  int64 namespace_id = 1;
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message NamespaceServiceEndpointsRequest {
-  int64 namespace_id = 1;
-  string project_name = 2;
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+  string project_name = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message NamespaceSimpleProject {
