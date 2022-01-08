@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"time"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -95,10 +96,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 				return nil
 			})),
 			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-				user, err := marsauth.GetUser(ctx)
-				if err == nil {
-					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
-				}
+				defer func(t time.Time) {
+					user, err := marsauth.GetUser(ctx)
+					if err == nil {
+						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
+					}
+				}(time.Now())
 
 				return handler(srv, ss)
 			},
@@ -109,10 +112,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(Authenticate),
 			marsauth.UnaryServerInterceptor(),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				user, err := marsauth.GetUser(ctx)
-				if err == nil {
-					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
-				}
+				defer func(t time.Time) {
+					user, err := marsauth.GetUser(ctx)
+					if err == nil {
+						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
+					}
+				}(time.Now())
 
 				return handler(ctx, req)
 			},

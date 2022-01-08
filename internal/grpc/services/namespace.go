@@ -83,6 +83,9 @@ func (n *Namespace) Create(ctx context.Context, request *namespace.NamespaceCrea
 		if err != nil {
 			return nil, err
 		}
+		if create.Status.Phase == v1.NamespaceTerminating {
+			return nil, status.Error(codes.AlreadyExists, "该名称空间正在删除中")
+		}
 	}
 
 	var imagePullSecrets []string
