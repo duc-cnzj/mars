@@ -8,7 +8,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VersionClient interface {
-	Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionResponse, error)
+	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 }
 
 type versionClient struct {
@@ -31,9 +30,9 @@ func NewVersionClient(cc grpc.ClientConnInterface) VersionClient {
 	return &versionClient{cc}
 }
 
-func (c *versionClient) Get(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionResponse, error) {
+func (c *versionClient) Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
 	out := new(VersionResponse)
-	err := c.cc.Invoke(ctx, "/Version/Get", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/Version/Version", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (c *versionClient) Get(ctx context.Context, in *emptypb.Empty, opts ...grpc
 // All implementations must embed UnimplementedVersionServer
 // for forward compatibility
 type VersionServer interface {
-	Get(context.Context, *emptypb.Empty) (*VersionResponse, error)
+	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	mustEmbedUnimplementedVersionServer()
 }
 
@@ -52,8 +51,8 @@ type VersionServer interface {
 type UnimplementedVersionServer struct {
 }
 
-func (UnimplementedVersionServer) Get(context.Context, *emptypb.Empty) (*VersionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedVersionServer) Version(context.Context, *VersionRequest) (*VersionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
 }
 func (UnimplementedVersionServer) mustEmbedUnimplementedVersionServer() {}
 
@@ -68,20 +67,20 @@ func RegisterVersionServer(s grpc.ServiceRegistrar, srv VersionServer) {
 	s.RegisterService(&Version_ServiceDesc, srv)
 }
 
-func _Version_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+func _Version_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VersionServer).Get(ctx, in)
+		return srv.(VersionServer).Version(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Version/Get",
+		FullMethod: "/Version/Version",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VersionServer).Get(ctx, req.(*emptypb.Empty))
+		return srv.(VersionServer).Version(ctx, req.(*VersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -94,8 +93,8 @@ var Version_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*VersionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Get",
-			Handler:    _Version_Get_Handler,
+			MethodName: "Version",
+			Handler:    _Version_Version_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

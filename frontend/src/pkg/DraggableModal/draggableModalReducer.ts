@@ -134,6 +134,22 @@ const clampResize = (
 }
 
 export const draggableModalReducer = (state: ModalsState, action: Action): ModalsState => {
+    const removeOverflow = (exceptID: string) => {
+        let hidden = true
+            for (const key in state.modals) {
+                if (Object.prototype.hasOwnProperty.call(state.modals, key)) {
+                    const element = state.modals[key];
+                    console.log(element)
+                    if (element.visible && exceptID != key) {
+                        hidden = false
+                        break
+                    }
+                }
+            }
+            if (hidden) {
+                document.body.classList.remove("ant-design-draggable-modal-body-overflow")
+            }
+    }
     switch (action.type) {
         case 'doubleClick':
             let curr = state.modals[action.id]
@@ -238,6 +254,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'show': {
+            document.body.classList.add("ant-design-draggable-modal-body-overflow")
             const modalState = state.modals[action.id]
             const centerX = state.windowSize.width / 2 - modalState.width / 2
             const centerY = state.windowSize.height / 2 - modalState.height / 2
@@ -286,6 +303,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'hide': {
+            removeOverflow(action.id)
             const modalState = state.modals[action.id]
             return {
                 ...state,
@@ -315,6 +333,7 @@ export const draggableModalReducer = (state: ModalsState, action: Action): Modal
                 },
             }
         case 'unmount':
+            removeOverflow(action.id)
             const modalsClone = { ...state.modals }
             delete modalsClone[action.id]
             return {

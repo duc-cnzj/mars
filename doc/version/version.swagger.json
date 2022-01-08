@@ -18,7 +18,7 @@
   "paths": {
     "/api/version": {
       "get": {
-        "operationId": "Version_Get",
+        "operationId": "Version_Version",
         "responses": {
           "200": {
             "description": "A successful response.",

@@ -11,14 +11,14 @@ import (
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/duc-cnzj/mars/client/cluster"
+	websocket_pb "github.com/duc-cnzj/mars/client/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
@@ -114,7 +114,7 @@ func (*WebsocketManager) TickClusterHealth() {
 			case <-ticker.C:
 				info := utils.ClusterInfo()
 				sub.ToAll(&websocket_pb.WsHandleClusterResponse{
-					Metadata: &websocket_pb.ResponseMetadata{
+					Metadata: &websocket_pb.Metadata{
 						Type: WsClusterInfoSync,
 					},
 					Info: &cluster.ClusterInfoResponse{
@@ -302,14 +302,14 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 	sessionID, err := HandleExecShell(&input, c)
 	if err != nil {
 		mlog.Error(err)
-		NewMessageSender(c, "", WsHandleExecShell).SendEndMsg(ResultError, err.Error())
+		NewMessageSender(c, "", WsHandleExecShell).SendEndError(err)
 		return
 	}
 
 	mlog.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
 
 	NewMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-		Metadata: &websocket_pb.ResponseMetadata{
+		Metadata: &websocket_pb.Metadata{
 			Id:     c.id,
 			Uid:    c.uid,
 			Type:   WsHandleExecShell,
@@ -337,7 +337,7 @@ func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 	}
 
 	// cancel
-	var slugName = utils.Md5(fmt.Sprintf("%d-%s", input.NamespaceId, input.Name))
+	var slugName = getSlugName(input.NamespaceId, input.Name)
 	if c.cancelSignaler.Has(slugName) {
 		c.cancelSignaler.Cancel(slugName)
 	}
@@ -352,14 +352,17 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	job := NewJober(&input, t, c)
+	slug := getSlugName(input.NamespaceId, input.Name)
+	job := NewJober(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 	defer c.cancelSignaler.Remove(job.ID())
-	installProject(job)
+	InstallProject(job)
 }
+
+var getSlugName = utils.GetSlugName
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsUpdateProject")
@@ -375,7 +378,9 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
+	slug := getSlugName(int64(p.NamespaceId), p.Name)
 	job := NewJober(&websocket_pb.ProjectInput{
+		Type:            t,
 		NamespaceId:     int64(p.NamespaceId),
 		Name:            p.Name,
 		GitlabProjectId: int64(p.GitlabProjectId),
@@ -383,16 +388,16 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		GitlabCommit:    input.GitlabCommit,
 		Config:          input.Config,
 		Atomic:          input.Atomic,
-	}, t, c)
+	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 	defer c.cancelSignaler.Remove(job.ID())
-	installProject(job)
+	InstallProject(job)
 }
 
-func installProject(job Job) {
+func InstallProject(job Job) {
 	var err error
 	defer func() {
 		job.CallDestroyFuncs()
@@ -408,14 +413,14 @@ func installProject(job Job) {
 
 	if err = job.LoadConfigs(); err != nil {
 		if err := job.GetStoppedErrorIfHas(); err != nil {
-			job.Messager().SendEndMsg(ResultDeployCanceled, err.Error())
+			job.Messager().SendDeployedResult(ResultDeployCanceled, err.Error(), nil)
 			return
 		}
 		job.Messager().SendEndError(err)
 		return
 	}
 
-	res := &WsResponse{Metadata: &websocket_pb.ResponseMetadata{Type: WsReloadProjects}}
+	res := &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
 	if err = job.Run(); err != nil {
 		job.PubSub().ToAll(res)
 		return

@@ -7,25 +7,25 @@ const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.
 // Exported root namespace
 const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
-export const LoginRequest = $root.LoginRequest = (() => {
+export const AuthLoginRequest = $root.AuthLoginRequest = (() => {
 
     /**
-     * Properties of a LoginRequest.
-     * @exports ILoginRequest
-     * @interface ILoginRequest
-     * @property {string|null} [username] LoginRequest username
-     * @property {string|null} [password] LoginRequest password
+     * Properties of an AuthLoginRequest.
+     * @exports IAuthLoginRequest
+     * @interface IAuthLoginRequest
+     * @property {string|null} [username] AuthLoginRequest username
+     * @property {string|null} [password] AuthLoginRequest password
      */
 
     /**
-     * Constructs a new LoginRequest.
-     * @exports LoginRequest
-     * @classdesc Represents a LoginRequest.
-     * @implements ILoginRequest
+     * Constructs a new AuthLoginRequest.
+     * @exports AuthLoginRequest
+     * @classdesc Represents an AuthLoginRequest.
+     * @implements IAuthLoginRequest
      * @constructor
-     * @param {ILoginRequest=} [properties] Properties to set
+     * @param {IAuthLoginRequest=} [properties] Properties to set
      */
-    function LoginRequest(properties) {
+    function AuthLoginRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -33,31 +33,31 @@ export const LoginRequest = $root.LoginRequest = (() => {
     }
 
     /**
-     * LoginRequest username.
+     * AuthLoginRequest username.
      * @member {string} username
-     * @memberof LoginRequest
+     * @memberof AuthLoginRequest
      * @instance
      */
-    LoginRequest.prototype.username = "";
+    AuthLoginRequest.prototype.username = "";
 
     /**
-     * LoginRequest password.
+     * AuthLoginRequest password.
      * @member {string} password
-     * @memberof LoginRequest
+     * @memberof AuthLoginRequest
      * @instance
      */
-    LoginRequest.prototype.password = "";
+    AuthLoginRequest.prototype.password = "";
 
     /**
-     * Encodes the specified LoginRequest message. Does not implicitly {@link LoginRequest.verify|verify} messages.
+     * Encodes the specified AuthLoginRequest message. Does not implicitly {@link AuthLoginRequest.verify|verify} messages.
      * @function encode
-     * @memberof LoginRequest
+     * @memberof AuthLoginRequest
      * @static
-     * @param {LoginRequest} message LoginRequest message or plain object to encode
+     * @param {AuthLoginRequest} message AuthLoginRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    LoginRequest.encode = function encode(message, writer) {
+    AuthLoginRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.username != null && Object.hasOwnProperty.call(message, "username"))
@@ -68,20 +68,20 @@ export const LoginRequest = $root.LoginRequest = (() => {
     };
 
     /**
-     * Decodes a LoginRequest message from the specified reader or buffer.
+     * Decodes an AuthLoginRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof LoginRequest
+     * @memberof AuthLoginRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {LoginRequest} LoginRequest
+     * @returns {AuthLoginRequest} AuthLoginRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    LoginRequest.decode = function decode(reader, length) {
+    AuthLoginRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.LoginRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthLoginRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -99,28 +99,28 @@ export const LoginRequest = $root.LoginRequest = (() => {
         return message;
     };
 
-    return LoginRequest;
+    return AuthLoginRequest;
 })();
 
-export const LoginResponse = $root.LoginResponse = (() => {
+export const AuthLoginResponse = $root.AuthLoginResponse = (() => {
 
     /**
-     * Properties of a LoginResponse.
-     * @exports ILoginResponse
-     * @interface ILoginResponse
-     * @property {string|null} [token] LoginResponse token
-     * @property {number|null} [expires_in] LoginResponse expires_in
+     * Properties of an AuthLoginResponse.
+     * @exports IAuthLoginResponse
+     * @interface IAuthLoginResponse
+     * @property {string|null} [token] AuthLoginResponse token
+     * @property {number|null} [expires_in] AuthLoginResponse expires_in
      */
 
     /**
-     * Constructs a new LoginResponse.
-     * @exports LoginResponse
-     * @classdesc Represents a LoginResponse.
-     * @implements ILoginResponse
+     * Constructs a new AuthLoginResponse.
+     * @exports AuthLoginResponse
+     * @classdesc Represents an AuthLoginResponse.
+     * @implements IAuthLoginResponse
      * @constructor
-     * @param {ILoginResponse=} [properties] Properties to set
+     * @param {IAuthLoginResponse=} [properties] Properties to set
      */
-    function LoginResponse(properties) {
+    function AuthLoginResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -128,31 +128,31 @@ export const LoginResponse = $root.LoginResponse = (() => {
     }
 
     /**
-     * LoginResponse token.
+     * AuthLoginResponse token.
      * @member {string} token
-     * @memberof LoginResponse
+     * @memberof AuthLoginResponse
      * @instance
      */
-    LoginResponse.prototype.token = "";
+    AuthLoginResponse.prototype.token = "";
 
     /**
-     * LoginResponse expires_in.
+     * AuthLoginResponse expires_in.
      * @member {number} expires_in
-     * @memberof LoginResponse
+     * @memberof AuthLoginResponse
      * @instance
      */
-    LoginResponse.prototype.expires_in = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    AuthLoginResponse.prototype.expires_in = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified LoginResponse message. Does not implicitly {@link LoginResponse.verify|verify} messages.
+     * Encodes the specified AuthLoginResponse message. Does not implicitly {@link AuthLoginResponse.verify|verify} messages.
      * @function encode
-     * @memberof LoginResponse
+     * @memberof AuthLoginResponse
      * @static
-     * @param {LoginResponse} message LoginResponse message or plain object to encode
+     * @param {AuthLoginResponse} message AuthLoginResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    LoginResponse.encode = function encode(message, writer) {
+    AuthLoginResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.token != null && Object.hasOwnProperty.call(message, "token"))
@@ -163,20 +163,20 @@ export const LoginResponse = $root.LoginResponse = (() => {
     };
 
     /**
-     * Decodes a LoginResponse message from the specified reader or buffer.
+     * Decodes an AuthLoginResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof LoginResponse
+     * @memberof AuthLoginResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {LoginResponse} LoginResponse
+     * @returns {AuthLoginResponse} AuthLoginResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    LoginResponse.decode = function decode(reader, length) {
+    AuthLoginResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.LoginResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthLoginResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -194,32 +194,275 @@ export const LoginResponse = $root.LoginResponse = (() => {
         return message;
     };
 
-    return LoginResponse;
+    return AuthLoginResponse;
 })();
 
-export const InfoResponse = $root.InfoResponse = (() => {
+export const AuthExchangeRequest = $root.AuthExchangeRequest = (() => {
 
     /**
-     * Properties of an InfoResponse.
-     * @exports IInfoResponse
-     * @interface IInfoResponse
-     * @property {string|null} [id] InfoResponse id
-     * @property {string|null} [avatar] InfoResponse avatar
-     * @property {string|null} [name] InfoResponse name
-     * @property {string|null} [email] InfoResponse email
-     * @property {string|null} [logout_url] InfoResponse logout_url
-     * @property {Array.<string>|null} [roles] InfoResponse roles
+     * Properties of an AuthExchangeRequest.
+     * @exports IAuthExchangeRequest
+     * @interface IAuthExchangeRequest
+     * @property {string|null} [code] AuthExchangeRequest code
      */
 
     /**
-     * Constructs a new InfoResponse.
-     * @exports InfoResponse
-     * @classdesc Represents an InfoResponse.
-     * @implements IInfoResponse
+     * Constructs a new AuthExchangeRequest.
+     * @exports AuthExchangeRequest
+     * @classdesc Represents an AuthExchangeRequest.
+     * @implements IAuthExchangeRequest
      * @constructor
-     * @param {IInfoResponse=} [properties] Properties to set
+     * @param {IAuthExchangeRequest=} [properties] Properties to set
      */
-    function InfoResponse(properties) {
+    function AuthExchangeRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * AuthExchangeRequest code.
+     * @member {string} code
+     * @memberof AuthExchangeRequest
+     * @instance
+     */
+    AuthExchangeRequest.prototype.code = "";
+
+    /**
+     * Encodes the specified AuthExchangeRequest message. Does not implicitly {@link AuthExchangeRequest.verify|verify} messages.
+     * @function encode
+     * @memberof AuthExchangeRequest
+     * @static
+     * @param {AuthExchangeRequest} message AuthExchangeRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    AuthExchangeRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.code != null && Object.hasOwnProperty.call(message, "code"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.code);
+        return writer;
+    };
+
+    /**
+     * Decodes an AuthExchangeRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof AuthExchangeRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {AuthExchangeRequest} AuthExchangeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    AuthExchangeRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthExchangeRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.code = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return AuthExchangeRequest;
+})();
+
+export const AuthExchangeResponse = $root.AuthExchangeResponse = (() => {
+
+    /**
+     * Properties of an AuthExchangeResponse.
+     * @exports IAuthExchangeResponse
+     * @interface IAuthExchangeResponse
+     * @property {string|null} [token] AuthExchangeResponse token
+     * @property {number|null} [expires_in] AuthExchangeResponse expires_in
+     */
+
+    /**
+     * Constructs a new AuthExchangeResponse.
+     * @exports AuthExchangeResponse
+     * @classdesc Represents an AuthExchangeResponse.
+     * @implements IAuthExchangeResponse
+     * @constructor
+     * @param {IAuthExchangeResponse=} [properties] Properties to set
+     */
+    function AuthExchangeResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * AuthExchangeResponse token.
+     * @member {string} token
+     * @memberof AuthExchangeResponse
+     * @instance
+     */
+    AuthExchangeResponse.prototype.token = "";
+
+    /**
+     * AuthExchangeResponse expires_in.
+     * @member {number} expires_in
+     * @memberof AuthExchangeResponse
+     * @instance
+     */
+    AuthExchangeResponse.prototype.expires_in = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified AuthExchangeResponse message. Does not implicitly {@link AuthExchangeResponse.verify|verify} messages.
+     * @function encode
+     * @memberof AuthExchangeResponse
+     * @static
+     * @param {AuthExchangeResponse} message AuthExchangeResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    AuthExchangeResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.token);
+        if (message.expires_in != null && Object.hasOwnProperty.call(message, "expires_in"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.expires_in);
+        return writer;
+    };
+
+    /**
+     * Decodes an AuthExchangeResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof AuthExchangeResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {AuthExchangeResponse} AuthExchangeResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    AuthExchangeResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthExchangeResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.token = reader.string();
+                break;
+            case 2:
+                message.expires_in = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return AuthExchangeResponse;
+})();
+
+export const AuthInfoRequest = $root.AuthInfoRequest = (() => {
+
+    /**
+     * Properties of an AuthInfoRequest.
+     * @exports IAuthInfoRequest
+     * @interface IAuthInfoRequest
+     */
+
+    /**
+     * Constructs a new AuthInfoRequest.
+     * @exports AuthInfoRequest
+     * @classdesc Represents an AuthInfoRequest.
+     * @implements IAuthInfoRequest
+     * @constructor
+     * @param {IAuthInfoRequest=} [properties] Properties to set
+     */
+    function AuthInfoRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified AuthInfoRequest message. Does not implicitly {@link AuthInfoRequest.verify|verify} messages.
+     * @function encode
+     * @memberof AuthInfoRequest
+     * @static
+     * @param {AuthInfoRequest} message AuthInfoRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    AuthInfoRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes an AuthInfoRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof AuthInfoRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {AuthInfoRequest} AuthInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    AuthInfoRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthInfoRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return AuthInfoRequest;
+})();
+
+export const AuthInfoResponse = $root.AuthInfoResponse = (() => {
+
+    /**
+     * Properties of an AuthInfoResponse.
+     * @exports IAuthInfoResponse
+     * @interface IAuthInfoResponse
+     * @property {string|null} [id] AuthInfoResponse id
+     * @property {string|null} [avatar] AuthInfoResponse avatar
+     * @property {string|null} [name] AuthInfoResponse name
+     * @property {string|null} [email] AuthInfoResponse email
+     * @property {string|null} [logout_url] AuthInfoResponse logout_url
+     * @property {Array.<string>|null} [roles] AuthInfoResponse roles
+     */
+
+    /**
+     * Constructs a new AuthInfoResponse.
+     * @exports AuthInfoResponse
+     * @classdesc Represents an AuthInfoResponse.
+     * @implements IAuthInfoResponse
+     * @constructor
+     * @param {IAuthInfoResponse=} [properties] Properties to set
+     */
+    function AuthInfoResponse(properties) {
         this.roles = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -228,63 +471,63 @@ export const InfoResponse = $root.InfoResponse = (() => {
     }
 
     /**
-     * InfoResponse id.
+     * AuthInfoResponse id.
      * @member {string} id
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.id = "";
+    AuthInfoResponse.prototype.id = "";
 
     /**
-     * InfoResponse avatar.
+     * AuthInfoResponse avatar.
      * @member {string} avatar
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.avatar = "";
+    AuthInfoResponse.prototype.avatar = "";
 
     /**
-     * InfoResponse name.
+     * AuthInfoResponse name.
      * @member {string} name
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.name = "";
+    AuthInfoResponse.prototype.name = "";
 
     /**
-     * InfoResponse email.
+     * AuthInfoResponse email.
      * @member {string} email
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.email = "";
+    AuthInfoResponse.prototype.email = "";
 
     /**
-     * InfoResponse logout_url.
+     * AuthInfoResponse logout_url.
      * @member {string} logout_url
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.logout_url = "";
+    AuthInfoResponse.prototype.logout_url = "";
 
     /**
-     * InfoResponse roles.
+     * AuthInfoResponse roles.
      * @member {Array.<string>} roles
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @instance
      */
-    InfoResponse.prototype.roles = $util.emptyArray;
+    AuthInfoResponse.prototype.roles = $util.emptyArray;
 
     /**
-     * Encodes the specified InfoResponse message. Does not implicitly {@link InfoResponse.verify|verify} messages.
+     * Encodes the specified AuthInfoResponse message. Does not implicitly {@link AuthInfoResponse.verify|verify} messages.
      * @function encode
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @static
-     * @param {InfoResponse} message InfoResponse message or plain object to encode
+     * @param {AuthInfoResponse} message AuthInfoResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    InfoResponse.encode = function encode(message, writer) {
+    AuthInfoResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.id != null && Object.hasOwnProperty.call(message, "id"))
@@ -304,20 +547,20 @@ export const InfoResponse = $root.InfoResponse = (() => {
     };
 
     /**
-     * Decodes an InfoResponse message from the specified reader or buffer.
+     * Decodes an AuthInfoResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof InfoResponse
+     * @memberof AuthInfoResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {InfoResponse} InfoResponse
+     * @returns {AuthInfoResponse} AuthInfoResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    InfoResponse.decode = function decode(reader, length) {
+    AuthInfoResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.InfoResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthInfoResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -349,31 +592,26 @@ export const InfoResponse = $root.InfoResponse = (() => {
         return message;
     };
 
-    return InfoResponse;
+    return AuthInfoResponse;
 })();
 
-export const OidcSetting = $root.OidcSetting = (() => {
+export const AuthSettingsRequest = $root.AuthSettingsRequest = (() => {
 
     /**
-     * Properties of an OidcSetting.
-     * @exports IOidcSetting
-     * @interface IOidcSetting
-     * @property {boolean|null} [enabled] OidcSetting enabled
-     * @property {string|null} [name] OidcSetting name
-     * @property {string|null} [url] OidcSetting url
-     * @property {string|null} [end_session_endpoint] OidcSetting end_session_endpoint
-     * @property {string|null} [state] OidcSetting state
+     * Properties of an AuthSettingsRequest.
+     * @exports IAuthSettingsRequest
+     * @interface IAuthSettingsRequest
      */
 
     /**
-     * Constructs a new OidcSetting.
-     * @exports OidcSetting
-     * @classdesc Represents an OidcSetting.
-     * @implements IOidcSetting
+     * Constructs a new AuthSettingsRequest.
+     * @exports AuthSettingsRequest
+     * @classdesc Represents an AuthSettingsRequest.
+     * @implements IAuthSettingsRequest
      * @constructor
-     * @param {IOidcSetting=} [properties] Properties to set
+     * @param {IAuthSettingsRequest=} [properties] Properties to set
      */
-    function OidcSetting(properties) {
+    function AuthSettingsRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -381,103 +619,38 @@ export const OidcSetting = $root.OidcSetting = (() => {
     }
 
     /**
-     * OidcSetting enabled.
-     * @member {boolean} enabled
-     * @memberof OidcSetting
-     * @instance
-     */
-    OidcSetting.prototype.enabled = false;
-
-    /**
-     * OidcSetting name.
-     * @member {string} name
-     * @memberof OidcSetting
-     * @instance
-     */
-    OidcSetting.prototype.name = "";
-
-    /**
-     * OidcSetting url.
-     * @member {string} url
-     * @memberof OidcSetting
-     * @instance
-     */
-    OidcSetting.prototype.url = "";
-
-    /**
-     * OidcSetting end_session_endpoint.
-     * @member {string} end_session_endpoint
-     * @memberof OidcSetting
-     * @instance
-     */
-    OidcSetting.prototype.end_session_endpoint = "";
-
-    /**
-     * OidcSetting state.
-     * @member {string} state
-     * @memberof OidcSetting
-     * @instance
-     */
-    OidcSetting.prototype.state = "";
-
-    /**
-     * Encodes the specified OidcSetting message. Does not implicitly {@link OidcSetting.verify|verify} messages.
+     * Encodes the specified AuthSettingsRequest message. Does not implicitly {@link AuthSettingsRequest.verify|verify} messages.
      * @function encode
-     * @memberof OidcSetting
+     * @memberof AuthSettingsRequest
      * @static
-     * @param {OidcSetting} message OidcSetting message or plain object to encode
+     * @param {AuthSettingsRequest} message AuthSettingsRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    OidcSetting.encode = function encode(message, writer) {
+    AuthSettingsRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
-        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
-        if (message.url != null && Object.hasOwnProperty.call(message, "url"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.url);
-        if (message.end_session_endpoint != null && Object.hasOwnProperty.call(message, "end_session_endpoint"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.end_session_endpoint);
-        if (message.state != null && Object.hasOwnProperty.call(message, "state"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.state);
         return writer;
     };
 
     /**
-     * Decodes an OidcSetting message from the specified reader or buffer.
+     * Decodes an AuthSettingsRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof OidcSetting
+     * @memberof AuthSettingsRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {OidcSetting} OidcSetting
+     * @returns {AuthSettingsRequest} AuthSettingsRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    OidcSetting.decode = function decode(reader, length) {
+    AuthSettingsRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.OidcSetting();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthSettingsRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
-            case 1:
-                message.enabled = reader.bool();
-                break;
-            case 2:
-                message.name = reader.string();
-                break;
-            case 3:
-                message.url = reader.string();
-                break;
-            case 4:
-                message.end_session_endpoint = reader.string();
-                break;
-            case 5:
-                message.state = reader.string();
-                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -486,27 +659,27 @@ export const OidcSetting = $root.OidcSetting = (() => {
         return message;
     };
 
-    return OidcSetting;
+    return AuthSettingsRequest;
 })();
 
-export const SettingsResponse = $root.SettingsResponse = (() => {
+export const AuthSettingsResponse = $root.AuthSettingsResponse = (() => {
 
     /**
-     * Properties of a SettingsResponse.
-     * @exports ISettingsResponse
-     * @interface ISettingsResponse
-     * @property {Array.<OidcSetting>|null} [items] SettingsResponse items
+     * Properties of an AuthSettingsResponse.
+     * @exports IAuthSettingsResponse
+     * @interface IAuthSettingsResponse
+     * @property {Array.<AuthSettingsResponse.OidcSetting>|null} [items] AuthSettingsResponse items
      */
 
     /**
-     * Constructs a new SettingsResponse.
-     * @exports SettingsResponse
-     * @classdesc Represents a SettingsResponse.
-     * @implements ISettingsResponse
+     * Constructs a new AuthSettingsResponse.
+     * @exports AuthSettingsResponse
+     * @classdesc Represents an AuthSettingsResponse.
+     * @implements IAuthSettingsResponse
      * @constructor
-     * @param {ISettingsResponse=} [properties] Properties to set
+     * @param {IAuthSettingsResponse=} [properties] Properties to set
      */
-    function SettingsResponse(properties) {
+    function AuthSettingsResponse(properties) {
         this.items = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -515,53 +688,53 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
     }
 
     /**
-     * SettingsResponse items.
-     * @member {Array.<OidcSetting>} items
-     * @memberof SettingsResponse
+     * AuthSettingsResponse items.
+     * @member {Array.<AuthSettingsResponse.OidcSetting>} items
+     * @memberof AuthSettingsResponse
      * @instance
      */
-    SettingsResponse.prototype.items = $util.emptyArray;
+    AuthSettingsResponse.prototype.items = $util.emptyArray;
 
     /**
-     * Encodes the specified SettingsResponse message. Does not implicitly {@link SettingsResponse.verify|verify} messages.
+     * Encodes the specified AuthSettingsResponse message. Does not implicitly {@link AuthSettingsResponse.verify|verify} messages.
      * @function encode
-     * @memberof SettingsResponse
+     * @memberof AuthSettingsResponse
      * @static
-     * @param {SettingsResponse} message SettingsResponse message or plain object to encode
+     * @param {AuthSettingsResponse} message AuthSettingsResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    SettingsResponse.encode = function encode(message, writer) {
+    AuthSettingsResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.items != null && message.items.length)
             for (let i = 0; i < message.items.length; ++i)
-                $root.OidcSetting.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.AuthSettingsResponse.OidcSetting.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes a SettingsResponse message from the specified reader or buffer.
+     * Decodes an AuthSettingsResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof SettingsResponse
+     * @memberof AuthSettingsResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {SettingsResponse} SettingsResponse
+     * @returns {AuthSettingsResponse} AuthSettingsResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    SettingsResponse.decode = function decode(reader, length) {
+    AuthSettingsResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.SettingsResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthSettingsResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
                 if (!(message.items && message.items.length))
                     message.items = [];
-                message.items.push($root.OidcSetting.decode(reader, reader.uint32()));
+                message.items.push($root.AuthSettingsResponse.OidcSetting.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -571,88 +744,144 @@ export const SettingsResponse = $root.SettingsResponse = (() => {
         return message;
     };
 
-    return SettingsResponse;
-})();
+    AuthSettingsResponse.OidcSetting = (function() {
 
-export const ExchangeRequest = $root.ExchangeRequest = (() => {
+        /**
+         * Properties of an OidcSetting.
+         * @memberof AuthSettingsResponse
+         * @interface IOidcSetting
+         * @property {boolean|null} [enabled] OidcSetting enabled
+         * @property {string|null} [name] OidcSetting name
+         * @property {string|null} [url] OidcSetting url
+         * @property {string|null} [end_session_endpoint] OidcSetting end_session_endpoint
+         * @property {string|null} [state] OidcSetting state
+         */
 
-    /**
-     * Properties of an ExchangeRequest.
-     * @exports IExchangeRequest
-     * @interface IExchangeRequest
-     * @property {string|null} [code] ExchangeRequest code
-     */
-
-    /**
-     * Constructs a new ExchangeRequest.
-     * @exports ExchangeRequest
-     * @classdesc Represents an ExchangeRequest.
-     * @implements IExchangeRequest
-     * @constructor
-     * @param {IExchangeRequest=} [properties] Properties to set
-     */
-    function ExchangeRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ExchangeRequest code.
-     * @member {string} code
-     * @memberof ExchangeRequest
-     * @instance
-     */
-    ExchangeRequest.prototype.code = "";
-
-    /**
-     * Encodes the specified ExchangeRequest message. Does not implicitly {@link ExchangeRequest.verify|verify} messages.
-     * @function encode
-     * @memberof ExchangeRequest
-     * @static
-     * @param {ExchangeRequest} message ExchangeRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ExchangeRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.code != null && Object.hasOwnProperty.call(message, "code"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.code);
-        return writer;
-    };
-
-    /**
-     * Decodes an ExchangeRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof ExchangeRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ExchangeRequest} ExchangeRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ExchangeRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ExchangeRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.code = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
+        /**
+         * Constructs a new OidcSetting.
+         * @memberof AuthSettingsResponse
+         * @classdesc Represents an OidcSetting.
+         * @implements IOidcSetting
+         * @constructor
+         * @param {AuthSettingsResponse.IOidcSetting=} [properties] Properties to set
+         */
+        function OidcSetting(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
         }
-        return message;
-    };
 
-    return ExchangeRequest;
+        /**
+         * OidcSetting enabled.
+         * @member {boolean} enabled
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @instance
+         */
+        OidcSetting.prototype.enabled = false;
+
+        /**
+         * OidcSetting name.
+         * @member {string} name
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @instance
+         */
+        OidcSetting.prototype.name = "";
+
+        /**
+         * OidcSetting url.
+         * @member {string} url
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @instance
+         */
+        OidcSetting.prototype.url = "";
+
+        /**
+         * OidcSetting end_session_endpoint.
+         * @member {string} end_session_endpoint
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @instance
+         */
+        OidcSetting.prototype.end_session_endpoint = "";
+
+        /**
+         * OidcSetting state.
+         * @member {string} state
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @instance
+         */
+        OidcSetting.prototype.state = "";
+
+        /**
+         * Encodes the specified OidcSetting message. Does not implicitly {@link AuthSettingsResponse.OidcSetting.verify|verify} messages.
+         * @function encode
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @static
+         * @param {AuthSettingsResponse.OidcSetting} message OidcSetting message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        OidcSetting.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
+                writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
+            if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+            if (message.url != null && Object.hasOwnProperty.call(message, "url"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.url);
+            if (message.end_session_endpoint != null && Object.hasOwnProperty.call(message, "end_session_endpoint"))
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.end_session_endpoint);
+            if (message.state != null && Object.hasOwnProperty.call(message, "state"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.state);
+            return writer;
+        };
+
+        /**
+         * Decodes an OidcSetting message from the specified reader or buffer.
+         * @function decode
+         * @memberof AuthSettingsResponse.OidcSetting
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {AuthSettingsResponse.OidcSetting} OidcSetting
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        OidcSetting.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AuthSettingsResponse.OidcSetting();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.enabled = reader.bool();
+                    break;
+                case 2:
+                    message.name = reader.string();
+                    break;
+                case 3:
+                    message.url = reader.string();
+                    break;
+                case 4:
+                    message.end_session_endpoint = reader.string();
+                    break;
+                case 5:
+                    message.state = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return OidcSetting;
+    })();
+
+    return AuthSettingsResponse;
 })();
 
 export const Auth = $root.Auth = (() => {
@@ -679,7 +908,7 @@ export const Auth = $root.Auth = (() => {
      * @typedef LoginCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {LoginResponse} [response] LoginResponse
+     * @param {AuthLoginResponse} [response] AuthLoginResponse
      */
 
     /**
@@ -687,13 +916,13 @@ export const Auth = $root.Auth = (() => {
      * @function login
      * @memberof Auth
      * @instance
-     * @param {LoginRequest} request LoginRequest message or plain object
-     * @param {Auth.LoginCallback} callback Node-style callback called with the error, if any, and LoginResponse
+     * @param {AuthLoginRequest} request AuthLoginRequest message or plain object
+     * @param {Auth.LoginCallback} callback Node-style callback called with the error, if any, and AuthLoginResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Auth.prototype.login = function login(request, callback) {
-        return this.rpcCall(login, $root.LoginRequest, $root.LoginResponse, request, callback);
+        return this.rpcCall(login, $root.AuthLoginRequest, $root.AuthLoginResponse, request, callback);
     }, "name", { value: "Login" });
 
     /**
@@ -701,8 +930,8 @@ export const Auth = $root.Auth = (() => {
      * @function login
      * @memberof Auth
      * @instance
-     * @param {LoginRequest} request LoginRequest message or plain object
-     * @returns {Promise<LoginResponse>} Promise
+     * @param {AuthLoginRequest} request AuthLoginRequest message or plain object
+     * @returns {Promise<AuthLoginResponse>} Promise
      * @variation 2
      */
 
@@ -712,7 +941,7 @@ export const Auth = $root.Auth = (() => {
      * @typedef InfoCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {InfoResponse} [response] InfoResponse
+     * @param {AuthInfoResponse} [response] AuthInfoResponse
      */
 
     /**
@@ -720,13 +949,13 @@ export const Auth = $root.Auth = (() => {
      * @function info
      * @memberof Auth
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Auth.InfoCallback} callback Node-style callback called with the error, if any, and InfoResponse
+     * @param {AuthInfoRequest} request AuthInfoRequest message or plain object
+     * @param {Auth.InfoCallback} callback Node-style callback called with the error, if any, and AuthInfoResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Auth.prototype.info = function info(request, callback) {
-        return this.rpcCall(info, $root.google.protobuf.Empty, $root.InfoResponse, request, callback);
+        return this.rpcCall(info, $root.AuthInfoRequest, $root.AuthInfoResponse, request, callback);
     }, "name", { value: "Info" });
 
     /**
@@ -734,8 +963,8 @@ export const Auth = $root.Auth = (() => {
      * @function info
      * @memberof Auth
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<InfoResponse>} Promise
+     * @param {AuthInfoRequest} request AuthInfoRequest message or plain object
+     * @returns {Promise<AuthInfoResponse>} Promise
      * @variation 2
      */
 
@@ -745,7 +974,7 @@ export const Auth = $root.Auth = (() => {
      * @typedef SettingsCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {SettingsResponse} [response] SettingsResponse
+     * @param {AuthSettingsResponse} [response] AuthSettingsResponse
      */
 
     /**
@@ -753,13 +982,13 @@ export const Auth = $root.Auth = (() => {
      * @function settings
      * @memberof Auth
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Auth.SettingsCallback} callback Node-style callback called with the error, if any, and SettingsResponse
+     * @param {AuthSettingsRequest} request AuthSettingsRequest message or plain object
+     * @param {Auth.SettingsCallback} callback Node-style callback called with the error, if any, and AuthSettingsResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Auth.prototype.settings = function settings(request, callback) {
-        return this.rpcCall(settings, $root.google.protobuf.Empty, $root.SettingsResponse, request, callback);
+        return this.rpcCall(settings, $root.AuthSettingsRequest, $root.AuthSettingsResponse, request, callback);
     }, "name", { value: "Settings" });
 
     /**
@@ -767,8 +996,8 @@ export const Auth = $root.Auth = (() => {
      * @function settings
      * @memberof Auth
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<SettingsResponse>} Promise
+     * @param {AuthSettingsRequest} request AuthSettingsRequest message or plain object
+     * @returns {Promise<AuthSettingsResponse>} Promise
      * @variation 2
      */
 
@@ -778,7 +1007,7 @@ export const Auth = $root.Auth = (() => {
      * @typedef ExchangeCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {LoginResponse} [response] LoginResponse
+     * @param {AuthExchangeResponse} [response] AuthExchangeResponse
      */
 
     /**
@@ -786,13 +1015,13 @@ export const Auth = $root.Auth = (() => {
      * @function exchange
      * @memberof Auth
      * @instance
-     * @param {ExchangeRequest} request ExchangeRequest message or plain object
-     * @param {Auth.ExchangeCallback} callback Node-style callback called with the error, if any, and LoginResponse
+     * @param {AuthExchangeRequest} request AuthExchangeRequest message or plain object
+     * @param {Auth.ExchangeCallback} callback Node-style callback called with the error, if any, and AuthExchangeResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Auth.prototype.exchange = function exchange(request, callback) {
-        return this.rpcCall(exchange, $root.ExchangeRequest, $root.LoginResponse, request, callback);
+        return this.rpcCall(exchange, $root.AuthExchangeRequest, $root.AuthExchangeResponse, request, callback);
     }, "name", { value: "Exchange" });
 
     /**
@@ -800,5551 +1029,12 @@ export const Auth = $root.Auth = (() => {
      * @function exchange
      * @memberof Auth
      * @instance
-     * @param {ExchangeRequest} request ExchangeRequest message or plain object
-     * @returns {Promise<LoginResponse>} Promise
+     * @param {AuthExchangeRequest} request AuthExchangeRequest message or plain object
+     * @returns {Promise<AuthExchangeResponse>} Promise
      * @variation 2
      */
 
     return Auth;
-})();
-
-export const ChangelogGetRequest = $root.ChangelogGetRequest = (() => {
-
-    /**
-     * Properties of a ChangelogGetRequest.
-     * @exports IChangelogGetRequest
-     * @interface IChangelogGetRequest
-     * @property {number|null} [project_id] ChangelogGetRequest project_id
-     * @property {boolean|null} [only_changed] ChangelogGetRequest only_changed
-     */
-
-    /**
-     * Constructs a new ChangelogGetRequest.
-     * @exports ChangelogGetRequest
-     * @classdesc Represents a ChangelogGetRequest.
-     * @implements IChangelogGetRequest
-     * @constructor
-     * @param {IChangelogGetRequest=} [properties] Properties to set
-     */
-    function ChangelogGetRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ChangelogGetRequest project_id.
-     * @member {number} project_id
-     * @memberof ChangelogGetRequest
-     * @instance
-     */
-    ChangelogGetRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ChangelogGetRequest only_changed.
-     * @member {boolean} only_changed
-     * @memberof ChangelogGetRequest
-     * @instance
-     */
-    ChangelogGetRequest.prototype.only_changed = false;
-
-    /**
-     * Encodes the specified ChangelogGetRequest message. Does not implicitly {@link ChangelogGetRequest.verify|verify} messages.
-     * @function encode
-     * @memberof ChangelogGetRequest
-     * @static
-     * @param {ChangelogGetRequest} message ChangelogGetRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ChangelogGetRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        if (message.only_changed != null && Object.hasOwnProperty.call(message, "only_changed"))
-            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.only_changed);
-        return writer;
-    };
-
-    /**
-     * Decodes a ChangelogGetRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof ChangelogGetRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ChangelogGetRequest} ChangelogGetRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ChangelogGetRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogGetRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            case 2:
-                message.only_changed = reader.bool();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ChangelogGetRequest;
-})();
-
-export const ChangelogGetResponse = $root.ChangelogGetResponse = (() => {
-
-    /**
-     * Properties of a ChangelogGetResponse.
-     * @exports IChangelogGetResponse
-     * @interface IChangelogGetResponse
-     * @property {Array.<ChangelogGetResponse.Item>|null} [items] ChangelogGetResponse items
-     */
-
-    /**
-     * Constructs a new ChangelogGetResponse.
-     * @exports ChangelogGetResponse
-     * @classdesc Represents a ChangelogGetResponse.
-     * @implements IChangelogGetResponse
-     * @constructor
-     * @param {IChangelogGetResponse=} [properties] Properties to set
-     */
-    function ChangelogGetResponse(properties) {
-        this.items = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ChangelogGetResponse items.
-     * @member {Array.<ChangelogGetResponse.Item>} items
-     * @memberof ChangelogGetResponse
-     * @instance
-     */
-    ChangelogGetResponse.prototype.items = $util.emptyArray;
-
-    /**
-     * Encodes the specified ChangelogGetResponse message. Does not implicitly {@link ChangelogGetResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ChangelogGetResponse
-     * @static
-     * @param {ChangelogGetResponse} message ChangelogGetResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ChangelogGetResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.items != null && message.items.length)
-            for (let i = 0; i < message.items.length; ++i)
-                $root.ChangelogGetResponse.Item.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a ChangelogGetResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ChangelogGetResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ChangelogGetResponse} ChangelogGetResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ChangelogGetResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogGetResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                if (!(message.items && message.items.length))
-                    message.items = [];
-                message.items.push($root.ChangelogGetResponse.Item.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    ChangelogGetResponse.Item = (function() {
-
-        /**
-         * Properties of an Item.
-         * @memberof ChangelogGetResponse
-         * @interface IItem
-         * @property {number|null} [version] Item version
-         * @property {string|null} [config] Item config
-         * @property {string|null} [date] Item date
-         * @property {string|null} [username] Item username
-         */
-
-        /**
-         * Constructs a new Item.
-         * @memberof ChangelogGetResponse
-         * @classdesc Represents an Item.
-         * @implements IItem
-         * @constructor
-         * @param {ChangelogGetResponse.IItem=} [properties] Properties to set
-         */
-        function Item(properties) {
-            if (properties)
-                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
-                        this[keys[i]] = properties[keys[i]];
-        }
-
-        /**
-         * Item version.
-         * @member {number} version
-         * @memberof ChangelogGetResponse.Item
-         * @instance
-         */
-        Item.prototype.version = 0;
-
-        /**
-         * Item config.
-         * @member {string} config
-         * @memberof ChangelogGetResponse.Item
-         * @instance
-         */
-        Item.prototype.config = "";
-
-        /**
-         * Item date.
-         * @member {string} date
-         * @memberof ChangelogGetResponse.Item
-         * @instance
-         */
-        Item.prototype.date = "";
-
-        /**
-         * Item username.
-         * @member {string} username
-         * @memberof ChangelogGetResponse.Item
-         * @instance
-         */
-        Item.prototype.username = "";
-
-        /**
-         * Encodes the specified Item message. Does not implicitly {@link ChangelogGetResponse.Item.verify|verify} messages.
-         * @function encode
-         * @memberof ChangelogGetResponse.Item
-         * @static
-         * @param {ChangelogGetResponse.Item} message Item message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        Item.encode = function encode(message, writer) {
-            if (!writer)
-                writer = $Writer.create();
-            if (message.version != null && Object.hasOwnProperty.call(message, "version"))
-                writer.uint32(/* id 1, wireType 0 =*/8).int32(message.version);
-            if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-                writer.uint32(/* id 2, wireType 2 =*/18).string(message.config);
-            if (message.date != null && Object.hasOwnProperty.call(message, "date"))
-                writer.uint32(/* id 3, wireType 2 =*/26).string(message.date);
-            if (message.username != null && Object.hasOwnProperty.call(message, "username"))
-                writer.uint32(/* id 4, wireType 2 =*/34).string(message.username);
-            return writer;
-        };
-
-        /**
-         * Decodes an Item message from the specified reader or buffer.
-         * @function decode
-         * @memberof ChangelogGetResponse.Item
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @param {number} [length] Message length if known beforehand
-         * @returns {ChangelogGetResponse.Item} Item
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        Item.decode = function decode(reader, length) {
-            if (!(reader instanceof $Reader))
-                reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogGetResponse.Item();
-            while (reader.pos < end) {
-                let tag = reader.uint32();
-                switch (tag >>> 3) {
-                case 1:
-                    message.version = reader.int32();
-                    break;
-                case 2:
-                    message.config = reader.string();
-                    break;
-                case 3:
-                    message.date = reader.string();
-                    break;
-                case 4:
-                    message.username = reader.string();
-                    break;
-                default:
-                    reader.skipType(tag & 7);
-                    break;
-                }
-            }
-            return message;
-        };
-
-        return Item;
-    })();
-
-    return ChangelogGetResponse;
-})();
-
-export const Changelog = $root.Changelog = (() => {
-
-    /**
-     * Constructs a new Changelog service.
-     * @exports Changelog
-     * @classdesc Represents a Changelog
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Changelog(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Changelog.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Changelog;
-
-    /**
-     * Callback as used by {@link Changelog#get}.
-     * @memberof Changelog
-     * @typedef GetCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ChangelogGetResponse} [response] ChangelogGetResponse
-     */
-
-    /**
-     * Calls Get.
-     * @function get
-     * @memberof Changelog
-     * @instance
-     * @param {ChangelogGetRequest} request ChangelogGetRequest message or plain object
-     * @param {Changelog.GetCallback} callback Node-style callback called with the error, if any, and ChangelogGetResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Changelog.prototype.get = function get(request, callback) {
-        return this.rpcCall(get, $root.ChangelogGetRequest, $root.ChangelogGetResponse, request, callback);
-    }, "name", { value: "Get" });
-
-    /**
-     * Calls Get.
-     * @function get
-     * @memberof Changelog
-     * @instance
-     * @param {ChangelogGetRequest} request ChangelogGetRequest message or plain object
-     * @returns {Promise<ChangelogGetResponse>} Promise
-     * @variation 2
-     */
-
-    return Changelog;
-})();
-
-/**
- * ClusterStatus enum.
- * @exports ClusterStatus
- * @enum {number}
- * @property {number} StatusUnknown=0 StatusUnknown value
- * @property {number} StatusBad=1 StatusBad value
- * @property {number} StatusNotGood=2 StatusNotGood value
- * @property {number} StatusHealth=3 StatusHealth value
- */
-export const ClusterStatus = $root.ClusterStatus = (() => {
-    const valuesById = {}, values = Object.create(valuesById);
-    values[valuesById[0] = "StatusUnknown"] = 0;
-    values[valuesById[1] = "StatusBad"] = 1;
-    values[valuesById[2] = "StatusNotGood"] = 2;
-    values[valuesById[3] = "StatusHealth"] = 3;
-    return values;
-})();
-
-export const ClusterInfoResponse = $root.ClusterInfoResponse = (() => {
-
-    /**
-     * Properties of a ClusterInfoResponse.
-     * @exports IClusterInfoResponse
-     * @interface IClusterInfoResponse
-     * @property {string|null} [status] ClusterInfoResponse status
-     * @property {string|null} [free_memory] ClusterInfoResponse free_memory
-     * @property {string|null} [free_cpu] ClusterInfoResponse free_cpu
-     * @property {string|null} [free_request_memory] ClusterInfoResponse free_request_memory
-     * @property {string|null} [free_request_cpu] ClusterInfoResponse free_request_cpu
-     * @property {string|null} [total_memory] ClusterInfoResponse total_memory
-     * @property {string|null} [total_cpu] ClusterInfoResponse total_cpu
-     * @property {string|null} [usage_memory_rate] ClusterInfoResponse usage_memory_rate
-     * @property {string|null} [usage_cpu_rate] ClusterInfoResponse usage_cpu_rate
-     * @property {string|null} [request_memory_rate] ClusterInfoResponse request_memory_rate
-     * @property {string|null} [request_cpu_rate] ClusterInfoResponse request_cpu_rate
-     */
-
-    /**
-     * Constructs a new ClusterInfoResponse.
-     * @exports ClusterInfoResponse
-     * @classdesc Represents a ClusterInfoResponse.
-     * @implements IClusterInfoResponse
-     * @constructor
-     * @param {IClusterInfoResponse=} [properties] Properties to set
-     */
-    function ClusterInfoResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ClusterInfoResponse status.
-     * @member {string} status
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.status = "";
-
-    /**
-     * ClusterInfoResponse free_memory.
-     * @member {string} free_memory
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.free_memory = "";
-
-    /**
-     * ClusterInfoResponse free_cpu.
-     * @member {string} free_cpu
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.free_cpu = "";
-
-    /**
-     * ClusterInfoResponse free_request_memory.
-     * @member {string} free_request_memory
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.free_request_memory = "";
-
-    /**
-     * ClusterInfoResponse free_request_cpu.
-     * @member {string} free_request_cpu
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.free_request_cpu = "";
-
-    /**
-     * ClusterInfoResponse total_memory.
-     * @member {string} total_memory
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.total_memory = "";
-
-    /**
-     * ClusterInfoResponse total_cpu.
-     * @member {string} total_cpu
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.total_cpu = "";
-
-    /**
-     * ClusterInfoResponse usage_memory_rate.
-     * @member {string} usage_memory_rate
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.usage_memory_rate = "";
-
-    /**
-     * ClusterInfoResponse usage_cpu_rate.
-     * @member {string} usage_cpu_rate
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.usage_cpu_rate = "";
-
-    /**
-     * ClusterInfoResponse request_memory_rate.
-     * @member {string} request_memory_rate
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.request_memory_rate = "";
-
-    /**
-     * ClusterInfoResponse request_cpu_rate.
-     * @member {string} request_cpu_rate
-     * @memberof ClusterInfoResponse
-     * @instance
-     */
-    ClusterInfoResponse.prototype.request_cpu_rate = "";
-
-    /**
-     * Encodes the specified ClusterInfoResponse message. Does not implicitly {@link ClusterInfoResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ClusterInfoResponse
-     * @static
-     * @param {ClusterInfoResponse} message ClusterInfoResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ClusterInfoResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.status != null && Object.hasOwnProperty.call(message, "status"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.status);
-        if (message.free_memory != null && Object.hasOwnProperty.call(message, "free_memory"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.free_memory);
-        if (message.free_cpu != null && Object.hasOwnProperty.call(message, "free_cpu"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.free_cpu);
-        if (message.free_request_memory != null && Object.hasOwnProperty.call(message, "free_request_memory"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.free_request_memory);
-        if (message.free_request_cpu != null && Object.hasOwnProperty.call(message, "free_request_cpu"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.free_request_cpu);
-        if (message.total_memory != null && Object.hasOwnProperty.call(message, "total_memory"))
-            writer.uint32(/* id 6, wireType 2 =*/50).string(message.total_memory);
-        if (message.total_cpu != null && Object.hasOwnProperty.call(message, "total_cpu"))
-            writer.uint32(/* id 7, wireType 2 =*/58).string(message.total_cpu);
-        if (message.usage_memory_rate != null && Object.hasOwnProperty.call(message, "usage_memory_rate"))
-            writer.uint32(/* id 8, wireType 2 =*/66).string(message.usage_memory_rate);
-        if (message.usage_cpu_rate != null && Object.hasOwnProperty.call(message, "usage_cpu_rate"))
-            writer.uint32(/* id 9, wireType 2 =*/74).string(message.usage_cpu_rate);
-        if (message.request_memory_rate != null && Object.hasOwnProperty.call(message, "request_memory_rate"))
-            writer.uint32(/* id 10, wireType 2 =*/82).string(message.request_memory_rate);
-        if (message.request_cpu_rate != null && Object.hasOwnProperty.call(message, "request_cpu_rate"))
-            writer.uint32(/* id 11, wireType 2 =*/90).string(message.request_cpu_rate);
-        return writer;
-    };
-
-    /**
-     * Decodes a ClusterInfoResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ClusterInfoResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ClusterInfoResponse} ClusterInfoResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ClusterInfoResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ClusterInfoResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.status = reader.string();
-                break;
-            case 2:
-                message.free_memory = reader.string();
-                break;
-            case 3:
-                message.free_cpu = reader.string();
-                break;
-            case 4:
-                message.free_request_memory = reader.string();
-                break;
-            case 5:
-                message.free_request_cpu = reader.string();
-                break;
-            case 6:
-                message.total_memory = reader.string();
-                break;
-            case 7:
-                message.total_cpu = reader.string();
-                break;
-            case 8:
-                message.usage_memory_rate = reader.string();
-                break;
-            case 9:
-                message.usage_cpu_rate = reader.string();
-                break;
-            case 10:
-                message.request_memory_rate = reader.string();
-                break;
-            case 11:
-                message.request_cpu_rate = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ClusterInfoResponse;
-})();
-
-export const Cluster = $root.Cluster = (() => {
-
-    /**
-     * Constructs a new Cluster service.
-     * @exports Cluster
-     * @classdesc Represents a Cluster
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Cluster(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Cluster.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Cluster;
-
-    /**
-     * Callback as used by {@link Cluster#info}.
-     * @memberof Cluster
-     * @typedef InfoCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ClusterInfoResponse} [response] ClusterInfoResponse
-     */
-
-    /**
-     * Calls Info.
-     * @function info
-     * @memberof Cluster
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Cluster.InfoCallback} callback Node-style callback called with the error, if any, and ClusterInfoResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Cluster.prototype.info = function info(request, callback) {
-        return this.rpcCall(info, $root.google.protobuf.Empty, $root.ClusterInfoResponse, request, callback);
-    }, "name", { value: "Info" });
-
-    /**
-     * Calls Info.
-     * @function info
-     * @memberof Cluster
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<ClusterInfoResponse>} Promise
-     * @variation 2
-     */
-
-    return Cluster;
-})();
-
-export const CopyToPodRequest = $root.CopyToPodRequest = (() => {
-
-    /**
-     * Properties of a CopyToPodRequest.
-     * @exports ICopyToPodRequest
-     * @interface ICopyToPodRequest
-     * @property {number|null} [file_id] CopyToPodRequest file_id
-     * @property {string|null} [namespace] CopyToPodRequest namespace
-     * @property {string|null} [pod] CopyToPodRequest pod
-     * @property {string|null} [container] CopyToPodRequest container
-     */
-
-    /**
-     * Constructs a new CopyToPodRequest.
-     * @exports CopyToPodRequest
-     * @classdesc Represents a CopyToPodRequest.
-     * @implements ICopyToPodRequest
-     * @constructor
-     * @param {ICopyToPodRequest=} [properties] Properties to set
-     */
-    function CopyToPodRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CopyToPodRequest file_id.
-     * @member {number} file_id
-     * @memberof CopyToPodRequest
-     * @instance
-     */
-    CopyToPodRequest.prototype.file_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * CopyToPodRequest namespace.
-     * @member {string} namespace
-     * @memberof CopyToPodRequest
-     * @instance
-     */
-    CopyToPodRequest.prototype.namespace = "";
-
-    /**
-     * CopyToPodRequest pod.
-     * @member {string} pod
-     * @memberof CopyToPodRequest
-     * @instance
-     */
-    CopyToPodRequest.prototype.pod = "";
-
-    /**
-     * CopyToPodRequest container.
-     * @member {string} container
-     * @memberof CopyToPodRequest
-     * @instance
-     */
-    CopyToPodRequest.prototype.container = "";
-
-    /**
-     * Encodes the specified CopyToPodRequest message. Does not implicitly {@link CopyToPodRequest.verify|verify} messages.
-     * @function encode
-     * @memberof CopyToPodRequest
-     * @static
-     * @param {CopyToPodRequest} message CopyToPodRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CopyToPodRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.file_id != null && Object.hasOwnProperty.call(message, "file_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.file_id);
-        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.namespace);
-        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.pod);
-        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.container);
-        return writer;
-    };
-
-    /**
-     * Decodes a CopyToPodRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof CopyToPodRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CopyToPodRequest} CopyToPodRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CopyToPodRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CopyToPodRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.file_id = reader.int64();
-                break;
-            case 2:
-                message.namespace = reader.string();
-                break;
-            case 3:
-                message.pod = reader.string();
-                break;
-            case 4:
-                message.container = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CopyToPodRequest;
-})();
-
-export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
-
-    /**
-     * Properties of a CopyToPodResponse.
-     * @exports ICopyToPodResponse
-     * @interface ICopyToPodResponse
-     * @property {string|null} [podFilePath] CopyToPodResponse podFilePath
-     * @property {string|null} [output] CopyToPodResponse output
-     */
-
-    /**
-     * Constructs a new CopyToPodResponse.
-     * @exports CopyToPodResponse
-     * @classdesc Represents a CopyToPodResponse.
-     * @implements ICopyToPodResponse
-     * @constructor
-     * @param {ICopyToPodResponse=} [properties] Properties to set
-     */
-    function CopyToPodResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CopyToPodResponse podFilePath.
-     * @member {string} podFilePath
-     * @memberof CopyToPodResponse
-     * @instance
-     */
-    CopyToPodResponse.prototype.podFilePath = "";
-
-    /**
-     * CopyToPodResponse output.
-     * @member {string} output
-     * @memberof CopyToPodResponse
-     * @instance
-     */
-    CopyToPodResponse.prototype.output = "";
-
-    /**
-     * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
-     * @function encode
-     * @memberof CopyToPodResponse
-     * @static
-     * @param {CopyToPodResponse} message CopyToPodResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CopyToPodResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.podFilePath != null && Object.hasOwnProperty.call(message, "podFilePath"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.podFilePath);
-        if (message.output != null && Object.hasOwnProperty.call(message, "output"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.output);
-        return writer;
-    };
-
-    /**
-     * Decodes a CopyToPodResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof CopyToPodResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CopyToPodResponse} CopyToPodResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CopyToPodResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CopyToPodResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.podFilePath = reader.string();
-                break;
-            case 2:
-                message.output = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CopyToPodResponse;
-})();
-
-export const Cp = $root.Cp = (() => {
-
-    /**
-     * Constructs a new Cp service.
-     * @exports Cp
-     * @classdesc Represents a Cp
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Cp(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Cp.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Cp;
-
-    /**
-     * Callback as used by {@link Cp#copyToPod}.
-     * @memberof Cp
-     * @typedef CopyToPodCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {CopyToPodResponse} [response] CopyToPodResponse
-     */
-
-    /**
-     * Calls CopyToPod.
-     * @function copyToPod
-     * @memberof Cp
-     * @instance
-     * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
-     * @param {Cp.CopyToPodCallback} callback Node-style callback called with the error, if any, and CopyToPodResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Cp.prototype.copyToPod = function copyToPod(request, callback) {
-        return this.rpcCall(copyToPod, $root.CopyToPodRequest, $root.CopyToPodResponse, request, callback);
-    }, "name", { value: "CopyToPod" });
-
-    /**
-     * Calls CopyToPod.
-     * @function copyToPod
-     * @memberof Cp
-     * @instance
-     * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
-     * @returns {Promise<CopyToPodResponse>} Promise
-     * @variation 2
-     */
-
-    return Cp;
-})();
-
-export const EventRequest = $root.EventRequest = (() => {
-
-    /**
-     * Properties of an EventRequest.
-     * @exports IEventRequest
-     * @interface IEventRequest
-     * @property {number|null} [page] EventRequest page
-     * @property {number|null} [page_size] EventRequest page_size
-     */
-
-    /**
-     * Constructs a new EventRequest.
-     * @exports EventRequest
-     * @classdesc Represents an EventRequest.
-     * @implements IEventRequest
-     * @constructor
-     * @param {IEventRequest=} [properties] Properties to set
-     */
-    function EventRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * EventRequest page.
-     * @member {number} page
-     * @memberof EventRequest
-     * @instance
-     */
-    EventRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * EventRequest page_size.
-     * @member {number} page_size
-     * @memberof EventRequest
-     * @instance
-     */
-    EventRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * Encodes the specified EventRequest message. Does not implicitly {@link EventRequest.verify|verify} messages.
-     * @function encode
-     * @memberof EventRequest
-     * @static
-     * @param {EventRequest} message EventRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    EventRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
-        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
-        return writer;
-    };
-
-    /**
-     * Decodes an EventRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof EventRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {EventRequest} EventRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    EventRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.page = reader.int64();
-                break;
-            case 2:
-                message.page_size = reader.int64();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return EventRequest;
-})();
-
-/**
- * ActionType enum.
- * @exports ActionType
- * @enum {number}
- * @property {number} Unknown=0 Unknown value
- * @property {number} Create=1 Create value
- * @property {number} Update=2 Update value
- * @property {number} Delete=3 Delete value
- */
-export const ActionType = $root.ActionType = (() => {
-    const valuesById = {}, values = Object.create(valuesById);
-    values[valuesById[0] = "Unknown"] = 0;
-    values[valuesById[1] = "Create"] = 1;
-    values[valuesById[2] = "Update"] = 2;
-    values[valuesById[3] = "Delete"] = 3;
-    return values;
-})();
-
-export const EventList = $root.EventList = (() => {
-
-    /**
-     * Properties of an EventList.
-     * @exports IEventList
-     * @interface IEventList
-     * @property {number|null} [page] EventList page
-     * @property {number|null} [page_size] EventList page_size
-     * @property {Array.<EventList.item>|null} [items] EventList items
-     * @property {number|null} [count] EventList count
-     */
-
-    /**
-     * Constructs a new EventList.
-     * @exports EventList
-     * @classdesc Represents an EventList.
-     * @implements IEventList
-     * @constructor
-     * @param {IEventList=} [properties] Properties to set
-     */
-    function EventList(properties) {
-        this.items = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * EventList page.
-     * @member {number} page
-     * @memberof EventList
-     * @instance
-     */
-    EventList.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * EventList page_size.
-     * @member {number} page_size
-     * @memberof EventList
-     * @instance
-     */
-    EventList.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * EventList items.
-     * @member {Array.<EventList.item>} items
-     * @memberof EventList
-     * @instance
-     */
-    EventList.prototype.items = $util.emptyArray;
-
-    /**
-     * EventList count.
-     * @member {number} count
-     * @memberof EventList
-     * @instance
-     */
-    EventList.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * Encodes the specified EventList message. Does not implicitly {@link EventList.verify|verify} messages.
-     * @function encode
-     * @memberof EventList
-     * @static
-     * @param {EventList} message EventList message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    EventList.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
-        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
-        if (message.items != null && message.items.length)
-            for (let i = 0; i < message.items.length; ++i)
-                $root.EventList.item.encode(message.items[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
-        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
-            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.count);
-        return writer;
-    };
-
-    /**
-     * Decodes an EventList message from the specified reader or buffer.
-     * @function decode
-     * @memberof EventList
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {EventList} EventList
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    EventList.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventList();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.page = reader.int64();
-                break;
-            case 2:
-                message.page_size = reader.int64();
-                break;
-            case 3:
-                if (!(message.items && message.items.length))
-                    message.items = [];
-                message.items.push($root.EventList.item.decode(reader, reader.uint32()));
-                break;
-            case 4:
-                message.count = reader.int64();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    EventList.item = (function() {
-
-        /**
-         * Properties of an item.
-         * @memberof EventList
-         * @interface Iitem
-         * @property {number|null} [id] item id
-         * @property {ActionType|null} [action] item action
-         * @property {string|null} [username] item username
-         * @property {string|null} [message] item message
-         * @property {string|null} [old] item old
-         * @property {string|null} ["new"] item new
-         * @property {string|null} [event_at] item event_at
-         */
-
-        /**
-         * Constructs a new item.
-         * @memberof EventList
-         * @classdesc Represents an item.
-         * @implements Iitem
-         * @constructor
-         * @param {EventList.Iitem=} [properties] Properties to set
-         */
-        function item(properties) {
-            if (properties)
-                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
-                        this[keys[i]] = properties[keys[i]];
-        }
-
-        /**
-         * item id.
-         * @member {number} id
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-        /**
-         * item action.
-         * @member {ActionType} action
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.action = 0;
-
-        /**
-         * item username.
-         * @member {string} username
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.username = "";
-
-        /**
-         * item message.
-         * @member {string} message
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.message = "";
-
-        /**
-         * item old.
-         * @member {string} old
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.old = "";
-
-        /**
-         * item new.
-         * @member {string} new
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype["new"] = "";
-
-        /**
-         * item event_at.
-         * @member {string} event_at
-         * @memberof EventList.item
-         * @instance
-         */
-        item.prototype.event_at = "";
-
-        /**
-         * Encodes the specified item message. Does not implicitly {@link EventList.item.verify|verify} messages.
-         * @function encode
-         * @memberof EventList.item
-         * @static
-         * @param {EventList.item} message item message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        item.encode = function encode(message, writer) {
-            if (!writer)
-                writer = $Writer.create();
-            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-            if (message.action != null && Object.hasOwnProperty.call(message, "action"))
-                writer.uint32(/* id 2, wireType 0 =*/16).int32(message.action);
-            if (message.username != null && Object.hasOwnProperty.call(message, "username"))
-                writer.uint32(/* id 3, wireType 2 =*/26).string(message.username);
-            if (message.message != null && Object.hasOwnProperty.call(message, "message"))
-                writer.uint32(/* id 4, wireType 2 =*/34).string(message.message);
-            if (message.old != null && Object.hasOwnProperty.call(message, "old"))
-                writer.uint32(/* id 5, wireType 2 =*/42).string(message.old);
-            if (message["new"] != null && Object.hasOwnProperty.call(message, "new"))
-                writer.uint32(/* id 6, wireType 2 =*/50).string(message["new"]);
-            if (message.event_at != null && Object.hasOwnProperty.call(message, "event_at"))
-                writer.uint32(/* id 7, wireType 2 =*/58).string(message.event_at);
-            return writer;
-        };
-
-        /**
-         * Decodes an item message from the specified reader or buffer.
-         * @function decode
-         * @memberof EventList.item
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @param {number} [length] Message length if known beforehand
-         * @returns {EventList.item} item
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        item.decode = function decode(reader, length) {
-            if (!(reader instanceof $Reader))
-                reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventList.item();
-            while (reader.pos < end) {
-                let tag = reader.uint32();
-                switch (tag >>> 3) {
-                case 1:
-                    message.id = reader.int64();
-                    break;
-                case 2:
-                    message.action = reader.int32();
-                    break;
-                case 3:
-                    message.username = reader.string();
-                    break;
-                case 4:
-                    message.message = reader.string();
-                    break;
-                case 5:
-                    message.old = reader.string();
-                    break;
-                case 6:
-                    message["new"] = reader.string();
-                    break;
-                case 7:
-                    message.event_at = reader.string();
-                    break;
-                default:
-                    reader.skipType(tag & 7);
-                    break;
-                }
-            }
-            return message;
-        };
-
-        return item;
-    })();
-
-    return EventList;
-})();
-
-export const Event = $root.Event = (() => {
-
-    /**
-     * Constructs a new Event service.
-     * @exports Event
-     * @classdesc Represents an Event
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Event(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Event.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Event;
-
-    /**
-     * Callback as used by {@link Event#list}.
-     * @memberof Event
-     * @typedef ListCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {EventList} [response] EventList
-     */
-
-    /**
-     * Calls List.
-     * @function list
-     * @memberof Event
-     * @instance
-     * @param {EventRequest} request EventRequest message or plain object
-     * @param {Event.ListCallback} callback Node-style callback called with the error, if any, and EventList
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Event.prototype.list = function list(request, callback) {
-        return this.rpcCall(list, $root.EventRequest, $root.EventList, request, callback);
-    }, "name", { value: "List" });
-
-    /**
-     * Calls List.
-     * @function list
-     * @memberof Event
-     * @instance
-     * @param {EventRequest} request EventRequest message or plain object
-     * @returns {Promise<EventList>} Promise
-     * @variation 2
-     */
-
-    return Event;
-})();
-
-export const GitlabDestroyRequest = $root.GitlabDestroyRequest = (() => {
-
-    /**
-     * Properties of a GitlabDestroyRequest.
-     * @exports IGitlabDestroyRequest
-     * @interface IGitlabDestroyRequest
-     * @property {string|null} [namespace_id] GitlabDestroyRequest namespace_id
-     * @property {string|null} [project_id] GitlabDestroyRequest project_id
-     */
-
-    /**
-     * Constructs a new GitlabDestroyRequest.
-     * @exports GitlabDestroyRequest
-     * @classdesc Represents a GitlabDestroyRequest.
-     * @implements IGitlabDestroyRequest
-     * @constructor
-     * @param {IGitlabDestroyRequest=} [properties] Properties to set
-     */
-    function GitlabDestroyRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * GitlabDestroyRequest namespace_id.
-     * @member {string} namespace_id
-     * @memberof GitlabDestroyRequest
-     * @instance
-     */
-    GitlabDestroyRequest.prototype.namespace_id = "";
-
-    /**
-     * GitlabDestroyRequest project_id.
-     * @member {string} project_id
-     * @memberof GitlabDestroyRequest
-     * @instance
-     */
-    GitlabDestroyRequest.prototype.project_id = "";
-
-    /**
-     * Encodes the specified GitlabDestroyRequest message. Does not implicitly {@link GitlabDestroyRequest.verify|verify} messages.
-     * @function encode
-     * @memberof GitlabDestroyRequest
-     * @static
-     * @param {GitlabDestroyRequest} message GitlabDestroyRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    GitlabDestroyRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace_id);
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.project_id);
-        return writer;
-    };
-
-    /**
-     * Decodes a GitlabDestroyRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof GitlabDestroyRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {GitlabDestroyRequest} GitlabDestroyRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    GitlabDestroyRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitlabDestroyRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.namespace_id = reader.string();
-                break;
-            case 2:
-                message.project_id = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return GitlabDestroyRequest;
-})();
-
-export const EnableProjectRequest = $root.EnableProjectRequest = (() => {
-
-    /**
-     * Properties of an EnableProjectRequest.
-     * @exports IEnableProjectRequest
-     * @interface IEnableProjectRequest
-     * @property {string|null} [gitlab_project_id] EnableProjectRequest gitlab_project_id
-     */
-
-    /**
-     * Constructs a new EnableProjectRequest.
-     * @exports EnableProjectRequest
-     * @classdesc Represents an EnableProjectRequest.
-     * @implements IEnableProjectRequest
-     * @constructor
-     * @param {IEnableProjectRequest=} [properties] Properties to set
-     */
-    function EnableProjectRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * EnableProjectRequest gitlab_project_id.
-     * @member {string} gitlab_project_id
-     * @memberof EnableProjectRequest
-     * @instance
-     */
-    EnableProjectRequest.prototype.gitlab_project_id = "";
-
-    /**
-     * Encodes the specified EnableProjectRequest message. Does not implicitly {@link EnableProjectRequest.verify|verify} messages.
-     * @function encode
-     * @memberof EnableProjectRequest
-     * @static
-     * @param {EnableProjectRequest} message EnableProjectRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    EnableProjectRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.gitlab_project_id);
-        return writer;
-    };
-
-    /**
-     * Decodes an EnableProjectRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof EnableProjectRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {EnableProjectRequest} EnableProjectRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    EnableProjectRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EnableProjectRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.gitlab_project_id = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return EnableProjectRequest;
-})();
-
-export const DisableProjectRequest = $root.DisableProjectRequest = (() => {
-
-    /**
-     * Properties of a DisableProjectRequest.
-     * @exports IDisableProjectRequest
-     * @interface IDisableProjectRequest
-     * @property {string|null} [gitlab_project_id] DisableProjectRequest gitlab_project_id
-     */
-
-    /**
-     * Constructs a new DisableProjectRequest.
-     * @exports DisableProjectRequest
-     * @classdesc Represents a DisableProjectRequest.
-     * @implements IDisableProjectRequest
-     * @constructor
-     * @param {IDisableProjectRequest=} [properties] Properties to set
-     */
-    function DisableProjectRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * DisableProjectRequest gitlab_project_id.
-     * @member {string} gitlab_project_id
-     * @memberof DisableProjectRequest
-     * @instance
-     */
-    DisableProjectRequest.prototype.gitlab_project_id = "";
-
-    /**
-     * Encodes the specified DisableProjectRequest message. Does not implicitly {@link DisableProjectRequest.verify|verify} messages.
-     * @function encode
-     * @memberof DisableProjectRequest
-     * @static
-     * @param {DisableProjectRequest} message DisableProjectRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    DisableProjectRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.gitlab_project_id);
-        return writer;
-    };
-
-    /**
-     * Decodes a DisableProjectRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof DisableProjectRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {DisableProjectRequest} DisableProjectRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    DisableProjectRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DisableProjectRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.gitlab_project_id = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return DisableProjectRequest;
-})();
-
-export const GitlabProjectInfo = $root.GitlabProjectInfo = (() => {
-
-    /**
-     * Properties of a GitlabProjectInfo.
-     * @exports IGitlabProjectInfo
-     * @interface IGitlabProjectInfo
-     * @property {number|null} [id] GitlabProjectInfo id
-     * @property {string|null} [name] GitlabProjectInfo name
-     * @property {string|null} [path] GitlabProjectInfo path
-     * @property {string|null} [web_url] GitlabProjectInfo web_url
-     * @property {string|null} [avatar_url] GitlabProjectInfo avatar_url
-     * @property {string|null} [description] GitlabProjectInfo description
-     * @property {boolean|null} [enabled] GitlabProjectInfo enabled
-     * @property {boolean|null} [global_enabled] GitlabProjectInfo global_enabled
-     */
-
-    /**
-     * Constructs a new GitlabProjectInfo.
-     * @exports GitlabProjectInfo
-     * @classdesc Represents a GitlabProjectInfo.
-     * @implements IGitlabProjectInfo
-     * @constructor
-     * @param {IGitlabProjectInfo=} [properties] Properties to set
-     */
-    function GitlabProjectInfo(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * GitlabProjectInfo id.
-     * @member {number} id
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * GitlabProjectInfo name.
-     * @member {string} name
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.name = "";
-
-    /**
-     * GitlabProjectInfo path.
-     * @member {string} path
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.path = "";
-
-    /**
-     * GitlabProjectInfo web_url.
-     * @member {string} web_url
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.web_url = "";
-
-    /**
-     * GitlabProjectInfo avatar_url.
-     * @member {string} avatar_url
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.avatar_url = "";
-
-    /**
-     * GitlabProjectInfo description.
-     * @member {string} description
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.description = "";
-
-    /**
-     * GitlabProjectInfo enabled.
-     * @member {boolean} enabled
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.enabled = false;
-
-    /**
-     * GitlabProjectInfo global_enabled.
-     * @member {boolean} global_enabled
-     * @memberof GitlabProjectInfo
-     * @instance
-     */
-    GitlabProjectInfo.prototype.global_enabled = false;
-
-    /**
-     * Encodes the specified GitlabProjectInfo message. Does not implicitly {@link GitlabProjectInfo.verify|verify} messages.
-     * @function encode
-     * @memberof GitlabProjectInfo
-     * @static
-     * @param {GitlabProjectInfo} message GitlabProjectInfo message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    GitlabProjectInfo.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
-        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.path);
-        if (message.web_url != null && Object.hasOwnProperty.call(message, "web_url"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.web_url);
-        if (message.avatar_url != null && Object.hasOwnProperty.call(message, "avatar_url"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.avatar_url);
-        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
-            writer.uint32(/* id 6, wireType 2 =*/50).string(message.description);
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 7, wireType 0 =*/56).bool(message.enabled);
-        if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
-            writer.uint32(/* id 8, wireType 0 =*/64).bool(message.global_enabled);
-        return writer;
-    };
-
-    /**
-     * Decodes a GitlabProjectInfo message from the specified reader or buffer.
-     * @function decode
-     * @memberof GitlabProjectInfo
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {GitlabProjectInfo} GitlabProjectInfo
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    GitlabProjectInfo.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitlabProjectInfo();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.id = reader.int64();
-                break;
-            case 2:
-                message.name = reader.string();
-                break;
-            case 3:
-                message.path = reader.string();
-                break;
-            case 4:
-                message.web_url = reader.string();
-                break;
-            case 5:
-                message.avatar_url = reader.string();
-                break;
-            case 6:
-                message.description = reader.string();
-                break;
-            case 7:
-                message.enabled = reader.bool();
-                break;
-            case 8:
-                message.global_enabled = reader.bool();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return GitlabProjectInfo;
-})();
-
-export const ProjectListResponse = $root.ProjectListResponse = (() => {
-
-    /**
-     * Properties of a ProjectListResponse.
-     * @exports IProjectListResponse
-     * @interface IProjectListResponse
-     * @property {Array.<GitlabProjectInfo>|null} [data] ProjectListResponse data
-     */
-
-    /**
-     * Constructs a new ProjectListResponse.
-     * @exports ProjectListResponse
-     * @classdesc Represents a ProjectListResponse.
-     * @implements IProjectListResponse
-     * @constructor
-     * @param {IProjectListResponse=} [properties] Properties to set
-     */
-    function ProjectListResponse(properties) {
-        this.data = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ProjectListResponse data.
-     * @member {Array.<GitlabProjectInfo>} data
-     * @memberof ProjectListResponse
-     * @instance
-     */
-    ProjectListResponse.prototype.data = $util.emptyArray;
-
-    /**
-     * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ProjectListResponse
-     * @static
-     * @param {ProjectListResponse} message ProjectListResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ProjectListResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && message.data.length)
-            for (let i = 0; i < message.data.length; ++i)
-                $root.GitlabProjectInfo.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a ProjectListResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ProjectListResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectListResponse} ProjectListResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ProjectListResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectListResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                if (!(message.data && message.data.length))
-                    message.data = [];
-                message.data.push($root.GitlabProjectInfo.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ProjectListResponse;
-})();
-
-export const Option = $root.Option = (() => {
-
-    /**
-     * Properties of an Option.
-     * @exports IOption
-     * @interface IOption
-     * @property {string|null} [value] Option value
-     * @property {string|null} [label] Option label
-     * @property {string|null} [type] Option type
-     * @property {boolean|null} [isLeaf] Option isLeaf
-     * @property {string|null} [projectId] Option projectId
-     * @property {string|null} [branch] Option branch
-     */
-
-    /**
-     * Constructs a new Option.
-     * @exports Option
-     * @classdesc Represents an Option.
-     * @implements IOption
-     * @constructor
-     * @param {IOption=} [properties] Properties to set
-     */
-    function Option(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * Option value.
-     * @member {string} value
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.value = "";
-
-    /**
-     * Option label.
-     * @member {string} label
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.label = "";
-
-    /**
-     * Option type.
-     * @member {string} type
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.type = "";
-
-    /**
-     * Option isLeaf.
-     * @member {boolean} isLeaf
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.isLeaf = false;
-
-    /**
-     * Option projectId.
-     * @member {string} projectId
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.projectId = "";
-
-    /**
-     * Option branch.
-     * @member {string} branch
-     * @memberof Option
-     * @instance
-     */
-    Option.prototype.branch = "";
-
-    /**
-     * Encodes the specified Option message. Does not implicitly {@link Option.verify|verify} messages.
-     * @function encode
-     * @memberof Option
-     * @static
-     * @param {Option} message Option message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    Option.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.value != null && Object.hasOwnProperty.call(message, "value"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
-        if (message.label != null && Object.hasOwnProperty.call(message, "label"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.label);
-        if (message.type != null && Object.hasOwnProperty.call(message, "type"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.type);
-        if (message.isLeaf != null && Object.hasOwnProperty.call(message, "isLeaf"))
-            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.isLeaf);
-        if (message.projectId != null && Object.hasOwnProperty.call(message, "projectId"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.projectId);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 6, wireType 2 =*/50).string(message.branch);
-        return writer;
-    };
-
-    /**
-     * Decodes an Option message from the specified reader or buffer.
-     * @function decode
-     * @memberof Option
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {Option} Option
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    Option.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Option();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.value = reader.string();
-                break;
-            case 2:
-                message.label = reader.string();
-                break;
-            case 3:
-                message.type = reader.string();
-                break;
-            case 4:
-                message.isLeaf = reader.bool();
-                break;
-            case 5:
-                message.projectId = reader.string();
-                break;
-            case 6:
-                message.branch = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return Option;
-})();
-
-export const ProjectsResponse = $root.ProjectsResponse = (() => {
-
-    /**
-     * Properties of a ProjectsResponse.
-     * @exports IProjectsResponse
-     * @interface IProjectsResponse
-     * @property {Array.<Option>|null} [data] ProjectsResponse data
-     */
-
-    /**
-     * Constructs a new ProjectsResponse.
-     * @exports ProjectsResponse
-     * @classdesc Represents a ProjectsResponse.
-     * @implements IProjectsResponse
-     * @constructor
-     * @param {IProjectsResponse=} [properties] Properties to set
-     */
-    function ProjectsResponse(properties) {
-        this.data = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ProjectsResponse data.
-     * @member {Array.<Option>} data
-     * @memberof ProjectsResponse
-     * @instance
-     */
-    ProjectsResponse.prototype.data = $util.emptyArray;
-
-    /**
-     * Encodes the specified ProjectsResponse message. Does not implicitly {@link ProjectsResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ProjectsResponse
-     * @static
-     * @param {ProjectsResponse} message ProjectsResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ProjectsResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && message.data.length)
-            for (let i = 0; i < message.data.length; ++i)
-                $root.Option.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a ProjectsResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ProjectsResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectsResponse} ProjectsResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ProjectsResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectsResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                if (!(message.data && message.data.length))
-                    message.data = [];
-                message.data.push($root.Option.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ProjectsResponse;
-})();
-
-export const BranchesRequest = $root.BranchesRequest = (() => {
-
-    /**
-     * Properties of a BranchesRequest.
-     * @exports IBranchesRequest
-     * @interface IBranchesRequest
-     * @property {string|null} [project_id] BranchesRequest project_id
-     * @property {boolean|null} [all] BranchesRequest all
-     */
-
-    /**
-     * Constructs a new BranchesRequest.
-     * @exports BranchesRequest
-     * @classdesc Represents a BranchesRequest.
-     * @implements IBranchesRequest
-     * @constructor
-     * @param {IBranchesRequest=} [properties] Properties to set
-     */
-    function BranchesRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * BranchesRequest project_id.
-     * @member {string} project_id
-     * @memberof BranchesRequest
-     * @instance
-     */
-    BranchesRequest.prototype.project_id = "";
-
-    /**
-     * BranchesRequest all.
-     * @member {boolean} all
-     * @memberof BranchesRequest
-     * @instance
-     */
-    BranchesRequest.prototype.all = false;
-
-    /**
-     * Encodes the specified BranchesRequest message. Does not implicitly {@link BranchesRequest.verify|verify} messages.
-     * @function encode
-     * @memberof BranchesRequest
-     * @static
-     * @param {BranchesRequest} message BranchesRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    BranchesRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
-        if (message.all != null && Object.hasOwnProperty.call(message, "all"))
-            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.all);
-        return writer;
-    };
-
-    /**
-     * Decodes a BranchesRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof BranchesRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {BranchesRequest} BranchesRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    BranchesRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.BranchesRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.string();
-                break;
-            case 2:
-                message.all = reader.bool();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return BranchesRequest;
-})();
-
-export const BranchesResponse = $root.BranchesResponse = (() => {
-
-    /**
-     * Properties of a BranchesResponse.
-     * @exports IBranchesResponse
-     * @interface IBranchesResponse
-     * @property {Array.<Option>|null} [data] BranchesResponse data
-     */
-
-    /**
-     * Constructs a new BranchesResponse.
-     * @exports BranchesResponse
-     * @classdesc Represents a BranchesResponse.
-     * @implements IBranchesResponse
-     * @constructor
-     * @param {IBranchesResponse=} [properties] Properties to set
-     */
-    function BranchesResponse(properties) {
-        this.data = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * BranchesResponse data.
-     * @member {Array.<Option>} data
-     * @memberof BranchesResponse
-     * @instance
-     */
-    BranchesResponse.prototype.data = $util.emptyArray;
-
-    /**
-     * Encodes the specified BranchesResponse message. Does not implicitly {@link BranchesResponse.verify|verify} messages.
-     * @function encode
-     * @memberof BranchesResponse
-     * @static
-     * @param {BranchesResponse} message BranchesResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    BranchesResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && message.data.length)
-            for (let i = 0; i < message.data.length; ++i)
-                $root.Option.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a BranchesResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof BranchesResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {BranchesResponse} BranchesResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    BranchesResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.BranchesResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                if (!(message.data && message.data.length))
-                    message.data = [];
-                message.data.push($root.Option.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return BranchesResponse;
-})();
-
-export const CommitsRequest = $root.CommitsRequest = (() => {
-
-    /**
-     * Properties of a CommitsRequest.
-     * @exports ICommitsRequest
-     * @interface ICommitsRequest
-     * @property {string|null} [project_id] CommitsRequest project_id
-     * @property {string|null} [branch] CommitsRequest branch
-     */
-
-    /**
-     * Constructs a new CommitsRequest.
-     * @exports CommitsRequest
-     * @classdesc Represents a CommitsRequest.
-     * @implements ICommitsRequest
-     * @constructor
-     * @param {ICommitsRequest=} [properties] Properties to set
-     */
-    function CommitsRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CommitsRequest project_id.
-     * @member {string} project_id
-     * @memberof CommitsRequest
-     * @instance
-     */
-    CommitsRequest.prototype.project_id = "";
-
-    /**
-     * CommitsRequest branch.
-     * @member {string} branch
-     * @memberof CommitsRequest
-     * @instance
-     */
-    CommitsRequest.prototype.branch = "";
-
-    /**
-     * Encodes the specified CommitsRequest message. Does not implicitly {@link CommitsRequest.verify|verify} messages.
-     * @function encode
-     * @memberof CommitsRequest
-     * @static
-     * @param {CommitsRequest} message CommitsRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CommitsRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        return writer;
-    };
-
-    /**
-     * Decodes a CommitsRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof CommitsRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CommitsRequest} CommitsRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CommitsRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CommitsRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.string();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CommitsRequest;
-})();
-
-export const CommitsResponse = $root.CommitsResponse = (() => {
-
-    /**
-     * Properties of a CommitsResponse.
-     * @exports ICommitsResponse
-     * @interface ICommitsResponse
-     * @property {Array.<Option>|null} [data] CommitsResponse data
-     */
-
-    /**
-     * Constructs a new CommitsResponse.
-     * @exports CommitsResponse
-     * @classdesc Represents a CommitsResponse.
-     * @implements ICommitsResponse
-     * @constructor
-     * @param {ICommitsResponse=} [properties] Properties to set
-     */
-    function CommitsResponse(properties) {
-        this.data = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CommitsResponse data.
-     * @member {Array.<Option>} data
-     * @memberof CommitsResponse
-     * @instance
-     */
-    CommitsResponse.prototype.data = $util.emptyArray;
-
-    /**
-     * Encodes the specified CommitsResponse message. Does not implicitly {@link CommitsResponse.verify|verify} messages.
-     * @function encode
-     * @memberof CommitsResponse
-     * @static
-     * @param {CommitsResponse} message CommitsResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CommitsResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && message.data.length)
-            for (let i = 0; i < message.data.length; ++i)
-                $root.Option.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a CommitsResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof CommitsResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CommitsResponse} CommitsResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CommitsResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CommitsResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                if (!(message.data && message.data.length))
-                    message.data = [];
-                message.data.push($root.Option.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CommitsResponse;
-})();
-
-export const CommitRequest = $root.CommitRequest = (() => {
-
-    /**
-     * Properties of a CommitRequest.
-     * @exports ICommitRequest
-     * @interface ICommitRequest
-     * @property {string|null} [project_id] CommitRequest project_id
-     * @property {string|null} [branch] CommitRequest branch
-     * @property {string|null} [commit] CommitRequest commit
-     */
-
-    /**
-     * Constructs a new CommitRequest.
-     * @exports CommitRequest
-     * @classdesc Represents a CommitRequest.
-     * @implements ICommitRequest
-     * @constructor
-     * @param {ICommitRequest=} [properties] Properties to set
-     */
-    function CommitRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CommitRequest project_id.
-     * @member {string} project_id
-     * @memberof CommitRequest
-     * @instance
-     */
-    CommitRequest.prototype.project_id = "";
-
-    /**
-     * CommitRequest branch.
-     * @member {string} branch
-     * @memberof CommitRequest
-     * @instance
-     */
-    CommitRequest.prototype.branch = "";
-
-    /**
-     * CommitRequest commit.
-     * @member {string} commit
-     * @memberof CommitRequest
-     * @instance
-     */
-    CommitRequest.prototype.commit = "";
-
-    /**
-     * Encodes the specified CommitRequest message. Does not implicitly {@link CommitRequest.verify|verify} messages.
-     * @function encode
-     * @memberof CommitRequest
-     * @static
-     * @param {CommitRequest} message CommitRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CommitRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        if (message.commit != null && Object.hasOwnProperty.call(message, "commit"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.commit);
-        return writer;
-    };
-
-    /**
-     * Decodes a CommitRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof CommitRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CommitRequest} CommitRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CommitRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CommitRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.string();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            case 3:
-                message.commit = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CommitRequest;
-})();
-
-export const CommitResponse = $root.CommitResponse = (() => {
-
-    /**
-     * Properties of a CommitResponse.
-     * @exports ICommitResponse
-     * @interface ICommitResponse
-     * @property {Option|null} [data] CommitResponse data
-     */
-
-    /**
-     * Constructs a new CommitResponse.
-     * @exports CommitResponse
-     * @classdesc Represents a CommitResponse.
-     * @implements ICommitResponse
-     * @constructor
-     * @param {ICommitResponse=} [properties] Properties to set
-     */
-    function CommitResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * CommitResponse data.
-     * @member {Option|null|undefined} data
-     * @memberof CommitResponse
-     * @instance
-     */
-    CommitResponse.prototype.data = null;
-
-    /**
-     * Encodes the specified CommitResponse message. Does not implicitly {@link CommitResponse.verify|verify} messages.
-     * @function encode
-     * @memberof CommitResponse
-     * @static
-     * @param {CommitResponse} message CommitResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    CommitResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-            $root.Option.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a CommitResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof CommitResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {CommitResponse} CommitResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    CommitResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CommitResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.data = $root.Option.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return CommitResponse;
-})();
-
-export const PipelineInfoRequest = $root.PipelineInfoRequest = (() => {
-
-    /**
-     * Properties of a PipelineInfoRequest.
-     * @exports IPipelineInfoRequest
-     * @interface IPipelineInfoRequest
-     * @property {string|null} [project_id] PipelineInfoRequest project_id
-     * @property {string|null} [branch] PipelineInfoRequest branch
-     * @property {string|null} [commit] PipelineInfoRequest commit
-     */
-
-    /**
-     * Constructs a new PipelineInfoRequest.
-     * @exports PipelineInfoRequest
-     * @classdesc Represents a PipelineInfoRequest.
-     * @implements IPipelineInfoRequest
-     * @constructor
-     * @param {IPipelineInfoRequest=} [properties] Properties to set
-     */
-    function PipelineInfoRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * PipelineInfoRequest project_id.
-     * @member {string} project_id
-     * @memberof PipelineInfoRequest
-     * @instance
-     */
-    PipelineInfoRequest.prototype.project_id = "";
-
-    /**
-     * PipelineInfoRequest branch.
-     * @member {string} branch
-     * @memberof PipelineInfoRequest
-     * @instance
-     */
-    PipelineInfoRequest.prototype.branch = "";
-
-    /**
-     * PipelineInfoRequest commit.
-     * @member {string} commit
-     * @memberof PipelineInfoRequest
-     * @instance
-     */
-    PipelineInfoRequest.prototype.commit = "";
-
-    /**
-     * Encodes the specified PipelineInfoRequest message. Does not implicitly {@link PipelineInfoRequest.verify|verify} messages.
-     * @function encode
-     * @memberof PipelineInfoRequest
-     * @static
-     * @param {PipelineInfoRequest} message PipelineInfoRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    PipelineInfoRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        if (message.commit != null && Object.hasOwnProperty.call(message, "commit"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.commit);
-        return writer;
-    };
-
-    /**
-     * Decodes a PipelineInfoRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof PipelineInfoRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {PipelineInfoRequest} PipelineInfoRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    PipelineInfoRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PipelineInfoRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.string();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            case 3:
-                message.commit = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return PipelineInfoRequest;
-})();
-
-export const PipelineInfoResponse = $root.PipelineInfoResponse = (() => {
-
-    /**
-     * Properties of a PipelineInfoResponse.
-     * @exports IPipelineInfoResponse
-     * @interface IPipelineInfoResponse
-     * @property {string|null} [status] PipelineInfoResponse status
-     * @property {string|null} [web_url] PipelineInfoResponse web_url
-     */
-
-    /**
-     * Constructs a new PipelineInfoResponse.
-     * @exports PipelineInfoResponse
-     * @classdesc Represents a PipelineInfoResponse.
-     * @implements IPipelineInfoResponse
-     * @constructor
-     * @param {IPipelineInfoResponse=} [properties] Properties to set
-     */
-    function PipelineInfoResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * PipelineInfoResponse status.
-     * @member {string} status
-     * @memberof PipelineInfoResponse
-     * @instance
-     */
-    PipelineInfoResponse.prototype.status = "";
-
-    /**
-     * PipelineInfoResponse web_url.
-     * @member {string} web_url
-     * @memberof PipelineInfoResponse
-     * @instance
-     */
-    PipelineInfoResponse.prototype.web_url = "";
-
-    /**
-     * Encodes the specified PipelineInfoResponse message. Does not implicitly {@link PipelineInfoResponse.verify|verify} messages.
-     * @function encode
-     * @memberof PipelineInfoResponse
-     * @static
-     * @param {PipelineInfoResponse} message PipelineInfoResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    PipelineInfoResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.status != null && Object.hasOwnProperty.call(message, "status"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.status);
-        if (message.web_url != null && Object.hasOwnProperty.call(message, "web_url"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.web_url);
-        return writer;
-    };
-
-    /**
-     * Decodes a PipelineInfoResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof PipelineInfoResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {PipelineInfoResponse} PipelineInfoResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    PipelineInfoResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PipelineInfoResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.status = reader.string();
-                break;
-            case 2:
-                message.web_url = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return PipelineInfoResponse;
-})();
-
-export const ConfigFileRequest = $root.ConfigFileRequest = (() => {
-
-    /**
-     * Properties of a ConfigFileRequest.
-     * @exports IConfigFileRequest
-     * @interface IConfigFileRequest
-     * @property {string|null} [project_id] ConfigFileRequest project_id
-     * @property {string|null} [branch] ConfigFileRequest branch
-     */
-
-    /**
-     * Constructs a new ConfigFileRequest.
-     * @exports ConfigFileRequest
-     * @classdesc Represents a ConfigFileRequest.
-     * @implements IConfigFileRequest
-     * @constructor
-     * @param {IConfigFileRequest=} [properties] Properties to set
-     */
-    function ConfigFileRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ConfigFileRequest project_id.
-     * @member {string} project_id
-     * @memberof ConfigFileRequest
-     * @instance
-     */
-    ConfigFileRequest.prototype.project_id = "";
-
-    /**
-     * ConfigFileRequest branch.
-     * @member {string} branch
-     * @memberof ConfigFileRequest
-     * @instance
-     */
-    ConfigFileRequest.prototype.branch = "";
-
-    /**
-     * Encodes the specified ConfigFileRequest message. Does not implicitly {@link ConfigFileRequest.verify|verify} messages.
-     * @function encode
-     * @memberof ConfigFileRequest
-     * @static
-     * @param {ConfigFileRequest} message ConfigFileRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ConfigFileRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        return writer;
-    };
-
-    /**
-     * Decodes a ConfigFileRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof ConfigFileRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ConfigFileRequest} ConfigFileRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ConfigFileRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ConfigFileRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.string();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ConfigFileRequest;
-})();
-
-export const ConfigFileResponse = $root.ConfigFileResponse = (() => {
-
-    /**
-     * Properties of a ConfigFileResponse.
-     * @exports IConfigFileResponse
-     * @interface IConfigFileResponse
-     * @property {string|null} [data] ConfigFileResponse data
-     * @property {string|null} [type] ConfigFileResponse type
-     */
-
-    /**
-     * Constructs a new ConfigFileResponse.
-     * @exports ConfigFileResponse
-     * @classdesc Represents a ConfigFileResponse.
-     * @implements IConfigFileResponse
-     * @constructor
-     * @param {IConfigFileResponse=} [properties] Properties to set
-     */
-    function ConfigFileResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ConfigFileResponse data.
-     * @member {string} data
-     * @memberof ConfigFileResponse
-     * @instance
-     */
-    ConfigFileResponse.prototype.data = "";
-
-    /**
-     * ConfigFileResponse type.
-     * @member {string} type
-     * @memberof ConfigFileResponse
-     * @instance
-     */
-    ConfigFileResponse.prototype.type = "";
-
-    /**
-     * Encodes the specified ConfigFileResponse message. Does not implicitly {@link ConfigFileResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ConfigFileResponse
-     * @static
-     * @param {ConfigFileResponse} message ConfigFileResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ConfigFileResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.data);
-        if (message.type != null && Object.hasOwnProperty.call(message, "type"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.type);
-        return writer;
-    };
-
-    /**
-     * Decodes a ConfigFileResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ConfigFileResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ConfigFileResponse} ConfigFileResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ConfigFileResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ConfigFileResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.data = reader.string();
-                break;
-            case 2:
-                message.type = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ConfigFileResponse;
-})();
-
-export const Gitlab = $root.Gitlab = (() => {
-
-    /**
-     * Constructs a new Gitlab service.
-     * @exports Gitlab
-     * @classdesc Represents a Gitlab
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Gitlab(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Gitlab.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Gitlab;
-
-    /**
-     * Callback as used by {@link Gitlab#enableProject}.
-     * @memberof Gitlab
-     * @typedef EnableProjectCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {google.protobuf.Empty} [response] Empty
-     */
-
-    /**
-     * Calls EnableProject.
-     * @function enableProject
-     * @memberof Gitlab
-     * @instance
-     * @param {EnableProjectRequest} request EnableProjectRequest message or plain object
-     * @param {Gitlab.EnableProjectCallback} callback Node-style callback called with the error, if any, and Empty
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.enableProject = function enableProject(request, callback) {
-        return this.rpcCall(enableProject, $root.EnableProjectRequest, $root.google.protobuf.Empty, request, callback);
-    }, "name", { value: "EnableProject" });
-
-    /**
-     * Calls EnableProject.
-     * @function enableProject
-     * @memberof Gitlab
-     * @instance
-     * @param {EnableProjectRequest} request EnableProjectRequest message or plain object
-     * @returns {Promise<google.protobuf.Empty>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#disableProject}.
-     * @memberof Gitlab
-     * @typedef DisableProjectCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {google.protobuf.Empty} [response] Empty
-     */
-
-    /**
-     * Calls DisableProject.
-     * @function disableProject
-     * @memberof Gitlab
-     * @instance
-     * @param {DisableProjectRequest} request DisableProjectRequest message or plain object
-     * @param {Gitlab.DisableProjectCallback} callback Node-style callback called with the error, if any, and Empty
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.disableProject = function disableProject(request, callback) {
-        return this.rpcCall(disableProject, $root.DisableProjectRequest, $root.google.protobuf.Empty, request, callback);
-    }, "name", { value: "DisableProject" });
-
-    /**
-     * Calls DisableProject.
-     * @function disableProject
-     * @memberof Gitlab
-     * @instance
-     * @param {DisableProjectRequest} request DisableProjectRequest message or plain object
-     * @returns {Promise<google.protobuf.Empty>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#projectList}.
-     * @memberof Gitlab
-     * @typedef ProjectListCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ProjectListResponse} [response] ProjectListResponse
-     */
-
-    /**
-     * Calls ProjectList.
-     * @function projectList
-     * @memberof Gitlab
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Gitlab.ProjectListCallback} callback Node-style callback called with the error, if any, and ProjectListResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.projectList = function projectList(request, callback) {
-        return this.rpcCall(projectList, $root.google.protobuf.Empty, $root.ProjectListResponse, request, callback);
-    }, "name", { value: "ProjectList" });
-
-    /**
-     * Calls ProjectList.
-     * @function projectList
-     * @memberof Gitlab
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<ProjectListResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#projects}.
-     * @memberof Gitlab
-     * @typedef ProjectsCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ProjectsResponse} [response] ProjectsResponse
-     */
-
-    /**
-     * Calls Projects.
-     * @function projects
-     * @memberof Gitlab
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Gitlab.ProjectsCallback} callback Node-style callback called with the error, if any, and ProjectsResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.projects = function projects(request, callback) {
-        return this.rpcCall(projects, $root.google.protobuf.Empty, $root.ProjectsResponse, request, callback);
-    }, "name", { value: "Projects" });
-
-    /**
-     * Calls Projects.
-     * @function projects
-     * @memberof Gitlab
-     * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<ProjectsResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#branches}.
-     * @memberof Gitlab
-     * @typedef BranchesCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {BranchesResponse} [response] BranchesResponse
-     */
-
-    /**
-     * Calls Branches.
-     * @function branches
-     * @memberof Gitlab
-     * @instance
-     * @param {BranchesRequest} request BranchesRequest message or plain object
-     * @param {Gitlab.BranchesCallback} callback Node-style callback called with the error, if any, and BranchesResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.branches = function branches(request, callback) {
-        return this.rpcCall(branches, $root.BranchesRequest, $root.BranchesResponse, request, callback);
-    }, "name", { value: "Branches" });
-
-    /**
-     * Calls Branches.
-     * @function branches
-     * @memberof Gitlab
-     * @instance
-     * @param {BranchesRequest} request BranchesRequest message or plain object
-     * @returns {Promise<BranchesResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#commits}.
-     * @memberof Gitlab
-     * @typedef CommitsCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {CommitsResponse} [response] CommitsResponse
-     */
-
-    /**
-     * Calls Commits.
-     * @function commits
-     * @memberof Gitlab
-     * @instance
-     * @param {CommitsRequest} request CommitsRequest message or plain object
-     * @param {Gitlab.CommitsCallback} callback Node-style callback called with the error, if any, and CommitsResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.commits = function commits(request, callback) {
-        return this.rpcCall(commits, $root.CommitsRequest, $root.CommitsResponse, request, callback);
-    }, "name", { value: "Commits" });
-
-    /**
-     * Calls Commits.
-     * @function commits
-     * @memberof Gitlab
-     * @instance
-     * @param {CommitsRequest} request CommitsRequest message or plain object
-     * @returns {Promise<CommitsResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#commit}.
-     * @memberof Gitlab
-     * @typedef CommitCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {CommitResponse} [response] CommitResponse
-     */
-
-    /**
-     * Calls Commit.
-     * @function commit
-     * @memberof Gitlab
-     * @instance
-     * @param {CommitRequest} request CommitRequest message or plain object
-     * @param {Gitlab.CommitCallback} callback Node-style callback called with the error, if any, and CommitResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.commit = function commit(request, callback) {
-        return this.rpcCall(commit, $root.CommitRequest, $root.CommitResponse, request, callback);
-    }, "name", { value: "Commit" });
-
-    /**
-     * Calls Commit.
-     * @function commit
-     * @memberof Gitlab
-     * @instance
-     * @param {CommitRequest} request CommitRequest message or plain object
-     * @returns {Promise<CommitResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#pipelineInfo}.
-     * @memberof Gitlab
-     * @typedef PipelineInfoCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {PipelineInfoResponse} [response] PipelineInfoResponse
-     */
-
-    /**
-     * Calls PipelineInfo.
-     * @function pipelineInfo
-     * @memberof Gitlab
-     * @instance
-     * @param {PipelineInfoRequest} request PipelineInfoRequest message or plain object
-     * @param {Gitlab.PipelineInfoCallback} callback Node-style callback called with the error, if any, and PipelineInfoResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.pipelineInfo = function pipelineInfo(request, callback) {
-        return this.rpcCall(pipelineInfo, $root.PipelineInfoRequest, $root.PipelineInfoResponse, request, callback);
-    }, "name", { value: "PipelineInfo" });
-
-    /**
-     * Calls PipelineInfo.
-     * @function pipelineInfo
-     * @memberof Gitlab
-     * @instance
-     * @param {PipelineInfoRequest} request PipelineInfoRequest message or plain object
-     * @returns {Promise<PipelineInfoResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Gitlab#configFile}.
-     * @memberof Gitlab
-     * @typedef ConfigFileCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ConfigFileResponse} [response] ConfigFileResponse
-     */
-
-    /**
-     * Calls ConfigFile.
-     * @function configFile
-     * @memberof Gitlab
-     * @instance
-     * @param {ConfigFileRequest} request ConfigFileRequest message or plain object
-     * @param {Gitlab.ConfigFileCallback} callback Node-style callback called with the error, if any, and ConfigFileResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Gitlab.prototype.configFile = function configFile(request, callback) {
-        return this.rpcCall(configFile, $root.ConfigFileRequest, $root.ConfigFileResponse, request, callback);
-    }, "name", { value: "ConfigFile" });
-
-    /**
-     * Calls ConfigFile.
-     * @function configFile
-     * @memberof Gitlab
-     * @instance
-     * @param {ConfigFileRequest} request ConfigFileRequest message or plain object
-     * @returns {Promise<ConfigFileResponse>} Promise
-     * @variation 2
-     */
-
-    return Gitlab;
-})();
-
-export const Config = $root.Config = (() => {
-
-    /**
-     * Properties of a Config.
-     * @exports IConfig
-     * @interface IConfig
-     * @property {string|null} [config_file] Config config_file
-     * @property {string|null} [config_file_values] Config config_file_values
-     * @property {string|null} [config_field] Config config_field
-     * @property {boolean|null} [is_simple_env] Config is_simple_env
-     * @property {string|null} [config_file_type] Config config_file_type
-     * @property {string|null} [local_chart_path] Config local_chart_path
-     * @property {Array.<string>|null} [branches] Config branches
-     * @property {string|null} [values_yaml] Config values_yaml
-     */
-
-    /**
-     * Constructs a new Config.
-     * @exports Config
-     * @classdesc Represents a Config.
-     * @implements IConfig
-     * @constructor
-     * @param {IConfig=} [properties] Properties to set
-     */
-    function Config(properties) {
-        this.branches = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * Config config_file.
-     * @member {string} config_file
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.config_file = "";
-
-    /**
-     * Config config_file_values.
-     * @member {string} config_file_values
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.config_file_values = "";
-
-    /**
-     * Config config_field.
-     * @member {string} config_field
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.config_field = "";
-
-    /**
-     * Config is_simple_env.
-     * @member {boolean} is_simple_env
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.is_simple_env = false;
-
-    /**
-     * Config config_file_type.
-     * @member {string} config_file_type
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.config_file_type = "";
-
-    /**
-     * Config local_chart_path.
-     * @member {string} local_chart_path
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.local_chart_path = "";
-
-    /**
-     * Config branches.
-     * @member {Array.<string>} branches
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.branches = $util.emptyArray;
-
-    /**
-     * Config values_yaml.
-     * @member {string} values_yaml
-     * @memberof Config
-     * @instance
-     */
-    Config.prototype.values_yaml = "";
-
-    /**
-     * Encodes the specified Config message. Does not implicitly {@link Config.verify|verify} messages.
-     * @function encode
-     * @memberof Config
-     * @static
-     * @param {Config} message Config message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    Config.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.config_file != null && Object.hasOwnProperty.call(message, "config_file"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.config_file);
-        if (message.config_file_values != null && Object.hasOwnProperty.call(message, "config_file_values"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config_file_values);
-        if (message.config_field != null && Object.hasOwnProperty.call(message, "config_field"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.config_field);
-        if (message.is_simple_env != null && Object.hasOwnProperty.call(message, "is_simple_env"))
-            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_simple_env);
-        if (message.config_file_type != null && Object.hasOwnProperty.call(message, "config_file_type"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.config_file_type);
-        if (message.local_chart_path != null && Object.hasOwnProperty.call(message, "local_chart_path"))
-            writer.uint32(/* id 6, wireType 2 =*/50).string(message.local_chart_path);
-        if (message.branches != null && message.branches.length)
-            for (let i = 0; i < message.branches.length; ++i)
-                writer.uint32(/* id 7, wireType 2 =*/58).string(message.branches[i]);
-        if (message.values_yaml != null && Object.hasOwnProperty.call(message, "values_yaml"))
-            writer.uint32(/* id 8, wireType 2 =*/66).string(message.values_yaml);
-        return writer;
-    };
-
-    /**
-     * Decodes a Config message from the specified reader or buffer.
-     * @function decode
-     * @memberof Config
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {Config} Config
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    Config.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Config();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.config_file = reader.string();
-                break;
-            case 2:
-                message.config_file_values = reader.string();
-                break;
-            case 3:
-                message.config_field = reader.string();
-                break;
-            case 4:
-                message.is_simple_env = reader.bool();
-                break;
-            case 5:
-                message.config_file_type = reader.string();
-                break;
-            case 6:
-                message.local_chart_path = reader.string();
-                break;
-            case 7:
-                if (!(message.branches && message.branches.length))
-                    message.branches = [];
-                message.branches.push(reader.string());
-                break;
-            case 8:
-                message.values_yaml = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return Config;
-})();
-
-export const MarsShowRequest = $root.MarsShowRequest = (() => {
-
-    /**
-     * Properties of a MarsShowRequest.
-     * @exports IMarsShowRequest
-     * @interface IMarsShowRequest
-     * @property {number|null} [project_id] MarsShowRequest project_id
-     * @property {string|null} [branch] MarsShowRequest branch
-     */
-
-    /**
-     * Constructs a new MarsShowRequest.
-     * @exports MarsShowRequest
-     * @classdesc Represents a MarsShowRequest.
-     * @implements IMarsShowRequest
-     * @constructor
-     * @param {IMarsShowRequest=} [properties] Properties to set
-     */
-    function MarsShowRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * MarsShowRequest project_id.
-     * @member {number} project_id
-     * @memberof MarsShowRequest
-     * @instance
-     */
-    MarsShowRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * MarsShowRequest branch.
-     * @member {string} branch
-     * @memberof MarsShowRequest
-     * @instance
-     */
-    MarsShowRequest.prototype.branch = "";
-
-    /**
-     * Encodes the specified MarsShowRequest message. Does not implicitly {@link MarsShowRequest.verify|verify} messages.
-     * @function encode
-     * @memberof MarsShowRequest
-     * @static
-     * @param {MarsShowRequest} message MarsShowRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    MarsShowRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        return writer;
-    };
-
-    /**
-     * Decodes a MarsShowRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof MarsShowRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {MarsShowRequest} MarsShowRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    MarsShowRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsShowRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return MarsShowRequest;
-})();
-
-export const MarsShowResponse = $root.MarsShowResponse = (() => {
-
-    /**
-     * Properties of a MarsShowResponse.
-     * @exports IMarsShowResponse
-     * @interface IMarsShowResponse
-     * @property {string|null} [branch] MarsShowResponse branch
-     * @property {Config|null} [config] MarsShowResponse config
-     */
-
-    /**
-     * Constructs a new MarsShowResponse.
-     * @exports MarsShowResponse
-     * @classdesc Represents a MarsShowResponse.
-     * @implements IMarsShowResponse
-     * @constructor
-     * @param {IMarsShowResponse=} [properties] Properties to set
-     */
-    function MarsShowResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * MarsShowResponse branch.
-     * @member {string} branch
-     * @memberof MarsShowResponse
-     * @instance
-     */
-    MarsShowResponse.prototype.branch = "";
-
-    /**
-     * MarsShowResponse config.
-     * @member {Config|null|undefined} config
-     * @memberof MarsShowResponse
-     * @instance
-     */
-    MarsShowResponse.prototype.config = null;
-
-    /**
-     * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
-     * @function encode
-     * @memberof MarsShowResponse
-     * @static
-     * @param {MarsShowResponse} message MarsShowResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    MarsShowResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.branch);
-        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a MarsShowResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof MarsShowResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {MarsShowResponse} MarsShowResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    MarsShowResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsShowResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.branch = reader.string();
-                break;
-            case 2:
-                message.config = $root.Config.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return MarsShowResponse;
-})();
-
-export const GlobalConfigRequest = $root.GlobalConfigRequest = (() => {
-
-    /**
-     * Properties of a GlobalConfigRequest.
-     * @exports IGlobalConfigRequest
-     * @interface IGlobalConfigRequest
-     * @property {number|null} [project_id] GlobalConfigRequest project_id
-     */
-
-    /**
-     * Constructs a new GlobalConfigRequest.
-     * @exports GlobalConfigRequest
-     * @classdesc Represents a GlobalConfigRequest.
-     * @implements IGlobalConfigRequest
-     * @constructor
-     * @param {IGlobalConfigRequest=} [properties] Properties to set
-     */
-    function GlobalConfigRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * GlobalConfigRequest project_id.
-     * @member {number} project_id
-     * @memberof GlobalConfigRequest
-     * @instance
-     */
-    GlobalConfigRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * Encodes the specified GlobalConfigRequest message. Does not implicitly {@link GlobalConfigRequest.verify|verify} messages.
-     * @function encode
-     * @memberof GlobalConfigRequest
-     * @static
-     * @param {GlobalConfigRequest} message GlobalConfigRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    GlobalConfigRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        return writer;
-    };
-
-    /**
-     * Decodes a GlobalConfigRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof GlobalConfigRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {GlobalConfigRequest} GlobalConfigRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    GlobalConfigRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GlobalConfigRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return GlobalConfigRequest;
-})();
-
-export const GlobalConfigResponse = $root.GlobalConfigResponse = (() => {
-
-    /**
-     * Properties of a GlobalConfigResponse.
-     * @exports IGlobalConfigResponse
-     * @interface IGlobalConfigResponse
-     * @property {boolean|null} [enabled] GlobalConfigResponse enabled
-     * @property {Config|null} [config] GlobalConfigResponse config
-     */
-
-    /**
-     * Constructs a new GlobalConfigResponse.
-     * @exports GlobalConfigResponse
-     * @classdesc Represents a GlobalConfigResponse.
-     * @implements IGlobalConfigResponse
-     * @constructor
-     * @param {IGlobalConfigResponse=} [properties] Properties to set
-     */
-    function GlobalConfigResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * GlobalConfigResponse enabled.
-     * @member {boolean} enabled
-     * @memberof GlobalConfigResponse
-     * @instance
-     */
-    GlobalConfigResponse.prototype.enabled = false;
-
-    /**
-     * GlobalConfigResponse config.
-     * @member {Config|null|undefined} config
-     * @memberof GlobalConfigResponse
-     * @instance
-     */
-    GlobalConfigResponse.prototype.config = null;
-
-    /**
-     * Encodes the specified GlobalConfigResponse message. Does not implicitly {@link GlobalConfigResponse.verify|verify} messages.
-     * @function encode
-     * @memberof GlobalConfigResponse
-     * @static
-     * @param {GlobalConfigResponse} message GlobalConfigResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    GlobalConfigResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
-        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a GlobalConfigResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof GlobalConfigResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {GlobalConfigResponse} GlobalConfigResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    GlobalConfigResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GlobalConfigResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.enabled = reader.bool();
-                break;
-            case 2:
-                message.config = $root.Config.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return GlobalConfigResponse;
-})();
-
-export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
-
-    /**
-     * Properties of a MarsUpdateRequest.
-     * @exports IMarsUpdateRequest
-     * @interface IMarsUpdateRequest
-     * @property {number|null} [project_id] MarsUpdateRequest project_id
-     * @property {Config|null} [config] MarsUpdateRequest config
-     */
-
-    /**
-     * Constructs a new MarsUpdateRequest.
-     * @exports MarsUpdateRequest
-     * @classdesc Represents a MarsUpdateRequest.
-     * @implements IMarsUpdateRequest
-     * @constructor
-     * @param {IMarsUpdateRequest=} [properties] Properties to set
-     */
-    function MarsUpdateRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * MarsUpdateRequest project_id.
-     * @member {number} project_id
-     * @memberof MarsUpdateRequest
-     * @instance
-     */
-    MarsUpdateRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * MarsUpdateRequest config.
-     * @member {Config|null|undefined} config
-     * @memberof MarsUpdateRequest
-     * @instance
-     */
-    MarsUpdateRequest.prototype.config = null;
-
-    /**
-     * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
-     * @function encode
-     * @memberof MarsUpdateRequest
-     * @static
-     * @param {MarsUpdateRequest} message MarsUpdateRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    MarsUpdateRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            $root.Config.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a MarsUpdateRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof MarsUpdateRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {MarsUpdateRequest} MarsUpdateRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    MarsUpdateRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsUpdateRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            case 2:
-                message.config = $root.Config.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return MarsUpdateRequest;
-})();
-
-export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
-
-    /**
-     * Properties of a MarsUpdateResponse.
-     * @exports IMarsUpdateResponse
-     * @interface IMarsUpdateResponse
-     * @property {Config|null} [config] MarsUpdateResponse config
-     */
-
-    /**
-     * Constructs a new MarsUpdateResponse.
-     * @exports MarsUpdateResponse
-     * @classdesc Represents a MarsUpdateResponse.
-     * @implements IMarsUpdateResponse
-     * @constructor
-     * @param {IMarsUpdateResponse=} [properties] Properties to set
-     */
-    function MarsUpdateResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * MarsUpdateResponse config.
-     * @member {Config|null|undefined} config
-     * @memberof MarsUpdateResponse
-     * @instance
-     */
-    MarsUpdateResponse.prototype.config = null;
-
-    /**
-     * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
-     * @function encode
-     * @memberof MarsUpdateResponse
-     * @static
-     * @param {MarsUpdateResponse} message MarsUpdateResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    MarsUpdateResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            $root.Config.encode(message.config, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a MarsUpdateResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof MarsUpdateResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {MarsUpdateResponse} MarsUpdateResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    MarsUpdateResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsUpdateResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.config = $root.Config.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return MarsUpdateResponse;
-})();
-
-export const ToggleEnabledRequest = $root.ToggleEnabledRequest = (() => {
-
-    /**
-     * Properties of a ToggleEnabledRequest.
-     * @exports IToggleEnabledRequest
-     * @interface IToggleEnabledRequest
-     * @property {number|null} [project_id] ToggleEnabledRequest project_id
-     * @property {boolean|null} [enabled] ToggleEnabledRequest enabled
-     */
-
-    /**
-     * Constructs a new ToggleEnabledRequest.
-     * @exports ToggleEnabledRequest
-     * @classdesc Represents a ToggleEnabledRequest.
-     * @implements IToggleEnabledRequest
-     * @constructor
-     * @param {IToggleEnabledRequest=} [properties] Properties to set
-     */
-    function ToggleEnabledRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ToggleEnabledRequest project_id.
-     * @member {number} project_id
-     * @memberof ToggleEnabledRequest
-     * @instance
-     */
-    ToggleEnabledRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ToggleEnabledRequest enabled.
-     * @member {boolean} enabled
-     * @memberof ToggleEnabledRequest
-     * @instance
-     */
-    ToggleEnabledRequest.prototype.enabled = false;
-
-    /**
-     * Encodes the specified ToggleEnabledRequest message. Does not implicitly {@link ToggleEnabledRequest.verify|verify} messages.
-     * @function encode
-     * @memberof ToggleEnabledRequest
-     * @static
-     * @param {ToggleEnabledRequest} message ToggleEnabledRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ToggleEnabledRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.enabled);
-        return writer;
-    };
-
-    /**
-     * Decodes a ToggleEnabledRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof ToggleEnabledRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ToggleEnabledRequest} ToggleEnabledRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ToggleEnabledRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ToggleEnabledRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            case 2:
-                message.enabled = reader.bool();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ToggleEnabledRequest;
-})();
-
-export const DefaultChartValuesRequest = $root.DefaultChartValuesRequest = (() => {
-
-    /**
-     * Properties of a DefaultChartValuesRequest.
-     * @exports IDefaultChartValuesRequest
-     * @interface IDefaultChartValuesRequest
-     * @property {number|null} [project_id] DefaultChartValuesRequest project_id
-     * @property {string|null} [branch] DefaultChartValuesRequest branch
-     */
-
-    /**
-     * Constructs a new DefaultChartValuesRequest.
-     * @exports DefaultChartValuesRequest
-     * @classdesc Represents a DefaultChartValuesRequest.
-     * @implements IDefaultChartValuesRequest
-     * @constructor
-     * @param {IDefaultChartValuesRequest=} [properties] Properties to set
-     */
-    function DefaultChartValuesRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * DefaultChartValuesRequest project_id.
-     * @member {number} project_id
-     * @memberof DefaultChartValuesRequest
-     * @instance
-     */
-    DefaultChartValuesRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * DefaultChartValuesRequest branch.
-     * @member {string} branch
-     * @memberof DefaultChartValuesRequest
-     * @instance
-     */
-    DefaultChartValuesRequest.prototype.branch = "";
-
-    /**
-     * Encodes the specified DefaultChartValuesRequest message. Does not implicitly {@link DefaultChartValuesRequest.verify|verify} messages.
-     * @function encode
-     * @memberof DefaultChartValuesRequest
-     * @static
-     * @param {DefaultChartValuesRequest} message DefaultChartValuesRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    DefaultChartValuesRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
-        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
-        return writer;
-    };
-
-    /**
-     * Decodes a DefaultChartValuesRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof DefaultChartValuesRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {DefaultChartValuesRequest} DefaultChartValuesRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    DefaultChartValuesRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DefaultChartValuesRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.project_id = reader.int64();
-                break;
-            case 2:
-                message.branch = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return DefaultChartValuesRequest;
-})();
-
-export const DefaultChartValues = $root.DefaultChartValues = (() => {
-
-    /**
-     * Properties of a DefaultChartValues.
-     * @exports IDefaultChartValues
-     * @interface IDefaultChartValues
-     * @property {string|null} [value] DefaultChartValues value
-     */
-
-    /**
-     * Constructs a new DefaultChartValues.
-     * @exports DefaultChartValues
-     * @classdesc Represents a DefaultChartValues.
-     * @implements IDefaultChartValues
-     * @constructor
-     * @param {IDefaultChartValues=} [properties] Properties to set
-     */
-    function DefaultChartValues(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * DefaultChartValues value.
-     * @member {string} value
-     * @memberof DefaultChartValues
-     * @instance
-     */
-    DefaultChartValues.prototype.value = "";
-
-    /**
-     * Encodes the specified DefaultChartValues message. Does not implicitly {@link DefaultChartValues.verify|verify} messages.
-     * @function encode
-     * @memberof DefaultChartValues
-     * @static
-     * @param {DefaultChartValues} message DefaultChartValues message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    DefaultChartValues.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.value != null && Object.hasOwnProperty.call(message, "value"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
-        return writer;
-    };
-
-    /**
-     * Decodes a DefaultChartValues message from the specified reader or buffer.
-     * @function decode
-     * @memberof DefaultChartValues
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {DefaultChartValues} DefaultChartValues
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    DefaultChartValues.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DefaultChartValues();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.value = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return DefaultChartValues;
-})();
-
-export const Mars = $root.Mars = (() => {
-
-    /**
-     * Constructs a new Mars service.
-     * @exports Mars
-     * @classdesc Represents a Mars
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Mars(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Mars.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Mars;
-
-    /**
-     * Callback as used by {@link Mars#show}.
-     * @memberof Mars
-     * @typedef ShowCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {MarsShowResponse} [response] MarsShowResponse
-     */
-
-    /**
-     * Calls Show.
-     * @function show
-     * @memberof Mars
-     * @instance
-     * @param {MarsShowRequest} request MarsShowRequest message or plain object
-     * @param {Mars.ShowCallback} callback Node-style callback called with the error, if any, and MarsShowResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Mars.prototype.show = function show(request, callback) {
-        return this.rpcCall(show, $root.MarsShowRequest, $root.MarsShowResponse, request, callback);
-    }, "name", { value: "Show" });
-
-    /**
-     * Calls Show.
-     * @function show
-     * @memberof Mars
-     * @instance
-     * @param {MarsShowRequest} request MarsShowRequest message or plain object
-     * @returns {Promise<MarsShowResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Mars#globalConfig}.
-     * @memberof Mars
-     * @typedef GlobalConfigCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {GlobalConfigResponse} [response] GlobalConfigResponse
-     */
-
-    /**
-     * Calls GlobalConfig.
-     * @function globalConfig
-     * @memberof Mars
-     * @instance
-     * @param {GlobalConfigRequest} request GlobalConfigRequest message or plain object
-     * @param {Mars.GlobalConfigCallback} callback Node-style callback called with the error, if any, and GlobalConfigResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Mars.prototype.globalConfig = function globalConfig(request, callback) {
-        return this.rpcCall(globalConfig, $root.GlobalConfigRequest, $root.GlobalConfigResponse, request, callback);
-    }, "name", { value: "GlobalConfig" });
-
-    /**
-     * Calls GlobalConfig.
-     * @function globalConfig
-     * @memberof Mars
-     * @instance
-     * @param {GlobalConfigRequest} request GlobalConfigRequest message or plain object
-     * @returns {Promise<GlobalConfigResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Mars#toggleEnabled}.
-     * @memberof Mars
-     * @typedef ToggleEnabledCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {google.protobuf.Empty} [response] Empty
-     */
-
-    /**
-     * Calls ToggleEnabled.
-     * @function toggleEnabled
-     * @memberof Mars
-     * @instance
-     * @param {ToggleEnabledRequest} request ToggleEnabledRequest message or plain object
-     * @param {Mars.ToggleEnabledCallback} callback Node-style callback called with the error, if any, and Empty
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Mars.prototype.toggleEnabled = function toggleEnabled(request, callback) {
-        return this.rpcCall(toggleEnabled, $root.ToggleEnabledRequest, $root.google.protobuf.Empty, request, callback);
-    }, "name", { value: "ToggleEnabled" });
-
-    /**
-     * Calls ToggleEnabled.
-     * @function toggleEnabled
-     * @memberof Mars
-     * @instance
-     * @param {ToggleEnabledRequest} request ToggleEnabledRequest message or plain object
-     * @returns {Promise<google.protobuf.Empty>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Mars#update}.
-     * @memberof Mars
-     * @typedef UpdateCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {MarsUpdateResponse} [response] MarsUpdateResponse
-     */
-
-    /**
-     * Calls Update.
-     * @function update
-     * @memberof Mars
-     * @instance
-     * @param {MarsUpdateRequest} request MarsUpdateRequest message or plain object
-     * @param {Mars.UpdateCallback} callback Node-style callback called with the error, if any, and MarsUpdateResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Mars.prototype.update = function update(request, callback) {
-        return this.rpcCall(update, $root.MarsUpdateRequest, $root.MarsUpdateResponse, request, callback);
-    }, "name", { value: "Update" });
-
-    /**
-     * Calls Update.
-     * @function update
-     * @memberof Mars
-     * @instance
-     * @param {MarsUpdateRequest} request MarsUpdateRequest message or plain object
-     * @returns {Promise<MarsUpdateResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Mars#getDefaultChartValues}.
-     * @memberof Mars
-     * @typedef GetDefaultChartValuesCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {DefaultChartValues} [response] DefaultChartValues
-     */
-
-    /**
-     * Calls GetDefaultChartValues.
-     * @function getDefaultChartValues
-     * @memberof Mars
-     * @instance
-     * @param {DefaultChartValuesRequest} request DefaultChartValuesRequest message or plain object
-     * @param {Mars.GetDefaultChartValuesCallback} callback Node-style callback called with the error, if any, and DefaultChartValues
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Mars.prototype.getDefaultChartValues = function getDefaultChartValues(request, callback) {
-        return this.rpcCall(getDefaultChartValues, $root.DefaultChartValuesRequest, $root.DefaultChartValues, request, callback);
-    }, "name", { value: "GetDefaultChartValues" });
-
-    /**
-     * Calls GetDefaultChartValues.
-     * @function getDefaultChartValues
-     * @memberof Mars
-     * @instance
-     * @param {DefaultChartValuesRequest} request DefaultChartValuesRequest message or plain object
-     * @returns {Promise<DefaultChartValues>} Promise
-     * @variation 2
-     */
-
-    return Mars;
-})();
-
-export const ProjectByIDRequest = $root.ProjectByIDRequest = (() => {
-
-    /**
-     * Properties of a ProjectByIDRequest.
-     * @exports IProjectByIDRequest
-     * @interface IProjectByIDRequest
-     * @property {string|null} [namespace] ProjectByIDRequest namespace
-     * @property {string|null} [pod] ProjectByIDRequest pod
-     */
-
-    /**
-     * Constructs a new ProjectByIDRequest.
-     * @exports ProjectByIDRequest
-     * @classdesc Represents a ProjectByIDRequest.
-     * @implements IProjectByIDRequest
-     * @constructor
-     * @param {IProjectByIDRequest=} [properties] Properties to set
-     */
-    function ProjectByIDRequest(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ProjectByIDRequest namespace.
-     * @member {string} namespace
-     * @memberof ProjectByIDRequest
-     * @instance
-     */
-    ProjectByIDRequest.prototype.namespace = "";
-
-    /**
-     * ProjectByIDRequest pod.
-     * @member {string} pod
-     * @memberof ProjectByIDRequest
-     * @instance
-     */
-    ProjectByIDRequest.prototype.pod = "";
-
-    /**
-     * Encodes the specified ProjectByIDRequest message. Does not implicitly {@link ProjectByIDRequest.verify|verify} messages.
-     * @function encode
-     * @memberof ProjectByIDRequest
-     * @static
-     * @param {ProjectByIDRequest} message ProjectByIDRequest message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ProjectByIDRequest.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
-        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
-        return writer;
-    };
-
-    /**
-     * Decodes a ProjectByIDRequest message from the specified reader or buffer.
-     * @function decode
-     * @memberof ProjectByIDRequest
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectByIDRequest} ProjectByIDRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ProjectByIDRequest.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectByIDRequest();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.namespace = reader.string();
-                break;
-            case 2:
-                message.pod = reader.string();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ProjectByIDRequest;
-})();
-
-export const ProjectByIDResponse = $root.ProjectByIDResponse = (() => {
-
-    /**
-     * Properties of a ProjectByIDResponse.
-     * @exports IProjectByIDResponse
-     * @interface IProjectByIDResponse
-     * @property {number|null} [cpu] ProjectByIDResponse cpu
-     * @property {number|null} [memory] ProjectByIDResponse memory
-     * @property {string|null} [humanize_cpu] ProjectByIDResponse humanize_cpu
-     * @property {string|null} [humanize_memory] ProjectByIDResponse humanize_memory
-     * @property {string|null} [time] ProjectByIDResponse time
-     * @property {number|null} [length] ProjectByIDResponse length
-     */
-
-    /**
-     * Constructs a new ProjectByIDResponse.
-     * @exports ProjectByIDResponse
-     * @classdesc Represents a ProjectByIDResponse.
-     * @implements IProjectByIDResponse
-     * @constructor
-     * @param {IProjectByIDResponse=} [properties] Properties to set
-     */
-    function ProjectByIDResponse(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ProjectByIDResponse cpu.
-     * @member {number} cpu
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.cpu = 0;
-
-    /**
-     * ProjectByIDResponse memory.
-     * @member {number} memory
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.memory = 0;
-
-    /**
-     * ProjectByIDResponse humanize_cpu.
-     * @member {string} humanize_cpu
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.humanize_cpu = "";
-
-    /**
-     * ProjectByIDResponse humanize_memory.
-     * @member {string} humanize_memory
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.humanize_memory = "";
-
-    /**
-     * ProjectByIDResponse time.
-     * @member {string} time
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.time = "";
-
-    /**
-     * ProjectByIDResponse length.
-     * @member {number} length
-     * @memberof ProjectByIDResponse
-     * @instance
-     */
-    ProjectByIDResponse.prototype.length = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * Encodes the specified ProjectByIDResponse message. Does not implicitly {@link ProjectByIDResponse.verify|verify} messages.
-     * @function encode
-     * @memberof ProjectByIDResponse
-     * @static
-     * @param {ProjectByIDResponse} message ProjectByIDResponse message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ProjectByIDResponse.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
-            writer.uint32(/* id 1, wireType 1 =*/9).double(message.cpu);
-        if (message.memory != null && Object.hasOwnProperty.call(message, "memory"))
-            writer.uint32(/* id 2, wireType 1 =*/17).double(message.memory);
-        if (message.humanize_cpu != null && Object.hasOwnProperty.call(message, "humanize_cpu"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.humanize_cpu);
-        if (message.humanize_memory != null && Object.hasOwnProperty.call(message, "humanize_memory"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.humanize_memory);
-        if (message.time != null && Object.hasOwnProperty.call(message, "time"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.time);
-        if (message.length != null && Object.hasOwnProperty.call(message, "length"))
-            writer.uint32(/* id 6, wireType 0 =*/48).int64(message.length);
-        return writer;
-    };
-
-    /**
-     * Decodes a ProjectByIDResponse message from the specified reader or buffer.
-     * @function decode
-     * @memberof ProjectByIDResponse
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectByIDResponse} ProjectByIDResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ProjectByIDResponse.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectByIDResponse();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.cpu = reader.double();
-                break;
-            case 2:
-                message.memory = reader.double();
-                break;
-            case 3:
-                message.humanize_cpu = reader.string();
-                break;
-            case 4:
-                message.humanize_memory = reader.string();
-                break;
-            case 5:
-                message.time = reader.string();
-                break;
-            case 6:
-                message.length = reader.int64();
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ProjectByIDResponse;
-})();
-
-export const Metrics = $root.Metrics = (() => {
-
-    /**
-     * Constructs a new Metrics service.
-     * @exports Metrics
-     * @classdesc Represents a Metrics
-     * @extends $protobuf.rpc.Service
-     * @constructor
-     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
-     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
-     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
-     */
-    function Metrics(rpcImpl, requestDelimited, responseDelimited) {
-        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
-    }
-
-    (Metrics.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Metrics;
-
-    /**
-     * Callback as used by {@link Metrics#projectByID}.
-     * @memberof Metrics
-     * @typedef ProjectByIDCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {ProjectByIDResponse} [response] ProjectByIDResponse
-     */
-
-    /**
-     * Calls ProjectByID.
-     * @function projectByID
-     * @memberof Metrics
-     * @instance
-     * @param {ProjectByIDRequest} request ProjectByIDRequest message or plain object
-     * @param {Metrics.ProjectByIDCallback} callback Node-style callback called with the error, if any, and ProjectByIDResponse
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Metrics.prototype.projectByID = function projectByID(request, callback) {
-        return this.rpcCall(projectByID, $root.ProjectByIDRequest, $root.ProjectByIDResponse, request, callback);
-    }, "name", { value: "ProjectByID" });
-
-    /**
-     * Calls ProjectByID.
-     * @function projectByID
-     * @memberof Metrics
-     * @instance
-     * @param {ProjectByIDRequest} request ProjectByIDRequest message or plain object
-     * @returns {Promise<ProjectByIDResponse>} Promise
-     * @variation 2
-     */
-
-    return Metrics;
-})();
-
-export const GitlabProjectModal = $root.GitlabProjectModal = (() => {
-
-    /**
-     * Properties of a GitlabProjectModal.
-     * @exports IGitlabProjectModal
-     * @interface IGitlabProjectModal
-     * @property {number|null} [id] GitlabProjectModal id
-     * @property {string|null} [default_branch] GitlabProjectModal default_branch
-     * @property {string|null} [name] GitlabProjectModal name
-     * @property {number|null} [gitlab_project_id] GitlabProjectModal gitlab_project_id
-     * @property {boolean|null} [enabled] GitlabProjectModal enabled
-     * @property {boolean|null} [global_enabled] GitlabProjectModal global_enabled
-     * @property {string|null} [global_config] GitlabProjectModal global_config
-     * @property {google.protobuf.Timestamp|null} [created_at] GitlabProjectModal created_at
-     * @property {google.protobuf.Timestamp|null} [updated_at] GitlabProjectModal updated_at
-     * @property {google.protobuf.Timestamp|null} [deleted_at] GitlabProjectModal deleted_at
-     */
-
-    /**
-     * Constructs a new GitlabProjectModal.
-     * @exports GitlabProjectModal
-     * @classdesc Represents a GitlabProjectModal.
-     * @implements IGitlabProjectModal
-     * @constructor
-     * @param {IGitlabProjectModal=} [properties] Properties to set
-     */
-    function GitlabProjectModal(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * GitlabProjectModal id.
-     * @member {number} id
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * GitlabProjectModal default_branch.
-     * @member {string} default_branch
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.default_branch = "";
-
-    /**
-     * GitlabProjectModal name.
-     * @member {string} name
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.name = "";
-
-    /**
-     * GitlabProjectModal gitlab_project_id.
-     * @member {number} gitlab_project_id
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.gitlab_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * GitlabProjectModal enabled.
-     * @member {boolean} enabled
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.enabled = false;
-
-    /**
-     * GitlabProjectModal global_enabled.
-     * @member {boolean} global_enabled
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.global_enabled = false;
-
-    /**
-     * GitlabProjectModal global_config.
-     * @member {string} global_config
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.global_config = "";
-
-    /**
-     * GitlabProjectModal created_at.
-     * @member {google.protobuf.Timestamp|null|undefined} created_at
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.created_at = null;
-
-    /**
-     * GitlabProjectModal updated_at.
-     * @member {google.protobuf.Timestamp|null|undefined} updated_at
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.updated_at = null;
-
-    /**
-     * GitlabProjectModal deleted_at.
-     * @member {google.protobuf.Timestamp|null|undefined} deleted_at
-     * @memberof GitlabProjectModal
-     * @instance
-     */
-    GitlabProjectModal.prototype.deleted_at = null;
-
-    /**
-     * Encodes the specified GitlabProjectModal message. Does not implicitly {@link GitlabProjectModal.verify|verify} messages.
-     * @function encode
-     * @memberof GitlabProjectModal
-     * @static
-     * @param {GitlabProjectModal} message GitlabProjectModal message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    GitlabProjectModal.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-        if (message.default_branch != null && Object.hasOwnProperty.call(message, "default_branch"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.default_branch);
-        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.name);
-        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
-            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.gitlab_project_id);
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 5, wireType 0 =*/40).bool(message.enabled);
-        if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
-            writer.uint32(/* id 6, wireType 0 =*/48).bool(message.global_enabled);
-        if (message.global_config != null && Object.hasOwnProperty.call(message, "global_config"))
-            writer.uint32(/* id 7, wireType 2 =*/58).string(message.global_config);
-        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
-            $root.google.protobuf.Timestamp.encode(message.created_at, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
-        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
-            $root.google.protobuf.Timestamp.encode(message.updated_at, writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
-        if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
-            $root.google.protobuf.Timestamp.encode(message.deleted_at, writer.uint32(/* id 10, wireType 2 =*/82).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a GitlabProjectModal message from the specified reader or buffer.
-     * @function decode
-     * @memberof GitlabProjectModal
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {GitlabProjectModal} GitlabProjectModal
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    GitlabProjectModal.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitlabProjectModal();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.id = reader.int64();
-                break;
-            case 2:
-                message.default_branch = reader.string();
-                break;
-            case 3:
-                message.name = reader.string();
-                break;
-            case 4:
-                message.gitlab_project_id = reader.int64();
-                break;
-            case 5:
-                message.enabled = reader.bool();
-                break;
-            case 6:
-                message.global_enabled = reader.bool();
-                break;
-            case 7:
-                message.global_config = reader.string();
-                break;
-            case 8:
-                message.created_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 9:
-                message.updated_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 10:
-                message.deleted_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return GitlabProjectModal;
-})();
-
-export const NamespaceModal = $root.NamespaceModal = (() => {
-
-    /**
-     * Properties of a NamespaceModal.
-     * @exports INamespaceModal
-     * @interface INamespaceModal
-     * @property {number|null} [id] NamespaceModal id
-     * @property {string|null} [name] NamespaceModal name
-     * @property {Array.<string>|null} [image_pull_secrets] NamespaceModal image_pull_secrets
-     * @property {google.protobuf.Timestamp|null} [created_at] NamespaceModal created_at
-     * @property {google.protobuf.Timestamp|null} [updated_at] NamespaceModal updated_at
-     * @property {google.protobuf.Timestamp|null} [deleted_at] NamespaceModal deleted_at
-     * @property {Array.<ProjectModal>|null} [projects] NamespaceModal projects
-     */
-
-    /**
-     * Constructs a new NamespaceModal.
-     * @exports NamespaceModal
-     * @classdesc Represents a NamespaceModal.
-     * @implements INamespaceModal
-     * @constructor
-     * @param {INamespaceModal=} [properties] Properties to set
-     */
-    function NamespaceModal(properties) {
-        this.image_pull_secrets = [];
-        this.projects = [];
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * NamespaceModal id.
-     * @member {number} id
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * NamespaceModal name.
-     * @member {string} name
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.name = "";
-
-    /**
-     * NamespaceModal image_pull_secrets.
-     * @member {Array.<string>} image_pull_secrets
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.image_pull_secrets = $util.emptyArray;
-
-    /**
-     * NamespaceModal created_at.
-     * @member {google.protobuf.Timestamp|null|undefined} created_at
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.created_at = null;
-
-    /**
-     * NamespaceModal updated_at.
-     * @member {google.protobuf.Timestamp|null|undefined} updated_at
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.updated_at = null;
-
-    /**
-     * NamespaceModal deleted_at.
-     * @member {google.protobuf.Timestamp|null|undefined} deleted_at
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.deleted_at = null;
-
-    /**
-     * NamespaceModal projects.
-     * @member {Array.<ProjectModal>} projects
-     * @memberof NamespaceModal
-     * @instance
-     */
-    NamespaceModal.prototype.projects = $util.emptyArray;
-
-    /**
-     * Encodes the specified NamespaceModal message. Does not implicitly {@link NamespaceModal.verify|verify} messages.
-     * @function encode
-     * @memberof NamespaceModal
-     * @static
-     * @param {NamespaceModal} message NamespaceModal message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    NamespaceModal.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
-        if (message.image_pull_secrets != null && message.image_pull_secrets.length)
-            for (let i = 0; i < message.image_pull_secrets.length; ++i)
-                writer.uint32(/* id 3, wireType 2 =*/26).string(message.image_pull_secrets[i]);
-        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
-            $root.google.protobuf.Timestamp.encode(message.created_at, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
-        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
-            $root.google.protobuf.Timestamp.encode(message.updated_at, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
-        if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
-            $root.google.protobuf.Timestamp.encode(message.deleted_at, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
-        if (message.projects != null && message.projects.length)
-            for (let i = 0; i < message.projects.length; ++i)
-                $root.ProjectModal.encode(message.projects[i], writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a NamespaceModal message from the specified reader or buffer.
-     * @function decode
-     * @memberof NamespaceModal
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {NamespaceModal} NamespaceModal
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    NamespaceModal.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceModal();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.id = reader.int64();
-                break;
-            case 2:
-                message.name = reader.string();
-                break;
-            case 3:
-                if (!(message.image_pull_secrets && message.image_pull_secrets.length))
-                    message.image_pull_secrets = [];
-                message.image_pull_secrets.push(reader.string());
-                break;
-            case 4:
-                message.created_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 5:
-                message.updated_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 6:
-                message.deleted_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 7:
-                if (!(message.projects && message.projects.length))
-                    message.projects = [];
-                message.projects.push($root.ProjectModal.decode(reader, reader.uint32()));
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return NamespaceModal;
-})();
-
-export const ProjectModal = $root.ProjectModal = (() => {
-
-    /**
-     * Properties of a ProjectModal.
-     * @exports IProjectModal
-     * @interface IProjectModal
-     * @property {number|null} [id] ProjectModal id
-     * @property {string|null} [name] ProjectModal name
-     * @property {number|null} [gitlab_project_id] ProjectModal gitlab_project_id
-     * @property {string|null} [gitlab_branch] ProjectModal gitlab_branch
-     * @property {string|null} [gitlab_commit] ProjectModal gitlab_commit
-     * @property {string|null} [config] ProjectModal config
-     * @property {string|null} [override_values] ProjectModal override_values
-     * @property {string|null} [docker_image] ProjectModal docker_image
-     * @property {string|null} [pod_selectors] ProjectModal pod_selectors
-     * @property {number|null} [namespace_id] ProjectModal namespace_id
-     * @property {boolean|null} [atomic] ProjectModal atomic
-     * @property {google.protobuf.Timestamp|null} [created_at] ProjectModal created_at
-     * @property {google.protobuf.Timestamp|null} [updated_at] ProjectModal updated_at
-     * @property {google.protobuf.Timestamp|null} [deleted_at] ProjectModal deleted_at
-     * @property {NamespaceModal|null} [namespace] ProjectModal namespace
-     */
-
-    /**
-     * Constructs a new ProjectModal.
-     * @exports ProjectModal
-     * @classdesc Represents a ProjectModal.
-     * @implements IProjectModal
-     * @constructor
-     * @param {IProjectModal=} [properties] Properties to set
-     */
-    function ProjectModal(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * ProjectModal id.
-     * @member {number} id
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ProjectModal name.
-     * @member {string} name
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.name = "";
-
-    /**
-     * ProjectModal gitlab_project_id.
-     * @member {number} gitlab_project_id
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.gitlab_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ProjectModal gitlab_branch.
-     * @member {string} gitlab_branch
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.gitlab_branch = "";
-
-    /**
-     * ProjectModal gitlab_commit.
-     * @member {string} gitlab_commit
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.gitlab_commit = "";
-
-    /**
-     * ProjectModal config.
-     * @member {string} config
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.config = "";
-
-    /**
-     * ProjectModal override_values.
-     * @member {string} override_values
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.override_values = "";
-
-    /**
-     * ProjectModal docker_image.
-     * @member {string} docker_image
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.docker_image = "";
-
-    /**
-     * ProjectModal pod_selectors.
-     * @member {string} pod_selectors
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.pod_selectors = "";
-
-    /**
-     * ProjectModal namespace_id.
-     * @member {number} namespace_id
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ProjectModal atomic.
-     * @member {boolean} atomic
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.atomic = false;
-
-    /**
-     * ProjectModal created_at.
-     * @member {google.protobuf.Timestamp|null|undefined} created_at
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.created_at = null;
-
-    /**
-     * ProjectModal updated_at.
-     * @member {google.protobuf.Timestamp|null|undefined} updated_at
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.updated_at = null;
-
-    /**
-     * ProjectModal deleted_at.
-     * @member {google.protobuf.Timestamp|null|undefined} deleted_at
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.deleted_at = null;
-
-    /**
-     * ProjectModal namespace.
-     * @member {NamespaceModal|null|undefined} namespace
-     * @memberof ProjectModal
-     * @instance
-     */
-    ProjectModal.prototype.namespace = null;
-
-    /**
-     * Encodes the specified ProjectModal message. Does not implicitly {@link ProjectModal.verify|verify} messages.
-     * @function encode
-     * @memberof ProjectModal
-     * @static
-     * @param {ProjectModal} message ProjectModal message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    ProjectModal.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
-        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
-            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.gitlab_project_id);
-        if (message.gitlab_branch != null && Object.hasOwnProperty.call(message, "gitlab_branch"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.gitlab_branch);
-        if (message.gitlab_commit != null && Object.hasOwnProperty.call(message, "gitlab_commit"))
-            writer.uint32(/* id 5, wireType 2 =*/42).string(message.gitlab_commit);
-        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
-            writer.uint32(/* id 6, wireType 2 =*/50).string(message.config);
-        if (message.override_values != null && Object.hasOwnProperty.call(message, "override_values"))
-            writer.uint32(/* id 7, wireType 2 =*/58).string(message.override_values);
-        if (message.docker_image != null && Object.hasOwnProperty.call(message, "docker_image"))
-            writer.uint32(/* id 8, wireType 2 =*/66).string(message.docker_image);
-        if (message.pod_selectors != null && Object.hasOwnProperty.call(message, "pod_selectors"))
-            writer.uint32(/* id 9, wireType 2 =*/74).string(message.pod_selectors);
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 10, wireType 0 =*/80).int64(message.namespace_id);
-        if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
-            writer.uint32(/* id 11, wireType 0 =*/88).bool(message.atomic);
-        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
-            $root.google.protobuf.Timestamp.encode(message.created_at, writer.uint32(/* id 12, wireType 2 =*/98).fork()).ldelim();
-        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
-            $root.google.protobuf.Timestamp.encode(message.updated_at, writer.uint32(/* id 13, wireType 2 =*/106).fork()).ldelim();
-        if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
-            $root.google.protobuf.Timestamp.encode(message.deleted_at, writer.uint32(/* id 14, wireType 2 =*/114).fork()).ldelim();
-        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
-            $root.NamespaceModal.encode(message.namespace, writer.uint32(/* id 15, wireType 2 =*/122).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a ProjectModal message from the specified reader or buffer.
-     * @function decode
-     * @memberof ProjectModal
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectModal} ProjectModal
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    ProjectModal.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectModal();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.id = reader.int64();
-                break;
-            case 2:
-                message.name = reader.string();
-                break;
-            case 3:
-                message.gitlab_project_id = reader.int64();
-                break;
-            case 4:
-                message.gitlab_branch = reader.string();
-                break;
-            case 5:
-                message.gitlab_commit = reader.string();
-                break;
-            case 6:
-                message.config = reader.string();
-                break;
-            case 7:
-                message.override_values = reader.string();
-                break;
-            case 8:
-                message.docker_image = reader.string();
-                break;
-            case 9:
-                message.pod_selectors = reader.string();
-                break;
-            case 10:
-                message.namespace_id = reader.int64();
-                break;
-            case 11:
-                message.atomic = reader.bool();
-                break;
-            case 12:
-                message.created_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 13:
-                message.updated_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 14:
-                message.deleted_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
-                break;
-            case 15:
-                message.namespace = $root.NamespaceModal.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return ProjectModal;
 })();
 
 export const google = $root.google = (() => {
@@ -6356,32 +1046,34 @@ export const google = $root.google = (() => {
      */
     const google = {};
 
-    google.protobuf = (function() {
+    google.api = (function() {
 
         /**
-         * Namespace protobuf.
+         * Namespace api.
          * @memberof google
          * @namespace
          */
-        const protobuf = {};
+        const api = {};
 
-        protobuf.Empty = (function() {
+        api.Http = (function() {
 
             /**
-             * Properties of an Empty.
-             * @memberof google.protobuf
-             * @interface IEmpty
+             * Properties of a Http.
+             * @memberof google.api
+             * @interface IHttp
+             * @property {Array.<google.api.HttpRule>|null} [rules] Http rules
              */
 
             /**
-             * Constructs a new Empty.
-             * @memberof google.protobuf
-             * @classdesc Represents an Empty.
-             * @implements IEmpty
+             * Constructs a new Http.
+             * @memberof google.api
+             * @classdesc Represents a Http.
+             * @implements IHttp
              * @constructor
-             * @param {google.protobuf.IEmpty=} [properties] Properties to set
+             * @param {google.api.IHttp=} [properties] Properties to set
              */
-            function Empty(properties) {
+            function Http(properties) {
+                this.rules = [];
                 if (properties)
                     for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                         if (properties[keys[i]] != null)
@@ -6389,38 +1081,54 @@ export const google = $root.google = (() => {
             }
 
             /**
-             * Encodes the specified Empty message. Does not implicitly {@link google.protobuf.Empty.verify|verify} messages.
+             * Http rules.
+             * @member {Array.<google.api.HttpRule>} rules
+             * @memberof google.api.Http
+             * @instance
+             */
+            Http.prototype.rules = $util.emptyArray;
+
+            /**
+             * Encodes the specified Http message. Does not implicitly {@link google.api.Http.verify|verify} messages.
              * @function encode
-             * @memberof google.protobuf.Empty
+             * @memberof google.api.Http
              * @static
-             * @param {google.protobuf.Empty} message Empty message or plain object to encode
+             * @param {google.api.Http} message Http message or plain object to encode
              * @param {$protobuf.Writer} [writer] Writer to encode to
              * @returns {$protobuf.Writer} Writer
              */
-            Empty.encode = function encode(message, writer) {
+            Http.encode = function encode(message, writer) {
                 if (!writer)
                     writer = $Writer.create();
+                if (message.rules != null && message.rules.length)
+                    for (let i = 0; i < message.rules.length; ++i)
+                        $root.google.api.HttpRule.encode(message.rules[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
                 return writer;
             };
 
             /**
-             * Decodes an Empty message from the specified reader or buffer.
+             * Decodes a Http message from the specified reader or buffer.
              * @function decode
-             * @memberof google.protobuf.Empty
+             * @memberof google.api.Http
              * @static
              * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
              * @param {number} [length] Message length if known beforehand
-             * @returns {google.protobuf.Empty} Empty
+             * @returns {google.api.Http} Http
              * @throws {Error} If the payload is not a reader or valid buffer
              * @throws {$protobuf.util.ProtocolError} If required fields are missing
              */
-            Empty.decode = function decode(reader, length) {
+            Http.decode = function decode(reader, length) {
                 if (!(reader instanceof $Reader))
                     reader = $Reader.create(reader);
-                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.protobuf.Empty();
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.Http();
                 while (reader.pos < end) {
                     let tag = reader.uint32();
                     switch (tag >>> 3) {
+                    case 1:
+                        if (!(message.rules && message.rules.length))
+                            message.rules = [];
+                        message.rules.push($root.google.api.HttpRule.decode(reader, reader.uint32()));
+                        break;
                     default:
                         reader.skipType(tag & 7);
                         break;
@@ -6429,8 +1137,326 @@ export const google = $root.google = (() => {
                 return message;
             };
 
-            return Empty;
+            return Http;
         })();
+
+        api.HttpRule = (function() {
+
+            /**
+             * Properties of a HttpRule.
+             * @memberof google.api
+             * @interface IHttpRule
+             * @property {string|null} [get] HttpRule get
+             * @property {string|null} [put] HttpRule put
+             * @property {string|null} [post] HttpRule post
+             * @property {string|null} ["delete"] HttpRule delete
+             * @property {string|null} [patch] HttpRule patch
+             * @property {google.api.CustomHttpPattern|null} [custom] HttpRule custom
+             * @property {string|null} [selector] HttpRule selector
+             * @property {string|null} [body] HttpRule body
+             * @property {Array.<google.api.HttpRule>|null} [additional_bindings] HttpRule additional_bindings
+             */
+
+            /**
+             * Constructs a new HttpRule.
+             * @memberof google.api
+             * @classdesc Represents a HttpRule.
+             * @implements IHttpRule
+             * @constructor
+             * @param {google.api.IHttpRule=} [properties] Properties to set
+             */
+            function HttpRule(properties) {
+                this.additional_bindings = [];
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * HttpRule get.
+             * @member {string|null|undefined} get
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.get = null;
+
+            /**
+             * HttpRule put.
+             * @member {string|null|undefined} put
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.put = null;
+
+            /**
+             * HttpRule post.
+             * @member {string|null|undefined} post
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.post = null;
+
+            /**
+             * HttpRule delete.
+             * @member {string|null|undefined} delete
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype["delete"] = null;
+
+            /**
+             * HttpRule patch.
+             * @member {string|null|undefined} patch
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.patch = null;
+
+            /**
+             * HttpRule custom.
+             * @member {google.api.CustomHttpPattern|null|undefined} custom
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.custom = null;
+
+            /**
+             * HttpRule selector.
+             * @member {string} selector
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.selector = "";
+
+            /**
+             * HttpRule body.
+             * @member {string} body
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.body = "";
+
+            /**
+             * HttpRule additional_bindings.
+             * @member {Array.<google.api.HttpRule>} additional_bindings
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            HttpRule.prototype.additional_bindings = $util.emptyArray;
+
+            // OneOf field names bound to virtual getters and setters
+            let $oneOfFields;
+
+            /**
+             * HttpRule pattern.
+             * @member {"get"|"put"|"post"|"delete"|"patch"|"custom"|undefined} pattern
+             * @memberof google.api.HttpRule
+             * @instance
+             */
+            Object.defineProperty(HttpRule.prototype, "pattern", {
+                get: $util.oneOfGetter($oneOfFields = ["get", "put", "post", "delete", "patch", "custom"]),
+                set: $util.oneOfSetter($oneOfFields)
+            });
+
+            /**
+             * Encodes the specified HttpRule message. Does not implicitly {@link google.api.HttpRule.verify|verify} messages.
+             * @function encode
+             * @memberof google.api.HttpRule
+             * @static
+             * @param {google.api.HttpRule} message HttpRule message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            HttpRule.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.selector != null && Object.hasOwnProperty.call(message, "selector"))
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.selector);
+                if (message.get != null && Object.hasOwnProperty.call(message, "get"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.get);
+                if (message.put != null && Object.hasOwnProperty.call(message, "put"))
+                    writer.uint32(/* id 3, wireType 2 =*/26).string(message.put);
+                if (message.post != null && Object.hasOwnProperty.call(message, "post"))
+                    writer.uint32(/* id 4, wireType 2 =*/34).string(message.post);
+                if (message["delete"] != null && Object.hasOwnProperty.call(message, "delete"))
+                    writer.uint32(/* id 5, wireType 2 =*/42).string(message["delete"]);
+                if (message.patch != null && Object.hasOwnProperty.call(message, "patch"))
+                    writer.uint32(/* id 6, wireType 2 =*/50).string(message.patch);
+                if (message.body != null && Object.hasOwnProperty.call(message, "body"))
+                    writer.uint32(/* id 7, wireType 2 =*/58).string(message.body);
+                if (message.custom != null && Object.hasOwnProperty.call(message, "custom"))
+                    $root.google.api.CustomHttpPattern.encode(message.custom, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
+                if (message.additional_bindings != null && message.additional_bindings.length)
+                    for (let i = 0; i < message.additional_bindings.length; ++i)
+                        $root.google.api.HttpRule.encode(message.additional_bindings[i], writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
+                return writer;
+            };
+
+            /**
+             * Decodes a HttpRule message from the specified reader or buffer.
+             * @function decode
+             * @memberof google.api.HttpRule
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {google.api.HttpRule} HttpRule
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            HttpRule.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.HttpRule();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 2:
+                        message.get = reader.string();
+                        break;
+                    case 3:
+                        message.put = reader.string();
+                        break;
+                    case 4:
+                        message.post = reader.string();
+                        break;
+                    case 5:
+                        message["delete"] = reader.string();
+                        break;
+                    case 6:
+                        message.patch = reader.string();
+                        break;
+                    case 8:
+                        message.custom = $root.google.api.CustomHttpPattern.decode(reader, reader.uint32());
+                        break;
+                    case 1:
+                        message.selector = reader.string();
+                        break;
+                    case 7:
+                        message.body = reader.string();
+                        break;
+                    case 11:
+                        if (!(message.additional_bindings && message.additional_bindings.length))
+                            message.additional_bindings = [];
+                        message.additional_bindings.push($root.google.api.HttpRule.decode(reader, reader.uint32()));
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            return HttpRule;
+        })();
+
+        api.CustomHttpPattern = (function() {
+
+            /**
+             * Properties of a CustomHttpPattern.
+             * @memberof google.api
+             * @interface ICustomHttpPattern
+             * @property {string|null} [kind] CustomHttpPattern kind
+             * @property {string|null} [path] CustomHttpPattern path
+             */
+
+            /**
+             * Constructs a new CustomHttpPattern.
+             * @memberof google.api
+             * @classdesc Represents a CustomHttpPattern.
+             * @implements ICustomHttpPattern
+             * @constructor
+             * @param {google.api.ICustomHttpPattern=} [properties] Properties to set
+             */
+            function CustomHttpPattern(properties) {
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * CustomHttpPattern kind.
+             * @member {string} kind
+             * @memberof google.api.CustomHttpPattern
+             * @instance
+             */
+            CustomHttpPattern.prototype.kind = "";
+
+            /**
+             * CustomHttpPattern path.
+             * @member {string} path
+             * @memberof google.api.CustomHttpPattern
+             * @instance
+             */
+            CustomHttpPattern.prototype.path = "";
+
+            /**
+             * Encodes the specified CustomHttpPattern message. Does not implicitly {@link google.api.CustomHttpPattern.verify|verify} messages.
+             * @function encode
+             * @memberof google.api.CustomHttpPattern
+             * @static
+             * @param {google.api.CustomHttpPattern} message CustomHttpPattern message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            CustomHttpPattern.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.kind != null && Object.hasOwnProperty.call(message, "kind"))
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.kind);
+                if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.path);
+                return writer;
+            };
+
+            /**
+             * Decodes a CustomHttpPattern message from the specified reader or buffer.
+             * @function decode
+             * @memberof google.api.CustomHttpPattern
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {google.api.CustomHttpPattern} CustomHttpPattern
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            CustomHttpPattern.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.CustomHttpPattern();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 1:
+                        message.kind = reader.string();
+                        break;
+                    case 2:
+                        message.path = reader.string();
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            return CustomHttpPattern;
+        })();
+
+        return api;
+    })();
+
+    google.protobuf = (function() {
+
+        /**
+         * Namespace protobuf.
+         * @memberof google
+         * @namespace
+         */
+        const protobuf = {};
 
         protobuf.FileDescriptorSet = (function() {
 
@@ -9953,528 +4979,31 @@ export const google = $root.google = (() => {
             return GeneratedCodeInfo;
         })();
 
-        protobuf.Timestamp = (function() {
-
-            /**
-             * Properties of a Timestamp.
-             * @memberof google.protobuf
-             * @interface ITimestamp
-             * @property {number|null} [seconds] Timestamp seconds
-             * @property {number|null} [nanos] Timestamp nanos
-             */
-
-            /**
-             * Constructs a new Timestamp.
-             * @memberof google.protobuf
-             * @classdesc Represents a Timestamp.
-             * @implements ITimestamp
-             * @constructor
-             * @param {google.protobuf.ITimestamp=} [properties] Properties to set
-             */
-            function Timestamp(properties) {
-                if (properties)
-                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                        if (properties[keys[i]] != null)
-                            this[keys[i]] = properties[keys[i]];
-            }
-
-            /**
-             * Timestamp seconds.
-             * @member {number} seconds
-             * @memberof google.protobuf.Timestamp
-             * @instance
-             */
-            Timestamp.prototype.seconds = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-            /**
-             * Timestamp nanos.
-             * @member {number} nanos
-             * @memberof google.protobuf.Timestamp
-             * @instance
-             */
-            Timestamp.prototype.nanos = 0;
-
-            /**
-             * Encodes the specified Timestamp message. Does not implicitly {@link google.protobuf.Timestamp.verify|verify} messages.
-             * @function encode
-             * @memberof google.protobuf.Timestamp
-             * @static
-             * @param {google.protobuf.Timestamp} message Timestamp message or plain object to encode
-             * @param {$protobuf.Writer} [writer] Writer to encode to
-             * @returns {$protobuf.Writer} Writer
-             */
-            Timestamp.encode = function encode(message, writer) {
-                if (!writer)
-                    writer = $Writer.create();
-                if (message.seconds != null && Object.hasOwnProperty.call(message, "seconds"))
-                    writer.uint32(/* id 1, wireType 0 =*/8).int64(message.seconds);
-                if (message.nanos != null && Object.hasOwnProperty.call(message, "nanos"))
-                    writer.uint32(/* id 2, wireType 0 =*/16).int32(message.nanos);
-                return writer;
-            };
-
-            /**
-             * Decodes a Timestamp message from the specified reader or buffer.
-             * @function decode
-             * @memberof google.protobuf.Timestamp
-             * @static
-             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-             * @param {number} [length] Message length if known beforehand
-             * @returns {google.protobuf.Timestamp} Timestamp
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            Timestamp.decode = function decode(reader, length) {
-                if (!(reader instanceof $Reader))
-                    reader = $Reader.create(reader);
-                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.protobuf.Timestamp();
-                while (reader.pos < end) {
-                    let tag = reader.uint32();
-                    switch (tag >>> 3) {
-                    case 1:
-                        message.seconds = reader.int64();
-                        break;
-                    case 2:
-                        message.nanos = reader.int32();
-                        break;
-                    default:
-                        reader.skipType(tag & 7);
-                        break;
-                    }
-                }
-                return message;
-            };
-
-            return Timestamp;
-        })();
-
         return protobuf;
-    })();
-
-    google.api = (function() {
-
-        /**
-         * Namespace api.
-         * @memberof google
-         * @namespace
-         */
-        const api = {};
-
-        api.Http = (function() {
-
-            /**
-             * Properties of a Http.
-             * @memberof google.api
-             * @interface IHttp
-             * @property {Array.<google.api.HttpRule>|null} [rules] Http rules
-             */
-
-            /**
-             * Constructs a new Http.
-             * @memberof google.api
-             * @classdesc Represents a Http.
-             * @implements IHttp
-             * @constructor
-             * @param {google.api.IHttp=} [properties] Properties to set
-             */
-            function Http(properties) {
-                this.rules = [];
-                if (properties)
-                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                        if (properties[keys[i]] != null)
-                            this[keys[i]] = properties[keys[i]];
-            }
-
-            /**
-             * Http rules.
-             * @member {Array.<google.api.HttpRule>} rules
-             * @memberof google.api.Http
-             * @instance
-             */
-            Http.prototype.rules = $util.emptyArray;
-
-            /**
-             * Encodes the specified Http message. Does not implicitly {@link google.api.Http.verify|verify} messages.
-             * @function encode
-             * @memberof google.api.Http
-             * @static
-             * @param {google.api.Http} message Http message or plain object to encode
-             * @param {$protobuf.Writer} [writer] Writer to encode to
-             * @returns {$protobuf.Writer} Writer
-             */
-            Http.encode = function encode(message, writer) {
-                if (!writer)
-                    writer = $Writer.create();
-                if (message.rules != null && message.rules.length)
-                    for (let i = 0; i < message.rules.length; ++i)
-                        $root.google.api.HttpRule.encode(message.rules[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-                return writer;
-            };
-
-            /**
-             * Decodes a Http message from the specified reader or buffer.
-             * @function decode
-             * @memberof google.api.Http
-             * @static
-             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-             * @param {number} [length] Message length if known beforehand
-             * @returns {google.api.Http} Http
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            Http.decode = function decode(reader, length) {
-                if (!(reader instanceof $Reader))
-                    reader = $Reader.create(reader);
-                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.Http();
-                while (reader.pos < end) {
-                    let tag = reader.uint32();
-                    switch (tag >>> 3) {
-                    case 1:
-                        if (!(message.rules && message.rules.length))
-                            message.rules = [];
-                        message.rules.push($root.google.api.HttpRule.decode(reader, reader.uint32()));
-                        break;
-                    default:
-                        reader.skipType(tag & 7);
-                        break;
-                    }
-                }
-                return message;
-            };
-
-            return Http;
-        })();
-
-        api.HttpRule = (function() {
-
-            /**
-             * Properties of a HttpRule.
-             * @memberof google.api
-             * @interface IHttpRule
-             * @property {string|null} [get] HttpRule get
-             * @property {string|null} [put] HttpRule put
-             * @property {string|null} [post] HttpRule post
-             * @property {string|null} ["delete"] HttpRule delete
-             * @property {string|null} [patch] HttpRule patch
-             * @property {google.api.CustomHttpPattern|null} [custom] HttpRule custom
-             * @property {string|null} [selector] HttpRule selector
-             * @property {string|null} [body] HttpRule body
-             * @property {Array.<google.api.HttpRule>|null} [additional_bindings] HttpRule additional_bindings
-             */
-
-            /**
-             * Constructs a new HttpRule.
-             * @memberof google.api
-             * @classdesc Represents a HttpRule.
-             * @implements IHttpRule
-             * @constructor
-             * @param {google.api.IHttpRule=} [properties] Properties to set
-             */
-            function HttpRule(properties) {
-                this.additional_bindings = [];
-                if (properties)
-                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                        if (properties[keys[i]] != null)
-                            this[keys[i]] = properties[keys[i]];
-            }
-
-            /**
-             * HttpRule get.
-             * @member {string|null|undefined} get
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.get = null;
-
-            /**
-             * HttpRule put.
-             * @member {string|null|undefined} put
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.put = null;
-
-            /**
-             * HttpRule post.
-             * @member {string|null|undefined} post
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.post = null;
-
-            /**
-             * HttpRule delete.
-             * @member {string|null|undefined} delete
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype["delete"] = null;
-
-            /**
-             * HttpRule patch.
-             * @member {string|null|undefined} patch
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.patch = null;
-
-            /**
-             * HttpRule custom.
-             * @member {google.api.CustomHttpPattern|null|undefined} custom
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.custom = null;
-
-            /**
-             * HttpRule selector.
-             * @member {string} selector
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.selector = "";
-
-            /**
-             * HttpRule body.
-             * @member {string} body
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.body = "";
-
-            /**
-             * HttpRule additional_bindings.
-             * @member {Array.<google.api.HttpRule>} additional_bindings
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            HttpRule.prototype.additional_bindings = $util.emptyArray;
-
-            // OneOf field names bound to virtual getters and setters
-            let $oneOfFields;
-
-            /**
-             * HttpRule pattern.
-             * @member {"get"|"put"|"post"|"delete"|"patch"|"custom"|undefined} pattern
-             * @memberof google.api.HttpRule
-             * @instance
-             */
-            Object.defineProperty(HttpRule.prototype, "pattern", {
-                get: $util.oneOfGetter($oneOfFields = ["get", "put", "post", "delete", "patch", "custom"]),
-                set: $util.oneOfSetter($oneOfFields)
-            });
-
-            /**
-             * Encodes the specified HttpRule message. Does not implicitly {@link google.api.HttpRule.verify|verify} messages.
-             * @function encode
-             * @memberof google.api.HttpRule
-             * @static
-             * @param {google.api.HttpRule} message HttpRule message or plain object to encode
-             * @param {$protobuf.Writer} [writer] Writer to encode to
-             * @returns {$protobuf.Writer} Writer
-             */
-            HttpRule.encode = function encode(message, writer) {
-                if (!writer)
-                    writer = $Writer.create();
-                if (message.selector != null && Object.hasOwnProperty.call(message, "selector"))
-                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.selector);
-                if (message.get != null && Object.hasOwnProperty.call(message, "get"))
-                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.get);
-                if (message.put != null && Object.hasOwnProperty.call(message, "put"))
-                    writer.uint32(/* id 3, wireType 2 =*/26).string(message.put);
-                if (message.post != null && Object.hasOwnProperty.call(message, "post"))
-                    writer.uint32(/* id 4, wireType 2 =*/34).string(message.post);
-                if (message["delete"] != null && Object.hasOwnProperty.call(message, "delete"))
-                    writer.uint32(/* id 5, wireType 2 =*/42).string(message["delete"]);
-                if (message.patch != null && Object.hasOwnProperty.call(message, "patch"))
-                    writer.uint32(/* id 6, wireType 2 =*/50).string(message.patch);
-                if (message.body != null && Object.hasOwnProperty.call(message, "body"))
-                    writer.uint32(/* id 7, wireType 2 =*/58).string(message.body);
-                if (message.custom != null && Object.hasOwnProperty.call(message, "custom"))
-                    $root.google.api.CustomHttpPattern.encode(message.custom, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
-                if (message.additional_bindings != null && message.additional_bindings.length)
-                    for (let i = 0; i < message.additional_bindings.length; ++i)
-                        $root.google.api.HttpRule.encode(message.additional_bindings[i], writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
-                return writer;
-            };
-
-            /**
-             * Decodes a HttpRule message from the specified reader or buffer.
-             * @function decode
-             * @memberof google.api.HttpRule
-             * @static
-             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-             * @param {number} [length] Message length if known beforehand
-             * @returns {google.api.HttpRule} HttpRule
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            HttpRule.decode = function decode(reader, length) {
-                if (!(reader instanceof $Reader))
-                    reader = $Reader.create(reader);
-                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.HttpRule();
-                while (reader.pos < end) {
-                    let tag = reader.uint32();
-                    switch (tag >>> 3) {
-                    case 2:
-                        message.get = reader.string();
-                        break;
-                    case 3:
-                        message.put = reader.string();
-                        break;
-                    case 4:
-                        message.post = reader.string();
-                        break;
-                    case 5:
-                        message["delete"] = reader.string();
-                        break;
-                    case 6:
-                        message.patch = reader.string();
-                        break;
-                    case 8:
-                        message.custom = $root.google.api.CustomHttpPattern.decode(reader, reader.uint32());
-                        break;
-                    case 1:
-                        message.selector = reader.string();
-                        break;
-                    case 7:
-                        message.body = reader.string();
-                        break;
-                    case 11:
-                        if (!(message.additional_bindings && message.additional_bindings.length))
-                            message.additional_bindings = [];
-                        message.additional_bindings.push($root.google.api.HttpRule.decode(reader, reader.uint32()));
-                        break;
-                    default:
-                        reader.skipType(tag & 7);
-                        break;
-                    }
-                }
-                return message;
-            };
-
-            return HttpRule;
-        })();
-
-        api.CustomHttpPattern = (function() {
-
-            /**
-             * Properties of a CustomHttpPattern.
-             * @memberof google.api
-             * @interface ICustomHttpPattern
-             * @property {string|null} [kind] CustomHttpPattern kind
-             * @property {string|null} [path] CustomHttpPattern path
-             */
-
-            /**
-             * Constructs a new CustomHttpPattern.
-             * @memberof google.api
-             * @classdesc Represents a CustomHttpPattern.
-             * @implements ICustomHttpPattern
-             * @constructor
-             * @param {google.api.ICustomHttpPattern=} [properties] Properties to set
-             */
-            function CustomHttpPattern(properties) {
-                if (properties)
-                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                        if (properties[keys[i]] != null)
-                            this[keys[i]] = properties[keys[i]];
-            }
-
-            /**
-             * CustomHttpPattern kind.
-             * @member {string} kind
-             * @memberof google.api.CustomHttpPattern
-             * @instance
-             */
-            CustomHttpPattern.prototype.kind = "";
-
-            /**
-             * CustomHttpPattern path.
-             * @member {string} path
-             * @memberof google.api.CustomHttpPattern
-             * @instance
-             */
-            CustomHttpPattern.prototype.path = "";
-
-            /**
-             * Encodes the specified CustomHttpPattern message. Does not implicitly {@link google.api.CustomHttpPattern.verify|verify} messages.
-             * @function encode
-             * @memberof google.api.CustomHttpPattern
-             * @static
-             * @param {google.api.CustomHttpPattern} message CustomHttpPattern message or plain object to encode
-             * @param {$protobuf.Writer} [writer] Writer to encode to
-             * @returns {$protobuf.Writer} Writer
-             */
-            CustomHttpPattern.encode = function encode(message, writer) {
-                if (!writer)
-                    writer = $Writer.create();
-                if (message.kind != null && Object.hasOwnProperty.call(message, "kind"))
-                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.kind);
-                if (message.path != null && Object.hasOwnProperty.call(message, "path"))
-                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.path);
-                return writer;
-            };
-
-            /**
-             * Decodes a CustomHttpPattern message from the specified reader or buffer.
-             * @function decode
-             * @memberof google.api.CustomHttpPattern
-             * @static
-             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-             * @param {number} [length] Message length if known beforehand
-             * @returns {google.api.CustomHttpPattern} CustomHttpPattern
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            CustomHttpPattern.decode = function decode(reader, length) {
-                if (!(reader instanceof $Reader))
-                    reader = $Reader.create(reader);
-                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.google.api.CustomHttpPattern();
-                while (reader.pos < end) {
-                    let tag = reader.uint32();
-                    switch (tag >>> 3) {
-                    case 1:
-                        message.kind = reader.string();
-                        break;
-                    case 2:
-                        message.path = reader.string();
-                        break;
-                    default:
-                        reader.skipType(tag & 7);
-                        break;
-                    }
-                }
-                return message;
-            };
-
-            return CustomHttpPattern;
-        })();
-
-        return api;
     })();
 
     return google;
 })();
 
-export const NamespaceID = $root.NamespaceID = (() => {
+export const ChangelogShowRequest = $root.ChangelogShowRequest = (() => {
 
     /**
-     * Properties of a NamespaceID.
-     * @exports INamespaceID
-     * @interface INamespaceID
-     * @property {number|null} [namespace_id] NamespaceID namespace_id
+     * Properties of a ChangelogShowRequest.
+     * @exports IChangelogShowRequest
+     * @interface IChangelogShowRequest
+     * @property {number|null} [project_id] ChangelogShowRequest project_id
+     * @property {boolean|null} [only_changed] ChangelogShowRequest only_changed
      */
 
     /**
-     * Constructs a new NamespaceID.
-     * @exports NamespaceID
-     * @classdesc Represents a NamespaceID.
-     * @implements INamespaceID
+     * Constructs a new ChangelogShowRequest.
+     * @exports ChangelogShowRequest
+     * @classdesc Represents a ChangelogShowRequest.
+     * @implements IChangelogShowRequest
      * @constructor
-     * @param {INamespaceID=} [properties] Properties to set
+     * @param {IChangelogShowRequest=} [properties] Properties to set
      */
-    function NamespaceID(properties) {
+    function ChangelogShowRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -10482,50 +5011,63 @@ export const NamespaceID = $root.NamespaceID = (() => {
     }
 
     /**
-     * NamespaceID namespace_id.
-     * @member {number} namespace_id
-     * @memberof NamespaceID
+     * ChangelogShowRequest project_id.
+     * @member {number} project_id
+     * @memberof ChangelogShowRequest
      * @instance
      */
-    NamespaceID.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ChangelogShowRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified NamespaceID message. Does not implicitly {@link NamespaceID.verify|verify} messages.
+     * ChangelogShowRequest only_changed.
+     * @member {boolean} only_changed
+     * @memberof ChangelogShowRequest
+     * @instance
+     */
+    ChangelogShowRequest.prototype.only_changed = false;
+
+    /**
+     * Encodes the specified ChangelogShowRequest message. Does not implicitly {@link ChangelogShowRequest.verify|verify} messages.
      * @function encode
-     * @memberof NamespaceID
+     * @memberof ChangelogShowRequest
      * @static
-     * @param {NamespaceID} message NamespaceID message or plain object to encode
+     * @param {ChangelogShowRequest} message ChangelogShowRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    NamespaceID.encode = function encode(message, writer) {
+    ChangelogShowRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        if (message.only_changed != null && Object.hasOwnProperty.call(message, "only_changed"))
+            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.only_changed);
         return writer;
     };
 
     /**
-     * Decodes a NamespaceID message from the specified reader or buffer.
+     * Decodes a ChangelogShowRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof NamespaceID
+     * @memberof ChangelogShowRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {NamespaceID} NamespaceID
+     * @returns {ChangelogShowRequest} ChangelogShowRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    NamespaceID.decode = function decode(reader, length) {
+    ChangelogShowRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceID();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogShowRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
+                message.project_id = reader.int64();
+                break;
+            case 2:
+                message.only_changed = reader.bool();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -10535,33 +5077,30 @@ export const NamespaceID = $root.NamespaceID = (() => {
         return message;
     };
 
-    return NamespaceID;
+    return ChangelogShowRequest;
 })();
 
-export const NamespaceResponse = $root.NamespaceResponse = (() => {
+export const ChangelogShowItem = $root.ChangelogShowItem = (() => {
 
     /**
-     * Properties of a NamespaceResponse.
-     * @exports INamespaceResponse
-     * @interface INamespaceResponse
-     * @property {number|null} [id] NamespaceResponse id
-     * @property {string|null} [name] NamespaceResponse name
-     * @property {Array.<string>|null} [image_pull_secrets] NamespaceResponse image_pull_secrets
-     * @property {google.protobuf.Timestamp|null} [created_at] NamespaceResponse created_at
-     * @property {google.protobuf.Timestamp|null} [updated_at] NamespaceResponse updated_at
-     * @property {google.protobuf.Timestamp|null} [deleted_at] NamespaceResponse deleted_at
+     * Properties of a ChangelogShowItem.
+     * @exports IChangelogShowItem
+     * @interface IChangelogShowItem
+     * @property {number|null} [version] ChangelogShowItem version
+     * @property {string|null} [config] ChangelogShowItem config
+     * @property {string|null} [date] ChangelogShowItem date
+     * @property {string|null} [username] ChangelogShowItem username
      */
 
     /**
-     * Constructs a new NamespaceResponse.
-     * @exports NamespaceResponse
-     * @classdesc Represents a NamespaceResponse.
-     * @implements INamespaceResponse
+     * Constructs a new ChangelogShowItem.
+     * @exports ChangelogShowItem
+     * @classdesc Represents a ChangelogShowItem.
+     * @implements IChangelogShowItem
      * @constructor
-     * @param {INamespaceResponse=} [properties] Properties to set
+     * @param {IChangelogShowItem=} [properties] Properties to set
      */
-    function NamespaceResponse(properties) {
-        this.image_pull_secrets = [];
+    function ChangelogShowItem(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -10569,63 +5108,5482 @@ export const NamespaceResponse = $root.NamespaceResponse = (() => {
     }
 
     /**
-     * NamespaceResponse id.
-     * @member {number} id
-     * @memberof NamespaceResponse
+     * ChangelogShowItem version.
+     * @member {number} version
+     * @memberof ChangelogShowItem
      * @instance
      */
-    NamespaceResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ChangelogShowItem.prototype.version = 0;
 
     /**
-     * NamespaceResponse name.
-     * @member {string} name
-     * @memberof NamespaceResponse
+     * ChangelogShowItem config.
+     * @member {string} config
+     * @memberof ChangelogShowItem
      * @instance
      */
-    NamespaceResponse.prototype.name = "";
+    ChangelogShowItem.prototype.config = "";
 
     /**
-     * NamespaceResponse image_pull_secrets.
-     * @member {Array.<string>} image_pull_secrets
-     * @memberof NamespaceResponse
+     * ChangelogShowItem date.
+     * @member {string} date
+     * @memberof ChangelogShowItem
      * @instance
      */
-    NamespaceResponse.prototype.image_pull_secrets = $util.emptyArray;
+    ChangelogShowItem.prototype.date = "";
 
     /**
-     * NamespaceResponse created_at.
-     * @member {google.protobuf.Timestamp|null|undefined} created_at
-     * @memberof NamespaceResponse
+     * ChangelogShowItem username.
+     * @member {string} username
+     * @memberof ChangelogShowItem
      * @instance
      */
-    NamespaceResponse.prototype.created_at = null;
+    ChangelogShowItem.prototype.username = "";
 
     /**
-     * NamespaceResponse updated_at.
-     * @member {google.protobuf.Timestamp|null|undefined} updated_at
-     * @memberof NamespaceResponse
-     * @instance
-     */
-    NamespaceResponse.prototype.updated_at = null;
-
-    /**
-     * NamespaceResponse deleted_at.
-     * @member {google.protobuf.Timestamp|null|undefined} deleted_at
-     * @memberof NamespaceResponse
-     * @instance
-     */
-    NamespaceResponse.prototype.deleted_at = null;
-
-    /**
-     * Encodes the specified NamespaceResponse message. Does not implicitly {@link NamespaceResponse.verify|verify} messages.
+     * Encodes the specified ChangelogShowItem message. Does not implicitly {@link ChangelogShowItem.verify|verify} messages.
      * @function encode
-     * @memberof NamespaceResponse
+     * @memberof ChangelogShowItem
      * @static
-     * @param {NamespaceResponse} message NamespaceResponse message or plain object to encode
+     * @param {ChangelogShowItem} message ChangelogShowItem message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    NamespaceResponse.encode = function encode(message, writer) {
+    ChangelogShowItem.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.version != null && Object.hasOwnProperty.call(message, "version"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int32(message.version);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config);
+        if (message.date != null && Object.hasOwnProperty.call(message, "date"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.date);
+        if (message.username != null && Object.hasOwnProperty.call(message, "username"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.username);
+        return writer;
+    };
+
+    /**
+     * Decodes a ChangelogShowItem message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangelogShowItem
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangelogShowItem} ChangelogShowItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangelogShowItem.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogShowItem();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.version = reader.int32();
+                break;
+            case 2:
+                message.config = reader.string();
+                break;
+            case 3:
+                message.date = reader.string();
+                break;
+            case 4:
+                message.username = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ChangelogShowItem;
+})();
+
+export const ChangelogShowResponse = $root.ChangelogShowResponse = (() => {
+
+    /**
+     * Properties of a ChangelogShowResponse.
+     * @exports IChangelogShowResponse
+     * @interface IChangelogShowResponse
+     * @property {Array.<ChangelogShowItem>|null} [items] ChangelogShowResponse items
+     */
+
+    /**
+     * Constructs a new ChangelogShowResponse.
+     * @exports ChangelogShowResponse
+     * @classdesc Represents a ChangelogShowResponse.
+     * @implements IChangelogShowResponse
+     * @constructor
+     * @param {IChangelogShowResponse=} [properties] Properties to set
+     */
+    function ChangelogShowResponse(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangelogShowResponse items.
+     * @member {Array.<ChangelogShowItem>} items
+     * @memberof ChangelogShowResponse
+     * @instance
+     */
+    ChangelogShowResponse.prototype.items = $util.emptyArray;
+
+    /**
+     * Encodes the specified ChangelogShowResponse message. Does not implicitly {@link ChangelogShowResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ChangelogShowResponse
+     * @static
+     * @param {ChangelogShowResponse} message ChangelogShowResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangelogShowResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.ChangelogShowItem.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a ChangelogShowResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangelogShowResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangelogShowResponse} ChangelogShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangelogShowResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangelogShowResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.ChangelogShowItem.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ChangelogShowResponse;
+})();
+
+export const Changelog = $root.Changelog = (() => {
+
+    /**
+     * Constructs a new Changelog service.
+     * @exports Changelog
+     * @classdesc Represents a Changelog
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Changelog(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Changelog.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Changelog;
+
+    /**
+     * Callback as used by {@link Changelog#show}.
+     * @memberof Changelog
+     * @typedef ShowCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ChangelogShowResponse} [response] ChangelogShowResponse
+     */
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Changelog
+     * @instance
+     * @param {ChangelogShowRequest} request ChangelogShowRequest message or plain object
+     * @param {Changelog.ShowCallback} callback Node-style callback called with the error, if any, and ChangelogShowResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Changelog.prototype.show = function show(request, callback) {
+        return this.rpcCall(show, $root.ChangelogShowRequest, $root.ChangelogShowResponse, request, callback);
+    }, "name", { value: "Show" });
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Changelog
+     * @instance
+     * @param {ChangelogShowRequest} request ChangelogShowRequest message or plain object
+     * @returns {Promise<ChangelogShowResponse>} Promise
+     * @variation 2
+     */
+
+    return Changelog;
+})();
+
+/**
+ * ClusterStatus enum.
+ * @exports ClusterStatus
+ * @enum {number}
+ * @property {number} StatusUnknown=0 StatusUnknown value
+ * @property {number} StatusBad=1 StatusBad value
+ * @property {number} StatusNotGood=2 StatusNotGood value
+ * @property {number} StatusHealth=3 StatusHealth value
+ */
+export const ClusterStatus = $root.ClusterStatus = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
+    values[valuesById[0] = "StatusUnknown"] = 0;
+    values[valuesById[1] = "StatusBad"] = 1;
+    values[valuesById[2] = "StatusNotGood"] = 2;
+    values[valuesById[3] = "StatusHealth"] = 3;
+    return values;
+})();
+
+export const ClusterInfoResponse = $root.ClusterInfoResponse = (() => {
+
+    /**
+     * Properties of a ClusterInfoResponse.
+     * @exports IClusterInfoResponse
+     * @interface IClusterInfoResponse
+     * @property {string|null} [status] ClusterInfoResponse status
+     * @property {string|null} [free_memory] ClusterInfoResponse free_memory
+     * @property {string|null} [free_cpu] ClusterInfoResponse free_cpu
+     * @property {string|null} [free_request_memory] ClusterInfoResponse free_request_memory
+     * @property {string|null} [free_request_cpu] ClusterInfoResponse free_request_cpu
+     * @property {string|null} [total_memory] ClusterInfoResponse total_memory
+     * @property {string|null} [total_cpu] ClusterInfoResponse total_cpu
+     * @property {string|null} [usage_memory_rate] ClusterInfoResponse usage_memory_rate
+     * @property {string|null} [usage_cpu_rate] ClusterInfoResponse usage_cpu_rate
+     * @property {string|null} [request_memory_rate] ClusterInfoResponse request_memory_rate
+     * @property {string|null} [request_cpu_rate] ClusterInfoResponse request_cpu_rate
+     */
+
+    /**
+     * Constructs a new ClusterInfoResponse.
+     * @exports ClusterInfoResponse
+     * @classdesc Represents a ClusterInfoResponse.
+     * @implements IClusterInfoResponse
+     * @constructor
+     * @param {IClusterInfoResponse=} [properties] Properties to set
+     */
+    function ClusterInfoResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ClusterInfoResponse status.
+     * @member {string} status
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.status = "";
+
+    /**
+     * ClusterInfoResponse free_memory.
+     * @member {string} free_memory
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.free_memory = "";
+
+    /**
+     * ClusterInfoResponse free_cpu.
+     * @member {string} free_cpu
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.free_cpu = "";
+
+    /**
+     * ClusterInfoResponse free_request_memory.
+     * @member {string} free_request_memory
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.free_request_memory = "";
+
+    /**
+     * ClusterInfoResponse free_request_cpu.
+     * @member {string} free_request_cpu
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.free_request_cpu = "";
+
+    /**
+     * ClusterInfoResponse total_memory.
+     * @member {string} total_memory
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.total_memory = "";
+
+    /**
+     * ClusterInfoResponse total_cpu.
+     * @member {string} total_cpu
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.total_cpu = "";
+
+    /**
+     * ClusterInfoResponse usage_memory_rate.
+     * @member {string} usage_memory_rate
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.usage_memory_rate = "";
+
+    /**
+     * ClusterInfoResponse usage_cpu_rate.
+     * @member {string} usage_cpu_rate
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.usage_cpu_rate = "";
+
+    /**
+     * ClusterInfoResponse request_memory_rate.
+     * @member {string} request_memory_rate
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.request_memory_rate = "";
+
+    /**
+     * ClusterInfoResponse request_cpu_rate.
+     * @member {string} request_cpu_rate
+     * @memberof ClusterInfoResponse
+     * @instance
+     */
+    ClusterInfoResponse.prototype.request_cpu_rate = "";
+
+    /**
+     * Encodes the specified ClusterInfoResponse message. Does not implicitly {@link ClusterInfoResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ClusterInfoResponse
+     * @static
+     * @param {ClusterInfoResponse} message ClusterInfoResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ClusterInfoResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.status != null && Object.hasOwnProperty.call(message, "status"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.status);
+        if (message.free_memory != null && Object.hasOwnProperty.call(message, "free_memory"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.free_memory);
+        if (message.free_cpu != null && Object.hasOwnProperty.call(message, "free_cpu"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.free_cpu);
+        if (message.free_request_memory != null && Object.hasOwnProperty.call(message, "free_request_memory"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.free_request_memory);
+        if (message.free_request_cpu != null && Object.hasOwnProperty.call(message, "free_request_cpu"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.free_request_cpu);
+        if (message.total_memory != null && Object.hasOwnProperty.call(message, "total_memory"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.total_memory);
+        if (message.total_cpu != null && Object.hasOwnProperty.call(message, "total_cpu"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.total_cpu);
+        if (message.usage_memory_rate != null && Object.hasOwnProperty.call(message, "usage_memory_rate"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.usage_memory_rate);
+        if (message.usage_cpu_rate != null && Object.hasOwnProperty.call(message, "usage_cpu_rate"))
+            writer.uint32(/* id 9, wireType 2 =*/74).string(message.usage_cpu_rate);
+        if (message.request_memory_rate != null && Object.hasOwnProperty.call(message, "request_memory_rate"))
+            writer.uint32(/* id 10, wireType 2 =*/82).string(message.request_memory_rate);
+        if (message.request_cpu_rate != null && Object.hasOwnProperty.call(message, "request_cpu_rate"))
+            writer.uint32(/* id 11, wireType 2 =*/90).string(message.request_cpu_rate);
+        return writer;
+    };
+
+    /**
+     * Decodes a ClusterInfoResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ClusterInfoResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ClusterInfoResponse} ClusterInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ClusterInfoResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ClusterInfoResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.status = reader.string();
+                break;
+            case 2:
+                message.free_memory = reader.string();
+                break;
+            case 3:
+                message.free_cpu = reader.string();
+                break;
+            case 4:
+                message.free_request_memory = reader.string();
+                break;
+            case 5:
+                message.free_request_cpu = reader.string();
+                break;
+            case 6:
+                message.total_memory = reader.string();
+                break;
+            case 7:
+                message.total_cpu = reader.string();
+                break;
+            case 8:
+                message.usage_memory_rate = reader.string();
+                break;
+            case 9:
+                message.usage_cpu_rate = reader.string();
+                break;
+            case 10:
+                message.request_memory_rate = reader.string();
+                break;
+            case 11:
+                message.request_cpu_rate = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ClusterInfoResponse;
+})();
+
+export const ClusterInfoRequest = $root.ClusterInfoRequest = (() => {
+
+    /**
+     * Properties of a ClusterInfoRequest.
+     * @exports IClusterInfoRequest
+     * @interface IClusterInfoRequest
+     */
+
+    /**
+     * Constructs a new ClusterInfoRequest.
+     * @exports ClusterInfoRequest
+     * @classdesc Represents a ClusterInfoRequest.
+     * @implements IClusterInfoRequest
+     * @constructor
+     * @param {IClusterInfoRequest=} [properties] Properties to set
+     */
+    function ClusterInfoRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified ClusterInfoRequest message. Does not implicitly {@link ClusterInfoRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ClusterInfoRequest
+     * @static
+     * @param {ClusterInfoRequest} message ClusterInfoRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ClusterInfoRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a ClusterInfoRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ClusterInfoRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ClusterInfoRequest} ClusterInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ClusterInfoRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ClusterInfoRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ClusterInfoRequest;
+})();
+
+export const Cluster = $root.Cluster = (() => {
+
+    /**
+     * Constructs a new Cluster service.
+     * @exports Cluster
+     * @classdesc Represents a Cluster
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Cluster(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Cluster.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Cluster;
+
+    /**
+     * Callback as used by {@link Cluster#clusterInfo}.
+     * @memberof Cluster
+     * @typedef ClusterInfoCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ClusterInfoResponse} [response] ClusterInfoResponse
+     */
+
+    /**
+     * Calls ClusterInfo.
+     * @function clusterInfo
+     * @memberof Cluster
+     * @instance
+     * @param {ClusterInfoRequest} request ClusterInfoRequest message or plain object
+     * @param {Cluster.ClusterInfoCallback} callback Node-style callback called with the error, if any, and ClusterInfoResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Cluster.prototype.clusterInfo = function clusterInfo(request, callback) {
+        return this.rpcCall(clusterInfo, $root.ClusterInfoRequest, $root.ClusterInfoResponse, request, callback);
+    }, "name", { value: "ClusterInfo" });
+
+    /**
+     * Calls ClusterInfo.
+     * @function clusterInfo
+     * @memberof Cluster
+     * @instance
+     * @param {ClusterInfoRequest} request ClusterInfoRequest message or plain object
+     * @returns {Promise<ClusterInfoResponse>} Promise
+     * @variation 2
+     */
+
+    return Cluster;
+})();
+
+export const CopyToPodRequest = $root.CopyToPodRequest = (() => {
+
+    /**
+     * Properties of a CopyToPodRequest.
+     * @exports ICopyToPodRequest
+     * @interface ICopyToPodRequest
+     * @property {number|null} [file_id] CopyToPodRequest file_id
+     * @property {string|null} [namespace] CopyToPodRequest namespace
+     * @property {string|null} [pod] CopyToPodRequest pod
+     * @property {string|null} [container] CopyToPodRequest container
+     */
+
+    /**
+     * Constructs a new CopyToPodRequest.
+     * @exports CopyToPodRequest
+     * @classdesc Represents a CopyToPodRequest.
+     * @implements ICopyToPodRequest
+     * @constructor
+     * @param {ICopyToPodRequest=} [properties] Properties to set
+     */
+    function CopyToPodRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * CopyToPodRequest file_id.
+     * @member {number} file_id
+     * @memberof CopyToPodRequest
+     * @instance
+     */
+    CopyToPodRequest.prototype.file_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * CopyToPodRequest namespace.
+     * @member {string} namespace
+     * @memberof CopyToPodRequest
+     * @instance
+     */
+    CopyToPodRequest.prototype.namespace = "";
+
+    /**
+     * CopyToPodRequest pod.
+     * @member {string} pod
+     * @memberof CopyToPodRequest
+     * @instance
+     */
+    CopyToPodRequest.prototype.pod = "";
+
+    /**
+     * CopyToPodRequest container.
+     * @member {string} container
+     * @memberof CopyToPodRequest
+     * @instance
+     */
+    CopyToPodRequest.prototype.container = "";
+
+    /**
+     * Encodes the specified CopyToPodRequest message. Does not implicitly {@link CopyToPodRequest.verify|verify} messages.
+     * @function encode
+     * @memberof CopyToPodRequest
+     * @static
+     * @param {CopyToPodRequest} message CopyToPodRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    CopyToPodRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.file_id != null && Object.hasOwnProperty.call(message, "file_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.file_id);
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.pod);
+        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.container);
+        return writer;
+    };
+
+    /**
+     * Decodes a CopyToPodRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof CopyToPodRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {CopyToPodRequest} CopyToPodRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    CopyToPodRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CopyToPodRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.file_id = reader.int64();
+                break;
+            case 2:
+                message.namespace = reader.string();
+                break;
+            case 3:
+                message.pod = reader.string();
+                break;
+            case 4:
+                message.container = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return CopyToPodRequest;
+})();
+
+export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
+
+    /**
+     * Properties of a CopyToPodResponse.
+     * @exports ICopyToPodResponse
+     * @interface ICopyToPodResponse
+     * @property {string|null} [podFilePath] CopyToPodResponse podFilePath
+     * @property {string|null} [output] CopyToPodResponse output
+     */
+
+    /**
+     * Constructs a new CopyToPodResponse.
+     * @exports CopyToPodResponse
+     * @classdesc Represents a CopyToPodResponse.
+     * @implements ICopyToPodResponse
+     * @constructor
+     * @param {ICopyToPodResponse=} [properties] Properties to set
+     */
+    function CopyToPodResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * CopyToPodResponse podFilePath.
+     * @member {string} podFilePath
+     * @memberof CopyToPodResponse
+     * @instance
+     */
+    CopyToPodResponse.prototype.podFilePath = "";
+
+    /**
+     * CopyToPodResponse output.
+     * @member {string} output
+     * @memberof CopyToPodResponse
+     * @instance
+     */
+    CopyToPodResponse.prototype.output = "";
+
+    /**
+     * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
+     * @function encode
+     * @memberof CopyToPodResponse
+     * @static
+     * @param {CopyToPodResponse} message CopyToPodResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    CopyToPodResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.podFilePath != null && Object.hasOwnProperty.call(message, "podFilePath"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.podFilePath);
+        if (message.output != null && Object.hasOwnProperty.call(message, "output"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.output);
+        return writer;
+    };
+
+    /**
+     * Decodes a CopyToPodResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof CopyToPodResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {CopyToPodResponse} CopyToPodResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    CopyToPodResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CopyToPodResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.podFilePath = reader.string();
+                break;
+            case 2:
+                message.output = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return CopyToPodResponse;
+})();
+
+export const ContainerCopy = $root.ContainerCopy = (() => {
+
+    /**
+     * Constructs a new ContainerCopy service.
+     * @exports ContainerCopy
+     * @classdesc Represents a ContainerCopy
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function ContainerCopy(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (ContainerCopy.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = ContainerCopy;
+
+    /**
+     * Callback as used by {@link ContainerCopy#copyToPod}.
+     * @memberof ContainerCopy
+     * @typedef CopyToPodCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {CopyToPodResponse} [response] CopyToPodResponse
+     */
+
+    /**
+     * Calls CopyToPod.
+     * @function copyToPod
+     * @memberof ContainerCopy
+     * @instance
+     * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
+     * @param {ContainerCopy.CopyToPodCallback} callback Node-style callback called with the error, if any, and CopyToPodResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(ContainerCopy.prototype.copyToPod = function copyToPod(request, callback) {
+        return this.rpcCall(copyToPod, $root.CopyToPodRequest, $root.CopyToPodResponse, request, callback);
+    }, "name", { value: "CopyToPod" });
+
+    /**
+     * Calls CopyToPod.
+     * @function copyToPod
+     * @memberof ContainerCopy
+     * @instance
+     * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
+     * @returns {Promise<CopyToPodResponse>} Promise
+     * @variation 2
+     */
+
+    return ContainerCopy;
+})();
+
+/**
+ * ActionType enum.
+ * @exports ActionType
+ * @enum {number}
+ * @property {number} Unknown=0 Unknown value
+ * @property {number} Create=1 Create value
+ * @property {number} Update=2 Update value
+ * @property {number} Delete=3 Delete value
+ */
+export const ActionType = $root.ActionType = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
+    values[valuesById[0] = "Unknown"] = 0;
+    values[valuesById[1] = "Create"] = 1;
+    values[valuesById[2] = "Update"] = 2;
+    values[valuesById[3] = "Delete"] = 3;
+    return values;
+})();
+
+export const EventListRequest = $root.EventListRequest = (() => {
+
+    /**
+     * Properties of an EventListRequest.
+     * @exports IEventListRequest
+     * @interface IEventListRequest
+     * @property {number|null} [page] EventListRequest page
+     * @property {number|null} [page_size] EventListRequest page_size
+     */
+
+    /**
+     * Constructs a new EventListRequest.
+     * @exports EventListRequest
+     * @classdesc Represents an EventListRequest.
+     * @implements IEventListRequest
+     * @constructor
+     * @param {IEventListRequest=} [properties] Properties to set
+     */
+    function EventListRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EventListRequest page.
+     * @member {number} page
+     * @memberof EventListRequest
+     * @instance
+     */
+    EventListRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventListRequest page_size.
+     * @member {number} page_size
+     * @memberof EventListRequest
+     * @instance
+     */
+    EventListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EventListRequest message. Does not implicitly {@link EventListRequest.verify|verify} messages.
+     * @function encode
+     * @memberof EventListRequest
+     * @static
+     * @param {EventListRequest} message EventListRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EventListRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        return writer;
+    };
+
+    /**
+     * Decodes an EventListRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof EventListRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EventListRequest} EventListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EventListRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventListRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EventListRequest;
+})();
+
+export const EventListItem = $root.EventListItem = (() => {
+
+    /**
+     * Properties of an EventListItem.
+     * @exports IEventListItem
+     * @interface IEventListItem
+     * @property {number|null} [id] EventListItem id
+     * @property {ActionType|null} [action] EventListItem action
+     * @property {string|null} [username] EventListItem username
+     * @property {string|null} [message] EventListItem message
+     * @property {string|null} [old] EventListItem old
+     * @property {string|null} ["new"] EventListItem new
+     * @property {string|null} [event_at] EventListItem event_at
+     */
+
+    /**
+     * Constructs a new EventListItem.
+     * @exports EventListItem
+     * @classdesc Represents an EventListItem.
+     * @implements IEventListItem
+     * @constructor
+     * @param {IEventListItem=} [properties] Properties to set
+     */
+    function EventListItem(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EventListItem id.
+     * @member {number} id
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventListItem action.
+     * @member {ActionType} action
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.action = 0;
+
+    /**
+     * EventListItem username.
+     * @member {string} username
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.username = "";
+
+    /**
+     * EventListItem message.
+     * @member {string} message
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.message = "";
+
+    /**
+     * EventListItem old.
+     * @member {string} old
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.old = "";
+
+    /**
+     * EventListItem new.
+     * @member {string} new
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype["new"] = "";
+
+    /**
+     * EventListItem event_at.
+     * @member {string} event_at
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.event_at = "";
+
+    /**
+     * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
+     * @function encode
+     * @memberof EventListItem
+     * @static
+     * @param {EventListItem} message EventListItem message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EventListItem.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.action != null && Object.hasOwnProperty.call(message, "action"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.action);
+        if (message.username != null && Object.hasOwnProperty.call(message, "username"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.username);
+        if (message.message != null && Object.hasOwnProperty.call(message, "message"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.message);
+        if (message.old != null && Object.hasOwnProperty.call(message, "old"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.old);
+        if (message["new"] != null && Object.hasOwnProperty.call(message, "new"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message["new"]);
+        if (message.event_at != null && Object.hasOwnProperty.call(message, "event_at"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.event_at);
+        return writer;
+    };
+
+    /**
+     * Decodes an EventListItem message from the specified reader or buffer.
+     * @function decode
+     * @memberof EventListItem
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EventListItem} EventListItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EventListItem.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventListItem();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.action = reader.int32();
+                break;
+            case 3:
+                message.username = reader.string();
+                break;
+            case 4:
+                message.message = reader.string();
+                break;
+            case 5:
+                message.old = reader.string();
+                break;
+            case 6:
+                message["new"] = reader.string();
+                break;
+            case 7:
+                message.event_at = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EventListItem;
+})();
+
+export const EventListResponse = $root.EventListResponse = (() => {
+
+    /**
+     * Properties of an EventListResponse.
+     * @exports IEventListResponse
+     * @interface IEventListResponse
+     * @property {number|null} [page] EventListResponse page
+     * @property {number|null} [page_size] EventListResponse page_size
+     * @property {Array.<EventListItem>|null} [items] EventListResponse items
+     * @property {number|null} [count] EventListResponse count
+     */
+
+    /**
+     * Constructs a new EventListResponse.
+     * @exports EventListResponse
+     * @classdesc Represents an EventListResponse.
+     * @implements IEventListResponse
+     * @constructor
+     * @param {IEventListResponse=} [properties] Properties to set
+     */
+    function EventListResponse(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EventListResponse page.
+     * @member {number} page
+     * @memberof EventListResponse
+     * @instance
+     */
+    EventListResponse.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventListResponse page_size.
+     * @member {number} page_size
+     * @memberof EventListResponse
+     * @instance
+     */
+    EventListResponse.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * EventListResponse items.
+     * @member {Array.<EventListItem>} items
+     * @memberof EventListResponse
+     * @instance
+     */
+    EventListResponse.prototype.items = $util.emptyArray;
+
+    /**
+     * EventListResponse count.
+     * @member {number} count
+     * @memberof EventListResponse
+     * @instance
+     */
+    EventListResponse.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EventListResponse message. Does not implicitly {@link EventListResponse.verify|verify} messages.
+     * @function encode
+     * @memberof EventListResponse
+     * @static
+     * @param {EventListResponse} message EventListResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EventListResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.EventListItem.encode(message.items[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.count);
+        return writer;
+    };
+
+    /**
+     * Decodes an EventListResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof EventListResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EventListResponse} EventListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EventListResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EventListResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.EventListItem.decode(reader, reader.uint32()));
+                break;
+            case 4:
+                message.count = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EventListResponse;
+})();
+
+export const Event = $root.Event = (() => {
+
+    /**
+     * Constructs a new Event service.
+     * @exports Event
+     * @classdesc Represents an Event
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Event(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Event.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Event;
+
+    /**
+     * Callback as used by {@link Event#list}.
+     * @memberof Event
+     * @typedef ListCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {EventListResponse} [response] EventListResponse
+     */
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Event
+     * @instance
+     * @param {EventListRequest} request EventListRequest message or plain object
+     * @param {Event.ListCallback} callback Node-style callback called with the error, if any, and EventListResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Event.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.EventListRequest, $root.EventListResponse, request, callback);
+    }, "name", { value: "List" });
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Event
+     * @instance
+     * @param {EventListRequest} request EventListRequest message or plain object
+     * @returns {Promise<EventListResponse>} Promise
+     * @variation 2
+     */
+
+    return Event;
+})();
+
+export const GitDestroyRequest = $root.GitDestroyRequest = (() => {
+
+    /**
+     * Properties of a GitDestroyRequest.
+     * @exports IGitDestroyRequest
+     * @interface IGitDestroyRequest
+     * @property {string|null} [namespace_id] GitDestroyRequest namespace_id
+     * @property {string|null} [project_id] GitDestroyRequest project_id
+     */
+
+    /**
+     * Constructs a new GitDestroyRequest.
+     * @exports GitDestroyRequest
+     * @classdesc Represents a GitDestroyRequest.
+     * @implements IGitDestroyRequest
+     * @constructor
+     * @param {IGitDestroyRequest=} [properties] Properties to set
+     */
+    function GitDestroyRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitDestroyRequest namespace_id.
+     * @member {string} namespace_id
+     * @memberof GitDestroyRequest
+     * @instance
+     */
+    GitDestroyRequest.prototype.namespace_id = "";
+
+    /**
+     * GitDestroyRequest project_id.
+     * @member {string} project_id
+     * @memberof GitDestroyRequest
+     * @instance
+     */
+    GitDestroyRequest.prototype.project_id = "";
+
+    /**
+     * Encodes the specified GitDestroyRequest message. Does not implicitly {@link GitDestroyRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitDestroyRequest
+     * @static
+     * @param {GitDestroyRequest} message GitDestroyRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitDestroyRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace_id);
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitDestroyRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitDestroyRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitDestroyRequest} GitDestroyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitDestroyRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitDestroyRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.string();
+                break;
+            case 2:
+                message.project_id = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitDestroyRequest;
+})();
+
+export const GitEnableProjectRequest = $root.GitEnableProjectRequest = (() => {
+
+    /**
+     * Properties of a GitEnableProjectRequest.
+     * @exports IGitEnableProjectRequest
+     * @interface IGitEnableProjectRequest
+     * @property {string|null} [git_project_id] GitEnableProjectRequest git_project_id
+     */
+
+    /**
+     * Constructs a new GitEnableProjectRequest.
+     * @exports GitEnableProjectRequest
+     * @classdesc Represents a GitEnableProjectRequest.
+     * @implements IGitEnableProjectRequest
+     * @constructor
+     * @param {IGitEnableProjectRequest=} [properties] Properties to set
+     */
+    function GitEnableProjectRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitEnableProjectRequest git_project_id.
+     * @member {string} git_project_id
+     * @memberof GitEnableProjectRequest
+     * @instance
+     */
+    GitEnableProjectRequest.prototype.git_project_id = "";
+
+    /**
+     * Encodes the specified GitEnableProjectRequest message. Does not implicitly {@link GitEnableProjectRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitEnableProjectRequest
+     * @static
+     * @param {GitEnableProjectRequest} message GitEnableProjectRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitEnableProjectRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.git_project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitEnableProjectRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitEnableProjectRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitEnableProjectRequest} GitEnableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitEnableProjectRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitEnableProjectRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.git_project_id = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitEnableProjectRequest;
+})();
+
+export const GitDisableProjectRequest = $root.GitDisableProjectRequest = (() => {
+
+    /**
+     * Properties of a GitDisableProjectRequest.
+     * @exports IGitDisableProjectRequest
+     * @interface IGitDisableProjectRequest
+     * @property {string|null} [git_project_id] GitDisableProjectRequest git_project_id
+     */
+
+    /**
+     * Constructs a new GitDisableProjectRequest.
+     * @exports GitDisableProjectRequest
+     * @classdesc Represents a GitDisableProjectRequest.
+     * @implements IGitDisableProjectRequest
+     * @constructor
+     * @param {IGitDisableProjectRequest=} [properties] Properties to set
+     */
+    function GitDisableProjectRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitDisableProjectRequest git_project_id.
+     * @member {string} git_project_id
+     * @memberof GitDisableProjectRequest
+     * @instance
+     */
+    GitDisableProjectRequest.prototype.git_project_id = "";
+
+    /**
+     * Encodes the specified GitDisableProjectRequest message. Does not implicitly {@link GitDisableProjectRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitDisableProjectRequest
+     * @static
+     * @param {GitDisableProjectRequest} message GitDisableProjectRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitDisableProjectRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.git_project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitDisableProjectRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitDisableProjectRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitDisableProjectRequest} GitDisableProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitDisableProjectRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitDisableProjectRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.git_project_id = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitDisableProjectRequest;
+})();
+
+export const GitProjectItem = $root.GitProjectItem = (() => {
+
+    /**
+     * Properties of a GitProjectItem.
+     * @exports IGitProjectItem
+     * @interface IGitProjectItem
+     * @property {number|null} [id] GitProjectItem id
+     * @property {string|null} [name] GitProjectItem name
+     * @property {string|null} [path] GitProjectItem path
+     * @property {string|null} [web_url] GitProjectItem web_url
+     * @property {string|null} [avatar_url] GitProjectItem avatar_url
+     * @property {string|null} [description] GitProjectItem description
+     * @property {boolean|null} [enabled] GitProjectItem enabled
+     * @property {boolean|null} [global_enabled] GitProjectItem global_enabled
+     */
+
+    /**
+     * Constructs a new GitProjectItem.
+     * @exports GitProjectItem
+     * @classdesc Represents a GitProjectItem.
+     * @implements IGitProjectItem
+     * @constructor
+     * @param {IGitProjectItem=} [properties] Properties to set
+     */
+    function GitProjectItem(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitProjectItem id.
+     * @member {number} id
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * GitProjectItem name.
+     * @member {string} name
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.name = "";
+
+    /**
+     * GitProjectItem path.
+     * @member {string} path
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.path = "";
+
+    /**
+     * GitProjectItem web_url.
+     * @member {string} web_url
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.web_url = "";
+
+    /**
+     * GitProjectItem avatar_url.
+     * @member {string} avatar_url
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.avatar_url = "";
+
+    /**
+     * GitProjectItem description.
+     * @member {string} description
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.description = "";
+
+    /**
+     * GitProjectItem enabled.
+     * @member {boolean} enabled
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.enabled = false;
+
+    /**
+     * GitProjectItem global_enabled.
+     * @member {boolean} global_enabled
+     * @memberof GitProjectItem
+     * @instance
+     */
+    GitProjectItem.prototype.global_enabled = false;
+
+    /**
+     * Encodes the specified GitProjectItem message. Does not implicitly {@link GitProjectItem.verify|verify} messages.
+     * @function encode
+     * @memberof GitProjectItem
+     * @static
+     * @param {GitProjectItem} message GitProjectItem message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitProjectItem.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.path);
+        if (message.web_url != null && Object.hasOwnProperty.call(message, "web_url"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.web_url);
+        if (message.avatar_url != null && Object.hasOwnProperty.call(message, "avatar_url"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.avatar_url);
+        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.description);
+        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
+            writer.uint32(/* id 7, wireType 0 =*/56).bool(message.enabled);
+        if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
+            writer.uint32(/* id 8, wireType 0 =*/64).bool(message.global_enabled);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitProjectItem message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitProjectItem
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitProjectItem} GitProjectItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitProjectItem.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectItem();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                message.path = reader.string();
+                break;
+            case 4:
+                message.web_url = reader.string();
+                break;
+            case 5:
+                message.avatar_url = reader.string();
+                break;
+            case 6:
+                message.description = reader.string();
+                break;
+            case 7:
+                message.enabled = reader.bool();
+                break;
+            case 8:
+                message.global_enabled = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitProjectItem;
+})();
+
+export const GitAllProjectsResponse = $root.GitAllProjectsResponse = (() => {
+
+    /**
+     * Properties of a GitAllProjectsResponse.
+     * @exports IGitAllProjectsResponse
+     * @interface IGitAllProjectsResponse
+     * @property {Array.<GitProjectItem>|null} [data] GitAllProjectsResponse data
+     */
+
+    /**
+     * Constructs a new GitAllProjectsResponse.
+     * @exports GitAllProjectsResponse
+     * @classdesc Represents a GitAllProjectsResponse.
+     * @implements IGitAllProjectsResponse
+     * @constructor
+     * @param {IGitAllProjectsResponse=} [properties] Properties to set
+     */
+    function GitAllProjectsResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitAllProjectsResponse data.
+     * @member {Array.<GitProjectItem>} data
+     * @memberof GitAllProjectsResponse
+     * @instance
+     */
+    GitAllProjectsResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified GitAllProjectsResponse message. Does not implicitly {@link GitAllProjectsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitAllProjectsResponse
+     * @static
+     * @param {GitAllProjectsResponse} message GitAllProjectsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitAllProjectsResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.GitProjectItem.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitAllProjectsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitAllProjectsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitAllProjectsResponse} GitAllProjectsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitAllProjectsResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitAllProjectsResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.GitProjectItem.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitAllProjectsResponse;
+})();
+
+export const GitOption = $root.GitOption = (() => {
+
+    /**
+     * Properties of a GitOption.
+     * @exports IGitOption
+     * @interface IGitOption
+     * @property {string|null} [value] GitOption value
+     * @property {string|null} [label] GitOption label
+     * @property {string|null} [type] GitOption type
+     * @property {boolean|null} [isLeaf] GitOption isLeaf
+     * @property {string|null} [projectId] GitOption projectId
+     * @property {string|null} [branch] GitOption branch
+     */
+
+    /**
+     * Constructs a new GitOption.
+     * @exports GitOption
+     * @classdesc Represents a GitOption.
+     * @implements IGitOption
+     * @constructor
+     * @param {IGitOption=} [properties] Properties to set
+     */
+    function GitOption(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitOption value.
+     * @member {string} value
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.value = "";
+
+    /**
+     * GitOption label.
+     * @member {string} label
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.label = "";
+
+    /**
+     * GitOption type.
+     * @member {string} type
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.type = "";
+
+    /**
+     * GitOption isLeaf.
+     * @member {boolean} isLeaf
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.isLeaf = false;
+
+    /**
+     * GitOption projectId.
+     * @member {string} projectId
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.projectId = "";
+
+    /**
+     * GitOption branch.
+     * @member {string} branch
+     * @memberof GitOption
+     * @instance
+     */
+    GitOption.prototype.branch = "";
+
+    /**
+     * Encodes the specified GitOption message. Does not implicitly {@link GitOption.verify|verify} messages.
+     * @function encode
+     * @memberof GitOption
+     * @static
+     * @param {GitOption} message GitOption message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitOption.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
+        if (message.label != null && Object.hasOwnProperty.call(message, "label"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.label);
+        if (message.type != null && Object.hasOwnProperty.call(message, "type"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.type);
+        if (message.isLeaf != null && Object.hasOwnProperty.call(message, "isLeaf"))
+            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.isLeaf);
+        if (message.projectId != null && Object.hasOwnProperty.call(message, "projectId"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.projectId);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.branch);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitOption message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitOption
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitOption} GitOption
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitOption.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitOption();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.value = reader.string();
+                break;
+            case 2:
+                message.label = reader.string();
+                break;
+            case 3:
+                message.type = reader.string();
+                break;
+            case 4:
+                message.isLeaf = reader.bool();
+                break;
+            case 5:
+                message.projectId = reader.string();
+                break;
+            case 6:
+                message.branch = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitOption;
+})();
+
+export const GitProjectOptionsResponse = $root.GitProjectOptionsResponse = (() => {
+
+    /**
+     * Properties of a GitProjectOptionsResponse.
+     * @exports IGitProjectOptionsResponse
+     * @interface IGitProjectOptionsResponse
+     * @property {Array.<GitOption>|null} [data] GitProjectOptionsResponse data
+     */
+
+    /**
+     * Constructs a new GitProjectOptionsResponse.
+     * @exports GitProjectOptionsResponse
+     * @classdesc Represents a GitProjectOptionsResponse.
+     * @implements IGitProjectOptionsResponse
+     * @constructor
+     * @param {IGitProjectOptionsResponse=} [properties] Properties to set
+     */
+    function GitProjectOptionsResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitProjectOptionsResponse data.
+     * @member {Array.<GitOption>} data
+     * @memberof GitProjectOptionsResponse
+     * @instance
+     */
+    GitProjectOptionsResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified GitProjectOptionsResponse message. Does not implicitly {@link GitProjectOptionsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitProjectOptionsResponse
+     * @static
+     * @param {GitProjectOptionsResponse} message GitProjectOptionsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitProjectOptionsResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.GitOption.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitProjectOptionsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitProjectOptionsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitProjectOptionsResponse} GitProjectOptionsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitProjectOptionsResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectOptionsResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.GitOption.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitProjectOptionsResponse;
+})();
+
+export const GitBranchOptionsRequest = $root.GitBranchOptionsRequest = (() => {
+
+    /**
+     * Properties of a GitBranchOptionsRequest.
+     * @exports IGitBranchOptionsRequest
+     * @interface IGitBranchOptionsRequest
+     * @property {string|null} [project_id] GitBranchOptionsRequest project_id
+     * @property {boolean|null} [all] GitBranchOptionsRequest all
+     */
+
+    /**
+     * Constructs a new GitBranchOptionsRequest.
+     * @exports GitBranchOptionsRequest
+     * @classdesc Represents a GitBranchOptionsRequest.
+     * @implements IGitBranchOptionsRequest
+     * @constructor
+     * @param {IGitBranchOptionsRequest=} [properties] Properties to set
+     */
+    function GitBranchOptionsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitBranchOptionsRequest project_id.
+     * @member {string} project_id
+     * @memberof GitBranchOptionsRequest
+     * @instance
+     */
+    GitBranchOptionsRequest.prototype.project_id = "";
+
+    /**
+     * GitBranchOptionsRequest all.
+     * @member {boolean} all
+     * @memberof GitBranchOptionsRequest
+     * @instance
+     */
+    GitBranchOptionsRequest.prototype.all = false;
+
+    /**
+     * Encodes the specified GitBranchOptionsRequest message. Does not implicitly {@link GitBranchOptionsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitBranchOptionsRequest
+     * @static
+     * @param {GitBranchOptionsRequest} message GitBranchOptionsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitBranchOptionsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.all != null && Object.hasOwnProperty.call(message, "all"))
+            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.all);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitBranchOptionsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitBranchOptionsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitBranchOptionsRequest} GitBranchOptionsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitBranchOptionsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitBranchOptionsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.string();
+                break;
+            case 2:
+                message.all = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitBranchOptionsRequest;
+})();
+
+export const GitBranchOptionsResponse = $root.GitBranchOptionsResponse = (() => {
+
+    /**
+     * Properties of a GitBranchOptionsResponse.
+     * @exports IGitBranchOptionsResponse
+     * @interface IGitBranchOptionsResponse
+     * @property {Array.<GitOption>|null} [data] GitBranchOptionsResponse data
+     */
+
+    /**
+     * Constructs a new GitBranchOptionsResponse.
+     * @exports GitBranchOptionsResponse
+     * @classdesc Represents a GitBranchOptionsResponse.
+     * @implements IGitBranchOptionsResponse
+     * @constructor
+     * @param {IGitBranchOptionsResponse=} [properties] Properties to set
+     */
+    function GitBranchOptionsResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitBranchOptionsResponse data.
+     * @member {Array.<GitOption>} data
+     * @memberof GitBranchOptionsResponse
+     * @instance
+     */
+    GitBranchOptionsResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified GitBranchOptionsResponse message. Does not implicitly {@link GitBranchOptionsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitBranchOptionsResponse
+     * @static
+     * @param {GitBranchOptionsResponse} message GitBranchOptionsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitBranchOptionsResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.GitOption.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitBranchOptionsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitBranchOptionsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitBranchOptionsResponse} GitBranchOptionsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitBranchOptionsResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitBranchOptionsResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.GitOption.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitBranchOptionsResponse;
+})();
+
+export const GitCommitOptionsRequest = $root.GitCommitOptionsRequest = (() => {
+
+    /**
+     * Properties of a GitCommitOptionsRequest.
+     * @exports IGitCommitOptionsRequest
+     * @interface IGitCommitOptionsRequest
+     * @property {string|null} [project_id] GitCommitOptionsRequest project_id
+     * @property {string|null} [branch] GitCommitOptionsRequest branch
+     */
+
+    /**
+     * Constructs a new GitCommitOptionsRequest.
+     * @exports GitCommitOptionsRequest
+     * @classdesc Represents a GitCommitOptionsRequest.
+     * @implements IGitCommitOptionsRequest
+     * @constructor
+     * @param {IGitCommitOptionsRequest=} [properties] Properties to set
+     */
+    function GitCommitOptionsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitCommitOptionsRequest project_id.
+     * @member {string} project_id
+     * @memberof GitCommitOptionsRequest
+     * @instance
+     */
+    GitCommitOptionsRequest.prototype.project_id = "";
+
+    /**
+     * GitCommitOptionsRequest branch.
+     * @member {string} branch
+     * @memberof GitCommitOptionsRequest
+     * @instance
+     */
+    GitCommitOptionsRequest.prototype.branch = "";
+
+    /**
+     * Encodes the specified GitCommitOptionsRequest message. Does not implicitly {@link GitCommitOptionsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitCommitOptionsRequest
+     * @static
+     * @param {GitCommitOptionsRequest} message GitCommitOptionsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitCommitOptionsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitCommitOptionsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitCommitOptionsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitCommitOptionsRequest} GitCommitOptionsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitCommitOptionsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitCommitOptionsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.string();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitCommitOptionsRequest;
+})();
+
+export const GitCommitOptionsResponse = $root.GitCommitOptionsResponse = (() => {
+
+    /**
+     * Properties of a GitCommitOptionsResponse.
+     * @exports IGitCommitOptionsResponse
+     * @interface IGitCommitOptionsResponse
+     * @property {Array.<GitOption>|null} [data] GitCommitOptionsResponse data
+     */
+
+    /**
+     * Constructs a new GitCommitOptionsResponse.
+     * @exports GitCommitOptionsResponse
+     * @classdesc Represents a GitCommitOptionsResponse.
+     * @implements IGitCommitOptionsResponse
+     * @constructor
+     * @param {IGitCommitOptionsResponse=} [properties] Properties to set
+     */
+    function GitCommitOptionsResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitCommitOptionsResponse data.
+     * @member {Array.<GitOption>} data
+     * @memberof GitCommitOptionsResponse
+     * @instance
+     */
+    GitCommitOptionsResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified GitCommitOptionsResponse message. Does not implicitly {@link GitCommitOptionsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitCommitOptionsResponse
+     * @static
+     * @param {GitCommitOptionsResponse} message GitCommitOptionsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitCommitOptionsResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.GitOption.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitCommitOptionsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitCommitOptionsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitCommitOptionsResponse} GitCommitOptionsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitCommitOptionsResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitCommitOptionsResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.GitOption.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitCommitOptionsResponse;
+})();
+
+export const GitCommitRequest = $root.GitCommitRequest = (() => {
+
+    /**
+     * Properties of a GitCommitRequest.
+     * @exports IGitCommitRequest
+     * @interface IGitCommitRequest
+     * @property {string|null} [project_id] GitCommitRequest project_id
+     * @property {string|null} [branch] GitCommitRequest branch
+     * @property {string|null} [commit] GitCommitRequest commit
+     */
+
+    /**
+     * Constructs a new GitCommitRequest.
+     * @exports GitCommitRequest
+     * @classdesc Represents a GitCommitRequest.
+     * @implements IGitCommitRequest
+     * @constructor
+     * @param {IGitCommitRequest=} [properties] Properties to set
+     */
+    function GitCommitRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitCommitRequest project_id.
+     * @member {string} project_id
+     * @memberof GitCommitRequest
+     * @instance
+     */
+    GitCommitRequest.prototype.project_id = "";
+
+    /**
+     * GitCommitRequest branch.
+     * @member {string} branch
+     * @memberof GitCommitRequest
+     * @instance
+     */
+    GitCommitRequest.prototype.branch = "";
+
+    /**
+     * GitCommitRequest commit.
+     * @member {string} commit
+     * @memberof GitCommitRequest
+     * @instance
+     */
+    GitCommitRequest.prototype.commit = "";
+
+    /**
+     * Encodes the specified GitCommitRequest message. Does not implicitly {@link GitCommitRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitCommitRequest
+     * @static
+     * @param {GitCommitRequest} message GitCommitRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitCommitRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        if (message.commit != null && Object.hasOwnProperty.call(message, "commit"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.commit);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitCommitRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitCommitRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitCommitRequest} GitCommitRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitCommitRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitCommitRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.string();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            case 3:
+                message.commit = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitCommitRequest;
+})();
+
+export const GitCommitResponse = $root.GitCommitResponse = (() => {
+
+    /**
+     * Properties of a GitCommitResponse.
+     * @exports IGitCommitResponse
+     * @interface IGitCommitResponse
+     * @property {GitOption|null} [data] GitCommitResponse data
+     */
+
+    /**
+     * Constructs a new GitCommitResponse.
+     * @exports GitCommitResponse
+     * @classdesc Represents a GitCommitResponse.
+     * @implements IGitCommitResponse
+     * @constructor
+     * @param {IGitCommitResponse=} [properties] Properties to set
+     */
+    function GitCommitResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitCommitResponse data.
+     * @member {GitOption|null|undefined} data
+     * @memberof GitCommitResponse
+     * @instance
+     */
+    GitCommitResponse.prototype.data = null;
+
+    /**
+     * Encodes the specified GitCommitResponse message. Does not implicitly {@link GitCommitResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitCommitResponse
+     * @static
+     * @param {GitCommitResponse} message GitCommitResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitCommitResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+            $root.GitOption.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitCommitResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitCommitResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitCommitResponse} GitCommitResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitCommitResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitCommitResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.data = $root.GitOption.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitCommitResponse;
+})();
+
+export const GitPipelineInfoRequest = $root.GitPipelineInfoRequest = (() => {
+
+    /**
+     * Properties of a GitPipelineInfoRequest.
+     * @exports IGitPipelineInfoRequest
+     * @interface IGitPipelineInfoRequest
+     * @property {string|null} [project_id] GitPipelineInfoRequest project_id
+     * @property {string|null} [branch] GitPipelineInfoRequest branch
+     * @property {string|null} [commit] GitPipelineInfoRequest commit
+     */
+
+    /**
+     * Constructs a new GitPipelineInfoRequest.
+     * @exports GitPipelineInfoRequest
+     * @classdesc Represents a GitPipelineInfoRequest.
+     * @implements IGitPipelineInfoRequest
+     * @constructor
+     * @param {IGitPipelineInfoRequest=} [properties] Properties to set
+     */
+    function GitPipelineInfoRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitPipelineInfoRequest project_id.
+     * @member {string} project_id
+     * @memberof GitPipelineInfoRequest
+     * @instance
+     */
+    GitPipelineInfoRequest.prototype.project_id = "";
+
+    /**
+     * GitPipelineInfoRequest branch.
+     * @member {string} branch
+     * @memberof GitPipelineInfoRequest
+     * @instance
+     */
+    GitPipelineInfoRequest.prototype.branch = "";
+
+    /**
+     * GitPipelineInfoRequest commit.
+     * @member {string} commit
+     * @memberof GitPipelineInfoRequest
+     * @instance
+     */
+    GitPipelineInfoRequest.prototype.commit = "";
+
+    /**
+     * Encodes the specified GitPipelineInfoRequest message. Does not implicitly {@link GitPipelineInfoRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitPipelineInfoRequest
+     * @static
+     * @param {GitPipelineInfoRequest} message GitPipelineInfoRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitPipelineInfoRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        if (message.commit != null && Object.hasOwnProperty.call(message, "commit"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.commit);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitPipelineInfoRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitPipelineInfoRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitPipelineInfoRequest} GitPipelineInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitPipelineInfoRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitPipelineInfoRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.string();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            case 3:
+                message.commit = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitPipelineInfoRequest;
+})();
+
+export const GitPipelineInfoResponse = $root.GitPipelineInfoResponse = (() => {
+
+    /**
+     * Properties of a GitPipelineInfoResponse.
+     * @exports IGitPipelineInfoResponse
+     * @interface IGitPipelineInfoResponse
+     * @property {string|null} [status] GitPipelineInfoResponse status
+     * @property {string|null} [web_url] GitPipelineInfoResponse web_url
+     */
+
+    /**
+     * Constructs a new GitPipelineInfoResponse.
+     * @exports GitPipelineInfoResponse
+     * @classdesc Represents a GitPipelineInfoResponse.
+     * @implements IGitPipelineInfoResponse
+     * @constructor
+     * @param {IGitPipelineInfoResponse=} [properties] Properties to set
+     */
+    function GitPipelineInfoResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitPipelineInfoResponse status.
+     * @member {string} status
+     * @memberof GitPipelineInfoResponse
+     * @instance
+     */
+    GitPipelineInfoResponse.prototype.status = "";
+
+    /**
+     * GitPipelineInfoResponse web_url.
+     * @member {string} web_url
+     * @memberof GitPipelineInfoResponse
+     * @instance
+     */
+    GitPipelineInfoResponse.prototype.web_url = "";
+
+    /**
+     * Encodes the specified GitPipelineInfoResponse message. Does not implicitly {@link GitPipelineInfoResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitPipelineInfoResponse
+     * @static
+     * @param {GitPipelineInfoResponse} message GitPipelineInfoResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitPipelineInfoResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.status != null && Object.hasOwnProperty.call(message, "status"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.status);
+        if (message.web_url != null && Object.hasOwnProperty.call(message, "web_url"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.web_url);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitPipelineInfoResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitPipelineInfoResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitPipelineInfoResponse} GitPipelineInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitPipelineInfoResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitPipelineInfoResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.status = reader.string();
+                break;
+            case 2:
+                message.web_url = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitPipelineInfoResponse;
+})();
+
+export const GitConfigFileRequest = $root.GitConfigFileRequest = (() => {
+
+    /**
+     * Properties of a GitConfigFileRequest.
+     * @exports IGitConfigFileRequest
+     * @interface IGitConfigFileRequest
+     * @property {string|null} [project_id] GitConfigFileRequest project_id
+     * @property {string|null} [branch] GitConfigFileRequest branch
+     */
+
+    /**
+     * Constructs a new GitConfigFileRequest.
+     * @exports GitConfigFileRequest
+     * @classdesc Represents a GitConfigFileRequest.
+     * @implements IGitConfigFileRequest
+     * @constructor
+     * @param {IGitConfigFileRequest=} [properties] Properties to set
+     */
+    function GitConfigFileRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitConfigFileRequest project_id.
+     * @member {string} project_id
+     * @memberof GitConfigFileRequest
+     * @instance
+     */
+    GitConfigFileRequest.prototype.project_id = "";
+
+    /**
+     * GitConfigFileRequest branch.
+     * @member {string} branch
+     * @memberof GitConfigFileRequest
+     * @instance
+     */
+    GitConfigFileRequest.prototype.branch = "";
+
+    /**
+     * Encodes the specified GitConfigFileRequest message. Does not implicitly {@link GitConfigFileRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitConfigFileRequest
+     * @static
+     * @param {GitConfigFileRequest} message GitConfigFileRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitConfigFileRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitConfigFileRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitConfigFileRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitConfigFileRequest} GitConfigFileRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitConfigFileRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigFileRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.string();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitConfigFileRequest;
+})();
+
+export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
+
+    /**
+     * Properties of a GitConfigFileResponse.
+     * @exports IGitConfigFileResponse
+     * @interface IGitConfigFileResponse
+     * @property {string|null} [data] GitConfigFileResponse data
+     * @property {string|null} [type] GitConfigFileResponse type
+     */
+
+    /**
+     * Constructs a new GitConfigFileResponse.
+     * @exports GitConfigFileResponse
+     * @classdesc Represents a GitConfigFileResponse.
+     * @implements IGitConfigFileResponse
+     * @constructor
+     * @param {IGitConfigFileResponse=} [properties] Properties to set
+     */
+    function GitConfigFileResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitConfigFileResponse data.
+     * @member {string} data
+     * @memberof GitConfigFileResponse
+     * @instance
+     */
+    GitConfigFileResponse.prototype.data = "";
+
+    /**
+     * GitConfigFileResponse type.
+     * @member {string} type
+     * @memberof GitConfigFileResponse
+     * @instance
+     */
+    GitConfigFileResponse.prototype.type = "";
+
+    /**
+     * Encodes the specified GitConfigFileResponse message. Does not implicitly {@link GitConfigFileResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitConfigFileResponse
+     * @static
+     * @param {GitConfigFileResponse} message GitConfigFileResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitConfigFileResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.data);
+        if (message.type != null && Object.hasOwnProperty.call(message, "type"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.type);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitConfigFileResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitConfigFileResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitConfigFileResponse} GitConfigFileResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitConfigFileResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigFileResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.data = reader.string();
+                break;
+            case 2:
+                message.type = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitConfigFileResponse;
+})();
+
+export const GitEnableProjectResponse = $root.GitEnableProjectResponse = (() => {
+
+    /**
+     * Properties of a GitEnableProjectResponse.
+     * @exports IGitEnableProjectResponse
+     * @interface IGitEnableProjectResponse
+     */
+
+    /**
+     * Constructs a new GitEnableProjectResponse.
+     * @exports GitEnableProjectResponse
+     * @classdesc Represents a GitEnableProjectResponse.
+     * @implements IGitEnableProjectResponse
+     * @constructor
+     * @param {IGitEnableProjectResponse=} [properties] Properties to set
+     */
+    function GitEnableProjectResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified GitEnableProjectResponse message. Does not implicitly {@link GitEnableProjectResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitEnableProjectResponse
+     * @static
+     * @param {GitEnableProjectResponse} message GitEnableProjectResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitEnableProjectResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitEnableProjectResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitEnableProjectResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitEnableProjectResponse} GitEnableProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitEnableProjectResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitEnableProjectResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitEnableProjectResponse;
+})();
+
+export const GitDisableProjectResponse = $root.GitDisableProjectResponse = (() => {
+
+    /**
+     * Properties of a GitDisableProjectResponse.
+     * @exports IGitDisableProjectResponse
+     * @interface IGitDisableProjectResponse
+     */
+
+    /**
+     * Constructs a new GitDisableProjectResponse.
+     * @exports GitDisableProjectResponse
+     * @classdesc Represents a GitDisableProjectResponse.
+     * @implements IGitDisableProjectResponse
+     * @constructor
+     * @param {IGitDisableProjectResponse=} [properties] Properties to set
+     */
+    function GitDisableProjectResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified GitDisableProjectResponse message. Does not implicitly {@link GitDisableProjectResponse.verify|verify} messages.
+     * @function encode
+     * @memberof GitDisableProjectResponse
+     * @static
+     * @param {GitDisableProjectResponse} message GitDisableProjectResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitDisableProjectResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitDisableProjectResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitDisableProjectResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitDisableProjectResponse} GitDisableProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitDisableProjectResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitDisableProjectResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitDisableProjectResponse;
+})();
+
+export const GitAllProjectsRequest = $root.GitAllProjectsRequest = (() => {
+
+    /**
+     * Properties of a GitAllProjectsRequest.
+     * @exports IGitAllProjectsRequest
+     * @interface IGitAllProjectsRequest
+     */
+
+    /**
+     * Constructs a new GitAllProjectsRequest.
+     * @exports GitAllProjectsRequest
+     * @classdesc Represents a GitAllProjectsRequest.
+     * @implements IGitAllProjectsRequest
+     * @constructor
+     * @param {IGitAllProjectsRequest=} [properties] Properties to set
+     */
+    function GitAllProjectsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified GitAllProjectsRequest message. Does not implicitly {@link GitAllProjectsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitAllProjectsRequest
+     * @static
+     * @param {GitAllProjectsRequest} message GitAllProjectsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitAllProjectsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitAllProjectsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitAllProjectsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitAllProjectsRequest} GitAllProjectsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitAllProjectsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitAllProjectsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitAllProjectsRequest;
+})();
+
+export const GitProjectOptionsRequest = $root.GitProjectOptionsRequest = (() => {
+
+    /**
+     * Properties of a GitProjectOptionsRequest.
+     * @exports IGitProjectOptionsRequest
+     * @interface IGitProjectOptionsRequest
+     */
+
+    /**
+     * Constructs a new GitProjectOptionsRequest.
+     * @exports GitProjectOptionsRequest
+     * @classdesc Represents a GitProjectOptionsRequest.
+     * @implements IGitProjectOptionsRequest
+     * @constructor
+     * @param {IGitProjectOptionsRequest=} [properties] Properties to set
+     */
+    function GitProjectOptionsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified GitProjectOptionsRequest message. Does not implicitly {@link GitProjectOptionsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof GitProjectOptionsRequest
+     * @static
+     * @param {GitProjectOptionsRequest} message GitProjectOptionsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitProjectOptionsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a GitProjectOptionsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitProjectOptionsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitProjectOptionsRequest} GitProjectOptionsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitProjectOptionsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectOptionsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitProjectOptionsRequest;
+})();
+
+export const GitServer = $root.GitServer = (() => {
+
+    /**
+     * Constructs a new GitServer service.
+     * @exports GitServer
+     * @classdesc Represents a GitServer
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function GitServer(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (GitServer.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = GitServer;
+
+    /**
+     * Callback as used by {@link GitServer#enableProject}.
+     * @memberof GitServer
+     * @typedef EnableProjectCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitEnableProjectResponse} [response] GitEnableProjectResponse
+     */
+
+    /**
+     * Calls EnableProject.
+     * @function enableProject
+     * @memberof GitServer
+     * @instance
+     * @param {GitEnableProjectRequest} request GitEnableProjectRequest message or plain object
+     * @param {GitServer.EnableProjectCallback} callback Node-style callback called with the error, if any, and GitEnableProjectResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.enableProject = function enableProject(request, callback) {
+        return this.rpcCall(enableProject, $root.GitEnableProjectRequest, $root.GitEnableProjectResponse, request, callback);
+    }, "name", { value: "EnableProject" });
+
+    /**
+     * Calls EnableProject.
+     * @function enableProject
+     * @memberof GitServer
+     * @instance
+     * @param {GitEnableProjectRequest} request GitEnableProjectRequest message or plain object
+     * @returns {Promise<GitEnableProjectResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#disableProject}.
+     * @memberof GitServer
+     * @typedef DisableProjectCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitDisableProjectResponse} [response] GitDisableProjectResponse
+     */
+
+    /**
+     * Calls DisableProject.
+     * @function disableProject
+     * @memberof GitServer
+     * @instance
+     * @param {GitDisableProjectRequest} request GitDisableProjectRequest message or plain object
+     * @param {GitServer.DisableProjectCallback} callback Node-style callback called with the error, if any, and GitDisableProjectResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.disableProject = function disableProject(request, callback) {
+        return this.rpcCall(disableProject, $root.GitDisableProjectRequest, $root.GitDisableProjectResponse, request, callback);
+    }, "name", { value: "DisableProject" });
+
+    /**
+     * Calls DisableProject.
+     * @function disableProject
+     * @memberof GitServer
+     * @instance
+     * @param {GitDisableProjectRequest} request GitDisableProjectRequest message or plain object
+     * @returns {Promise<GitDisableProjectResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#all}.
+     * @memberof GitServer
+     * @typedef AllCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitAllProjectsResponse} [response] GitAllProjectsResponse
+     */
+
+    /**
+     * Calls All.
+     * @function all
+     * @memberof GitServer
+     * @instance
+     * @param {GitAllProjectsRequest} request GitAllProjectsRequest message or plain object
+     * @param {GitServer.AllCallback} callback Node-style callback called with the error, if any, and GitAllProjectsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.all = function all(request, callback) {
+        return this.rpcCall(all, $root.GitAllProjectsRequest, $root.GitAllProjectsResponse, request, callback);
+    }, "name", { value: "All" });
+
+    /**
+     * Calls All.
+     * @function all
+     * @memberof GitServer
+     * @instance
+     * @param {GitAllProjectsRequest} request GitAllProjectsRequest message or plain object
+     * @returns {Promise<GitAllProjectsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#projectOptions}.
+     * @memberof GitServer
+     * @typedef ProjectOptionsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitProjectOptionsResponse} [response] GitProjectOptionsResponse
+     */
+
+    /**
+     * Calls ProjectOptions.
+     * @function projectOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitProjectOptionsRequest} request GitProjectOptionsRequest message or plain object
+     * @param {GitServer.ProjectOptionsCallback} callback Node-style callback called with the error, if any, and GitProjectOptionsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.projectOptions = function projectOptions(request, callback) {
+        return this.rpcCall(projectOptions, $root.GitProjectOptionsRequest, $root.GitProjectOptionsResponse, request, callback);
+    }, "name", { value: "ProjectOptions" });
+
+    /**
+     * Calls ProjectOptions.
+     * @function projectOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitProjectOptionsRequest} request GitProjectOptionsRequest message or plain object
+     * @returns {Promise<GitProjectOptionsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#branchOptions}.
+     * @memberof GitServer
+     * @typedef BranchOptionsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitBranchOptionsResponse} [response] GitBranchOptionsResponse
+     */
+
+    /**
+     * Calls BranchOptions.
+     * @function branchOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitBranchOptionsRequest} request GitBranchOptionsRequest message or plain object
+     * @param {GitServer.BranchOptionsCallback} callback Node-style callback called with the error, if any, and GitBranchOptionsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.branchOptions = function branchOptions(request, callback) {
+        return this.rpcCall(branchOptions, $root.GitBranchOptionsRequest, $root.GitBranchOptionsResponse, request, callback);
+    }, "name", { value: "BranchOptions" });
+
+    /**
+     * Calls BranchOptions.
+     * @function branchOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitBranchOptionsRequest} request GitBranchOptionsRequest message or plain object
+     * @returns {Promise<GitBranchOptionsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#commitOptions}.
+     * @memberof GitServer
+     * @typedef CommitOptionsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitCommitOptionsResponse} [response] GitCommitOptionsResponse
+     */
+
+    /**
+     * Calls CommitOptions.
+     * @function commitOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitCommitOptionsRequest} request GitCommitOptionsRequest message or plain object
+     * @param {GitServer.CommitOptionsCallback} callback Node-style callback called with the error, if any, and GitCommitOptionsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.commitOptions = function commitOptions(request, callback) {
+        return this.rpcCall(commitOptions, $root.GitCommitOptionsRequest, $root.GitCommitOptionsResponse, request, callback);
+    }, "name", { value: "CommitOptions" });
+
+    /**
+     * Calls CommitOptions.
+     * @function commitOptions
+     * @memberof GitServer
+     * @instance
+     * @param {GitCommitOptionsRequest} request GitCommitOptionsRequest message or plain object
+     * @returns {Promise<GitCommitOptionsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#commit}.
+     * @memberof GitServer
+     * @typedef CommitCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitCommitResponse} [response] GitCommitResponse
+     */
+
+    /**
+     * Calls Commit.
+     * @function commit
+     * @memberof GitServer
+     * @instance
+     * @param {GitCommitRequest} request GitCommitRequest message or plain object
+     * @param {GitServer.CommitCallback} callback Node-style callback called with the error, if any, and GitCommitResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.commit = function commit(request, callback) {
+        return this.rpcCall(commit, $root.GitCommitRequest, $root.GitCommitResponse, request, callback);
+    }, "name", { value: "Commit" });
+
+    /**
+     * Calls Commit.
+     * @function commit
+     * @memberof GitServer
+     * @instance
+     * @param {GitCommitRequest} request GitCommitRequest message or plain object
+     * @returns {Promise<GitCommitResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#pipelineInfo}.
+     * @memberof GitServer
+     * @typedef PipelineInfoCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitPipelineInfoResponse} [response] GitPipelineInfoResponse
+     */
+
+    /**
+     * Calls PipelineInfo.
+     * @function pipelineInfo
+     * @memberof GitServer
+     * @instance
+     * @param {GitPipelineInfoRequest} request GitPipelineInfoRequest message or plain object
+     * @param {GitServer.PipelineInfoCallback} callback Node-style callback called with the error, if any, and GitPipelineInfoResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.pipelineInfo = function pipelineInfo(request, callback) {
+        return this.rpcCall(pipelineInfo, $root.GitPipelineInfoRequest, $root.GitPipelineInfoResponse, request, callback);
+    }, "name", { value: "PipelineInfo" });
+
+    /**
+     * Calls PipelineInfo.
+     * @function pipelineInfo
+     * @memberof GitServer
+     * @instance
+     * @param {GitPipelineInfoRequest} request GitPipelineInfoRequest message or plain object
+     * @returns {Promise<GitPipelineInfoResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link GitServer#marsConfigFile}.
+     * @memberof GitServer
+     * @typedef MarsConfigFileCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {GitConfigFileResponse} [response] GitConfigFileResponse
+     */
+
+    /**
+     * Calls MarsConfigFile.
+     * @function marsConfigFile
+     * @memberof GitServer
+     * @instance
+     * @param {GitConfigFileRequest} request GitConfigFileRequest message or plain object
+     * @param {GitServer.MarsConfigFileCallback} callback Node-style callback called with the error, if any, and GitConfigFileResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(GitServer.prototype.marsConfigFile = function marsConfigFile(request, callback) {
+        return this.rpcCall(marsConfigFile, $root.GitConfigFileRequest, $root.GitConfigFileResponse, request, callback);
+    }, "name", { value: "MarsConfigFile" });
+
+    /**
+     * Calls MarsConfigFile.
+     * @function marsConfigFile
+     * @memberof GitServer
+     * @instance
+     * @param {GitConfigFileRequest} request GitConfigFileRequest message or plain object
+     * @returns {Promise<GitConfigFileResponse>} Promise
+     * @variation 2
+     */
+
+    return GitServer;
+})();
+
+export const MarsConfig = $root.MarsConfig = (() => {
+
+    /**
+     * Properties of a MarsConfig.
+     * @exports IMarsConfig
+     * @interface IMarsConfig
+     * @property {string|null} [config_file] MarsConfig config_file
+     * @property {string|null} [config_file_values] MarsConfig config_file_values
+     * @property {string|null} [config_field] MarsConfig config_field
+     * @property {boolean|null} [is_simple_env] MarsConfig is_simple_env
+     * @property {string|null} [config_file_type] MarsConfig config_file_type
+     * @property {string|null} [local_chart_path] MarsConfig local_chart_path
+     * @property {Array.<string>|null} [branches] MarsConfig branches
+     * @property {string|null} [values_yaml] MarsConfig values_yaml
+     */
+
+    /**
+     * Constructs a new MarsConfig.
+     * @exports MarsConfig
+     * @classdesc Represents a MarsConfig.
+     * @implements IMarsConfig
+     * @constructor
+     * @param {IMarsConfig=} [properties] Properties to set
+     */
+    function MarsConfig(properties) {
+        this.branches = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsConfig config_file.
+     * @member {string} config_file
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.config_file = "";
+
+    /**
+     * MarsConfig config_file_values.
+     * @member {string} config_file_values
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.config_file_values = "";
+
+    /**
+     * MarsConfig config_field.
+     * @member {string} config_field
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.config_field = "";
+
+    /**
+     * MarsConfig is_simple_env.
+     * @member {boolean} is_simple_env
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.is_simple_env = false;
+
+    /**
+     * MarsConfig config_file_type.
+     * @member {string} config_file_type
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.config_file_type = "";
+
+    /**
+     * MarsConfig local_chart_path.
+     * @member {string} local_chart_path
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.local_chart_path = "";
+
+    /**
+     * MarsConfig branches.
+     * @member {Array.<string>} branches
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.branches = $util.emptyArray;
+
+    /**
+     * MarsConfig values_yaml.
+     * @member {string} values_yaml
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.values_yaml = "";
+
+    /**
+     * Encodes the specified MarsConfig message. Does not implicitly {@link MarsConfig.verify|verify} messages.
+     * @function encode
+     * @memberof MarsConfig
+     * @static
+     * @param {MarsConfig} message MarsConfig message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsConfig.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.config_file != null && Object.hasOwnProperty.call(message, "config_file"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.config_file);
+        if (message.config_file_values != null && Object.hasOwnProperty.call(message, "config_file_values"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.config_file_values);
+        if (message.config_field != null && Object.hasOwnProperty.call(message, "config_field"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.config_field);
+        if (message.is_simple_env != null && Object.hasOwnProperty.call(message, "is_simple_env"))
+            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_simple_env);
+        if (message.config_file_type != null && Object.hasOwnProperty.call(message, "config_file_type"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.config_file_type);
+        if (message.local_chart_path != null && Object.hasOwnProperty.call(message, "local_chart_path"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.local_chart_path);
+        if (message.branches != null && message.branches.length)
+            for (let i = 0; i < message.branches.length; ++i)
+                writer.uint32(/* id 7, wireType 2 =*/58).string(message.branches[i]);
+        if (message.values_yaml != null && Object.hasOwnProperty.call(message, "values_yaml"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.values_yaml);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsConfig message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsConfig
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsConfig} MarsConfig
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsConfig.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsConfig();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.config_file = reader.string();
+                break;
+            case 2:
+                message.config_file_values = reader.string();
+                break;
+            case 3:
+                message.config_field = reader.string();
+                break;
+            case 4:
+                message.is_simple_env = reader.bool();
+                break;
+            case 5:
+                message.config_file_type = reader.string();
+                break;
+            case 6:
+                message.local_chart_path = reader.string();
+                break;
+            case 7:
+                if (!(message.branches && message.branches.length))
+                    message.branches = [];
+                message.branches.push(reader.string());
+                break;
+            case 8:
+                message.values_yaml = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsConfig;
+})();
+
+export const MarsShowRequest = $root.MarsShowRequest = (() => {
+
+    /**
+     * Properties of a MarsShowRequest.
+     * @exports IMarsShowRequest
+     * @interface IMarsShowRequest
+     * @property {number|null} [project_id] MarsShowRequest project_id
+     * @property {string|null} [branch] MarsShowRequest branch
+     */
+
+    /**
+     * Constructs a new MarsShowRequest.
+     * @exports MarsShowRequest
+     * @classdesc Represents a MarsShowRequest.
+     * @implements IMarsShowRequest
+     * @constructor
+     * @param {IMarsShowRequest=} [properties] Properties to set
+     */
+    function MarsShowRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsShowRequest project_id.
+     * @member {number} project_id
+     * @memberof MarsShowRequest
+     * @instance
+     */
+    MarsShowRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * MarsShowRequest branch.
+     * @member {string} branch
+     * @memberof MarsShowRequest
+     * @instance
+     */
+    MarsShowRequest.prototype.branch = "";
+
+    /**
+     * Encodes the specified MarsShowRequest message. Does not implicitly {@link MarsShowRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MarsShowRequest
+     * @static
+     * @param {MarsShowRequest} message MarsShowRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsShowRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsShowRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsShowRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsShowRequest} MarsShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsShowRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsShowRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsShowRequest;
+})();
+
+export const MarsShowResponse = $root.MarsShowResponse = (() => {
+
+    /**
+     * Properties of a MarsShowResponse.
+     * @exports IMarsShowResponse
+     * @interface IMarsShowResponse
+     * @property {string|null} [branch] MarsShowResponse branch
+     * @property {MarsConfig|null} [config] MarsShowResponse config
+     */
+
+    /**
+     * Constructs a new MarsShowResponse.
+     * @exports MarsShowResponse
+     * @classdesc Represents a MarsShowResponse.
+     * @implements IMarsShowResponse
+     * @constructor
+     * @param {IMarsShowResponse=} [properties] Properties to set
+     */
+    function MarsShowResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsShowResponse branch.
+     * @member {string} branch
+     * @memberof MarsShowResponse
+     * @instance
+     */
+    MarsShowResponse.prototype.branch = "";
+
+    /**
+     * MarsShowResponse config.
+     * @member {MarsConfig|null|undefined} config
+     * @memberof MarsShowResponse
+     * @instance
+     */
+    MarsShowResponse.prototype.config = null;
+
+    /**
+     * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MarsShowResponse
+     * @static
+     * @param {MarsShowResponse} message MarsShowResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsShowResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.branch);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            $root.MarsConfig.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsShowResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsShowResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsShowResponse} MarsShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsShowResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsShowResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.branch = reader.string();
+                break;
+            case 2:
+                message.config = $root.MarsConfig.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsShowResponse;
+})();
+
+export const MarsGlobalConfigRequest = $root.MarsGlobalConfigRequest = (() => {
+
+    /**
+     * Properties of a MarsGlobalConfigRequest.
+     * @exports IMarsGlobalConfigRequest
+     * @interface IMarsGlobalConfigRequest
+     * @property {number|null} [project_id] MarsGlobalConfigRequest project_id
+     */
+
+    /**
+     * Constructs a new MarsGlobalConfigRequest.
+     * @exports MarsGlobalConfigRequest
+     * @classdesc Represents a MarsGlobalConfigRequest.
+     * @implements IMarsGlobalConfigRequest
+     * @constructor
+     * @param {IMarsGlobalConfigRequest=} [properties] Properties to set
+     */
+    function MarsGlobalConfigRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsGlobalConfigRequest project_id.
+     * @member {number} project_id
+     * @memberof MarsGlobalConfigRequest
+     * @instance
+     */
+    MarsGlobalConfigRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified MarsGlobalConfigRequest message. Does not implicitly {@link MarsGlobalConfigRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MarsGlobalConfigRequest
+     * @static
+     * @param {MarsGlobalConfigRequest} message MarsGlobalConfigRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsGlobalConfigRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsGlobalConfigRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsGlobalConfigRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsGlobalConfigRequest} MarsGlobalConfigRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsGlobalConfigRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsGlobalConfigRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsGlobalConfigRequest;
+})();
+
+export const MarsGlobalConfigResponse = $root.MarsGlobalConfigResponse = (() => {
+
+    /**
+     * Properties of a MarsGlobalConfigResponse.
+     * @exports IMarsGlobalConfigResponse
+     * @interface IMarsGlobalConfigResponse
+     * @property {boolean|null} [enabled] MarsGlobalConfigResponse enabled
+     * @property {MarsConfig|null} [config] MarsGlobalConfigResponse config
+     */
+
+    /**
+     * Constructs a new MarsGlobalConfigResponse.
+     * @exports MarsGlobalConfigResponse
+     * @classdesc Represents a MarsGlobalConfigResponse.
+     * @implements IMarsGlobalConfigResponse
+     * @constructor
+     * @param {IMarsGlobalConfigResponse=} [properties] Properties to set
+     */
+    function MarsGlobalConfigResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsGlobalConfigResponse enabled.
+     * @member {boolean} enabled
+     * @memberof MarsGlobalConfigResponse
+     * @instance
+     */
+    MarsGlobalConfigResponse.prototype.enabled = false;
+
+    /**
+     * MarsGlobalConfigResponse config.
+     * @member {MarsConfig|null|undefined} config
+     * @memberof MarsGlobalConfigResponse
+     * @instance
+     */
+    MarsGlobalConfigResponse.prototype.config = null;
+
+    /**
+     * Encodes the specified MarsGlobalConfigResponse message. Does not implicitly {@link MarsGlobalConfigResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MarsGlobalConfigResponse
+     * @static
+     * @param {MarsGlobalConfigResponse} message MarsGlobalConfigResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsGlobalConfigResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
+            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            $root.MarsConfig.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsGlobalConfigResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsGlobalConfigResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsGlobalConfigResponse} MarsGlobalConfigResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsGlobalConfigResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsGlobalConfigResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.enabled = reader.bool();
+                break;
+            case 2:
+                message.config = $root.MarsConfig.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsGlobalConfigResponse;
+})();
+
+export const MarsUpdateRequest = $root.MarsUpdateRequest = (() => {
+
+    /**
+     * Properties of a MarsUpdateRequest.
+     * @exports IMarsUpdateRequest
+     * @interface IMarsUpdateRequest
+     * @property {number|null} [project_id] MarsUpdateRequest project_id
+     * @property {MarsConfig|null} [config] MarsUpdateRequest config
+     */
+
+    /**
+     * Constructs a new MarsUpdateRequest.
+     * @exports MarsUpdateRequest
+     * @classdesc Represents a MarsUpdateRequest.
+     * @implements IMarsUpdateRequest
+     * @constructor
+     * @param {IMarsUpdateRequest=} [properties] Properties to set
+     */
+    function MarsUpdateRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsUpdateRequest project_id.
+     * @member {number} project_id
+     * @memberof MarsUpdateRequest
+     * @instance
+     */
+    MarsUpdateRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * MarsUpdateRequest config.
+     * @member {MarsConfig|null|undefined} config
+     * @memberof MarsUpdateRequest
+     * @instance
+     */
+    MarsUpdateRequest.prototype.config = null;
+
+    /**
+     * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MarsUpdateRequest
+     * @static
+     * @param {MarsUpdateRequest} message MarsUpdateRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsUpdateRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            $root.MarsConfig.encode(message.config, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsUpdateRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsUpdateRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsUpdateRequest} MarsUpdateRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsUpdateRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsUpdateRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            case 2:
+                message.config = $root.MarsConfig.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsUpdateRequest;
+})();
+
+export const MarsUpdateResponse = $root.MarsUpdateResponse = (() => {
+
+    /**
+     * Properties of a MarsUpdateResponse.
+     * @exports IMarsUpdateResponse
+     * @interface IMarsUpdateResponse
+     * @property {MarsConfig|null} [config] MarsUpdateResponse config
+     */
+
+    /**
+     * Constructs a new MarsUpdateResponse.
+     * @exports MarsUpdateResponse
+     * @classdesc Represents a MarsUpdateResponse.
+     * @implements IMarsUpdateResponse
+     * @constructor
+     * @param {IMarsUpdateResponse=} [properties] Properties to set
+     */
+    function MarsUpdateResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsUpdateResponse config.
+     * @member {MarsConfig|null|undefined} config
+     * @memberof MarsUpdateResponse
+     * @instance
+     */
+    MarsUpdateResponse.prototype.config = null;
+
+    /**
+     * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MarsUpdateResponse
+     * @static
+     * @param {MarsUpdateResponse} message MarsUpdateResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsUpdateResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            $root.MarsConfig.encode(message.config, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsUpdateResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsUpdateResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsUpdateResponse} MarsUpdateResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsUpdateResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsUpdateResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.config = $root.MarsConfig.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsUpdateResponse;
+})();
+
+export const MarsToggleEnabledRequest = $root.MarsToggleEnabledRequest = (() => {
+
+    /**
+     * Properties of a MarsToggleEnabledRequest.
+     * @exports IMarsToggleEnabledRequest
+     * @interface IMarsToggleEnabledRequest
+     * @property {number|null} [project_id] MarsToggleEnabledRequest project_id
+     * @property {boolean|null} [enabled] MarsToggleEnabledRequest enabled
+     */
+
+    /**
+     * Constructs a new MarsToggleEnabledRequest.
+     * @exports MarsToggleEnabledRequest
+     * @classdesc Represents a MarsToggleEnabledRequest.
+     * @implements IMarsToggleEnabledRequest
+     * @constructor
+     * @param {IMarsToggleEnabledRequest=} [properties] Properties to set
+     */
+    function MarsToggleEnabledRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsToggleEnabledRequest project_id.
+     * @member {number} project_id
+     * @memberof MarsToggleEnabledRequest
+     * @instance
+     */
+    MarsToggleEnabledRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * MarsToggleEnabledRequest enabled.
+     * @member {boolean} enabled
+     * @memberof MarsToggleEnabledRequest
+     * @instance
+     */
+    MarsToggleEnabledRequest.prototype.enabled = false;
+
+    /**
+     * Encodes the specified MarsToggleEnabledRequest message. Does not implicitly {@link MarsToggleEnabledRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MarsToggleEnabledRequest
+     * @static
+     * @param {MarsToggleEnabledRequest} message MarsToggleEnabledRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsToggleEnabledRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
+            writer.uint32(/* id 2, wireType 0 =*/16).bool(message.enabled);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsToggleEnabledRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsToggleEnabledRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsToggleEnabledRequest} MarsToggleEnabledRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsToggleEnabledRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsToggleEnabledRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            case 2:
+                message.enabled = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsToggleEnabledRequest;
+})();
+
+export const MarsDefaultChartValuesRequest = $root.MarsDefaultChartValuesRequest = (() => {
+
+    /**
+     * Properties of a MarsDefaultChartValuesRequest.
+     * @exports IMarsDefaultChartValuesRequest
+     * @interface IMarsDefaultChartValuesRequest
+     * @property {number|null} [project_id] MarsDefaultChartValuesRequest project_id
+     * @property {string|null} [branch] MarsDefaultChartValuesRequest branch
+     */
+
+    /**
+     * Constructs a new MarsDefaultChartValuesRequest.
+     * @exports MarsDefaultChartValuesRequest
+     * @classdesc Represents a MarsDefaultChartValuesRequest.
+     * @implements IMarsDefaultChartValuesRequest
+     * @constructor
+     * @param {IMarsDefaultChartValuesRequest=} [properties] Properties to set
+     */
+    function MarsDefaultChartValuesRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsDefaultChartValuesRequest project_id.
+     * @member {number} project_id
+     * @memberof MarsDefaultChartValuesRequest
+     * @instance
+     */
+    MarsDefaultChartValuesRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * MarsDefaultChartValuesRequest branch.
+     * @member {string} branch
+     * @memberof MarsDefaultChartValuesRequest
+     * @instance
+     */
+    MarsDefaultChartValuesRequest.prototype.branch = "";
+
+    /**
+     * Encodes the specified MarsDefaultChartValuesRequest message. Does not implicitly {@link MarsDefaultChartValuesRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MarsDefaultChartValuesRequest
+     * @static
+     * @param {MarsDefaultChartValuesRequest} message MarsDefaultChartValuesRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsDefaultChartValuesRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.branch);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsDefaultChartValuesRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsDefaultChartValuesRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsDefaultChartValuesRequest} MarsDefaultChartValuesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsDefaultChartValuesRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsDefaultChartValuesRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            case 2:
+                message.branch = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsDefaultChartValuesRequest;
+})();
+
+export const MarsDefaultChartValuesResponse = $root.MarsDefaultChartValuesResponse = (() => {
+
+    /**
+     * Properties of a MarsDefaultChartValuesResponse.
+     * @exports IMarsDefaultChartValuesResponse
+     * @interface IMarsDefaultChartValuesResponse
+     * @property {string|null} [value] MarsDefaultChartValuesResponse value
+     */
+
+    /**
+     * Constructs a new MarsDefaultChartValuesResponse.
+     * @exports MarsDefaultChartValuesResponse
+     * @classdesc Represents a MarsDefaultChartValuesResponse.
+     * @implements IMarsDefaultChartValuesResponse
+     * @constructor
+     * @param {IMarsDefaultChartValuesResponse=} [properties] Properties to set
+     */
+    function MarsDefaultChartValuesResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MarsDefaultChartValuesResponse value.
+     * @member {string} value
+     * @memberof MarsDefaultChartValuesResponse
+     * @instance
+     */
+    MarsDefaultChartValuesResponse.prototype.value = "";
+
+    /**
+     * Encodes the specified MarsDefaultChartValuesResponse message. Does not implicitly {@link MarsDefaultChartValuesResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MarsDefaultChartValuesResponse
+     * @static
+     * @param {MarsDefaultChartValuesResponse} message MarsDefaultChartValuesResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsDefaultChartValuesResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsDefaultChartValuesResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsDefaultChartValuesResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsDefaultChartValuesResponse} MarsDefaultChartValuesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsDefaultChartValuesResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsDefaultChartValuesResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.value = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsDefaultChartValuesResponse;
+})();
+
+export const MarsToggleEnabledResponse = $root.MarsToggleEnabledResponse = (() => {
+
+    /**
+     * Properties of a MarsToggleEnabledResponse.
+     * @exports IMarsToggleEnabledResponse
+     * @interface IMarsToggleEnabledResponse
+     */
+
+    /**
+     * Constructs a new MarsToggleEnabledResponse.
+     * @exports MarsToggleEnabledResponse
+     * @classdesc Represents a MarsToggleEnabledResponse.
+     * @implements IMarsToggleEnabledResponse
+     * @constructor
+     * @param {IMarsToggleEnabledResponse=} [properties] Properties to set
+     */
+    function MarsToggleEnabledResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified MarsToggleEnabledResponse message. Does not implicitly {@link MarsToggleEnabledResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MarsToggleEnabledResponse
+     * @static
+     * @param {MarsToggleEnabledResponse} message MarsToggleEnabledResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MarsToggleEnabledResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a MarsToggleEnabledResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MarsToggleEnabledResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MarsToggleEnabledResponse} MarsToggleEnabledResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MarsToggleEnabledResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MarsToggleEnabledResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MarsToggleEnabledResponse;
+})();
+
+export const Mars = $root.Mars = (() => {
+
+    /**
+     * Constructs a new Mars service.
+     * @exports Mars
+     * @classdesc Represents a Mars
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Mars(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Mars.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Mars;
+
+    /**
+     * Callback as used by {@link Mars#show}.
+     * @memberof Mars
+     * @typedef ShowCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MarsShowResponse} [response] MarsShowResponse
+     */
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Mars
+     * @instance
+     * @param {MarsShowRequest} request MarsShowRequest message or plain object
+     * @param {Mars.ShowCallback} callback Node-style callback called with the error, if any, and MarsShowResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Mars.prototype.show = function show(request, callback) {
+        return this.rpcCall(show, $root.MarsShowRequest, $root.MarsShowResponse, request, callback);
+    }, "name", { value: "Show" });
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Mars
+     * @instance
+     * @param {MarsShowRequest} request MarsShowRequest message or plain object
+     * @returns {Promise<MarsShowResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Mars#globalConfig}.
+     * @memberof Mars
+     * @typedef GlobalConfigCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MarsGlobalConfigResponse} [response] MarsGlobalConfigResponse
+     */
+
+    /**
+     * Calls GlobalConfig.
+     * @function globalConfig
+     * @memberof Mars
+     * @instance
+     * @param {MarsGlobalConfigRequest} request MarsGlobalConfigRequest message or plain object
+     * @param {Mars.GlobalConfigCallback} callback Node-style callback called with the error, if any, and MarsGlobalConfigResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Mars.prototype.globalConfig = function globalConfig(request, callback) {
+        return this.rpcCall(globalConfig, $root.MarsGlobalConfigRequest, $root.MarsGlobalConfigResponse, request, callback);
+    }, "name", { value: "GlobalConfig" });
+
+    /**
+     * Calls GlobalConfig.
+     * @function globalConfig
+     * @memberof Mars
+     * @instance
+     * @param {MarsGlobalConfigRequest} request MarsGlobalConfigRequest message or plain object
+     * @returns {Promise<MarsGlobalConfigResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Mars#toggleEnabled}.
+     * @memberof Mars
+     * @typedef ToggleEnabledCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MarsToggleEnabledResponse} [response] MarsToggleEnabledResponse
+     */
+
+    /**
+     * Calls ToggleEnabled.
+     * @function toggleEnabled
+     * @memberof Mars
+     * @instance
+     * @param {MarsToggleEnabledRequest} request MarsToggleEnabledRequest message or plain object
+     * @param {Mars.ToggleEnabledCallback} callback Node-style callback called with the error, if any, and MarsToggleEnabledResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Mars.prototype.toggleEnabled = function toggleEnabled(request, callback) {
+        return this.rpcCall(toggleEnabled, $root.MarsToggleEnabledRequest, $root.MarsToggleEnabledResponse, request, callback);
+    }, "name", { value: "ToggleEnabled" });
+
+    /**
+     * Calls ToggleEnabled.
+     * @function toggleEnabled
+     * @memberof Mars
+     * @instance
+     * @param {MarsToggleEnabledRequest} request MarsToggleEnabledRequest message or plain object
+     * @returns {Promise<MarsToggleEnabledResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Mars#update}.
+     * @memberof Mars
+     * @typedef UpdateCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MarsUpdateResponse} [response] MarsUpdateResponse
+     */
+
+    /**
+     * Calls Update.
+     * @function update
+     * @memberof Mars
+     * @instance
+     * @param {MarsUpdateRequest} request MarsUpdateRequest message or plain object
+     * @param {Mars.UpdateCallback} callback Node-style callback called with the error, if any, and MarsUpdateResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Mars.prototype.update = function update(request, callback) {
+        return this.rpcCall(update, $root.MarsUpdateRequest, $root.MarsUpdateResponse, request, callback);
+    }, "name", { value: "Update" });
+
+    /**
+     * Calls Update.
+     * @function update
+     * @memberof Mars
+     * @instance
+     * @param {MarsUpdateRequest} request MarsUpdateRequest message or plain object
+     * @returns {Promise<MarsUpdateResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Mars#getDefaultChartValues}.
+     * @memberof Mars
+     * @typedef GetDefaultChartValuesCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MarsDefaultChartValuesResponse} [response] MarsDefaultChartValuesResponse
+     */
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @function getDefaultChartValues
+     * @memberof Mars
+     * @instance
+     * @param {MarsDefaultChartValuesRequest} request MarsDefaultChartValuesRequest message or plain object
+     * @param {Mars.GetDefaultChartValuesCallback} callback Node-style callback called with the error, if any, and MarsDefaultChartValuesResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Mars.prototype.getDefaultChartValues = function getDefaultChartValues(request, callback) {
+        return this.rpcCall(getDefaultChartValues, $root.MarsDefaultChartValuesRequest, $root.MarsDefaultChartValuesResponse, request, callback);
+    }, "name", { value: "GetDefaultChartValues" });
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @function getDefaultChartValues
+     * @memberof Mars
+     * @instance
+     * @param {MarsDefaultChartValuesRequest} request MarsDefaultChartValuesRequest message or plain object
+     * @returns {Promise<MarsDefaultChartValuesResponse>} Promise
+     * @variation 2
+     */
+
+    return Mars;
+})();
+
+export const MetricsShowRequest = $root.MetricsShowRequest = (() => {
+
+    /**
+     * Properties of a MetricsShowRequest.
+     * @exports IMetricsShowRequest
+     * @interface IMetricsShowRequest
+     * @property {string|null} [namespace] MetricsShowRequest namespace
+     * @property {string|null} [pod] MetricsShowRequest pod
+     */
+
+    /**
+     * Constructs a new MetricsShowRequest.
+     * @exports MetricsShowRequest
+     * @classdesc Represents a MetricsShowRequest.
+     * @implements IMetricsShowRequest
+     * @constructor
+     * @param {IMetricsShowRequest=} [properties] Properties to set
+     */
+    function MetricsShowRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsShowRequest namespace.
+     * @member {string} namespace
+     * @memberof MetricsShowRequest
+     * @instance
+     */
+    MetricsShowRequest.prototype.namespace = "";
+
+    /**
+     * MetricsShowRequest pod.
+     * @member {string} pod
+     * @memberof MetricsShowRequest
+     * @instance
+     */
+    MetricsShowRequest.prototype.pod = "";
+
+    /**
+     * Encodes the specified MetricsShowRequest message. Does not implicitly {@link MetricsShowRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsShowRequest
+     * @static
+     * @param {MetricsShowRequest} message MetricsShowRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsShowRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsShowRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsShowRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsShowRequest} MetricsShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsShowRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsShowRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace = reader.string();
+                break;
+            case 2:
+                message.pod = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsShowRequest;
+})();
+
+export const MetricsShowResponse = $root.MetricsShowResponse = (() => {
+
+    /**
+     * Properties of a MetricsShowResponse.
+     * @exports IMetricsShowResponse
+     * @interface IMetricsShowResponse
+     * @property {number|null} [cpu] MetricsShowResponse cpu
+     * @property {number|null} [memory] MetricsShowResponse memory
+     * @property {string|null} [humanize_cpu] MetricsShowResponse humanize_cpu
+     * @property {string|null} [humanize_memory] MetricsShowResponse humanize_memory
+     * @property {string|null} [time] MetricsShowResponse time
+     * @property {number|null} [length] MetricsShowResponse length
+     */
+
+    /**
+     * Constructs a new MetricsShowResponse.
+     * @exports MetricsShowResponse
+     * @classdesc Represents a MetricsShowResponse.
+     * @implements IMetricsShowResponse
+     * @constructor
+     * @param {IMetricsShowResponse=} [properties] Properties to set
+     */
+    function MetricsShowResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsShowResponse cpu.
+     * @member {number} cpu
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.cpu = 0;
+
+    /**
+     * MetricsShowResponse memory.
+     * @member {number} memory
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.memory = 0;
+
+    /**
+     * MetricsShowResponse humanize_cpu.
+     * @member {string} humanize_cpu
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.humanize_cpu = "";
+
+    /**
+     * MetricsShowResponse humanize_memory.
+     * @member {string} humanize_memory
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.humanize_memory = "";
+
+    /**
+     * MetricsShowResponse time.
+     * @member {string} time
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.time = "";
+
+    /**
+     * MetricsShowResponse length.
+     * @member {number} length
+     * @memberof MetricsShowResponse
+     * @instance
+     */
+    MetricsShowResponse.prototype.length = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified MetricsShowResponse message. Does not implicitly {@link MetricsShowResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsShowResponse
+     * @static
+     * @param {MetricsShowResponse} message MetricsShowResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsShowResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
+            writer.uint32(/* id 1, wireType 1 =*/9).double(message.cpu);
+        if (message.memory != null && Object.hasOwnProperty.call(message, "memory"))
+            writer.uint32(/* id 2, wireType 1 =*/17).double(message.memory);
+        if (message.humanize_cpu != null && Object.hasOwnProperty.call(message, "humanize_cpu"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.humanize_cpu);
+        if (message.humanize_memory != null && Object.hasOwnProperty.call(message, "humanize_memory"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.humanize_memory);
+        if (message.time != null && Object.hasOwnProperty.call(message, "time"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.time);
+        if (message.length != null && Object.hasOwnProperty.call(message, "length"))
+            writer.uint32(/* id 6, wireType 0 =*/48).int64(message.length);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsShowResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsShowResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsShowResponse} MetricsShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsShowResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsShowResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.cpu = reader.double();
+                break;
+            case 2:
+                message.memory = reader.double();
+                break;
+            case 3:
+                message.humanize_cpu = reader.string();
+                break;
+            case 4:
+                message.humanize_memory = reader.string();
+                break;
+            case 5:
+                message.time = reader.string();
+                break;
+            case 6:
+                message.length = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsShowResponse;
+})();
+
+export const Metrics = $root.Metrics = (() => {
+
+    /**
+     * Constructs a new Metrics service.
+     * @exports Metrics
+     * @classdesc Represents a Metrics
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Metrics(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Metrics.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Metrics;
+
+    /**
+     * Callback as used by {@link Metrics#show}.
+     * @memberof Metrics
+     * @typedef ShowCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsShowResponse} [response] MetricsShowResponse
+     */
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsShowRequest} request MetricsShowRequest message or plain object
+     * @param {Metrics.ShowCallback} callback Node-style callback called with the error, if any, and MetricsShowResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.show = function show(request, callback) {
+        return this.rpcCall(show, $root.MetricsShowRequest, $root.MetricsShowResponse, request, callback);
+    }, "name", { value: "Show" });
+
+    /**
+     * Calls Show.
+     * @function show
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsShowRequest} request MetricsShowRequest message or plain object
+     * @returns {Promise<MetricsShowResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Metrics#streamShow}.
+     * @memberof Metrics
+     * @typedef StreamShowCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsShowResponse} [response] MetricsShowResponse
+     */
+
+    /**
+     * Calls StreamShow.
+     * @function streamShow
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsShowRequest} request MetricsShowRequest message or plain object
+     * @param {Metrics.StreamShowCallback} callback Node-style callback called with the error, if any, and MetricsShowResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.streamShow = function streamShow(request, callback) {
+        return this.rpcCall(streamShow, $root.MetricsShowRequest, $root.MetricsShowResponse, request, callback);
+    }, "name", { value: "StreamShow" });
+
+    /**
+     * Calls StreamShow.
+     * @function streamShow
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsShowRequest} request MetricsShowRequest message or plain object
+     * @returns {Promise<MetricsShowResponse>} Promise
+     * @variation 2
+     */
+
+    return Metrics;
+})();
+
+export const GitlabProjectModel = $root.GitlabProjectModel = (() => {
+
+    /**
+     * Properties of a GitlabProjectModel.
+     * @exports IGitlabProjectModel
+     * @interface IGitlabProjectModel
+     * @property {number|null} [id] GitlabProjectModel id
+     * @property {string|null} [default_branch] GitlabProjectModel default_branch
+     * @property {string|null} [name] GitlabProjectModel name
+     * @property {number|null} [gitlab_project_id] GitlabProjectModel gitlab_project_id
+     * @property {boolean|null} [enabled] GitlabProjectModel enabled
+     * @property {boolean|null} [global_enabled] GitlabProjectModel global_enabled
+     * @property {string|null} [global_config] GitlabProjectModel global_config
+     * @property {string|null} [created_at] GitlabProjectModel created_at
+     * @property {string|null} [updated_at] GitlabProjectModel updated_at
+     */
+
+    /**
+     * Constructs a new GitlabProjectModel.
+     * @exports GitlabProjectModel
+     * @classdesc Represents a GitlabProjectModel.
+     * @implements IGitlabProjectModel
+     * @constructor
+     * @param {IGitlabProjectModel=} [properties] Properties to set
+     */
+    function GitlabProjectModel(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * GitlabProjectModel id.
+     * @member {number} id
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * GitlabProjectModel default_branch.
+     * @member {string} default_branch
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.default_branch = "";
+
+    /**
+     * GitlabProjectModel name.
+     * @member {string} name
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.name = "";
+
+    /**
+     * GitlabProjectModel gitlab_project_id.
+     * @member {number} gitlab_project_id
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.gitlab_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * GitlabProjectModel enabled.
+     * @member {boolean} enabled
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.enabled = false;
+
+    /**
+     * GitlabProjectModel global_enabled.
+     * @member {boolean} global_enabled
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.global_enabled = false;
+
+    /**
+     * GitlabProjectModel global_config.
+     * @member {string} global_config
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.global_config = "";
+
+    /**
+     * GitlabProjectModel created_at.
+     * @member {string} created_at
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.created_at = "";
+
+    /**
+     * GitlabProjectModel updated_at.
+     * @member {string} updated_at
+     * @memberof GitlabProjectModel
+     * @instance
+     */
+    GitlabProjectModel.prototype.updated_at = "";
+
+    /**
+     * Encodes the specified GitlabProjectModel message. Does not implicitly {@link GitlabProjectModel.verify|verify} messages.
+     * @function encode
+     * @memberof GitlabProjectModel
+     * @static
+     * @param {GitlabProjectModel} message GitlabProjectModel message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    GitlabProjectModel.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.default_branch != null && Object.hasOwnProperty.call(message, "default_branch"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.default_branch);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.name);
+        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.gitlab_project_id);
+        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
+            writer.uint32(/* id 5, wireType 0 =*/40).bool(message.enabled);
+        if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
+            writer.uint32(/* id 6, wireType 0 =*/48).bool(message.global_enabled);
+        if (message.global_config != null && Object.hasOwnProperty.call(message, "global_config"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.global_config);
+        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.created_at);
+        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+            writer.uint32(/* id 9, wireType 2 =*/74).string(message.updated_at);
+        return writer;
+    };
+
+    /**
+     * Decodes a GitlabProjectModel message from the specified reader or buffer.
+     * @function decode
+     * @memberof GitlabProjectModel
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {GitlabProjectModel} GitlabProjectModel
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    GitlabProjectModel.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitlabProjectModel();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.default_branch = reader.string();
+                break;
+            case 3:
+                message.name = reader.string();
+                break;
+            case 4:
+                message.gitlab_project_id = reader.int64();
+                break;
+            case 5:
+                message.enabled = reader.bool();
+                break;
+            case 6:
+                message.global_enabled = reader.bool();
+                break;
+            case 7:
+                message.global_config = reader.string();
+                break;
+            case 8:
+                message.created_at = reader.string();
+                break;
+            case 9:
+                message.updated_at = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return GitlabProjectModel;
+})();
+
+export const NamespaceModel = $root.NamespaceModel = (() => {
+
+    /**
+     * Properties of a NamespaceModel.
+     * @exports INamespaceModel
+     * @interface INamespaceModel
+     * @property {number|null} [id] NamespaceModel id
+     * @property {string|null} [name] NamespaceModel name
+     * @property {Array.<string>|null} [image_pull_secrets] NamespaceModel image_pull_secrets
+     * @property {string|null} [created_at] NamespaceModel created_at
+     * @property {string|null} [updated_at] NamespaceModel updated_at
+     * @property {Array.<ProjectModel>|null} [projects] NamespaceModel projects
+     */
+
+    /**
+     * Constructs a new NamespaceModel.
+     * @exports NamespaceModel
+     * @classdesc Represents a NamespaceModel.
+     * @implements INamespaceModel
+     * @constructor
+     * @param {INamespaceModel=} [properties] Properties to set
+     */
+    function NamespaceModel(properties) {
+        this.image_pull_secrets = [];
+        this.projects = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceModel id.
+     * @member {number} id
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * NamespaceModel name.
+     * @member {string} name
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.name = "";
+
+    /**
+     * NamespaceModel image_pull_secrets.
+     * @member {Array.<string>} image_pull_secrets
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.image_pull_secrets = $util.emptyArray;
+
+    /**
+     * NamespaceModel created_at.
+     * @member {string} created_at
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.created_at = "";
+
+    /**
+     * NamespaceModel updated_at.
+     * @member {string} updated_at
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.updated_at = "";
+
+    /**
+     * NamespaceModel projects.
+     * @member {Array.<ProjectModel>} projects
+     * @memberof NamespaceModel
+     * @instance
+     */
+    NamespaceModel.prototype.projects = $util.emptyArray;
+
+    /**
+     * Encodes the specified NamespaceModel message. Does not implicitly {@link NamespaceModel.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceModel
+     * @static
+     * @param {NamespaceModel} message NamespaceModel message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceModel.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.id != null && Object.hasOwnProperty.call(message, "id"))
@@ -10636,29 +10594,30 @@ export const NamespaceResponse = $root.NamespaceResponse = (() => {
             for (let i = 0; i < message.image_pull_secrets.length; ++i)
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.image_pull_secrets[i]);
         if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
-            $root.google.protobuf.Timestamp.encode(message.created_at, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.created_at);
         if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
-            $root.google.protobuf.Timestamp.encode(message.updated_at, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
-        if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
-            $root.google.protobuf.Timestamp.encode(message.deleted_at, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.updated_at);
+        if (message.projects != null && message.projects.length)
+            for (let i = 0; i < message.projects.length; ++i)
+                $root.ProjectModel.encode(message.projects[i], writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes a NamespaceResponse message from the specified reader or buffer.
+     * Decodes a NamespaceModel message from the specified reader or buffer.
      * @function decode
-     * @memberof NamespaceResponse
+     * @memberof NamespaceModel
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {NamespaceResponse} NamespaceResponse
+     * @returns {NamespaceModel} NamespaceModel
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    NamespaceResponse.decode = function decode(reader, length) {
+    NamespaceModel.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceModel();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -10674,13 +10633,15 @@ export const NamespaceResponse = $root.NamespaceResponse = (() => {
                 message.image_pull_secrets.push(reader.string());
                 break;
             case 4:
-                message.created_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
+                message.created_at = reader.string();
                 break;
             case 5:
-                message.updated_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
+                message.updated_at = reader.string();
                 break;
-            case 6:
-                message.deleted_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
+            case 7:
+                if (!(message.projects && message.projects.length))
+                    message.projects = [];
+                message.projects.push($root.ProjectModel.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -10690,7 +10651,879 @@ export const NamespaceResponse = $root.NamespaceResponse = (() => {
         return message;
     };
 
-    return NamespaceResponse;
+    return NamespaceModel;
+})();
+
+export const ProjectModel = $root.ProjectModel = (() => {
+
+    /**
+     * Properties of a ProjectModel.
+     * @exports IProjectModel
+     * @interface IProjectModel
+     * @property {number|null} [id] ProjectModel id
+     * @property {string|null} [name] ProjectModel name
+     * @property {number|null} [gitlab_project_id] ProjectModel gitlab_project_id
+     * @property {string|null} [gitlab_branch] ProjectModel gitlab_branch
+     * @property {string|null} [gitlab_commit] ProjectModel gitlab_commit
+     * @property {string|null} [config] ProjectModel config
+     * @property {string|null} [override_values] ProjectModel override_values
+     * @property {string|null} [docker_image] ProjectModel docker_image
+     * @property {string|null} [pod_selectors] ProjectModel pod_selectors
+     * @property {number|null} [namespace_id] ProjectModel namespace_id
+     * @property {boolean|null} [atomic] ProjectModel atomic
+     * @property {string|null} [created_at] ProjectModel created_at
+     * @property {string|null} [updated_at] ProjectModel updated_at
+     * @property {NamespaceModel|null} [namespace] ProjectModel namespace
+     */
+
+    /**
+     * Constructs a new ProjectModel.
+     * @exports ProjectModel
+     * @classdesc Represents a ProjectModel.
+     * @implements IProjectModel
+     * @constructor
+     * @param {IProjectModel=} [properties] Properties to set
+     */
+    function ProjectModel(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectModel id.
+     * @member {number} id
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectModel name.
+     * @member {string} name
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.name = "";
+
+    /**
+     * ProjectModel gitlab_project_id.
+     * @member {number} gitlab_project_id
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.gitlab_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectModel gitlab_branch.
+     * @member {string} gitlab_branch
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.gitlab_branch = "";
+
+    /**
+     * ProjectModel gitlab_commit.
+     * @member {string} gitlab_commit
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.gitlab_commit = "";
+
+    /**
+     * ProjectModel config.
+     * @member {string} config
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.config = "";
+
+    /**
+     * ProjectModel override_values.
+     * @member {string} override_values
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.override_values = "";
+
+    /**
+     * ProjectModel docker_image.
+     * @member {string} docker_image
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.docker_image = "";
+
+    /**
+     * ProjectModel pod_selectors.
+     * @member {string} pod_selectors
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.pod_selectors = "";
+
+    /**
+     * ProjectModel namespace_id.
+     * @member {number} namespace_id
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectModel atomic.
+     * @member {boolean} atomic
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.atomic = false;
+
+    /**
+     * ProjectModel created_at.
+     * @member {string} created_at
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.created_at = "";
+
+    /**
+     * ProjectModel updated_at.
+     * @member {string} updated_at
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.updated_at = "";
+
+    /**
+     * ProjectModel namespace.
+     * @member {NamespaceModel|null|undefined} namespace
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.namespace = null;
+
+    /**
+     * Encodes the specified ProjectModel message. Does not implicitly {@link ProjectModel.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectModel
+     * @static
+     * @param {ProjectModel} message ProjectModel message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectModel.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.gitlab_project_id);
+        if (message.gitlab_branch != null && Object.hasOwnProperty.call(message, "gitlab_branch"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.gitlab_branch);
+        if (message.gitlab_commit != null && Object.hasOwnProperty.call(message, "gitlab_commit"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.gitlab_commit);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.config);
+        if (message.override_values != null && Object.hasOwnProperty.call(message, "override_values"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.override_values);
+        if (message.docker_image != null && Object.hasOwnProperty.call(message, "docker_image"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.docker_image);
+        if (message.pod_selectors != null && Object.hasOwnProperty.call(message, "pod_selectors"))
+            writer.uint32(/* id 9, wireType 2 =*/74).string(message.pod_selectors);
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 10, wireType 0 =*/80).int64(message.namespace_id);
+        if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
+            writer.uint32(/* id 11, wireType 0 =*/88).bool(message.atomic);
+        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+            writer.uint32(/* id 12, wireType 2 =*/98).string(message.created_at);
+        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+            writer.uint32(/* id 13, wireType 2 =*/106).string(message.updated_at);
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            $root.NamespaceModel.encode(message.namespace, writer.uint32(/* id 15, wireType 2 =*/122).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectModel message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectModel
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectModel} ProjectModel
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectModel.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectModel();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                message.gitlab_project_id = reader.int64();
+                break;
+            case 4:
+                message.gitlab_branch = reader.string();
+                break;
+            case 5:
+                message.gitlab_commit = reader.string();
+                break;
+            case 6:
+                message.config = reader.string();
+                break;
+            case 7:
+                message.override_values = reader.string();
+                break;
+            case 8:
+                message.docker_image = reader.string();
+                break;
+            case 9:
+                message.pod_selectors = reader.string();
+                break;
+            case 10:
+                message.namespace_id = reader.int64();
+                break;
+            case 11:
+                message.atomic = reader.bool();
+                break;
+            case 12:
+                message.created_at = reader.string();
+                break;
+            case 13:
+                message.updated_at = reader.string();
+                break;
+            case 15:
+                message.namespace = $root.NamespaceModel.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectModel;
+})();
+
+export const NamespaceCreateRequest = $root.NamespaceCreateRequest = (() => {
+
+    /**
+     * Properties of a NamespaceCreateRequest.
+     * @exports INamespaceCreateRequest
+     * @interface INamespaceCreateRequest
+     * @property {string|null} [namespace] NamespaceCreateRequest namespace
+     */
+
+    /**
+     * Constructs a new NamespaceCreateRequest.
+     * @exports NamespaceCreateRequest
+     * @classdesc Represents a NamespaceCreateRequest.
+     * @implements INamespaceCreateRequest
+     * @constructor
+     * @param {INamespaceCreateRequest=} [properties] Properties to set
+     */
+    function NamespaceCreateRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceCreateRequest namespace.
+     * @member {string} namespace
+     * @memberof NamespaceCreateRequest
+     * @instance
+     */
+    NamespaceCreateRequest.prototype.namespace = "";
+
+    /**
+     * Encodes the specified NamespaceCreateRequest message. Does not implicitly {@link NamespaceCreateRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceCreateRequest
+     * @static
+     * @param {NamespaceCreateRequest} message NamespaceCreateRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceCreateRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceCreateRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceCreateRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceCreateRequest} NamespaceCreateRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceCreateRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceCreateRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceCreateRequest;
+})();
+
+export const NamespaceShowRequest = $root.NamespaceShowRequest = (() => {
+
+    /**
+     * Properties of a NamespaceShowRequest.
+     * @exports INamespaceShowRequest
+     * @interface INamespaceShowRequest
+     * @property {number|null} [namespace_id] NamespaceShowRequest namespace_id
+     */
+
+    /**
+     * Constructs a new NamespaceShowRequest.
+     * @exports NamespaceShowRequest
+     * @classdesc Represents a NamespaceShowRequest.
+     * @implements INamespaceShowRequest
+     * @constructor
+     * @param {INamespaceShowRequest=} [properties] Properties to set
+     */
+    function NamespaceShowRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceShowRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof NamespaceShowRequest
+     * @instance
+     */
+    NamespaceShowRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified NamespaceShowRequest message. Does not implicitly {@link NamespaceShowRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceShowRequest
+     * @static
+     * @param {NamespaceShowRequest} message NamespaceShowRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceShowRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceShowRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceShowRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceShowRequest} NamespaceShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceShowRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceShowRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceShowRequest;
+})();
+
+export const NamespaceDeleteRequest = $root.NamespaceDeleteRequest = (() => {
+
+    /**
+     * Properties of a NamespaceDeleteRequest.
+     * @exports INamespaceDeleteRequest
+     * @interface INamespaceDeleteRequest
+     * @property {number|null} [namespace_id] NamespaceDeleteRequest namespace_id
+     */
+
+    /**
+     * Constructs a new NamespaceDeleteRequest.
+     * @exports NamespaceDeleteRequest
+     * @classdesc Represents a NamespaceDeleteRequest.
+     * @implements INamespaceDeleteRequest
+     * @constructor
+     * @param {INamespaceDeleteRequest=} [properties] Properties to set
+     */
+    function NamespaceDeleteRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceDeleteRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof NamespaceDeleteRequest
+     * @instance
+     */
+    NamespaceDeleteRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified NamespaceDeleteRequest message. Does not implicitly {@link NamespaceDeleteRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceDeleteRequest
+     * @static
+     * @param {NamespaceDeleteRequest} message NamespaceDeleteRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceDeleteRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceDeleteRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceDeleteRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceDeleteRequest} NamespaceDeleteRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceDeleteRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceDeleteRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceDeleteRequest;
+})();
+
+export const NamespaceIsExistsRequest = $root.NamespaceIsExistsRequest = (() => {
+
+    /**
+     * Properties of a NamespaceIsExistsRequest.
+     * @exports INamespaceIsExistsRequest
+     * @interface INamespaceIsExistsRequest
+     * @property {string|null} [name] NamespaceIsExistsRequest name
+     */
+
+    /**
+     * Constructs a new NamespaceIsExistsRequest.
+     * @exports NamespaceIsExistsRequest
+     * @classdesc Represents a NamespaceIsExistsRequest.
+     * @implements INamespaceIsExistsRequest
+     * @constructor
+     * @param {INamespaceIsExistsRequest=} [properties] Properties to set
+     */
+    function NamespaceIsExistsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceIsExistsRequest name.
+     * @member {string} name
+     * @memberof NamespaceIsExistsRequest
+     * @instance
+     */
+    NamespaceIsExistsRequest.prototype.name = "";
+
+    /**
+     * Encodes the specified NamespaceIsExistsRequest message. Does not implicitly {@link NamespaceIsExistsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceIsExistsRequest
+     * @static
+     * @param {NamespaceIsExistsRequest} message NamespaceIsExistsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceIsExistsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.name);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceIsExistsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceIsExistsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceIsExistsRequest} NamespaceIsExistsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceIsExistsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceIsExistsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.name = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceIsExistsRequest;
+})();
+
+export const NamespaceCpuMemoryRequest = $root.NamespaceCpuMemoryRequest = (() => {
+
+    /**
+     * Properties of a NamespaceCpuMemoryRequest.
+     * @exports INamespaceCpuMemoryRequest
+     * @interface INamespaceCpuMemoryRequest
+     * @property {number|null} [namespace_id] NamespaceCpuMemoryRequest namespace_id
+     */
+
+    /**
+     * Constructs a new NamespaceCpuMemoryRequest.
+     * @exports NamespaceCpuMemoryRequest
+     * @classdesc Represents a NamespaceCpuMemoryRequest.
+     * @implements INamespaceCpuMemoryRequest
+     * @constructor
+     * @param {INamespaceCpuMemoryRequest=} [properties] Properties to set
+     */
+    function NamespaceCpuMemoryRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceCpuMemoryRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof NamespaceCpuMemoryRequest
+     * @instance
+     */
+    NamespaceCpuMemoryRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified NamespaceCpuMemoryRequest message. Does not implicitly {@link NamespaceCpuMemoryRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceCpuMemoryRequest
+     * @static
+     * @param {NamespaceCpuMemoryRequest} message NamespaceCpuMemoryRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceCpuMemoryRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceCpuMemoryRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceCpuMemoryRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceCpuMemoryRequest} NamespaceCpuMemoryRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceCpuMemoryRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceCpuMemoryRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceCpuMemoryRequest;
+})();
+
+export const NamespaceServiceEndpointsRequest = $root.NamespaceServiceEndpointsRequest = (() => {
+
+    /**
+     * Properties of a NamespaceServiceEndpointsRequest.
+     * @exports INamespaceServiceEndpointsRequest
+     * @interface INamespaceServiceEndpointsRequest
+     * @property {number|null} [namespace_id] NamespaceServiceEndpointsRequest namespace_id
+     * @property {string|null} [project_name] NamespaceServiceEndpointsRequest project_name
+     */
+
+    /**
+     * Constructs a new NamespaceServiceEndpointsRequest.
+     * @exports NamespaceServiceEndpointsRequest
+     * @classdesc Represents a NamespaceServiceEndpointsRequest.
+     * @implements INamespaceServiceEndpointsRequest
+     * @constructor
+     * @param {INamespaceServiceEndpointsRequest=} [properties] Properties to set
+     */
+    function NamespaceServiceEndpointsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceServiceEndpointsRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof NamespaceServiceEndpointsRequest
+     * @instance
+     */
+    NamespaceServiceEndpointsRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * NamespaceServiceEndpointsRequest project_name.
+     * @member {string} project_name
+     * @memberof NamespaceServiceEndpointsRequest
+     * @instance
+     */
+    NamespaceServiceEndpointsRequest.prototype.project_name = "";
+
+    /**
+     * Encodes the specified NamespaceServiceEndpointsRequest message. Does not implicitly {@link NamespaceServiceEndpointsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceServiceEndpointsRequest
+     * @static
+     * @param {NamespaceServiceEndpointsRequest} message NamespaceServiceEndpointsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceServiceEndpointsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        if (message.project_name != null && Object.hasOwnProperty.call(message, "project_name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.project_name);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceServiceEndpointsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceServiceEndpointsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceServiceEndpointsRequest} NamespaceServiceEndpointsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceServiceEndpointsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceServiceEndpointsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            case 2:
+                message.project_name = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceServiceEndpointsRequest;
+})();
+
+export const NamespaceSimpleProject = $root.NamespaceSimpleProject = (() => {
+
+    /**
+     * Properties of a NamespaceSimpleProject.
+     * @exports INamespaceSimpleProject
+     * @interface INamespaceSimpleProject
+     * @property {number|null} [id] NamespaceSimpleProject id
+     * @property {string|null} [name] NamespaceSimpleProject name
+     * @property {string|null} [status] NamespaceSimpleProject status
+     */
+
+    /**
+     * Constructs a new NamespaceSimpleProject.
+     * @exports NamespaceSimpleProject
+     * @classdesc Represents a NamespaceSimpleProject.
+     * @implements INamespaceSimpleProject
+     * @constructor
+     * @param {INamespaceSimpleProject=} [properties] Properties to set
+     */
+    function NamespaceSimpleProject(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceSimpleProject id.
+     * @member {number} id
+     * @memberof NamespaceSimpleProject
+     * @instance
+     */
+    NamespaceSimpleProject.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * NamespaceSimpleProject name.
+     * @member {string} name
+     * @memberof NamespaceSimpleProject
+     * @instance
+     */
+    NamespaceSimpleProject.prototype.name = "";
+
+    /**
+     * NamespaceSimpleProject status.
+     * @member {string} status
+     * @memberof NamespaceSimpleProject
+     * @instance
+     */
+    NamespaceSimpleProject.prototype.status = "";
+
+    /**
+     * Encodes the specified NamespaceSimpleProject message. Does not implicitly {@link NamespaceSimpleProject.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceSimpleProject
+     * @static
+     * @param {NamespaceSimpleProject} message NamespaceSimpleProject message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceSimpleProject.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.status != null && Object.hasOwnProperty.call(message, "status"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.status);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceSimpleProject message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceSimpleProject
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceSimpleProject} NamespaceSimpleProject
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceSimpleProject.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceSimpleProject();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                message.status = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceSimpleProject;
 })();
 
 export const NamespaceItem = $root.NamespaceItem = (() => {
@@ -10701,9 +11534,9 @@ export const NamespaceItem = $root.NamespaceItem = (() => {
      * @interface INamespaceItem
      * @property {number|null} [id] NamespaceItem id
      * @property {string|null} [name] NamespaceItem name
-     * @property {google.protobuf.Timestamp|null} [created_at] NamespaceItem created_at
-     * @property {google.protobuf.Timestamp|null} [updated_at] NamespaceItem updated_at
-     * @property {Array.<NamespaceItem.SimpleProjectItem>|null} [projects] NamespaceItem projects
+     * @property {string|null} [created_at] NamespaceItem created_at
+     * @property {string|null} [updated_at] NamespaceItem updated_at
+     * @property {Array.<NamespaceSimpleProject>|null} [projects] NamespaceItem projects
      */
 
     /**
@@ -10740,23 +11573,23 @@ export const NamespaceItem = $root.NamespaceItem = (() => {
 
     /**
      * NamespaceItem created_at.
-     * @member {google.protobuf.Timestamp|null|undefined} created_at
+     * @member {string} created_at
      * @memberof NamespaceItem
      * @instance
      */
-    NamespaceItem.prototype.created_at = null;
+    NamespaceItem.prototype.created_at = "";
 
     /**
      * NamespaceItem updated_at.
-     * @member {google.protobuf.Timestamp|null|undefined} updated_at
+     * @member {string} updated_at
      * @memberof NamespaceItem
      * @instance
      */
-    NamespaceItem.prototype.updated_at = null;
+    NamespaceItem.prototype.updated_at = "";
 
     /**
      * NamespaceItem projects.
-     * @member {Array.<NamespaceItem.SimpleProjectItem>} projects
+     * @member {Array.<NamespaceSimpleProject>} projects
      * @memberof NamespaceItem
      * @instance
      */
@@ -10779,12 +11612,12 @@ export const NamespaceItem = $root.NamespaceItem = (() => {
         if (message.name != null && Object.hasOwnProperty.call(message, "name"))
             writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
         if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
-            $root.google.protobuf.Timestamp.encode(message.created_at, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.created_at);
         if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
-            $root.google.protobuf.Timestamp.encode(message.updated_at, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.updated_at);
         if (message.projects != null && message.projects.length)
             for (let i = 0; i < message.projects.length; ++i)
-                $root.NamespaceItem.SimpleProjectItem.encode(message.projects[i], writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
+                $root.NamespaceSimpleProject.encode(message.projects[i], writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
         return writer;
     };
 
@@ -10813,15 +11646,15 @@ export const NamespaceItem = $root.NamespaceItem = (() => {
                 message.name = reader.string();
                 break;
             case 3:
-                message.created_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
+                message.created_at = reader.string();
                 break;
             case 4:
-                message.updated_at = $root.google.protobuf.Timestamp.decode(reader, reader.uint32());
+                message.updated_at = reader.string();
                 break;
             case 5:
                 if (!(message.projects && message.projects.length))
                     message.projects = [];
-                message.projects.push($root.NamespaceItem.SimpleProjectItem.decode(reader, reader.uint32()));
+                message.projects.push($root.NamespaceSimpleProject.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -10831,136 +11664,27 @@ export const NamespaceItem = $root.NamespaceItem = (() => {
         return message;
     };
 
-    NamespaceItem.SimpleProjectItem = (function() {
-
-        /**
-         * Properties of a SimpleProjectItem.
-         * @memberof NamespaceItem
-         * @interface ISimpleProjectItem
-         * @property {number|null} [id] SimpleProjectItem id
-         * @property {string|null} [name] SimpleProjectItem name
-         * @property {string|null} [status] SimpleProjectItem status
-         */
-
-        /**
-         * Constructs a new SimpleProjectItem.
-         * @memberof NamespaceItem
-         * @classdesc Represents a SimpleProjectItem.
-         * @implements ISimpleProjectItem
-         * @constructor
-         * @param {NamespaceItem.ISimpleProjectItem=} [properties] Properties to set
-         */
-        function SimpleProjectItem(properties) {
-            if (properties)
-                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
-                        this[keys[i]] = properties[keys[i]];
-        }
-
-        /**
-         * SimpleProjectItem id.
-         * @member {number} id
-         * @memberof NamespaceItem.SimpleProjectItem
-         * @instance
-         */
-        SimpleProjectItem.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-        /**
-         * SimpleProjectItem name.
-         * @member {string} name
-         * @memberof NamespaceItem.SimpleProjectItem
-         * @instance
-         */
-        SimpleProjectItem.prototype.name = "";
-
-        /**
-         * SimpleProjectItem status.
-         * @member {string} status
-         * @memberof NamespaceItem.SimpleProjectItem
-         * @instance
-         */
-        SimpleProjectItem.prototype.status = "";
-
-        /**
-         * Encodes the specified SimpleProjectItem message. Does not implicitly {@link NamespaceItem.SimpleProjectItem.verify|verify} messages.
-         * @function encode
-         * @memberof NamespaceItem.SimpleProjectItem
-         * @static
-         * @param {NamespaceItem.SimpleProjectItem} message SimpleProjectItem message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        SimpleProjectItem.encode = function encode(message, writer) {
-            if (!writer)
-                writer = $Writer.create();
-            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
-            if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-                writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
-            if (message.status != null && Object.hasOwnProperty.call(message, "status"))
-                writer.uint32(/* id 3, wireType 2 =*/26).string(message.status);
-            return writer;
-        };
-
-        /**
-         * Decodes a SimpleProjectItem message from the specified reader or buffer.
-         * @function decode
-         * @memberof NamespaceItem.SimpleProjectItem
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @param {number} [length] Message length if known beforehand
-         * @returns {NamespaceItem.SimpleProjectItem} SimpleProjectItem
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        SimpleProjectItem.decode = function decode(reader, length) {
-            if (!(reader instanceof $Reader))
-                reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceItem.SimpleProjectItem();
-            while (reader.pos < end) {
-                let tag = reader.uint32();
-                switch (tag >>> 3) {
-                case 1:
-                    message.id = reader.int64();
-                    break;
-                case 2:
-                    message.name = reader.string();
-                    break;
-                case 3:
-                    message.status = reader.string();
-                    break;
-                default:
-                    reader.skipType(tag & 7);
-                    break;
-                }
-            }
-            return message;
-        };
-
-        return SimpleProjectItem;
-    })();
-
     return NamespaceItem;
 })();
 
-export const NamespaceList = $root.NamespaceList = (() => {
+export const NamespaceAllResponse = $root.NamespaceAllResponse = (() => {
 
     /**
-     * Properties of a NamespaceList.
-     * @exports INamespaceList
-     * @interface INamespaceList
-     * @property {Array.<NamespaceItem>|null} [data] NamespaceList data
+     * Properties of a NamespaceAllResponse.
+     * @exports INamespaceAllResponse
+     * @interface INamespaceAllResponse
+     * @property {Array.<NamespaceItem>|null} [data] NamespaceAllResponse data
      */
 
     /**
-     * Constructs a new NamespaceList.
-     * @exports NamespaceList
-     * @classdesc Represents a NamespaceList.
-     * @implements INamespaceList
+     * Constructs a new NamespaceAllResponse.
+     * @exports NamespaceAllResponse
+     * @classdesc Represents a NamespaceAllResponse.
+     * @implements INamespaceAllResponse
      * @constructor
-     * @param {INamespaceList=} [properties] Properties to set
+     * @param {INamespaceAllResponse=} [properties] Properties to set
      */
-    function NamespaceList(properties) {
+    function NamespaceAllResponse(properties) {
         this.data = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -10969,23 +11693,23 @@ export const NamespaceList = $root.NamespaceList = (() => {
     }
 
     /**
-     * NamespaceList data.
+     * NamespaceAllResponse data.
      * @member {Array.<NamespaceItem>} data
-     * @memberof NamespaceList
+     * @memberof NamespaceAllResponse
      * @instance
      */
-    NamespaceList.prototype.data = $util.emptyArray;
+    NamespaceAllResponse.prototype.data = $util.emptyArray;
 
     /**
-     * Encodes the specified NamespaceList message. Does not implicitly {@link NamespaceList.verify|verify} messages.
+     * Encodes the specified NamespaceAllResponse message. Does not implicitly {@link NamespaceAllResponse.verify|verify} messages.
      * @function encode
-     * @memberof NamespaceList
+     * @memberof NamespaceAllResponse
      * @static
-     * @param {NamespaceList} message NamespaceList message or plain object to encode
+     * @param {NamespaceAllResponse} message NamespaceAllResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    NamespaceList.encode = function encode(message, writer) {
+    NamespaceAllResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.data != null && message.data.length)
@@ -10995,20 +11719,20 @@ export const NamespaceList = $root.NamespaceList = (() => {
     };
 
     /**
-     * Decodes a NamespaceList message from the specified reader or buffer.
+     * Decodes a NamespaceAllResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof NamespaceList
+     * @memberof NamespaceAllResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {NamespaceList} NamespaceList
+     * @returns {NamespaceAllResponse} NamespaceAllResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    NamespaceList.decode = function decode(reader, length) {
+    NamespaceAllResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceList();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceAllResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -11025,27 +11749,32 @@ export const NamespaceList = $root.NamespaceList = (() => {
         return message;
     };
 
-    return NamespaceList;
+    return NamespaceAllResponse;
 })();
 
-export const NsStoreRequest = $root.NsStoreRequest = (() => {
+export const NamespaceCreateResponse = $root.NamespaceCreateResponse = (() => {
 
     /**
-     * Properties of a NsStoreRequest.
-     * @exports INsStoreRequest
-     * @interface INsStoreRequest
-     * @property {string|null} [namespace] NsStoreRequest namespace
+     * Properties of a NamespaceCreateResponse.
+     * @exports INamespaceCreateResponse
+     * @interface INamespaceCreateResponse
+     * @property {number|null} [id] NamespaceCreateResponse id
+     * @property {string|null} [name] NamespaceCreateResponse name
+     * @property {Array.<string>|null} [image_pull_secrets] NamespaceCreateResponse image_pull_secrets
+     * @property {string|null} [created_at] NamespaceCreateResponse created_at
+     * @property {string|null} [updated_at] NamespaceCreateResponse updated_at
      */
 
     /**
-     * Constructs a new NsStoreRequest.
-     * @exports NsStoreRequest
-     * @classdesc Represents a NsStoreRequest.
-     * @implements INsStoreRequest
+     * Constructs a new NamespaceCreateResponse.
+     * @exports NamespaceCreateResponse
+     * @classdesc Represents a NamespaceCreateResponse.
+     * @implements INamespaceCreateResponse
      * @constructor
-     * @param {INsStoreRequest=} [properties] Properties to set
+     * @param {INamespaceCreateResponse=} [properties] Properties to set
      */
-    function NsStoreRequest(properties) {
+    function NamespaceCreateResponse(properties) {
+        this.image_pull_secrets = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11053,50 +11782,105 @@ export const NsStoreRequest = $root.NsStoreRequest = (() => {
     }
 
     /**
-     * NsStoreRequest namespace.
-     * @member {string} namespace
-     * @memberof NsStoreRequest
+     * NamespaceCreateResponse id.
+     * @member {number} id
+     * @memberof NamespaceCreateResponse
      * @instance
      */
-    NsStoreRequest.prototype.namespace = "";
+    NamespaceCreateResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified NsStoreRequest message. Does not implicitly {@link NsStoreRequest.verify|verify} messages.
+     * NamespaceCreateResponse name.
+     * @member {string} name
+     * @memberof NamespaceCreateResponse
+     * @instance
+     */
+    NamespaceCreateResponse.prototype.name = "";
+
+    /**
+     * NamespaceCreateResponse image_pull_secrets.
+     * @member {Array.<string>} image_pull_secrets
+     * @memberof NamespaceCreateResponse
+     * @instance
+     */
+    NamespaceCreateResponse.prototype.image_pull_secrets = $util.emptyArray;
+
+    /**
+     * NamespaceCreateResponse created_at.
+     * @member {string} created_at
+     * @memberof NamespaceCreateResponse
+     * @instance
+     */
+    NamespaceCreateResponse.prototype.created_at = "";
+
+    /**
+     * NamespaceCreateResponse updated_at.
+     * @member {string} updated_at
+     * @memberof NamespaceCreateResponse
+     * @instance
+     */
+    NamespaceCreateResponse.prototype.updated_at = "";
+
+    /**
+     * Encodes the specified NamespaceCreateResponse message. Does not implicitly {@link NamespaceCreateResponse.verify|verify} messages.
      * @function encode
-     * @memberof NsStoreRequest
+     * @memberof NamespaceCreateResponse
      * @static
-     * @param {NsStoreRequest} message NsStoreRequest message or plain object to encode
+     * @param {NamespaceCreateResponse} message NamespaceCreateResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    NsStoreRequest.encode = function encode(message, writer) {
+    NamespaceCreateResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.image_pull_secrets != null && message.image_pull_secrets.length)
+            for (let i = 0; i < message.image_pull_secrets.length; ++i)
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.image_pull_secrets[i]);
+        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.created_at);
+        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.updated_at);
         return writer;
     };
 
     /**
-     * Decodes a NsStoreRequest message from the specified reader or buffer.
+     * Decodes a NamespaceCreateResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof NsStoreRequest
+     * @memberof NamespaceCreateResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {NsStoreRequest} NsStoreRequest
+     * @returns {NamespaceCreateResponse} NamespaceCreateResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    NsStoreRequest.decode = function decode(reader, length) {
+    NamespaceCreateResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NsStoreRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceCreateResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace = reader.string();
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                if (!(message.image_pull_secrets && message.image_pull_secrets.length))
+                    message.image_pull_secrets = [];
+                message.image_pull_secrets.push(reader.string());
+                break;
+            case 4:
+                message.created_at = reader.string();
+                break;
+            case 5:
+                message.updated_at = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -11106,27 +11890,34 @@ export const NsStoreRequest = $root.NsStoreRequest = (() => {
         return message;
     };
 
-    return NsStoreRequest;
+    return NamespaceCreateResponse;
 })();
 
-export const NsStoreResponse = $root.NsStoreResponse = (() => {
+export const NamespaceShowResponse = $root.NamespaceShowResponse = (() => {
 
     /**
-     * Properties of a NsStoreResponse.
-     * @exports INsStoreResponse
-     * @interface INsStoreResponse
-     * @property {NamespaceResponse|null} [data] NsStoreResponse data
+     * Properties of a NamespaceShowResponse.
+     * @exports INamespaceShowResponse
+     * @interface INamespaceShowResponse
+     * @property {number|null} [id] NamespaceShowResponse id
+     * @property {string|null} [name] NamespaceShowResponse name
+     * @property {Array.<string>|null} [image_pull_secrets] NamespaceShowResponse image_pull_secrets
+     * @property {string|null} [created_at] NamespaceShowResponse created_at
+     * @property {string|null} [updated_at] NamespaceShowResponse updated_at
+     * @property {Array.<ProjectModel>|null} [projects] NamespaceShowResponse projects
      */
 
     /**
-     * Constructs a new NsStoreResponse.
-     * @exports NsStoreResponse
-     * @classdesc Represents a NsStoreResponse.
-     * @implements INsStoreResponse
+     * Constructs a new NamespaceShowResponse.
+     * @exports NamespaceShowResponse
+     * @classdesc Represents a NamespaceShowResponse.
+     * @implements INamespaceShowResponse
      * @constructor
-     * @param {INsStoreResponse=} [properties] Properties to set
+     * @param {INamespaceShowResponse=} [properties] Properties to set
      */
-    function NsStoreResponse(properties) {
+    function NamespaceShowResponse(properties) {
+        this.image_pull_secrets = [];
+        this.projects = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11134,50 +11925,121 @@ export const NsStoreResponse = $root.NsStoreResponse = (() => {
     }
 
     /**
-     * NsStoreResponse data.
-     * @member {NamespaceResponse|null|undefined} data
-     * @memberof NsStoreResponse
+     * NamespaceShowResponse id.
+     * @member {number} id
+     * @memberof NamespaceShowResponse
      * @instance
      */
-    NsStoreResponse.prototype.data = null;
+    NamespaceShowResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified NsStoreResponse message. Does not implicitly {@link NsStoreResponse.verify|verify} messages.
+     * NamespaceShowResponse name.
+     * @member {string} name
+     * @memberof NamespaceShowResponse
+     * @instance
+     */
+    NamespaceShowResponse.prototype.name = "";
+
+    /**
+     * NamespaceShowResponse image_pull_secrets.
+     * @member {Array.<string>} image_pull_secrets
+     * @memberof NamespaceShowResponse
+     * @instance
+     */
+    NamespaceShowResponse.prototype.image_pull_secrets = $util.emptyArray;
+
+    /**
+     * NamespaceShowResponse created_at.
+     * @member {string} created_at
+     * @memberof NamespaceShowResponse
+     * @instance
+     */
+    NamespaceShowResponse.prototype.created_at = "";
+
+    /**
+     * NamespaceShowResponse updated_at.
+     * @member {string} updated_at
+     * @memberof NamespaceShowResponse
+     * @instance
+     */
+    NamespaceShowResponse.prototype.updated_at = "";
+
+    /**
+     * NamespaceShowResponse projects.
+     * @member {Array.<ProjectModel>} projects
+     * @memberof NamespaceShowResponse
+     * @instance
+     */
+    NamespaceShowResponse.prototype.projects = $util.emptyArray;
+
+    /**
+     * Encodes the specified NamespaceShowResponse message. Does not implicitly {@link NamespaceShowResponse.verify|verify} messages.
      * @function encode
-     * @memberof NsStoreResponse
+     * @memberof NamespaceShowResponse
      * @static
-     * @param {NsStoreResponse} message NsStoreResponse message or plain object to encode
+     * @param {NamespaceShowResponse} message NamespaceShowResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    NsStoreResponse.encode = function encode(message, writer) {
+    NamespaceShowResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-            $root.NamespaceResponse.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.image_pull_secrets != null && message.image_pull_secrets.length)
+            for (let i = 0; i < message.image_pull_secrets.length; ++i)
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.image_pull_secrets[i]);
+        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.created_at);
+        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.updated_at);
+        if (message.projects != null && message.projects.length)
+            for (let i = 0; i < message.projects.length; ++i)
+                $root.ProjectModel.encode(message.projects[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes a NsStoreResponse message from the specified reader or buffer.
+     * Decodes a NamespaceShowResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof NsStoreResponse
+     * @memberof NamespaceShowResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {NsStoreResponse} NsStoreResponse
+     * @returns {NamespaceShowResponse} NamespaceShowResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    NsStoreResponse.decode = function decode(reader, length) {
+    NamespaceShowResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NsStoreResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceShowResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.data = $root.NamespaceResponse.decode(reader, reader.uint32());
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                if (!(message.image_pull_secrets && message.image_pull_secrets.length))
+                    message.image_pull_secrets = [];
+                message.image_pull_secrets.push(reader.string());
+                break;
+            case 4:
+                message.created_at = reader.string();
+                break;
+            case 5:
+                message.updated_at = reader.string();
+                break;
+            case 6:
+                if (!(message.projects && message.projects.length))
+                    message.projects = [];
+                message.projects.push($root.ProjectModel.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -11187,28 +12049,28 @@ export const NsStoreResponse = $root.NsStoreResponse = (() => {
         return message;
     };
 
-    return NsStoreResponse;
+    return NamespaceShowResponse;
 })();
 
-export const CpuAndMemoryResponse = $root.CpuAndMemoryResponse = (() => {
+export const NamespaceCpuMemoryResponse = $root.NamespaceCpuMemoryResponse = (() => {
 
     /**
-     * Properties of a CpuAndMemoryResponse.
-     * @exports ICpuAndMemoryResponse
-     * @interface ICpuAndMemoryResponse
-     * @property {string|null} [cpu] CpuAndMemoryResponse cpu
-     * @property {string|null} [memory] CpuAndMemoryResponse memory
+     * Properties of a NamespaceCpuMemoryResponse.
+     * @exports INamespaceCpuMemoryResponse
+     * @interface INamespaceCpuMemoryResponse
+     * @property {string|null} [cpu] NamespaceCpuMemoryResponse cpu
+     * @property {string|null} [memory] NamespaceCpuMemoryResponse memory
      */
 
     /**
-     * Constructs a new CpuAndMemoryResponse.
-     * @exports CpuAndMemoryResponse
-     * @classdesc Represents a CpuAndMemoryResponse.
-     * @implements ICpuAndMemoryResponse
+     * Constructs a new NamespaceCpuMemoryResponse.
+     * @exports NamespaceCpuMemoryResponse
+     * @classdesc Represents a NamespaceCpuMemoryResponse.
+     * @implements INamespaceCpuMemoryResponse
      * @constructor
-     * @param {ICpuAndMemoryResponse=} [properties] Properties to set
+     * @param {INamespaceCpuMemoryResponse=} [properties] Properties to set
      */
-    function CpuAndMemoryResponse(properties) {
+    function NamespaceCpuMemoryResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11216,31 +12078,31 @@ export const CpuAndMemoryResponse = $root.CpuAndMemoryResponse = (() => {
     }
 
     /**
-     * CpuAndMemoryResponse cpu.
+     * NamespaceCpuMemoryResponse cpu.
      * @member {string} cpu
-     * @memberof CpuAndMemoryResponse
+     * @memberof NamespaceCpuMemoryResponse
      * @instance
      */
-    CpuAndMemoryResponse.prototype.cpu = "";
+    NamespaceCpuMemoryResponse.prototype.cpu = "";
 
     /**
-     * CpuAndMemoryResponse memory.
+     * NamespaceCpuMemoryResponse memory.
      * @member {string} memory
-     * @memberof CpuAndMemoryResponse
+     * @memberof NamespaceCpuMemoryResponse
      * @instance
      */
-    CpuAndMemoryResponse.prototype.memory = "";
+    NamespaceCpuMemoryResponse.prototype.memory = "";
 
     /**
-     * Encodes the specified CpuAndMemoryResponse message. Does not implicitly {@link CpuAndMemoryResponse.verify|verify} messages.
+     * Encodes the specified NamespaceCpuMemoryResponse message. Does not implicitly {@link NamespaceCpuMemoryResponse.verify|verify} messages.
      * @function encode
-     * @memberof CpuAndMemoryResponse
+     * @memberof NamespaceCpuMemoryResponse
      * @static
-     * @param {CpuAndMemoryResponse} message CpuAndMemoryResponse message or plain object to encode
+     * @param {NamespaceCpuMemoryResponse} message NamespaceCpuMemoryResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    CpuAndMemoryResponse.encode = function encode(message, writer) {
+    NamespaceCpuMemoryResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
@@ -11251,20 +12113,20 @@ export const CpuAndMemoryResponse = $root.CpuAndMemoryResponse = (() => {
     };
 
     /**
-     * Decodes a CpuAndMemoryResponse message from the specified reader or buffer.
+     * Decodes a NamespaceCpuMemoryResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof CpuAndMemoryResponse
+     * @memberof NamespaceCpuMemoryResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {CpuAndMemoryResponse} CpuAndMemoryResponse
+     * @returns {NamespaceCpuMemoryResponse} NamespaceCpuMemoryResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    CpuAndMemoryResponse.decode = function decode(reader, length) {
+    NamespaceCpuMemoryResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CpuAndMemoryResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceCpuMemoryResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -11282,27 +12144,27 @@ export const CpuAndMemoryResponse = $root.CpuAndMemoryResponse = (() => {
         return message;
     };
 
-    return CpuAndMemoryResponse;
+    return NamespaceCpuMemoryResponse;
 })();
 
-export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => {
+export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpointsResponse = (() => {
 
     /**
-     * Properties of a ServiceEndpointsResponse.
-     * @exports IServiceEndpointsResponse
-     * @interface IServiceEndpointsResponse
-     * @property {Array.<ServiceEndpointsResponse.item>|null} [data] ServiceEndpointsResponse data
+     * Properties of a NamespaceServiceEndpointsResponse.
+     * @exports INamespaceServiceEndpointsResponse
+     * @interface INamespaceServiceEndpointsResponse
+     * @property {Array.<NamespaceServiceEndpointsResponse.item>|null} [data] NamespaceServiceEndpointsResponse data
      */
 
     /**
-     * Constructs a new ServiceEndpointsResponse.
-     * @exports ServiceEndpointsResponse
-     * @classdesc Represents a ServiceEndpointsResponse.
-     * @implements IServiceEndpointsResponse
+     * Constructs a new NamespaceServiceEndpointsResponse.
+     * @exports NamespaceServiceEndpointsResponse
+     * @classdesc Represents a NamespaceServiceEndpointsResponse.
+     * @implements INamespaceServiceEndpointsResponse
      * @constructor
-     * @param {IServiceEndpointsResponse=} [properties] Properties to set
+     * @param {INamespaceServiceEndpointsResponse=} [properties] Properties to set
      */
-    function ServiceEndpointsResponse(properties) {
+    function NamespaceServiceEndpointsResponse(properties) {
         this.data = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -11311,53 +12173,53 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
     }
 
     /**
-     * ServiceEndpointsResponse data.
-     * @member {Array.<ServiceEndpointsResponse.item>} data
-     * @memberof ServiceEndpointsResponse
+     * NamespaceServiceEndpointsResponse data.
+     * @member {Array.<NamespaceServiceEndpointsResponse.item>} data
+     * @memberof NamespaceServiceEndpointsResponse
      * @instance
      */
-    ServiceEndpointsResponse.prototype.data = $util.emptyArray;
+    NamespaceServiceEndpointsResponse.prototype.data = $util.emptyArray;
 
     /**
-     * Encodes the specified ServiceEndpointsResponse message. Does not implicitly {@link ServiceEndpointsResponse.verify|verify} messages.
+     * Encodes the specified NamespaceServiceEndpointsResponse message. Does not implicitly {@link NamespaceServiceEndpointsResponse.verify|verify} messages.
      * @function encode
-     * @memberof ServiceEndpointsResponse
+     * @memberof NamespaceServiceEndpointsResponse
      * @static
-     * @param {ServiceEndpointsResponse} message ServiceEndpointsResponse message or plain object to encode
+     * @param {NamespaceServiceEndpointsResponse} message NamespaceServiceEndpointsResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    ServiceEndpointsResponse.encode = function encode(message, writer) {
+    NamespaceServiceEndpointsResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.data != null && message.data.length)
             for (let i = 0; i < message.data.length; ++i)
-                $root.ServiceEndpointsResponse.item.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.NamespaceServiceEndpointsResponse.item.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes a ServiceEndpointsResponse message from the specified reader or buffer.
+     * Decodes a NamespaceServiceEndpointsResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof ServiceEndpointsResponse
+     * @memberof NamespaceServiceEndpointsResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {ServiceEndpointsResponse} ServiceEndpointsResponse
+     * @returns {NamespaceServiceEndpointsResponse} NamespaceServiceEndpointsResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    ServiceEndpointsResponse.decode = function decode(reader, length) {
+    NamespaceServiceEndpointsResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ServiceEndpointsResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceServiceEndpointsResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
                 if (!(message.data && message.data.length))
                     message.data = [];
-                message.data.push($root.ServiceEndpointsResponse.item.decode(reader, reader.uint32()));
+                message.data.push($root.NamespaceServiceEndpointsResponse.item.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -11367,11 +12229,11 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
         return message;
     };
 
-    ServiceEndpointsResponse.item = (function() {
+    NamespaceServiceEndpointsResponse.item = (function() {
 
         /**
          * Properties of an item.
-         * @memberof ServiceEndpointsResponse
+         * @memberof NamespaceServiceEndpointsResponse
          * @interface Iitem
          * @property {string|null} [name] item name
          * @property {Array.<string>|null} [url] item url
@@ -11379,11 +12241,11 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
 
         /**
          * Constructs a new item.
-         * @memberof ServiceEndpointsResponse
+         * @memberof NamespaceServiceEndpointsResponse
          * @classdesc Represents an item.
          * @implements Iitem
          * @constructor
-         * @param {ServiceEndpointsResponse.Iitem=} [properties] Properties to set
+         * @param {NamespaceServiceEndpointsResponse.Iitem=} [properties] Properties to set
          */
         function item(properties) {
             this.url = [];
@@ -11396,7 +12258,7 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
         /**
          * item name.
          * @member {string} name
-         * @memberof ServiceEndpointsResponse.item
+         * @memberof NamespaceServiceEndpointsResponse.item
          * @instance
          */
         item.prototype.name = "";
@@ -11404,17 +12266,17 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
         /**
          * item url.
          * @member {Array.<string>} url
-         * @memberof ServiceEndpointsResponse.item
+         * @memberof NamespaceServiceEndpointsResponse.item
          * @instance
          */
         item.prototype.url = $util.emptyArray;
 
         /**
-         * Encodes the specified item message. Does not implicitly {@link ServiceEndpointsResponse.item.verify|verify} messages.
+         * Encodes the specified item message. Does not implicitly {@link NamespaceServiceEndpointsResponse.item.verify|verify} messages.
          * @function encode
-         * @memberof ServiceEndpointsResponse.item
+         * @memberof NamespaceServiceEndpointsResponse.item
          * @static
-         * @param {ServiceEndpointsResponse.item} message item message or plain object to encode
+         * @param {NamespaceServiceEndpointsResponse.item} message item message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
@@ -11432,18 +12294,18 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
         /**
          * Decodes an item message from the specified reader or buffer.
          * @function decode
-         * @memberof ServiceEndpointsResponse.item
+         * @memberof NamespaceServiceEndpointsResponse.item
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {ServiceEndpointsResponse.item} item
+         * @returns {NamespaceServiceEndpointsResponse.item} item
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         item.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ServiceEndpointsResponse.item();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceServiceEndpointsResponse.item();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -11466,28 +12328,28 @@ export const ServiceEndpointsResponse = $root.ServiceEndpointsResponse = (() => 
         return item;
     })();
 
-    return ServiceEndpointsResponse;
+    return NamespaceServiceEndpointsResponse;
 })();
 
-export const ServiceEndpointsRequest = $root.ServiceEndpointsRequest = (() => {
+export const NamespaceIsExistsResponse = $root.NamespaceIsExistsResponse = (() => {
 
     /**
-     * Properties of a ServiceEndpointsRequest.
-     * @exports IServiceEndpointsRequest
-     * @interface IServiceEndpointsRequest
-     * @property {number|null} [namespace_id] ServiceEndpointsRequest namespace_id
-     * @property {string|null} [project_name] ServiceEndpointsRequest project_name
+     * Properties of a NamespaceIsExistsResponse.
+     * @exports INamespaceIsExistsResponse
+     * @interface INamespaceIsExistsResponse
+     * @property {boolean|null} [exists] NamespaceIsExistsResponse exists
+     * @property {number|null} [id] NamespaceIsExistsResponse id
      */
 
     /**
-     * Constructs a new ServiceEndpointsRequest.
-     * @exports ServiceEndpointsRequest
-     * @classdesc Represents a ServiceEndpointsRequest.
-     * @implements IServiceEndpointsRequest
+     * Constructs a new NamespaceIsExistsResponse.
+     * @exports NamespaceIsExistsResponse
+     * @classdesc Represents a NamespaceIsExistsResponse.
+     * @implements INamespaceIsExistsResponse
      * @constructor
-     * @param {IServiceEndpointsRequest=} [properties] Properties to set
+     * @param {INamespaceIsExistsResponse=} [properties] Properties to set
      */
-    function ServiceEndpointsRequest(properties) {
+    function NamespaceIsExistsResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11495,63 +12357,63 @@ export const ServiceEndpointsRequest = $root.ServiceEndpointsRequest = (() => {
     }
 
     /**
-     * ServiceEndpointsRequest namespace_id.
-     * @member {number} namespace_id
-     * @memberof ServiceEndpointsRequest
+     * NamespaceIsExistsResponse exists.
+     * @member {boolean} exists
+     * @memberof NamespaceIsExistsResponse
      * @instance
      */
-    ServiceEndpointsRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    NamespaceIsExistsResponse.prototype.exists = false;
 
     /**
-     * ServiceEndpointsRequest project_name.
-     * @member {string} project_name
-     * @memberof ServiceEndpointsRequest
+     * NamespaceIsExistsResponse id.
+     * @member {number} id
+     * @memberof NamespaceIsExistsResponse
      * @instance
      */
-    ServiceEndpointsRequest.prototype.project_name = "";
+    NamespaceIsExistsResponse.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified ServiceEndpointsRequest message. Does not implicitly {@link ServiceEndpointsRequest.verify|verify} messages.
+     * Encodes the specified NamespaceIsExistsResponse message. Does not implicitly {@link NamespaceIsExistsResponse.verify|verify} messages.
      * @function encode
-     * @memberof ServiceEndpointsRequest
+     * @memberof NamespaceIsExistsResponse
      * @static
-     * @param {ServiceEndpointsRequest} message ServiceEndpointsRequest message or plain object to encode
+     * @param {NamespaceIsExistsResponse} message NamespaceIsExistsResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    ServiceEndpointsRequest.encode = function encode(message, writer) {
+    NamespaceIsExistsResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
-        if (message.project_name != null && Object.hasOwnProperty.call(message, "project_name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.project_name);
+        if (message.exists != null && Object.hasOwnProperty.call(message, "exists"))
+            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.exists);
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.id);
         return writer;
     };
 
     /**
-     * Decodes a ServiceEndpointsRequest message from the specified reader or buffer.
+     * Decodes a NamespaceIsExistsResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof ServiceEndpointsRequest
+     * @memberof NamespaceIsExistsResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {ServiceEndpointsRequest} ServiceEndpointsRequest
+     * @returns {NamespaceIsExistsResponse} NamespaceIsExistsResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    ServiceEndpointsRequest.decode = function decode(reader, length) {
+    NamespaceIsExistsResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ServiceEndpointsRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceIsExistsResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
+                message.exists = reader.bool();
                 break;
             case 2:
-                message.project_name = reader.string();
+                message.id = reader.int64();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -11561,7 +12423,141 @@ export const ServiceEndpointsRequest = $root.ServiceEndpointsRequest = (() => {
         return message;
     };
 
-    return ServiceEndpointsRequest;
+    return NamespaceIsExistsResponse;
+})();
+
+export const NamespaceAllRequest = $root.NamespaceAllRequest = (() => {
+
+    /**
+     * Properties of a NamespaceAllRequest.
+     * @exports INamespaceAllRequest
+     * @interface INamespaceAllRequest
+     */
+
+    /**
+     * Constructs a new NamespaceAllRequest.
+     * @exports NamespaceAllRequest
+     * @classdesc Represents a NamespaceAllRequest.
+     * @implements INamespaceAllRequest
+     * @constructor
+     * @param {INamespaceAllRequest=} [properties] Properties to set
+     */
+    function NamespaceAllRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified NamespaceAllRequest message. Does not implicitly {@link NamespaceAllRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceAllRequest
+     * @static
+     * @param {NamespaceAllRequest} message NamespaceAllRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceAllRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceAllRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceAllRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceAllRequest} NamespaceAllRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceAllRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceAllRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceAllRequest;
+})();
+
+export const NamespaceDeleteResponse = $root.NamespaceDeleteResponse = (() => {
+
+    /**
+     * Properties of a NamespaceDeleteResponse.
+     * @exports INamespaceDeleteResponse
+     * @interface INamespaceDeleteResponse
+     */
+
+    /**
+     * Constructs a new NamespaceDeleteResponse.
+     * @exports NamespaceDeleteResponse
+     * @classdesc Represents a NamespaceDeleteResponse.
+     * @implements INamespaceDeleteResponse
+     * @constructor
+     * @param {INamespaceDeleteResponse=} [properties] Properties to set
+     */
+    function NamespaceDeleteResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified NamespaceDeleteResponse message. Does not implicitly {@link NamespaceDeleteResponse.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceDeleteResponse
+     * @static
+     * @param {NamespaceDeleteResponse} message NamespaceDeleteResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceDeleteResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceDeleteResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceDeleteResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceDeleteResponse} NamespaceDeleteResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceDeleteResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceDeleteResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceDeleteResponse;
 })();
 
 export const Namespace = $root.Namespace = (() => {
@@ -11583,101 +12579,200 @@ export const Namespace = $root.Namespace = (() => {
     (Namespace.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Namespace;
 
     /**
-     * Callback as used by {@link Namespace#index}.
+     * Callback as used by {@link Namespace#all}.
      * @memberof Namespace
-     * @typedef IndexCallback
+     * @typedef AllCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {NamespaceList} [response] NamespaceList
+     * @param {NamespaceAllResponse} [response] NamespaceAllResponse
      */
 
     /**
-     * Calls Index.
-     * @function index
+     * Calls All.
+     * @function all
      * @memberof Namespace
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Namespace.IndexCallback} callback Node-style callback called with the error, if any, and NamespaceList
+     * @param {NamespaceAllRequest} request NamespaceAllRequest message or plain object
+     * @param {Namespace.AllCallback} callback Node-style callback called with the error, if any, and NamespaceAllResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Namespace.prototype.index = function index(request, callback) {
-        return this.rpcCall(index, $root.google.protobuf.Empty, $root.NamespaceList, request, callback);
-    }, "name", { value: "Index" });
+    Object.defineProperty(Namespace.prototype.all = function all(request, callback) {
+        return this.rpcCall(all, $root.NamespaceAllRequest, $root.NamespaceAllResponse, request, callback);
+    }, "name", { value: "All" });
 
     /**
-     * Calls Index.
-     * @function index
+     * Calls All.
+     * @function all
      * @memberof Namespace
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @returns {Promise<NamespaceList>} Promise
+     * @param {NamespaceAllRequest} request NamespaceAllRequest message or plain object
+     * @returns {Promise<NamespaceAllResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link Namespace#store}.
+     * Callback as used by {@link Namespace#create}.
      * @memberof Namespace
-     * @typedef StoreCallback
+     * @typedef CreateCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {NsStoreResponse} [response] NsStoreResponse
+     * @param {NamespaceCreateResponse} [response] NamespaceCreateResponse
      */
 
     /**
-     * Calls Store.
-     * @function store
+     * Calls Create.
+     * @function create
      * @memberof Namespace
      * @instance
-     * @param {NsStoreRequest} request NsStoreRequest message or plain object
-     * @param {Namespace.StoreCallback} callback Node-style callback called with the error, if any, and NsStoreResponse
+     * @param {NamespaceCreateRequest} request NamespaceCreateRequest message or plain object
+     * @param {Namespace.CreateCallback} callback Node-style callback called with the error, if any, and NamespaceCreateResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Namespace.prototype.store = function store(request, callback) {
-        return this.rpcCall(store, $root.NsStoreRequest, $root.NsStoreResponse, request, callback);
-    }, "name", { value: "Store" });
+    Object.defineProperty(Namespace.prototype.create = function create(request, callback) {
+        return this.rpcCall(create, $root.NamespaceCreateRequest, $root.NamespaceCreateResponse, request, callback);
+    }, "name", { value: "Create" });
 
     /**
-     * Calls Store.
-     * @function store
+     * Calls Create.
+     * @function create
      * @memberof Namespace
      * @instance
-     * @param {NsStoreRequest} request NsStoreRequest message or plain object
-     * @returns {Promise<NsStoreResponse>} Promise
+     * @param {NamespaceCreateRequest} request NamespaceCreateRequest message or plain object
+     * @returns {Promise<NamespaceCreateResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link Namespace#cpuAndMemory}.
+     * Callback as used by {@link Namespace#show}.
      * @memberof Namespace
-     * @typedef CpuAndMemoryCallback
+     * @typedef ShowCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {CpuAndMemoryResponse} [response] CpuAndMemoryResponse
+     * @param {NamespaceShowResponse} [response] NamespaceShowResponse
      */
 
     /**
-     * Calls CpuAndMemory.
-     * @function cpuAndMemory
+     * Calls Show.
+     * @function show
      * @memberof Namespace
      * @instance
-     * @param {NamespaceID} request NamespaceID message or plain object
-     * @param {Namespace.CpuAndMemoryCallback} callback Node-style callback called with the error, if any, and CpuAndMemoryResponse
+     * @param {NamespaceShowRequest} request NamespaceShowRequest message or plain object
+     * @param {Namespace.ShowCallback} callback Node-style callback called with the error, if any, and NamespaceShowResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Namespace.prototype.cpuAndMemory = function cpuAndMemory(request, callback) {
-        return this.rpcCall(cpuAndMemory, $root.NamespaceID, $root.CpuAndMemoryResponse, request, callback);
-    }, "name", { value: "CpuAndMemory" });
+    Object.defineProperty(Namespace.prototype.show = function show(request, callback) {
+        return this.rpcCall(show, $root.NamespaceShowRequest, $root.NamespaceShowResponse, request, callback);
+    }, "name", { value: "Show" });
 
     /**
-     * Calls CpuAndMemory.
-     * @function cpuAndMemory
+     * Calls Show.
+     * @function show
      * @memberof Namespace
      * @instance
-     * @param {NamespaceID} request NamespaceID message or plain object
-     * @returns {Promise<CpuAndMemoryResponse>} Promise
+     * @param {NamespaceShowRequest} request NamespaceShowRequest message or plain object
+     * @returns {Promise<NamespaceShowResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Namespace#delete_}.
+     * @memberof Namespace
+     * @typedef DeleteCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {NamespaceDeleteResponse} [response] NamespaceDeleteResponse
+     */
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceDeleteRequest} request NamespaceDeleteRequest message or plain object
+     * @param {Namespace.DeleteCallback} callback Node-style callback called with the error, if any, and NamespaceDeleteResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Namespace.prototype["delete"] = function delete_(request, callback) {
+        return this.rpcCall(delete_, $root.NamespaceDeleteRequest, $root.NamespaceDeleteResponse, request, callback);
+    }, "name", { value: "Delete" });
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceDeleteRequest} request NamespaceDeleteRequest message or plain object
+     * @returns {Promise<NamespaceDeleteResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Namespace#isExists}.
+     * @memberof Namespace
+     * @typedef IsExistsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {NamespaceIsExistsResponse} [response] NamespaceIsExistsResponse
+     */
+
+    /**
+     * Calls IsExists.
+     * @function isExists
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceIsExistsRequest} request NamespaceIsExistsRequest message or plain object
+     * @param {Namespace.IsExistsCallback} callback Node-style callback called with the error, if any, and NamespaceIsExistsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Namespace.prototype.isExists = function isExists(request, callback) {
+        return this.rpcCall(isExists, $root.NamespaceIsExistsRequest, $root.NamespaceIsExistsResponse, request, callback);
+    }, "name", { value: "IsExists" });
+
+    /**
+     * Calls IsExists.
+     * @function isExists
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceIsExistsRequest} request NamespaceIsExistsRequest message or plain object
+     * @returns {Promise<NamespaceIsExistsResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Namespace#cpuMemory}.
+     * @memberof Namespace
+     * @typedef CpuMemoryCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {NamespaceCpuMemoryResponse} [response] NamespaceCpuMemoryResponse
+     */
+
+    /**
+     * Calls CpuMemory.
+     * @function cpuMemory
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceCpuMemoryRequest} request NamespaceCpuMemoryRequest message or plain object
+     * @param {Namespace.CpuMemoryCallback} callback Node-style callback called with the error, if any, and NamespaceCpuMemoryResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Namespace.prototype.cpuMemory = function cpuMemory(request, callback) {
+        return this.rpcCall(cpuMemory, $root.NamespaceCpuMemoryRequest, $root.NamespaceCpuMemoryResponse, request, callback);
+    }, "name", { value: "CpuMemory" });
+
+    /**
+     * Calls CpuMemory.
+     * @function cpuMemory
+     * @memberof Namespace
+     * @instance
+     * @param {NamespaceCpuMemoryRequest} request NamespaceCpuMemoryRequest message or plain object
+     * @returns {Promise<NamespaceCpuMemoryResponse>} Promise
      * @variation 2
      */
 
@@ -11687,7 +12782,7 @@ export const Namespace = $root.Namespace = (() => {
      * @typedef ServiceEndpointsCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {ServiceEndpointsResponse} [response] ServiceEndpointsResponse
+     * @param {NamespaceServiceEndpointsResponse} [response] NamespaceServiceEndpointsResponse
      */
 
     /**
@@ -11695,13 +12790,13 @@ export const Namespace = $root.Namespace = (() => {
      * @function serviceEndpoints
      * @memberof Namespace
      * @instance
-     * @param {ServiceEndpointsRequest} request ServiceEndpointsRequest message or plain object
-     * @param {Namespace.ServiceEndpointsCallback} callback Node-style callback called with the error, if any, and ServiceEndpointsResponse
+     * @param {NamespaceServiceEndpointsRequest} request NamespaceServiceEndpointsRequest message or plain object
+     * @param {Namespace.ServiceEndpointsCallback} callback Node-style callback called with the error, if any, and NamespaceServiceEndpointsResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Namespace.prototype.serviceEndpoints = function serviceEndpoints(request, callback) {
-        return this.rpcCall(serviceEndpoints, $root.ServiceEndpointsRequest, $root.ServiceEndpointsResponse, request, callback);
+        return this.rpcCall(serviceEndpoints, $root.NamespaceServiceEndpointsRequest, $root.NamespaceServiceEndpointsResponse, request, callback);
     }, "name", { value: "ServiceEndpoints" });
 
     /**
@@ -11709,41 +12804,8 @@ export const Namespace = $root.Namespace = (() => {
      * @function serviceEndpoints
      * @memberof Namespace
      * @instance
-     * @param {ServiceEndpointsRequest} request ServiceEndpointsRequest message or plain object
-     * @returns {Promise<ServiceEndpointsResponse>} Promise
-     * @variation 2
-     */
-
-    /**
-     * Callback as used by {@link Namespace#destroy}.
-     * @memberof Namespace
-     * @typedef DestroyCallback
-     * @type {function}
-     * @param {Error|null} error Error, if any
-     * @param {google.protobuf.Empty} [response] Empty
-     */
-
-    /**
-     * Calls Destroy.
-     * @function destroy
-     * @memberof Namespace
-     * @instance
-     * @param {NamespaceID} request NamespaceID message or plain object
-     * @param {Namespace.DestroyCallback} callback Node-style callback called with the error, if any, and Empty
-     * @returns {undefined}
-     * @variation 1
-     */
-    Object.defineProperty(Namespace.prototype.destroy = function destroy(request, callback) {
-        return this.rpcCall(destroy, $root.NamespaceID, $root.google.protobuf.Empty, request, callback);
-    }, "name", { value: "Destroy" });
-
-    /**
-     * Calls Destroy.
-     * @function destroy
-     * @memberof Namespace
-     * @instance
-     * @param {NamespaceID} request NamespaceID message or plain object
-     * @returns {Promise<google.protobuf.Empty>} Promise
+     * @param {NamespaceServiceEndpointsRequest} request NamespaceServiceEndpointsRequest message or plain object
+     * @returns {Promise<NamespaceServiceEndpointsResponse>} Promise
      * @variation 2
      */
 
@@ -11980,25 +13042,24 @@ export const Picture = $root.Picture = (() => {
     return Picture;
 })();
 
-export const ProjectDestroyRequest = $root.ProjectDestroyRequest = (() => {
+export const ProjectDeleteRequest = $root.ProjectDeleteRequest = (() => {
 
     /**
-     * Properties of a ProjectDestroyRequest.
-     * @exports IProjectDestroyRequest
-     * @interface IProjectDestroyRequest
-     * @property {number|null} [namespace_id] ProjectDestroyRequest namespace_id
-     * @property {number|null} [project_id] ProjectDestroyRequest project_id
+     * Properties of a ProjectDeleteRequest.
+     * @exports IProjectDeleteRequest
+     * @interface IProjectDeleteRequest
+     * @property {number|null} [project_id] ProjectDeleteRequest project_id
      */
 
     /**
-     * Constructs a new ProjectDestroyRequest.
-     * @exports ProjectDestroyRequest
-     * @classdesc Represents a ProjectDestroyRequest.
-     * @implements IProjectDestroyRequest
+     * Constructs a new ProjectDeleteRequest.
+     * @exports ProjectDeleteRequest
+     * @classdesc Represents a ProjectDeleteRequest.
+     * @implements IProjectDeleteRequest
      * @constructor
-     * @param {IProjectDestroyRequest=} [properties] Properties to set
+     * @param {IProjectDeleteRequest=} [properties] Properties to set
      */
-    function ProjectDestroyRequest(properties) {
+    function ProjectDeleteRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12006,62 +13067,49 @@ export const ProjectDestroyRequest = $root.ProjectDestroyRequest = (() => {
     }
 
     /**
-     * ProjectDestroyRequest namespace_id.
-     * @member {number} namespace_id
-     * @memberof ProjectDestroyRequest
-     * @instance
-     */
-    ProjectDestroyRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * ProjectDestroyRequest project_id.
+     * ProjectDeleteRequest project_id.
      * @member {number} project_id
-     * @memberof ProjectDestroyRequest
+     * @memberof ProjectDeleteRequest
      * @instance
      */
-    ProjectDestroyRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ProjectDeleteRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified ProjectDestroyRequest message. Does not implicitly {@link ProjectDestroyRequest.verify|verify} messages.
+     * Encodes the specified ProjectDeleteRequest message. Does not implicitly {@link ProjectDeleteRequest.verify|verify} messages.
      * @function encode
-     * @memberof ProjectDestroyRequest
+     * @memberof ProjectDeleteRequest
      * @static
-     * @param {ProjectDestroyRequest} message ProjectDestroyRequest message or plain object to encode
+     * @param {ProjectDeleteRequest} message ProjectDeleteRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    ProjectDestroyRequest.encode = function encode(message, writer) {
+    ProjectDeleteRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.project_id);
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
         return writer;
     };
 
     /**
-     * Decodes a ProjectDestroyRequest message from the specified reader or buffer.
+     * Decodes a ProjectDeleteRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof ProjectDestroyRequest
+     * @memberof ProjectDeleteRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {ProjectDestroyRequest} ProjectDestroyRequest
+     * @returns {ProjectDeleteRequest} ProjectDeleteRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    ProjectDestroyRequest.decode = function decode(reader, length) {
+    ProjectDeleteRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectDestroyRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectDeleteRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
-                break;
-            case 2:
                 message.project_id = reader.int64();
                 break;
             default:
@@ -12072,7 +13120,7 @@ export const ProjectDestroyRequest = $root.ProjectDestroyRequest = (() => {
         return message;
     };
 
-    return ProjectDestroyRequest;
+    return ProjectDeleteRequest;
 })();
 
 export const ProjectShowRequest = $root.ProjectShowRequest = (() => {
@@ -12081,7 +13129,6 @@ export const ProjectShowRequest = $root.ProjectShowRequest = (() => {
      * Properties of a ProjectShowRequest.
      * @exports IProjectShowRequest
      * @interface IProjectShowRequest
-     * @property {number|null} [namespace_id] ProjectShowRequest namespace_id
      * @property {number|null} [project_id] ProjectShowRequest project_id
      */
 
@@ -12099,14 +13146,6 @@ export const ProjectShowRequest = $root.ProjectShowRequest = (() => {
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
-
-    /**
-     * ProjectShowRequest namespace_id.
-     * @member {number} namespace_id
-     * @memberof ProjectShowRequest
-     * @instance
-     */
-    ProjectShowRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
      * ProjectShowRequest project_id.
@@ -12128,10 +13167,8 @@ export const ProjectShowRequest = $root.ProjectShowRequest = (() => {
     ProjectShowRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.project_id);
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
         return writer;
     };
 
@@ -12154,9 +13191,6 @@ export const ProjectShowRequest = $root.ProjectShowRequest = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
-                break;
-            case 2:
                 message.project_id = reader.int64();
                 break;
             default:
@@ -12195,7 +13229,8 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      * @property {string|null} [override_values] ProjectShowResponse override_values
      * @property {string|null} [created_at] ProjectShowResponse created_at
      * @property {string|null} [updated_at] ProjectShowResponse updated_at
-     * @property {number|null} [updated_timestamp] ProjectShowResponse updated_timestamp
+     * @property {string|null} [humanize_created_at] ProjectShowResponse humanize_created_at
+     * @property {string|null} [humanize_updated_at] ProjectShowResponse humanize_updated_at
      */
 
     /**
@@ -12367,12 +13402,20 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
     ProjectShowResponse.prototype.updated_at = "";
 
     /**
-     * ProjectShowResponse updated_timestamp.
-     * @member {number} updated_timestamp
+     * ProjectShowResponse humanize_created_at.
+     * @member {string} humanize_created_at
      * @memberof ProjectShowResponse
      * @instance
      */
-    ProjectShowResponse.prototype.updated_timestamp = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ProjectShowResponse.prototype.humanize_created_at = "";
+
+    /**
+     * ProjectShowResponse humanize_updated_at.
+     * @member {string} humanize_updated_at
+     * @memberof ProjectShowResponse
+     * @instance
+     */
+    ProjectShowResponse.prototype.humanize_updated_at = "";
 
     /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
@@ -12425,8 +13468,10 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
             writer.uint32(/* id 18, wireType 2 =*/146).string(message.created_at);
         if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
             writer.uint32(/* id 19, wireType 2 =*/154).string(message.updated_at);
-        if (message.updated_timestamp != null && Object.hasOwnProperty.call(message, "updated_timestamp"))
-            writer.uint32(/* id 20, wireType 0 =*/160).int64(message.updated_timestamp);
+        if (message.humanize_created_at != null && Object.hasOwnProperty.call(message, "humanize_created_at"))
+            writer.uint32(/* id 20, wireType 2 =*/162).string(message.humanize_created_at);
+        if (message.humanize_updated_at != null && Object.hasOwnProperty.call(message, "humanize_updated_at"))
+            writer.uint32(/* id 21, wireType 2 =*/170).string(message.humanize_updated_at);
         return writer;
     };
 
@@ -12508,7 +13553,10 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
                 message.updated_at = reader.string();
                 break;
             case 20:
-                message.updated_timestamp = reader.int64();
+                message.humanize_created_at = reader.string();
+                break;
+            case 21:
+                message.humanize_updated_at = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -12616,25 +13664,24 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
     return ProjectShowResponse;
 })();
 
-export const AllPodContainersRequest = $root.AllPodContainersRequest = (() => {
+export const ProjectAllPodContainersRequest = $root.ProjectAllPodContainersRequest = (() => {
 
     /**
-     * Properties of an AllPodContainersRequest.
-     * @exports IAllPodContainersRequest
-     * @interface IAllPodContainersRequest
-     * @property {number|null} [namespace_id] AllPodContainersRequest namespace_id
-     * @property {number|null} [project_id] AllPodContainersRequest project_id
+     * Properties of a ProjectAllPodContainersRequest.
+     * @exports IProjectAllPodContainersRequest
+     * @interface IProjectAllPodContainersRequest
+     * @property {number|null} [project_id] ProjectAllPodContainersRequest project_id
      */
 
     /**
-     * Constructs a new AllPodContainersRequest.
-     * @exports AllPodContainersRequest
-     * @classdesc Represents an AllPodContainersRequest.
-     * @implements IAllPodContainersRequest
+     * Constructs a new ProjectAllPodContainersRequest.
+     * @exports ProjectAllPodContainersRequest
+     * @classdesc Represents a ProjectAllPodContainersRequest.
+     * @implements IProjectAllPodContainersRequest
      * @constructor
-     * @param {IAllPodContainersRequest=} [properties] Properties to set
+     * @param {IProjectAllPodContainersRequest=} [properties] Properties to set
      */
-    function AllPodContainersRequest(properties) {
+    function ProjectAllPodContainersRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12642,62 +13689,49 @@ export const AllPodContainersRequest = $root.AllPodContainersRequest = (() => {
     }
 
     /**
-     * AllPodContainersRequest namespace_id.
-     * @member {number} namespace_id
-     * @memberof AllPodContainersRequest
-     * @instance
-     */
-    AllPodContainersRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * AllPodContainersRequest project_id.
+     * ProjectAllPodContainersRequest project_id.
      * @member {number} project_id
-     * @memberof AllPodContainersRequest
+     * @memberof ProjectAllPodContainersRequest
      * @instance
      */
-    AllPodContainersRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ProjectAllPodContainersRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified AllPodContainersRequest message. Does not implicitly {@link AllPodContainersRequest.verify|verify} messages.
+     * Encodes the specified ProjectAllPodContainersRequest message. Does not implicitly {@link ProjectAllPodContainersRequest.verify|verify} messages.
      * @function encode
-     * @memberof AllPodContainersRequest
+     * @memberof ProjectAllPodContainersRequest
      * @static
-     * @param {AllPodContainersRequest} message AllPodContainersRequest message or plain object to encode
+     * @param {ProjectAllPodContainersRequest} message ProjectAllPodContainersRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    AllPodContainersRequest.encode = function encode(message, writer) {
+    ProjectAllPodContainersRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.project_id);
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
         return writer;
     };
 
     /**
-     * Decodes an AllPodContainersRequest message from the specified reader or buffer.
+     * Decodes a ProjectAllPodContainersRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof AllPodContainersRequest
+     * @memberof ProjectAllPodContainersRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {AllPodContainersRequest} AllPodContainersRequest
+     * @returns {ProjectAllPodContainersRequest} ProjectAllPodContainersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    AllPodContainersRequest.decode = function decode(reader, length) {
+    ProjectAllPodContainersRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AllPodContainersRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectAllPodContainersRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
-                break;
-            case 2:
                 message.project_id = reader.int64();
                 break;
             default:
@@ -12708,29 +13742,30 @@ export const AllPodContainersRequest = $root.AllPodContainersRequest = (() => {
         return message;
     };
 
-    return AllPodContainersRequest;
+    return ProjectAllPodContainersRequest;
 })();
 
-export const PodLog = $root.PodLog = (() => {
+export const ProjectPodLog = $root.ProjectPodLog = (() => {
 
     /**
-     * Properties of a PodLog.
-     * @exports IPodLog
-     * @interface IPodLog
-     * @property {string|null} [pod_name] PodLog pod_name
-     * @property {string|null} [container_name] PodLog container_name
-     * @property {string|null} [log] PodLog log
+     * Properties of a ProjectPodLog.
+     * @exports IProjectPodLog
+     * @interface IProjectPodLog
+     * @property {string|null} [namespace] ProjectPodLog namespace
+     * @property {string|null} [pod_name] ProjectPodLog pod_name
+     * @property {string|null} [container_name] ProjectPodLog container_name
+     * @property {string|null} [log] ProjectPodLog log
      */
 
     /**
-     * Constructs a new PodLog.
-     * @exports PodLog
-     * @classdesc Represents a PodLog.
-     * @implements IPodLog
+     * Constructs a new ProjectPodLog.
+     * @exports ProjectPodLog
+     * @classdesc Represents a ProjectPodLog.
+     * @implements IProjectPodLog
      * @constructor
-     * @param {IPodLog=} [properties] Properties to set
+     * @param {IProjectPodLog=} [properties] Properties to set
      */
-    function PodLog(properties) {
+    function ProjectPodLog(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12738,75 +13773,88 @@ export const PodLog = $root.PodLog = (() => {
     }
 
     /**
-     * PodLog pod_name.
+     * ProjectPodLog namespace.
+     * @member {string} namespace
+     * @memberof ProjectPodLog
+     * @instance
+     */
+    ProjectPodLog.prototype.namespace = "";
+
+    /**
+     * ProjectPodLog pod_name.
      * @member {string} pod_name
-     * @memberof PodLog
+     * @memberof ProjectPodLog
      * @instance
      */
-    PodLog.prototype.pod_name = "";
+    ProjectPodLog.prototype.pod_name = "";
 
     /**
-     * PodLog container_name.
+     * ProjectPodLog container_name.
      * @member {string} container_name
-     * @memberof PodLog
+     * @memberof ProjectPodLog
      * @instance
      */
-    PodLog.prototype.container_name = "";
+    ProjectPodLog.prototype.container_name = "";
 
     /**
-     * PodLog log.
+     * ProjectPodLog log.
      * @member {string} log
-     * @memberof PodLog
+     * @memberof ProjectPodLog
      * @instance
      */
-    PodLog.prototype.log = "";
+    ProjectPodLog.prototype.log = "";
 
     /**
-     * Encodes the specified PodLog message. Does not implicitly {@link PodLog.verify|verify} messages.
+     * Encodes the specified ProjectPodLog message. Does not implicitly {@link ProjectPodLog.verify|verify} messages.
      * @function encode
-     * @memberof PodLog
+     * @memberof ProjectPodLog
      * @static
-     * @param {PodLog} message PodLog message or plain object to encode
+     * @param {ProjectPodLog} message ProjectPodLog message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    PodLog.encode = function encode(message, writer) {
+    ProjectPodLog.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
         if (message.pod_name != null && Object.hasOwnProperty.call(message, "pod_name"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.pod_name);
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod_name);
         if (message.container_name != null && Object.hasOwnProperty.call(message, "container_name"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.container_name);
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.container_name);
         if (message.log != null && Object.hasOwnProperty.call(message, "log"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.log);
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.log);
         return writer;
     };
 
     /**
-     * Decodes a PodLog message from the specified reader or buffer.
+     * Decodes a ProjectPodLog message from the specified reader or buffer.
      * @function decode
-     * @memberof PodLog
+     * @memberof ProjectPodLog
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {PodLog} PodLog
+     * @returns {ProjectPodLog} ProjectPodLog
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    PodLog.decode = function decode(reader, length) {
+    ProjectPodLog.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PodLog();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectPodLog();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.pod_name = reader.string();
+                message.namespace = reader.string();
                 break;
             case 2:
-                message.container_name = reader.string();
+                message.pod_name = reader.string();
                 break;
             case 3:
+                message.container_name = reader.string();
+                break;
+            case 4:
                 message.log = reader.string();
                 break;
             default:
@@ -12817,27 +13865,27 @@ export const PodLog = $root.PodLog = (() => {
         return message;
     };
 
-    return PodLog;
+    return ProjectPodLog;
 })();
 
-export const AllPodContainersResponse = $root.AllPodContainersResponse = (() => {
+export const ProjectAllPodContainersResponse = $root.ProjectAllPodContainersResponse = (() => {
 
     /**
-     * Properties of an AllPodContainersResponse.
-     * @exports IAllPodContainersResponse
-     * @interface IAllPodContainersResponse
-     * @property {Array.<PodLog>|null} [data] AllPodContainersResponse data
+     * Properties of a ProjectAllPodContainersResponse.
+     * @exports IProjectAllPodContainersResponse
+     * @interface IProjectAllPodContainersResponse
+     * @property {Array.<ProjectPodLog>|null} [data] ProjectAllPodContainersResponse data
      */
 
     /**
-     * Constructs a new AllPodContainersResponse.
-     * @exports AllPodContainersResponse
-     * @classdesc Represents an AllPodContainersResponse.
-     * @implements IAllPodContainersResponse
+     * Constructs a new ProjectAllPodContainersResponse.
+     * @exports ProjectAllPodContainersResponse
+     * @classdesc Represents a ProjectAllPodContainersResponse.
+     * @implements IProjectAllPodContainersResponse
      * @constructor
-     * @param {IAllPodContainersResponse=} [properties] Properties to set
+     * @param {IProjectAllPodContainersResponse=} [properties] Properties to set
      */
-    function AllPodContainersResponse(properties) {
+    function ProjectAllPodContainersResponse(properties) {
         this.data = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -12846,53 +13894,53 @@ export const AllPodContainersResponse = $root.AllPodContainersResponse = (() => 
     }
 
     /**
-     * AllPodContainersResponse data.
-     * @member {Array.<PodLog>} data
-     * @memberof AllPodContainersResponse
+     * ProjectAllPodContainersResponse data.
+     * @member {Array.<ProjectPodLog>} data
+     * @memberof ProjectAllPodContainersResponse
      * @instance
      */
-    AllPodContainersResponse.prototype.data = $util.emptyArray;
+    ProjectAllPodContainersResponse.prototype.data = $util.emptyArray;
 
     /**
-     * Encodes the specified AllPodContainersResponse message. Does not implicitly {@link AllPodContainersResponse.verify|verify} messages.
+     * Encodes the specified ProjectAllPodContainersResponse message. Does not implicitly {@link ProjectAllPodContainersResponse.verify|verify} messages.
      * @function encode
-     * @memberof AllPodContainersResponse
+     * @memberof ProjectAllPodContainersResponse
      * @static
-     * @param {AllPodContainersResponse} message AllPodContainersResponse message or plain object to encode
+     * @param {ProjectAllPodContainersResponse} message ProjectAllPodContainersResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    AllPodContainersResponse.encode = function encode(message, writer) {
+    ProjectAllPodContainersResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.data != null && message.data.length)
             for (let i = 0; i < message.data.length; ++i)
-                $root.PodLog.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.ProjectPodLog.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes an AllPodContainersResponse message from the specified reader or buffer.
+     * Decodes a ProjectAllPodContainersResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof AllPodContainersResponse
+     * @memberof ProjectAllPodContainersResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {AllPodContainersResponse} AllPodContainersResponse
+     * @returns {ProjectAllPodContainersResponse} ProjectAllPodContainersResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    AllPodContainersResponse.decode = function decode(reader, length) {
+    ProjectAllPodContainersResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.AllPodContainersResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectAllPodContainersResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
                 if (!(message.data && message.data.length))
                     message.data = [];
-                message.data.push($root.PodLog.decode(reader, reader.uint32()));
+                message.data.push($root.ProjectPodLog.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -12902,30 +13950,29 @@ export const AllPodContainersResponse = $root.AllPodContainersResponse = (() => 
         return message;
     };
 
-    return AllPodContainersResponse;
+    return ProjectAllPodContainersResponse;
 })();
 
-export const PodContainerLogRequest = $root.PodContainerLogRequest = (() => {
+export const ProjectPodContainerLogRequest = $root.ProjectPodContainerLogRequest = (() => {
 
     /**
-     * Properties of a PodContainerLogRequest.
-     * @exports IPodContainerLogRequest
-     * @interface IPodContainerLogRequest
-     * @property {number|null} [namespace_id] PodContainerLogRequest namespace_id
-     * @property {number|null} [project_id] PodContainerLogRequest project_id
-     * @property {string|null} [pod] PodContainerLogRequest pod
-     * @property {string|null} [container] PodContainerLogRequest container
+     * Properties of a ProjectPodContainerLogRequest.
+     * @exports IProjectPodContainerLogRequest
+     * @interface IProjectPodContainerLogRequest
+     * @property {number|null} [project_id] ProjectPodContainerLogRequest project_id
+     * @property {string|null} [pod] ProjectPodContainerLogRequest pod
+     * @property {string|null} [container] ProjectPodContainerLogRequest container
      */
 
     /**
-     * Constructs a new PodContainerLogRequest.
-     * @exports PodContainerLogRequest
-     * @classdesc Represents a PodContainerLogRequest.
-     * @implements IPodContainerLogRequest
+     * Constructs a new ProjectPodContainerLogRequest.
+     * @exports ProjectPodContainerLogRequest
+     * @classdesc Represents a ProjectPodContainerLogRequest.
+     * @implements IProjectPodContainerLogRequest
      * @constructor
-     * @param {IPodContainerLogRequest=} [properties] Properties to set
+     * @param {IProjectPodContainerLogRequest=} [properties] Properties to set
      */
-    function PodContainerLogRequest(properties) {
+    function ProjectPodContainerLogRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12933,88 +13980,75 @@ export const PodContainerLogRequest = $root.PodContainerLogRequest = (() => {
     }
 
     /**
-     * PodContainerLogRequest namespace_id.
-     * @member {number} namespace_id
-     * @memberof PodContainerLogRequest
-     * @instance
-     */
-    PodContainerLogRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
-
-    /**
-     * PodContainerLogRequest project_id.
+     * ProjectPodContainerLogRequest project_id.
      * @member {number} project_id
-     * @memberof PodContainerLogRequest
+     * @memberof ProjectPodContainerLogRequest
      * @instance
      */
-    PodContainerLogRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    ProjectPodContainerLogRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * PodContainerLogRequest pod.
+     * ProjectPodContainerLogRequest pod.
      * @member {string} pod
-     * @memberof PodContainerLogRequest
+     * @memberof ProjectPodContainerLogRequest
      * @instance
      */
-    PodContainerLogRequest.prototype.pod = "";
+    ProjectPodContainerLogRequest.prototype.pod = "";
 
     /**
-     * PodContainerLogRequest container.
+     * ProjectPodContainerLogRequest container.
      * @member {string} container
-     * @memberof PodContainerLogRequest
+     * @memberof ProjectPodContainerLogRequest
      * @instance
      */
-    PodContainerLogRequest.prototype.container = "";
+    ProjectPodContainerLogRequest.prototype.container = "";
 
     /**
-     * Encodes the specified PodContainerLogRequest message. Does not implicitly {@link PodContainerLogRequest.verify|verify} messages.
+     * Encodes the specified ProjectPodContainerLogRequest message. Does not implicitly {@link ProjectPodContainerLogRequest.verify|verify} messages.
      * @function encode
-     * @memberof PodContainerLogRequest
+     * @memberof ProjectPodContainerLogRequest
      * @static
-     * @param {PodContainerLogRequest} message PodContainerLogRequest message or plain object to encode
+     * @param {ProjectPodContainerLogRequest} message ProjectPodContainerLogRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    PodContainerLogRequest.encode = function encode(message, writer) {
+    ProjectPodContainerLogRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
-            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
         if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.project_id);
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
         if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
-            writer.uint32(/* id 3, wireType 2 =*/26).string(message.pod);
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
         if (message.container != null && Object.hasOwnProperty.call(message, "container"))
-            writer.uint32(/* id 4, wireType 2 =*/34).string(message.container);
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.container);
         return writer;
     };
 
     /**
-     * Decodes a PodContainerLogRequest message from the specified reader or buffer.
+     * Decodes a ProjectPodContainerLogRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof PodContainerLogRequest
+     * @memberof ProjectPodContainerLogRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {PodContainerLogRequest} PodContainerLogRequest
+     * @returns {ProjectPodContainerLogRequest} ProjectPodContainerLogRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    PodContainerLogRequest.decode = function decode(reader, length) {
+    ProjectPodContainerLogRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PodContainerLogRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectPodContainerLogRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.namespace_id = reader.int64();
-                break;
-            case 2:
                 message.project_id = reader.int64();
                 break;
-            case 3:
+            case 2:
                 message.pod = reader.string();
                 break;
-            case 4:
+            case 3:
                 message.container = reader.string();
                 break;
             default:
@@ -13025,27 +14059,27 @@ export const PodContainerLogRequest = $root.PodContainerLogRequest = (() => {
         return message;
     };
 
-    return PodContainerLogRequest;
+    return ProjectPodContainerLogRequest;
 })();
 
-export const PodContainerLogResponse = $root.PodContainerLogResponse = (() => {
+export const ProjectPodContainerLogResponse = $root.ProjectPodContainerLogResponse = (() => {
 
     /**
-     * Properties of a PodContainerLogResponse.
-     * @exports IPodContainerLogResponse
-     * @interface IPodContainerLogResponse
-     * @property {PodLog|null} [data] PodContainerLogResponse data
+     * Properties of a ProjectPodContainerLogResponse.
+     * @exports IProjectPodContainerLogResponse
+     * @interface IProjectPodContainerLogResponse
+     * @property {ProjectPodLog|null} [data] ProjectPodContainerLogResponse data
      */
 
     /**
-     * Constructs a new PodContainerLogResponse.
-     * @exports PodContainerLogResponse
-     * @classdesc Represents a PodContainerLogResponse.
-     * @implements IPodContainerLogResponse
+     * Constructs a new ProjectPodContainerLogResponse.
+     * @exports ProjectPodContainerLogResponse
+     * @classdesc Represents a ProjectPodContainerLogResponse.
+     * @implements IProjectPodContainerLogResponse
      * @constructor
-     * @param {IPodContainerLogResponse=} [properties] Properties to set
+     * @param {IProjectPodContainerLogResponse=} [properties] Properties to set
      */
-    function PodContainerLogResponse(properties) {
+    function ProjectPodContainerLogResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -13053,50 +14087,50 @@ export const PodContainerLogResponse = $root.PodContainerLogResponse = (() => {
     }
 
     /**
-     * PodContainerLogResponse data.
-     * @member {PodLog|null|undefined} data
-     * @memberof PodContainerLogResponse
+     * ProjectPodContainerLogResponse data.
+     * @member {ProjectPodLog|null|undefined} data
+     * @memberof ProjectPodContainerLogResponse
      * @instance
      */
-    PodContainerLogResponse.prototype.data = null;
+    ProjectPodContainerLogResponse.prototype.data = null;
 
     /**
-     * Encodes the specified PodContainerLogResponse message. Does not implicitly {@link PodContainerLogResponse.verify|verify} messages.
+     * Encodes the specified ProjectPodContainerLogResponse message. Does not implicitly {@link ProjectPodContainerLogResponse.verify|verify} messages.
      * @function encode
-     * @memberof PodContainerLogResponse
+     * @memberof ProjectPodContainerLogResponse
      * @static
-     * @param {PodContainerLogResponse} message PodContainerLogResponse message or plain object to encode
+     * @param {ProjectPodContainerLogResponse} message ProjectPodContainerLogResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    PodContainerLogResponse.encode = function encode(message, writer) {
+    ProjectPodContainerLogResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-            $root.PodLog.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            $root.ProjectPodLog.encode(message.data, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
     /**
-     * Decodes a PodContainerLogResponse message from the specified reader or buffer.
+     * Decodes a ProjectPodContainerLogResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof PodContainerLogResponse
+     * @memberof ProjectPodContainerLogResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {PodContainerLogResponse} PodContainerLogResponse
+     * @returns {ProjectPodContainerLogResponse} ProjectPodContainerLogResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    PodContainerLogResponse.decode = function decode(reader, length) {
+    ProjectPodContainerLogResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PodContainerLogResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectPodContainerLogResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.data = $root.PodLog.decode(reader, reader.uint32());
+                message.data = $root.ProjectPodLog.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -13106,28 +14140,28 @@ export const PodContainerLogResponse = $root.PodContainerLogResponse = (() => {
         return message;
     };
 
-    return PodContainerLogResponse;
+    return ProjectPodContainerLogResponse;
 })();
 
-export const IsPodRunningRequest = $root.IsPodRunningRequest = (() => {
+export const ProjectIsPodRunningRequest = $root.ProjectIsPodRunningRequest = (() => {
 
     /**
-     * Properties of an IsPodRunningRequest.
-     * @exports IIsPodRunningRequest
-     * @interface IIsPodRunningRequest
-     * @property {string|null} [namespace] IsPodRunningRequest namespace
-     * @property {string|null} [pod] IsPodRunningRequest pod
+     * Properties of a ProjectIsPodRunningRequest.
+     * @exports IProjectIsPodRunningRequest
+     * @interface IProjectIsPodRunningRequest
+     * @property {string|null} [namespace] ProjectIsPodRunningRequest namespace
+     * @property {string|null} [pod] ProjectIsPodRunningRequest pod
      */
 
     /**
-     * Constructs a new IsPodRunningRequest.
-     * @exports IsPodRunningRequest
-     * @classdesc Represents an IsPodRunningRequest.
-     * @implements IIsPodRunningRequest
+     * Constructs a new ProjectIsPodRunningRequest.
+     * @exports ProjectIsPodRunningRequest
+     * @classdesc Represents a ProjectIsPodRunningRequest.
+     * @implements IProjectIsPodRunningRequest
      * @constructor
-     * @param {IIsPodRunningRequest=} [properties] Properties to set
+     * @param {IProjectIsPodRunningRequest=} [properties] Properties to set
      */
-    function IsPodRunningRequest(properties) {
+    function ProjectIsPodRunningRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -13135,31 +14169,31 @@ export const IsPodRunningRequest = $root.IsPodRunningRequest = (() => {
     }
 
     /**
-     * IsPodRunningRequest namespace.
+     * ProjectIsPodRunningRequest namespace.
      * @member {string} namespace
-     * @memberof IsPodRunningRequest
+     * @memberof ProjectIsPodRunningRequest
      * @instance
      */
-    IsPodRunningRequest.prototype.namespace = "";
+    ProjectIsPodRunningRequest.prototype.namespace = "";
 
     /**
-     * IsPodRunningRequest pod.
+     * ProjectIsPodRunningRequest pod.
      * @member {string} pod
-     * @memberof IsPodRunningRequest
+     * @memberof ProjectIsPodRunningRequest
      * @instance
      */
-    IsPodRunningRequest.prototype.pod = "";
+    ProjectIsPodRunningRequest.prototype.pod = "";
 
     /**
-     * Encodes the specified IsPodRunningRequest message. Does not implicitly {@link IsPodRunningRequest.verify|verify} messages.
+     * Encodes the specified ProjectIsPodRunningRequest message. Does not implicitly {@link ProjectIsPodRunningRequest.verify|verify} messages.
      * @function encode
-     * @memberof IsPodRunningRequest
+     * @memberof ProjectIsPodRunningRequest
      * @static
-     * @param {IsPodRunningRequest} message IsPodRunningRequest message or plain object to encode
+     * @param {ProjectIsPodRunningRequest} message ProjectIsPodRunningRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    IsPodRunningRequest.encode = function encode(message, writer) {
+    ProjectIsPodRunningRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
@@ -13170,20 +14204,20 @@ export const IsPodRunningRequest = $root.IsPodRunningRequest = (() => {
     };
 
     /**
-     * Decodes an IsPodRunningRequest message from the specified reader or buffer.
+     * Decodes a ProjectIsPodRunningRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof IsPodRunningRequest
+     * @memberof ProjectIsPodRunningRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {IsPodRunningRequest} IsPodRunningRequest
+     * @returns {ProjectIsPodRunningRequest} ProjectIsPodRunningRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    IsPodRunningRequest.decode = function decode(reader, length) {
+    ProjectIsPodRunningRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.IsPodRunningRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectIsPodRunningRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -13201,28 +14235,28 @@ export const IsPodRunningRequest = $root.IsPodRunningRequest = (() => {
         return message;
     };
 
-    return IsPodRunningRequest;
+    return ProjectIsPodRunningRequest;
 })();
 
-export const IsPodRunningResponse = $root.IsPodRunningResponse = (() => {
+export const ProjectIsPodRunningResponse = $root.ProjectIsPodRunningResponse = (() => {
 
     /**
-     * Properties of an IsPodRunningResponse.
-     * @exports IIsPodRunningResponse
-     * @interface IIsPodRunningResponse
-     * @property {boolean|null} [running] IsPodRunningResponse running
-     * @property {string|null} [reason] IsPodRunningResponse reason
+     * Properties of a ProjectIsPodRunningResponse.
+     * @exports IProjectIsPodRunningResponse
+     * @interface IProjectIsPodRunningResponse
+     * @property {boolean|null} [running] ProjectIsPodRunningResponse running
+     * @property {string|null} [reason] ProjectIsPodRunningResponse reason
      */
 
     /**
-     * Constructs a new IsPodRunningResponse.
-     * @exports IsPodRunningResponse
-     * @classdesc Represents an IsPodRunningResponse.
-     * @implements IIsPodRunningResponse
+     * Constructs a new ProjectIsPodRunningResponse.
+     * @exports ProjectIsPodRunningResponse
+     * @classdesc Represents a ProjectIsPodRunningResponse.
+     * @implements IProjectIsPodRunningResponse
      * @constructor
-     * @param {IIsPodRunningResponse=} [properties] Properties to set
+     * @param {IProjectIsPodRunningResponse=} [properties] Properties to set
      */
-    function IsPodRunningResponse(properties) {
+    function ProjectIsPodRunningResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -13230,31 +14264,31 @@ export const IsPodRunningResponse = $root.IsPodRunningResponse = (() => {
     }
 
     /**
-     * IsPodRunningResponse running.
+     * ProjectIsPodRunningResponse running.
      * @member {boolean} running
-     * @memberof IsPodRunningResponse
+     * @memberof ProjectIsPodRunningResponse
      * @instance
      */
-    IsPodRunningResponse.prototype.running = false;
+    ProjectIsPodRunningResponse.prototype.running = false;
 
     /**
-     * IsPodRunningResponse reason.
+     * ProjectIsPodRunningResponse reason.
      * @member {string} reason
-     * @memberof IsPodRunningResponse
+     * @memberof ProjectIsPodRunningResponse
      * @instance
      */
-    IsPodRunningResponse.prototype.reason = "";
+    ProjectIsPodRunningResponse.prototype.reason = "";
 
     /**
-     * Encodes the specified IsPodRunningResponse message. Does not implicitly {@link IsPodRunningResponse.verify|verify} messages.
+     * Encodes the specified ProjectIsPodRunningResponse message. Does not implicitly {@link ProjectIsPodRunningResponse.verify|verify} messages.
      * @function encode
-     * @memberof IsPodRunningResponse
+     * @memberof ProjectIsPodRunningResponse
      * @static
-     * @param {IsPodRunningResponse} message IsPodRunningResponse message or plain object to encode
+     * @param {ProjectIsPodRunningResponse} message ProjectIsPodRunningResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    IsPodRunningResponse.encode = function encode(message, writer) {
+    ProjectIsPodRunningResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.running != null && Object.hasOwnProperty.call(message, "running"))
@@ -13265,20 +14299,20 @@ export const IsPodRunningResponse = $root.IsPodRunningResponse = (() => {
     };
 
     /**
-     * Decodes an IsPodRunningResponse message from the specified reader or buffer.
+     * Decodes a ProjectIsPodRunningResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof IsPodRunningResponse
+     * @memberof ProjectIsPodRunningResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {IsPodRunningResponse} IsPodRunningResponse
+     * @returns {ProjectIsPodRunningResponse} ProjectIsPodRunningResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    IsPodRunningResponse.decode = function decode(reader, length) {
+    ProjectIsPodRunningResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.IsPodRunningResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectIsPodRunningResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -13296,7 +14330,570 @@ export const IsPodRunningResponse = $root.IsPodRunningResponse = (() => {
         return message;
     };
 
-    return IsPodRunningResponse;
+    return ProjectIsPodRunningResponse;
+})();
+
+export const ProjectApplyResponse = $root.ProjectApplyResponse = (() => {
+
+    /**
+     * Properties of a ProjectApplyResponse.
+     * @exports IProjectApplyResponse
+     * @interface IProjectApplyResponse
+     * @property {Metadata|null} [metadata] ProjectApplyResponse metadata
+     * @property {ProjectModel|null} [project] ProjectApplyResponse project
+     */
+
+    /**
+     * Constructs a new ProjectApplyResponse.
+     * @exports ProjectApplyResponse
+     * @classdesc Represents a ProjectApplyResponse.
+     * @implements IProjectApplyResponse
+     * @constructor
+     * @param {IProjectApplyResponse=} [properties] Properties to set
+     */
+    function ProjectApplyResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectApplyResponse metadata.
+     * @member {Metadata|null|undefined} metadata
+     * @memberof ProjectApplyResponse
+     * @instance
+     */
+    ProjectApplyResponse.prototype.metadata = null;
+
+    /**
+     * ProjectApplyResponse project.
+     * @member {ProjectModel|null|undefined} project
+     * @memberof ProjectApplyResponse
+     * @instance
+     */
+    ProjectApplyResponse.prototype.project = null;
+
+    /**
+     * Encodes the specified ProjectApplyResponse message. Does not implicitly {@link ProjectApplyResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectApplyResponse
+     * @static
+     * @param {ProjectApplyResponse} message ProjectApplyResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectApplyResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+            $root.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.project != null && Object.hasOwnProperty.call(message, "project"))
+            $root.ProjectModel.encode(message.project, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectApplyResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectApplyResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectApplyResponse} ProjectApplyResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectApplyResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectApplyResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.metadata = $root.Metadata.decode(reader, reader.uint32());
+                break;
+            case 2:
+                message.project = $root.ProjectModel.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectApplyResponse;
+})();
+
+export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
+
+    /**
+     * Properties of a ProjectApplyRequest.
+     * @exports IProjectApplyRequest
+     * @interface IProjectApplyRequest
+     * @property {number|null} [namespace_id] ProjectApplyRequest namespace_id
+     * @property {string|null} [name] ProjectApplyRequest name
+     * @property {number|null} [gitlab_project_id] ProjectApplyRequest gitlab_project_id
+     * @property {string|null} [gitlab_branch] ProjectApplyRequest gitlab_branch
+     * @property {string|null} [gitlab_commit] ProjectApplyRequest gitlab_commit
+     * @property {string|null} [config] ProjectApplyRequest config
+     * @property {boolean|null} [atomic] ProjectApplyRequest atomic
+     * @property {boolean|null} [websocket_sync] ProjectApplyRequest websocket_sync
+     */
+
+    /**
+     * Constructs a new ProjectApplyRequest.
+     * @exports ProjectApplyRequest
+     * @classdesc Represents a ProjectApplyRequest.
+     * @implements IProjectApplyRequest
+     * @constructor
+     * @param {IProjectApplyRequest=} [properties] Properties to set
+     */
+    function ProjectApplyRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectApplyRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectApplyRequest name.
+     * @member {string} name
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.name = "";
+
+    /**
+     * ProjectApplyRequest gitlab_project_id.
+     * @member {number} gitlab_project_id
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.gitlab_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectApplyRequest gitlab_branch.
+     * @member {string} gitlab_branch
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.gitlab_branch = "";
+
+    /**
+     * ProjectApplyRequest gitlab_commit.
+     * @member {string} gitlab_commit
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.gitlab_commit = "";
+
+    /**
+     * ProjectApplyRequest config.
+     * @member {string} config
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.config = "";
+
+    /**
+     * ProjectApplyRequest atomic.
+     * @member {boolean} atomic
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.atomic = false;
+
+    /**
+     * ProjectApplyRequest websocket_sync.
+     * @member {boolean} websocket_sync
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.websocket_sync = false;
+
+    /**
+     * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectApplyRequest
+     * @static
+     * @param {ProjectApplyRequest} message ProjectApplyRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectApplyRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.name);
+        if (message.gitlab_project_id != null && Object.hasOwnProperty.call(message, "gitlab_project_id"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.gitlab_project_id);
+        if (message.gitlab_branch != null && Object.hasOwnProperty.call(message, "gitlab_branch"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.gitlab_branch);
+        if (message.gitlab_commit != null && Object.hasOwnProperty.call(message, "gitlab_commit"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.gitlab_commit);
+        if (message.config != null && Object.hasOwnProperty.call(message, "config"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.config);
+        if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
+            writer.uint32(/* id 7, wireType 0 =*/56).bool(message.atomic);
+        if (message.websocket_sync != null && Object.hasOwnProperty.call(message, "websocket_sync"))
+            writer.uint32(/* id 8, wireType 0 =*/64).bool(message.websocket_sync);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectApplyRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectApplyRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectApplyRequest} ProjectApplyRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectApplyRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectApplyRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            case 2:
+                message.name = reader.string();
+                break;
+            case 3:
+                message.gitlab_project_id = reader.int64();
+                break;
+            case 4:
+                message.gitlab_branch = reader.string();
+                break;
+            case 5:
+                message.gitlab_commit = reader.string();
+                break;
+            case 6:
+                message.config = reader.string();
+                break;
+            case 7:
+                message.atomic = reader.bool();
+                break;
+            case 8:
+                message.websocket_sync = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectApplyRequest;
+})();
+
+export const ProjectDeleteResponse = $root.ProjectDeleteResponse = (() => {
+
+    /**
+     * Properties of a ProjectDeleteResponse.
+     * @exports IProjectDeleteResponse
+     * @interface IProjectDeleteResponse
+     */
+
+    /**
+     * Constructs a new ProjectDeleteResponse.
+     * @exports ProjectDeleteResponse
+     * @classdesc Represents a ProjectDeleteResponse.
+     * @implements IProjectDeleteResponse
+     * @constructor
+     * @param {IProjectDeleteResponse=} [properties] Properties to set
+     */
+    function ProjectDeleteResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified ProjectDeleteResponse message. Does not implicitly {@link ProjectDeleteResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectDeleteResponse
+     * @static
+     * @param {ProjectDeleteResponse} message ProjectDeleteResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectDeleteResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectDeleteResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectDeleteResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectDeleteResponse} ProjectDeleteResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectDeleteResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectDeleteResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectDeleteResponse;
+})();
+
+export const ProjectListRequest = $root.ProjectListRequest = (() => {
+
+    /**
+     * Properties of a ProjectListRequest.
+     * @exports IProjectListRequest
+     * @interface IProjectListRequest
+     * @property {number|null} [page] ProjectListRequest page
+     * @property {number|null} [page_size] ProjectListRequest page_size
+     */
+
+    /**
+     * Constructs a new ProjectListRequest.
+     * @exports ProjectListRequest
+     * @classdesc Represents a ProjectListRequest.
+     * @implements IProjectListRequest
+     * @constructor
+     * @param {IProjectListRequest=} [properties] Properties to set
+     */
+    function ProjectListRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectListRequest page.
+     * @member {number} page
+     * @memberof ProjectListRequest
+     * @instance
+     */
+    ProjectListRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListRequest page_size.
+     * @member {number} page_size
+     * @memberof ProjectListRequest
+     * @instance
+     */
+    ProjectListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified ProjectListRequest message. Does not implicitly {@link ProjectListRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectListRequest
+     * @static
+     * @param {ProjectListRequest} message ProjectListRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectListRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectListRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectListRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectListRequest} ProjectListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectListRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectListRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectListRequest;
+})();
+
+export const ProjectListResponse = $root.ProjectListResponse = (() => {
+
+    /**
+     * Properties of a ProjectListResponse.
+     * @exports IProjectListResponse
+     * @interface IProjectListResponse
+     * @property {number|null} [page] ProjectListResponse page
+     * @property {number|null} [page_size] ProjectListResponse page_size
+     * @property {number|null} [count] ProjectListResponse count
+     * @property {Array.<ProjectModel>|null} [data] ProjectListResponse data
+     */
+
+    /**
+     * Constructs a new ProjectListResponse.
+     * @exports ProjectListResponse
+     * @classdesc Represents a ProjectListResponse.
+     * @implements IProjectListResponse
+     * @constructor
+     * @param {IProjectListResponse=} [properties] Properties to set
+     */
+    function ProjectListResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectListResponse page.
+     * @member {number} page
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse page_size.
+     * @member {number} page_size
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse count.
+     * @member {number} count
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse data.
+     * @member {Array.<ProjectModel>} data
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectListResponse
+     * @static
+     * @param {ProjectListResponse} message ProjectListResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectListResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.count);
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.ProjectModel.encode(message.data[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectListResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectListResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectListResponse} ProjectListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectListResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectListResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                message.count = reader.int64();
+                break;
+            case 4:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.ProjectModel.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectListResponse;
 })();
 
 export const Project = $root.Project = (() => {
@@ -13318,35 +14915,101 @@ export const Project = $root.Project = (() => {
     (Project.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Project;
 
     /**
-     * Callback as used by {@link Project#destroy}.
+     * Callback as used by {@link Project#list}.
      * @memberof Project
-     * @typedef DestroyCallback
+     * @typedef ListCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {google.protobuf.Empty} [response] Empty
+     * @param {ProjectListResponse} [response] ProjectListResponse
      */
 
     /**
-     * Calls Destroy.
-     * @function destroy
+     * Calls List.
+     * @function list
      * @memberof Project
      * @instance
-     * @param {ProjectDestroyRequest} request ProjectDestroyRequest message or plain object
-     * @param {Project.DestroyCallback} callback Node-style callback called with the error, if any, and Empty
+     * @param {ProjectListRequest} request ProjectListRequest message or plain object
+     * @param {Project.ListCallback} callback Node-style callback called with the error, if any, and ProjectListResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Project.prototype.destroy = function destroy(request, callback) {
-        return this.rpcCall(destroy, $root.ProjectDestroyRequest, $root.google.protobuf.Empty, request, callback);
-    }, "name", { value: "Destroy" });
+    Object.defineProperty(Project.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.ProjectListRequest, $root.ProjectListResponse, request, callback);
+    }, "name", { value: "List" });
 
     /**
-     * Calls Destroy.
-     * @function destroy
+     * Calls List.
+     * @function list
      * @memberof Project
      * @instance
-     * @param {ProjectDestroyRequest} request ProjectDestroyRequest message or plain object
-     * @returns {Promise<google.protobuf.Empty>} Promise
+     * @param {ProjectListRequest} request ProjectListRequest message or plain object
+     * @returns {Promise<ProjectListResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Project#apply}.
+     * @memberof Project
+     * @typedef ApplyCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ProjectApplyResponse} [response] ProjectApplyResponse
+     */
+
+    /**
+     * Calls Apply.
+     * @function apply
+     * @memberof Project
+     * @instance
+     * @param {ProjectApplyRequest} request ProjectApplyRequest message or plain object
+     * @param {Project.ApplyCallback} callback Node-style callback called with the error, if any, and ProjectApplyResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype.apply = function apply(request, callback) {
+        return this.rpcCall(apply, $root.ProjectApplyRequest, $root.ProjectApplyResponse, request, callback);
+    }, "name", { value: "Apply" });
+
+    /**
+     * Calls Apply.
+     * @function apply
+     * @memberof Project
+     * @instance
+     * @param {ProjectApplyRequest} request ProjectApplyRequest message or plain object
+     * @returns {Promise<ProjectApplyResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Project#delete_}.
+     * @memberof Project
+     * @typedef DeleteCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ProjectDeleteResponse} [response] ProjectDeleteResponse
+     */
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof Project
+     * @instance
+     * @param {ProjectDeleteRequest} request ProjectDeleteRequest message or plain object
+     * @param {Project.DeleteCallback} callback Node-style callback called with the error, if any, and ProjectDeleteResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype["delete"] = function delete_(request, callback) {
+        return this.rpcCall(delete_, $root.ProjectDeleteRequest, $root.ProjectDeleteResponse, request, callback);
+    }, "name", { value: "Delete" });
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof Project
+     * @instance
+     * @param {ProjectDeleteRequest} request ProjectDeleteRequest message or plain object
+     * @returns {Promise<ProjectDeleteResponse>} Promise
      * @variation 2
      */
 
@@ -13389,7 +15052,7 @@ export const Project = $root.Project = (() => {
      * @typedef IsPodRunningCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {IsPodRunningResponse} [response] IsPodRunningResponse
+     * @param {ProjectIsPodRunningResponse} [response] ProjectIsPodRunningResponse
      */
 
     /**
@@ -13397,13 +15060,13 @@ export const Project = $root.Project = (() => {
      * @function isPodRunning
      * @memberof Project
      * @instance
-     * @param {IsPodRunningRequest} request IsPodRunningRequest message or plain object
-     * @param {Project.IsPodRunningCallback} callback Node-style callback called with the error, if any, and IsPodRunningResponse
+     * @param {ProjectIsPodRunningRequest} request ProjectIsPodRunningRequest message or plain object
+     * @param {Project.IsPodRunningCallback} callback Node-style callback called with the error, if any, and ProjectIsPodRunningResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Project.prototype.isPodRunning = function isPodRunning(request, callback) {
-        return this.rpcCall(isPodRunning, $root.IsPodRunningRequest, $root.IsPodRunningResponse, request, callback);
+        return this.rpcCall(isPodRunning, $root.ProjectIsPodRunningRequest, $root.ProjectIsPodRunningResponse, request, callback);
     }, "name", { value: "IsPodRunning" });
 
     /**
@@ -13411,8 +15074,8 @@ export const Project = $root.Project = (() => {
      * @function isPodRunning
      * @memberof Project
      * @instance
-     * @param {IsPodRunningRequest} request IsPodRunningRequest message or plain object
-     * @returns {Promise<IsPodRunningResponse>} Promise
+     * @param {ProjectIsPodRunningRequest} request ProjectIsPodRunningRequest message or plain object
+     * @returns {Promise<ProjectIsPodRunningResponse>} Promise
      * @variation 2
      */
 
@@ -13422,7 +15085,7 @@ export const Project = $root.Project = (() => {
      * @typedef AllPodContainersCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {AllPodContainersResponse} [response] AllPodContainersResponse
+     * @param {ProjectAllPodContainersResponse} [response] ProjectAllPodContainersResponse
      */
 
     /**
@@ -13430,13 +15093,13 @@ export const Project = $root.Project = (() => {
      * @function allPodContainers
      * @memberof Project
      * @instance
-     * @param {AllPodContainersRequest} request AllPodContainersRequest message or plain object
-     * @param {Project.AllPodContainersCallback} callback Node-style callback called with the error, if any, and AllPodContainersResponse
+     * @param {ProjectAllPodContainersRequest} request ProjectAllPodContainersRequest message or plain object
+     * @param {Project.AllPodContainersCallback} callback Node-style callback called with the error, if any, and ProjectAllPodContainersResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Project.prototype.allPodContainers = function allPodContainers(request, callback) {
-        return this.rpcCall(allPodContainers, $root.AllPodContainersRequest, $root.AllPodContainersResponse, request, callback);
+        return this.rpcCall(allPodContainers, $root.ProjectAllPodContainersRequest, $root.ProjectAllPodContainersResponse, request, callback);
     }, "name", { value: "AllPodContainers" });
 
     /**
@@ -13444,8 +15107,8 @@ export const Project = $root.Project = (() => {
      * @function allPodContainers
      * @memberof Project
      * @instance
-     * @param {AllPodContainersRequest} request AllPodContainersRequest message or plain object
-     * @returns {Promise<AllPodContainersResponse>} Promise
+     * @param {ProjectAllPodContainersRequest} request ProjectAllPodContainersRequest message or plain object
+     * @returns {Promise<ProjectAllPodContainersResponse>} Promise
      * @variation 2
      */
 
@@ -13455,7 +15118,7 @@ export const Project = $root.Project = (() => {
      * @typedef PodContainerLogCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {PodContainerLogResponse} [response] PodContainerLogResponse
+     * @param {ProjectPodContainerLogResponse} [response] ProjectPodContainerLogResponse
      */
 
     /**
@@ -13463,13 +15126,13 @@ export const Project = $root.Project = (() => {
      * @function podContainerLog
      * @memberof Project
      * @instance
-     * @param {PodContainerLogRequest} request PodContainerLogRequest message or plain object
-     * @param {Project.PodContainerLogCallback} callback Node-style callback called with the error, if any, and PodContainerLogResponse
+     * @param {ProjectPodContainerLogRequest} request ProjectPodContainerLogRequest message or plain object
+     * @param {Project.PodContainerLogCallback} callback Node-style callback called with the error, if any, and ProjectPodContainerLogResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Project.prototype.podContainerLog = function podContainerLog(request, callback) {
-        return this.rpcCall(podContainerLog, $root.PodContainerLogRequest, $root.PodContainerLogResponse, request, callback);
+        return this.rpcCall(podContainerLog, $root.ProjectPodContainerLogRequest, $root.ProjectPodContainerLogResponse, request, callback);
     }, "name", { value: "PodContainerLog" });
 
     /**
@@ -13477,8 +15140,8 @@ export const Project = $root.Project = (() => {
      * @function podContainerLog
      * @memberof Project
      * @instance
-     * @param {PodContainerLogRequest} request PodContainerLogRequest message or plain object
-     * @returns {Promise<PodContainerLogResponse>} Promise
+     * @param {ProjectPodContainerLogRequest} request ProjectPodContainerLogRequest message or plain object
+     * @returns {Promise<ProjectPodContainerLogResponse>} Promise
      * @variation 2
      */
 
@@ -13488,7 +15151,7 @@ export const Project = $root.Project = (() => {
      * @typedef StreamPodContainerLogCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {PodContainerLogResponse} [response] PodContainerLogResponse
+     * @param {ProjectPodContainerLogResponse} [response] ProjectPodContainerLogResponse
      */
 
     /**
@@ -13496,13 +15159,13 @@ export const Project = $root.Project = (() => {
      * @function streamPodContainerLog
      * @memberof Project
      * @instance
-     * @param {PodContainerLogRequest} request PodContainerLogRequest message or plain object
-     * @param {Project.StreamPodContainerLogCallback} callback Node-style callback called with the error, if any, and PodContainerLogResponse
+     * @param {ProjectPodContainerLogRequest} request ProjectPodContainerLogRequest message or plain object
+     * @param {Project.StreamPodContainerLogCallback} callback Node-style callback called with the error, if any, and ProjectPodContainerLogResponse
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(Project.prototype.streamPodContainerLog = function streamPodContainerLog(request, callback) {
-        return this.rpcCall(streamPodContainerLog, $root.PodContainerLogRequest, $root.PodContainerLogResponse, request, callback);
+        return this.rpcCall(streamPodContainerLog, $root.ProjectPodContainerLogRequest, $root.ProjectPodContainerLogResponse, request, callback);
     }, "name", { value: "StreamPodContainerLog" });
 
     /**
@@ -13510,8 +15173,8 @@ export const Project = $root.Project = (() => {
      * @function streamPodContainerLog
      * @memberof Project
      * @instance
-     * @param {PodContainerLogRequest} request PodContainerLogRequest message or plain object
-     * @returns {Promise<PodContainerLogResponse>} Promise
+     * @param {ProjectPodContainerLogRequest} request ProjectPodContainerLogRequest message or plain object
+     * @returns {Promise<ProjectPodContainerLogResponse>} Promise
      * @variation 2
      */
 
@@ -13739,6 +15402,73 @@ export const VersionResponse = $root.VersionResponse = (() => {
     return VersionResponse;
 })();
 
+export const VersionRequest = $root.VersionRequest = (() => {
+
+    /**
+     * Properties of a VersionRequest.
+     * @exports IVersionRequest
+     * @interface IVersionRequest
+     */
+
+    /**
+     * Constructs a new VersionRequest.
+     * @exports VersionRequest
+     * @classdesc Represents a VersionRequest.
+     * @implements IVersionRequest
+     * @constructor
+     * @param {IVersionRequest=} [properties] Properties to set
+     */
+    function VersionRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified VersionRequest message. Does not implicitly {@link VersionRequest.verify|verify} messages.
+     * @function encode
+     * @memberof VersionRequest
+     * @static
+     * @param {VersionRequest} message VersionRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    VersionRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a VersionRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof VersionRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {VersionRequest} VersionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    VersionRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.VersionRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return VersionRequest;
+})();
+
 export const Version = $root.Version = (() => {
 
     /**
@@ -13758,34 +15488,34 @@ export const Version = $root.Version = (() => {
     (Version.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Version;
 
     /**
-     * Callback as used by {@link Version#get}.
+     * Callback as used by {@link Version#version}.
      * @memberof Version
-     * @typedef GetCallback
+     * @typedef VersionCallback
      * @type {function}
      * @param {Error|null} error Error, if any
      * @param {VersionResponse} [response] VersionResponse
      */
 
     /**
-     * Calls Get.
-     * @function get
+     * Calls Version.
+     * @function version
      * @memberof Version
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
-     * @param {Version.GetCallback} callback Node-style callback called with the error, if any, and VersionResponse
+     * @param {VersionRequest} request VersionRequest message or plain object
+     * @param {Version.VersionCallback} callback Node-style callback called with the error, if any, and VersionResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(Version.prototype.get = function get(request, callback) {
-        return this.rpcCall(get, $root.google.protobuf.Empty, $root.VersionResponse, request, callback);
-    }, "name", { value: "Get" });
+    Object.defineProperty(Version.prototype.version = function version(request, callback) {
+        return this.rpcCall(version, $root.VersionRequest, $root.VersionResponse, request, callback);
+    }, "name", { value: "Version" });
 
     /**
-     * Calls Get.
-     * @function get
+     * Calls Version.
+     * @function version
      * @memberof Version
      * @instance
-     * @param {google.protobuf.Empty} request Empty message or plain object
+     * @param {VersionRequest} request VersionRequest message or plain object
      * @returns {Promise<VersionResponse>} Promise
      * @variation 2
      */
@@ -13806,10 +15536,11 @@ export const Version = $root.Version = (() => {
  * @property {number} ProcessPercent=6 ProcessPercent value
  * @property {number} ClusterInfoSync=7 ClusterInfoSync value
  * @property {number} InternalError=8 InternalError value
- * @property {number} HandleExecShell=9 HandleExecShell value
- * @property {number} HandleExecShellMsg=10 HandleExecShellMsg value
- * @property {number} HandleCloseShell=11 HandleCloseShell value
- * @property {number} HandleAuthorize=12 HandleAuthorize value
+ * @property {number} ApplyProject=9 ApplyProject value
+ * @property {number} HandleExecShell=50 HandleExecShell value
+ * @property {number} HandleExecShellMsg=51 HandleExecShellMsg value
+ * @property {number} HandleCloseShell=52 HandleCloseShell value
+ * @property {number} HandleAuthorize=53 HandleAuthorize value
  */
 export const Type = $root.Type = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -13822,10 +15553,11 @@ export const Type = $root.Type = (() => {
     values[valuesById[6] = "ProcessPercent"] = 6;
     values[valuesById[7] = "ClusterInfoSync"] = 7;
     values[valuesById[8] = "InternalError"] = 8;
-    values[valuesById[9] = "HandleExecShell"] = 9;
-    values[valuesById[10] = "HandleExecShellMsg"] = 10;
-    values[valuesById[11] = "HandleCloseShell"] = 11;
-    values[valuesById[12] = "HandleAuthorize"] = 12;
+    values[valuesById[9] = "ApplyProject"] = 9;
+    values[valuesById[50] = "HandleExecShell"] = 50;
+    values[valuesById[51] = "HandleExecShellMsg"] = 51;
+    values[valuesById[52] = "HandleCloseShell"] = 52;
+    values[valuesById[53] = "HandleAuthorize"] = 53;
     return values;
 })();
 
@@ -14837,31 +16569,31 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
     return UpdateProjectInput;
 })();
 
-export const ResponseMetadata = $root.ResponseMetadata = (() => {
+export const Metadata = $root.Metadata = (() => {
 
     /**
-     * Properties of a ResponseMetadata.
-     * @exports IResponseMetadata
-     * @interface IResponseMetadata
-     * @property {string|null} [id] ResponseMetadata id
-     * @property {string|null} [uid] ResponseMetadata uid
-     * @property {string|null} [slug] ResponseMetadata slug
-     * @property {Type|null} [type] ResponseMetadata type
-     * @property {boolean|null} [end] ResponseMetadata end
-     * @property {ResultType|null} [result] ResponseMetadata result
-     * @property {To|null} [to] ResponseMetadata to
-     * @property {string|null} [data] ResponseMetadata data
+     * Properties of a Metadata.
+     * @exports IMetadata
+     * @interface IMetadata
+     * @property {string|null} [id] Metadata id
+     * @property {string|null} [uid] Metadata uid
+     * @property {string|null} [slug] Metadata slug
+     * @property {Type|null} [type] Metadata type
+     * @property {boolean|null} [end] Metadata end
+     * @property {ResultType|null} [result] Metadata result
+     * @property {To|null} [to] Metadata to
+     * @property {string|null} [data] Metadata data
      */
 
     /**
-     * Constructs a new ResponseMetadata.
-     * @exports ResponseMetadata
-     * @classdesc Represents a ResponseMetadata.
-     * @implements IResponseMetadata
+     * Constructs a new Metadata.
+     * @exports Metadata
+     * @classdesc Represents a Metadata.
+     * @implements IMetadata
      * @constructor
-     * @param {IResponseMetadata=} [properties] Properties to set
+     * @param {IMetadata=} [properties] Properties to set
      */
-    function ResponseMetadata(properties) {
+    function Metadata(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -14869,79 +16601,79 @@ export const ResponseMetadata = $root.ResponseMetadata = (() => {
     }
 
     /**
-     * ResponseMetadata id.
+     * Metadata id.
      * @member {string} id
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.id = "";
+    Metadata.prototype.id = "";
 
     /**
-     * ResponseMetadata uid.
+     * Metadata uid.
      * @member {string} uid
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.uid = "";
+    Metadata.prototype.uid = "";
 
     /**
-     * ResponseMetadata slug.
+     * Metadata slug.
      * @member {string} slug
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.slug = "";
+    Metadata.prototype.slug = "";
 
     /**
-     * ResponseMetadata type.
+     * Metadata type.
      * @member {Type} type
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.type = 0;
+    Metadata.prototype.type = 0;
 
     /**
-     * ResponseMetadata end.
+     * Metadata end.
      * @member {boolean} end
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.end = false;
+    Metadata.prototype.end = false;
 
     /**
-     * ResponseMetadata result.
+     * Metadata result.
      * @member {ResultType} result
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.result = 0;
+    Metadata.prototype.result = 0;
 
     /**
-     * ResponseMetadata to.
+     * Metadata to.
      * @member {To} to
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.to = 0;
+    Metadata.prototype.to = 0;
 
     /**
-     * ResponseMetadata data.
+     * Metadata data.
      * @member {string} data
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @instance
      */
-    ResponseMetadata.prototype.data = "";
+    Metadata.prototype.data = "";
 
     /**
-     * Encodes the specified ResponseMetadata message. Does not implicitly {@link ResponseMetadata.verify|verify} messages.
+     * Encodes the specified Metadata message. Does not implicitly {@link Metadata.verify|verify} messages.
      * @function encode
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @static
-     * @param {ResponseMetadata} message ResponseMetadata message or plain object to encode
+     * @param {Metadata} message Metadata message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    ResponseMetadata.encode = function encode(message, writer) {
+    Metadata.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.id != null && Object.hasOwnProperty.call(message, "id"))
@@ -14964,20 +16696,20 @@ export const ResponseMetadata = $root.ResponseMetadata = (() => {
     };
 
     /**
-     * Decodes a ResponseMetadata message from the specified reader or buffer.
+     * Decodes a Metadata message from the specified reader or buffer.
      * @function decode
-     * @memberof ResponseMetadata
+     * @memberof Metadata
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {ResponseMetadata} ResponseMetadata
+     * @returns {Metadata} Metadata
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    ResponseMetadata.decode = function decode(reader, length) {
+    Metadata.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ResponseMetadata();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Metadata();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -15013,88 +16745,7 @@ export const ResponseMetadata = $root.ResponseMetadata = (() => {
         return message;
     };
 
-    return ResponseMetadata;
-})();
-
-export const WsResponseMetadata = $root.WsResponseMetadata = (() => {
-
-    /**
-     * Properties of a WsResponseMetadata.
-     * @exports IWsResponseMetadata
-     * @interface IWsResponseMetadata
-     * @property {ResponseMetadata|null} [metadata] WsResponseMetadata metadata
-     */
-
-    /**
-     * Constructs a new WsResponseMetadata.
-     * @exports WsResponseMetadata
-     * @classdesc Represents a WsResponseMetadata.
-     * @implements IWsResponseMetadata
-     * @constructor
-     * @param {IWsResponseMetadata=} [properties] Properties to set
-     */
-    function WsResponseMetadata(properties) {
-        if (properties)
-            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * WsResponseMetadata metadata.
-     * @member {ResponseMetadata|null|undefined} metadata
-     * @memberof WsResponseMetadata
-     * @instance
-     */
-    WsResponseMetadata.prototype.metadata = null;
-
-    /**
-     * Encodes the specified WsResponseMetadata message. Does not implicitly {@link WsResponseMetadata.verify|verify} messages.
-     * @function encode
-     * @memberof WsResponseMetadata
-     * @static
-     * @param {WsResponseMetadata} message WsResponseMetadata message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    WsResponseMetadata.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-            $root.ResponseMetadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Decodes a WsResponseMetadata message from the specified reader or buffer.
-     * @function decode
-     * @memberof WsResponseMetadata
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {WsResponseMetadata} WsResponseMetadata
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    WsResponseMetadata.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.WsResponseMetadata();
-        while (reader.pos < end) {
-            let tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.metadata = $root.ResponseMetadata.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    return WsResponseMetadata;
+    return Metadata;
 })();
 
 export const Container = $root.Container = (() => {
@@ -15206,13 +16857,94 @@ export const Container = $root.Container = (() => {
     return Container;
 })();
 
+export const WsMetadataResponse = $root.WsMetadataResponse = (() => {
+
+    /**
+     * Properties of a WsMetadataResponse.
+     * @exports IWsMetadataResponse
+     * @interface IWsMetadataResponse
+     * @property {Metadata|null} [metadata] WsMetadataResponse metadata
+     */
+
+    /**
+     * Constructs a new WsMetadataResponse.
+     * @exports WsMetadataResponse
+     * @classdesc Represents a WsMetadataResponse.
+     * @implements IWsMetadataResponse
+     * @constructor
+     * @param {IWsMetadataResponse=} [properties] Properties to set
+     */
+    function WsMetadataResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * WsMetadataResponse metadata.
+     * @member {Metadata|null|undefined} metadata
+     * @memberof WsMetadataResponse
+     * @instance
+     */
+    WsMetadataResponse.prototype.metadata = null;
+
+    /**
+     * Encodes the specified WsMetadataResponse message. Does not implicitly {@link WsMetadataResponse.verify|verify} messages.
+     * @function encode
+     * @memberof WsMetadataResponse
+     * @static
+     * @param {WsMetadataResponse} message WsMetadataResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WsMetadataResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+            $root.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a WsMetadataResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof WsMetadataResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {WsMetadataResponse} WsMetadataResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WsMetadataResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.WsMetadataResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.metadata = $root.Metadata.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return WsMetadataResponse;
+})();
+
 export const WsHandleShellResponse = $root.WsHandleShellResponse = (() => {
 
     /**
      * Properties of a WsHandleShellResponse.
      * @exports IWsHandleShellResponse
      * @interface IWsHandleShellResponse
-     * @property {ResponseMetadata|null} [metadata] WsHandleShellResponse metadata
+     * @property {Metadata|null} [metadata] WsHandleShellResponse metadata
      * @property {TerminalMessage|null} [terminal_message] WsHandleShellResponse terminal_message
      * @property {Container|null} [container] WsHandleShellResponse container
      */
@@ -15234,7 +16966,7 @@ export const WsHandleShellResponse = $root.WsHandleShellResponse = (() => {
 
     /**
      * WsHandleShellResponse metadata.
-     * @member {ResponseMetadata|null|undefined} metadata
+     * @member {Metadata|null|undefined} metadata
      * @memberof WsHandleShellResponse
      * @instance
      */
@@ -15269,7 +17001,7 @@ export const WsHandleShellResponse = $root.WsHandleShellResponse = (() => {
         if (!writer)
             writer = $Writer.create();
         if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-            $root.ResponseMetadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            $root.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         if (message.terminal_message != null && Object.hasOwnProperty.call(message, "terminal_message"))
             $root.TerminalMessage.encode(message.terminal_message, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         if (message.container != null && Object.hasOwnProperty.call(message, "container"))
@@ -15296,7 +17028,7 @@ export const WsHandleShellResponse = $root.WsHandleShellResponse = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.metadata = $root.ResponseMetadata.decode(reader, reader.uint32());
+                message.metadata = $root.Metadata.decode(reader, reader.uint32());
                 break;
             case 2:
                 message.terminal_message = $root.TerminalMessage.decode(reader, reader.uint32());
@@ -15321,7 +17053,7 @@ export const WsHandleClusterResponse = $root.WsHandleClusterResponse = (() => {
      * Properties of a WsHandleClusterResponse.
      * @exports IWsHandleClusterResponse
      * @interface IWsHandleClusterResponse
-     * @property {ResponseMetadata|null} [metadata] WsHandleClusterResponse metadata
+     * @property {Metadata|null} [metadata] WsHandleClusterResponse metadata
      * @property {ClusterInfoResponse|null} [info] WsHandleClusterResponse info
      */
 
@@ -15342,7 +17074,7 @@ export const WsHandleClusterResponse = $root.WsHandleClusterResponse = (() => {
 
     /**
      * WsHandleClusterResponse metadata.
-     * @member {ResponseMetadata|null|undefined} metadata
+     * @member {Metadata|null|undefined} metadata
      * @memberof WsHandleClusterResponse
      * @instance
      */
@@ -15369,7 +17101,7 @@ export const WsHandleClusterResponse = $root.WsHandleClusterResponse = (() => {
         if (!writer)
             writer = $Writer.create();
         if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
-            $root.ResponseMetadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            $root.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         if (message.info != null && Object.hasOwnProperty.call(message, "info"))
             $root.ClusterInfoResponse.encode(message.info, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
@@ -15394,7 +17126,7 @@ export const WsHandleClusterResponse = $root.WsHandleClusterResponse = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                message.metadata = $root.ResponseMetadata.decode(reader, reader.uint32());
+                message.metadata = $root.Metadata.decode(reader, reader.uint32());
                 break;
             case 2:
                 message.info = $root.ClusterInfoResponse.decode(reader, reader.uint32());

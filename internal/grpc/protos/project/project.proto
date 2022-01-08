@@ -1,18 +1,18 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "websocket/websocket.proto";
+import "model/model.proto";
+import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
+option go_package = "github.com/duc-cnzj/mars/client/project;project";
 
-message ProjectDestroyRequest {
-  int64 namespace_id = 1;
-  int64 project_id = 2;
+message ProjectDeleteRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectShowRequest {
-  int64 namespace_id = 1;
-  int64 project_id = 2;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message ProjectShowResponse {
@@ -40,79 +40,118 @@ message ProjectShowResponse {
   string override_values = 17;
   string created_at = 18;
   string updated_at = 19;
-  int64 updated_timestamp = 20;
+  string humanize_created_at = 20;
+  string humanize_updated_at = 21;
 }
 
-message AllPodContainersRequest {
-  int64 namespace_id = 1;
-  int64 project_id = 2;
+message ProjectAllPodContainersRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message PodLog {
-  string pod_name = 1;
-  string container_name = 2;
-  string log = 3;
-}
-
-message AllPodContainersResponse {
-  repeated PodLog data = 1;
-}
-
-message PodContainerLogRequest {
-  int64 namespace_id = 1;
-  int64 project_id = 2;
-  string pod = 3;
-  string container = 4;
-}
-
-message PodContainerLogResponse {
-    PodLog data = 1;
-}
-
-message IsPodRunningRequest {
+message ProjectPodLog {
   string namespace = 1;
-  string pod = 2;
+  string pod_name = 2;
+  string container_name = 3;
+  string log = 4;
 }
 
-message IsPodRunningResponse {
+message ProjectAllPodContainersResponse {
+  repeated ProjectPodLog data = 1;
+}
+
+message ProjectPodContainerLogRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string container = 3 [(validate.rules).string.min_bytes = 1];
+}
+
+message ProjectPodContainerLogResponse {
+  ProjectPodLog data = 1;
+}
+
+message ProjectIsPodRunningRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+}
+
+message ProjectIsPodRunningResponse {
   bool running = 1;
   string reason = 2;
 }
 
+message ProjectApplyResponse {
+  Metadata metadata = 1;
+  ProjectModel project = 2;
+}
+
+// ProjectApplyRequest same as ProjectInput
+message ProjectApplyRequest {
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
+  string name = 2 [(validate.rules).string.min_bytes = 1];
+  int64 gitlab_project_id = 3 [(validate.rules).int64.gt = 0];
+  string gitlab_branch = 4 [(validate.rules).string.min_bytes = 1];
+  string gitlab_commit = 5 [(validate.rules).string.min_bytes = 1];
+  string config = 6;
+  bool atomic = 7;
+  bool websocket_sync = 8;
+}
+
+message ProjectDeleteResponse {}
+
+message ProjectListRequest {
+  int64 page = 1 [(validate.rules).int64.gt = 0];
+  int64 page_size = 2 [(validate.rules).int64.gt = 0];
+}
+
+message ProjectListResponse {
+  int64 page = 1;
+  int64 page_size = 2;
+  int64 count = 3;
+  repeated ProjectModel data = 4;
+}
+
 service Project {
-  rpc Destroy(ProjectDestroyRequest) returns (google.protobuf.Empty) {
+  rpc List(ProjectListRequest) returns (ProjectListResponse) {
     option (google.api.http) = {
-      delete: "/api/namespaces/{namespace_id}/projects/{project_id}"
+      get: "/api/projects"
+    };
+  }
+
+  rpc Apply(ProjectApplyRequest) returns (stream ProjectApplyResponse);
+
+  rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/api/projects/{project_id}"
     };
   }
 
   rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/projects/{project_id}"
+      get: "/api/projects/{project_id}"
     };
   }
 
-  rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {
+  rpc IsPodRunning(ProjectIsPodRunningRequest) returns (ProjectIsPodRunningResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace}/pod/{pod}/status"
     };
   }
 
-  rpc AllPodContainers(AllPodContainersRequest) returns (AllPodContainersResponse) {
+  rpc AllPodContainers(ProjectAllPodContainersRequest) returns (ProjectAllPodContainersResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/projects/{project_id}/containers"
+      get: "/api/projects/{project_id}/containers"
     };
   }
 
-  rpc PodContainerLog(PodContainerLogRequest) returns (PodContainerLogResponse) {
+  rpc PodContainerLog(ProjectPodContainerLogRequest) returns (ProjectPodContainerLogResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/logs"
+      get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs"
     };
   }
 
-  rpc StreamPodContainerLog(PodContainerLogRequest) returns (stream PodContainerLogResponse) {
+  rpc StreamPodContainerLog(ProjectPodContainerLogRequest) returns (stream ProjectPodContainerLogResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"
+      get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"
     };
   }
 }

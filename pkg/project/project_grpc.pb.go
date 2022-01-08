@@ -8,7 +8,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,12 +19,14 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectClient interface {
-	Destroy(ctx context.Context, in *ProjectDestroyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error)
+	Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
+	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
 	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
-	IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error)
-	AllPodContainers(ctx context.Context, in *AllPodContainersRequest, opts ...grpc.CallOption) (*AllPodContainersResponse, error)
-	PodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (*PodContainerLogResponse, error)
-	StreamPodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error)
+	IsPodRunning(ctx context.Context, in *ProjectIsPodRunningRequest, opts ...grpc.CallOption) (*ProjectIsPodRunningResponse, error)
+	AllPodContainers(ctx context.Context, in *ProjectAllPodContainersRequest, opts ...grpc.CallOption) (*ProjectAllPodContainersResponse, error)
+	PodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (*ProjectPodContainerLogResponse, error)
+	StreamPodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error)
 }
 
 type projectClient struct {
@@ -36,9 +37,50 @@ func NewProjectClient(cc grpc.ClientConnInterface) ProjectClient {
 	return &projectClient{cc}
 }
 
-func (c *projectClient) Destroy(ctx context.Context, in *ProjectDestroyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/Project/Destroy", in, out, opts...)
+func (c *projectClient) List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error) {
+	out := new(ProjectListResponse)
+	err := c.cc.Invoke(ctx, "/Project/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectClient) Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[0], "/Project/Apply", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &projectApplyClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Project_ApplyClient interface {
+	Recv() (*ProjectApplyResponse, error)
+	grpc.ClientStream
+}
+
+type projectApplyClient struct {
+	grpc.ClientStream
+}
+
+func (x *projectApplyClient) Recv() (*ProjectApplyResponse, error) {
+	m := new(ProjectApplyResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *projectClient) Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error) {
+	out := new(ProjectDeleteResponse)
+	err := c.cc.Invoke(ctx, "/Project/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +96,8 @@ func (c *projectClient) Show(ctx context.Context, in *ProjectShowRequest, opts .
 	return out, nil
 }
 
-func (c *projectClient) IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error) {
-	out := new(IsPodRunningResponse)
+func (c *projectClient) IsPodRunning(ctx context.Context, in *ProjectIsPodRunningRequest, opts ...grpc.CallOption) (*ProjectIsPodRunningResponse, error) {
+	out := new(ProjectIsPodRunningResponse)
 	err := c.cc.Invoke(ctx, "/Project/IsPodRunning", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -63,8 +105,8 @@ func (c *projectClient) IsPodRunning(ctx context.Context, in *IsPodRunningReques
 	return out, nil
 }
 
-func (c *projectClient) AllPodContainers(ctx context.Context, in *AllPodContainersRequest, opts ...grpc.CallOption) (*AllPodContainersResponse, error) {
-	out := new(AllPodContainersResponse)
+func (c *projectClient) AllPodContainers(ctx context.Context, in *ProjectAllPodContainersRequest, opts ...grpc.CallOption) (*ProjectAllPodContainersResponse, error) {
+	out := new(ProjectAllPodContainersResponse)
 	err := c.cc.Invoke(ctx, "/Project/AllPodContainers", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -72,8 +114,8 @@ func (c *projectClient) AllPodContainers(ctx context.Context, in *AllPodContaine
 	return out, nil
 }
 
-func (c *projectClient) PodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (*PodContainerLogResponse, error) {
-	out := new(PodContainerLogResponse)
+func (c *projectClient) PodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (*ProjectPodContainerLogResponse, error) {
+	out := new(ProjectPodContainerLogResponse)
 	err := c.cc.Invoke(ctx, "/Project/PodContainerLog", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -81,8 +123,8 @@ func (c *projectClient) PodContainerLog(ctx context.Context, in *PodContainerLog
 	return out, nil
 }
 
-func (c *projectClient) StreamPodContainerLog(ctx context.Context, in *PodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[0], "/Project/StreamPodContainerLog", opts...)
+func (c *projectClient) StreamPodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[1], "/Project/StreamPodContainerLog", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +139,7 @@ func (c *projectClient) StreamPodContainerLog(ctx context.Context, in *PodContai
 }
 
 type Project_StreamPodContainerLogClient interface {
-	Recv() (*PodContainerLogResponse, error)
+	Recv() (*ProjectPodContainerLogResponse, error)
 	grpc.ClientStream
 }
 
@@ -105,8 +147,8 @@ type projectStreamPodContainerLogClient struct {
 	grpc.ClientStream
 }
 
-func (x *projectStreamPodContainerLogClient) Recv() (*PodContainerLogResponse, error) {
-	m := new(PodContainerLogResponse)
+func (x *projectStreamPodContainerLogClient) Recv() (*ProjectPodContainerLogResponse, error) {
+	m := new(ProjectPodContainerLogResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -117,12 +159,14 @@ func (x *projectStreamPodContainerLogClient) Recv() (*PodContainerLogResponse, e
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
 type ProjectServer interface {
-	Destroy(context.Context, *ProjectDestroyRequest) (*emptypb.Empty, error)
+	List(context.Context, *ProjectListRequest) (*ProjectListResponse, error)
+	Apply(*ProjectApplyRequest, Project_ApplyServer) error
+	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
 	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
-	IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error)
-	AllPodContainers(context.Context, *AllPodContainersRequest) (*AllPodContainersResponse, error)
-	PodContainerLog(context.Context, *PodContainerLogRequest) (*PodContainerLogResponse, error)
-	StreamPodContainerLog(*PodContainerLogRequest, Project_StreamPodContainerLogServer) error
+	IsPodRunning(context.Context, *ProjectIsPodRunningRequest) (*ProjectIsPodRunningResponse, error)
+	AllPodContainers(context.Context, *ProjectAllPodContainersRequest) (*ProjectAllPodContainersResponse, error)
+	PodContainerLog(context.Context, *ProjectPodContainerLogRequest) (*ProjectPodContainerLogResponse, error)
+	StreamPodContainerLog(*ProjectPodContainerLogRequest, Project_StreamPodContainerLogServer) error
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -130,22 +174,28 @@ type ProjectServer interface {
 type UnimplementedProjectServer struct {
 }
 
-func (UnimplementedProjectServer) Destroy(context.Context, *ProjectDestroyRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Destroy not implemented")
+func (UnimplementedProjectServer) List(context.Context, *ProjectListRequest) (*ProjectListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedProjectServer) Apply(*ProjectApplyRequest, Project_ApplyServer) error {
+	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedProjectServer) Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedProjectServer) Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
 }
-func (UnimplementedProjectServer) IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error) {
+func (UnimplementedProjectServer) IsPodRunning(context.Context, *ProjectIsPodRunningRequest) (*ProjectIsPodRunningResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsPodRunning not implemented")
 }
-func (UnimplementedProjectServer) AllPodContainers(context.Context, *AllPodContainersRequest) (*AllPodContainersResponse, error) {
+func (UnimplementedProjectServer) AllPodContainers(context.Context, *ProjectAllPodContainersRequest) (*ProjectAllPodContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllPodContainers not implemented")
 }
-func (UnimplementedProjectServer) PodContainerLog(context.Context, *PodContainerLogRequest) (*PodContainerLogResponse, error) {
+func (UnimplementedProjectServer) PodContainerLog(context.Context, *ProjectPodContainerLogRequest) (*ProjectPodContainerLogResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PodContainerLog not implemented")
 }
-func (UnimplementedProjectServer) StreamPodContainerLog(*PodContainerLogRequest, Project_StreamPodContainerLogServer) error {
+func (UnimplementedProjectServer) StreamPodContainerLog(*ProjectPodContainerLogRequest, Project_StreamPodContainerLogServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamPodContainerLog not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
@@ -161,20 +211,59 @@ func RegisterProjectServer(s grpc.ServiceRegistrar, srv ProjectServer) {
 	s.RegisterService(&Project_ServiceDesc, srv)
 }
 
-func _Project_Destroy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectDestroyRequest)
+func _Project_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProjectServer).Destroy(ctx, in)
+		return srv.(ProjectServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/Destroy",
+		FullMethod: "/Project/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).Destroy(ctx, req.(*ProjectDestroyRequest))
+		return srv.(ProjectServer).List(ctx, req.(*ProjectListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Project_Apply_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ProjectApplyRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ProjectServer).Apply(m, &projectApplyServer{stream})
+}
+
+type Project_ApplyServer interface {
+	Send(*ProjectApplyResponse) error
+	grpc.ServerStream
+}
+
+type projectApplyServer struct {
+	grpc.ServerStream
+}
+
+func (x *projectApplyServer) Send(m *ProjectApplyResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Project_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Project/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).Delete(ctx, req.(*ProjectDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -198,7 +287,7 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 }
 
 func _Project_IsPodRunning_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IsPodRunningRequest)
+	in := new(ProjectIsPodRunningRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -210,13 +299,13 @@ func _Project_IsPodRunning_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: "/Project/IsPodRunning",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).IsPodRunning(ctx, req.(*IsPodRunningRequest))
+		return srv.(ProjectServer).IsPodRunning(ctx, req.(*ProjectIsPodRunningRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_AllPodContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllPodContainersRequest)
+	in := new(ProjectAllPodContainersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -228,13 +317,13 @@ func _Project_AllPodContainers_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/Project/AllPodContainers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).AllPodContainers(ctx, req.(*AllPodContainersRequest))
+		return srv.(ProjectServer).AllPodContainers(ctx, req.(*ProjectAllPodContainersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_PodContainerLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PodContainerLogRequest)
+	in := new(ProjectPodContainerLogRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -246,13 +335,13 @@ func _Project_PodContainerLog_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/Project/PodContainerLog",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).PodContainerLog(ctx, req.(*PodContainerLogRequest))
+		return srv.(ProjectServer).PodContainerLog(ctx, req.(*ProjectPodContainerLogRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_StreamPodContainerLog_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(PodContainerLogRequest)
+	m := new(ProjectPodContainerLogRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -260,7 +349,7 @@ func _Project_StreamPodContainerLog_Handler(srv interface{}, stream grpc.ServerS
 }
 
 type Project_StreamPodContainerLogServer interface {
-	Send(*PodContainerLogResponse) error
+	Send(*ProjectPodContainerLogResponse) error
 	grpc.ServerStream
 }
 
@@ -268,7 +357,7 @@ type projectStreamPodContainerLogServer struct {
 	grpc.ServerStream
 }
 
-func (x *projectStreamPodContainerLogServer) Send(m *PodContainerLogResponse) error {
+func (x *projectStreamPodContainerLogServer) Send(m *ProjectPodContainerLogResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -280,8 +369,12 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ProjectServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Destroy",
-			Handler:    _Project_Destroy_Handler,
+			MethodName: "List",
+			Handler:    _Project_List_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Project_Delete_Handler,
 		},
 		{
 			MethodName: "Show",
@@ -301,6 +394,11 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Apply",
+			Handler:       _Project_Apply_Handler,
+			ServerStreams: true,
+		},
 		{
 			StreamName:    "StreamPodContainerLog",
 			Handler:       _Project_StreamPodContainerLog_Handler,

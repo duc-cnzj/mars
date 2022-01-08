@@ -1,0 +1,499 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "gitserver/gitserver.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "GitServer"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/gitserver/project_options": {
+      "get": {
+        "operationId": "GitServer_ProjectOptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectOptionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects": {
+      "get": {
+        "operationId": "GitServer_All",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitAllProjectsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/disable": {
+      "post": {
+        "operationId": "GitServer_DisableProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitDisableProjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GitDisableProjectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/enable": {
+      "post": {
+        "operationId": "GitServer_EnableProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitEnableProjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GitEnableProjectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branch_options": {
+      "get": {
+        "operationId": "GitServer_BranchOptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitBranchOptionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options": {
+      "get": {
+        "operationId": "GitServer_CommitOptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitCommitOptionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}": {
+      "get": {
+        "operationId": "GitServer_Commit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitCommitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "commit",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
+      "get": {
+        "operationId": "GitServer_PipelineInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitPipelineInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "commit",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    },
+    "/api/gitserver/projects/{project_id}/branches/{branch}/config_file": {
+      "get": {
+        "operationId": "GitServer_MarsConfigFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitConfigFileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitServer"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "GitAllProjectsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitProjectItem"
+          }
+        }
+      }
+    },
+    "GitBranchOptionsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitOption"
+          }
+        }
+      }
+    },
+    "GitCommitOptionsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitOption"
+          }
+        }
+      }
+    },
+    "GitCommitResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/GitOption"
+        }
+      }
+    },
+    "GitConfigFileResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "GitDisableProjectRequest": {
+      "type": "object",
+      "properties": {
+        "git_project_id": {
+          "type": "string"
+        }
+      }
+    },
+    "GitDisableProjectResponse": {
+      "type": "object"
+    },
+    "GitEnableProjectRequest": {
+      "type": "object",
+      "properties": {
+        "git_project_id": {
+          "type": "string"
+        }
+      }
+    },
+    "GitEnableProjectResponse": {
+      "type": "object"
+    },
+    "GitOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "isLeaf": {
+          "type": "boolean",
+          "title": "isLeaf 兼容 antd"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        }
+      }
+    },
+    "GitPipelineInfoResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "web_url": {
+          "type": "string"
+        }
+      }
+    },
+    "GitProjectItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "web_url": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "global_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "GitProjectOptionsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitOption"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

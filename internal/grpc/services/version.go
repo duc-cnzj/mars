@@ -3,17 +3,16 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/client/version"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/pkg/version"
 	marsVersion "github.com/duc-cnzj/mars/version"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type VersionService struct {
 	version.UnsafeVersionServer
 }
 
-func (*VersionService) Get(ctx context.Context, empty *emptypb.Empty) (*version.VersionResponse, error) {
+func (*VersionService) Version(ctx context.Context, request *version.VersionRequest) (*version.VersionResponse, error) {
 	vv := marsVersion.GetVersion()
 
 	return &version.VersionResponse{

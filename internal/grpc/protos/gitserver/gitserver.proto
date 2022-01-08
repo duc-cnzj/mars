@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/duc-cnzj/mars/client/gitserver;gitserver";
+
+message GitDestroyRequest {
+  string namespace_id = 1 [(validate.rules).string.min_bytes = 1];
+  string project_id = 2 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitEnableProjectRequest {
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitDisableProjectRequest {
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitProjectItem {
+  int64 id = 1;
+  string name = 2;
+  string path = 3;
+  string web_url = 4;
+  string avatar_url = 5;
+  string description = 6;
+  bool enabled = 7;
+  bool global_enabled = 8;
+}
+
+message GitAllProjectsResponse {
+  repeated GitProjectItem data = 1;
+}
+
+message GitOption {
+  string value = 1;
+  string label = 2;
+  string type = 3;
+  // isLeaf 兼容 antd
+  bool isLeaf = 4;
+  string projectId = 5;
+  string branch = 6;
+}
+
+message GitProjectOptionsResponse {
+  repeated GitOption data = 1;
+}
+
+message GitBranchOptionsRequest {
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  bool all = 2;
+}
+message GitBranchOptionsResponse {
+  repeated GitOption data = 1;
+}
+message GitCommitOptionsRequest {
+  string project_id = 1;
+  string branch = 2;
+}
+message GitCommitOptionsResponse {
+  repeated GitOption data = 1;
+}
+
+message GitCommitRequest {
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string commit = 3 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitCommitResponse {
+  GitOption data = 1;
+}
+
+message GitPipelineInfoRequest {
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string commit = 3 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitPipelineInfoResponse {
+  string status = 1;
+  string web_url = 2;
+}
+
+message GitConfigFileRequest {
+  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string branch = 2 [(validate.rules).string.min_bytes = 1];
+}
+
+message GitConfigFileResponse {
+  string data = 1;
+  string type = 2;
+}
+
+message GitEnableProjectResponse {}
+message GitDisableProjectResponse {}
+message GitAllProjectsRequest {}
+message GitProjectOptionsRequest {}
+
+service GitServer {
+  rpc EnableProject(GitEnableProjectRequest) returns (GitEnableProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/gitserver/projects/enable",
+      body: "*"
+    };
+  }
+
+  rpc DisableProject(GitDisableProjectRequest) returns (GitDisableProjectResponse) {
+    option (google.api.http) = {
+      post: "/api/gitserver/projects/disable",
+      body: "*"
+    };
+  }
+
+  rpc All(GitAllProjectsRequest) returns (GitAllProjectsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects",
+    };
+  }
+
+  rpc ProjectOptions(GitProjectOptionsRequest) returns (GitProjectOptionsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/project_options",
+    };
+  }
+
+  rpc BranchOptions(GitBranchOptionsRequest) returns (GitBranchOptionsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects/{project_id}/branch_options",
+    };
+  }
+
+  rpc CommitOptions(GitCommitOptionsRequest) returns (GitCommitOptionsResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options",
+    };
+  }
+
+  rpc Commit(GitCommitRequest) returns (GitCommitResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}",
+    };
+  }
+
+  rpc PipelineInfo(GitPipelineInfoRequest) returns (GitPipelineInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info",
+    };
+  }
+
+  rpc MarsConfigFile(GitConfigFileRequest) returns (GitConfigFileResponse) {
+    option (google.api.http) = {
+      get: "/api/gitserver/projects/{project_id}/branches/{branch}/config_file",
+    };
+  }
+}

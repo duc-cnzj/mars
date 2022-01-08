@@ -1,26 +1,27 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/changelog;changelog";
+option go_package = "github.com/duc-cnzj/mars/client/changelog;changelog";
 
-message ChangelogGetRequest {
-  int64 project_id = 1;
+message ChangelogShowRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   bool only_changed = 2;
 }
 
-message ChangelogGetResponse {
-  message Item {
-    int32 version = 1;
-    string config = 2;
-    string date = 3;
-    string username = 4;
-  }
-  repeated Item items = 1;
+message ChangelogShowItem {
+  int32 version = 1;
+  string config = 2;
+  string date = 3;
+  string username = 4;
+}
+message ChangelogShowResponse {
+  repeated ChangelogShowItem items = 1;
 }
 
 service Changelog {
-  rpc Get(ChangelogGetRequest) returns (ChangelogGetResponse) {
+  rpc Show(ChangelogShowRequest) returns (ChangelogShowResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/changelogs"
     };

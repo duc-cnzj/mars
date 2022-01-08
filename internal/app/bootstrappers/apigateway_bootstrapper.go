@@ -7,6 +7,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/duc-cnzj/mars/client/auth"
+	"github.com/duc-cnzj/mars/client/changelog"
+	"github.com/duc-cnzj/mars/client/cluster"
+	cp "github.com/duc-cnzj/mars/client/container_copy"
+	"github.com/duc-cnzj/mars/client/event"
+	"github.com/duc-cnzj/mars/client/gitserver"
+	"github.com/duc-cnzj/mars/client/mars"
+	rpcmetrics "github.com/duc-cnzj/mars/client/metrics"
+	"github.com/duc-cnzj/mars/client/namespace"
+	"github.com/duc-cnzj/mars/client/picture"
+	"github.com/duc-cnzj/mars/client/project"
+	"github.com/duc-cnzj/mars/client/version"
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -14,18 +26,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
-	"github.com/duc-cnzj/mars/pkg/auth"
-	"github.com/duc-cnzj/mars/pkg/changelog"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	"github.com/duc-cnzj/mars/pkg/cp"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/gitlab"
-	"github.com/duc-cnzj/mars/pkg/mars"
-	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
-	"github.com/duc-cnzj/mars/pkg/namespace"
-	"github.com/duc-cnzj/mars/pkg/picture"
-	"github.com/duc-cnzj/mars/pkg/project"
-	"github.com/duc-cnzj/mars/pkg/version"
 	"github.com/duc-cnzj/mars/third_party/doc/data"
 
 	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
@@ -40,7 +40,7 @@ import (
 type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&apiGateway{endpoint: grpcEndpoint})
+	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort)})
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 		t := time.NewTimer(5 * time.Second)
 		defer t.Stop()
@@ -89,12 +89,12 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
 		cluster.RegisterClusterHandlerFromEndpoint,
-		gitlab.RegisterGitlabHandlerFromEndpoint,
+		gitserver.RegisterGitServerHandlerFromEndpoint,
 		mars.RegisterMarsHandlerFromEndpoint,
 		project.RegisterProjectHandlerFromEndpoint,
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,
-		cp.RegisterCpHandlerFromEndpoint,
+		cp.RegisterContainerCopyHandlerFromEndpoint,
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 		version.RegisterVersionHandlerFromEndpoint,
 		changelog.RegisterChangelogHandlerFromEndpoint,

@@ -6,18 +6,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/duc-cnzj/mars/client/event"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
 )
 
 type EventSvc struct {
 	event.UnsafeEventServer
 }
 
-func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*event.EventList, error) {
+func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*event.EventListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -42,7 +42,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventRequest) (*even
 		})
 	}
 
-	return &event.EventList{
+	return &event.EventListResponse{
 		Page:     int64(page),
 		PageSize: int64(pageSize),
 		Items:    res,

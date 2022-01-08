@@ -2,6 +2,10 @@
  * NOTE: This is not compiled.
  */
 
+.ant-design-draggable-modal-body-overflow {
+  overflow: auto !important;
+}
+
 .ant-design-draggable-modal {
     pointer-events: none;
     overflow: hidden !important;

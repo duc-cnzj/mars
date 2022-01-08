@@ -1,10 +1,9 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/version;version";
+option go_package = "github.com/duc-cnzj/mars/client/version;version";
 
 message VersionResponse {
   string Version = 1;
@@ -20,8 +19,9 @@ message VersionResponse {
   string GitRepo = 11;
 }
 
+message VersionRequest{}
 service Version {
-  rpc Get(google.protobuf.Empty) returns (VersionResponse) {
+  rpc Version(VersionRequest) returns (VersionResponse) {
     option (google.api.http) = {
       get: "/api/version"
     };

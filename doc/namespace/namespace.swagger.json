@@ -18,12 +18,12 @@
   "paths": {
     "/api/namespaces": {
       "get": {
-        "operationId": "Namespace_Index",
+        "operationId": "Namespace_All",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceList"
+              "$ref": "#/definitions/NamespaceAllResponse"
             }
           },
           "default": {
@@ -38,12 +38,12 @@
         ]
       },
       "post": {
-        "operationId": "Namespace_Store",
+        "operationId": "Namespace_Create",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NsStoreResponse"
+              "$ref": "#/definitions/NamespaceCreateResponse"
             }
           },
           "default": {
@@ -59,7 +59,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NsStoreRequest"
+              "$ref": "#/definitions/NamespaceCreateRequest"
             }
           }
         ],
@@ -68,14 +68,65 @@
         ]
       }
     },
-    "/api/namespaces/{namespace_id}": {
-      "delete": {
-        "operationId": "Namespace_Destroy",
+    "/api/namespaces/exists": {
+      "post": {
+        "operationId": "Namespace_IsExists",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "properties": {}
+              "$ref": "#/definitions/NamespaceIsExistsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Namespace"
+        ]
+      }
+    },
+    "/api/namespaces/{namespace_id}": {
+      "get": {
+        "operationId": "Namespace_Show",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NamespaceShowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Namespace"
+        ]
+      },
+      "delete": {
+        "operationId": "Namespace_Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NamespaceDeleteResponse"
             }
           },
           "default": {
@@ -99,14 +150,14 @@
         ]
       }
     },
-    "/api/namespaces/{namespace_id}/cpu_and_memory": {
+    "/api/namespaces/{namespace_id}/cpu_memory": {
       "get": {
-        "operationId": "Namespace_CpuAndMemory",
+        "operationId": "Namespace_CpuMemory",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/CpuAndMemoryResponse"
+              "$ref": "#/definitions/NamespaceCpuMemoryResponse"
             }
           },
           "default": {
@@ -137,7 +188,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ServiceEndpointsResponse"
+              "$ref": "#/definitions/NamespaceServiceEndpointsResponse"
             }
           },
           "default": {
@@ -169,59 +220,7 @@
     }
   },
   "definitions": {
-    "CpuAndMemoryResponse": {
-      "type": "object",
-      "properties": {
-        "cpu": {
-          "type": "string"
-        },
-        "memory": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceItem": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updated_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceItemSimpleProjectItem"
-          }
-        }
-      }
-    },
-    "NamespaceItemSimpleProjectItem": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceList": {
+    "NamespaceAllResponse": {
       "type": "object",
       "properties": {
         "data": {
@@ -232,7 +231,26 @@
         }
       }
     },
-    "NamespaceResponse": {
+    "NamespaceCpuMemoryResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      }
+    },
+    "NamespaceCreateRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "NamespaceCreateResponse": {
       "type": "object",
       "properties": {
         "id": {
@@ -249,47 +267,94 @@
           }
         },
         "created_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "updated_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "deleted_at": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
-    "NsStoreRequest": {
-      "type": "object",
-      "properties": {
-        "namespace": {
           "type": "string"
         }
       }
     },
-    "NsStoreResponse": {
+    "NamespaceDeleteResponse": {
+      "type": "object"
+    },
+    "NamespaceIsExistsResponse": {
       "type": "object",
       "properties": {
-        "data": {
-          "$ref": "#/definitions/NamespaceResponse"
+        "exists": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
-    "ServiceEndpointsResponse": {
+    "NamespaceItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NamespaceSimpleProject"
+          }
+        }
+      }
+    },
+    "NamespaceModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "image_pull_secrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectModel"
+          }
+        }
+      }
+    },
+    "NamespaceServiceEndpointsResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ServiceEndpointsResponseitem"
+            "$ref": "#/definitions/NamespaceServiceEndpointsResponseitem"
           }
         }
       }
     },
-    "ServiceEndpointsResponseitem": {
+    "NamespaceServiceEndpointsResponseitem": {
       "type": "object",
       "properties": {
         "name": {
@@ -300,6 +365,101 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "NamespaceShowResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "image_pull_secrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectModel"
+          }
+        }
+      }
+    },
+    "NamespaceSimpleProject": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "ProjectModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "gitlab_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gitlab_branch": {
+          "type": "string"
+        },
+        "gitlab_commit": {
+          "type": "string"
+        },
+        "config": {
+          "type": "string"
+        },
+        "override_values": {
+          "type": "string"
+        },
+        "docker_image": {
+          "type": "string"
+        },
+        "pod_selectors": {
+          "type": "string"
+        },
+        "namespace_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "atomic": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "namespace": {
+          "$ref": "#/definitions/NamespaceModel"
         }
       }
     },

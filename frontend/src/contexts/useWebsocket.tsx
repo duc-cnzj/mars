@@ -70,7 +70,7 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
       console.log("ws closed");
     };
     conn.onmessage = function (evt) {
-      let data: pb.WsResponseMetadata = pb.WsResponseMetadata.decode(new Uint8Array(evt.data))
+      let data: pb.WsMetadataResponse = pb.WsMetadataResponse.decode(new Uint8Array(evt.data))
       data.metadata && dispatch(handleEvents(data.metadata.slug, data.metadata, new Uint8Array(evt.data)));
     };
   }, [dispatch]);

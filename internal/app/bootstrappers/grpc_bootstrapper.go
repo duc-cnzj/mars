@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"runtime"
+	"time"
 
+	"github.com/duc-cnzj/mars/internal/validator"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -13,40 +16,29 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/duc-cnzj/mars/client/auth"
+	"github.com/duc-cnzj/mars/client/changelog"
+	"github.com/duc-cnzj/mars/client/cluster"
+	"github.com/duc-cnzj/mars/client/container_copy"
+	"github.com/duc-cnzj/mars/client/event"
+	"github.com/duc-cnzj/mars/client/gitserver"
+	"github.com/duc-cnzj/mars/client/mars"
+	rpcmetrics "github.com/duc-cnzj/mars/client/metrics"
+	"github.com/duc-cnzj/mars/client/namespace"
+	"github.com/duc-cnzj/mars/client/picture"
+	"github.com/duc-cnzj/mars/client/project"
+	"github.com/duc-cnzj/mars/client/version"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	marsauth "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/auth"
-	"github.com/duc-cnzj/mars/pkg/changelog"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	"github.com/duc-cnzj/mars/pkg/cp"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/gitlab"
-	"github.com/duc-cnzj/mars/pkg/mars"
-	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
-	"github.com/duc-cnzj/mars/pkg/namespace"
-	"github.com/duc-cnzj/mars/pkg/picture"
-	"github.com/duc-cnzj/mars/pkg/project"
-	"github.com/duc-cnzj/mars/pkg/version"
 )
-
-var grpcEndpoint string
-
-func init() {
-	port, err := utils.GetFreePort()
-	if err != nil {
-		panic("There are no free ports for grpc server")
-	}
-	grpcEndpoint = fmt.Sprintf("localhost:%d", port)
-}
 
 type GrpcBootstrapper struct{}
 
 func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&grpcRunner{endpoint: grpcEndpoint})
+	app.AddServer(&grpcRunner{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort)})
 
 	return nil
 }
@@ -89,10 +81,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 				return nil
 			})),
 			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-				user, err := marsauth.GetUser(ctx)
-				if err == nil {
-					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
-				}
+				defer func(t time.Time) {
+					user, err := marsauth.GetUser(ctx)
+					if err == nil {
+						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
+					}
+				}(time.Now())
 
 				return handler(srv, ss)
 			},
@@ -101,17 +95,22 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			grpc_opentracing.UnaryServerInterceptor(traceWithOpName()),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
+			validator.UnaryServerInterceptor(),
 			marsauth.UnaryServerInterceptor(),
 			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-				user, err := marsauth.GetUser(ctx)
-				if err == nil {
-					mlog.Infof("[Grpc]: user: %v, visit: %v.", user.Name, info.FullMethod)
-				}
+				defer func(t time.Time) {
+					user, err := marsauth.GetUser(ctx)
+					if err == nil {
+						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
+					}
+				}(time.Now())
 
 				return handler(ctx, req)
 			},
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-				mlog.Error("[Grpc]: recovery error: ", p)
+				bf := make([]byte, 1024*5)
+				runtime.Stack(bf, false)
+				mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 				return nil
 			})),
 			grpc_prometheus.UnaryServerInterceptor,
@@ -121,12 +120,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	grpc_prometheus.Register(server)
 
 	cluster.RegisterClusterServer(server, new(services.Cluster))
-	gitlab.RegisterGitlabServer(server, new(services.Gitlab))
+	gitserver.RegisterGitServerServer(server, new(services.GitServer))
 	mars.RegisterMarsServer(server, new(services.Mars))
 	namespace.RegisterNamespaceServer(server, new(services.Namespace))
 	project.RegisterProjectServer(server, new(services.Project))
 	picture.RegisterPictureServer(server, new(services.Picture))
-	cp.RegisterCpServer(server, new(services.CopyToPod))
+	container_copy.RegisterContainerCopyServer(server, new(services.ContainerCopy))
 	auth.RegisterAuthServer(server, services.NewAuth(app.Auth(), app.Oidc(), app.Config().AdminPassword))
 	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
 	version.RegisterVersionServer(server, new(services.VersionService))

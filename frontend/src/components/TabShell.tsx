@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { containerList, isPodRunning } from "../api/project";
+import { allPodContainers, isPodRunning } from "../api/project";
 import { message, Radio, Tag, Upload, Button } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -26,7 +26,7 @@ const TabShell: React.FC<{
   resizeAt: number;
   updatedAt: any;
 }> = ({ detail, resizeAt, updatedAt }) => {
-  const [list, setList] = useState<pb.PodLog[]>([]);
+  const [list, setList] = useState<pb.ProjectPodLog[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
@@ -45,14 +45,13 @@ const TabShell: React.FC<{
 
   const listContainer = useCallback(
     () =>
-      containerList({
-        namespace_id: detail.namespace?.id || 0,
+    allPodContainers({
         project_id: detail.id,
       }).then((res) => {
         setList(res.data.data);
         return res;
       }),
-    [detail.id, detail.namespace?.id]
+    [detail.id]
   );
 
   const sendMsg = useCallback(

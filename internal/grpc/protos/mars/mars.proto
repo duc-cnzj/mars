@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/mars";
+option go_package = "github.com/duc-cnzj/mars/client/mars";
 
-message Config {
+message MarsConfig {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
   string config_file = 1;
   // config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
@@ -23,46 +23,47 @@ message Config {
 }
 
 message MarsShowRequest {
-  int64 project_id = 1;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
 message MarsShowResponse {
   string branch = 1;
-  Config config = 2;
+  MarsConfig config = 2;
 }
 
-message GlobalConfigRequest {
-  int64 project_id = 1;
+message MarsGlobalConfigRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message GlobalConfigResponse {
+message MarsGlobalConfigResponse {
   bool enabled = 1;
-  Config config = 2;
+  MarsConfig config = 2;
 }
 
 message MarsUpdateRequest {
-  int64 project_id = 1;
-  Config config = 2;
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  MarsConfig config = 2;
 }
 
 message MarsUpdateResponse {
-  Config config = 1;
+  MarsConfig config = 1;
 }
 
-message ToggleEnabledRequest {
-  int64 project_id = 1;
+message MarsToggleEnabledRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   bool enabled = 2;
 }
 
-message DefaultChartValuesRequest {
-  int64 project_id = 1;
+message MarsDefaultChartValuesRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
-message DefaultChartValues {
+message MarsDefaultChartValuesResponse {
   string value = 1;
 }
+message MarsToggleEnabledResponse {}
 
 service Mars {
   rpc Show(MarsShowRequest) returns (MarsShowResponse) {
@@ -71,13 +72,13 @@ service Mars {
     };
   }
 
-  rpc GlobalConfig(GlobalConfigRequest) returns (GlobalConfigResponse) {
+  rpc GlobalConfig(MarsGlobalConfigRequest) returns (MarsGlobalConfigResponse) {
     option (google.api.http) = {
       get: "/api/gitlab/projects/{project_id}/global_config"
     };
   }
 
-  rpc ToggleEnabled(ToggleEnabledRequest) returns (google.protobuf.Empty) {
+  rpc ToggleEnabled(MarsToggleEnabledRequest) returns (MarsToggleEnabledResponse) {
     option (google.api.http) = {
       post: "/api/gitlab/projects/{project_id}/toggle_enabled",
       body: "*"
@@ -91,7 +92,7 @@ service Mars {
     };
   }
 
-  rpc GetDefaultChartValues(DefaultChartValuesRequest) returns (DefaultChartValues) {
+  rpc GetDefaultChartValues(MarsDefaultChartValuesRequest) returns (MarsDefaultChartValuesResponse) {
     option (google.api.http) = {
       get: "/api/gitlab/projects/{project_id}/default_values",
     };

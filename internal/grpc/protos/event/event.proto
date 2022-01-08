@@ -1,13 +1,9 @@
 syntax = "proto3";
 
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/event;event";
-
-message EventRequest {
-  int64 page = 1;
-  int64 page_size = 2;
-}
+option go_package = "github.com/duc-cnzj/mars/client/event;event";
 
 enum ActionType {
   Unknown = 0;
@@ -16,24 +12,29 @@ enum ActionType {
   Delete = 3;
 }
 
-message EventList {
-  message item {
-    int64 id = 1;
-    ActionType action = 2;
-    string username = 3;
-    string message = 4;
-    string old = 5;
-    string new = 6;
-    string event_at = 7;
-  }
+message EventListRequest {
+  int64 page = 1 [(validate.rules).int64.gte = 1];
+  int64 page_size = 2 [(validate.rules).int64.gte = 1];
+}
+
+message EventListItem {
+  int64 id = 1;
+  ActionType action = 2;
+  string username = 3;
+  string message = 4;
+  string old = 5;
+  string new = 6;
+  string event_at = 7;
+}
+message EventListResponse {
   int64 page = 1;
   int64 page_size = 2;
-  repeated item items = 3;
+  repeated EventListItem items = 3;
   int64 count = 4;
 }
 
 service Event {
-  rpc List(EventRequest) returns (EventList) {
+  rpc List(EventListRequest) returns (EventListResponse) {
     option (google.api.http) = {
       get: "/api/events"
     };

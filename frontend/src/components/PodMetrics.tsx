@@ -69,7 +69,7 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
       console.log(e);
     }, []);
     let { close } = useStream(
-      `${process.env.REACT_APP_BASE_URL}/api/metrics/namespace/${namespace}/pods/${pod}?time=${timestamp}`,
+      `${process.env.REACT_APP_BASE_URL}/api/metrics/namespace/${namespace}/pods/${pod}/stream?time=${timestamp}`,
       {
         onNext,
         onError,

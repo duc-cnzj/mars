@@ -98,7 +98,7 @@ func (p *memoryPubSub) ID() string {
 	return p.id
 }
 
-func (p *memoryPubSub) ToSelf(wsResponse proto.Message) error {
+func (p *memoryPubSub) ToSelf(wsResponse plugins.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)
@@ -110,7 +110,7 @@ func (p *memoryPubSub) ToSelf(wsResponse proto.Message) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToAll(wsResponse proto.Message) error {
+func (p *memoryPubSub) ToAll(wsResponse plugins.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)
@@ -123,7 +123,7 @@ func (p *memoryPubSub) ToAll(wsResponse proto.Message) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToOthers(wsResponse proto.Message) error {
+func (p *memoryPubSub) ToOthers(wsResponse plugins.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)

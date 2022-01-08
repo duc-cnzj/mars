@@ -2,25 +2,27 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/duc-cnzj/mars/client/event"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/dustin/go-humanize"
 
+	cp "github.com/duc-cnzj/mars/client/container_copy"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/cp"
 )
 
-type CopyToPod struct {
-	cp.UnimplementedCpServer
+type ContainerCopy struct {
+	cp.UnimplementedContainerCopyServer
 }
 
-func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest) (*cp.CopyToPodResponse, error) {
+func (c *ContainerCopy) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest) (*cp.CopyToPodResponse, error) {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
-		return nil, errors.New(reason)
+		return nil, status.Error(codes.NotFound, reason)
 	}
 
 	var file models.File
@@ -29,7 +31,7 @@ func (c *CopyToPod) CopyToPod(ctx context.Context, request *cp.CopyToPodRequest)
 	}
 	res, err := utils.CopyFileToPod(request.Namespace, request.Pod, request.Container, file.Path, "")
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	app.DB().Model(&file).Updates(map[string]interface{}{

@@ -19,7 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	ProjectByID(ctx context.Context, in *ProjectByIDRequest, opts ...grpc.CallOption) (Metrics_ProjectByIDClient, error)
+	Show(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (*MetricsShowResponse, error)
+	StreamShow(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (Metrics_StreamShowClient, error)
 }
 
 type metricsClient struct {
@@ -30,12 +31,21 @@ func NewMetricsClient(cc grpc.ClientConnInterface) MetricsClient {
 	return &metricsClient{cc}
 }
 
-func (c *metricsClient) ProjectByID(ctx context.Context, in *ProjectByIDRequest, opts ...grpc.CallOption) (Metrics_ProjectByIDClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Metrics_ServiceDesc.Streams[0], "/Metrics/ProjectByID", opts...)
+func (c *metricsClient) Show(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (*MetricsShowResponse, error) {
+	out := new(MetricsShowResponse)
+	err := c.cc.Invoke(ctx, "/Metrics/Show", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &metricsProjectByIDClient{stream}
+	return out, nil
+}
+
+func (c *metricsClient) StreamShow(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (Metrics_StreamShowClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Metrics_ServiceDesc.Streams[0], "/Metrics/StreamShow", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metricsStreamShowClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -45,17 +55,17 @@ func (c *metricsClient) ProjectByID(ctx context.Context, in *ProjectByIDRequest,
 	return x, nil
 }
 
-type Metrics_ProjectByIDClient interface {
-	Recv() (*ProjectByIDResponse, error)
+type Metrics_StreamShowClient interface {
+	Recv() (*MetricsShowResponse, error)
 	grpc.ClientStream
 }
 
-type metricsProjectByIDClient struct {
+type metricsStreamShowClient struct {
 	grpc.ClientStream
 }
 
-func (x *metricsProjectByIDClient) Recv() (*ProjectByIDResponse, error) {
-	m := new(ProjectByIDResponse)
+func (x *metricsStreamShowClient) Recv() (*MetricsShowResponse, error) {
+	m := new(MetricsShowResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -66,7 +76,8 @@ func (x *metricsProjectByIDClient) Recv() (*ProjectByIDResponse, error) {
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	ProjectByID(*ProjectByIDRequest, Metrics_ProjectByIDServer) error
+	Show(context.Context, *MetricsShowRequest) (*MetricsShowResponse, error)
+	StreamShow(*MetricsShowRequest, Metrics_StreamShowServer) error
 	mustEmbedUnimplementedMetricsServer()
 }
 
@@ -74,8 +85,11 @@ type MetricsServer interface {
 type UnimplementedMetricsServer struct {
 }
 
-func (UnimplementedMetricsServer) ProjectByID(*ProjectByIDRequest, Metrics_ProjectByIDServer) error {
-	return status.Errorf(codes.Unimplemented, "method ProjectByID not implemented")
+func (UnimplementedMetricsServer) Show(context.Context, *MetricsShowRequest) (*MetricsShowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+}
+func (UnimplementedMetricsServer) StreamShow(*MetricsShowRequest, Metrics_StreamShowServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamShow not implemented")
 }
 func (UnimplementedMetricsServer) mustEmbedUnimplementedMetricsServer() {}
 
@@ -90,24 +104,42 @@ func RegisterMetricsServer(s grpc.ServiceRegistrar, srv MetricsServer) {
 	s.RegisterService(&Metrics_ServiceDesc, srv)
 }
 
-func _Metrics_ProjectByID_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ProjectByIDRequest)
+func _Metrics_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsShowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricsServer).Show(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Metrics/Show",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricsServer).Show(ctx, req.(*MetricsShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Metrics_StreamShow_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MetricsShowRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(MetricsServer).ProjectByID(m, &metricsProjectByIDServer{stream})
+	return srv.(MetricsServer).StreamShow(m, &metricsStreamShowServer{stream})
 }
 
-type Metrics_ProjectByIDServer interface {
-	Send(*ProjectByIDResponse) error
+type Metrics_StreamShowServer interface {
+	Send(*MetricsShowResponse) error
 	grpc.ServerStream
 }
 
-type metricsProjectByIDServer struct {
+type metricsStreamShowServer struct {
 	grpc.ServerStream
 }
 
-func (x *metricsProjectByIDServer) Send(m *ProjectByIDResponse) error {
+func (x *metricsStreamShowServer) Send(m *MetricsShowResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -117,11 +149,16 @@ func (x *metricsProjectByIDServer) Send(m *ProjectByIDResponse) error {
 var Metrics_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Metrics",
 	HandlerType: (*MetricsServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Show",
+			Handler:    _Metrics_Show_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ProjectByID",
-			Handler:       _Metrics_ProjectByID_Handler,
+			StreamName:    "StreamShow",
+			Handler:       _Metrics_StreamShow_Handler,
 			ServerStreams: true,
 		},
 	},

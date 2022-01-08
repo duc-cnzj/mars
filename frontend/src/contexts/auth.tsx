@@ -31,8 +31,8 @@ function ProvideAuth({ children }: { children: any }) {
 
 function useAuth(): {
   login: (username: string, password: string, cb: () => void) => {};
-  user: pb.InfoResponse;
-  setUser: (u: pb.InfoResponse) => void;
+  user: pb.AuthInfoResponse;
+  setUser: (u: pb.AuthInfoResponse) => void;
   logout: (cb: () => void) => {};
   isAdmin: () => boolean;
 } {
@@ -40,7 +40,7 @@ function useAuth(): {
 }
 
 function useProvideAuth() {
-  const [user, setUser] = useState<pb.InfoResponse>();
+  const [user, setUser] = useState<pb.AuthInfoResponse>();
 
   const h = useHistory();
   useEffect(() => {

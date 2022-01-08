@@ -5,17 +5,17 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/duc-cnzj/mars/client/changelog"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/changelog"
 )
 
 type Changelog struct {
 	changelog.UnimplementedChangelogServer
 }
 
-func (c *Changelog) Get(ctx context.Context, request *changelog.ChangelogGetRequest) (*changelog.ChangelogGetResponse, error) {
+func (c *Changelog) Show(ctx context.Context, request *changelog.ChangelogShowRequest) (*changelog.ChangelogShowResponse, error) {
 	var logs []models.Changelog
 	err := app.DB().
 		Scopes(func(db *gorm.DB) *gorm.DB {
@@ -31,9 +31,9 @@ func (c *Changelog) Get(ctx context.Context, request *changelog.ChangelogGetRequ
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*changelog.ChangelogGetResponse_Item, 0, len(logs))
+	items := make([]*changelog.ChangelogShowItem, 0, len(logs))
 	for _, log := range logs {
-		items = append(items, &changelog.ChangelogGetResponse_Item{
+		items = append(items, &changelog.ChangelogShowItem{
 			Version:  int32(log.Version),
 			Config:   log.Config,
 			Date:     utils.ToHumanizeDatetimeString(&log.CreatedAt),
@@ -41,5 +41,5 @@ func (c *Changelog) Get(ctx context.Context, request *changelog.ChangelogGetRequ
 		})
 	}
 
-	return &changelog.ChangelogGetResponse{Items: items}, nil
+	return &changelog.ChangelogShowResponse{Items: items}, nil
 }

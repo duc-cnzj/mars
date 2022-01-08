@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EventList"
+              "$ref": "#/definitions/EventListResponse"
             }
           },
           "default": {
@@ -66,30 +66,7 @@
       ],
       "default": "Unknown"
     },
-    "EventList": {
-      "type": "object",
-      "properties": {
-        "page": {
-          "type": "string",
-          "format": "int64"
-        },
-        "page_size": {
-          "type": "string",
-          "format": "int64"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/EventListitem"
-          }
-        },
-        "count": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "EventListitem": {
+    "EventListItem": {
       "type": "object",
       "properties": {
         "id": {
@@ -113,6 +90,29 @@
         },
         "event_at": {
           "type": "string"
+        }
+      }
+    },
+    "EventListResponse": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventListItem"
+          }
+        },
+        "count": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

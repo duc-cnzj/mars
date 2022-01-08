@@ -18,7 +18,7 @@
   "paths": {
     "/api/cluster_info": {
       "get": {
-        "operationId": "Cluster_Info",
+        "operationId": "Cluster_ClusterInfo",
         "responses": {
           "200": {
             "description": "A successful response.",

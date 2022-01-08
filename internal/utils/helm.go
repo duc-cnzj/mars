@@ -227,6 +227,59 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 	}
 }
 
+type ListReleaseItem struct {
+	Release *release.Release
+	Status  string
+}
+
+type ReleaseList map[string]ListReleaseItem
+
+func (l ReleaseList) GetStatus(namespace, name string) string {
+	if item, ok := l[fmt.Sprintf("%s-%s", namespace, name)]; ok {
+		return item.Status
+	}
+	return StatusUnknown
+}
+
+func (l ReleaseList) Add(r *release.Release) {
+	fn := func(run *release.Release) string {
+		switch run.Info.Status {
+		case release.StatusPendingUpgrade, release.StatusPendingRollback, release.StatusPendingInstall:
+			return StatusPending
+		case release.StatusDeployed:
+			return StatusDeployed
+		case release.StatusFailed:
+			return StatusFailed
+		default:
+			return StatusUnknown
+		}
+	}
+	l[fmt.Sprintf("%s-%s", r.Namespace, r.Name)] = ListReleaseItem{
+		Release: r,
+		Status:  fn(r),
+	}
+}
+
+func ListRelease() (ReleaseList, error) {
+	m := make(ReleaseList)
+
+	actionConfig, _, err := getActionConfigAndSettings("", mlog.Debugf)
+	if err != nil {
+		return m, err
+	}
+	statusClient := action.NewList(actionConfig)
+	lists, err := statusClient.Run()
+	if err != nil {
+		mlog.Error(err)
+		return m, err
+	}
+	for _, item := range lists {
+		m.Add(item)
+	}
+	return m, nil
+
+}
+
 func PackageChart(path string, destDir string) (string, error) {
 	_, settings, err := getActionConfigAndSettings("", mlog.Debugf)
 	if err != nil {
@@ -291,4 +344,8 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...i
 	}
 
 	return actionConfig, settings, nil
+}
+
+func GetSlugName(namespaceId int64, name string) string {
+	return Md5(fmt.Sprintf("%d-%s", namespaceId, name))
 }

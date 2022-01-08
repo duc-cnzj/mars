@@ -8,7 +8,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,11 +19,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NamespaceClient interface {
-	Index(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NamespaceList, error)
-	Store(ctx context.Context, in *NsStoreRequest, opts ...grpc.CallOption) (*NsStoreResponse, error)
-	CpuAndMemory(ctx context.Context, in *NamespaceID, opts ...grpc.CallOption) (*CpuAndMemoryResponse, error)
-	ServiceEndpoints(ctx context.Context, in *ServiceEndpointsRequest, opts ...grpc.CallOption) (*ServiceEndpointsResponse, error)
-	Destroy(ctx context.Context, in *NamespaceID, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	All(ctx context.Context, in *NamespaceAllRequest, opts ...grpc.CallOption) (*NamespaceAllResponse, error)
+	Create(ctx context.Context, in *NamespaceCreateRequest, opts ...grpc.CallOption) (*NamespaceCreateResponse, error)
+	Show(ctx context.Context, in *NamespaceShowRequest, opts ...grpc.CallOption) (*NamespaceShowResponse, error)
+	Delete(ctx context.Context, in *NamespaceDeleteRequest, opts ...grpc.CallOption) (*NamespaceDeleteResponse, error)
+	IsExists(ctx context.Context, in *NamespaceIsExistsRequest, opts ...grpc.CallOption) (*NamespaceIsExistsResponse, error)
+	CpuMemory(ctx context.Context, in *NamespaceCpuMemoryRequest, opts ...grpc.CallOption) (*NamespaceCpuMemoryResponse, error)
+	ServiceEndpoints(ctx context.Context, in *NamespaceServiceEndpointsRequest, opts ...grpc.CallOption) (*NamespaceServiceEndpointsResponse, error)
 }
 
 type namespaceClient struct {
@@ -35,45 +36,63 @@ func NewNamespaceClient(cc grpc.ClientConnInterface) NamespaceClient {
 	return &namespaceClient{cc}
 }
 
-func (c *namespaceClient) Index(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NamespaceList, error) {
-	out := new(NamespaceList)
-	err := c.cc.Invoke(ctx, "/Namespace/Index", in, out, opts...)
+func (c *namespaceClient) All(ctx context.Context, in *NamespaceAllRequest, opts ...grpc.CallOption) (*NamespaceAllResponse, error) {
+	out := new(NamespaceAllResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/All", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *namespaceClient) Store(ctx context.Context, in *NsStoreRequest, opts ...grpc.CallOption) (*NsStoreResponse, error) {
-	out := new(NsStoreResponse)
-	err := c.cc.Invoke(ctx, "/Namespace/Store", in, out, opts...)
+func (c *namespaceClient) Create(ctx context.Context, in *NamespaceCreateRequest, opts ...grpc.CallOption) (*NamespaceCreateResponse, error) {
+	out := new(NamespaceCreateResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *namespaceClient) CpuAndMemory(ctx context.Context, in *NamespaceID, opts ...grpc.CallOption) (*CpuAndMemoryResponse, error) {
-	out := new(CpuAndMemoryResponse)
-	err := c.cc.Invoke(ctx, "/Namespace/CpuAndMemory", in, out, opts...)
+func (c *namespaceClient) Show(ctx context.Context, in *NamespaceShowRequest, opts ...grpc.CallOption) (*NamespaceShowResponse, error) {
+	out := new(NamespaceShowResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/Show", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *namespaceClient) ServiceEndpoints(ctx context.Context, in *ServiceEndpointsRequest, opts ...grpc.CallOption) (*ServiceEndpointsResponse, error) {
-	out := new(ServiceEndpointsResponse)
+func (c *namespaceClient) Delete(ctx context.Context, in *NamespaceDeleteRequest, opts ...grpc.CallOption) (*NamespaceDeleteResponse, error) {
+	out := new(NamespaceDeleteResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *namespaceClient) IsExists(ctx context.Context, in *NamespaceIsExistsRequest, opts ...grpc.CallOption) (*NamespaceIsExistsResponse, error) {
+	out := new(NamespaceIsExistsResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/IsExists", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *namespaceClient) CpuMemory(ctx context.Context, in *NamespaceCpuMemoryRequest, opts ...grpc.CallOption) (*NamespaceCpuMemoryResponse, error) {
+	out := new(NamespaceCpuMemoryResponse)
+	err := c.cc.Invoke(ctx, "/Namespace/CpuMemory", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *namespaceClient) ServiceEndpoints(ctx context.Context, in *NamespaceServiceEndpointsRequest, opts ...grpc.CallOption) (*NamespaceServiceEndpointsResponse, error) {
+	out := new(NamespaceServiceEndpointsResponse)
 	err := c.cc.Invoke(ctx, "/Namespace/ServiceEndpoints", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *namespaceClient) Destroy(ctx context.Context, in *NamespaceID, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/Namespace/Destroy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +103,13 @@ func (c *namespaceClient) Destroy(ctx context.Context, in *NamespaceID, opts ...
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility
 type NamespaceServer interface {
-	Index(context.Context, *emptypb.Empty) (*NamespaceList, error)
-	Store(context.Context, *NsStoreRequest) (*NsStoreResponse, error)
-	CpuAndMemory(context.Context, *NamespaceID) (*CpuAndMemoryResponse, error)
-	ServiceEndpoints(context.Context, *ServiceEndpointsRequest) (*ServiceEndpointsResponse, error)
-	Destroy(context.Context, *NamespaceID) (*emptypb.Empty, error)
+	All(context.Context, *NamespaceAllRequest) (*NamespaceAllResponse, error)
+	Create(context.Context, *NamespaceCreateRequest) (*NamespaceCreateResponse, error)
+	Show(context.Context, *NamespaceShowRequest) (*NamespaceShowResponse, error)
+	Delete(context.Context, *NamespaceDeleteRequest) (*NamespaceDeleteResponse, error)
+	IsExists(context.Context, *NamespaceIsExistsRequest) (*NamespaceIsExistsResponse, error)
+	CpuMemory(context.Context, *NamespaceCpuMemoryRequest) (*NamespaceCpuMemoryResponse, error)
+	ServiceEndpoints(context.Context, *NamespaceServiceEndpointsRequest) (*NamespaceServiceEndpointsResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }
 
@@ -96,20 +117,26 @@ type NamespaceServer interface {
 type UnimplementedNamespaceServer struct {
 }
 
-func (UnimplementedNamespaceServer) Index(context.Context, *emptypb.Empty) (*NamespaceList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Index not implemented")
+func (UnimplementedNamespaceServer) All(context.Context, *NamespaceAllRequest) (*NamespaceAllResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
 }
-func (UnimplementedNamespaceServer) Store(context.Context, *NsStoreRequest) (*NsStoreResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Store not implemented")
+func (UnimplementedNamespaceServer) Create(context.Context, *NamespaceCreateRequest) (*NamespaceCreateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedNamespaceServer) CpuAndMemory(context.Context, *NamespaceID) (*CpuAndMemoryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CpuAndMemory not implemented")
+func (UnimplementedNamespaceServer) Show(context.Context, *NamespaceShowRequest) (*NamespaceShowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
 }
-func (UnimplementedNamespaceServer) ServiceEndpoints(context.Context, *ServiceEndpointsRequest) (*ServiceEndpointsResponse, error) {
+func (UnimplementedNamespaceServer) Delete(context.Context, *NamespaceDeleteRequest) (*NamespaceDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedNamespaceServer) IsExists(context.Context, *NamespaceIsExistsRequest) (*NamespaceIsExistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsExists not implemented")
+}
+func (UnimplementedNamespaceServer) CpuMemory(context.Context, *NamespaceCpuMemoryRequest) (*NamespaceCpuMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CpuMemory not implemented")
+}
+func (UnimplementedNamespaceServer) ServiceEndpoints(context.Context, *NamespaceServiceEndpointsRequest) (*NamespaceServiceEndpointsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ServiceEndpoints not implemented")
-}
-func (UnimplementedNamespaceServer) Destroy(context.Context, *NamespaceID) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Destroy not implemented")
 }
 func (UnimplementedNamespaceServer) mustEmbedUnimplementedNamespaceServer() {}
 
@@ -124,62 +151,116 @@ func RegisterNamespaceServer(s grpc.ServiceRegistrar, srv NamespaceServer) {
 	s.RegisterService(&Namespace_ServiceDesc, srv)
 }
 
-func _Namespace_Index_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+func _Namespace_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceAllRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NamespaceServer).Index(ctx, in)
+		return srv.(NamespaceServer).All(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Namespace/Index",
+		FullMethod: "/Namespace/All",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).Index(ctx, req.(*emptypb.Empty))
+		return srv.(NamespaceServer).All(ctx, req.(*NamespaceAllRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Namespace_Store_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NsStoreRequest)
+func _Namespace_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceCreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NamespaceServer).Store(ctx, in)
+		return srv.(NamespaceServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Namespace/Store",
+		FullMethod: "/Namespace/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).Store(ctx, req.(*NsStoreRequest))
+		return srv.(NamespaceServer).Create(ctx, req.(*NamespaceCreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Namespace_CpuAndMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NamespaceID)
+func _Namespace_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceShowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NamespaceServer).CpuAndMemory(ctx, in)
+		return srv.(NamespaceServer).Show(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Namespace/CpuAndMemory",
+		FullMethod: "/Namespace/Show",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).CpuAndMemory(ctx, req.(*NamespaceID))
+		return srv.(NamespaceServer).Show(ctx, req.(*NamespaceShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Namespace_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Namespace/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).Delete(ctx, req.(*NamespaceDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Namespace_IsExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceIsExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).IsExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Namespace/IsExists",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).IsExists(ctx, req.(*NamespaceIsExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Namespace_CpuMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NamespaceCpuMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NamespaceServer).CpuMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Namespace/CpuMemory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NamespaceServer).CpuMemory(ctx, req.(*NamespaceCpuMemoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Namespace_ServiceEndpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceEndpointsRequest)
+	in := new(NamespaceServiceEndpointsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -191,25 +272,7 @@ func _Namespace_ServiceEndpoints_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/Namespace/ServiceEndpoints",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).ServiceEndpoints(ctx, req.(*ServiceEndpointsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Namespace_Destroy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NamespaceID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NamespaceServer).Destroy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Namespace/Destroy",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NamespaceServer).Destroy(ctx, req.(*NamespaceID))
+		return srv.(NamespaceServer).ServiceEndpoints(ctx, req.(*NamespaceServiceEndpointsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -222,24 +285,32 @@ var Namespace_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*NamespaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Index",
-			Handler:    _Namespace_Index_Handler,
+			MethodName: "All",
+			Handler:    _Namespace_All_Handler,
 		},
 		{
-			MethodName: "Store",
-			Handler:    _Namespace_Store_Handler,
+			MethodName: "Create",
+			Handler:    _Namespace_Create_Handler,
 		},
 		{
-			MethodName: "CpuAndMemory",
-			Handler:    _Namespace_CpuAndMemory_Handler,
+			MethodName: "Show",
+			Handler:    _Namespace_Show_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Namespace_Delete_Handler,
+		},
+		{
+			MethodName: "IsExists",
+			Handler:    _Namespace_IsExists_Handler,
+		},
+		{
+			MethodName: "CpuMemory",
+			Handler:    _Namespace_CpuMemory_Handler,
 		},
 		{
 			MethodName: "ServiceEndpoints",
 			Handler:    _Namespace_ServiceEndpoints_Handler,
-		},
-		{
-			MethodName: "Destroy",
-			Handler:    _Namespace_Destroy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

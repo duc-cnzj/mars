@@ -102,7 +102,7 @@ func local_request_Mars_Show_0(ctx context.Context, marshaler runtime.Marshaler,
 }
 
 func request_Mars_GlobalConfig_0(ctx context.Context, marshaler runtime.Marshaler, client MarsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GlobalConfigRequest
+	var protoReq MarsGlobalConfigRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -128,7 +128,7 @@ func request_Mars_GlobalConfig_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 func local_request_Mars_GlobalConfig_0(ctx context.Context, marshaler runtime.Marshaler, server MarsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GlobalConfigRequest
+	var protoReq MarsGlobalConfigRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -154,7 +154,7 @@ func local_request_Mars_GlobalConfig_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func request_Mars_ToggleEnabled_0(ctx context.Context, marshaler runtime.Marshaler, client MarsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ToggleEnabledRequest
+	var protoReq MarsToggleEnabledRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -188,7 +188,7 @@ func request_Mars_ToggleEnabled_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Mars_ToggleEnabled_0(ctx context.Context, marshaler runtime.Marshaler, server MarsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ToggleEnabledRequest
+	var protoReq MarsToggleEnabledRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -294,7 +294,7 @@ var (
 )
 
 func request_Mars_GetDefaultChartValues_0(ctx context.Context, marshaler runtime.Marshaler, client MarsClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DefaultChartValuesRequest
+	var protoReq MarsDefaultChartValuesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -327,7 +327,7 @@ func request_Mars_GetDefaultChartValues_0(ctx context.Context, marshaler runtime
 }
 
 func local_request_Mars_GetDefaultChartValues_0(ctx context.Context, marshaler runtime.Marshaler, server MarsServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DefaultChartValuesRequest
+	var protoReq MarsDefaultChartValuesRequest
 	var metadata runtime.ServerMetadata
 
 	var (

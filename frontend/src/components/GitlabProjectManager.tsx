@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { disabledProject, enabledProject, projectList } from "../api/gitlab";
+import { disabledProject, enabledProject, allProjects } from "../api/gitlab";
 import { CopyOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import {
@@ -18,12 +18,12 @@ import pb from "../api/compiled";
 
 const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
-  const [list, setList] = useState<pb.GitlabProjectInfo[]>([]);
+  const [list, setList] = useState<pb.GitProjectItem[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
 
   const fetchList = useCallback(() => {
-    return projectList()
+    return allProjects()
       .then((res) => {
         setList(res.data.data);
       })
@@ -36,14 +36,14 @@ const GitlabProjectManager: React.FC = () => {
     });
   }, [fetchList, setInitLoading]);
 
-  const toggleStatus = async (item: pb.GitlabProjectInfo) => {
+  const toggleStatus = async (item: pb.GitProjectItem) => {
     setLoadingList((l) => ({ ...l, [item.id]: true }));
     console.log("loadingList", loadingList);
     try {
       if (item.enabled) {
-        await disabledProject({ gitlab_project_id: String(item.id) });
+        await disabledProject({ git_project_id: String(item.id) });
       } else {
-        await enabledProject({ gitlab_project_id: String(item.id) });
+        await enabledProject({ git_project_id: String(item.id) });
       }
     } catch (e: any) {
       message.error(e.response.data.message);
@@ -57,9 +57,9 @@ const GitlabProjectManager: React.FC = () => {
     });
   };
 
-  const [currentItem, setCurrentItem] = useState<pb.GitlabProjectInfo>();
+  const [currentItem, setCurrentItem] = useState<pb.GitProjectItem>();
   const [configVisible, setConfigVisible] = useState(false);
-  const [selected, setSelected] = useState<pb.GitlabProjectInfo>();
+  const [selected, setSelected] = useState<pb.GitProjectItem>();
 
   const onChange = useCallback(
     (v: any) => {
@@ -115,7 +115,7 @@ const GitlabProjectManager: React.FC = () => {
           dataSource={list.filter((item) =>
             selected ? item.id === selected.id : true
           )}
-          renderItem={(item: pb.GitlabProjectInfo) => (
+          renderItem={(item: pb.GitProjectItem) => (
             <List.Item
               className="gitlab__list-item"
               key={item.id}

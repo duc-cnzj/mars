@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars/pkg/mars"
+	"github.com/duc-cnzj/mars/client/mars"
 )
 
 type GitlabProject struct {
@@ -28,9 +28,9 @@ type GitlabProject struct {
 }
 
 func (g GitlabProject) PrettyYaml() string {
-	cfg := mars.Config{}
+	cfg := mars.MarsConfig{}
 	json.Unmarshal([]byte(g.GlobalConfig), &cfg)
-	clone := proto.Clone(&cfg).(*mars.Config)
+	clone := proto.Clone(&cfg).(*mars.MarsConfig)
 	var v map[string]interface{}
 	yaml.Unmarshal([]byte(cfg.ValuesYaml), &v)
 	var data = struct {
@@ -57,12 +57,12 @@ func (g GitlabProject) PrettyYaml() string {
 	return bf.String()
 }
 
-func (g *GitlabProject) GlobalMarsConfig() *mars.Config {
+func (g *GitlabProject) GlobalMarsConfig() *mars.MarsConfig {
 	if g.GlobalConfig == "" {
-		return &mars.Config{}
+		return &mars.MarsConfig{}
 	}
 
-	var c = &mars.Config{}
+	var c = &mars.MarsConfig{}
 	json.Unmarshal([]byte(g.GlobalConfig), c)
 	return c
 }
