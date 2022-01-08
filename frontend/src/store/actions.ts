@@ -14,6 +14,7 @@ import { Dispatch } from "redux";
 import { message } from "antd";
 import { setUid } from "../utils/uid";
 import pb from "../api/compiled";
+import { debounce } from "lodash";
 
 export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
@@ -79,26 +80,27 @@ export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
   info: info,
 });
 
-export const handleEvents = (
-  id: string,
-  data: pb.Metadata,
-  input: any
-) => {
+const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
+    dispatch(setNamespaceReload(true))
+    console.log("duc calllllll")
+}, 500);
+
+export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
   return function (dispatch: Dispatch) {
     switch (data.type.valueOf()) {
       case pb.Type.SetUid:
         setUid(data.data);
         break;
       case pb.Type.ClusterInfoSync:
-        let info = pb.WsHandleClusterResponse.decode(input)
+        let info = pb.WsHandleClusterResponse.decode(input);
         info.info && dispatch(setClusterInfo(info.info));
         break;
       case pb.Type.ReloadProjects:
-        dispatch(setNamespaceReload(true));
+        debounceLoadNamespace(dispatch);
         break;
       case pb.Type.UpdateProject:
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
-      console.log("update_project", data);
+        console.log("update_project", data);
 
         if (data.end) {
           switch (data.result) {
@@ -146,9 +148,7 @@ export const handleEvents = (
               break;
           }
           dispatch(setCreateProjectLoading(id, false));
-          setTimeout(() => {
-            dispatch(setNamespaceReload(true));
-          }, 1000);
+          debounceLoadNamespace(dispatch);
         }
         break;
       case pb.Type.ProcessPercent:
@@ -161,21 +161,25 @@ export const handleEvents = (
         }
         let res = pb.WsHandleShellResponse.decode(input);
 
-        (res.container && res.terminal_message) && dispatch(
-          setShellSessionId(
-            `${res.container.namespace}|${res.container.pod}|${res.container.container}`,
-            res.terminal_message.session_id
-          )
-        );
+        res.container &&
+          res.terminal_message &&
+          dispatch(
+            setShellSessionId(
+              `${res.container.namespace}|${res.container.pod}|${res.container.container}`,
+              res.terminal_message.session_id
+            )
+          );
         break;
       case pb.Type.HandleExecShellMsg:
         let logRes = pb.WsHandleShellResponse.decode(input);
-        (logRes.container && logRes.terminal_message)  && dispatch(
-          setShellLog(
-            `${logRes.container.namespace}|${logRes.container.pod}|${logRes.container.container}`,
-            logRes.terminal_message,
-          )
-        );
+        logRes.container &&
+          logRes.terminal_message &&
+          dispatch(
+            setShellLog(
+              `${logRes.container.namespace}|${logRes.container.pod}|${logRes.container.container}`,
+              logRes.terminal_message
+            )
+          );
         break;
       default:
         console.log("unknown event: ", data.type);

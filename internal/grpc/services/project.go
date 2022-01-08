@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/duc-cnzj/mars/internal/scopes"
+
 	"github.com/duc-cnzj/mars/client/model"
 
 	"gorm.io/gorm"
@@ -30,6 +32,55 @@ import (
 
 type Project struct {
 	project.UnimplementedProjectServer
+}
+
+func (p *Project) List(ctx context.Context, request *project.ProjectListRequest) (*project.ProjectListResponse, error) {
+	var (
+		page     = int(request.Page)
+		pageSize = int(request.PageSize)
+		projects []models.Project
+		count    int64
+	)
+	if err := app.DB().Preload("Namespace").Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&projects).Error; err != nil {
+		return nil, err
+	}
+	app.DB().Model(&models.Project{}).Count(&count)
+	res := make([]*model.ProjectModel, 0, len(projects))
+	for _, p := range projects {
+		var ns *model.NamespaceModel
+		if p.Namespace.ID != 0 {
+			ns = &model.NamespaceModel{
+				Id:               int64(p.Namespace.ID),
+				Name:             p.Namespace.Name,
+				ImagePullSecrets: p.Namespace.ImagePullSecretsArray(),
+				CreatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
+				UpdatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
+			}
+		}
+		res = append(res, &model.ProjectModel{
+			Id:              int64(p.ID),
+			Name:            p.Name,
+			GitlabProjectId: int64(p.GitlabProjectId),
+			GitlabBranch:    p.GitlabBranch,
+			GitlabCommit:    p.GitlabCommit,
+			Config:          p.Config,
+			OverrideValues:  p.OverrideValues,
+			DockerImage:     p.DockerImage,
+			PodSelectors:    p.PodSelectors,
+			NamespaceId:     int64(p.NamespaceId),
+			Atomic:          p.Atomic,
+			CreatedAt:       utils.ToRFC3339DatetimeString(&p.CreatedAt),
+			UpdatedAt:       utils.ToRFC3339DatetimeString(&p.UpdatedAt),
+			Namespace:       ns,
+		})
+	}
+
+	return &project.ProjectListResponse{
+		Page:     request.Page,
+		PageSize: request.PageSize,
+		Count:    count,
+		Data:     res,
+	}, nil
 }
 
 func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Project_ApplyServer) error {

@@ -5930,6 +5930,80 @@ export class ProjectDeleteResponse implements IProjectDeleteResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectDeleteResponse;
 }
 
+/** Represents a ProjectListRequest. */
+export class ProjectListRequest implements IProjectListRequest {
+
+    /**
+     * Constructs a new ProjectListRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectListRequest);
+
+    /** ProjectListRequest page. */
+    public page: number;
+
+    /** ProjectListRequest page_size. */
+    public page_size: number;
+
+    /**
+     * Encodes the specified ProjectListRequest message. Does not implicitly {@link ProjectListRequest.verify|verify} messages.
+     * @param message ProjectListRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectListRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectListRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectListRequest;
+}
+
+/** Represents a ProjectListResponse. */
+export class ProjectListResponse implements IProjectListResponse {
+
+    /**
+     * Constructs a new ProjectListResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectListResponse);
+
+    /** ProjectListResponse page. */
+    public page: number;
+
+    /** ProjectListResponse page_size. */
+    public page_size: number;
+
+    /** ProjectListResponse count. */
+    public count: number;
+
+    /** ProjectListResponse data. */
+    public data: ProjectModel[];
+
+    /**
+     * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
+     * @param message ProjectListResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectListResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectListResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectListResponse;
+}
+
 /** Represents a Project */
 export class Project extends $protobuf.rpc.Service {
 
@@ -5940,6 +6014,20 @@ export class Project extends $protobuf.rpc.Service {
      * @param [responseDelimited=false] Whether responses are length-delimited
      */
     constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls List.
+     * @param request ProjectListRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectListResponse
+     */
+    public list(request: ProjectListRequest, callback: Project.ListCallback): void;
+
+    /**
+     * Calls List.
+     * @param request ProjectListRequest message or plain object
+     * @returns Promise
+     */
+    public list(request: ProjectListRequest): Promise<ProjectListResponse>;
 
     /**
      * Calls Apply.
@@ -6041,6 +6129,13 @@ export class Project extends $protobuf.rpc.Service {
 }
 
 export namespace Project {
+
+    /**
+     * Callback as used by {@link Project#list}.
+     * @param error Error, if any
+     * @param [response] ProjectListResponse
+     */
+    type ListCallback = (error: (Error|null), response?: ProjectListResponse) => void;
 
     /**
      * Callback as used by {@link Project#apply}.

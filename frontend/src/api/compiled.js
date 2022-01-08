@@ -14674,6 +14674,228 @@ export const ProjectDeleteResponse = $root.ProjectDeleteResponse = (() => {
     return ProjectDeleteResponse;
 })();
 
+export const ProjectListRequest = $root.ProjectListRequest = (() => {
+
+    /**
+     * Properties of a ProjectListRequest.
+     * @exports IProjectListRequest
+     * @interface IProjectListRequest
+     * @property {number|null} [page] ProjectListRequest page
+     * @property {number|null} [page_size] ProjectListRequest page_size
+     */
+
+    /**
+     * Constructs a new ProjectListRequest.
+     * @exports ProjectListRequest
+     * @classdesc Represents a ProjectListRequest.
+     * @implements IProjectListRequest
+     * @constructor
+     * @param {IProjectListRequest=} [properties] Properties to set
+     */
+    function ProjectListRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectListRequest page.
+     * @member {number} page
+     * @memberof ProjectListRequest
+     * @instance
+     */
+    ProjectListRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListRequest page_size.
+     * @member {number} page_size
+     * @memberof ProjectListRequest
+     * @instance
+     */
+    ProjectListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified ProjectListRequest message. Does not implicitly {@link ProjectListRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectListRequest
+     * @static
+     * @param {ProjectListRequest} message ProjectListRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectListRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectListRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectListRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectListRequest} ProjectListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectListRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectListRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectListRequest;
+})();
+
+export const ProjectListResponse = $root.ProjectListResponse = (() => {
+
+    /**
+     * Properties of a ProjectListResponse.
+     * @exports IProjectListResponse
+     * @interface IProjectListResponse
+     * @property {number|null} [page] ProjectListResponse page
+     * @property {number|null} [page_size] ProjectListResponse page_size
+     * @property {number|null} [count] ProjectListResponse count
+     * @property {Array.<ProjectModel>|null} [data] ProjectListResponse data
+     */
+
+    /**
+     * Constructs a new ProjectListResponse.
+     * @exports ProjectListResponse
+     * @classdesc Represents a ProjectListResponse.
+     * @implements IProjectListResponse
+     * @constructor
+     * @param {IProjectListResponse=} [properties] Properties to set
+     */
+    function ProjectListResponse(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectListResponse page.
+     * @member {number} page
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse page_size.
+     * @member {number} page_size
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse count.
+     * @member {number} count
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * ProjectListResponse data.
+     * @member {Array.<ProjectModel>} data
+     * @memberof ProjectListResponse
+     * @instance
+     */
+    ProjectListResponse.prototype.data = $util.emptyArray;
+
+    /**
+     * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectListResponse
+     * @static
+     * @param {ProjectListResponse} message ProjectListResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectListResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.count);
+        if (message.data != null && message.data.length)
+            for (let i = 0; i < message.data.length; ++i)
+                $root.ProjectModel.encode(message.data[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectListResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectListResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectListResponse} ProjectListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectListResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectListResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                message.count = reader.int64();
+                break;
+            case 4:
+                if (!(message.data && message.data.length))
+                    message.data = [];
+                message.data.push($root.ProjectModel.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectListResponse;
+})();
+
 export const Project = $root.Project = (() => {
 
     /**
@@ -14691,6 +14913,39 @@ export const Project = $root.Project = (() => {
     }
 
     (Project.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Project;
+
+    /**
+     * Callback as used by {@link Project#list}.
+     * @memberof Project
+     * @typedef ListCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ProjectListResponse} [response] ProjectListResponse
+     */
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Project
+     * @instance
+     * @param {ProjectListRequest} request ProjectListRequest message or plain object
+     * @param {Project.ListCallback} callback Node-style callback called with the error, if any, and ProjectListResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.ProjectListRequest, $root.ProjectListResponse, request, callback);
+    }, "name", { value: "List" });
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof Project
+     * @instance
+     * @param {ProjectListRequest} request ProjectListRequest message or plain object
+     * @returns {Promise<ProjectListResponse>} Promise
+     * @variation 2
+     */
 
     /**
      * Callback as used by {@link Project#apply}.

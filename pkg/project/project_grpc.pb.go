@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectClient interface {
+	List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error)
 	Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
 	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
 	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
@@ -34,6 +35,15 @@ type projectClient struct {
 
 func NewProjectClient(cc grpc.ClientConnInterface) ProjectClient {
 	return &projectClient{cc}
+}
+
+func (c *projectClient) List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error) {
+	out := new(ProjectListResponse)
+	err := c.cc.Invoke(ctx, "/Project/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *projectClient) Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error) {
@@ -149,6 +159,7 @@ func (x *projectStreamPodContainerLogClient) Recv() (*ProjectPodContainerLogResp
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
 type ProjectServer interface {
+	List(context.Context, *ProjectListRequest) (*ProjectListResponse, error)
 	Apply(*ProjectApplyRequest, Project_ApplyServer) error
 	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
 	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
@@ -163,6 +174,9 @@ type ProjectServer interface {
 type UnimplementedProjectServer struct {
 }
 
+func (UnimplementedProjectServer) List(context.Context, *ProjectListRequest) (*ProjectListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
 func (UnimplementedProjectServer) Apply(*ProjectApplyRequest, Project_ApplyServer) error {
 	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
@@ -195,6 +209,24 @@ type UnsafeProjectServer interface {
 
 func RegisterProjectServer(s grpc.ServiceRegistrar, srv ProjectServer) {
 	s.RegisterService(&Project_ServiceDesc, srv)
+}
+
+func _Project_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Project/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).List(ctx, req.(*ProjectListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_Apply_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -336,6 +368,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Project",
 	HandlerType: (*ProjectServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "List",
+			Handler:    _Project_List_Handler,
+		},
 		{
 			MethodName: "Delete",
 			Handler:    _Project_Delete_Handler,
