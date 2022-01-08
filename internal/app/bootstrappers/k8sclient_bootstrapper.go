@@ -27,6 +27,10 @@ func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 			return err
 		}
 	}
+
+	// 客户端不限速，有可能会把集群打死。
+	config.QPS = -1
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
