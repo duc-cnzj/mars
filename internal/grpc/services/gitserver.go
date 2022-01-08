@@ -77,10 +77,14 @@ func (g *GitServer) DisableProject(ctx context.Context, request *gitserver.GitDi
 }
 
 func (g *GitServer) All(ctx context.Context, req *gitserver.GitAllProjectsRequest) (*gitserver.GitAllProjectsResponse, error) {
-	projects, err := plugins.GetGitServer().ListProjects(1, 100)
+	do, err, _ := sf.Do(sfGitServerAll, func() (interface{}, error) {
+		mlog.Debug("sfGitServerAll...")
+		return plugins.GetGitServer().ListProjects(1, 100)
+	})
 	if err != nil {
 		return nil, err
 	}
+	var projects = do.(plugins.ListProjectResponseInterface)
 
 	var gps []models.GitlabProject
 	app.DB().Find(&gps)
