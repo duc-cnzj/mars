@@ -8,14 +8,15 @@ import (
 	"syscall"
 	"time"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/app/instance"
+	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/database"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 )
 
 type Hook string
@@ -32,6 +33,7 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.AuthBootstrapper{},
 	&bootstrappers.UploadBootstrapper{},
+	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
@@ -67,6 +69,17 @@ type Application struct {
 	oidcProvider  contracts.OidcConfig
 	uploader      contracts.Uploader
 	auth          contracts.AuthInterface
+
+	sf    *singleflight.Group
+	cache contracts.CacheInterface
+}
+
+func (app *Application) SetCache(c contracts.CacheInterface) {
+	app.cache = c
+}
+
+func (app *Application) Cache() contracts.CacheInterface {
+	return app.cache
 }
 
 func (app *Application) Auth() contracts.AuthInterface {
@@ -129,6 +142,10 @@ func (app *Application) EventDispatcher() contracts.DispatcherInterface {
 	return app.dispatcher
 }
 
+func (app *Application) Singleflight() *singleflight.Group {
+	return app.sf
+}
+
 func (app *Application) SetEventDispatcher(dispatcher contracts.DispatcherInterface) {
 	app.dispatcher = dispatcher
 }
@@ -148,6 +165,8 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		hooks:         map[Hook][]contracts.Callback{},
 		servers:       []contracts.Server{},
 		metrics:       &emptyMetrics{},
+		sf:            &singleflight.Group{},
+		cache:         &cache.NoCache{},
 	}
 
 	app.dbManager = database.NewManager(app)

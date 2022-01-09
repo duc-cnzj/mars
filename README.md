@@ -153,6 +153,7 @@ https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
 
 ## TODO
 
+- [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
 - [ ] namespace all -> list
 - [ ] 增加 basic? or CA? auth，参考 k8s 的做法

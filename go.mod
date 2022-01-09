@@ -5,6 +5,7 @@ go 1.17
 replace github.com/duc-cnzj/mars/pkg => ./pkg
 
 require (
+	github.com/coocood/freecache v1.2.0
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/duc-cnzj/mars/pkg v0.0.0-00010101000000-000000000000
 	github.com/dustin/go-humanize v1.0.0
@@ -63,6 +64,7 @@ require (
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect

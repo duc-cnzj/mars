@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 	"golang.org/x/oauth2"
 
 	restclient "k8s.io/client-go/rest"
@@ -83,5 +84,10 @@ type ApplicationInterface interface {
 
 	SetPlugins(map[string]PluginInterface)
 	GetPlugins() map[string]PluginInterface
-	GetPluginByName(name string) PluginInterface
+	GetPluginByName(string) PluginInterface
+
+	Singleflight() *singleflight.Group
+
+	SetCache(CacheInterface)
+	Cache() CacheInterface
 }

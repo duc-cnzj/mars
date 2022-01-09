@@ -29,9 +29,17 @@ serve:
 build_race:
 	go build -ldflags=${LDFLAGS} -race -o app main.go
 
+.PHONY: build
+build:
+	go build -ldflags=${LDFLAGS} -o app main.go
+
 .PHONY: build_web
 build_web:
 	cd ./frontend && yarn build
+
+.PHONY: test
+test:
+	go test ./... -race -count=1 -cover
 
 .PHONY: build_linux_amd64
 build_linux_amd64:

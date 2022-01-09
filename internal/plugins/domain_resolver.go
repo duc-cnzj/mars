@@ -9,9 +9,7 @@ import (
 
 var domainResolverOnce = sync.Once{}
 
-type DomainResolverInterface interface {
-	contracts.PluginInterface
-
+type DomainResolver interface {
 	// GetDomainByIndex domainSuffix: test.com, project: mars, namespace: default index: 0,1,2..., preOccupiedLen: 预占用的长度
 	GetDomainByIndex(domainSuffix, projectName, namespace string, index, preOccupiedLen int) string
 
@@ -19,7 +17,7 @@ type DomainResolverInterface interface {
 	GetDomain(domainSuffix, projectName, namespace string, preOccupiedLen int) string
 }
 
-func GetDomainResolverPlugin() DomainResolverInterface {
+func GetDomainResolver() DomainResolver {
 	pcfg := app.Config().DomainResolverPlugin
 	p := app.App().GetPluginByName(pcfg.Name)
 	args := pcfg.GetArgs()
@@ -34,5 +32,5 @@ func GetDomainResolverPlugin() DomainResolverInterface {
 		})
 	})
 
-	return p.(DomainResolverInterface)
+	return p.(DomainResolver)
 }

@@ -1,6 +1,7 @@
 package picture
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
@@ -21,6 +22,8 @@ var (
 	}
 )
 
+var _ plugins.PictureInterface = (*Cartoon)(nil)
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	p := &Cartoon{}
@@ -29,7 +32,7 @@ func init() {
 
 type Cartoon struct{}
 
-func (c *Cartoon) Get(random bool) (*plugins.Picture, error) {
+func (c *Cartoon) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
 	return &plugins.Picture{
 		Url:       urls[rand.Intn(len(urls))],
 		Copyright: "",

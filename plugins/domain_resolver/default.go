@@ -16,6 +16,8 @@ var (
 	maxDomainLength = 64
 )
 
+var _ plugins.DomainResolver = (*DefaultDomainResolver)(nil)
+
 func init() {
 	dr := &DefaultDomainResolver{}
 	plugins.RegisterPlugin(dr.Name(), dr)

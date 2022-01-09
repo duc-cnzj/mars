@@ -4,6 +4,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -13,10 +14,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var _ plugins.GitServer = (*server)(nil)
+
 var name = "github"
 
 func init() {
-	dr := &githubServer{}
+	dr := &server{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
@@ -52,17 +55,17 @@ func (p *project) GetDescription() string {
 	return p.p.GetDescription()
 }
 
-type githubServer struct {
+type server struct {
 	client   *github.Client
 	user     *github.User
 	username string
 }
 
-func (g *githubServer) Name() string {
+func (g *server) Name() string {
 	return name
 }
 
-func (g *githubServer) Initialize(args map[string]interface{}) error {
+func (g *server) Initialize(args map[string]interface{}) error {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: args["token"].(string)},
 	)
@@ -78,12 +81,12 @@ func (g *githubServer) Initialize(args map[string]interface{}) error {
 	return nil
 }
 
-func (g *githubServer) Destroy() error {
+func (g *server) Destroy() error {
 	mlog.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (g *githubServer) GetProject(pid string) (plugins.ProjectInterface, error) {
+func (g *server) GetProject(pid string) (plugins.ProjectInterface, error) {
 	p, _, err := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	if err != nil {
 		return nil, err
@@ -118,7 +121,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *githubServer) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
 	list, _, err := g.client.Repositories.List(context.TODO(), g.username, &github.RepositoryListOptions{
 		Sort:        "updated",
 		ListOptions: github.ListOptions{Page: page, PerPage: pageSize},
@@ -148,7 +151,7 @@ func (g *githubServer) ListProjects(page, pageSize int) (plugins.ListProjectResp
 	}, nil
 }
 
-func (g *githubServer) AllProjects() ([]plugins.ProjectInterface, error) {
+func (g *server) AllProjects() ([]plugins.ProjectInterface, error) {
 	var ps []plugins.ProjectInterface
 	page := 1
 	for page != -1 {
@@ -212,7 +215,7 @@ func (b *branch) GetWebURL() string {
 	return ""
 }
 
-func (g *githubServer) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 
 	branches, _, err := g.client.Repositories.ListBranches(context.TODO(), g.username, p.GetName(), &github.BranchListOptions{
@@ -246,7 +249,7 @@ func (g *githubServer) ListBranches(pid string, page, pageSize int) (plugins.Lis
 	}, nil
 }
 
-func (g *githubServer) AllBranches(pid string) ([]plugins.BranchInterface, error) {
+func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 	var branches []plugins.BranchInterface
 	page := 1
 	for page != -1 {
@@ -322,11 +325,11 @@ func (c *commit) GetWebURL() string {
 	return c.c.GetHTMLURL()
 }
 
-func (c *commit) GetLastPipeline() plugins.PipelineInterface {
-	return nil
+func (g *server) GetCommitPipeline(pid string, sha string) (plugins.PipelineInterface, error) {
+	return nil, errors.New("github unimplemented this func")
 }
 
-func (g *githubServer) GetCommit(pid string, sha string) (plugins.CommitInterface, error) {
+func (g *server) GetCommit(pid string, sha string) (plugins.CommitInterface, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	c, _, err := g.client.Repositories.GetCommit(context.TODO(), g.username, p.GetName(), sha, &github.ListOptions{})
 	if err != nil {
@@ -335,7 +338,7 @@ func (g *githubServer) GetCommit(pid string, sha string) (plugins.CommitInterfac
 	return &commit{c: c, p: p, status: nil}, nil
 }
 
-func (g *githubServer) ListCommits(pid string, branch string) ([]plugins.CommitInterface, error) {
+func (g *server) ListCommits(pid string, branch string) ([]plugins.CommitInterface, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	cs, _, err := g.client.Repositories.ListCommits(context.TODO(), g.username, p.GetName(), &github.CommitsListOptions{
 		SHA:         branch,
@@ -351,11 +354,11 @@ func (g *githubServer) ListCommits(pid string, branch string) ([]plugins.CommitI
 	return res, nil
 }
 
-func (g *githubServer) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
+func (g *server) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
 	return g.getRaw(pid, branch, filename)
 }
 
-func (g *githubServer) getRaw(pid string, branch string, filename string) (string, error) {
+func (g *server) getRaw(pid string, branch string, filename string) (string, error) {
 	p, _, err := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	if err != nil {
 		return "", err
@@ -370,11 +373,11 @@ func (g *githubServer) getRaw(pid string, branch string, filename string) (strin
 	return contents.GetContent()
 }
 
-func (g *githubServer) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
+func (g *server) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
 	return g.getRaw(pid, sha, filename)
 }
 
-func (g *githubServer) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
+func (g *server) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	_, directoryContent, _, _ := g.client.Repositories.GetContents(context.TODO(), g.username, p.GetName(), path, &github.RepositoryContentGetOptions{
 		Ref: branch,
@@ -386,7 +389,7 @@ func (g *githubServer) GetDirectoryFilesWithBranch(pid string, branch string, pa
 	return res, nil
 }
 
-func (g *githubServer) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
+func (g *server) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
 	return g.GetDirectoryFilesWithBranch(pid, sha, path, recursive)
 }
 

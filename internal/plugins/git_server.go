@@ -59,7 +59,6 @@ type CommitInterface interface {
 	GetMessage() string
 	GetProjectID() int64
 	GetWebURL() string
-	GetLastPipeline() PipelineInterface
 }
 
 type paginate interface {
@@ -79,9 +78,7 @@ type ListBranchResponseInterface interface {
 	GetItems() []BranchInterface
 }
 
-type GitServerPlugin interface {
-	contracts.PluginInterface
-
+type GitServer interface {
 	GetProject(pid string) (ProjectInterface, error)
 	ListProjects(page, pageSize int) (ListProjectResponseInterface, error)
 	AllProjects() ([]ProjectInterface, error)
@@ -90,6 +87,7 @@ type GitServerPlugin interface {
 	AllBranches(pid string) ([]BranchInterface, error)
 
 	GetCommit(pid string, sha string) (CommitInterface, error)
+	GetCommitPipeline(pid string, sha string) (PipelineInterface, error)
 	ListCommits(pid string, branch string) ([]CommitInterface, error)
 
 	GetFileContentWithBranch(pid string, branch string, filename string) (string, error)
@@ -99,7 +97,7 @@ type GitServerPlugin interface {
 	GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error)
 }
 
-func GetGitServer() GitServerPlugin {
+func GetGitServer() GitServer {
 	pcfg := app.Config().GitServerPlugin
 	p := app.App().GetPluginByName(pcfg.Name)
 	gitServerOnce.Do(func() {
@@ -111,5 +109,5 @@ func GetGitServer() GitServerPlugin {
 		})
 	})
 
-	return p.(GitServerPlugin)
+	return p.(GitServer)
 }

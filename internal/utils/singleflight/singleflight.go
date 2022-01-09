@@ -1,4 +1,4 @@
-package utils
+package singleflight
 
 import "sync"
 
@@ -18,9 +18,9 @@ type call struct {
 	chans []chan<- Result
 }
 
-// SingleflightGroup represents a class of work and forms a namespace in
+// Group represents a class of work and forms a namespace in
 // which units of work can be executed with duplicate suppression.
-type SingleflightGroup struct {
+type Group struct {
 	mu sync.Mutex       // protects m
 	m  map[string]*call // lazily initialized
 }
@@ -38,7 +38,7 @@ type Result struct {
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
 // The return value shared indicates whether v was given to multiple callers.
-func (g *SingleflightGroup) Do(key string, fn func() (interface{}, error)) (v interface{}, err error, shared bool) {
+func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, err error, shared bool) {
 	g.mu.Lock()
 	if g.m == nil {
 		g.m = make(map[string]*call)
@@ -62,7 +62,7 @@ func (g *SingleflightGroup) Do(key string, fn func() (interface{}, error)) (v in
 // results when they are ready. The second result is true if the function
 // will eventually be called, false if it will not (because there is
 // a pending request with this key).
-func (g *SingleflightGroup) DoChan(key string, fn func() (interface{}, error)) (<-chan Result, bool) {
+func (g *Group) DoChan(key string, fn func() (interface{}, error)) (<-chan Result, bool) {
 	ch := make(chan Result, 1)
 	g.mu.Lock()
 	if g.m == nil {
@@ -85,7 +85,7 @@ func (g *SingleflightGroup) DoChan(key string, fn func() (interface{}, error)) (
 }
 
 // doCall handles the single call for a key.
-func (g *SingleflightGroup) doCall(c *call, key string, fn func() (interface{}, error)) {
+func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 	c.val, c.err = fn()
 	c.wg.Done()
 
@@ -102,7 +102,7 @@ func (g *SingleflightGroup) doCall(c *call, key string, fn func() (interface{}, 
 // will call the function rather than waiting for an earlier call to complete.
 // Returns whether the key was forgotten or unknown--that is, whether no
 // other goroutines are waiting for the result.
-func (g *SingleflightGroup) ForgetUnshared(key string) bool {
+func (g *Group) ForgetUnshared(key string) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	c, ok := g.m[key]

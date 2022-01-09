@@ -116,7 +116,7 @@ func getDomainByIndex(project, namespace string, index, preOccupiedLen int) stri
 		return ""
 	}
 
-	return plugins.GetDomainResolverPlugin().GetDomainByIndex(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, index, preOccupiedLen)
+	return plugins.GetDomainResolver().GetDomainByIndex(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, index, preOccupiedLen)
 }
 
 func max(a, b int) int {

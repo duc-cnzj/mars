@@ -1,6 +1,7 @@
 package picture
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,8 @@ var (
 	url      = "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=%d&mkt=zh-CN"
 	bingname = "picture_bing"
 )
+
+var _ plugins.PictureInterface = (*Bing)(nil)
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -49,7 +52,7 @@ type Res struct {
 }
 
 type Bing struct {
-	sync.Mutex
+	sync.RWMutex
 	cacheItems []Item
 	cacheDay   string
 }
@@ -68,21 +71,26 @@ func (b *Bing) Destroy() error {
 	return nil
 }
 
-func (b *Bing) Get(random bool) (*plugins.Picture, error) {
+func (b *Bing) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
 	key, n := 0, 8
 	if random {
 		key = rand.Intn(n - 1)
 	}
 	var res []Item
-
-	b.Lock()
-	defer b.Unlock()
-
 	day := time.Now().Format("2006-01-02")
-	if len(b.cacheItems) > 0 && b.cacheDay == day {
-		mlog.Debug("use cache")
-		res = b.cacheItems
-	} else {
+
+	func() {
+		b.RLock()
+		defer b.RUnlock()
+		if len(b.cacheItems) > 0 && b.cacheDay == day {
+			mlog.Debug("use cache")
+			res = b.cacheItems
+		}
+	}()
+
+	if res == nil {
+		b.Lock()
+		defer b.Unlock()
 		get, err := http.Get(fmt.Sprintf(url, n))
 		if err != nil {
 			return nil, err

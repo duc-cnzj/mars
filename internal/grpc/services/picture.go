@@ -13,7 +13,7 @@ type Picture struct {
 }
 
 func (p *Picture) Background(ctx context.Context, req *picture.BackgroundRequest) (*picture.BackgroundResponse, error) {
-	one, err := plugins.GetPicturePlugin().Get(req.Random)
+	one, err := plugins.GetPicture().Get(ctx, req.Random)
 	if err != nil {
 		return nil, err
 	}

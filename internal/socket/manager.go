@@ -955,9 +955,9 @@ func (v *VariableLoader) Load(j *Jober) error {
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
-	if commit.GetLastPipeline() != nil {
-		pipelineID = commit.GetLastPipeline().GetID()
-		pipelineBranch = commit.GetLastPipeline().GetRef()
+	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit); e == nil {
+		pipelineID = pipeline.GetID()
+		pipelineBranch = pipeline.GetRef()
 
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"镜像分支 %s 镜像commit %s 镜像 pipeline_id %d", pipelineBranch, pipelineCommit, pipelineID))
 	} else {

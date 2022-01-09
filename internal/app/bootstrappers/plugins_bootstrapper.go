@@ -13,8 +13,8 @@ func (a *PluginsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) {
 		// 预加载插件
 		plugins.GetWsSender()
-		plugins.GetDomainResolverPlugin()
-		plugins.GetPicturePlugin()
+		plugins.GetDomainResolver()
+		plugins.GetPicture()
 		plugins.GetGitServer()
 	})
 

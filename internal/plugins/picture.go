@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"context"
 	"sync"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -15,12 +16,10 @@ type Picture struct {
 }
 
 type PictureInterface interface {
-	contracts.PluginInterface
-
-	Get(random bool) (*Picture, error)
+	Get(ctx context.Context, random bool) (*Picture, error)
 }
 
-func GetPicturePlugin() PictureInterface {
+func GetPicture() PictureInterface {
 	pcfg := app.Config().PicturePlugin
 	p := app.App().GetPluginByName(pcfg.Name)
 	pictureOnce.Do(func() {

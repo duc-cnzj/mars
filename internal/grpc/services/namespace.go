@@ -35,7 +35,7 @@ func (n *Namespace) All(ctx context.Context, request *namespace.NamespaceAllRequ
 	var res = &namespace.NamespaceAllResponse{Data: make([]*namespace.NamespaceItem, 0, len(namespaces))}
 	releaseStatus := utils.ReleaseList{}
 	if len(namespaces) > 0 {
-		do, _, _ := sf.Do(sfListRelease, func() (interface{}, error) {
+		do, _, _ := app.Singleflight().Do("ListRelease", func() (interface{}, error) {
 			mlog.Debug("sfListRelease.....")
 			return utils.ListRelease()
 		})

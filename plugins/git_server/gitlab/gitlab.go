@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -9,10 +10,12 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
+var _ plugins.GitServer = (*server)(nil)
+
 var name = "gitlab"
 
 func init() {
-	dr := &GitlabServer{}
+	dr := &server{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
@@ -116,14 +119,6 @@ func (c *commit) GetWebURL() string {
 	return c.c.WebURL
 }
 
-func (c *commit) GetLastPipeline() plugins.PipelineInterface {
-	if c.c.LastPipeline == nil {
-		return nil
-	}
-
-	return &pipeline{p: c.c.LastPipeline}
-}
-
 type pipeline struct {
 	p *gitlab.PipelineInfo
 }
@@ -169,15 +164,28 @@ func (p *pipeline) GetCreatedAt() *time.Time {
 	return p.p.CreatedAt
 }
 
-type GitlabServer struct {
+type server struct {
 	client *gitlab.Client
 }
 
-func (g *GitlabServer) Name() string {
+func (g *server) GetCommitPipeline(pid string, sha string) (plugins.PipelineInterface, error) {
+	c, _, err := g.client.Commits.GetCommit(pid, sha)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.LastPipeline == nil {
+		return nil, errors.New("pipeline not found")
+	}
+
+	return &pipeline{p: c.LastPipeline}, nil
+}
+
+func (g *server) Name() string {
 	return name
 }
 
-func (g *GitlabServer) Initialize(args map[string]interface{}) error {
+func (g *server) Initialize(args map[string]interface{}) error {
 	client, err := gitlab.NewClient(args["token"].(string), gitlab.WithBaseURL(args["baseurl"].(string)))
 	if err != nil {
 		return err
@@ -188,12 +196,12 @@ func (g *GitlabServer) Initialize(args map[string]interface{}) error {
 	return nil
 }
 
-func (g *GitlabServer) Destroy() error {
+func (g *server) Destroy() error {
 	mlog.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (g *GitlabServer) GetProject(pid string) (plugins.ProjectInterface, error) {
+func (g *server) GetProject(pid string) (plugins.ProjectInterface, error) {
 	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
 
 	return &project{p: p}, err
@@ -225,7 +233,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *GitlabServer) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
 	res, r, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
@@ -250,7 +258,7 @@ func (g *GitlabServer) ListProjects(page, pageSize int) (plugins.ListProjectResp
 	}, err
 }
 
-func (g *GitlabServer) AllProjects() ([]plugins.ProjectInterface, error) {
+func (g *server) AllProjects() ([]plugins.ProjectInterface, error) {
 	var ps []plugins.ProjectInterface
 	page := 1
 	for page != -1 {
@@ -297,7 +305,7 @@ func (l *listBranchResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *GitlabServer) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
 	var (
 		branches []plugins.BranchInterface
 		next     int
@@ -323,7 +331,7 @@ func (g *GitlabServer) ListBranches(pid string, page, pageSize int) (plugins.Lis
 	}, nil
 }
 
-func (g *GitlabServer) AllBranches(pid string) ([]plugins.BranchInterface, error) {
+func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 	var branches []plugins.BranchInterface
 	page := 1
 	for page != -1 {
@@ -344,12 +352,12 @@ func (g *GitlabServer) AllBranches(pid string) ([]plugins.BranchInterface, error
 	return branches, nil
 }
 
-func (g *GitlabServer) GetCommit(pid string, sha string) (plugins.CommitInterface, error) {
+func (g *server) GetCommit(pid string, sha string) (plugins.CommitInterface, error) {
 	c, _, err := g.client.Commits.GetCommit(pid, sha)
 	return &commit{c: c}, err
 }
 
-func (g *GitlabServer) ListCommits(pid string, branch string) ([]plugins.CommitInterface, error) {
+func (g *server) ListCommits(pid string, branch string) ([]plugins.CommitInterface, error) {
 	commits, _, err := g.client.Commits.ListCommits(pid, &gitlab.ListCommitsOptions{RefName: gitlab.String(branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
 
 	res := make([]plugins.CommitInterface, 0, len(commits))
@@ -372,11 +380,11 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 	return string(raw), err
 }
 
-func (g *GitlabServer) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
+func (g *server) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
 	return getRawFile(g.client, pid, sha, filename)
 }
 
-func (g *GitlabServer) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
+func (g *server) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
 	return getRawFile(g.client, pid, branch, filename)
 }
 
@@ -406,10 +414,10 @@ func getDirectoryFiles(g *gitlab.Client, pid interface{}, commit string, path st
 	return files, nil
 }
 
-func (g *GitlabServer) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
+func (g *server) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
 	return getDirectoryFiles(g.client, pid, branch, path, recursive)
 }
 
-func (g *GitlabServer) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
+func (g *server) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
 	return getDirectoryFiles(g.client, pid, sha, path, recursive)
 }
