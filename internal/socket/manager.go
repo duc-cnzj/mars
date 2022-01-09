@@ -717,6 +717,12 @@ func (j *Jober) Validate() error {
 		return errors.New("有别人也在操作这个项目，等等哦~")
 	}
 
+	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit)
+	if err != nil {
+		return err
+	}
+	j.commit = commit
+
 	return nil
 }
 
@@ -943,15 +949,10 @@ func (v *VariableLoader) Load(j *Jober) error {
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit)
-	if err != nil {
-		return err
-	}
-	j.commit = commit
 	var (
 		pipelineID     int64
 		pipelineBranch string
-		pipelineCommit string = commit.GetShortID()
+		pipelineCommit string = j.Commit().GetShortID()
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息

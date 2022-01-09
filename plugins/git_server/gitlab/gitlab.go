@@ -354,7 +354,10 @@ func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 
 func (g *server) GetCommit(pid string, sha string) (plugins.CommitInterface, error) {
 	c, _, err := g.client.Commits.GetCommit(pid, sha)
-	return &commit{c: c}, err
+	if err != nil {
+		return nil, err
+	}
+	return &commit{c: c}, nil
 }
 
 func (g *server) ListCommits(pid string, branch string) ([]plugins.CommitInterface, error) {

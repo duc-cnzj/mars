@@ -45,7 +45,7 @@ const TabShell: React.FC<{
 
   const listContainer = useCallback(
     () =>
-    allPodContainers({
+      allPodContainers({
         project_id: detail.id,
       }).then((res) => {
         setList(res.data.data);
@@ -220,21 +220,26 @@ const TabShell: React.FC<{
   const reconnect = useCallback(
     (e: any) => {
       setTimestamp(new Date().getTime());
-      setValue(e.target.value);
-      let s = (e.target.value as string).split("|");
-      isPodRunning({ namespace: detail.namespace?.name || "", pod: s[0] }).then(
-        (res) => {
-          if (res.data.running) {
-            initShell();
-          } else {
-            // message.error(`容器列表有更新，请重试！`);
-            listContainer().then((res) => {
-              let first = res.data.data[0];
-              setValue(first.pod_name + "|" + first.container_name);
-            });
-          }
+      setValue((v) => {
+        if (v === e.target.value) {
+          let s = (e.target.value as string).split("|");
+          isPodRunning({
+            namespace: detail.namespace?.name || "",
+            pod: s[0],
+          }).then((res) => {
+            if (res.data.running) {
+              initShell();
+            } else {
+              // message.error(`容器列表有更新，请重试！`);
+              listContainer().then((res) => {
+                let first = res.data.data[0];
+                setValue(first.pod_name + "|" + first.container_name);
+              });
+            }
+          });
         }
-      );
+        return e.target.value;
+      });
     },
     [detail.namespace?.name, initShell, listContainer]
   );

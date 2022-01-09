@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"runtime"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -9,13 +8,12 @@ import (
 )
 
 func HandlePanic(title string) {
-	pc, _, _, _ := runtime.Caller(2)
-	file, line := runtime.FuncForPC(pc).FileLine(pc)
-	called := fmt.Sprintf("%s:%d.", file, line)
+	bf := make([]byte, 1024*5)
+	runtime.Stack(bf, false)
 
 	err := recover()
 	if err != nil {
-		mlog.Errorf("[Panic]: title: %v, err: %v --- [%s]", title, err, called)
+		mlog.Errorf("[Panic]: title: %v, err: %v --- [%s]", title, err, string(bf))
 		if app.App() != nil && app.App().IsDebug() {
 			panic(err)
 		}
