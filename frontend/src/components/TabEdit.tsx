@@ -146,8 +146,8 @@ const ModalSub: React.FC<{
         loadConfigFile();
       }
     },
-    [loadConfigFile, data.config],
-  )
+    [loadConfigFile, data.config]
+  );
   useEffect(() => {
     if (!wsReady) {
       setStart(false);
@@ -236,15 +236,15 @@ const ModalSub: React.FC<{
 
   return (
     <div className="edit-project">
-      <PipelineInfo
-        projectId={data.gitlabProjectId}
-        branch={data.gitlabBranch}
-        commit={data.gitlabCommit}
-      />
       <div
         className={classNames({ "display-none": !editVisible })}
         style={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
+        <PipelineInfo
+          projectId={data.gitlabProjectId}
+          branch={data.gitlabBranch}
+          commit={data.gitlabCommit}
+        />
         <div
           style={{
             width: "100%",
