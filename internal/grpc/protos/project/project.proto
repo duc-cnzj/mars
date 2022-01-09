@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "websocket/websocket.proto";
 import "model/model.proto";
+import "namespace/namespace.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
@@ -29,7 +30,7 @@ message ProjectShowResponse {
   string gitlab_commit_author = 11;
   string gitlab_commit_date = 12;
 
-  repeated string urls = 13;
+  repeated NamespaceServiceEndpoint urls = 13;
   message Namespace {
     int64 id = 1;
     string name = 2;

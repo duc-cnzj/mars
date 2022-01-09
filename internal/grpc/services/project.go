@@ -7,25 +7,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/internal/scopes"
-
-	"github.com/duc-cnzj/mars/pkg/model"
-
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars/internal/socket"
-	"github.com/duc-cnzj/mars/pkg/websocket"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/internal/scopes"
+	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/event"
+	"github.com/duc-cnzj/mars/pkg/model"
+	"github.com/duc-cnzj/mars/pkg/namespace"
 	"github.com/duc-cnzj/mars/pkg/project"
+	"github.com/duc-cnzj/mars/pkg/websocket"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -227,7 +225,7 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModel.Namespace.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(projectModel.Namespace.Name)
 
-	var urls = make([]string, 0)
+	var urls = make([]*namespace.NamespaceServiceEndpoint, 0)
 	for key, values := range ingMapping {
 		if projectModel.Name == key {
 			urls = append(urls, values...)

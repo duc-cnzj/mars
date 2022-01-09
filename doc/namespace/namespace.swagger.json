@@ -343,27 +343,27 @@
         }
       }
     },
-    "NamespaceServiceEndpointsResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpointsResponseitem"
-          }
-        }
-      }
-    },
-    "NamespaceServiceEndpointsResponseitem": {
+    "NamespaceServiceEndpoint": {
       "type": "object",
       "properties": {
         "name": {
           "type": "string"
         },
         "url": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
+        }
+      }
+    },
+    "NamespaceServiceEndpointsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/NamespaceServiceEndpoint"
           }
         }
       }

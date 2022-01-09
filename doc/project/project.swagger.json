@@ -337,6 +337,20 @@
         }
       }
     },
+    "NamespaceServiceEndpoint": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
+        }
+      }
+    },
     "ProjectAllPodContainersResponse": {
       "type": "object",
       "properties": {
@@ -515,7 +529,7 @@
         "urls": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/NamespaceServiceEndpoint"
           }
         },
         "namespace": {

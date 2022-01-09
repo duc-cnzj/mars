@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/pkg/namespace"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,9 +63,11 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 	}, metav1.CreateOptions{})
 }
 
-func GetNodePortMappingByNamespace(namespace string) map[string][]string {
+type Endpoint = namespace.NamespaceServiceEndpoint
+
+func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
-	var m = map[string][]string{}
+	var m = map[string][]*Endpoint{}
 
 	isHttp := func(name string) bool {
 		switch {
@@ -92,11 +94,23 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 					case strings.Contains(port.Name, "rpc"):
 						fallthrough
 					case strings.Contains(port.Name, "tcp"):
-						m[projectName] = append(data, fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
+						m[projectName] = append(data, &Endpoint{
+							Name:     projectName,
+							PortName: port.Name,
+							Url:      fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort),
+						})
 					case isHttp(port.Name):
-						m[projectName] = append(data, fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort))
+						m[projectName] = append(data, &Endpoint{
+							Name:     projectName,
+							PortName: port.Name,
+							Url:      fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort),
+						})
 					default:
-						m[projectName] = append(data, fmt.Sprintf("[%s] %s:%d", port.Name, app.Config().ExternalIp, port.NodePort))
+						m[projectName] = append(data, &Endpoint{
+							Name:     projectName,
+							PortName: port.Name,
+							Url:      fmt.Sprintf("%s:%d", app.Config().ExternalIp, port.NodePort),
+						})
 					}
 				}
 			}
@@ -105,17 +119,17 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]string {
 	return m
 }
 
-func GetIngressMappingByNamespace(namespace string) map[string][]string {
-	var m = map[string][]string{}
+func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
+	var m = map[string][]*Endpoint{}
 
 	list, _ := app.K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
 	for _, item := range list.Items {
 		for _, tls := range item.Spec.TLS {
 			if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
 				data := m[projectName]
-				var hosts []string
+				var hosts []*Endpoint
 				for _, host := range tls.Hosts {
-					hosts = append(hosts, fmt.Sprintf("https://%s", host))
+					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("https://%s", host)})
 				}
 				m[projectName] = append(data, hosts...)
 			}

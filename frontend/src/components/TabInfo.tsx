@@ -118,8 +118,8 @@ const DetailTab: React.FC<{
         <p>
           地址:
           {detail.urls.map((item, index) => (
-            <a key={index} href={item} target="_blank" className="detail-data">
-              {item}
+            <a key={index} href={item.url} target="_blank" className="detail-data">
+              {item.url}{item.port_name ? `(${item.port_name})` : ""}
             </a>
           ))}
         </p>

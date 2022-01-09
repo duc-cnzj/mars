@@ -12147,13 +12147,122 @@ export const NamespaceCpuMemoryResponse = $root.NamespaceCpuMemoryResponse = (()
     return NamespaceCpuMemoryResponse;
 })();
 
+export const NamespaceServiceEndpoint = $root.NamespaceServiceEndpoint = (() => {
+
+    /**
+     * Properties of a NamespaceServiceEndpoint.
+     * @exports INamespaceServiceEndpoint
+     * @interface INamespaceServiceEndpoint
+     * @property {string|null} [name] NamespaceServiceEndpoint name
+     * @property {string|null} [url] NamespaceServiceEndpoint url
+     * @property {string|null} [port_name] NamespaceServiceEndpoint port_name
+     */
+
+    /**
+     * Constructs a new NamespaceServiceEndpoint.
+     * @exports NamespaceServiceEndpoint
+     * @classdesc Represents a NamespaceServiceEndpoint.
+     * @implements INamespaceServiceEndpoint
+     * @constructor
+     * @param {INamespaceServiceEndpoint=} [properties] Properties to set
+     */
+    function NamespaceServiceEndpoint(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * NamespaceServiceEndpoint name.
+     * @member {string} name
+     * @memberof NamespaceServiceEndpoint
+     * @instance
+     */
+    NamespaceServiceEndpoint.prototype.name = "";
+
+    /**
+     * NamespaceServiceEndpoint url.
+     * @member {string} url
+     * @memberof NamespaceServiceEndpoint
+     * @instance
+     */
+    NamespaceServiceEndpoint.prototype.url = "";
+
+    /**
+     * NamespaceServiceEndpoint port_name.
+     * @member {string} port_name
+     * @memberof NamespaceServiceEndpoint
+     * @instance
+     */
+    NamespaceServiceEndpoint.prototype.port_name = "";
+
+    /**
+     * Encodes the specified NamespaceServiceEndpoint message. Does not implicitly {@link NamespaceServiceEndpoint.verify|verify} messages.
+     * @function encode
+     * @memberof NamespaceServiceEndpoint
+     * @static
+     * @param {NamespaceServiceEndpoint} message NamespaceServiceEndpoint message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NamespaceServiceEndpoint.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.name != null && Object.hasOwnProperty.call(message, "name"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.name);
+        if (message.url != null && Object.hasOwnProperty.call(message, "url"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.url);
+        if (message.port_name != null && Object.hasOwnProperty.call(message, "port_name"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.port_name);
+        return writer;
+    };
+
+    /**
+     * Decodes a NamespaceServiceEndpoint message from the specified reader or buffer.
+     * @function decode
+     * @memberof NamespaceServiceEndpoint
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NamespaceServiceEndpoint} NamespaceServiceEndpoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NamespaceServiceEndpoint.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceServiceEndpoint();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.name = reader.string();
+                break;
+            case 2:
+                message.url = reader.string();
+                break;
+            case 3:
+                message.port_name = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return NamespaceServiceEndpoint;
+})();
+
 export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpointsResponse = (() => {
 
     /**
      * Properties of a NamespaceServiceEndpointsResponse.
      * @exports INamespaceServiceEndpointsResponse
      * @interface INamespaceServiceEndpointsResponse
-     * @property {Array.<NamespaceServiceEndpointsResponse.item>|null} [data] NamespaceServiceEndpointsResponse data
+     * @property {Array.<NamespaceServiceEndpoint>|null} [data] NamespaceServiceEndpointsResponse data
      */
 
     /**
@@ -12174,7 +12283,7 @@ export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpoints
 
     /**
      * NamespaceServiceEndpointsResponse data.
-     * @member {Array.<NamespaceServiceEndpointsResponse.item>} data
+     * @member {Array.<NamespaceServiceEndpoint>} data
      * @memberof NamespaceServiceEndpointsResponse
      * @instance
      */
@@ -12194,7 +12303,7 @@ export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpoints
             writer = $Writer.create();
         if (message.data != null && message.data.length)
             for (let i = 0; i < message.data.length; ++i)
-                $root.NamespaceServiceEndpointsResponse.item.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                $root.NamespaceServiceEndpoint.encode(message.data[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
@@ -12219,7 +12328,7 @@ export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpoints
             case 1:
                 if (!(message.data && message.data.length))
                     message.data = [];
-                message.data.push($root.NamespaceServiceEndpointsResponse.item.decode(reader, reader.uint32()));
+                message.data.push($root.NamespaceServiceEndpoint.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -12228,105 +12337,6 @@ export const NamespaceServiceEndpointsResponse = $root.NamespaceServiceEndpoints
         }
         return message;
     };
-
-    NamespaceServiceEndpointsResponse.item = (function() {
-
-        /**
-         * Properties of an item.
-         * @memberof NamespaceServiceEndpointsResponse
-         * @interface Iitem
-         * @property {string|null} [name] item name
-         * @property {Array.<string>|null} [url] item url
-         */
-
-        /**
-         * Constructs a new item.
-         * @memberof NamespaceServiceEndpointsResponse
-         * @classdesc Represents an item.
-         * @implements Iitem
-         * @constructor
-         * @param {NamespaceServiceEndpointsResponse.Iitem=} [properties] Properties to set
-         */
-        function item(properties) {
-            this.url = [];
-            if (properties)
-                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
-                        this[keys[i]] = properties[keys[i]];
-        }
-
-        /**
-         * item name.
-         * @member {string} name
-         * @memberof NamespaceServiceEndpointsResponse.item
-         * @instance
-         */
-        item.prototype.name = "";
-
-        /**
-         * item url.
-         * @member {Array.<string>} url
-         * @memberof NamespaceServiceEndpointsResponse.item
-         * @instance
-         */
-        item.prototype.url = $util.emptyArray;
-
-        /**
-         * Encodes the specified item message. Does not implicitly {@link NamespaceServiceEndpointsResponse.item.verify|verify} messages.
-         * @function encode
-         * @memberof NamespaceServiceEndpointsResponse.item
-         * @static
-         * @param {NamespaceServiceEndpointsResponse.item} message item message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        item.encode = function encode(message, writer) {
-            if (!writer)
-                writer = $Writer.create();
-            if (message.name != null && Object.hasOwnProperty.call(message, "name"))
-                writer.uint32(/* id 1, wireType 2 =*/10).string(message.name);
-            if (message.url != null && message.url.length)
-                for (let i = 0; i < message.url.length; ++i)
-                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.url[i]);
-            return writer;
-        };
-
-        /**
-         * Decodes an item message from the specified reader or buffer.
-         * @function decode
-         * @memberof NamespaceServiceEndpointsResponse.item
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @param {number} [length] Message length if known beforehand
-         * @returns {NamespaceServiceEndpointsResponse.item} item
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        item.decode = function decode(reader, length) {
-            if (!(reader instanceof $Reader))
-                reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NamespaceServiceEndpointsResponse.item();
-            while (reader.pos < end) {
-                let tag = reader.uint32();
-                switch (tag >>> 3) {
-                case 1:
-                    message.name = reader.string();
-                    break;
-                case 2:
-                    if (!(message.url && message.url.length))
-                        message.url = [];
-                    message.url.push(reader.string());
-                    break;
-                default:
-                    reader.skipType(tag & 7);
-                    break;
-                }
-            }
-            return message;
-        };
-
-        return item;
-    })();
 
     return NamespaceServiceEndpointsResponse;
 })();
@@ -13222,7 +13232,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      * @property {string|null} [gitlab_commit_title] ProjectShowResponse gitlab_commit_title
      * @property {string|null} [gitlab_commit_author] ProjectShowResponse gitlab_commit_author
      * @property {string|null} [gitlab_commit_date] ProjectShowResponse gitlab_commit_date
-     * @property {Array.<string>|null} [urls] ProjectShowResponse urls
+     * @property {Array.<NamespaceServiceEndpoint>|null} [urls] ProjectShowResponse urls
      * @property {ProjectShowResponse.Namespace|null} [namespace] ProjectShowResponse namespace
      * @property {string|null} [cpu] ProjectShowResponse cpu
      * @property {string|null} [memory] ProjectShowResponse memory
@@ -13347,7 +13357,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
 
     /**
      * ProjectShowResponse urls.
-     * @member {Array.<string>} urls
+     * @member {Array.<NamespaceServiceEndpoint>} urls
      * @memberof ProjectShowResponse
      * @instance
      */
@@ -13455,7 +13465,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
             writer.uint32(/* id 12, wireType 2 =*/98).string(message.gitlab_commit_date);
         if (message.urls != null && message.urls.length)
             for (let i = 0; i < message.urls.length; ++i)
-                writer.uint32(/* id 13, wireType 2 =*/106).string(message.urls[i]);
+                $root.NamespaceServiceEndpoint.encode(message.urls[i], writer.uint32(/* id 13, wireType 2 =*/106).fork()).ldelim();
         if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
             $root.ProjectShowResponse.Namespace.encode(message.namespace, writer.uint32(/* id 14, wireType 2 =*/114).fork()).ldelim();
         if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
@@ -13532,7 +13542,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
             case 13:
                 if (!(message.urls && message.urls.length))
                     message.urls = [];
-                message.urls.push(reader.string());
+                message.urls.push($root.NamespaceServiceEndpoint.decode(reader, reader.uint32()));
                 break;
             case 14:
                 message.namespace = $root.ProjectShowResponse.Namespace.decode(reader, reader.uint32());

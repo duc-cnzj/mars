@@ -305,6 +305,40 @@ func (m *ProjectShowResponse) validate(all bool) error {
 
 	// no validation rules for GitlabCommitDate
 
+	for idx, item := range m.GetUrls() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("Urls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("Urls[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectShowResponseValidationError{
+					field:  fmt.Sprintf("Urls[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if all {
 		switch v := interface{}(m.GetNamespace()).(type) {
 		case interface{ ValidateAll() error }:

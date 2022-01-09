@@ -28,7 +28,7 @@ message NamespaceCpuMemoryRequest {
 
 message NamespaceServiceEndpointsRequest {
   int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-  string project_name = 2 [(validate.rules).string.min_bytes = 1];
+  string project_name = 2;
 }
 
 message NamespaceSimpleProject {
@@ -70,13 +70,14 @@ message NamespaceCpuMemoryResponse {
   string memory = 2;
 }
 
-message NamespaceServiceEndpointsResponse {
-  message item {
+message NamespaceServiceEndpoint {
     string name = 1;
-    repeated string url = 2;
-  }
+    string url = 2;
+    string port_name = 3;
+}
 
-  repeated item data = 1;
+message NamespaceServiceEndpointsResponse {
+  repeated NamespaceServiceEndpoint data = 1;
 }
 
 message NamespaceIsExistsResponse {

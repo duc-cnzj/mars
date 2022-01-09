@@ -4947,6 +4947,43 @@ export class NamespaceCpuMemoryResponse implements INamespaceCpuMemoryResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceCpuMemoryResponse;
 }
 
+/** Represents a NamespaceServiceEndpoint. */
+export class NamespaceServiceEndpoint implements INamespaceServiceEndpoint {
+
+    /**
+     * Constructs a new NamespaceServiceEndpoint.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: INamespaceServiceEndpoint);
+
+    /** NamespaceServiceEndpoint name. */
+    public name: string;
+
+    /** NamespaceServiceEndpoint url. */
+    public url: string;
+
+    /** NamespaceServiceEndpoint port_name. */
+    public port_name: string;
+
+    /**
+     * Encodes the specified NamespaceServiceEndpoint message. Does not implicitly {@link NamespaceServiceEndpoint.verify|verify} messages.
+     * @param message NamespaceServiceEndpoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: NamespaceServiceEndpoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NamespaceServiceEndpoint message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NamespaceServiceEndpoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpoint;
+}
+
 /** Represents a NamespaceServiceEndpointsResponse. */
 export class NamespaceServiceEndpointsResponse implements INamespaceServiceEndpointsResponse {
 
@@ -4957,7 +4994,7 @@ export class NamespaceServiceEndpointsResponse implements INamespaceServiceEndpo
     constructor(properties?: INamespaceServiceEndpointsResponse);
 
     /** NamespaceServiceEndpointsResponse data. */
-    public data: NamespaceServiceEndpointsResponse.item[];
+    public data: NamespaceServiceEndpoint[];
 
     /**
      * Encodes the specified NamespaceServiceEndpointsResponse message. Does not implicitly {@link NamespaceServiceEndpointsResponse.verify|verify} messages.
@@ -4976,53 +5013,6 @@ export class NamespaceServiceEndpointsResponse implements INamespaceServiceEndpo
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpointsResponse;
-}
-
-export namespace NamespaceServiceEndpointsResponse {
-
-    /** Properties of an item. */
-    interface Iitem {
-
-        /** item name */
-        name?: (string|null);
-
-        /** item url */
-        url?: (string[]|null);
-    }
-
-    /** Represents an item. */
-    class item implements Iitem {
-
-        /**
-         * Constructs a new item.
-         * @param [properties] Properties to set
-         */
-        constructor(properties?: NamespaceServiceEndpointsResponse.Iitem);
-
-        /** item name. */
-        public name: string;
-
-        /** item url. */
-        public url: string[];
-
-        /**
-         * Encodes the specified item message. Does not implicitly {@link NamespaceServiceEndpointsResponse.item.verify|verify} messages.
-         * @param message item message or plain object to encode
-         * @param [writer] Writer to encode to
-         * @returns Writer
-         */
-        public static encode(message: NamespaceServiceEndpointsResponse.item, writer?: $protobuf.Writer): $protobuf.Writer;
-
-        /**
-         * Decodes an item message from the specified reader or buffer.
-         * @param reader Reader or buffer to decode from
-         * @param [length] Message length if known beforehand
-         * @returns item
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpointsResponse.item;
-    }
 }
 
 /** Represents a NamespaceIsExistsResponse. */
@@ -5486,7 +5476,7 @@ export class ProjectShowResponse implements IProjectShowResponse {
     public gitlab_commit_date: string;
 
     /** ProjectShowResponse urls. */
-    public urls: string[];
+    public urls: NamespaceServiceEndpoint[];
 
     /** ProjectShowResponse namespace. */
     public namespace?: (ProjectShowResponse.Namespace|null);

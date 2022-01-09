@@ -7,27 +7,25 @@ import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
   ({ namespaceId, projectName }) => {
-    const [endpoints, setEndpoints] = useState<pb.NamespaceServiceEndpointsResponse.Iitem[]>();
+    const [endpoints, setEndpoints] = useState<pb.NamespaceServiceEndpoint[]>();
 
     return (
       <Popover
         placement="right"
         title={"链接"}
         content={endpoints?.map((v, k) =>
-          v.url?.map((link) => (
-            <div key={link} onClick={(e) => e.stopPropagation()}>
-              <span style={{ marginRight: 5 }}>{v.name}:</span>
-              <a href={link} target="_blank" style={{ marginRight: 10 }}>
-                {link}
+            <div key={v.url} onClick={(e) => e.stopPropagation()}>
+              <span style={{ marginRight: 5 }}>{v.name}{v.port_name ? `(${v.port_name})` : ""}:</span>
+              <a href={v.url} target="_blank" style={{ marginRight: 10 }}>
+                {v.url}
               </a>
               <CopyToClipboard
-                text={link}
+                text={v.url}
                 onCopy={() => message.success("已复制！")}
               >
                 <CopyOutlined />
               </CopyToClipboard>
             </div>
-          ))
         )}
         trigger="hover"
       >

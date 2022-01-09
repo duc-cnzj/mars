@@ -2004,27 +2004,27 @@
         }
       }
     },
+    "NamespaceServiceEndpoint": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "NamespaceServiceEndpointsResponse": {
       "type": "object",
       "properties": {
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpointsResponseitem"
-          }
-        }
-      }
-    },
-    "NamespaceServiceEndpointsResponseitem": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "array",
-          "items": {
-            "type": "string"
+            "$ref": "#/definitions/NamespaceServiceEndpoint"
           }
         }
       }
@@ -2276,7 +2276,7 @@
         "urls": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/NamespaceServiceEndpoint"
           }
         }
       }
