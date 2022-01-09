@@ -12,9 +12,9 @@ import {
 import pb from "../api/compiled";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 
-SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage("yaml", yaml);
 
 const { confirm } = Modal;
 
@@ -25,7 +25,7 @@ const DetailTab: React.FC<{
   const [loading, setLoading] = useState<boolean>(false);
 
   return detail ? (
-    <div style={{height: "100%", overflowY: "auto"}}>
+    <div style={{ height: "100%", overflowY: "auto" }}>
       <div
         style={{
           display: "flex",
@@ -101,28 +101,40 @@ const DetailTab: React.FC<{
           分支: <span className="detail-data">{detail.gitlab_branch}</span>
         </p>
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <LinkOutlined
+
+      <div>
+        <div
           style={{
-            width: 20,
-            height: 20,
-            marginRight: 4,
-            fontSize: 16,
+            display: "flex",
+            alignItems: "center",
           }}
-        />
-        <p>
-          地址:
+        >
+          <LinkOutlined
+            style={{
+              width: 20,
+              height: 20,
+              marginRight: 4,
+              fontSize: 16,
+            }}
+          />
+          <p>地址:</p>
+        </div>
+        <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
           {detail.urls.map((item, index) => (
-            <a key={index} href={item.url} target="_blank" className="detail-data">
-              {item.url}{item.port_name ? `(${item.port_name})` : ""}
-            </a>
+            <li>
+              {index + 1}.
+              <a
+                key={index}
+                href={item.url}
+                target="_blank"
+                className="detail-data"
+              >
+                {item.url}
+                {item.port_name ? `(${item.port_name})` : ""}
+              </a>
+            </li>
           ))}
-        </p>
+        </ul>
       </div>
 
       <div
@@ -196,7 +208,8 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          部署日期: <span className="detail-data">{detail.humanize_created_at}</span>
+          部署日期:{" "}
+          <span className="detail-data">{detail.humanize_created_at}</span>
         </p>
       </div>
       <div
@@ -225,7 +238,8 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          更新日期: <span className="detail-data">{detail.humanize_updated_at}</span>
+          更新日期:{" "}
+          <span className="detail-data">{detail.humanize_updated_at}</span>
         </p>
       </div>
 
