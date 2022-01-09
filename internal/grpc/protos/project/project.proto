@@ -110,7 +110,13 @@ message ProjectListResponse {
   int64 count = 3;
   repeated ProjectModel data = 4;
 }
-
+message ProjectIsPodExistsRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+}
+message ProjectIsPodExistsResponse {
+  bool exists = 1;
+}
 service Project {
   rpc List(ProjectListRequest) returns (ProjectListResponse) {
     option (google.api.http) = {
@@ -135,6 +141,12 @@ service Project {
   rpc IsPodRunning(ProjectIsPodRunningRequest) returns (ProjectIsPodRunningResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace}/pod/{pod}/status"
+    };
+  }
+
+  rpc IsPodExists(ProjectIsPodExistsRequest) returns (ProjectIsPodExistsResponse) {
+    option (google.api.http) = {
+      post: "/api/namespaces/{namespace}/pod/{pod}/exists"
     };
   }
 

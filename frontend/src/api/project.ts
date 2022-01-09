@@ -21,4 +21,8 @@ export function isPodRunning({namespace, pod}: pb.ProjectIsPodRunningRequest) {
   return ajax.get<pb.ProjectIsPodRunningResponse>(`/api/namespaces/${namespace}/pod/${pod}/status`);
 }
 
+export function isPodExists({namespace, pod}: pb.ProjectIsPodExistsRequest) {
+  return ajax.post<pb.ProjectIsPodExistsResponse>(`/api/namespaces/${namespace}/pod/${pod}/exists`);
+}
+
 

@@ -24,6 +24,7 @@ type ProjectClient interface {
 	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
 	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
 	IsPodRunning(ctx context.Context, in *ProjectIsPodRunningRequest, opts ...grpc.CallOption) (*ProjectIsPodRunningResponse, error)
+	IsPodExists(ctx context.Context, in *ProjectIsPodExistsRequest, opts ...grpc.CallOption) (*ProjectIsPodExistsResponse, error)
 	AllPodContainers(ctx context.Context, in *ProjectAllPodContainersRequest, opts ...grpc.CallOption) (*ProjectAllPodContainersResponse, error)
 	PodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (*ProjectPodContainerLogResponse, error)
 	StreamPodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error)
@@ -105,6 +106,15 @@ func (c *projectClient) IsPodRunning(ctx context.Context, in *ProjectIsPodRunnin
 	return out, nil
 }
 
+func (c *projectClient) IsPodExists(ctx context.Context, in *ProjectIsPodExistsRequest, opts ...grpc.CallOption) (*ProjectIsPodExistsResponse, error) {
+	out := new(ProjectIsPodExistsResponse)
+	err := c.cc.Invoke(ctx, "/Project/IsPodExists", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *projectClient) AllPodContainers(ctx context.Context, in *ProjectAllPodContainersRequest, opts ...grpc.CallOption) (*ProjectAllPodContainersResponse, error) {
 	out := new(ProjectAllPodContainersResponse)
 	err := c.cc.Invoke(ctx, "/Project/AllPodContainers", in, out, opts...)
@@ -164,6 +174,7 @@ type ProjectServer interface {
 	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
 	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
 	IsPodRunning(context.Context, *ProjectIsPodRunningRequest) (*ProjectIsPodRunningResponse, error)
+	IsPodExists(context.Context, *ProjectIsPodExistsRequest) (*ProjectIsPodExistsResponse, error)
 	AllPodContainers(context.Context, *ProjectAllPodContainersRequest) (*ProjectAllPodContainersResponse, error)
 	PodContainerLog(context.Context, *ProjectPodContainerLogRequest) (*ProjectPodContainerLogResponse, error)
 	StreamPodContainerLog(*ProjectPodContainerLogRequest, Project_StreamPodContainerLogServer) error
@@ -188,6 +199,9 @@ func (UnimplementedProjectServer) Show(context.Context, *ProjectShowRequest) (*P
 }
 func (UnimplementedProjectServer) IsPodRunning(context.Context, *ProjectIsPodRunningRequest) (*ProjectIsPodRunningResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsPodRunning not implemented")
+}
+func (UnimplementedProjectServer) IsPodExists(context.Context, *ProjectIsPodExistsRequest) (*ProjectIsPodExistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsPodExists not implemented")
 }
 func (UnimplementedProjectServer) AllPodContainers(context.Context, *ProjectAllPodContainersRequest) (*ProjectAllPodContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllPodContainers not implemented")
@@ -304,6 +318,24 @@ func _Project_IsPodRunning_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Project_IsPodExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectIsPodExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).IsPodExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Project/IsPodExists",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).IsPodExists(ctx, req.(*ProjectIsPodExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Project_AllPodContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProjectAllPodContainersRequest)
 	if err := dec(in); err != nil {
@@ -383,6 +415,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsPodRunning",
 			Handler:    _Project_IsPodRunning_Handler,
+		},
+		{
+			MethodName: "IsPodExists",
+			Handler:    _Project_IsPodExists_Handler,
 		},
 		{
 			MethodName: "AllPodContainers",

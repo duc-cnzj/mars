@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -187,6 +189,15 @@ func (p *Project) IsPodRunning(_ context.Context, request *project.ProjectIsPodR
 	running, reason := utils.IsPodRunning(request.GetNamespace(), request.GetPod())
 
 	return &project.ProjectIsPodRunningResponse{Running: running, Reason: reason}, nil
+}
+
+func (p *Project) IsPodExists(_ context.Context, request *project.ProjectIsPodExistsRequest) (*project.ProjectIsPodExistsResponse, error) {
+	_, err := app.K8sClientSet().CoreV1().Pods(request.Namespace).Get(context.TODO(), request.Pod, v12.GetOptions{})
+	if err != nil && apierrors.IsNotFound(err) {
+		return &project.ProjectIsPodExistsResponse{Exists: false}, nil
+	}
+
+	return &project.ProjectIsPodExistsResponse{Exists: true}, nil
 }
 
 func (p *Project) Delete(ctx context.Context, request *project.ProjectDeleteRequest) (*project.ProjectDeleteResponse, error) {

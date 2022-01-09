@@ -16,6 +16,42 @@
     "application/json"
   ],
   "paths": {
+    "/api/namespaces/{namespace}/pod/{pod}/exists": {
+      "post": {
+        "operationId": "Project_IsPodExists",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProjectIsPodExistsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Project"
+        ]
+      }
+    },
     "/api/namespaces/{namespace}/pod/{pod}/status": {
       "get": {
         "operationId": "Project_IsPodRunning",
@@ -375,6 +411,14 @@
     },
     "ProjectDeleteResponse": {
       "type": "object"
+    },
+    "ProjectIsPodExistsResponse": {
+      "type": "object",
+      "properties": {
+        "exists": {
+          "type": "boolean"
+        }
+      }
     },
     "ProjectIsPodRunningResponse": {
       "type": "object",

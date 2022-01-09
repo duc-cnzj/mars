@@ -5994,6 +5994,71 @@ export class ProjectListResponse implements IProjectListResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectListResponse;
 }
 
+/** Represents a ProjectIsPodExistsRequest. */
+export class ProjectIsPodExistsRequest implements IProjectIsPodExistsRequest {
+
+    /**
+     * Constructs a new ProjectIsPodExistsRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectIsPodExistsRequest);
+
+    /** ProjectIsPodExistsRequest namespace. */
+    public namespace: string;
+
+    /** ProjectIsPodExistsRequest pod. */
+    public pod: string;
+
+    /**
+     * Encodes the specified ProjectIsPodExistsRequest message. Does not implicitly {@link ProjectIsPodExistsRequest.verify|verify} messages.
+     * @param message ProjectIsPodExistsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectIsPodExistsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectIsPodExistsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectIsPodExistsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodExistsRequest;
+}
+
+/** Represents a ProjectIsPodExistsResponse. */
+export class ProjectIsPodExistsResponse implements IProjectIsPodExistsResponse {
+
+    /**
+     * Constructs a new ProjectIsPodExistsResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectIsPodExistsResponse);
+
+    /** ProjectIsPodExistsResponse exists. */
+    public exists: boolean;
+
+    /**
+     * Encodes the specified ProjectIsPodExistsResponse message. Does not implicitly {@link ProjectIsPodExistsResponse.verify|verify} messages.
+     * @param message ProjectIsPodExistsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectIsPodExistsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectIsPodExistsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectIsPodExistsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodExistsResponse;
+}
+
 /** Represents a Project */
 export class Project extends $protobuf.rpc.Service {
 
@@ -6076,6 +6141,20 @@ export class Project extends $protobuf.rpc.Service {
     public isPodRunning(request: ProjectIsPodRunningRequest): Promise<ProjectIsPodRunningResponse>;
 
     /**
+     * Calls IsPodExists.
+     * @param request ProjectIsPodExistsRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectIsPodExistsResponse
+     */
+    public isPodExists(request: ProjectIsPodExistsRequest, callback: Project.IsPodExistsCallback): void;
+
+    /**
+     * Calls IsPodExists.
+     * @param request ProjectIsPodExistsRequest message or plain object
+     * @returns Promise
+     */
+    public isPodExists(request: ProjectIsPodExistsRequest): Promise<ProjectIsPodExistsResponse>;
+
+    /**
      * Calls AllPodContainers.
      * @param request ProjectAllPodContainersRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectAllPodContainersResponse
@@ -6154,6 +6233,13 @@ export namespace Project {
      * @param [response] ProjectIsPodRunningResponse
      */
     type IsPodRunningCallback = (error: (Error|null), response?: ProjectIsPodRunningResponse) => void;
+
+    /**
+     * Callback as used by {@link Project#isPodExists}.
+     * @param error Error, if any
+     * @param [response] ProjectIsPodExistsResponse
+     */
+    type IsPodExistsCallback = (error: (Error|null), response?: ProjectIsPodExistsResponse) => void;
 
     /**
      * Callback as used by {@link Project#allPodContainers}.

@@ -14906,6 +14906,182 @@ export const ProjectListResponse = $root.ProjectListResponse = (() => {
     return ProjectListResponse;
 })();
 
+export const ProjectIsPodExistsRequest = $root.ProjectIsPodExistsRequest = (() => {
+
+    /**
+     * Properties of a ProjectIsPodExistsRequest.
+     * @exports IProjectIsPodExistsRequest
+     * @interface IProjectIsPodExistsRequest
+     * @property {string|null} [namespace] ProjectIsPodExistsRequest namespace
+     * @property {string|null} [pod] ProjectIsPodExistsRequest pod
+     */
+
+    /**
+     * Constructs a new ProjectIsPodExistsRequest.
+     * @exports ProjectIsPodExistsRequest
+     * @classdesc Represents a ProjectIsPodExistsRequest.
+     * @implements IProjectIsPodExistsRequest
+     * @constructor
+     * @param {IProjectIsPodExistsRequest=} [properties] Properties to set
+     */
+    function ProjectIsPodExistsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectIsPodExistsRequest namespace.
+     * @member {string} namespace
+     * @memberof ProjectIsPodExistsRequest
+     * @instance
+     */
+    ProjectIsPodExistsRequest.prototype.namespace = "";
+
+    /**
+     * ProjectIsPodExistsRequest pod.
+     * @member {string} pod
+     * @memberof ProjectIsPodExistsRequest
+     * @instance
+     */
+    ProjectIsPodExistsRequest.prototype.pod = "";
+
+    /**
+     * Encodes the specified ProjectIsPodExistsRequest message. Does not implicitly {@link ProjectIsPodExistsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectIsPodExistsRequest
+     * @static
+     * @param {ProjectIsPodExistsRequest} message ProjectIsPodExistsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectIsPodExistsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectIsPodExistsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectIsPodExistsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectIsPodExistsRequest} ProjectIsPodExistsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectIsPodExistsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectIsPodExistsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace = reader.string();
+                break;
+            case 2:
+                message.pod = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectIsPodExistsRequest;
+})();
+
+export const ProjectIsPodExistsResponse = $root.ProjectIsPodExistsResponse = (() => {
+
+    /**
+     * Properties of a ProjectIsPodExistsResponse.
+     * @exports IProjectIsPodExistsResponse
+     * @interface IProjectIsPodExistsResponse
+     * @property {boolean|null} [exists] ProjectIsPodExistsResponse exists
+     */
+
+    /**
+     * Constructs a new ProjectIsPodExistsResponse.
+     * @exports ProjectIsPodExistsResponse
+     * @classdesc Represents a ProjectIsPodExistsResponse.
+     * @implements IProjectIsPodExistsResponse
+     * @constructor
+     * @param {IProjectIsPodExistsResponse=} [properties] Properties to set
+     */
+    function ProjectIsPodExistsResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectIsPodExistsResponse exists.
+     * @member {boolean} exists
+     * @memberof ProjectIsPodExistsResponse
+     * @instance
+     */
+    ProjectIsPodExistsResponse.prototype.exists = false;
+
+    /**
+     * Encodes the specified ProjectIsPodExistsResponse message. Does not implicitly {@link ProjectIsPodExistsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectIsPodExistsResponse
+     * @static
+     * @param {ProjectIsPodExistsResponse} message ProjectIsPodExistsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectIsPodExistsResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.exists != null && Object.hasOwnProperty.call(message, "exists"))
+            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.exists);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectIsPodExistsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectIsPodExistsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectIsPodExistsResponse} ProjectIsPodExistsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectIsPodExistsResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectIsPodExistsResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.exists = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectIsPodExistsResponse;
+})();
+
 export const Project = $root.Project = (() => {
 
     /**
@@ -15086,6 +15262,39 @@ export const Project = $root.Project = (() => {
      * @instance
      * @param {ProjectIsPodRunningRequest} request ProjectIsPodRunningRequest message or plain object
      * @returns {Promise<ProjectIsPodRunningResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Project#isPodExists}.
+     * @memberof Project
+     * @typedef IsPodExistsCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ProjectIsPodExistsResponse} [response] ProjectIsPodExistsResponse
+     */
+
+    /**
+     * Calls IsPodExists.
+     * @function isPodExists
+     * @memberof Project
+     * @instance
+     * @param {ProjectIsPodExistsRequest} request ProjectIsPodExistsRequest message or plain object
+     * @param {Project.IsPodExistsCallback} callback Node-style callback called with the error, if any, and ProjectIsPodExistsResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype.isPodExists = function isPodExists(request, callback) {
+        return this.rpcCall(isPodExists, $root.ProjectIsPodExistsRequest, $root.ProjectIsPodExistsResponse, request, callback);
+    }, "name", { value: "IsPodExists" });
+
+    /**
+     * Calls IsPodExists.
+     * @function isPodExists
+     * @memberof Project
+     * @instance
+     * @param {ProjectIsPodExistsRequest} request ProjectIsPodExistsRequest message or plain object
+     * @returns {Promise<ProjectIsPodExistsResponse>} Promise
      * @variation 2
      */
 

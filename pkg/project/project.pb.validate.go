@@ -1998,6 +1998,232 @@ var _ interface {
 	ErrorName() string
 } = ProjectListResponseValidationError{}
 
+// Validate checks the field values on ProjectIsPodExistsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectIsPodExistsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectIsPodExistsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectIsPodExistsRequestMultiError, or nil if none found.
+func (m *ProjectIsPodExistsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectIsPodExistsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetNamespace()) < 1 {
+		err := ProjectIsPodExistsRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetPod()) < 1 {
+		err := ProjectIsPodExistsRequestValidationError{
+			field:  "Pod",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ProjectIsPodExistsRequestMultiError(errors)
+	}
+	return nil
+}
+
+// ProjectIsPodExistsRequestMultiError is an error wrapping multiple validation
+// errors returned by ProjectIsPodExistsRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ProjectIsPodExistsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectIsPodExistsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectIsPodExistsRequestMultiError) AllErrors() []error { return m }
+
+// ProjectIsPodExistsRequestValidationError is the validation error returned by
+// ProjectIsPodExistsRequest.Validate if the designated constraints aren't met.
+type ProjectIsPodExistsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectIsPodExistsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectIsPodExistsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectIsPodExistsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectIsPodExistsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectIsPodExistsRequestValidationError) ErrorName() string {
+	return "ProjectIsPodExistsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectIsPodExistsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectIsPodExistsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectIsPodExistsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectIsPodExistsRequestValidationError{}
+
+// Validate checks the field values on ProjectIsPodExistsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectIsPodExistsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectIsPodExistsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectIsPodExistsResponseMultiError, or nil if none found.
+func (m *ProjectIsPodExistsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectIsPodExistsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Exists
+
+	if len(errors) > 0 {
+		return ProjectIsPodExistsResponseMultiError(errors)
+	}
+	return nil
+}
+
+// ProjectIsPodExistsResponseMultiError is an error wrapping multiple
+// validation errors returned by ProjectIsPodExistsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ProjectIsPodExistsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectIsPodExistsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectIsPodExistsResponseMultiError) AllErrors() []error { return m }
+
+// ProjectIsPodExistsResponseValidationError is the validation error returned
+// by ProjectIsPodExistsResponse.Validate if the designated constraints aren't met.
+type ProjectIsPodExistsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectIsPodExistsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectIsPodExistsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectIsPodExistsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectIsPodExistsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectIsPodExistsResponseValidationError) ErrorName() string {
+	return "ProjectIsPodExistsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectIsPodExistsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectIsPodExistsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectIsPodExistsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectIsPodExistsResponseValidationError{}
+
 // Validate checks the field values on ProjectShowResponse_Namespace with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

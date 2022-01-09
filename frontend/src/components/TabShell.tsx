@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { allPodContainers, isPodRunning } from "../api/project";
+import { allPodContainers, isPodExists } from "../api/project";
 import { message, Radio, Tag, Upload, Button } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -223,11 +223,11 @@ const TabShell: React.FC<{
       setValue((v) => {
         if (v === e.target.value) {
           let s = (e.target.value as string).split("|");
-          isPodRunning({
+          isPodExists({
             namespace: detail.namespace?.name || "",
             pod: s[0],
           }).then((res) => {
-            if (res.data.running) {
+            if (res.data.exists) {
               initShell();
             } else {
               // message.error(`容器列表有更新，请重试！`);
