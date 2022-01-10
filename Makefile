@@ -46,16 +46,16 @@ test:
 
 .PHONY: build_linux_amd64
 build_linux_amd64:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app-linux-amd64 main.go
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app-linux-amd64 main.go
 
 .PHONY: build_drawin_amd64
 build_drawin_amd64:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app-darwin-amd64 main.go
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app-darwin-amd64 main.go
 
 .PHONY: build_drawin_arm64
 build_drawin_arm64:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags=${LDFLAGS} -o app-darwin-arm64 main.go
+	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags=${LDFLAGS} -o app-darwin-arm64 main.go
 
 .PHONY: build_windows
 build_windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app.exe main.go
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags=${LDFLAGS} -o app.exe main.go
