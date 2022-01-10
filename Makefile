@@ -17,6 +17,9 @@ gen:
 vet:
 	go vet ./...
 
+.PHONY: release
+release: build_linux_amd64 build_drawin_amd64 build_drawin_arm64
+
 .PHONY: fmt
 fmt:
 	gofmt -s -w ./ && goimports -w ./

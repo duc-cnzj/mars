@@ -21,6 +21,7 @@
 * 支持查看容器cpu和内存使用情况。
 * 插件化
   * 队列驱动: nsq, redis, memory。
+* sdk 接入: [go](github.com/duc-cnzj/mars/pkg)。
 
 ## 🛠️ 使用文档
 
@@ -41,6 +42,12 @@ helm upgrade --install mars mars-charts/mars -f mars-values.yaml
 ```
 
 ## 🔍 configuration
+
+### 新方式
+
+web 页面配置项目，开启全局配置。
+
+### 老方式(侵入性)
 
 用法借鉴 `.gitlab.yml`, 使用时只需要在项目下面创建一个 `.mars.yaml` 就可以了。 
 
@@ -107,7 +114,7 @@ values_yaml: |
           - <.Host1>
 ```
 
-### 📒 `is_simple_env`, `config_file` 解释
+#### 📒 `is_simple_env`, `config_file` 解释
 
 这是一份普通的 helm charts values.yaml 文件
 ```yaml
@@ -146,10 +153,18 @@ conf_two: |
 
 [视频教程](https://www.bilibili.com/video/BV19b4y1r7iY/)
 
-> xuanji golang 版本。
+## 🍀 go-sdk 接入
 
-https://github.com/Lick-Dog-Club/xuanji-k8s-all-in-one
+```
+go get -u github.com/duc-cnzj/mars/pkg
+```
 
+```golang
+c, err := client.NewClient("127.0.0.1:50000",
+  client.WithAuth("admin", "123456"),
+  client.WithTokenAuthRefresh(),
+)
+```
 
 ## TODO
 
