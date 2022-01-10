@@ -3,7 +3,7 @@ import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
 import PipelineInfo from "./PipelineInfo";
 import ConfigHistory from "./ConfigHistory";
-import { commit, configFile, allProjects } from "../api/gitlab";
+import { commit, configFile } from "../api/gitlab";
 import { getHighlightSyntax } from "../utils/highlight";
 import {
   DeployStatus as DeployStatusEnum,
@@ -67,34 +67,32 @@ const ModalSub: React.FC<{
 
   // 初始化，设置 initvalue
   useEffect(() => {
-    allProjects().then((res) => {
-      if (
-        detail &&
-        detail.gitlab_project_id &&
-        detail.gitlab_branch &&
-        detail.gitlab_commit
-      ) {
-        configFile({
-          project_id: String(detail.gitlab_project_id),
-          branch: detail.gitlab_branch,
-        }).then((res) => {
-          setData((d) => ({ ...d, config_type: res.data.type }));
-        });
-        commit({
-          project_id: String(detail.gitlab_project_id),
-          branch: detail.gitlab_branch,
-          commit: detail.gitlab_commit,
-        }).then((res) => {
-          res.data.data &&
-            setInitValue({
-              projectName: detail.name,
-              gitlabProjectId: String(detail.gitlab_project_id),
-              gitlabBranch: detail.gitlab_branch,
-              gitlabCommit: res.data.data.label,
-            });
-        });
-      }
-    });
+    if (
+      detail &&
+      detail.gitlab_project_id &&
+      detail.gitlab_branch &&
+      detail.gitlab_commit
+    ) {
+      configFile({
+        project_id: String(detail.gitlab_project_id),
+        branch: detail.gitlab_branch,
+      }).then((res) => {
+        setData((d) => ({ ...d, config_type: res.data.type }));
+      });
+      commit({
+        project_id: String(detail.gitlab_project_id),
+        branch: detail.gitlab_branch,
+        commit: detail.gitlab_commit,
+      }).then((res) => {
+        res.data.data &&
+          setInitValue({
+            projectName: detail.name,
+            gitlabProjectId: String(detail.gitlab_project_id),
+            gitlabBranch: detail.gitlab_branch,
+            gitlabCommit: res.data.data.label,
+          });
+      });
+    }
   }, [setInitValue, detail]);
 
   // 更新成功，触发 onSuccess

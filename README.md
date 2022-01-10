@@ -168,6 +168,7 @@ c, err := client.NewClient("127.0.0.1:50000",
 
 ## TODO
 
+- [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
 - [ ] namespace all -> list
@@ -195,6 +196,8 @@ c, err := client.NewClient("127.0.0.1:50000",
 - [x] sessionId 还是要用起来
 - [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
 - [x] 高可用化
+
+
 
 - ~~socket install 方法剥离出来~~
 - ~~分离 ResponseMetadata 中的 Data~~

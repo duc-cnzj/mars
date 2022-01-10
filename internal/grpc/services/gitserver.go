@@ -286,7 +286,7 @@ func (g *GitServer) Commit(ctx context.Context, request *gitserver.GitCommitRequ
 func (g *GitServer) PipelineInfo(ctx context.Context, request *gitserver.GitPipelineInfoRequest) (*gitserver.GitPipelineInfoResponse, error) {
 	pipeline, err := plugins.GetGitServer().GetCommitPipeline(request.ProjectId, request.Commit)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	return &gitserver.GitPipelineInfoResponse{
