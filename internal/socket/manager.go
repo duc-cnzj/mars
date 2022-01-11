@@ -194,6 +194,8 @@ type Msger interface {
 type DeployMsger interface {
 	Msger
 	ProcessPercentMsger
+
+	Stop(error)
 	SendDeployedResult(websocket_pb.ResultType, string, *models.Project)
 }
 
@@ -201,13 +203,35 @@ type ProcessPercentMsger interface {
 	SendProcessPercent(string)
 }
 
-type MessageSender struct {
+type messager struct {
+	mu        sync.RWMutex
+	isStopped bool
+	stoperr   error
+
 	conn     *WsConn
 	slugName string
 	wsType   websocket_pb.Type
 }
 
-func (ms *MessageSender) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
+func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) DeployMsger {
+	return &messager{conn: conn, slugName: slugName, wsType: wsType}
+}
+
+func (ms *messager) Stop(err error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	ms.stoperr = err
+	ms.isStopped = true
+}
+
+func (ms *messager) IsStopped() bool {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	return ms.isStopped
+}
+
+func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
@@ -222,11 +246,7 @@ func (ms *MessageSender) SendDeployedResult(result websocket_pb.ResultType, msg 
 	ms.send(res)
 }
 
-func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) DeployMsger {
-	return &MessageSender{conn: conn, slugName: slugName, wsType: wsType}
-}
-
-func (ms *MessageSender) SendEndError(err error) {
+func (ms *messager) SendEndError(err error) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
@@ -241,7 +261,7 @@ func (ms *MessageSender) SendEndError(err error) {
 	ms.send(res)
 }
 
-func (ms *MessageSender) SendError(err error) {
+func (ms *messager) SendError(err error) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
@@ -256,7 +276,7 @@ func (ms *MessageSender) SendError(err error) {
 	ms.send(res)
 }
 
-func (ms *MessageSender) SendProcessPercent(percent string) {
+func (ms *messager) SendProcessPercent(percent string) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
@@ -271,7 +291,7 @@ func (ms *MessageSender) SendProcessPercent(percent string) {
 	ms.send(res)
 }
 
-func (ms *MessageSender) SendMsg(msg string) {
+func (ms *messager) SendMsg(msg string) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:   ms.slugName,
@@ -286,11 +306,14 @@ func (ms *MessageSender) SendMsg(msg string) {
 	ms.send(res)
 }
 
-func (ms *MessageSender) SendProtoMsg(msg plugins.WebsocketMessage) {
+func (ms *messager) SendProtoMsg(msg plugins.WebsocketMessage) {
 	ms.send(msg)
 }
 
-func (ms *MessageSender) send(res plugins.WebsocketMessage) {
+func (ms *messager) send(res plugins.WebsocketMessage) {
+	if ms.IsStopped() {
+		return
+	}
 	ms.conn.pubSub.ToSelf(res)
 }
 

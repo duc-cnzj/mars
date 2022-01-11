@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -342,6 +343,10 @@ func (p *Project) PodContainerLog(ctx context.Context, request *project.ProjectP
 }
 
 type messager struct {
+	mu        sync.RWMutex
+	isStopped bool
+	stoperr   error
+
 	slugName string
 	t        websocket.Type
 	server   project.Project_ApplyServer
@@ -358,7 +363,7 @@ func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string,
 			UpdatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
 		}
 	}
-	m.server.Send(&project.ProjectApplyResponse{
+	m.send(&project.ProjectApplyResponse{
 		Metadata: &websocket.Metadata{
 			Slug:   m.slugName,
 			Type:   m.t,
@@ -386,7 +391,7 @@ func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string,
 }
 
 func (m *messager) SendEndError(err error) {
-	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
 		Slug:   m.slugName,
 		Type:   m.t,
 		Result: websocket.ResultType_Error,
@@ -396,7 +401,7 @@ func (m *messager) SendEndError(err error) {
 }
 
 func (m *messager) SendError(err error) {
-	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
 		Slug:   m.slugName,
 		Type:   m.t,
 		Result: websocket.ResultType_Error,
@@ -410,7 +415,7 @@ func (m *messager) SendProcessPercent(s string) {
 }
 
 func (m *messager) SendMsg(s string) {
-	m.server.Send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
+	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
 		Slug:   m.slugName,
 		Type:   m.t,
 		Result: websocket.ResultType_Success,
@@ -420,5 +425,26 @@ func (m *messager) SendMsg(s string) {
 }
 
 func (m *messager) SendProtoMsg(message plugins.WebsocketMessage) {
-	m.server.Send(&project.ProjectApplyResponse{Metadata: message.GetMetadata()})
+	m.send(&project.ProjectApplyResponse{Metadata: message.GetMetadata()})
+}
+
+func (m *messager) send(res *project.ProjectApplyResponse) {
+	if m.IsStopped() {
+		return
+	}
+	m.server.Send(res)
+}
+
+func (m *messager) Stop(err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.isStopped = true
+	m.stoperr = err
+}
+
+func (m *messager) IsStopped() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return m.isStopped
 }

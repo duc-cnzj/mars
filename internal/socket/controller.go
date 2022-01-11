@@ -413,7 +413,8 @@ func InstallProject(job Job) {
 
 	if err = job.LoadConfigs(); err != nil {
 		if err := job.GetStoppedErrorIfHas(); err != nil {
-			job.Messager().SendDeployedResult(ResultDeployCanceled, err.Error(), nil)
+			job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, err.Error(), job.Project())
+			job.Messager().Stop(err)
 			return
 		}
 		job.Messager().SendEndError(err)
