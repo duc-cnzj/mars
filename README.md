@@ -21,7 +21,7 @@
 * 支持查看容器cpu和内存使用情况。
 * 插件化
   * 队列驱动: nsq, redis, memory。
-* sdk 接入: [go](github.com/duc-cnzj/mars/pkg)。
+* sdk 接入: [go](https://github.com/DuC-cnZj/mars#-go-sdk-%E6%8E%A5%E5%85%A5)。
 
 ## 🛠️ 使用文档
 
@@ -196,9 +196,6 @@ c, err := client.NewClient("127.0.0.1:50000",
 - [x] sessionId 还是要用起来
 - [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
 - [x] 高可用化
-
-
-
 - ~~socket install 方法剥离出来~~
 - ~~分离 ResponseMetadata 中的 Data~~
 - ~~断开连接使用图标的方式~~
