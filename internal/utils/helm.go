@@ -10,24 +10,25 @@ import (
 	"os"
 	"time"
 
-	"helm.sh/helm/v3/pkg/kube"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/spf13/pflag"
-
-	"helm.sh/helm/v3/pkg/chart/loader"
-
-	"helm.sh/helm/v3/pkg/downloader"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
+
+	"github.com/spf13/pflag"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
+	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	v1 "k8s.io/api/events/v1"
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 )
 
 func init() {
@@ -77,6 +78,32 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.DisableOpenAPIValidation = true
 
 	if atomic {
+		stopch := make(chan struct{}, 1)
+		inf := informers.NewSharedInformerFactoryWithOptions(
+			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
+		inf.Events().V1().Events().Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				return obj.(*v1.Event).Regarding.Kind == "Pod"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					send(obj, releaseName, fn)
+				},
+				UpdateFunc: func(oldObj, newObj interface{}) {
+					o := oldObj.(*v1.Event)
+					n := oldObj.(*v1.Event)
+					if o.ResourceVersion != n.ResourceVersion {
+						send(newObj, releaseName, fn)
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					send(obj, releaseName, fn)
+				},
+			},
+		})
+		inf.Start(stopch)
+		defer close(stopch)
+
 		client.Atomic = true
 		client.Wait = true
 		if app.Config().InstallTimeout != 0 {
@@ -139,6 +166,15 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	}
 
 	return client.RunWithContext(ctx, releaseName, ch, vals)
+}
+
+func send(obj interface{}, releaseName string, fn func(format string, v ...interface{})) {
+	event := obj.(*v1.Event)
+	p := event.Regarding
+	get, _ := app.K8sClientSet().CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, v12.GetOptions{ResourceVersion: p.ResourceVersion})
+	if get.Labels["app.kubernetes.io/instance"] == releaseName {
+		fn(event.Note)
+	}
 }
 
 func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
