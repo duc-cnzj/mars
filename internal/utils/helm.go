@@ -83,7 +83,8 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
 		inf.Events().V1().Events().Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return obj.(*v1.Event).Regarding.Kind == "Pod"
+				e := obj.(*v1.Event)
+				return e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
