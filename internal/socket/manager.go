@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,7 +13,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
@@ -68,72 +66,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-var (
-	hostMatch = regexp.MustCompile(`.*?=(.*?){{\s*.Host\d\s*}}`)
-	tagRegex  = regexp.MustCompile(`{{\s*(\.Branch|\.Commit|\.Pipeline)\s*}}`)
-
-	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-)
-
 type WsResponse = websocket_pb.WsMetadataResponse
-
-type CancelSignaler interface {
-	Remove(id string)
-	Has(id string) bool
-	Cancel(id string)
-	Add(id string, fn func(error)) error
-	CancelAll()
-}
-
-type CancelSignals struct {
-	cs map[string]func(error)
-	sync.RWMutex
-}
-
-func (cs *CancelSignals) Remove(id string) {
-	cs.Lock()
-	defer cs.Unlock()
-	delete(cs.cs, id)
-}
-
-func (cs *CancelSignals) Has(id string) bool {
-	cs.RLock()
-	defer cs.RUnlock()
-
-	_, ok := cs.cs[id]
-
-	return ok
-}
-
-func (cs *CancelSignals) Cancel(id string) {
-	cs.Lock()
-	defer cs.Unlock()
-	if fn, ok := cs.cs[id]; ok {
-		fn(errors.New("收到取消信号，开始停止部署！！！"))
-	}
-}
-
-func (cs *CancelSignals) Add(id string, fn func(error)) error {
-	cs.Lock()
-	defer cs.Unlock()
-	if _, ok := cs.cs[id]; ok {
-		return errors.New("项目已经存在")
-	}
-	cs.cs[id] = fn
-	return nil
-}
-
-func (cs *CancelSignals) CancelAll() {
-	cs.Lock()
-	defer cs.Unlock()
-	for _, f := range cs.cs {
-		f(errors.New("收到取消信号，开始停止部署！！！"))
-	}
-}
 
 type MessageType uint8
 
@@ -149,218 +82,25 @@ type MessageItem struct {
 	Type MessageType
 }
 
-type ReleaseInstaller interface {
-	Chart() *chart.Chart
-	Run(stopCtx context.Context, messageCh chan MessageItem) (*release.Release, error)
-}
+type vars map[string]interface{}
 
-type releaseInstaller struct {
-	chart       *chart.Chart
-	releaseName string
-	namespace   string
-	atomic      bool
-	valueOpts   *values.Options
-	logger      func(format string, v ...interface{})
-}
-
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, logger func(format string, v ...interface{}), atomic bool) *releaseInstaller {
-	return &releaseInstaller{chart: chart, valueOpts: valueOpts, logger: logger, releaseName: releaseName, atomic: atomic, namespace: namespace}
-}
-
-func (r *releaseInstaller) Chart() *chart.Chart {
-	return r.chart
-}
-
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh chan MessageItem) (*release.Release, error) {
-	defer utils.HandlePanic("releaseInstaller: Run")
-
-	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger, r.atomic)
-}
-
-type ProjectManager interface {
-	Get() *models.Project
-	IsNew() bool
-	Delete() error
-	Save() error
-}
-
-type Msger interface {
-	SendEndError(error)
-	SendError(error)
-	SendMsg(string)
-	SendProtoMsg(plugins.WebsocketMessage)
-}
-
-type DeployMsger interface {
-	Msger
-	ProcessPercentMsger
-	SendDeployedResult(websocket_pb.ResultType, string, *models.Project)
-}
-
-type ProcessPercentMsger interface {
-	SendProcessPercent(string)
-}
-
-type MessageSender struct {
-	conn     *WsConn
-	slugName string
-	wsType   websocket_pb.Type
-}
-
-func (ms *MessageSender) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: result,
-			End:    true,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   msg,
-		},
-	}
-	ms.send(res)
-}
-
-func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) DeployMsger {
-	return &MessageSender{conn: conn, slugName: slugName, wsType: wsType}
-}
-
-func (ms *MessageSender) SendEndError(err error) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultError,
-			End:    true,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   err.Error(),
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *MessageSender) SendError(err error) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultError,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   err.Error(),
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *MessageSender) SendProcessPercent(percent string) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   WsProcessPercent,
-			Result: ResultSuccess,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   percent,
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *MessageSender) SendMsg(msg string) {
-	res := &WsResponse{
-		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultSuccess,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   msg,
-		},
-	}
-	ms.send(res)
-}
-
-func (ms *MessageSender) SendProtoMsg(msg plugins.WebsocketMessage) {
-	ms.send(msg)
-}
-
-func (ms *MessageSender) send(res plugins.WebsocketMessage) {
-	ms.conn.pubSub.ToSelf(res)
-}
-
-type Percentable interface {
-	Current() int64
-	Add()
-	To(percent int64)
-}
-
-type ProcessPercent struct {
-	ProcessPercentMsger
-
-	percentLock sync.RWMutex
-	percent     int64
-}
-
-func NewProcessPercent(sender ProcessPercentMsger) Percentable {
-	return &ProcessPercent{
-		percent:             0,
-		ProcessPercentMsger: sender,
-	}
-}
-
-func (pp *ProcessPercent) Current() int64 {
-	pp.percentLock.RLock()
-	defer pp.percentLock.RUnlock()
-
-	return pp.percent
-}
-
-func (pp *ProcessPercent) Add() {
-	pp.percentLock.Lock()
-	defer pp.percentLock.Unlock()
-
-	if pp.percent < 100 {
-		pp.percent++
-		pp.SendProcessPercent(fmt.Sprintf("%d", pp.percent))
-	}
-}
-
-func (pp *ProcessPercent) To(percent int64) {
-	pp.percentLock.Lock()
-	defer pp.percentLock.Unlock()
-
-	sleepTime := 100 * time.Millisecond
-	for pp.percent < percent {
-		time.Sleep(sleepTime)
-		pp.percent++
-		if sleepTime > 50*time.Millisecond {
-			sleepTime = sleepTime / 2
+func (v vars) MustGetString(key string) string {
+	if v != nil {
+		if value, ok := v[key]; ok {
+			return fmt.Sprintf("%v", value)
 		}
-		pp.SendProcessPercent(fmt.Sprintf("%d", pp.percent))
 	}
-}
 
-type Runnable interface {
-	IsRunning() bool
-	SetRunning(running bool)
-	Run() error
-}
-
-type Stoppable interface {
-	GetStoppedErrorIfHas() error
-	IsStopped() bool
-	Stop(error)
+	return ""
 }
 
 type Job interface {
-	Runnable
-	Stoppable
+	Stop(error)
+	IsStopped() bool
+	GetStoppedErrorIfHas() error
+
+	Run() error
+	Logs() []string
 
 	User() contracts.UserInfo
 	IsNew() bool
@@ -381,38 +121,7 @@ type Job interface {
 	Percenter() Percentable
 }
 
-type running struct {
-	running bool
-	sync.Mutex
-}
-
-func (run *running) SetRunning(r bool) {
-	run.Lock()
-	defer run.Unlock()
-	run.running = r
-}
-
-func (run *running) IsRunning() bool {
-	run.Lock()
-	defer run.Unlock()
-	return run.running
-}
-
-type vars map[string]interface{}
-
-func (v vars) MustGetString(key string) string {
-	if v != nil {
-		if value, ok := v[key]; ok {
-			return fmt.Sprintf("%v", value)
-		}
-	}
-
-	return ""
-}
-
 type Jober struct {
-	running
-
 	input    *websocket_pb.ProjectInput
 	wsType   websocket_pb.Type
 	slugName string
@@ -466,6 +175,10 @@ func NewJober(
 
 func (j *Jober) ID() string {
 	return j.slugName
+}
+
+func (j *Jober) Logs() []string {
+	return j.ReleaseInstaller().Logs()
 }
 
 func (j *Jober) IsNew() bool {
@@ -564,21 +277,16 @@ func (u userConfig) PrettyYaml() string {
 }
 
 func (j *Jober) Run() error {
-	j.SetRunning(true)
-
 	go j.HandleMessage()
 
 	return func() error {
-		defer func() {
-			j.SetRunning(false)
-			close(j.messageCh)
-		}()
+		defer close(j.messageCh)
 		var (
 			result *release.Release
 			err    error
 		)
 
-		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh); err != nil {
+		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter()); err != nil {
 			j.messageCh <- MessageItem{
 				Msg:  err.Error(),
 				Type: MessageError,
@@ -676,7 +384,7 @@ func (j *Jober) Validate() error {
 		return errors.New("type error: " + j.wsType.String())
 	}
 
-	j.percenter = NewProcessPercent(j.messager)
+	j.percenter = newProcessPercent(j.messager)
 	j.stopCtx, j.stopFn = utils.NewCustomErrorContext()
 	j.messageCh = make(chan MessageItem)
 
@@ -906,6 +614,8 @@ const (
 	VarTlsSecret        = "TlsSecret"
 )
 
+var tagRegex = regexp.MustCompile(`{{\s*(\.Branch|\.Commit|\.Pipeline)\s*}}`)
+
 type VariableLoader struct {
 	values vars
 }
@@ -1054,23 +764,6 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(70)
-	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, func(format string, v ...interface{}) {
-		if j.Percenter().Current() < 99 {
-			j.Percenter().Add()
-		}
-		if j.Percenter().Current() >= 95 {
-			format = "[如果长时间未部署成功，建议取消使用 debug 模式]: " + format
-		}
-		msg := fmt.Sprintf(format, v...)
-		if j.IsRunning() {
-			select {
-			case j.messageCh <- MessageItem{
-				Msg:  msg,
-				Type: MessageText,
-			}:
-			default:
-			}
-		}
-	}, j.input.Atomic)
+	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic)
 	return nil
 }

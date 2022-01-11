@@ -3,7 +3,10 @@ package socket
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
@@ -100,6 +103,8 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []stri
 	return selectors
 }
 
+var hostMatch = regexp.MustCompile(`.*?=(.*?){{\s*.Host\d\s*}}`)
+
 func getPreOccupiedLenByValuesYaml(values string) int {
 	var sub = 0
 	if len(values) > 0 {
@@ -127,3 +132,68 @@ func max(a, b int) int {
 }
 
 var AuditLogWithChange = events.AuditLog
+
+type timeOrderedSetStringItem struct {
+	t    time.Time
+	data string
+}
+
+type orderedItemList []*timeOrderedSetStringItem
+
+func (o orderedItemList) Len() int {
+	return len(o)
+}
+
+func (o orderedItemList) Less(i, j int) bool {
+	return o[i].t.Before(o[j].t)
+}
+
+func (o orderedItemList) Swap(i, j int) {
+	o[i], o[j] = o[j], o[i]
+}
+
+func (o orderedItemList) List() (res []string) {
+	for _, item := range o {
+		res = append(res, item.data)
+	}
+	return res
+}
+
+type timeOrderedSetString struct {
+	mu    sync.RWMutex
+	items map[string]time.Time
+}
+
+func NewTimeOrderedSetString() *timeOrderedSetString {
+	return &timeOrderedSetString{items: make(map[string]time.Time)}
+}
+
+func (o *timeOrderedSetString) add(s string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if _, ok := o.items[s]; ok {
+		return
+	}
+	o.items[s] = time.Now()
+}
+
+func (o *timeOrderedSetString) has(s string) bool {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	_, ok := o.items[s]
+	return ok
+}
+
+func (o *timeOrderedSetString) sortedItems() []string {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	oslist := orderedItemList{}
+	for s, t := range o.items {
+		oslist = append(oslist, &timeOrderedSetStringItem{
+			t:    t,
+			data: s,
+		})
+	}
+	sort.Sort(oslist)
+	return oslist.List()
+}

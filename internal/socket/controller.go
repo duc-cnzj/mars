@@ -146,6 +146,12 @@ func (wc *WebsocketManager) Info(writer http.ResponseWriter, request *http.Reque
 	writer.Write(marshal)
 }
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -413,7 +419,8 @@ func InstallProject(job Job) {
 
 	if err = job.LoadConfigs(); err != nil {
 		if err := job.GetStoppedErrorIfHas(); err != nil {
-			job.Messager().SendDeployedResult(ResultDeployCanceled, err.Error(), nil)
+			job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, err.Error(), job.Project())
+			job.Messager().Stop(err)
 			return
 		}
 		job.Messager().SendEndError(err)
