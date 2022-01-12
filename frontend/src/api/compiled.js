@@ -5920,27 +5920,235 @@ export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
     return CopyToPodResponse;
 })();
 
-export const ContainerCopy = $root.ContainerCopy = (() => {
+export const ExecRequest = $root.ExecRequest = (() => {
 
     /**
-     * Constructs a new ContainerCopy service.
-     * @exports ContainerCopy
-     * @classdesc Represents a ContainerCopy
+     * Properties of an ExecRequest.
+     * @exports IExecRequest
+     * @interface IExecRequest
+     * @property {string|null} [namespace] ExecRequest namespace
+     * @property {string|null} [pod] ExecRequest pod
+     * @property {string|null} [container] ExecRequest container
+     * @property {Array.<string>|null} [command] ExecRequest command
+     */
+
+    /**
+     * Constructs a new ExecRequest.
+     * @exports ExecRequest
+     * @classdesc Represents an ExecRequest.
+     * @implements IExecRequest
+     * @constructor
+     * @param {IExecRequest=} [properties] Properties to set
+     */
+    function ExecRequest(properties) {
+        this.command = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ExecRequest namespace.
+     * @member {string} namespace
+     * @memberof ExecRequest
+     * @instance
+     */
+    ExecRequest.prototype.namespace = "";
+
+    /**
+     * ExecRequest pod.
+     * @member {string} pod
+     * @memberof ExecRequest
+     * @instance
+     */
+    ExecRequest.prototype.pod = "";
+
+    /**
+     * ExecRequest container.
+     * @member {string} container
+     * @memberof ExecRequest
+     * @instance
+     */
+    ExecRequest.prototype.container = "";
+
+    /**
+     * ExecRequest command.
+     * @member {Array.<string>} command
+     * @memberof ExecRequest
+     * @instance
+     */
+    ExecRequest.prototype.command = $util.emptyArray;
+
+    /**
+     * Encodes the specified ExecRequest message. Does not implicitly {@link ExecRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ExecRequest
+     * @static
+     * @param {ExecRequest} message ExecRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ExecRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
+        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.container);
+        if (message.command != null && message.command.length)
+            for (let i = 0; i < message.command.length; ++i)
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.command[i]);
+        return writer;
+    };
+
+    /**
+     * Decodes an ExecRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ExecRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ExecRequest} ExecRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ExecRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ExecRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace = reader.string();
+                break;
+            case 2:
+                message.pod = reader.string();
+                break;
+            case 3:
+                message.container = reader.string();
+                break;
+            case 4:
+                if (!(message.command && message.command.length))
+                    message.command = [];
+                message.command.push(reader.string());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ExecRequest;
+})();
+
+export const ExecResponse = $root.ExecResponse = (() => {
+
+    /**
+     * Properties of an ExecResponse.
+     * @exports IExecResponse
+     * @interface IExecResponse
+     * @property {string|null} [data] ExecResponse data
+     */
+
+    /**
+     * Constructs a new ExecResponse.
+     * @exports ExecResponse
+     * @classdesc Represents an ExecResponse.
+     * @implements IExecResponse
+     * @constructor
+     * @param {IExecResponse=} [properties] Properties to set
+     */
+    function ExecResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ExecResponse data.
+     * @member {string} data
+     * @memberof ExecResponse
+     * @instance
+     */
+    ExecResponse.prototype.data = "";
+
+    /**
+     * Encodes the specified ExecResponse message. Does not implicitly {@link ExecResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ExecResponse
+     * @static
+     * @param {ExecResponse} message ExecResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ExecResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.data);
+        return writer;
+    };
+
+    /**
+     * Decodes an ExecResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ExecResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ExecResponse} ExecResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ExecResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ExecResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.data = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ExecResponse;
+})();
+
+export const ContainerSvc = $root.ContainerSvc = (() => {
+
+    /**
+     * Constructs a new ContainerSvc service.
+     * @exports ContainerSvc
+     * @classdesc Represents a ContainerSvc
      * @extends $protobuf.rpc.Service
      * @constructor
      * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
      * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
      * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
      */
-    function ContainerCopy(rpcImpl, requestDelimited, responseDelimited) {
+    function ContainerSvc(rpcImpl, requestDelimited, responseDelimited) {
         $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
     }
 
-    (ContainerCopy.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = ContainerCopy;
+    (ContainerSvc.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = ContainerSvc;
 
     /**
-     * Callback as used by {@link ContainerCopy#copyToPod}.
-     * @memberof ContainerCopy
+     * Callback as used by {@link ContainerSvc#copyToPod}.
+     * @memberof ContainerSvc
      * @typedef CopyToPodCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -5950,28 +6158,61 @@ export const ContainerCopy = $root.ContainerCopy = (() => {
     /**
      * Calls CopyToPod.
      * @function copyToPod
-     * @memberof ContainerCopy
+     * @memberof ContainerSvc
      * @instance
      * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
-     * @param {ContainerCopy.CopyToPodCallback} callback Node-style callback called with the error, if any, and CopyToPodResponse
+     * @param {ContainerSvc.CopyToPodCallback} callback Node-style callback called with the error, if any, and CopyToPodResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(ContainerCopy.prototype.copyToPod = function copyToPod(request, callback) {
+    Object.defineProperty(ContainerSvc.prototype.copyToPod = function copyToPod(request, callback) {
         return this.rpcCall(copyToPod, $root.CopyToPodRequest, $root.CopyToPodResponse, request, callback);
     }, "name", { value: "CopyToPod" });
 
     /**
      * Calls CopyToPod.
      * @function copyToPod
-     * @memberof ContainerCopy
+     * @memberof ContainerSvc
      * @instance
      * @param {CopyToPodRequest} request CopyToPodRequest message or plain object
      * @returns {Promise<CopyToPodResponse>} Promise
      * @variation 2
      */
 
-    return ContainerCopy;
+    /**
+     * Callback as used by {@link ContainerSvc#exec}.
+     * @memberof ContainerSvc
+     * @typedef ExecCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ExecResponse} [response] ExecResponse
+     */
+
+    /**
+     * Calls Exec.
+     * @function exec
+     * @memberof ContainerSvc
+     * @instance
+     * @param {ExecRequest} request ExecRequest message or plain object
+     * @param {ContainerSvc.ExecCallback} callback Node-style callback called with the error, if any, and ExecResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(ContainerSvc.prototype.exec = function exec(request, callback) {
+        return this.rpcCall(exec, $root.ExecRequest, $root.ExecResponse, request, callback);
+    }, "name", { value: "Exec" });
+
+    /**
+     * Calls Exec.
+     * @function exec
+     * @memberof ContainerSvc
+     * @instance
+     * @param {ExecRequest} request ExecRequest message or plain object
+     * @returns {Promise<ExecResponse>} Promise
+     * @variation 2
+     */
+
+    return ContainerSvc;
 })();
 
 /**

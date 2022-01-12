@@ -2607,11 +2607,82 @@ export class CopyToPodResponse implements ICopyToPodResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CopyToPodResponse;
 }
 
-/** Represents a ContainerCopy */
-export class ContainerCopy extends $protobuf.rpc.Service {
+/** Represents an ExecRequest. */
+export class ExecRequest implements IExecRequest {
 
     /**
-     * Constructs a new ContainerCopy service.
+     * Constructs a new ExecRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IExecRequest);
+
+    /** ExecRequest namespace. */
+    public namespace: string;
+
+    /** ExecRequest pod. */
+    public pod: string;
+
+    /** ExecRequest container. */
+    public container: string;
+
+    /** ExecRequest command. */
+    public command: string[];
+
+    /**
+     * Encodes the specified ExecRequest message. Does not implicitly {@link ExecRequest.verify|verify} messages.
+     * @param message ExecRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ExecRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an ExecRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ExecRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExecRequest;
+}
+
+/** Represents an ExecResponse. */
+export class ExecResponse implements IExecResponse {
+
+    /**
+     * Constructs a new ExecResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IExecResponse);
+
+    /** ExecResponse data. */
+    public data: string;
+
+    /**
+     * Encodes the specified ExecResponse message. Does not implicitly {@link ExecResponse.verify|verify} messages.
+     * @param message ExecResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ExecResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an ExecResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ExecResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExecResponse;
+}
+
+/** Represents a ContainerSvc */
+export class ContainerSvc extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new ContainerSvc service.
      * @param rpcImpl RPC implementation
      * @param [requestDelimited=false] Whether requests are length-delimited
      * @param [responseDelimited=false] Whether responses are length-delimited
@@ -2623,7 +2694,7 @@ export class ContainerCopy extends $protobuf.rpc.Service {
      * @param request CopyToPodRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and CopyToPodResponse
      */
-    public copyToPod(request: CopyToPodRequest, callback: ContainerCopy.CopyToPodCallback): void;
+    public copyToPod(request: CopyToPodRequest, callback: ContainerSvc.CopyToPodCallback): void;
 
     /**
      * Calls CopyToPod.
@@ -2631,16 +2702,37 @@ export class ContainerCopy extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public copyToPod(request: CopyToPodRequest): Promise<CopyToPodResponse>;
-}
-
-export namespace ContainerCopy {
 
     /**
-     * Callback as used by {@link ContainerCopy#copyToPod}.
+     * Calls Exec.
+     * @param request ExecRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ExecResponse
+     */
+    public exec(request: ExecRequest, callback: ContainerSvc.ExecCallback): void;
+
+    /**
+     * Calls Exec.
+     * @param request ExecRequest message or plain object
+     * @returns Promise
+     */
+    public exec(request: ExecRequest): Promise<ExecResponse>;
+}
+
+export namespace ContainerSvc {
+
+    /**
+     * Callback as used by {@link ContainerSvc#copyToPod}.
      * @param error Error, if any
      * @param [response] CopyToPodResponse
      */
     type CopyToPodCallback = (error: (Error|null), response?: CopyToPodResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#exec}.
+     * @param error Error, if any
+     * @param [response] ExecResponse
+     */
+    type ExecCallback = (error: (Error|null), response?: ExecResponse) => void;
 }
 
 /** ActionType enum. */

@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/container_copy;container_copy";
+option go_package = "github.com/duc-cnzj/mars/pkg/container;container";
 
 message CopyToPodRequest {
   int64 file_id = 1 [(validate.rules).int64.gt = 0];
@@ -17,11 +17,24 @@ message CopyToPodResponse {
   string output = 2;
 }
 
-service ContainerCopy {
+message ExecRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string container = 3;
+  repeated string command = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}];
+}
+
+message ExecResponse {
+  string data = 1;
+}
+
+service ContainerSvc {
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
     option (google.api.http) = {
       post: "/api/container_copy/copy_to_pod",
       body: "*"
     };
   }
+
+  rpc Exec(ExecRequest) returns (stream ExecResponse);
 }

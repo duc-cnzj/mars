@@ -10,7 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
-	"github.com/duc-cnzj/mars/pkg/container_copy"
+	"github.com/duc-cnzj/mars/pkg/container"
 	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/gitserver"
 	"github.com/duc-cnzj/mars/pkg/mars"
@@ -28,7 +28,7 @@ type Interface interface {
 	Auth() auth.AuthClient
 	Changelog() changelog.ChangelogClient
 	Cluster() cluster.ClusterClient
-	ContainerCopy() container_copy.ContainerCopyClient
+	Container() container.ContainerSvcClient
 	Event() event.EventClient
 	GitServer() gitserver.GitServerClient
 	Mars() mars.MarsClient
@@ -51,18 +51,18 @@ type Client struct {
 
 	dialOptions []grpc.DialOption
 
-	auth          auth.AuthClient
-	changelog     changelog.ChangelogClient
-	cluster       cluster.ClusterClient
-	containerCopy container_copy.ContainerCopyClient
-	event         event.EventClient
-	gitServer     gitserver.GitServerClient
-	mars          mars.MarsClient
-	metrics       metrics.MetricsClient
-	namespace     namespace.NamespaceClient
-	picture       picture.PictureClient
-	project       project.ProjectClient
-	version       version.VersionClient
+	auth      auth.AuthClient
+	changelog changelog.ChangelogClient
+	cluster   cluster.ClusterClient
+	container container.ContainerSvcClient
+	event     event.EventClient
+	gitServer gitserver.GitServerClient
+	mars      mars.MarsClient
+	metrics   metrics.MetricsClient
+	namespace namespace.NamespaceClient
+	picture   picture.PictureClient
+	project   project.ProjectClient
+	version   version.VersionClient
 }
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
@@ -81,7 +81,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.auth = auth.NewAuthClient(dial)
 	c.changelog = changelog.NewChangelogClient(dial)
 	c.cluster = cluster.NewClusterClient(dial)
-	c.containerCopy = container_copy.NewContainerCopyClient(dial)
+	c.container = container.NewContainerSvcClient(dial)
 	c.event = event.NewEventClient(dial)
 	c.gitServer = gitserver.NewGitServerClient(dial)
 	c.mars = mars.NewMarsClient(dial)
@@ -112,8 +112,8 @@ func (c *Client) Cluster() cluster.ClusterClient {
 	return c.cluster
 }
 
-func (c *Client) ContainerCopy() container_copy.ContainerCopyClient {
-	return c.containerCopy
+func (c *Client) Container() container.ContainerSvcClient {
+	return c.container
 }
 
 func (c *Client) Event() event.EventClient {

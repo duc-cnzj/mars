@@ -17,7 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
-	cp "github.com/duc-cnzj/mars/pkg/container_copy"
+	"github.com/duc-cnzj/mars/pkg/container"
 	"github.com/duc-cnzj/mars/pkg/event"
 	"github.com/duc-cnzj/mars/pkg/gitserver"
 	"github.com/duc-cnzj/mars/pkg/mars"
@@ -94,7 +94,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		project.RegisterProjectHandlerFromEndpoint,
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,
-		cp.RegisterContainerCopyHandlerFromEndpoint,
+		container.RegisterContainerSvcHandlerFromEndpoint,
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 		version.RegisterVersionHandlerFromEndpoint,
 		changelog.RegisterChangelogHandlerFromEndpoint,
