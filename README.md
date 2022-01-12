@@ -168,6 +168,7 @@ c, err := client.NewClient("127.0.0.1:50000",
 
 ## TODO
 
+- [ ] ratelimiter
 - [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
