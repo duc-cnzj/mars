@@ -168,6 +168,7 @@ c, err := client.NewClient("127.0.0.1:50000",
 
 ## TODO
 
+- [ ] ratelimiter
 - [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
@@ -175,6 +176,7 @@ c, err := client.NewClient("127.0.0.1:50000",
 - [ ] 增加 basic? or CA? auth，参考 k8s 的做法
 - [ ] grpc 可配置使用 tls
 - [ ] client 集成 copy to pod & uploader
+- [x] rpc 增加远程执行容器命令接口
 - [x] 接口验证
 - [x] 前端 namespace 页面 margin-bottom
 - [x] 缺一个 project list

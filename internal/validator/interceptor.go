@@ -24,6 +24,27 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-// StreamServerInterceptor 有点难写，回头仔细想想
-//func StreamServerInterceptor() grpc.StreamServerInterceptor {
-//}
+func StreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		wrapper := &recvWrapper{stream}
+		return handler(srv, wrapper)
+	}
+}
+
+type recvWrapper struct {
+	grpc.ServerStream
+}
+
+func (s *recvWrapper) RecvMsg(m interface{}) error {
+	if err := s.ServerStream.RecvMsg(m); err != nil {
+		return err
+	}
+
+	if validator, ok := m.(Validator); ok {
+		if err := validator.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

@@ -146,9 +146,9 @@
     "/api/container_copy/copy_to_pod": {
       "post": {
         "tags": [
-          "ContainerCopy"
+          "ContainerSvc"
         ],
-        "operationId": "ContainerCopy_CopyToPod",
+        "operationId": "ContainerSvc_CopyToPod",
         "parameters": [
           {
             "name": "body",
@@ -1633,6 +1633,14 @@
         }
       }
     },
+    "ExecResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        }
+      }
+    },
     "GitAllProjectsResponse": {
       "type": "object",
       "properties": {
@@ -2468,7 +2476,7 @@
       "name": "Cluster"
     },
     {
-      "name": "ContainerCopy"
+      "name": "ContainerSvc"
     },
     {
       "name": "Event"

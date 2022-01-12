@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "container_copy/container_copy.proto",
+    "title": "container/container.proto",
     "version": "version not set"
   },
   "tags": [
     {
-      "name": "ContainerCopy"
+      "name": "ContainerSvc"
     }
   ],
   "consumes": [
@@ -18,7 +18,7 @@
   "paths": {
     "/api/container_copy/copy_to_pod": {
       "post": {
-        "operationId": "ContainerCopy_CopyToPod",
+        "operationId": "ContainerSvc_CopyToPod",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -44,7 +44,7 @@
           }
         ],
         "tags": [
-          "ContainerCopy"
+          "ContainerSvc"
         ]
       }
     }
@@ -75,6 +75,14 @@
           "type": "string"
         },
         "output": {
+          "type": "string"
+        }
+      }
+    },
+    "ExecResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
           "type": "string"
         }
       }
