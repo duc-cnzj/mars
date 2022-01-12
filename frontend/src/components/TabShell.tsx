@@ -248,6 +248,7 @@ const TabShell: React.FC<{
     const isLt50M = file.size / 1024 / 1024 <= 50;
     if (!isLt50M) {
       message.error("文件最大不能超过 50MB!");
+      return
     }
     setLoading(true);
 
