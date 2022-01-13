@@ -34,7 +34,7 @@ build_race:
 
 .PHONY: build
 build:
-	go build -ldflags=${LDFLAGS} -o app main.go
+	CGO_ENABLED=1 go build -ldflags=${LDFLAGS} -o app-$(go env GOOS)-$(go env GOARCH) main.go
 
 .PHONY: build_web
 build_web:
