@@ -50,6 +50,7 @@ jobs:
         with:
           goos: ${{ matrix.goos }}
           pre_command: export CGO_ENABLED=1
+          executable_compression: upx
           goarch: ${{ matrix.goarch }}
           build_command: |
             make build
