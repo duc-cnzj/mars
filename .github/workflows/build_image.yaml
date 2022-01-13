@@ -6,9 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: borales/actions-yarn@v2.3.0
         with:
           cache-dependency-path: frontend/yarn.lock
+      - uses: borales/actions-yarn@v2.3.0
+        with:
           cmd: cd frontend && yarn install && yarn build
       - name: upload build files
         uses: actions/upload-artifact@v2
