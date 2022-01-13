@@ -50,7 +50,7 @@ jobs:
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
-          name: build_app
+          name: app-linux-amd64
           path: |
             app-linux-amd64
 
@@ -73,6 +73,6 @@ jobs:
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
-          name: build_app
+          name: app-darwin-amd64
           path: |
-            build_drawin_amd64
+            app-darwin-amd64
