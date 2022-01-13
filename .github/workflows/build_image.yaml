@@ -1,0 +1,10 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    name: prod-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: borales/actions-yarn@v2.3.0
+      - run: cd frontend && yarn install && yarn build
