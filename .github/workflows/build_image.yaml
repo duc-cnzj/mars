@@ -53,3 +53,26 @@ jobs:
           name: build_app
           path: |
             app-linux-amd64
+
+  test-and-build-darwin:
+    needs: [build-frontend]
+    name: Test and Build Go Binary
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - run: |
+          make test && make build_drawin_amd64
+      - name: upload build app
+        uses: actions/upload-artifact@v2
+        with:
+          name: build_app
+          path: |
+            build_drawin_amd64
