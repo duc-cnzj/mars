@@ -22,6 +22,7 @@ jobs:
             frontend/build
 
   build-go:
+    needs: [build-frontend]
     strategy:
       matrix:
         go-version: [1.17.x]
