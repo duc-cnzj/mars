@@ -48,6 +48,8 @@ jobs:
           name: frontend_dist_files
           path: frontend/build
       - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
       - run: |
           go version
           make build
