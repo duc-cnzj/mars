@@ -4,8 +4,6 @@ on:
     workflows: ["tagged-release"]
     types:
       - completed
-  release:
-    types: [released]
 jobs:
   build-frontend:
     name: build-frontend
