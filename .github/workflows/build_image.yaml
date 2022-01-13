@@ -47,7 +47,7 @@ jobs:
           go-version: '1.17'
       - run: |
           go version
-          apt install gcc-8-aarch64-linux-gnu
+          sudo apt install gcc-8-aarch64-linux-gnu
           make build_linux_amd64
           CC=aarch64-linux-gnu-gcc-8 CGO_LDFLAGS="-static" make build_drawin_arm64
           make build_drawin_amd64
