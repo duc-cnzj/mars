@@ -1,7 +1,7 @@
 name: CI
 on:
   release:
-    types: [published]
+    types: [released]
 jobs:
   build-frontend:
     name: build-frontend
