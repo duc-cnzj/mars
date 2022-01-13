@@ -1,9 +1,8 @@
 name: CI
 on:
-  workflow_run:
-    workflows: ["tagged-release"]
-    types:
-      - completed
+  push:
+    tags:
+      - "v*"
 jobs:
   build-frontend:
     name: build-frontend
@@ -80,12 +79,6 @@ jobs:
           go-version: '1.17'
       - run: |
           make build_linux_amd64
-      - name: Upload the artifacts
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: 'app-linux-amd64'
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
@@ -121,3 +114,25 @@ jobs:
           name: app-darwin-amd64
           path: |
             app-darwin-amd64
+
+  release:
+    needs: [build-darwin-amd64, build-linux-amd64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v2
+    - name: Download linux amd64 app
+      uses: actions/download-artifact@v2
+      with:
+        name: app-linux-amd64
+        path: /tmp
+    - name: Download darwin amd64 app
+      uses: actions/download-artifact@v2
+      with:
+        name: app-darwin-amd64
+        path: /tmp
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "/tmp/app*"
+        token: ${{ secrets.GITHUB_TOKEN }}
