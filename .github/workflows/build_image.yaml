@@ -49,7 +49,7 @@ jobs:
           make test
 
   build-linux-amd64:
-    needs: [unittest]
+    needs: [test]
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
@@ -72,7 +72,7 @@ jobs:
             app-linux-amd64
 
   build-darwin-amd64:
-    needs: [unittest]
+    needs: [test]
     name: Build Go Binary macos amd64
     runs-on: macos-latest
     steps:
