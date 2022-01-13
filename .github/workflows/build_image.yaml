@@ -24,6 +24,7 @@ jobs:
             frontend/build
 
   releases-matrix:
+    needs: [build-frontend]
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
