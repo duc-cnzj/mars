@@ -31,9 +31,9 @@ jobs:
           path: |
             frontend/build
 
-  releases:
+  build-app:
     needs: [build-frontend]
-    name: Release Go Binary
+    name: Build Go Binary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,16 +46,10 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
-          go version
-          sudo apt install gcc-8-aarch64-linux-gnu
           make build_linux_amd64
-          CC=aarch64-linux-gnu-gcc-8 CGO_LDFLAGS="-static" make build_drawin_arm64
-          make build_drawin_amd64
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
           name: build_app
           path: |
             app-linux-amd64
-            app-darwin-amd64
-            app-darwin-arm64
