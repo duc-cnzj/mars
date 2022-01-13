@@ -49,6 +49,7 @@ jobs:
       - uses: wangyoucao577/go-release-action@v1.22
         with:
           goos: ${{ matrix.goos }}
+          pre_command: export CGO_ENABLED=1
           goarch: ${{ matrix.goarch }}
           build_command: |
             make build
