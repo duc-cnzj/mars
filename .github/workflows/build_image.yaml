@@ -21,38 +21,32 @@ jobs:
           path: |
             frontend/build
 
-  build-go:
-    needs: [build-frontend]
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.17.x]
-        os: [ubuntu-latest, macos-latest, ]
-    runs-on: ${{ matrix.os }}
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
     - name: Download frontend files
       uses: actions/download-artifact@v2
       with:
         name: frontend_dist_files
         path: frontend/build
-    - name: ls
-      run: ls && ls frontend/build
-    - name: Test
-      run: go test ./...
-    # - name: Build
-    #   run: |
-    #     VERSION_PATH=$(shell go list -m -f "{{.Path}}")/version
-    #     LDFLAGS = "-w -s  \
-    #     -X ${VERSION_PATH}.gitRepo=$(shell go list -m -f "{{.Path}}") \
-    #     -X ${VERSION_PATH}.gitBranch=$(shell git rev-parse --abbrev-ref HEAD) \
-    #     -X ${VERSION_PATH}.buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
-    #     -X ${VERSION_PATH}.gitCommit=$(shell git rev-parse --short HEAD) \
-    #     -X ${VERSION_PATH}.gitTag=$(shell git describe --exact-match --tags HEAD 2> /dev/null || echo "") \
-    #     -X ${VERSION_PATH}.kubectlVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep k8s.io/client-go | cut -d " " -f2) \
-    #     -X ${VERSION_PATH}.helmVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep helm.sh/helm/v3 | cut -d " " -f2)"
-    #     CGO_ENABLED=1 GOOS=linux GOARCH=$RUNNER_ARCH go build -ldflags=${LDFLAGS} -o app main.go
+    - uses: wangyoucao577/go-release-action@v1.22
+      with:
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        build_command: |
+          VERSION_PATH=$(shell go list -m -f "{{.Path}}")/version
+          LDFLAGS = "-w -s  \
+          -X ${VERSION_PATH}.gitRepo=$(shell go list -m -f "{{.Path}}") \
+          -X ${VERSION_PATH}.gitBranch=$(shell git rev-parse --abbrev-ref HEAD) \
+          -X ${VERSION_PATH}.buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
+          -X ${VERSION_PATH}.gitCommit=$(shell git rev-parse --short HEAD) \
+          -X ${VERSION_PATH}.gitTag=$(shell git describe --exact-match --tags HEAD 2> /dev/null || echo "") \
+          -X ${VERSION_PATH}.kubectlVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep k8s.io/client-go | cut -d " " -f2) \
+          -X ${VERSION_PATH}.helmVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep helm.sh/helm/v3 | cut -d " " -f2)"
+          CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags=${LDFLAGS} -o app-${{ matrix.goos }}-${{ matrix.goarch }} main.go
