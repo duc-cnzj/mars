@@ -51,10 +51,15 @@ jobs:
           goos: ${{ matrix.goos }}
           goversion: 1.17
           pre_command: "apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64 && export CGO_ENABLED=1 "
-          executable_compression: upx
           goarch: ${{ matrix.goarch }}
           build_command: |
             make build
+      - name: upload build app
+        uses: actions/upload-artifact@v2
+        with:
+          name: build_app
+          path: |
+            app
 
   releases-app-darwin-amd64:
     needs: [build-frontend]
@@ -78,3 +83,9 @@ jobs:
           goarch: ${{ matrix.goarch }}
           build_command: |
             make build
+      - name: upload build app
+        uses: actions/upload-artifact@v2
+        with:
+          name: build_app
+          path: |
+            app
