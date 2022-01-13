@@ -32,10 +32,16 @@ jobs:
             frontend/build
 
   test:
+    needs: [build-frontend]
     name: unittest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17'
@@ -43,7 +49,7 @@ jobs:
           make test
 
   build-linux-amd64:
-    needs: [build-frontend]
+    needs: [unittest]
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +72,7 @@ jobs:
             app-linux-amd64
 
   build-darwin-amd64:
-    needs: [build-frontend]
+    needs: [unittest]
     name: Build Go Binary macos amd64
     runs-on: macos-latest
     steps:
