@@ -30,11 +30,11 @@ serve:
 
 .PHONY: build_race
 build_race:
-	go build -ldflags=${LDFLAGS} -race -o app main.go
+	CGO_ENABLED=1 go build -ldflags=${LDFLAGS} -race -o app main.go
 
 .PHONY: build
 build:
-	CGO_ENABLED=1 go build -ldflags=${LDFLAGS} -o app-$(go env GOOS)-$(go env GOARCH) main.go
+	CGO_ENABLED=1 go build -ldflags=${LDFLAGS} -o app-$(shell go env GOOS)-$(shell go env GOARCH) main.go
 
 .PHONY: build_web
 build_web:
