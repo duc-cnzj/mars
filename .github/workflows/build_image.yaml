@@ -31,9 +31,9 @@ jobs:
           path: |
             frontend/build
 
-  build-app:
+  test-and-build:
     needs: [build-frontend]
-    name: Build Go Binary
+    name: Test and Build Go Binary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,7 +46,7 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
-          make build_linux_amd64
+          make test && make build_linux_amd64
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
