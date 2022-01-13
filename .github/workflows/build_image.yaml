@@ -10,7 +10,10 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
       - uses: borales/actions-yarn@v2.3.0
         with:
-          cmd: cd frontend && yarn install && yarn build
+          cmd: --cwd frontend install
+      - uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: --cwd frontend build
       - name: upload build files
         uses: actions/upload-artifact@v2
         with:
