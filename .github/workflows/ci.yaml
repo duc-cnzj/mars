@@ -1,0 +1,113 @@
+name: CI
+on: [push]
+jobs:
+  build-frontend:
+    name: build-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          cache: "yarn"
+          cache-dependency-path: frontend/yarn.lock
+      - uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: |
+            frontend/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('frontend/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: --cwd frontend install
+      - uses: borales/actions-yarn@v2.3.0
+        with:
+          cmd: --cwd frontend build
+      - name: upload build files
+        uses: actions/upload-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: |
+            frontend/build
+
+  test:
+    needs: [build-frontend]
+    name: unittest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - run: |
+          make test
+
+  build-linux-amd64:
+    needs: [test]
+    name: Build Go Binary linux amd64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - run: |
+          make build_linux_amd64
+      - name: upload build app
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-linux-amd64
+          path: |
+            app-linux-amd64
+
+  build-darwin-amd64:
+    needs: [test]
+    name: Build Go Binary macos amd64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - run: |
+          make build_drawin_amd64
+      - name: upload build app
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-darwin-amd64
+          path: |
+            app-darwin-amd64
