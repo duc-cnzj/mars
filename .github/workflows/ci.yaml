@@ -134,5 +134,7 @@ jobs:
         path: /tmp
     - uses: ncipollo/release-action@v1
       with:
+        generateReleaseNotes: true
+        allowUpdates: true
         artifacts: "/tmp/app*"
         token: ${{ secrets.GITHUB_TOKEN }}
