@@ -33,7 +33,7 @@ jobs:
 
   test-and-build:
     needs: [build-frontend]
-    name: Test and Build Go Binary
+    name: Test and Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
 
   test-and-build-darwin:
     needs: [build-frontend]
-    name: Test and Build Go Binary
+    name: Test and Build Go Binary macos
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
