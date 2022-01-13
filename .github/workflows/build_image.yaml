@@ -31,13 +31,13 @@ jobs:
           path: |
             frontend/build
 
-  releases-matrix:
+  releases-app-linux-amd64:
     needs: [build-frontend]
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, darwin]
+        goos: [linux]
         goarch: [amd64]
     steps:
       - uses: actions/checkout@v2
@@ -51,6 +51,28 @@ jobs:
           goos: ${{ matrix.goos }}
           pre_command: "apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64 && export CGO_ENABLED=1 "
           executable_compression: upx
+          goarch: ${{ matrix.goarch }}
+          build_command: |
+            make build
+
+  releases-app-darwin-amd64:
+    needs: [build-frontend]
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download frontend files
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_dist_files
+          path: frontend/build
+      - uses: wangyoucao577/go-release-action@v1.22
+        with:
+          goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           build_command: |
             make build
