@@ -39,6 +39,7 @@ jobs:
       matrix:
         goos: [linux]
         goarch: [amd64]
+        go: [ '1.17', ]
     steps:
       - uses: actions/checkout@v2
       - name: Download frontend files
@@ -46,14 +47,18 @@ jobs:
         with:
           name: frontend_dist_files
           path: frontend/build
-      - uses: wangyoucao577/go-release-action@v1.22
-        with:
-          goos: ${{ matrix.goos }}
-          goversion: 1.17
-          pre_command: "apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64 && export CGO_ENABLED=1 "
-          goarch: ${{ matrix.goarch }}
-          build_command: |
-            make build
+      - uses: actions/setup-go@v2
+      - run: |
+          go version
+          make build
+      # - uses: wangyoucao577/go-release-action@v1.22
+      #   with:
+      #     goos: ${{ matrix.goos }}
+      #     goversion: 1.17
+      #     pre_command: "apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64 && export CGO_ENABLED=1 "
+      #     goarch: ${{ matrix.goarch }}
+      #     build_command: |
+      #       make build
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
@@ -61,31 +66,31 @@ jobs:
           path: |
             app
 
-  releases-app-darwin-amd64:
-    needs: [build-frontend]
-    name: Release Go Binary
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [darwin]
-        goarch: [amd64, arm64]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download frontend files
-        uses: actions/download-artifact@v2
-        with:
-          name: frontend_dist_files
-          path: frontend/build
-      - uses: wangyoucao577/go-release-action@v1.22
-        with:
-          goversion: 1.17
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          build_command: |
-            make build
-      - name: upload build app
-        uses: actions/upload-artifact@v2
-        with:
-          name: build_app
-          path: |
-            app
+  # releases-app-darwin-amd64:
+  #   needs: [build-frontend]
+  #   name: Release Go Binary
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       goos: [darwin]
+  #       goarch: [amd64, arm64]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Download frontend files
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: frontend_dist_files
+  #         path: frontend/build
+  #     - uses: wangyoucao577/go-release-action@v1.22
+  #       with:
+  #         goversion: 1.17
+  #         goos: ${{ matrix.goos }}
+  #         goarch: ${{ matrix.goarch }}
+  #         build_command: |
+  #           make build
+  #     - name: upload build app
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: build_app
+  #         path: |
+  #           app
