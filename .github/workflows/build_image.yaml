@@ -49,6 +49,7 @@ jobs:
       - uses: wangyoucao577/go-release-action@v1.22
         with:
           goos: ${{ matrix.goos }}
+          goversion: 1.17
           pre_command: "apt-get update && apt-get install --no-install-recommends -y gcc-mingw-w64-x86-64 && export CGO_ENABLED=1 "
           executable_compression: upx
           goarch: ${{ matrix.goarch }}
@@ -72,6 +73,7 @@ jobs:
           path: frontend/build
       - uses: wangyoucao577/go-release-action@v1.22
         with:
+          goversion: 1.17
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           build_command: |
