@@ -31,9 +31,20 @@ jobs:
           path: |
             frontend/build
 
-  test-and-build:
+  test:
+    name: unittest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - run: |
+          make test
+
+  build-linux-amd64:
     needs: [build-frontend]
-    name: Test and Build Go Binary linux amd64
+    name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,7 +57,7 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
-          make test && make build_linux_amd64
+          make build_linux_amd64
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
@@ -54,9 +65,9 @@ jobs:
           path: |
             app-linux-amd64
 
-  test-and-build-darwin:
+  build-darwin-amd64:
     needs: [build-frontend]
-    name: Test and Build Go Binary macos
+    name: Build Go Binary macos amd64
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -69,7 +80,7 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
-          make test && make build_drawin_amd64
+          make build_drawin_amd64
       - name: upload build app
         uses: actions/upload-artifact@v2
         with:
