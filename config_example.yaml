@@ -39,6 +39,9 @@ kubeconfig: ""
 # upload_dir 默认是 /tmp/mars-uploads
 upload_dir: ""
 
+# 默认 50m, 使用 MB,Gi,m,g这样的写法
+#upload_max_size: "50m"
+
 # database
 # 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径
 db_driver: "sqlite"
