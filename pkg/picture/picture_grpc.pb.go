@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PictureClient interface {
+	// Background 获取背景图片
 	Background(ctx context.Context, in *BackgroundRequest, opts ...grpc.CallOption) (*BackgroundResponse, error)
 }
 
@@ -43,6 +44,7 @@ func (c *pictureClient) Background(ctx context.Context, in *BackgroundRequest, o
 // All implementations must embed UnimplementedPictureServer
 // for forward compatibility
 type PictureServer interface {
+	// Background 获取背景图片
 	Background(context.Context, *BackgroundRequest) (*BackgroundResponse, error)
 	mustEmbedUnimplementedPictureServer()
 }

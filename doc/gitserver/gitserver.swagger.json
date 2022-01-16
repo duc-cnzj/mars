@@ -18,6 +18,7 @@
   "paths": {
     "/api/gitserver/project_options": {
       "get": {
+        "summary": "ProjectOptions 获取项目信息， 用在级联列表",
         "operationId": "GitServer_ProjectOptions",
         "responses": {
           "200": {
@@ -40,6 +41,7 @@
     },
     "/api/gitserver/projects": {
       "get": {
+        "summary": "All 获取所有的 git 项目",
         "operationId": "GitServer_All",
         "responses": {
           "200": {
@@ -62,6 +64,7 @@
     },
     "/api/gitserver/projects/disable": {
       "post": {
+        "summary": "DisableProject 关闭项目",
         "operationId": "GitServer_DisableProject",
         "responses": {
           "200": {
@@ -94,6 +97,7 @@
     },
     "/api/gitserver/projects/enable": {
       "post": {
+        "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
         "operationId": "GitServer_EnableProject",
         "responses": {
           "200": {
@@ -126,6 +130,7 @@
     },
     "/api/gitserver/projects/{project_id}/branch_options": {
       "get": {
+        "summary": "BranchOptions 获取分支信息， 用在级联列表",
         "operationId": "GitServer_BranchOptions",
         "responses": {
           "200": {
@@ -162,6 +167,7 @@
     },
     "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options": {
       "get": {
+        "summary": "CommitOptions 获取commit信息， 用在级联列表",
         "operationId": "GitServer_CommitOptions",
         "responses": {
           "200": {
@@ -198,6 +204,7 @@
     },
     "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}": {
       "get": {
+        "summary": "Commit 获取 commit 详情",
         "operationId": "GitServer_Commit",
         "responses": {
           "200": {
@@ -240,6 +247,7 @@
     },
     "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
+        "summary": "PipelineInfo 获取 pipeline 详情",
         "operationId": "GitServer_PipelineInfo",
         "responses": {
           "200": {
@@ -282,6 +290,7 @@
     },
     "/api/gitserver/projects/{project_id}/branches/{branch}/config_file": {
       "get": {
+        "summary": "MarsConfigFile 获取项目 mars 配置详情",
         "operationId": "GitServer_MarsConfigFile",
         "responses": {
           "200": {

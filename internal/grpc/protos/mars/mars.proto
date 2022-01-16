@@ -66,18 +66,21 @@ message MarsDefaultChartValuesResponse {
 message MarsToggleEnabledResponse {}
 
 service Mars {
+  // Show 查看项目配置
   rpc Show(MarsShowRequest) returns (MarsShowResponse) {
     option (google.api.http) = {
       get: "/api/gitlab/projects/{project_id}/mars_config"
     };
   }
 
+  // GlobalConfig 查看项目 GlobalConfig 配置
   rpc GlobalConfig(MarsGlobalConfigRequest) returns (MarsGlobalConfigResponse) {
     option (google.api.http) = {
       get: "/api/gitlab/projects/{project_id}/global_config"
     };
   }
 
+  // ToggleEnabled 开启/关闭全局配置
   rpc ToggleEnabled(MarsToggleEnabledRequest) returns (MarsToggleEnabledResponse) {
     option (google.api.http) = {
       post: "/api/gitlab/projects/{project_id}/toggle_enabled",
@@ -85,6 +88,7 @@ service Mars {
     };
   }
 
+  // Update 更新全局配置
   rpc Update(MarsUpdateRequest) returns (MarsUpdateResponse) {
     option (google.api.http) = {
       put: "/api/gitlab/projects/{project_id}/mars_config",
@@ -92,6 +96,7 @@ service Mars {
     };
   }
 
+  // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
   rpc GetDefaultChartValues(MarsDefaultChartValuesRequest) returns (MarsDefaultChartValuesResponse) {
     option (google.api.http) = {
       get: "/api/gitlab/projects/{project_id}/default_values",

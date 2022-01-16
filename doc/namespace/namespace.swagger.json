@@ -18,6 +18,7 @@
   "paths": {
     "/api/namespaces": {
       "get": {
+        "summary": "All 获取所有的名称空间",
         "operationId": "Namespace_All",
         "responses": {
           "200": {
@@ -38,6 +39,7 @@
         ]
       },
       "post": {
+        "summary": "Create 创建名称空间",
         "operationId": "Namespace_Create",
         "responses": {
           "200": {
@@ -70,6 +72,7 @@
     },
     "/api/namespaces/exists": {
       "post": {
+        "summary": "IsExists 名称空间是否存在",
         "operationId": "Namespace_IsExists",
         "responses": {
           "200": {
@@ -92,6 +95,7 @@
     },
     "/api/namespaces/{namespace_id}": {
       "get": {
+        "summary": "Show 查看名称空间详情",
         "operationId": "Namespace_Show",
         "responses": {
           "200": {
@@ -121,6 +125,7 @@
         ]
       },
       "delete": {
+        "summary": "Delete 删除名称空间",
         "operationId": "Namespace_Delete",
         "responses": {
           "200": {
@@ -152,6 +157,7 @@
     },
     "/api/namespaces/{namespace_id}/cpu_memory": {
       "get": {
+        "summary": "CpuMemory 名称空间总共使用的 cpu memory",
         "operationId": "Namespace_CpuMemory",
         "responses": {
           "200": {
@@ -183,6 +189,7 @@
     },
     "/api/namespaces/{namespace_id}/service_endpoints": {
       "get": {
+        "summary": "ServiceEndpoints 名称空间下面所有服务的 endpoint",
         "operationId": "Namespace_ServiceEndpoints",
         "responses": {
           "200": {

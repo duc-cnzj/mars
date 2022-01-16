@@ -18,6 +18,7 @@
   "paths": {
     "/api/version": {
       "get": {
+        "summary": "Version 获取当前版本信息",
         "operationId": "Version_Version",
         "responses": {
           "200": {

@@ -18,6 +18,7 @@
   "paths": {
     "/api/gitlab/projects/{project_id}/default_values": {
       "get": {
+        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
         "operationId": "Mars_GetDefaultChartValues",
         "responses": {
           "200": {
@@ -55,6 +56,7 @@
     },
     "/api/gitlab/projects/{project_id}/global_config": {
       "get": {
+        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
         "operationId": "Mars_GlobalConfig",
         "responses": {
           "200": {
@@ -86,6 +88,7 @@
     },
     "/api/gitlab/projects/{project_id}/mars_config": {
       "get": {
+        "summary": "Show 查看项目配置",
         "operationId": "Mars_Show",
         "responses": {
           "200": {
@@ -121,6 +124,7 @@
         ]
       },
       "put": {
+        "summary": "Update 更新全局配置",
         "operationId": "Mars_Update",
         "responses": {
           "200": {
@@ -165,6 +169,7 @@
     },
     "/api/gitlab/projects/{project_id}/toggle_enabled": {
       "post": {
+        "summary": "ToggleEnabled 开启/关闭全局配置",
         "operationId": "Mars_ToggleEnabled",
         "responses": {
           "200": {

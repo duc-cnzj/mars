@@ -19,7 +19,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
+	//  Show 获取 pod 的 cpu memory 信息
 	Show(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (*MetricsShowResponse, error)
+	//  StreamShow stream 的方式获取 pod 的 cpu memory 信息
 	StreamShow(ctx context.Context, in *MetricsShowRequest, opts ...grpc.CallOption) (Metrics_StreamShowClient, error)
 }
 
@@ -76,7 +78,9 @@ func (x *metricsStreamShowClient) Recv() (*MetricsShowResponse, error) {
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
+	//  Show 获取 pod 的 cpu memory 信息
 	Show(context.Context, *MetricsShowRequest) (*MetricsShowResponse, error)
+	//  StreamShow stream 的方式获取 pod 的 cpu memory 信息
 	StreamShow(*MetricsShowRequest, Metrics_StreamShowServer) error
 	mustEmbedUnimplementedMetricsServer()
 }

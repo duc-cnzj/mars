@@ -19,14 +19,23 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GitServerClient interface {
+	// EnableProject 开启项目，开启后可以在项目列表看到
 	EnableProject(ctx context.Context, in *GitEnableProjectRequest, opts ...grpc.CallOption) (*GitEnableProjectResponse, error)
+	// DisableProject 关闭项目
 	DisableProject(ctx context.Context, in *GitDisableProjectRequest, opts ...grpc.CallOption) (*GitDisableProjectResponse, error)
+	// All 获取所有的 git 项目
 	All(ctx context.Context, in *GitAllProjectsRequest, opts ...grpc.CallOption) (*GitAllProjectsResponse, error)
+	// ProjectOptions 获取项目信息， 用在级联列表
 	ProjectOptions(ctx context.Context, in *GitProjectOptionsRequest, opts ...grpc.CallOption) (*GitProjectOptionsResponse, error)
+	// BranchOptions 获取分支信息， 用在级联列表
 	BranchOptions(ctx context.Context, in *GitBranchOptionsRequest, opts ...grpc.CallOption) (*GitBranchOptionsResponse, error)
+	// CommitOptions 获取commit信息， 用在级联列表
 	CommitOptions(ctx context.Context, in *GitCommitOptionsRequest, opts ...grpc.CallOption) (*GitCommitOptionsResponse, error)
+	// Commit 获取 commit 详情
 	Commit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
+	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(ctx context.Context, in *GitPipelineInfoRequest, opts ...grpc.CallOption) (*GitPipelineInfoResponse, error)
+	// MarsConfigFile 获取项目 mars 配置详情
 	MarsConfigFile(ctx context.Context, in *GitConfigFileRequest, opts ...grpc.CallOption) (*GitConfigFileResponse, error)
 }
 
@@ -123,14 +132,23 @@ func (c *gitServerClient) MarsConfigFile(ctx context.Context, in *GitConfigFileR
 // All implementations must embed UnimplementedGitServerServer
 // for forward compatibility
 type GitServerServer interface {
+	// EnableProject 开启项目，开启后可以在项目列表看到
 	EnableProject(context.Context, *GitEnableProjectRequest) (*GitEnableProjectResponse, error)
+	// DisableProject 关闭项目
 	DisableProject(context.Context, *GitDisableProjectRequest) (*GitDisableProjectResponse, error)
+	// All 获取所有的 git 项目
 	All(context.Context, *GitAllProjectsRequest) (*GitAllProjectsResponse, error)
+	// ProjectOptions 获取项目信息， 用在级联列表
 	ProjectOptions(context.Context, *GitProjectOptionsRequest) (*GitProjectOptionsResponse, error)
+	// BranchOptions 获取分支信息， 用在级联列表
 	BranchOptions(context.Context, *GitBranchOptionsRequest) (*GitBranchOptionsResponse, error)
+	// CommitOptions 获取commit信息， 用在级联列表
 	CommitOptions(context.Context, *GitCommitOptionsRequest) (*GitCommitOptionsResponse, error)
+	// Commit 获取 commit 详情
 	Commit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
+	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(context.Context, *GitPipelineInfoRequest) (*GitPipelineInfoResponse, error)
+	// MarsConfigFile 获取项目 mars 配置详情
 	MarsConfigFile(context.Context, *GitConfigFileRequest) (*GitConfigFileResponse, error)
 	mustEmbedUnimplementedGitServerServer()
 }

@@ -78,7 +78,9 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			marsauthorizor.StreamServerInterceptor(),
 			validator.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-				mlog.Error("[Grpc]: recovery error: ", p)
+				bf := make([]byte, 1024*5)
+				runtime.Stack(bf, false)
+				mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 				return nil
 			})),
 			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {

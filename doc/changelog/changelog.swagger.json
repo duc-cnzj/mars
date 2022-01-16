@@ -18,6 +18,7 @@
   "paths": {
     "/api/projects/{project_id}/changelogs": {
       "get": {
+        "summary": "Show 查看项目修改的版本差异",
         "operationId": "Changelog_Show",
         "responses": {
           "200": {

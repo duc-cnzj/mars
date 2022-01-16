@@ -21,6 +21,7 @@ message VersionResponse {
 
 message VersionRequest{}
 service Version {
+  // Version 获取当前版本信息
   rpc Version(VersionRequest) returns (VersionResponse) {
     option (google.api.http) = {
       get: "/api/version"

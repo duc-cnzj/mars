@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VersionClient interface {
+	// Version 获取当前版本信息
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 }
 
@@ -43,6 +44,7 @@ func (c *versionClient) Version(ctx context.Context, in *VersionRequest, opts ..
 // All implementations must embed UnimplementedVersionServer
 // for forward compatibility
 type VersionServer interface {
+	// Version 获取当前版本信息
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	mustEmbedUnimplementedVersionServer()
 }

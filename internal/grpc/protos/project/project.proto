@@ -118,50 +118,59 @@ message ProjectIsPodExistsResponse {
   bool exists = 1;
 }
 service Project {
+  //  List 获取项目列表
   rpc List(ProjectListRequest) returns (ProjectListResponse) {
     option (google.api.http) = {
       get: "/api/projects"
     };
   }
 
+  // Apply grpc 创建/更新项目
   rpc Apply(ProjectApplyRequest) returns (stream ProjectApplyResponse);
 
+  // Delete 删除项目
   rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {
     option (google.api.http) = {
       delete: "/api/projects/{project_id}"
     };
   }
 
+  // Show 项目详情
   rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}"
     };
   }
 
+  // IsPodRunning pod 是否正常在跑
   rpc IsPodRunning(ProjectIsPodRunningRequest) returns (ProjectIsPodRunningResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace}/pod/{pod}/status"
     };
   }
 
+  //  IsPodExists pod 是否存在
   rpc IsPodExists(ProjectIsPodExistsRequest) returns (ProjectIsPodExistsResponse) {
     option (google.api.http) = {
       post: "/api/namespaces/{namespace}/pod/{pod}/exists"
     };
   }
 
+  // AllPodContainers 获取项目下的所有 pod
   rpc AllPodContainers(ProjectAllPodContainersRequest) returns (ProjectAllPodContainersResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/containers"
     };
   }
 
+  // PodContainerLog 查看 pod 日志
   rpc PodContainerLog(ProjectPodContainerLogRequest) returns (ProjectPodContainerLogResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs"
     };
   }
 
+  // StreamPodContainerLog stream 方式查看 pod 日志
   rpc StreamPodContainerLog(ProjectPodContainerLogRequest) returns (stream ProjectPodContainerLogResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"

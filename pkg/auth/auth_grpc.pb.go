@@ -19,9 +19,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
+	//  Login 登录接口
 	Login(ctx context.Context, in *AuthLoginRequest, opts ...grpc.CallOption) (*AuthLoginResponse, error)
+	//  Info 获取当前登录的用户信息
 	Info(ctx context.Context, in *AuthInfoRequest, opts ...grpc.CallOption) (*AuthInfoResponse, error)
+	//  Settings 获取 sso 配置以及跳转 url
 	Settings(ctx context.Context, in *AuthSettingsRequest, opts ...grpc.CallOption) (*AuthSettingsResponse, error)
+	// Exchange sso code 换取 token
 	Exchange(ctx context.Context, in *AuthExchangeRequest, opts ...grpc.CallOption) (*AuthExchangeResponse, error)
 }
 
@@ -73,9 +77,13 @@ func (c *authClient) Exchange(ctx context.Context, in *AuthExchangeRequest, opts
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
 type AuthServer interface {
+	//  Login 登录接口
 	Login(context.Context, *AuthLoginRequest) (*AuthLoginResponse, error)
+	//  Info 获取当前登录的用户信息
 	Info(context.Context, *AuthInfoRequest) (*AuthInfoResponse, error)
+	//  Settings 获取 sso 配置以及跳转 url
 	Settings(context.Context, *AuthSettingsRequest) (*AuthSettingsResponse, error)
+	// Exchange sso code 换取 token
 	Exchange(context.Context, *AuthExchangeRequest) (*AuthExchangeResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }

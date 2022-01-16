@@ -179,7 +179,7 @@ c, err := client.NewClient("127.0.0.1:50000",
 - [ ] namespace all -> list
 - [ ] 增加 basic? or CA? auth，参考 k8s 的做法
 - [ ] grpc 可配置使用 tls
-- [ ] client 集成 copy to pod & uploader
+- [x] client 集成 copy to pod & uploader
 - [x] rpc 增加远程执行容器命令接口
 - [x] 接口验证
 - [x] 前端 namespace 页面 margin-bottom

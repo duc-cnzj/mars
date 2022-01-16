@@ -34,6 +34,7 @@ message EventListResponse {
 }
 
 service Event {
+  // List 用户操作事件列表
   rpc List(EventListRequest) returns (EventListResponse) {
     option (google.api.http) = {
       get: "/api/events"

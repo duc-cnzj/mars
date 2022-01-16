@@ -28,6 +28,7 @@ message ClusterInfoResponse {
 message ClusterInfoRequest {}
 
 service Cluster {
+  // ClusterInfo 查看集群信息
   rpc ClusterInfo(ClusterInfoRequest) returns (ClusterInfoResponse) {
     option (google.api.http) = {
       get: "/api/cluster_info"

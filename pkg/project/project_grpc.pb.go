@@ -19,14 +19,23 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectClient interface {
+	//  List 获取项目列表
 	List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error)
+	// Apply grpc 创建/更新项目
 	Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
+	// Delete 删除项目
 	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
+	// Show 项目详情
 	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
+	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(ctx context.Context, in *ProjectIsPodRunningRequest, opts ...grpc.CallOption) (*ProjectIsPodRunningResponse, error)
+	//  IsPodExists pod 是否存在
 	IsPodExists(ctx context.Context, in *ProjectIsPodExistsRequest, opts ...grpc.CallOption) (*ProjectIsPodExistsResponse, error)
+	// AllPodContainers 获取项目下的所有 pod
 	AllPodContainers(ctx context.Context, in *ProjectAllPodContainersRequest, opts ...grpc.CallOption) (*ProjectAllPodContainersResponse, error)
+	// PodContainerLog 查看 pod 日志
 	PodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (*ProjectPodContainerLogResponse, error)
+	// StreamPodContainerLog stream 方式查看 pod 日志
 	StreamPodContainerLog(ctx context.Context, in *ProjectPodContainerLogRequest, opts ...grpc.CallOption) (Project_StreamPodContainerLogClient, error)
 }
 
@@ -169,14 +178,23 @@ func (x *projectStreamPodContainerLogClient) Recv() (*ProjectPodContainerLogResp
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
 type ProjectServer interface {
+	//  List 获取项目列表
 	List(context.Context, *ProjectListRequest) (*ProjectListResponse, error)
+	// Apply grpc 创建/更新项目
 	Apply(*ProjectApplyRequest, Project_ApplyServer) error
+	// Delete 删除项目
 	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
+	// Show 项目详情
 	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
+	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(context.Context, *ProjectIsPodRunningRequest) (*ProjectIsPodRunningResponse, error)
+	//  IsPodExists pod 是否存在
 	IsPodExists(context.Context, *ProjectIsPodExistsRequest) (*ProjectIsPodExistsResponse, error)
+	// AllPodContainers 获取项目下的所有 pod
 	AllPodContainers(context.Context, *ProjectAllPodContainersRequest) (*ProjectAllPodContainersResponse, error)
+	// PodContainerLog 查看 pod 日志
 	PodContainerLog(context.Context, *ProjectPodContainerLogRequest) (*ProjectPodContainerLogResponse, error)
+	// StreamPodContainerLog stream 方式查看 pod 日志
 	StreamPodContainerLog(*ProjectPodContainerLogRequest, Project_StreamPodContainerLogServer) error
 	mustEmbedUnimplementedProjectServer()
 }

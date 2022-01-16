@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
+	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
@@ -140,8 +141,6 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	return nil
 }
 
-const maxFileSize = 50 << 20 // 50M
-
 func handUploadFile(gmux *runtime.ServeMux) {
 	gmux.HandlePath("POST", "/api/files", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		if req, ok := authenticated(r); ok {
@@ -163,7 +162,7 @@ func authenticated(r *http.Request) (*http.Request, bool) {
 }
 
 func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+	if err := r.ParseMultipartForm(int64(app.Config().MaxUploadSize())); err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
@@ -175,13 +174,20 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
+	info := r.Context().Value(authCtx{}).(*contracts.UserInfo)
+
 	var uploader contracts.Uploader = app.Uploader()
-	put, err := uploader.Disk("users").Put(fmt.Sprintf("%d-%s", time.Now().Unix(), h.Filename), f)
+	// 某个用户/那天/时间/文件名称
+	put, err := uploader.Disk("users").Put(
+		fmt.Sprintf("%s/%s/%s/%s",
+			info.Name,
+			time.Now().Format("2006-01-02"),
+			fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), utils.RandomString(20)),
+			h.Filename), f)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to upload file %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
-	info := r.Context().Value(authCtx{}).(*contracts.UserInfo)
 
 	file := models.File{Path: put.GetFile().Name(), Username: info.Name, Size: put.Size()}
 	app.DB().Create(&file)

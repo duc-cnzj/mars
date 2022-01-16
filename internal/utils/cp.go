@@ -2,12 +2,16 @@ package utils
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
+
+	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -19,6 +23,7 @@ type CopyFileToPodResult struct {
 	ErrOut        string
 	StdOut        string
 	ContainerPath string
+	FileName      string
 }
 
 func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
@@ -29,11 +34,15 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	if targetContainerDir == "" {
 		targetContainerDir = "/tmp"
 	}
-	_, err := os.Stat(fpath)
+	st, err := os.Stat(fpath)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
 	}
+	if uint64(st.Size()) > app.Config().MaxUploadSize() {
+		return nil, errors.New(fmt.Sprintf("最大不得超过 %s, 你上传的文件大小是 %s", humanize.Bytes(app.Config().MaxUploadSize()), humanize.Bytes(uint64(st.Size()))))
+	}
+
 	base := filepath.Base(fpath)
 	dir := filepath.Dir(fpath)
 	path := filepath.Join(dir, base+".tar.gz")
@@ -88,9 +97,10 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	})
 
 	return &CopyFileToPodResult{
-		ContainerPath: filepath.Join(targetContainerDir, base),
 		TargetDir:     targetContainerDir,
 		ErrOut:        errbf.String(),
 		StdOut:        outbf.String(),
+		ContainerPath: filepath.Join(targetContainerDir, base),
+		FileName:      base,
 	}, err
 }

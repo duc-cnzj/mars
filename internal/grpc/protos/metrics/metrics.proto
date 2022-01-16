@@ -20,12 +20,14 @@ message MetricsShowResponse {
 }
 
 service Metrics {
+  //  Show 获取 pod 的 cpu memory 信息
   rpc Show(MetricsShowRequest) returns (MetricsShowResponse) {
     option (google.api.http) = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}",
     };
   }
 
+  //  StreamShow stream 的方式获取 pod 的 cpu memory 信息
   rpc StreamShow(MetricsShowRequest) returns (stream MetricsShowResponse) {
     option (google.api.http) = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}/stream",
