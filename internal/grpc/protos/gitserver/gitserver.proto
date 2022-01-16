@@ -99,6 +99,7 @@ message GitAllProjectsRequest {}
 message GitProjectOptionsRequest {}
 
 service GitServer {
+  // EnableProject 开启项目，开启后可以在项目列表看到
   rpc EnableProject(GitEnableProjectRequest) returns (GitEnableProjectResponse) {
     option (google.api.http) = {
       post: "/api/gitserver/projects/enable",
@@ -106,6 +107,7 @@ service GitServer {
     };
   }
 
+  // DisableProject 关闭项目
   rpc DisableProject(GitDisableProjectRequest) returns (GitDisableProjectResponse) {
     option (google.api.http) = {
       post: "/api/gitserver/projects/disable",
@@ -113,42 +115,49 @@ service GitServer {
     };
   }
 
+  // All 获取所有的 git 项目
   rpc All(GitAllProjectsRequest) returns (GitAllProjectsResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects",
     };
   }
 
+  // ProjectOptions 获取项目信息， 用在级联列表
   rpc ProjectOptions(GitProjectOptionsRequest) returns (GitProjectOptionsResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/project_options",
     };
   }
 
+  // BranchOptions 获取分支信息， 用在级联列表
   rpc BranchOptions(GitBranchOptionsRequest) returns (GitBranchOptionsResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects/{project_id}/branch_options",
     };
   }
 
+  // CommitOptions 获取commit信息， 用在级联列表
   rpc CommitOptions(GitCommitOptionsRequest) returns (GitCommitOptionsResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options",
     };
   }
 
+  // Commit 获取 commit 详情
   rpc Commit(GitCommitRequest) returns (GitCommitResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}",
     };
   }
 
+  // PipelineInfo 获取 pipeline 详情
   rpc PipelineInfo(GitPipelineInfoRequest) returns (GitPipelineInfoResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
   }
 
+  // MarsConfigFile 获取项目 mars 配置详情
   rpc MarsConfigFile(GitConfigFileRequest) returns (GitConfigFileResponse) {
     option (google.api.http) = {
       get: "/api/gitserver/projects/{project_id}/branches/{branch}/config_file",

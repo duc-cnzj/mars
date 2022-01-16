@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/spf13/viper"
 )
 
@@ -46,8 +47,10 @@ type Config struct {
 	PicturePlugin        Plugin `mapstructure:"picture_plugin"`
 	GitServerPlugin      Plugin `mapstructure:"git_server_plugin"`
 
+	UploadDir     string `mapstructure:"upload_dir"`
+	UploadMaxSize string `mapstructure:"upload_max_size"`
+
 	KubeConfig     string `mapstructure:"kubeconfig"`
-	UploadDir      string `mapstructure:"upload_dir"`
 	NsPrefix       string `mapstructure:"ns_prefix"`
 	WildcardDomain string `mapstructure:"wildcard_domain"`
 	ClusterIssuer  string `mapstructure:"cluster_issuer"`
@@ -128,6 +131,14 @@ func Init(cfgFile string) *Config {
 	}
 
 	return cfg
+}
+
+func (c *Config) MaxUploadSize() uint64 {
+	bytes, err := humanize.ParseBytes(c.UploadMaxSize)
+	if err != nil {
+		return 50 << 20
+	}
+	return bytes
 }
 
 func (c *Config) HasWildcardDomain() bool {

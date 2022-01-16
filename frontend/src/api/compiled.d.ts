@@ -2588,6 +2588,9 @@ export class CopyToPodResponse implements ICopyToPodResponse {
     /** CopyToPodResponse output. */
     public output: string;
 
+    /** CopyToPodResponse file_name. */
+    public file_name: string;
+
     /**
      * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
      * @param message CopyToPodResponse message or plain object to encode
@@ -2678,6 +2681,98 @@ export class ExecResponse implements IExecResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExecResponse;
 }
 
+/** Represents a StreamCopyToPodRequest. */
+export class StreamCopyToPodRequest implements IStreamCopyToPodRequest {
+
+    /**
+     * Constructs a new StreamCopyToPodRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IStreamCopyToPodRequest);
+
+    /** StreamCopyToPodRequest file_name. */
+    public file_name: string;
+
+    /** StreamCopyToPodRequest data. */
+    public data: Uint8Array;
+
+    /** StreamCopyToPodRequest namespace. */
+    public namespace: string;
+
+    /** StreamCopyToPodRequest pod. */
+    public pod: string;
+
+    /** StreamCopyToPodRequest container. */
+    public container: string;
+
+    /**
+     * Encodes the specified StreamCopyToPodRequest message. Does not implicitly {@link StreamCopyToPodRequest.verify|verify} messages.
+     * @param message StreamCopyToPodRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: StreamCopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a StreamCopyToPodRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns StreamCopyToPodRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): StreamCopyToPodRequest;
+}
+
+/** Represents a StreamCopyToPodResponse. */
+export class StreamCopyToPodResponse implements IStreamCopyToPodResponse {
+
+    /**
+     * Constructs a new StreamCopyToPodResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IStreamCopyToPodResponse);
+
+    /** StreamCopyToPodResponse size. */
+    public size: number;
+
+    /** StreamCopyToPodResponse podFilePath. */
+    public podFilePath: string;
+
+    /** StreamCopyToPodResponse output. */
+    public output: string;
+
+    /** StreamCopyToPodResponse pod. */
+    public pod: string;
+
+    /** StreamCopyToPodResponse namespace. */
+    public namespace: string;
+
+    /** StreamCopyToPodResponse container. */
+    public container: string;
+
+    /** StreamCopyToPodResponse filename. */
+    public filename: string;
+
+    /**
+     * Encodes the specified StreamCopyToPodResponse message. Does not implicitly {@link StreamCopyToPodResponse.verify|verify} messages.
+     * @param message StreamCopyToPodResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: StreamCopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a StreamCopyToPodResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns StreamCopyToPodResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): StreamCopyToPodResponse;
+}
+
 /** Represents a ContainerSvc */
 export class ContainerSvc extends $protobuf.rpc.Service {
 
@@ -2716,6 +2811,20 @@ export class ContainerSvc extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public exec(request: ExecRequest): Promise<ExecResponse>;
+
+    /**
+     * Calls StreamCopyToPod.
+     * @param request StreamCopyToPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and StreamCopyToPodResponse
+     */
+    public streamCopyToPod(request: StreamCopyToPodRequest, callback: ContainerSvc.StreamCopyToPodCallback): void;
+
+    /**
+     * Calls StreamCopyToPod.
+     * @param request StreamCopyToPodRequest message or plain object
+     * @returns Promise
+     */
+    public streamCopyToPod(request: StreamCopyToPodRequest): Promise<StreamCopyToPodResponse>;
 }
 
 export namespace ContainerSvc {
@@ -2733,6 +2842,13 @@ export namespace ContainerSvc {
      * @param [response] ExecResponse
      */
     type ExecCallback = (error: (Error|null), response?: ExecResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#streamCopyToPod}.
+     * @param error Error, if any
+     * @param [response] StreamCopyToPodResponse
+     */
+    type StreamCopyToPodCallback = (error: (Error|null), response?: StreamCopyToPodResponse) => void;
 }
 
 /** ActionType enum. */

@@ -18,6 +18,7 @@
   "paths": {
     "/api/picture/background": {
       "get": {
+        "summary": "Background 获取背景图片",
         "operationId": "Picture_Background",
         "responses": {
           "200": {

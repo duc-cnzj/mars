@@ -19,10 +19,15 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MarsClient interface {
+	// Show 查看项目配置
 	Show(ctx context.Context, in *MarsShowRequest, opts ...grpc.CallOption) (*MarsShowResponse, error)
+	// GlobalConfig 查看项目 GlobalConfig 配置
 	GlobalConfig(ctx context.Context, in *MarsGlobalConfigRequest, opts ...grpc.CallOption) (*MarsGlobalConfigResponse, error)
+	// ToggleEnabled 开启/关闭全局配置
 	ToggleEnabled(ctx context.Context, in *MarsToggleEnabledRequest, opts ...grpc.CallOption) (*MarsToggleEnabledResponse, error)
+	// Update 更新全局配置
 	Update(ctx context.Context, in *MarsUpdateRequest, opts ...grpc.CallOption) (*MarsUpdateResponse, error)
+	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
 	GetDefaultChartValues(ctx context.Context, in *MarsDefaultChartValuesRequest, opts ...grpc.CallOption) (*MarsDefaultChartValuesResponse, error)
 }
 
@@ -83,10 +88,15 @@ func (c *marsClient) GetDefaultChartValues(ctx context.Context, in *MarsDefaultC
 // All implementations must embed UnimplementedMarsServer
 // for forward compatibility
 type MarsServer interface {
+	// Show 查看项目配置
 	Show(context.Context, *MarsShowRequest) (*MarsShowResponse, error)
+	// GlobalConfig 查看项目 GlobalConfig 配置
 	GlobalConfig(context.Context, *MarsGlobalConfigRequest) (*MarsGlobalConfigResponse, error)
+	// ToggleEnabled 开启/关闭全局配置
 	ToggleEnabled(context.Context, *MarsToggleEnabledRequest) (*MarsToggleEnabledResponse, error)
+	// Update 更新全局配置
 	Update(context.Context, *MarsUpdateRequest) (*MarsUpdateResponse, error)
+	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
 	GetDefaultChartValues(context.Context, *MarsDefaultChartValuesRequest) (*MarsDefaultChartValuesResponse, error)
 	mustEmbedUnimplementedMarsServer()
 }

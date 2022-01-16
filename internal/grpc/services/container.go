@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc/codes"
@@ -133,7 +136,98 @@ func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodR
 	return &container.CopyToPodResponse{
 		PodFilePath: res.TargetDir,
 		Output:      res.ErrOut,
+		FileName:    res.FileName,
 	}, err
+}
+
+func (c *Container) StreamCopyToPod(server container.ContainerSvc_StreamCopyToPodServer) error {
+	var (
+		fpath         string
+		namespace     string
+		pod           string
+		containerName string
+		user          = MustGetUser(server.Context())
+		f             *os.File
+		disk          = "grpc_upload"
+	)
+	defer f.Close()
+
+	for {
+		recv, err := server.Recv()
+		if err != nil {
+			if err == io.EOF && f != nil {
+				stat, _ := f.Stat()
+				f.Close()
+
+				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
+				app.DB().Create(&file)
+				res, err := c.CopyToPod(server.Context(), &container.CopyToPodRequest{
+					FileId:    int64(file.ID),
+					Namespace: namespace,
+					Pod:       pod,
+					Container: containerName,
+				})
+				if err != nil {
+					return err
+				}
+				return server.SendAndClose(&container.StreamCopyToPodResponse{
+					Size:        stat.Size(),
+					PodFilePath: res.PodFilePath,
+					Output:      res.Output,
+					Pod:         pod,
+					Namespace:   namespace,
+					Container:   containerName,
+					Filename:    res.FileName,
+				})
+			}
+			if f != nil {
+				f.Close()
+				app.Uploader().Disk(disk).Delete(f.Name())
+			}
+			return err
+		}
+		if fpath == "" {
+			pod = recv.Pod
+			namespace = recv.Namespace
+			if recv.Container == "" {
+				pod, err := app.K8sClientSet().CoreV1().Pods(recv.Namespace).Get(context.TODO(), recv.Pod, v12.GetOptions{})
+				if err != nil {
+					return err
+				}
+				for _, co := range pod.Spec.Containers {
+					recv.Container = co.Name
+					mlog.Debug("使用第一个容器: ", co.Name)
+					break
+				}
+			}
+			containerName = recv.Container
+			running, reason := utils.IsPodRunning(recv.Namespace, recv.Pod)
+			if !running {
+				return errors.New(reason)
+			}
+
+			// 某个用户/那天/时间/文件名称
+			// duc/2006-01-02/15-03-04-random-str/xxx.tgz
+			p := fmt.Sprintf("%s/%s/%s/%s",
+				user.Name,
+				time.Now().Format("2006-01-02"),
+				fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), utils.RandomString(20)),
+				filepath.Base(recv.GetFileName()))
+			fpath = app.Uploader().Disk(disk).AbsolutePath(p)
+			err := app.Uploader().Disk(disk).MkDir(filepath.Dir(p), true)
+			if err != nil {
+				mlog.Error(err)
+				return err
+			}
+			f, err = os.Create(fpath)
+			if err != nil {
+				mlog.Error(err)
+				return err
+			}
+		}
+
+		f.Write(recv.GetData())
+	}
 }
 
 type execReaderWriter struct {

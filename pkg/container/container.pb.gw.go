@@ -90,6 +90,50 @@ func request_ContainerSvc_Exec_0(ctx context.Context, marshaler runtime.Marshale
 
 }
 
+func request_ContainerSvc_StreamCopyToPod_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerSvcClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var metadata runtime.ServerMetadata
+	stream, err := client.StreamCopyToPod(ctx)
+	if err != nil {
+		grpclog.Infof("Failed to start streaming: %v", err)
+		return nil, metadata, err
+	}
+	dec := marshaler.NewDecoder(req.Body)
+	for {
+		var protoReq StreamCopyToPodRequest
+		err = dec.Decode(&protoReq)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			grpclog.Infof("Failed to decode request: %v", err)
+			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		if err = stream.Send(&protoReq); err != nil {
+			if err == io.EOF {
+				break
+			}
+			grpclog.Infof("Failed to send request: %v", err)
+			return nil, metadata, err
+		}
+	}
+
+	if err := stream.CloseSend(); err != nil {
+		grpclog.Infof("Failed to terminate client stream: %v", err)
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		grpclog.Infof("Failed to get header from client: %v", err)
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+
+	msg, err := stream.CloseAndRecv()
+	metadata.TrailerMD = stream.Trailer()
+	return msg, metadata, err
+
+}
+
 // RegisterContainerSvcHandlerServer registers the http handlers for service ContainerSvc to "mux".
 // UnaryRPC     :call ContainerSvcServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -120,6 +164,13 @@ func RegisterContainerSvcHandlerServer(ctx context.Context, mux *runtime.ServeMu
 	})
 
 	mux.Handle("POST", pattern_ContainerSvc_Exec_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
+	mux.Handle("POST", pattern_ContainerSvc_StreamCopyToPod_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -207,6 +258,26 @@ func RegisterContainerSvcHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
+	mux.Handle("POST", pattern_ContainerSvc_StreamCopyToPod_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.ContainerSvc/StreamCopyToPod", runtime.WithHTTPPathPattern("/ContainerSvc/StreamCopyToPod"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ContainerSvc_StreamCopyToPod_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ContainerSvc_StreamCopyToPod_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -214,10 +285,14 @@ var (
 	pattern_ContainerSvc_CopyToPod_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "container_copy", "copy_to_pod"}, ""))
 
 	pattern_ContainerSvc_Exec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"ContainerSvc", "Exec"}, ""))
+
+	pattern_ContainerSvc_StreamCopyToPod_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"ContainerSvc", "StreamCopyToPod"}, ""))
 )
 
 var (
 	forward_ContainerSvc_CopyToPod_0 = runtime.ForwardResponseMessage
 
 	forward_ContainerSvc_Exec_0 = runtime.ForwardResponseStream
+
+	forward_ContainerSvc_StreamCopyToPod_0 = runtime.ForwardResponseMessage
 )

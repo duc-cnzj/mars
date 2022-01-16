@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClusterClient interface {
+	// ClusterInfo 查看集群信息
 	ClusterInfo(ctx context.Context, in *ClusterInfoRequest, opts ...grpc.CallOption) (*ClusterInfoResponse, error)
 }
 
@@ -43,6 +44,7 @@ func (c *clusterClient) ClusterInfo(ctx context.Context, in *ClusterInfoRequest,
 // All implementations must embed UnimplementedClusterServer
 // for forward compatibility
 type ClusterServer interface {
+	// ClusterInfo 查看集群信息
 	ClusterInfo(context.Context, *ClusterInfoRequest) (*ClusterInfoResponse, error)
 	mustEmbedUnimplementedClusterServer()
 }

@@ -21,6 +21,7 @@ message ChangelogShowResponse {
 }
 
 service Changelog {
+  //  Show 查看项目修改的版本差异
   rpc Show(ChangelogShowRequest) returns (ChangelogShowResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/changelogs"

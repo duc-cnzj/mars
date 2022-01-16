@@ -18,6 +18,7 @@
   "paths": {
     "/api/metrics/namespace/{namespace}/pods/{pod}": {
       "get": {
+        "summary": "Show 获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_Show",
         "responses": {
           "200": {
@@ -54,6 +55,7 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}/stream": {
       "get": {
+        "summary": "StreamShow stream 的方式获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_StreamShow",
         "responses": {
           "200": {

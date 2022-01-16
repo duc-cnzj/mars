@@ -18,6 +18,7 @@
   "paths": {
     "/api/events": {
       "get": {
+        "summary": "List 用户操作事件列表",
         "operationId": "Event_List",
         "responses": {
           "200": {

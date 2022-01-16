@@ -51,6 +51,7 @@ message AuthSettingsResponse {
 }
 
 service Auth {
+  //  Login 登录接口
   rpc Login(AuthLoginRequest) returns (AuthLoginResponse) {
     option (google.api.http) = {
       post: "/api/auth/login",
@@ -62,18 +63,21 @@ service Auth {
     };
   }
 
+  //  Info 获取当前登录的用户信息
   rpc Info(AuthInfoRequest) returns (AuthInfoResponse) {
     option (google.api.http) = {
       get: "/api/auth/info"
     };
   }
 
+  //  Settings 获取 sso 配置以及跳转 url
   rpc Settings(AuthSettingsRequest) returns (AuthSettingsResponse) {
     option (google.api.http) = {
       get: "/api/auth/settings"
     };
   }
 
+  // Exchange sso code 换取 token
   rpc Exchange(AuthExchangeRequest) returns (AuthExchangeResponse) {
     option (google.api.http) = {
       post: "/api/auth/exchange",

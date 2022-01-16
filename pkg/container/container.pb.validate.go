@@ -204,6 +204,8 @@ func (m *CopyToPodResponse) validate(all bool) error {
 
 	// no validation rules for Output
 
+	// no validation rules for FileName
+
 	if len(errors) > 0 {
 		return CopyToPodResponseMultiError(errors)
 	}
@@ -531,3 +533,256 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExecResponseValidationError{}
+
+// Validate checks the field values on StreamCopyToPodRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *StreamCopyToPodRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StreamCopyToPodRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StreamCopyToPodRequestMultiError, or nil if none found.
+func (m *StreamCopyToPodRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StreamCopyToPodRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(m.GetFileName()) < 1 {
+		err := StreamCopyToPodRequestValidationError{
+			field:  "FileName",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Data
+
+	if len(m.GetNamespace()) < 1 {
+		err := StreamCopyToPodRequestValidationError{
+			field:  "Namespace",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetPod()) < 1 {
+		err := StreamCopyToPodRequestValidationError{
+			field:  "Pod",
+			reason: "value length must be at least 1 bytes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Container
+
+	if len(errors) > 0 {
+		return StreamCopyToPodRequestMultiError(errors)
+	}
+	return nil
+}
+
+// StreamCopyToPodRequestMultiError is an error wrapping multiple validation
+// errors returned by StreamCopyToPodRequest.ValidateAll() if the designated
+// constraints aren't met.
+type StreamCopyToPodRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StreamCopyToPodRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StreamCopyToPodRequestMultiError) AllErrors() []error { return m }
+
+// StreamCopyToPodRequestValidationError is the validation error returned by
+// StreamCopyToPodRequest.Validate if the designated constraints aren't met.
+type StreamCopyToPodRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StreamCopyToPodRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StreamCopyToPodRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StreamCopyToPodRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StreamCopyToPodRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StreamCopyToPodRequestValidationError) ErrorName() string {
+	return "StreamCopyToPodRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e StreamCopyToPodRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStreamCopyToPodRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StreamCopyToPodRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StreamCopyToPodRequestValidationError{}
+
+// Validate checks the field values on StreamCopyToPodResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *StreamCopyToPodResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StreamCopyToPodResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StreamCopyToPodResponseMultiError, or nil if none found.
+func (m *StreamCopyToPodResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StreamCopyToPodResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Size
+
+	// no validation rules for PodFilePath
+
+	// no validation rules for Output
+
+	// no validation rules for Pod
+
+	// no validation rules for Namespace
+
+	// no validation rules for Container
+
+	// no validation rules for Filename
+
+	if len(errors) > 0 {
+		return StreamCopyToPodResponseMultiError(errors)
+	}
+	return nil
+}
+
+// StreamCopyToPodResponseMultiError is an error wrapping multiple validation
+// errors returned by StreamCopyToPodResponse.ValidateAll() if the designated
+// constraints aren't met.
+type StreamCopyToPodResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StreamCopyToPodResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StreamCopyToPodResponseMultiError) AllErrors() []error { return m }
+
+// StreamCopyToPodResponseValidationError is the validation error returned by
+// StreamCopyToPodResponse.Validate if the designated constraints aren't met.
+type StreamCopyToPodResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StreamCopyToPodResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StreamCopyToPodResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StreamCopyToPodResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StreamCopyToPodResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StreamCopyToPodResponseValidationError) ErrorName() string {
+	return "StreamCopyToPodResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e StreamCopyToPodResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStreamCopyToPodResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StreamCopyToPodResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StreamCopyToPodResponseValidationError{}

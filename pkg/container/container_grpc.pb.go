@@ -19,8 +19,51 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ContainerSvcClient interface {
+	// CopyToPod (web): 页面上传文件到 pod 内部
 	CopyToPod(ctx context.Context, in *CopyToPodRequest, opts ...grpc.CallOption) (*CopyToPodResponse, error)
+	// Exec grpc 执行 pod 命令
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (ContainerSvc_ExecClient, error)
+	// StreamCopyToPod grpc 上传文件到 pod
+	//  demo:
+	//  cp, _ := c.Container().StreamCopyToPod(context.TODO())
+	//	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
+	//	defer open.Close()
+	//	bf := bufio.NewReaderSize(open, 1024*1024*5)
+	//	var (
+	//		filename =  open.Name()
+	//		pod = "mars-demo-549f789f7d-sxvqm"
+	//		containerName = "demo"
+	//		namespace = "devops-a"
+	//	)
+	//	for {
+	//		bts := make([]byte, 1024*1024)
+	//		_, err := bf.Read(bts)
+	//		if err != nil {
+	//			if err == io.EOF {
+	//				cp.Send(&container.StreamCopyToPodRequest{
+	//					FileName:  filename,
+	//					Data:      bts,
+	//					Namespace: namespace,
+	//					Pod:       pod,
+	//					Container: containerName,
+	//				})
+	//				recv, err := cp.CloseAndRecv()
+	//				if err != nil {
+	//					log.Fatal(err)
+	//				}
+	//				log.Println(recv)
+	//			}
+	//			return
+	//		}
+	//		 cp.Send(&container.StreamCopyToPodRequest{
+	//			FileName:  filename,
+	//			Data:      bts,
+	//			Namespace: namespace,
+	//			Pod:       pod,
+	//			Container: containerName,
+	//		 })
+	//	}
+	StreamCopyToPod(ctx context.Context, opts ...grpc.CallOption) (ContainerSvc_StreamCopyToPodClient, error)
 }
 
 type containerSvcClient struct {
@@ -72,12 +115,89 @@ func (x *containerSvcExecClient) Recv() (*ExecResponse, error) {
 	return m, nil
 }
 
+func (c *containerSvcClient) StreamCopyToPod(ctx context.Context, opts ...grpc.CallOption) (ContainerSvc_StreamCopyToPodClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ContainerSvc_ServiceDesc.Streams[1], "/ContainerSvc/StreamCopyToPod", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &containerSvcStreamCopyToPodClient{stream}
+	return x, nil
+}
+
+type ContainerSvc_StreamCopyToPodClient interface {
+	Send(*StreamCopyToPodRequest) error
+	CloseAndRecv() (*StreamCopyToPodResponse, error)
+	grpc.ClientStream
+}
+
+type containerSvcStreamCopyToPodClient struct {
+	grpc.ClientStream
+}
+
+func (x *containerSvcStreamCopyToPodClient) Send(m *StreamCopyToPodRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *containerSvcStreamCopyToPodClient) CloseAndRecv() (*StreamCopyToPodResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(StreamCopyToPodResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ContainerSvcServer is the server API for ContainerSvc service.
 // All implementations must embed UnimplementedContainerSvcServer
 // for forward compatibility
 type ContainerSvcServer interface {
+	// CopyToPod (web): 页面上传文件到 pod 内部
 	CopyToPod(context.Context, *CopyToPodRequest) (*CopyToPodResponse, error)
+	// Exec grpc 执行 pod 命令
 	Exec(*ExecRequest, ContainerSvc_ExecServer) error
+	// StreamCopyToPod grpc 上传文件到 pod
+	//  demo:
+	//  cp, _ := c.Container().StreamCopyToPod(context.TODO())
+	//	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
+	//	defer open.Close()
+	//	bf := bufio.NewReaderSize(open, 1024*1024*5)
+	//	var (
+	//		filename =  open.Name()
+	//		pod = "mars-demo-549f789f7d-sxvqm"
+	//		containerName = "demo"
+	//		namespace = "devops-a"
+	//	)
+	//	for {
+	//		bts := make([]byte, 1024*1024)
+	//		_, err := bf.Read(bts)
+	//		if err != nil {
+	//			if err == io.EOF {
+	//				cp.Send(&container.StreamCopyToPodRequest{
+	//					FileName:  filename,
+	//					Data:      bts,
+	//					Namespace: namespace,
+	//					Pod:       pod,
+	//					Container: containerName,
+	//				})
+	//				recv, err := cp.CloseAndRecv()
+	//				if err != nil {
+	//					log.Fatal(err)
+	//				}
+	//				log.Println(recv)
+	//			}
+	//			return
+	//		}
+	//		 cp.Send(&container.StreamCopyToPodRequest{
+	//			FileName:  filename,
+	//			Data:      bts,
+	//			Namespace: namespace,
+	//			Pod:       pod,
+	//			Container: containerName,
+	//		 })
+	//	}
+	StreamCopyToPod(ContainerSvc_StreamCopyToPodServer) error
 	mustEmbedUnimplementedContainerSvcServer()
 }
 
@@ -90,6 +210,9 @@ func (UnimplementedContainerSvcServer) CopyToPod(context.Context, *CopyToPodRequ
 }
 func (UnimplementedContainerSvcServer) Exec(*ExecRequest, ContainerSvc_ExecServer) error {
 	return status.Errorf(codes.Unimplemented, "method Exec not implemented")
+}
+func (UnimplementedContainerSvcServer) StreamCopyToPod(ContainerSvc_StreamCopyToPodServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamCopyToPod not implemented")
 }
 func (UnimplementedContainerSvcServer) mustEmbedUnimplementedContainerSvcServer() {}
 
@@ -143,6 +266,32 @@ func (x *containerSvcExecServer) Send(m *ExecResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _ContainerSvc_StreamCopyToPod_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ContainerSvcServer).StreamCopyToPod(&containerSvcStreamCopyToPodServer{stream})
+}
+
+type ContainerSvc_StreamCopyToPodServer interface {
+	SendAndClose(*StreamCopyToPodResponse) error
+	Recv() (*StreamCopyToPodRequest, error)
+	grpc.ServerStream
+}
+
+type containerSvcStreamCopyToPodServer struct {
+	grpc.ServerStream
+}
+
+func (x *containerSvcStreamCopyToPodServer) SendAndClose(m *StreamCopyToPodResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *containerSvcStreamCopyToPodServer) Recv() (*StreamCopyToPodRequest, error) {
+	m := new(StreamCopyToPodRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ContainerSvc_ServiceDesc is the grpc.ServiceDesc for ContainerSvc service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -160,6 +309,11 @@ var ContainerSvc_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Exec",
 			Handler:       _ContainerSvc_Exec_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamCopyToPod",
+			Handler:       _ContainerSvc_StreamCopyToPod_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "container/container.proto",

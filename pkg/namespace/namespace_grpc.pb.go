@@ -19,12 +19,19 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NamespaceClient interface {
+	// All 获取所有的名称空间
 	All(ctx context.Context, in *NamespaceAllRequest, opts ...grpc.CallOption) (*NamespaceAllResponse, error)
+	// Create 创建名称空间
 	Create(ctx context.Context, in *NamespaceCreateRequest, opts ...grpc.CallOption) (*NamespaceCreateResponse, error)
+	// Show 查看名称空间详情
 	Show(ctx context.Context, in *NamespaceShowRequest, opts ...grpc.CallOption) (*NamespaceShowResponse, error)
+	// Delete 删除名称空间
 	Delete(ctx context.Context, in *NamespaceDeleteRequest, opts ...grpc.CallOption) (*NamespaceDeleteResponse, error)
+	// IsExists 名称空间是否存在
 	IsExists(ctx context.Context, in *NamespaceIsExistsRequest, opts ...grpc.CallOption) (*NamespaceIsExistsResponse, error)
+	// CpuMemory 名称空间总共使用的 cpu memory
 	CpuMemory(ctx context.Context, in *NamespaceCpuMemoryRequest, opts ...grpc.CallOption) (*NamespaceCpuMemoryResponse, error)
+	// ServiceEndpoints 名称空间下面所有服务的 endpoint
 	ServiceEndpoints(ctx context.Context, in *NamespaceServiceEndpointsRequest, opts ...grpc.CallOption) (*NamespaceServiceEndpointsResponse, error)
 }
 
@@ -103,12 +110,19 @@ func (c *namespaceClient) ServiceEndpoints(ctx context.Context, in *NamespaceSer
 // All implementations must embed UnimplementedNamespaceServer
 // for forward compatibility
 type NamespaceServer interface {
+	// All 获取所有的名称空间
 	All(context.Context, *NamespaceAllRequest) (*NamespaceAllResponse, error)
+	// Create 创建名称空间
 	Create(context.Context, *NamespaceCreateRequest) (*NamespaceCreateResponse, error)
+	// Show 查看名称空间详情
 	Show(context.Context, *NamespaceShowRequest) (*NamespaceShowResponse, error)
+	// Delete 删除名称空间
 	Delete(context.Context, *NamespaceDeleteRequest) (*NamespaceDeleteResponse, error)
+	// IsExists 名称空间是否存在
 	IsExists(context.Context, *NamespaceIsExistsRequest) (*NamespaceIsExistsResponse, error)
+	// CpuMemory 名称空间总共使用的 cpu memory
 	CpuMemory(context.Context, *NamespaceCpuMemoryRequest) (*NamespaceCpuMemoryResponse, error)
+	// ServiceEndpoints 名称空间下面所有服务的 endpoint
 	ServiceEndpoints(context.Context, *NamespaceServiceEndpointsRequest) (*NamespaceServiceEndpointsResponse, error)
 	mustEmbedUnimplementedNamespaceServer()
 }

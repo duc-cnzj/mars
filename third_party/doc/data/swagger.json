@@ -16,6 +16,7 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Exchange sso code 换取 token",
         "operationId": "Auth_Exchange",
         "parameters": [
           {
@@ -48,6 +49,7 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Info 获取当前登录的用户信息",
         "operationId": "Auth_Info",
         "responses": {
           "200": {
@@ -71,6 +73,7 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Login 登录接口",
         "operationId": "Auth_Login",
         "parameters": [
           {
@@ -103,6 +106,7 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Settings 获取 sso 配置以及跳转 url",
         "operationId": "Auth_Settings",
         "responses": {
           "200": {
@@ -126,6 +130,7 @@
         "tags": [
           "Cluster"
         ],
+        "summary": "ClusterInfo 查看集群信息",
         "operationId": "Cluster_ClusterInfo",
         "responses": {
           "200": {
@@ -148,6 +153,7 @@
         "tags": [
           "ContainerSvc"
         ],
+        "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
         "operationId": "ContainerSvc_CopyToPod",
         "parameters": [
           {
@@ -180,6 +186,7 @@
         "tags": [
           "Event"
         ],
+        "summary": "List 用户操作事件列表",
         "operationId": "Event_List",
         "parameters": [
           {
@@ -216,6 +223,7 @@
         "tags": [
           "Mars"
         ],
+        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
         "operationId": "Mars_GetDefaultChartValues",
         "parameters": [
           {
@@ -252,6 +260,7 @@
         "tags": [
           "Mars"
         ],
+        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
         "operationId": "Mars_GlobalConfig",
         "parameters": [
           {
@@ -283,6 +292,7 @@
         "tags": [
           "Mars"
         ],
+        "summary": "Show 查看项目配置",
         "operationId": "Mars_Show",
         "parameters": [
           {
@@ -317,6 +327,7 @@
         "tags": [
           "Mars"
         ],
+        "summary": "Update 更新全局配置",
         "operationId": "Mars_Update",
         "parameters": [
           {
@@ -361,6 +372,7 @@
         "tags": [
           "Mars"
         ],
+        "summary": "ToggleEnabled 开启/关闭全局配置",
         "operationId": "Mars_ToggleEnabled",
         "parameters": [
           {
@@ -405,6 +417,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "ProjectOptions 获取项目信息， 用在级联列表",
         "operationId": "GitServer_ProjectOptions",
         "responses": {
           "200": {
@@ -427,6 +440,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "All 获取所有的 git 项目",
         "operationId": "GitServer_All",
         "responses": {
           "200": {
@@ -449,6 +463,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "DisableProject 关闭项目",
         "operationId": "GitServer_DisableProject",
         "parameters": [
           {
@@ -481,6 +496,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
         "operationId": "GitServer_EnableProject",
         "parameters": [
           {
@@ -513,6 +529,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "BranchOptions 获取分支信息， 用在级联列表",
         "operationId": "GitServer_BranchOptions",
         "parameters": [
           {
@@ -548,6 +565,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "CommitOptions 获取commit信息， 用在级联列表",
         "operationId": "GitServer_CommitOptions",
         "parameters": [
           {
@@ -584,6 +602,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "Commit 获取 commit 详情",
         "operationId": "GitServer_Commit",
         "parameters": [
           {
@@ -626,6 +645,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "PipelineInfo 获取 pipeline 详情",
         "operationId": "GitServer_PipelineInfo",
         "parameters": [
           {
@@ -668,6 +688,7 @@
         "tags": [
           "GitServer"
         ],
+        "summary": "MarsConfigFile 获取项目 mars 配置详情",
         "operationId": "GitServer_MarsConfigFile",
         "parameters": [
           {
@@ -704,6 +725,7 @@
         "tags": [
           "Metrics"
         ],
+        "summary": "Show 获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_Show",
         "parameters": [
           {
@@ -740,6 +762,7 @@
         "tags": [
           "Metrics"
         ],
+        "summary": "StreamShow stream 的方式获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_StreamShow",
         "parameters": [
           {
@@ -785,6 +808,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "All 获取所有的名称空间",
         "operationId": "Namespace_All",
         "responses": {
           "200": {
@@ -805,6 +829,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "Create 创建名称空间",
         "operationId": "Namespace_Create",
         "parameters": [
           {
@@ -837,6 +862,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "IsExists 名称空间是否存在",
         "operationId": "Namespace_IsExists",
         "responses": {
           "200": {
@@ -859,6 +885,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "Show 查看名称空间详情",
         "operationId": "Namespace_Show",
         "parameters": [
           {
@@ -888,6 +915,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "Delete 删除名称空间",
         "operationId": "Namespace_Delete",
         "parameters": [
           {
@@ -919,6 +947,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "CpuMemory 名称空间总共使用的 cpu memory",
         "operationId": "Namespace_CpuMemory",
         "parameters": [
           {
@@ -950,6 +979,7 @@
         "tags": [
           "Namespace"
         ],
+        "summary": "ServiceEndpoints 名称空间下面所有服务的 endpoint",
         "operationId": "Namespace_ServiceEndpoints",
         "parameters": [
           {
@@ -986,6 +1016,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "IsPodExists pod 是否存在",
         "operationId": "Project_IsPodExists",
         "parameters": [
           {
@@ -1022,6 +1053,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "IsPodRunning pod 是否正常在跑",
         "operationId": "Project_IsPodRunning",
         "parameters": [
           {
@@ -1059,6 +1091,7 @@
         "tags": [
           "Picture"
         ],
+        "summary": "Background 获取背景图片",
         "operationId": "Picture_Background",
         "parameters": [
           {
@@ -1088,6 +1121,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "List 获取项目列表",
         "operationId": "Project_List",
         "parameters": [
           {
@@ -1124,6 +1158,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "Show 项目详情",
         "operationId": "Project_Show",
         "parameters": [
           {
@@ -1153,6 +1188,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "Delete 删除项目",
         "operationId": "Project_Delete",
         "parameters": [
           {
@@ -1184,6 +1220,7 @@
         "tags": [
           "Changelog"
         ],
+        "summary": "Show 查看项目修改的版本差异",
         "operationId": "Changelog_Show",
         "parameters": [
           {
@@ -1220,6 +1257,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "AllPodContainers 获取项目下的所有 pod",
         "operationId": "Project_AllPodContainers",
         "parameters": [
           {
@@ -1251,6 +1289,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "PodContainerLog 查看 pod 日志",
         "operationId": "Project_PodContainerLog",
         "parameters": [
           {
@@ -1294,6 +1333,7 @@
         "tags": [
           "Project"
         ],
+        "summary": "StreamPodContainerLog stream 方式查看 pod 日志",
         "operationId": "Project_StreamPodContainerLog",
         "parameters": [
           {
@@ -1347,6 +1387,7 @@
         "tags": [
           "Version"
         ],
+        "summary": "Version 获取当前版本信息",
         "operationId": "Version_Version",
         "responses": {
           "200": {
@@ -1575,6 +1616,9 @@
     "CopyToPodResponse": {
       "type": "object",
       "properties": {
+        "file_name": {
+          "type": "string"
+        },
         "output": {
           "type": "string"
         },
@@ -2356,6 +2400,33 @@
         "DeployedFailed",
         "DeployedCanceled"
       ]
+    },
+    "StreamCopyToPodResponse": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "podFilePath": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
     },
     "To": {
       "type": "string",

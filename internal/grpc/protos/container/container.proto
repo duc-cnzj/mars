@@ -15,6 +15,7 @@ message CopyToPodRequest {
 message CopyToPodResponse {
   string podFilePath = 1;
   string output = 2;
+  string file_name = 3;
 }
 
 message ExecRequest {
@@ -28,7 +29,26 @@ message ExecResponse {
   string data = 1;
 }
 
+message StreamCopyToPodRequest {
+  string file_name = 1 [(validate.rules).string.min_bytes = 1];
+  bytes data = 2;
+  string namespace = 3  [(validate.rules).string.min_bytes = 1];
+  string pod = 4  [(validate.rules).string.min_bytes = 1];
+  string container = 5;
+}
+
+message StreamCopyToPodResponse {
+  int64 size = 1;
+  string podFilePath = 2;
+  string output = 3;
+  string pod = 4;
+  string namespace = 5;
+  string container = 6;
+  string filename = 7;
+}
+
 service ContainerSvc {
+  // CopyToPod (web): 页面上传文件到 pod 内部
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
     option (google.api.http) = {
       post: "/api/container_copy/copy_to_pod",
@@ -36,5 +56,48 @@ service ContainerSvc {
     };
   }
 
+  // Exec grpc 执行 pod 命令
   rpc Exec(ExecRequest) returns (stream ExecResponse);
+
+  // StreamCopyToPod grpc 上传文件到 pod
+  //  demo:
+  //  cp, _ := c.Container().StreamCopyToPod(context.TODO())
+  //	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
+  //	defer open.Close()
+  //	bf := bufio.NewReaderSize(open, 1024*1024*5)
+  //	var (
+  //		filename =  open.Name()
+  //		pod = "mars-demo-549f789f7d-sxvqm"
+  //		containerName = "demo"
+  //		namespace = "devops-a"
+  //	)
+  //	for {
+  //		bts := make([]byte, 1024*1024)
+  //		_, err := bf.Read(bts)
+  //		if err != nil {
+  //			if err == io.EOF {
+  //				cp.Send(&container.StreamCopyToPodRequest{
+  //					FileName:  filename,
+  //					Data:      bts,
+  //					Namespace: namespace,
+  //					Pod:       pod,
+  //					Container: containerName,
+  //				})
+  //				recv, err := cp.CloseAndRecv()
+  //				if err != nil {
+  //					log.Fatal(err)
+  //				}
+  //				log.Println(recv)
+  //			}
+  //			return
+  //		}
+  //		 cp.Send(&container.StreamCopyToPodRequest{
+  //			FileName:  filename,
+  //			Data:      bts,
+  //			Namespace: namespace,
+  //			Pod:       pod,
+  //			Container: containerName,
+  //		 })
+  //	}
+  rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
 }

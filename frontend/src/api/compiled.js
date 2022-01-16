@@ -5833,6 +5833,7 @@ export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
      * @interface ICopyToPodResponse
      * @property {string|null} [podFilePath] CopyToPodResponse podFilePath
      * @property {string|null} [output] CopyToPodResponse output
+     * @property {string|null} [file_name] CopyToPodResponse file_name
      */
 
     /**
@@ -5867,6 +5868,14 @@ export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
     CopyToPodResponse.prototype.output = "";
 
     /**
+     * CopyToPodResponse file_name.
+     * @member {string} file_name
+     * @memberof CopyToPodResponse
+     * @instance
+     */
+    CopyToPodResponse.prototype.file_name = "";
+
+    /**
      * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
      * @function encode
      * @memberof CopyToPodResponse
@@ -5882,6 +5891,8 @@ export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.podFilePath);
         if (message.output != null && Object.hasOwnProperty.call(message, "output"))
             writer.uint32(/* id 2, wireType 2 =*/18).string(message.output);
+        if (message.file_name != null && Object.hasOwnProperty.call(message, "file_name"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.file_name);
         return writer;
     };
 
@@ -5908,6 +5919,9 @@ export const CopyToPodResponse = $root.CopyToPodResponse = (() => {
                 break;
             case 2:
                 message.output = reader.string();
+                break;
+            case 3:
+                message.file_name = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -6128,6 +6142,308 @@ export const ExecResponse = $root.ExecResponse = (() => {
     return ExecResponse;
 })();
 
+export const StreamCopyToPodRequest = $root.StreamCopyToPodRequest = (() => {
+
+    /**
+     * Properties of a StreamCopyToPodRequest.
+     * @exports IStreamCopyToPodRequest
+     * @interface IStreamCopyToPodRequest
+     * @property {string|null} [file_name] StreamCopyToPodRequest file_name
+     * @property {Uint8Array|null} [data] StreamCopyToPodRequest data
+     * @property {string|null} [namespace] StreamCopyToPodRequest namespace
+     * @property {string|null} [pod] StreamCopyToPodRequest pod
+     * @property {string|null} [container] StreamCopyToPodRequest container
+     */
+
+    /**
+     * Constructs a new StreamCopyToPodRequest.
+     * @exports StreamCopyToPodRequest
+     * @classdesc Represents a StreamCopyToPodRequest.
+     * @implements IStreamCopyToPodRequest
+     * @constructor
+     * @param {IStreamCopyToPodRequest=} [properties] Properties to set
+     */
+    function StreamCopyToPodRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * StreamCopyToPodRequest file_name.
+     * @member {string} file_name
+     * @memberof StreamCopyToPodRequest
+     * @instance
+     */
+    StreamCopyToPodRequest.prototype.file_name = "";
+
+    /**
+     * StreamCopyToPodRequest data.
+     * @member {Uint8Array} data
+     * @memberof StreamCopyToPodRequest
+     * @instance
+     */
+    StreamCopyToPodRequest.prototype.data = $util.newBuffer([]);
+
+    /**
+     * StreamCopyToPodRequest namespace.
+     * @member {string} namespace
+     * @memberof StreamCopyToPodRequest
+     * @instance
+     */
+    StreamCopyToPodRequest.prototype.namespace = "";
+
+    /**
+     * StreamCopyToPodRequest pod.
+     * @member {string} pod
+     * @memberof StreamCopyToPodRequest
+     * @instance
+     */
+    StreamCopyToPodRequest.prototype.pod = "";
+
+    /**
+     * StreamCopyToPodRequest container.
+     * @member {string} container
+     * @memberof StreamCopyToPodRequest
+     * @instance
+     */
+    StreamCopyToPodRequest.prototype.container = "";
+
+    /**
+     * Encodes the specified StreamCopyToPodRequest message. Does not implicitly {@link StreamCopyToPodRequest.verify|verify} messages.
+     * @function encode
+     * @memberof StreamCopyToPodRequest
+     * @static
+     * @param {StreamCopyToPodRequest} message StreamCopyToPodRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    StreamCopyToPodRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.file_name != null && Object.hasOwnProperty.call(message, "file_name"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.file_name);
+        if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+            writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.data);
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.pod);
+        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.container);
+        return writer;
+    };
+
+    /**
+     * Decodes a StreamCopyToPodRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof StreamCopyToPodRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {StreamCopyToPodRequest} StreamCopyToPodRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    StreamCopyToPodRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.StreamCopyToPodRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.file_name = reader.string();
+                break;
+            case 2:
+                message.data = reader.bytes();
+                break;
+            case 3:
+                message.namespace = reader.string();
+                break;
+            case 4:
+                message.pod = reader.string();
+                break;
+            case 5:
+                message.container = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return StreamCopyToPodRequest;
+})();
+
+export const StreamCopyToPodResponse = $root.StreamCopyToPodResponse = (() => {
+
+    /**
+     * Properties of a StreamCopyToPodResponse.
+     * @exports IStreamCopyToPodResponse
+     * @interface IStreamCopyToPodResponse
+     * @property {number|null} [size] StreamCopyToPodResponse size
+     * @property {string|null} [podFilePath] StreamCopyToPodResponse podFilePath
+     * @property {string|null} [output] StreamCopyToPodResponse output
+     * @property {string|null} [pod] StreamCopyToPodResponse pod
+     * @property {string|null} [namespace] StreamCopyToPodResponse namespace
+     * @property {string|null} [container] StreamCopyToPodResponse container
+     * @property {string|null} [filename] StreamCopyToPodResponse filename
+     */
+
+    /**
+     * Constructs a new StreamCopyToPodResponse.
+     * @exports StreamCopyToPodResponse
+     * @classdesc Represents a StreamCopyToPodResponse.
+     * @implements IStreamCopyToPodResponse
+     * @constructor
+     * @param {IStreamCopyToPodResponse=} [properties] Properties to set
+     */
+    function StreamCopyToPodResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * StreamCopyToPodResponse size.
+     * @member {number} size
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * StreamCopyToPodResponse podFilePath.
+     * @member {string} podFilePath
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.podFilePath = "";
+
+    /**
+     * StreamCopyToPodResponse output.
+     * @member {string} output
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.output = "";
+
+    /**
+     * StreamCopyToPodResponse pod.
+     * @member {string} pod
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.pod = "";
+
+    /**
+     * StreamCopyToPodResponse namespace.
+     * @member {string} namespace
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.namespace = "";
+
+    /**
+     * StreamCopyToPodResponse container.
+     * @member {string} container
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.container = "";
+
+    /**
+     * StreamCopyToPodResponse filename.
+     * @member {string} filename
+     * @memberof StreamCopyToPodResponse
+     * @instance
+     */
+    StreamCopyToPodResponse.prototype.filename = "";
+
+    /**
+     * Encodes the specified StreamCopyToPodResponse message. Does not implicitly {@link StreamCopyToPodResponse.verify|verify} messages.
+     * @function encode
+     * @memberof StreamCopyToPodResponse
+     * @static
+     * @param {StreamCopyToPodResponse} message StreamCopyToPodResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    StreamCopyToPodResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.size != null && Object.hasOwnProperty.call(message, "size"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.size);
+        if (message.podFilePath != null && Object.hasOwnProperty.call(message, "podFilePath"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.podFilePath);
+        if (message.output != null && Object.hasOwnProperty.call(message, "output"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message.output);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.pod);
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.namespace);
+        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.container);
+        if (message.filename != null && Object.hasOwnProperty.call(message, "filename"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.filename);
+        return writer;
+    };
+
+    /**
+     * Decodes a StreamCopyToPodResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof StreamCopyToPodResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {StreamCopyToPodResponse} StreamCopyToPodResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    StreamCopyToPodResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.StreamCopyToPodResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.size = reader.int64();
+                break;
+            case 2:
+                message.podFilePath = reader.string();
+                break;
+            case 3:
+                message.output = reader.string();
+                break;
+            case 4:
+                message.pod = reader.string();
+                break;
+            case 5:
+                message.namespace = reader.string();
+                break;
+            case 6:
+                message.container = reader.string();
+                break;
+            case 7:
+                message.filename = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return StreamCopyToPodResponse;
+})();
+
 export const ContainerSvc = $root.ContainerSvc = (() => {
 
     /**
@@ -6209,6 +6525,39 @@ export const ContainerSvc = $root.ContainerSvc = (() => {
      * @instance
      * @param {ExecRequest} request ExecRequest message or plain object
      * @returns {Promise<ExecResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link ContainerSvc#streamCopyToPod}.
+     * @memberof ContainerSvc
+     * @typedef StreamCopyToPodCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {StreamCopyToPodResponse} [response] StreamCopyToPodResponse
+     */
+
+    /**
+     * Calls StreamCopyToPod.
+     * @function streamCopyToPod
+     * @memberof ContainerSvc
+     * @instance
+     * @param {StreamCopyToPodRequest} request StreamCopyToPodRequest message or plain object
+     * @param {ContainerSvc.StreamCopyToPodCallback} callback Node-style callback called with the error, if any, and StreamCopyToPodResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(ContainerSvc.prototype.streamCopyToPod = function streamCopyToPod(request, callback) {
+        return this.rpcCall(streamCopyToPod, $root.StreamCopyToPodRequest, $root.StreamCopyToPodResponse, request, callback);
+    }, "name", { value: "StreamCopyToPod" });
+
+    /**
+     * Calls StreamCopyToPod.
+     * @function streamCopyToPod
+     * @memberof ContainerSvc
+     * @instance
+     * @param {StreamCopyToPodRequest} request StreamCopyToPodRequest message or plain object
+     * @returns {Promise<StreamCopyToPodResponse>} Promise
      * @variation 2
      */
 

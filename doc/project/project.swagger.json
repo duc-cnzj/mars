@@ -18,6 +18,7 @@
   "paths": {
     "/api/namespaces/{namespace}/pod/{pod}/exists": {
       "post": {
+        "summary": "IsPodExists pod 是否存在",
         "operationId": "Project_IsPodExists",
         "responses": {
           "200": {
@@ -54,6 +55,7 @@
     },
     "/api/namespaces/{namespace}/pod/{pod}/status": {
       "get": {
+        "summary": "IsPodRunning pod 是否正常在跑",
         "operationId": "Project_IsPodRunning",
         "responses": {
           "200": {
@@ -90,6 +92,7 @@
     },
     "/api/projects": {
       "get": {
+        "summary": "List 获取项目列表",
         "operationId": "Project_List",
         "responses": {
           "200": {
@@ -128,6 +131,7 @@
     },
     "/api/projects/{project_id}": {
       "get": {
+        "summary": "Show 项目详情",
         "operationId": "Project_Show",
         "responses": {
           "200": {
@@ -157,6 +161,7 @@
         ]
       },
       "delete": {
+        "summary": "Delete 删除项目",
         "operationId": "Project_Delete",
         "responses": {
           "200": {
@@ -188,6 +193,7 @@
     },
     "/api/projects/{project_id}/containers": {
       "get": {
+        "summary": "AllPodContainers 获取项目下的所有 pod",
         "operationId": "Project_AllPodContainers",
         "responses": {
           "200": {
@@ -219,6 +225,7 @@
     },
     "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs": {
       "get": {
+        "summary": "PodContainerLog 查看 pod 日志",
         "operationId": "Project_PodContainerLog",
         "responses": {
           "200": {
@@ -262,6 +269,7 @@
     },
     "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
       "get": {
+        "summary": "StreamPodContainerLog stream 方式查看 pod 日志",
         "operationId": "Project_StreamPodContainerLog",
         "responses": {
           "200": {

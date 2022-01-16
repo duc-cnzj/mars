@@ -18,6 +18,7 @@
   "paths": {
     "/api/auth/exchange": {
       "post": {
+        "summary": "Exchange sso code 换取 token",
         "operationId": "Auth_Exchange",
         "responses": {
           "200": {
@@ -50,6 +51,7 @@
     },
     "/api/auth/info": {
       "get": {
+        "summary": "Info 获取当前登录的用户信息",
         "operationId": "Auth_Info",
         "responses": {
           "200": {
@@ -72,6 +74,7 @@
     },
     "/api/auth/login": {
       "post": {
+        "summary": "Login 登录接口",
         "operationId": "Auth_Login",
         "responses": {
           "200": {
@@ -105,6 +108,7 @@
     },
     "/api/auth/settings": {
       "get": {
+        "summary": "Settings 获取 sso 配置以及跳转 url",
         "operationId": "Auth_Settings",
         "responses": {
           "200": {

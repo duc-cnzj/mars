@@ -88,12 +88,14 @@ message NamespaceAllRequest {}
 message NamespaceDeleteResponse {}
 
 service Namespace {
+  // All 获取所有的名称空间
   rpc All(NamespaceAllRequest) returns (NamespaceAllResponse) {
     option (google.api.http) = {
       get: "/api/namespaces"
     };
   }
 
+  // Create 创建名称空间
   rpc Create(NamespaceCreateRequest) returns (NamespaceCreateResponse) {
     option (google.api.http) = {
       post: "/api/namespaces",
@@ -101,30 +103,35 @@ service Namespace {
     };
   }
 
+  // Show 查看名称空间详情
   rpc Show(NamespaceShowRequest) returns (NamespaceShowResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace_id}"
     };
   }
 
+  // Delete 删除名称空间
   rpc Delete(NamespaceDeleteRequest) returns (NamespaceDeleteResponse) {
     option (google.api.http) = {
       delete: "/api/namespaces/{namespace_id}"
     };
   }
 
+  // IsExists 名称空间是否存在
   rpc IsExists(NamespaceIsExistsRequest) returns (NamespaceIsExistsResponse) {
     option (google.api.http) = {
       post: "/api/namespaces/exists"
     };
   }
 
+  // CpuMemory 名称空间总共使用的 cpu memory
   rpc CpuMemory(NamespaceCpuMemoryRequest) returns (NamespaceCpuMemoryResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace_id}/cpu_memory"
     };
   }
 
+  // ServiceEndpoints 名称空间下面所有服务的 endpoint
   rpc ServiceEndpoints(NamespaceServiceEndpointsRequest) returns (NamespaceServiceEndpointsResponse) {
     option (google.api.http) = {
       get: "/api/namespaces/{namespace_id}/service_endpoints"
