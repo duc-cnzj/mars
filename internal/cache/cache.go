@@ -33,7 +33,7 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 			return nil, err
 		}
 		if err = c.fc.Set([]byte(key), res, seconds); err != nil {
-			return []byte(key), err
+			return nil, err
 		}
 		return res, nil
 	})
