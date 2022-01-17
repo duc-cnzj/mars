@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coocood/freecache"
+	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/utils/singleflight"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,7 @@ func TestNewCache(t *testing.T) {
 
 func TestCache_Remember(t *testing.T) {
 	var i int
-	cache := NewCache(freecache.NewCache(1024*1024), &singleflight.Group{})
+	cache := NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
 	fn := func() {
 		cache.Remember("duc", 10, func() ([]byte, error) {
 			i++

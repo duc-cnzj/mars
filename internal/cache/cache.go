@@ -5,17 +5,17 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 )
 
-type store interface {
+type Store interface {
 	Get(key []byte) (value []byte, err error)
 	Set(key, value []byte, expireSeconds int) (err error)
 }
 
 type Cache struct {
-	fc store
+	fc Store
 	sf *singleflight.Group
 }
 
-func NewCache(fc store, sf *singleflight.Group) *Cache {
+func NewCache(fc Store, sf *singleflight.Group) *Cache {
 	return &Cache{fc: fc, sf: sf}
 }
 
@@ -33,7 +33,7 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 			return nil, err
 		}
 		if err = c.fc.Set([]byte(key), res, seconds); err != nil {
-			return nil, err
+			return []byte(key), err
 		}
 		return res, nil
 	})
