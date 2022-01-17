@@ -64,6 +64,10 @@ const list = [
     text: 'cert-manager.io/cluster-issuer: "<.ClusterIssuer>"',
     displayText: "certManager",
   },
+  {
+    text: '<.Branch>-<.Pipeline>',
+    displayText: "imageTag",
+  },
 ];
 
 var wordRegexp = /[^"\s>\-_]+/;
