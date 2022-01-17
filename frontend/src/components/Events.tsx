@@ -213,6 +213,7 @@ const EventList: React.FC = () => {
               marker: { padding: "0 6px" },
               diffContainer: {
                 display: "block",
+                overflow: "auto",
                 width: "100%",
               },
             }}
