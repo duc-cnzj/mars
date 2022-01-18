@@ -59,11 +59,11 @@ type errorstore struct{}
 
 var storeerr = errors.New("store error")
 
-func (e *errorstore) Set(key, value []byte, expireSeconds int) (err error) {
+func (e *errorstore) Set(key string, value []byte, expireSeconds int) (err error) {
 	return storeerr
 }
 
-func (e *errorstore) Get(key []byte) (value []byte, err error) {
+func (e *errorstore) Get(key string) (value []byte, err error) {
 	return nil, errors.New("errorstore get err")
 }
 
@@ -76,10 +76,11 @@ func TestCache_RememberErrorStore(t *testing.T) {
 			return []byte("duccc"), nil
 		})
 	}
-	_, err := fn()
-	assert.ErrorIs(t, storeerr, err)
+	data, err := fn()
+	assert.Equal(t, []byte("duccc"), data)
+	assert.Nil(t, err)
 	_, err = fn()
-	assert.ErrorIs(t, storeerr, err)
+	assert.Nil(t, err)
 	assert.Equal(t, 2, i)
 }
 

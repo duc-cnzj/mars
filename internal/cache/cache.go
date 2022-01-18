@@ -6,8 +6,8 @@ import (
 )
 
 type Store interface {
-	Get(key []byte) (value []byte, err error)
-	Set(key, value []byte, expireSeconds int) (err error)
+	Get(key string) (value []byte, err error)
+	Set(key string, value []byte, expireSeconds int) (err error)
 }
 
 type Cache struct {
@@ -20,10 +20,9 @@ func NewCache(fc Store, sf *singleflight.Group) *Cache {
 }
 
 func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	k := []byte(key)
 	do, err, _ := c.sf.Do("CacheRemember:"+key, func() (interface{}, error) {
 		mlog.Debug("CacheRemember:" + key + " Do.....")
-		res, err := c.fc.Get(k)
+		res, err := c.fc.Get(key)
 		if err == nil {
 			mlog.Debug("from cache")
 			return res, nil
@@ -32,8 +31,10 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 		if err != nil {
 			return nil, err
 		}
-		if err = c.fc.Set([]byte(key), res, seconds); err != nil {
-			return nil, err
+		// 设置缓存阶段不管它有没有成功，我 fn() 都是成功的，所以需要返回
+		err = c.fc.Set(key, res, seconds)
+		if err != nil {
+			mlog.Errorf("[CACHE MISSING]: key %s err %v", key, err)
 		}
 		return res, nil
 	})

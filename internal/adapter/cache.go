@@ -15,16 +15,16 @@ func NewGoCacheAdapter(c *cache.Cache) *GoCacheAdapter {
 	return &GoCacheAdapter{c: c}
 }
 
-func (g *GoCacheAdapter) Get(key []byte) (value []byte, err error) {
-	get, b := g.c.Get(string(key))
+func (g *GoCacheAdapter) Get(key string) (value []byte, err error) {
+	v, b := g.c.Get(key)
 	if !b {
 		return nil, errors.New("not found")
 	}
-	return get.([]byte), nil
+	return v.([]byte), nil
 }
 
-func (g *GoCacheAdapter) Set(key, value []byte, expireSeconds int) (err error) {
-	g.c.Set(string(key), value, time.Second*time.Duration(expireSeconds))
+func (g *GoCacheAdapter) Set(key string, value []byte, expireSeconds int) (err error) {
+	g.c.Set(key, value, time.Second*time.Duration(expireSeconds))
 
 	return nil
 }

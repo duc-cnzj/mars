@@ -355,280 +355,312 @@ const ConfigModal: React.FC<{
               {loading ? (
                 <Skeleton active />
               ) : (
-                <Form
-                  labelAlign="left"
-                  name="basic"
-                  labelCol={{ span: 4 }}
-                  wrapperCol={{ span: 20 }}
-                  autoComplete="off"
+                <Row
+                  gutter={[16, 16]}
+                  style={{ height: "100%", overflowY: "auto" }}
                 >
-                  <Form.Item
-                    label="配置文件相对位置"
-                    tooltip="config_file 的位置，只接受相对路径，作为用户输入的默认配置"
+                  <Col
+                    span={12}
+                    style={{
+                      maxHeight: "800px",
+                      overflowY: "scroll",
+                      position: "relative",
+                    }}
                   >
-                    <Input
-                      disabled={!editMode || !globalEnabled}
-                      value={config.config_file}
-                      onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                        setConfig((c) => ({
-                          ...c,
-                          config_file: v.target.value,
-                        }));
-                      }}
-                    />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="values 中 config_file 的位置"
-                    tooltip={`用户配置对应到 helm values.yaml 中的哪个字段`}
-                  >
-                    <Popover
-                      overlayInnerStyle={{
-                        maxHeight: 600,
-                        overflowY: "scroll",
-                      }}
-                      content={
-                        <div>
-                          <SyntaxHighlighter
-                            language="yaml"
-                            style={materialDark}
-                            customStyle={{
-                              lineHeight: 1.2,
-                              padding: "10px",
-                              fontFamily: '"Fira code", "Fira Mono", monospace',
-                              fontSize: 12,
-                              margin: 0,
-                              height: "100%",
-                            }}
-                          >
-                            {String(configFileContent)}
-                          </SyntaxHighlighter>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setConfig((c) => ({
-                                ...c,
-                                config_file_values: configFileContent,
-                              }));
-                              setConfigFileTip(false);
-                            }}
-                            type="dashed"
-                            style={{ marginTop: 3, fontSize: 12 }}
-                          >
-                            使用该配置
-                          </Button>
-                        </div>
-                      }
-                      title={
+                    <Badge.Ribbon color="purple" text="charts 默认值">
+                      <div>
                         <div
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            display: !editMode ? "none" : "block",
+                            position: "absolute",
+                            top: 40,
+                            right: 20,
+                            zIndex: 99999,
+                            color: "white",
                           }}
                         >
-                          <div>检测到可用配置</div>
-                          <Button
-                            size="small"
-                            type="link"
-                            onClick={() => setConfigFileTip(false)}
-                            icon={<CloseOutlined />}
-                          ></Button>
+                          <CopyToClipboard
+                            text={defaultValues}
+                            onCopy={() => message.success("已复制！")}
+                          >
+                            <CopyOutlined />
+                          </CopyToClipboard>
                         </div>
-                      }
-                      trigger="focus"
-                      visible={configFileTip && editMode}
-                      onVisibleChange={(v) => setConfigFileTip(v)}
-                    ></Popover>
-                    <Input
-                      disabled={!editMode || !globalEnabled}
-                      value={config.config_field}
-                      onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                        setConfig((c) => ({
-                          ...c,
-                          config_field: v.target.value,
-                        }));
-                      }}
-                    />
-                  </Form.Item>
-
-                  <Form.Item label="config_file 文件类型">
-                    <Select
-                      showArrow={editMode}
-                      disabled={!editMode || !globalEnabled}
-                      value={config.config_file_type}
-                      onChange={(value: any) => {
-                        setConfig((c) => ({
-                          ...c,
-                          config_file_type: value,
-                        }));
-                      }}
-                    >
-                      <Select.Option value="env">.env</Select.Option>
-                      <Select.Option value="yaml">yaml</Select.Option>
-                      <Select.Option value="js">js</Select.Option>
-                      <Select.Option value="ini">ini</Select.Option>
-                      <Select.Option value="php">php</Select.Option>
-                      <Select.Option value="sql">sql</Select.Option>
-                      <Select.Option value="go">go</Select.Option>
-                      <Select.Option value="python">python</Select.Option>
-                      <Select.Option value="json">json</Select.Option>
-                      <Select.Option value="others">其他</Select.Option>
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item
-                    label="charts 的目录"
-                    tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
-                  >
-                    <Input
-                      disabled={!editMode || !globalEnabled}
-                      value={config.local_chart_path}
-                      onChange={(v: React.ChangeEvent<HTMLInputElement>) => {
-                        setConfig((c) => ({
-                          ...c,
-                          local_chart_path: v.target.value,
-                        }));
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item label="启用的分支">
-                    <Select
-                      disabled={!editMode || !globalEnabled}
-                      mode="multiple"
-                      style={{ width: "100%" }}
-                      value={config.branches}
-                      onChange={(v: string[]) => {
-                        console.log(v);
-                        setConfig((c) => ({ ...c, branches: v }));
-                      }}
-                    >
-                      <Option value="*">全部</Option>
-                      {mbranches.map((v, k) => (
-                        <Select.Option key={k} value={v}>
-                          {v}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item label="单字段" tooltip="是不是单字段的配置">
-                    <Switch
-                      disabled={!editMode || !globalEnabled}
-                      defaultChecked
-                      checked={config.is_simple_env}
-                      onChange={(checked: boolean, event: MouseEvent) => {
-                        setConfig((c) => ({
-                          ...c,
-                          is_simple_env: checked,
-                        }));
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label="全局配置文件"
-                    tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
-                  >
-                    <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-                      <CodeMirror
-                        options={{
-                          readOnly:
-                            !editMode || !globalEnabled ? "nocursor" : false,
-                          mode: mode,
-                          theme: "dracula",
-                        }}
-                        value={config.config_file_values || ""}
-                        onBeforeChange={(editor, d, value) => {
-                          setConfig((c) => ({
-                            ...c,
-                            config_file_values: value,
-                          }));
-                        }}
-                      />
-                    </div>
-                  </Form.Item>
-                  <Form.Item
-                    label={
-                      <div>
-                        <div>values.yaml</div>
-                        <div style={{ fontSize: 12 }}>
-                          自动补全: 'alt+enter'
-                        </div>
-                      </div>
-                    }
-                    tooltip="等同于 helm 的 values.yaml"
-                  >
-                    <Row gutter={3}>
-                      <Col
-                        span={12}
-                        style={{
-                          maxHeight: "600px",
-                          overflowY: "scroll",
-                          position: "relative",
-                          fontSize: 13,
-                        }}
-                      >
-                        <CodeMirror
-                          options={{
-                            readOnly:
-                              !editMode || !globalEnabled ? "nocursor" : false,
-                            mode: getMode("yaml"),
-                            theme: "dracula",
+                        <SyntaxHighlighter
+                          language="yaml"
+                          style={materialDark}
+                          customStyle={{
+                            minHeight: 200,
+                            lineHeight: 1.2,
+                            padding: "10px",
+                            fontFamily: '"Fira code", "Fira Mono", monospace',
+                            fontSize: 13,
+                            margin: 0,
+                            height: "100%",
                           }}
-                          value={config.values_yaml}
-                          onBeforeChange={(editor, d, value) => {
-                            setConfig((c) => ({ ...c, values_yaml: value }));
+                        >
+                          {defaultValues}
+                        </SyntaxHighlighter>
+                      </div>
+                    </Badge.Ribbon>
+                  </Col>
+                  <Col
+                    span={12}
+                    style={{
+                      maxHeight: "800px",
+                      overflowY: "scroll",
+                      position: "relative",
+                    }}
+                  >
+                    <Form name="basic" layout="vertical" autoComplete="off">
+                      <Form.Item
+                        label="charts 的目录"
+                        tooltip="charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 'pid|branch|path'"
+                      >
+                        <Input
+                          disabled={!editMode || !globalEnabled}
+                          value={config.local_chart_path}
+                          onChange={(
+                            v: React.ChangeEvent<HTMLInputElement>
+                          ) => {
+                            setConfig((c) => ({
+                              ...c,
+                              local_chart_path: v.target.value,
+                            }));
                           }}
                         />
-                      </Col>
-                      <Col span={12}>
-                        <Badge.Ribbon color="purple" text="charts 默认值">
-                          <div
-                            style={{
-                              maxHeight: "600px",
+                      </Form.Item>
+
+                      <Form.Item style={{ marginBottom: 0 }}>
+                        <Form.Item
+                          label="用户输入配置字段"
+                          tooltip={`用户在部署时使用的自定义配置字段, 比如 "conf->config"`}
+                          style={{
+                            display: "inline-block",
+                            width: "calc(50% - 8px)",
+                            marginRight: 8,
+                          }}
+                        >
+                          <Popover
+                            overlayInnerStyle={{
+                              maxHeight: 600,
                               overflowY: "scroll",
-                              position: "relative",
+                            }}
+                            content={
+                              <div>
+                                <SyntaxHighlighter
+                                  language="yaml"
+                                  style={materialDark}
+                                  customStyle={{
+                                    lineHeight: 1.2,
+                                    padding: "10px",
+                                    fontFamily:
+                                      '"Fira code", "Fira Mono", monospace',
+                                    fontSize: 12,
+                                    margin: 0,
+                                    height: "100%",
+                                  }}
+                                >
+                                  {String(configFileContent)}
+                                </SyntaxHighlighter>
+                                <Button
+                                  size="small"
+                                  onClick={() => {
+                                    setConfig((c) => ({
+                                      ...c,
+                                      config_file_values: configFileContent,
+                                    }));
+                                    setConfigFileTip(false);
+                                  }}
+                                  type="dashed"
+                                  style={{ marginTop: 3, fontSize: 12 }}
+                                >
+                                  使用该配置
+                                </Button>
+                              </div>
+                            }
+                            title={
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div>检测到可用配置</div>
+                                <Button
+                                  size="small"
+                                  type="link"
+                                  onClick={() => setConfigFileTip(false)}
+                                  icon={<CloseOutlined />}
+                                ></Button>
+                              </div>
+                            }
+                            trigger="focus"
+                            visible={configFileTip && editMode}
+                            onVisibleChange={(v) => setConfigFileTip(v)}
+                          ></Popover>
+                          <Input
+                            disabled={!editMode || !globalEnabled}
+                            value={config.config_field}
+                            onChange={(
+                              v: React.ChangeEvent<HTMLInputElement>
+                            ) => {
+                              setConfig((c) => ({
+                                ...c,
+                                config_field: v.target.value,
+                              }));
+                            }}
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          label="配置文件类型"
+                          style={{
+                            display: "inline-block",
+                            width: "calc(50% - 8px)",
+                          }}
+                        >
+                          <Select
+                            showArrow={editMode}
+                            disabled={!editMode || !globalEnabled}
+                            value={config.config_file_type}
+                            onChange={(value: any) => {
+                              setConfig((c) => ({
+                                ...c,
+                                config_file_type: value,
+                              }));
                             }}
                           >
-                            <div
-                              style={{
-                                display: !editMode ? "none" : "block",
-                                position: "absolute",
-                                top: 2,
-                                left: 2,
-                                zIndex: 99999,
-                                color: "white",
-                              }}
-                            >
-                              <CopyToClipboard
-                                text={defaultValues}
-                                onCopy={() => message.success("已复制！")}
-                              >
-                                <CopyOutlined />
-                              </CopyToClipboard>
+                            <Select.Option value="env">.env</Select.Option>
+                            <Select.Option value="yaml">yaml</Select.Option>
+                            <Select.Option value="js">js</Select.Option>
+                            <Select.Option value="ini">ini</Select.Option>
+                            <Select.Option value="php">php</Select.Option>
+                            <Select.Option value="sql">sql</Select.Option>
+                            <Select.Option value="go">go</Select.Option>
+                            <Select.Option value="python">python</Select.Option>
+                            <Select.Option value="json">json</Select.Option>
+                            <Select.Option value="others">其他</Select.Option>
+                          </Select>
+                        </Form.Item>
+                      </Form.Item>
+
+                      <Form.Item style={{ marginBottom: 0 }}>
+                        <Form.Item
+                          label="单字段"
+                          tooltip="配置文件是不是一个整体的value值"
+                          style={{
+                            display: "inline-block",
+                            width: "calc(15% - 8px)",
+                          }}
+                        >
+                          <Switch
+                            disabled={!editMode || !globalEnabled}
+                            defaultChecked
+                            checked={config.is_simple_env}
+                            onChange={(checked: boolean, event: MouseEvent) => {
+                              setConfig((c) => ({
+                                ...c,
+                                is_simple_env: checked,
+                              }));
+                            }}
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          label="启用的分支"
+                          style={{
+                            display: "inline-block",
+                            width: "calc(85% - 8px)",
+                          }}
+                        >
+                          <Select
+                            disabled={!editMode || !globalEnabled}
+                            mode="multiple"
+                            style={{ width: "100%" }}
+                            value={config.branches}
+                            onChange={(v: string[]) => {
+                              console.log(v);
+                              setConfig((c) => ({ ...c, branches: v }));
+                            }}
+                          >
+                            <Option value="*">全部</Option>
+                            {mbranches.map((v, k) => (
+                              <Select.Option key={k} value={v}>
+                                {v}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                      </Form.Item>
+                      <Form.Item
+                        label="全局配置文件"
+                        tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
+                      >
+                        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                          <CodeMirror
+                            options={{
+                              readOnly:
+                                !editMode || !globalEnabled
+                                  ? "nocursor"
+                                  : false,
+                              mode: mode,
+                              theme: "dracula",
+                            }}
+                            value={config.config_file_values || ""}
+                            onBeforeChange={(editor, d, value) => {
+                              setConfig((c) => ({
+                                ...c,
+                                config_file_values: value,
+                              }));
+                            }}
+                          />
+                        </div>
+                      </Form.Item>
+
+                      <Form.Item
+                        label={
+                          <div>
+                            <div>
+                              values.yaml &nbsp;&nbsp;&nbsp;
+                              <span style={{ fontSize: 12 }}>
+                                自动补全: 'alt+enter'
+                              </span>
                             </div>
-                            <SyntaxHighlighter
-                              language="yaml"
-                              style={materialDark}
-                              customStyle={{
-                                minHeight: 200,
-                                lineHeight: 1.2,
-                                padding: "10px",
-                                fontFamily:
-                                  '"Fira code", "Fira Mono", monospace',
-                                fontSize: 13,
-                                margin: 0,
-                                height: "100%",
-                              }}
-                            >
-                              {defaultValues}
-                            </SyntaxHighlighter>
                           </div>
-                        </Badge.Ribbon>
-                      </Col>
-                    </Row>
-                  </Form.Item>
-                </Form>
+                        }
+                        tooltip="等同于 helm 的 values.yaml"
+                      >
+                        <div
+                          style={{
+                            maxHeight: "800px",
+                            overflowY: "scroll",
+                            position: "relative",
+                            fontSize: 13,
+                          }}
+                        >
+                          <CodeMirror
+                            options={{
+                              readOnly:
+                                !editMode || !globalEnabled
+                                  ? "nocursor"
+                                  : false,
+                              mode: getMode("yaml"),
+                              theme: "dracula",
+                            }}
+                            value={config.values_yaml}
+                            onBeforeChange={(editor, d, value) => {
+                              setConfig((c) => ({
+                                ...c,
+                                values_yaml: value,
+                              }));
+                            }}
+                          />
+                        </div>
+                      </Form.Item>
+                    </Form>
+                  </Col>
+                </Row>
               )}
             </Col>
           </Row>
