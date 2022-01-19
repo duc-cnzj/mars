@@ -16,12 +16,12 @@ git_server_plugin:
 #  args:
 #    token: ""
 ws_sender_plugin:
-  name: ws_sender_nsq
-  args:
-    addr: 127.0.0.1:4150
+  name: ws_sender_memory
+#  name: ws_sender_nsq
+#  args:
+#    addr: 127.0.0.1:4150
     # lookupd_addr 可选，有就用
     # lookupd_addr: 127.0.0.1:4160
-  # name: ws_sender_memory
 #  name: ws_sender_redis
 #  args:
 #    addr: 127.0.0.1:6379
@@ -76,19 +76,19 @@ imagepullsecrets:
     email: "john@example.com"
     server: "registry.cn-hangzhou.aliyuncs.com"
 
-oidc:
-  - name: "sso1"
-    enabled: true
-    provider_url: "http://127.0.0.1:9001"
-    client_id: "sso-xxx"
-    client_secret: "xxxx"
-    redirect_url: "http://127.0.0.1:3000/auth/callback"
-  - name: "sso2"
-    enabled: true
-    provider_url: "http://127.0.0.1:9001"
-    client_id: "sso-xxx"
-    client_secret: "xxxx"
-    redirect_url: "http://127.0.0.1:3000/auth/callback"
+#oidc:
+#  - name: "sso1"
+#    enabled: true
+#    provider_url: "http://127.0.0.1:9001"
+#    client_id: "sso-xxx"
+#    client_secret: "xxxx"
+#    redirect_url: "http://127.0.0.1:3000/auth/callback"
+#  - name: "sso2"
+#    enabled: true
+#    provider_url: "http://127.0.0.1:9001"
+#    client_id: "sso-xxx"
+#    client_secret: "xxxx"
+#    redirect_url: "http://127.0.0.1:3000/auth/callback"
 
 admin_password: "123456"
 private_key: |-
