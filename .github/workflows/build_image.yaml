@@ -18,5 +18,5 @@ jobs:
       -
         name: Build
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
-          docker build --platform linux/arm64,linux/amd64,darwin/arm64,darwin/amd64 -t duccnzj/mars --push .
+          docker login registry.cn-hangzhou.aliyuncs.com -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+          docker build --platform linux/arm64,linux/amd64,darwin/arm64,darwin/amd64 -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars --push .
