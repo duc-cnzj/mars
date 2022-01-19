@@ -1,4 +1,4 @@
-FROM node:lts-alpine as web-build
+FROM --platform=$TARGETPLATFORM node:lts-alpine as web-build
 
 WORKDIR /app
 
