@@ -57,7 +57,7 @@ jobs:
       - run: |
           make test
 
-  build-linux-amd64:
+  build-linux:
     needs: [test]
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
@@ -78,15 +78,23 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu
           make build_linux_amd64
-      - name: upload build app
+          make build_linux_arm64
+      - name: upload app-linux-amd64
         uses: actions/upload-artifact@v2
         with:
           name: app-linux-amd64
           path: |
             app-linux-amd64
+      - name: upload app-linux-arm64
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-linux-arm64
+          path: |
+            app-linux-arm64
 
-  build-darwin-amd64:
+  build-darwin:
     needs: [test]
     name: Build Go Binary macos amd64
     runs-on: macos-latest
@@ -107,8 +115,15 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
+          make build_drawin_arm64
           make build_drawin_amd64
-      - name: upload build app
+      - name: upload app-darwin-arm64
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-darwin-arm64
+          path: |
+            app-darwin-arm64
+      - name: upload app-darwin-amd64
         uses: actions/upload-artifact@v2
         with:
           name: app-darwin-amd64
@@ -116,12 +131,17 @@ jobs:
             app-darwin-amd64
 
   release:
-    needs: [build-darwin-amd64, build-linux-amd64]
+    needs: [build-darwin, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
     - uses: actions/checkout@v2
+    - name: Download linux arm64 app
+      uses: actions/download-artifact@v2
+      with:
+        name: app-linux-arm64
+        path: /tmp
     - name: Download linux amd64 app
       uses: actions/download-artifact@v2
       with:
@@ -131,6 +151,11 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: app-darwin-amd64
+        path: /tmp
+    - name: Download darwin arm64 app
+      uses: actions/download-artifact@v2
+      with:
+        name: app-darwin-arm64
         path: /tmp
     - uses: ncipollo/release-action@v1
       with:
