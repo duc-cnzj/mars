@@ -81,12 +81,17 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu
           make build_linux_amd64
           make build_linux_arm64
-      - name: upload build app
+      - name: upload app-linux-amd64
         uses: actions/upload-artifact@v2
         with:
-          name: app-linux
+          name: app-linux-amd64
           path: |
             app-linux-amd64
+      - name: upload app-linux-arm64
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-linux-arm64
+          path: |
             app-linux-arm64
 
   build-darwin-amd64:
@@ -112,12 +117,17 @@ jobs:
       - run: |
           make build_drawin_arm64
           make build_drawin_amd64
-      - name: upload build app
+      - name: upload app-darwin-arm64
         uses: actions/upload-artifact@v2
         with:
-          name: app-darwin
+          name: app-darwin-arm64
           path: |
             app-darwin-arm64
+      - name: upload app-darwin-amd64
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-darwin-amd64
+          path: |
             app-darwin-amd64
 
 #  release:

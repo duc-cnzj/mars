@@ -1,4 +1,4 @@
-FROM node:lts-alpine as web-build
+FROM --platform=$TARGETPLATFORM node:lts-alpine as web-build
 
 WORKDIR /app
 
@@ -8,11 +8,10 @@ RUN cd frontend && \
     yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=$TARGETPLATFORM golang:1.17-alpine3.14 AS builder
+FROM --platform=$TARGETPLATFORM golang:1.17 AS builder
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-  apk add --no-cache ca-certificates tzdata build-base git && \
-  apt-get install -y gcc-aarch64-linux-gnu
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+  apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu
 
 WORKDIR /app
 
@@ -22,9 +21,6 @@ COPY --from=web-build /app/frontend/build /app/frontend/build
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod download
-
-RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
-  CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build -a -ldflags '-extldflags "-static"' -o /main main.go \
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-extldflags "-static"'; fi && \
     VERSION_PATH=$(go list -m -f "{{.Path}}")/version && LDFLAGS="-w -s  \
@@ -37,7 +33,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
      -X ${VERSION_PATH}.helmVersion=$(go list -m -f '{{.Path}} {{.Version}}' all | grep helm.sh/helm/v3 | cut -d ' ' -f2)" \
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETPLATFORM GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go
 
-FROM alpine:3.14
+FROM --platform=$TARGETPLATFORM alpine:3.14
 
 WORKDIR /
 
