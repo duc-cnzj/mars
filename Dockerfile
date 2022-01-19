@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 node:lts-alpine as web-build
+FROM --platform=$BUILDPLATFORM node:lts-alpine as web-build
 
 WORKDIR /app
 
@@ -7,22 +7,21 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=$TARGETPLATFORM golang:1.17 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.17 AS builder
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-  apt install -y ca-certificates tzdata git
+  apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu
 
 WORKDIR /app
 
 COPY . .
 
-COPY --from=web-build /app/frontend/build /app/frontend/build
+COPY --from=web-build /app/build /app/build
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod download
 
-RUN if [ "$TARGETARCH" = "arm64" ]; then apt install -y gcc-aarch64-linux-gnu && \
-    CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-linkmode external -extldflags "-static"'; fi && \
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-linkmode external -extldflags "-static"'; fi && \
     VERSION_PATH=$(go list -m -f "{{.Path}}")/version && LDFLAGS="-w -s  \
      -X ${VERSION_PATH}.gitRepo=$(go list -m -f '{{.Path}}') \
      -X ${VERSION_PATH}.gitBranch=$(git rev-parse --abbrev-ref HEAD) \
