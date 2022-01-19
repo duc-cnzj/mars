@@ -57,7 +57,7 @@ jobs:
 #      - run: |
 #          make test
 
-  build-linux-amd64:
+  build-linux:
     needs: [build-frontend]
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
@@ -94,7 +94,7 @@ jobs:
           path: |
             app-linux-arm64
 
-  build-darwin-amd64:
+  build-darwin:
     needs: [build-frontend]
     name: Build Go Binary macos amd64
     runs-on: macos-latest
