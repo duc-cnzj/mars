@@ -21,7 +21,9 @@ COPY --from=web-build /app/build /app/build
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod download
 
-RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-linkmode external -extldflags "-static"'; fi && \
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc \
+    && CC_FOR_TARGET=gcc-aarch64-linux-gnu \
+    && EXTRA_FLAGS='-linkmode external -extldflags "-static"'; fi && \
     VERSION_PATH=$(go list -m -f "{{.Path}}")/version && LDFLAGS="-w -s  \
      -X ${VERSION_PATH}.gitRepo=$(go list -m -f '{{.Path}}') \
      -X ${VERSION_PATH}.gitBranch=$(git rev-parse --abbrev-ref HEAD) \
@@ -32,7 +34,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
      -X ${VERSION_PATH}.helmVersion=$(go list -m -f '{{.Path}} {{.Version}}' all | grep helm.sh/helm/v3 | cut -d ' ' -f2)" \
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETPLATFORM GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go
 
-FROM --platform=$TARGETPLATFORM alpine:3.14
+FROM --platform=$BUILDPLATFORM alpine:3.14
 
 WORKDIR /
 
