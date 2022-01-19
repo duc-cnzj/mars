@@ -15,7 +15,7 @@ jobs:
         id: prepare
         run: |
           DOCKER_IMAGE=duccnzj/mars
-          DOCKER_PLATFORMS=linux/amd64,linux/arm64,darwin/arm64,darwin/amd64
+          DOCKER_PLATFORMS=linux/amd64,linux/arm64
           VERSION=latest
 
           TAGS="--tag ${DOCKER_IMAGE}:${VERSION}"
