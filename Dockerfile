@@ -2,10 +2,9 @@ FROM node:lts-alpine as web-build
 
 WORKDIR /app
 
-COPY . .
+COPY ./frontend .
 
-RUN cd frontend && \
-    yarn install --registry=https://registry.npm.taobao.org && \
+RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
 FROM --platform=$TARGETPLATFORM golang:1.17 AS builder
