@@ -7,7 +7,7 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=$BUILDPLATFORM golang:1.17 AS builder
+FROM --platform=linux/$TARGETARCH golang:1.17 AS builder
 
 ARG TARGETARCH
 ARG TARGETOS
