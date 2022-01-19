@@ -10,7 +10,7 @@ RUN yarn install --registry=https://registry.npm.taobao.org && \
 FROM --platform=$BUILDPLATFORM golang:1.17 AS builder
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-  apt update && \
+  ockeapt update && \
   apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu
 
 WORKDIR /app
@@ -35,7 +35,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc \
      -X ${VERSION_PATH}.helmVersion=$(go list -m -f '{{.Path}} {{.Version}}' all | grep helm.sh/helm/v3 | cut -d ' ' -f2)" \
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETPLATFORM GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go
 
-FROM --platform=$BUILDPLATFORM alpine:3.14
+FROM --platform=linux/$TARGETARCH alpine:3.14
 
 WORKDIR /
 
