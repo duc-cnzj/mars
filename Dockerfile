@@ -1,4 +1,4 @@
-FROM node:lts-alpine as web-build
+FROM --platform=$TARGETPLATFORM node:lts-alpine as web-build
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
      -X ${VERSION_PATH}.helmVersion=$(go list -m -f '{{.Path}} {{.Version}}' all | grep helm.sh/helm/v3 | cut -d ' ' -f2)" \
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETPLATFORM GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go
 
-FROM alpine:3.14
+FROM --platform=$TARGETPLATFORM alpine:3.14
 
 WORKDIR /
 
