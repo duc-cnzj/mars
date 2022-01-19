@@ -1,8 +1,8 @@
 name: CI
 on:
   push:
-#    tags:
-#      - "v*"
+    tags:
+      - "v*"
 jobs:
   build-frontend:
     name: build-frontend
