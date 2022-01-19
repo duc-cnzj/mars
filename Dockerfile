@@ -17,7 +17,7 @@ WORKDIR /app
 
 COPY . .
 
-COPY --from=web-build /app/build /app/build
+COPY --from=web-build /app/build /app/frontend/build
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod download
