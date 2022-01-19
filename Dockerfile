@@ -7,7 +7,7 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=linux/$TARGETARCH golang:1.17 AS builder
+FROM --platform=$TARGETPLATFORM golang:1.17 AS builder
 
 ARG TARGETARCH
 ARG TARGETOS
@@ -37,7 +37,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc \
      -X ${VERSION_PATH}.helmVersion=$(go list -m -f '{{.Path}} {{.Version}}' all | grep helm.sh/helm/v3 | cut -d ' ' -f2)" \
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go
 
-FROM --platform=linux/$TARGETARCH alpine:3.14
+FROM --platform=$TARGETPLATFORM alpine:3.14
 
 WORKDIR /
 
