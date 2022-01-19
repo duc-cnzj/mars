@@ -22,8 +22,7 @@ COPY . .
 
 COPY --from=web-build /app/build /app/frontend/build
 
-RUN go env -w GOPROXY=https://goproxy.cn,direct && \
-    go mod download
+RUN go mod download
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc \
     && CC_FOR_TARGET=gcc-aarch64-linux-gnu \
