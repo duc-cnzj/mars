@@ -50,7 +50,7 @@ build_linux_amd64:
 
 .PHONY: build_linux_arm64
 build_linux_arm64:
-	CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS} -linkmode external -extldflags '-static'" -o app-linux-arm64 main.go
+	CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS} -extldflags '-static'" -o app-linux-arm64 main.go
 
 .PHONY: build_drawin_amd64
 build_drawin_amd64:

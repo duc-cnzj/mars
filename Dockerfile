@@ -24,9 +24,7 @@ COPY --from=web-build /app/build /app/frontend/build
 
 RUN go mod download
 
-RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc \
-    && CC_FOR_TARGET=gcc-aarch64-linux-gnu \
-    && EXTRA_FLAGS='-linkmode external -extldflags "-static"'; fi && \
+RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu && EXTRA_FLAGS='-extldflags "-static"'; fi && \
     VERSION_PATH=$(go list -m -f "{{.Path}}")/version && LDFLAGS="-w -s  \
      -X ${VERSION_PATH}.gitRepo=$(go list -m -f '{{.Path}}') \
      -X ${VERSION_PATH}.gitBranch=$(git rev-parse --abbrev-ref HEAD) \
