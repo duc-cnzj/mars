@@ -164,10 +164,18 @@ go get -u github.com/duc-cnzj/mars/pkg
 ```
 
 ```golang
-c, err := client.NewClient("127.0.0.1:50000",
-  client.WithAuth("admin", "123456"),
-  client.WithTokenAuthRefresh(),
+package main
+
+import (
+  client "github.com/duc-cnzj/mars/pkg"
 )
+
+func main()  {
+  c, err := client.NewClient("127.0.0.1:50000",
+    client.WithAuth("admin", "123456"),
+    client.WithTokenAuthRefresh(),
+  )
+}
 ```
 
 ## TODO
