@@ -55,7 +55,7 @@ const ItemDetailModal: React.FC<{
   }, []);
 
   return (
-    <>
+    <div className="project-detail">
       <Button
         onClick={() => {
           onOk();
@@ -170,7 +170,7 @@ const ItemDetailModal: React.FC<{
           </TabPane>
         </Tabs>
       </DraggableModal>
-    </>
+    </div>
   );
 };
 

@@ -8637,6 +8637,7 @@ export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
      * @interface IGitConfigFileResponse
      * @property {string|null} [data] GitConfigFileResponse data
      * @property {string|null} [type] GitConfigFileResponse type
+     * @property {Array.<Element>|null} [elements] GitConfigFileResponse elements
      */
 
     /**
@@ -8648,6 +8649,7 @@ export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
      * @param {IGitConfigFileResponse=} [properties] Properties to set
      */
     function GitConfigFileResponse(properties) {
+        this.elements = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -8671,6 +8673,14 @@ export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
     GitConfigFileResponse.prototype.type = "";
 
     /**
+     * GitConfigFileResponse elements.
+     * @member {Array.<Element>} elements
+     * @memberof GitConfigFileResponse
+     * @instance
+     */
+    GitConfigFileResponse.prototype.elements = $util.emptyArray;
+
+    /**
      * Encodes the specified GitConfigFileResponse message. Does not implicitly {@link GitConfigFileResponse.verify|verify} messages.
      * @function encode
      * @memberof GitConfigFileResponse
@@ -8686,6 +8696,9 @@ export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.data);
         if (message.type != null && Object.hasOwnProperty.call(message, "type"))
             writer.uint32(/* id 2, wireType 2 =*/18).string(message.type);
+        if (message.elements != null && message.elements.length)
+            for (let i = 0; i < message.elements.length; ++i)
+                $root.Element.encode(message.elements[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         return writer;
     };
 
@@ -8712,6 +8725,11 @@ export const GitConfigFileResponse = $root.GitConfigFileResponse = (() => {
                 break;
             case 2:
                 message.type = reader.string();
+                break;
+            case 3:
+                if (!(message.elements && message.elements.length))
+                    message.elements = [];
+                message.elements.push($root.Element.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -9324,6 +9342,7 @@ export const MarsConfig = $root.MarsConfig = (() => {
      * @property {string|null} [local_chart_path] MarsConfig local_chart_path
      * @property {Array.<string>|null} [branches] MarsConfig branches
      * @property {string|null} [values_yaml] MarsConfig values_yaml
+     * @property {Array.<Element>|null} [elements] MarsConfig elements
      */
 
     /**
@@ -9336,6 +9355,7 @@ export const MarsConfig = $root.MarsConfig = (() => {
      */
     function MarsConfig(properties) {
         this.branches = [];
+        this.elements = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -9407,6 +9427,14 @@ export const MarsConfig = $root.MarsConfig = (() => {
     MarsConfig.prototype.values_yaml = "";
 
     /**
+     * MarsConfig elements.
+     * @member {Array.<Element>} elements
+     * @memberof MarsConfig
+     * @instance
+     */
+    MarsConfig.prototype.elements = $util.emptyArray;
+
+    /**
      * Encodes the specified MarsConfig message. Does not implicitly {@link MarsConfig.verify|verify} messages.
      * @function encode
      * @memberof MarsConfig
@@ -9435,6 +9463,9 @@ export const MarsConfig = $root.MarsConfig = (() => {
                 writer.uint32(/* id 7, wireType 2 =*/58).string(message.branches[i]);
         if (message.values_yaml != null && Object.hasOwnProperty.call(message, "values_yaml"))
             writer.uint32(/* id 8, wireType 2 =*/66).string(message.values_yaml);
+        if (message.elements != null && message.elements.length)
+            for (let i = 0; i < message.elements.length; ++i)
+                $root.Element.encode(message.elements[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         return writer;
     };
 
@@ -9482,6 +9513,11 @@ export const MarsConfig = $root.MarsConfig = (() => {
             case 8:
                 message.values_yaml = reader.string();
                 break;
+            case 9:
+                if (!(message.elements && message.elements.length))
+                    message.elements = [];
+                message.elements.push($root.Element.decode(reader, reader.uint32()));
+                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -9491,6 +9527,169 @@ export const MarsConfig = $root.MarsConfig = (() => {
     };
 
     return MarsConfig;
+})();
+
+/**
+ * ElementType enum.
+ * @exports ElementType
+ * @enum {number}
+ * @property {number} ElementTypeUnknown=0 ElementTypeUnknown value
+ * @property {number} ElementTypeInput=1 ElementTypeInput value
+ * @property {number} ElementTypeInputNumber=2 ElementTypeInputNumber value
+ * @property {number} ElementTypeSelect=3 ElementTypeSelect value
+ * @property {number} ElementTypeRadio=4 ElementTypeRadio value
+ * @property {number} ElementTypeSwitch=5 ElementTypeSwitch value
+ */
+export const ElementType = $root.ElementType = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
+    values[valuesById[0] = "ElementTypeUnknown"] = 0;
+    values[valuesById[1] = "ElementTypeInput"] = 1;
+    values[valuesById[2] = "ElementTypeInputNumber"] = 2;
+    values[valuesById[3] = "ElementTypeSelect"] = 3;
+    values[valuesById[4] = "ElementTypeRadio"] = 4;
+    values[valuesById[5] = "ElementTypeSwitch"] = 5;
+    return values;
+})();
+
+export const Element = $root.Element = (() => {
+
+    /**
+     * Properties of an Element.
+     * @exports IElement
+     * @interface IElement
+     * @property {string|null} [path] Element path
+     * @property {ElementType|null} [type] Element type
+     * @property {string|null} ["default"] Element default
+     * @property {string|null} [description] Element description
+     * @property {Array.<string>|null} [select_values] Element select_values
+     */
+
+    /**
+     * Constructs a new Element.
+     * @exports Element
+     * @classdesc Represents an Element.
+     * @implements IElement
+     * @constructor
+     * @param {IElement=} [properties] Properties to set
+     */
+    function Element(properties) {
+        this.select_values = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Element path.
+     * @member {string} path
+     * @memberof Element
+     * @instance
+     */
+    Element.prototype.path = "";
+
+    /**
+     * Element type.
+     * @member {ElementType} type
+     * @memberof Element
+     * @instance
+     */
+    Element.prototype.type = 0;
+
+    /**
+     * Element default.
+     * @member {string} default
+     * @memberof Element
+     * @instance
+     */
+    Element.prototype["default"] = "";
+
+    /**
+     * Element description.
+     * @member {string} description
+     * @memberof Element
+     * @instance
+     */
+    Element.prototype.description = "";
+
+    /**
+     * Element select_values.
+     * @member {Array.<string>} select_values
+     * @memberof Element
+     * @instance
+     */
+    Element.prototype.select_values = $util.emptyArray;
+
+    /**
+     * Encodes the specified Element message. Does not implicitly {@link Element.verify|verify} messages.
+     * @function encode
+     * @memberof Element
+     * @static
+     * @param {Element} message Element message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Element.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.path);
+        if (message.type != null && Object.hasOwnProperty.call(message, "type"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.type);
+        if (message["default"] != null && Object.hasOwnProperty.call(message, "default"))
+            writer.uint32(/* id 3, wireType 2 =*/26).string(message["default"]);
+        if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.description);
+        if (message.select_values != null && message.select_values.length)
+            for (let i = 0; i < message.select_values.length; ++i)
+                writer.uint32(/* id 6, wireType 2 =*/50).string(message.select_values[i]);
+        return writer;
+    };
+
+    /**
+     * Decodes an Element message from the specified reader or buffer.
+     * @function decode
+     * @memberof Element
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {Element} Element
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Element.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Element();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.path = reader.string();
+                break;
+            case 2:
+                message.type = reader.int32();
+                break;
+            case 3:
+                message["default"] = reader.string();
+                break;
+            case 4:
+                message.description = reader.string();
+                break;
+            case 6:
+                if (!(message.select_values && message.select_values.length))
+                    message.select_values = [];
+                message.select_values.push(reader.string());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return Element;
 })();
 
 export const MarsShowRequest = $root.MarsShowRequest = (() => {
@@ -13831,6 +14030,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      * @property {string|null} [updated_at] ProjectShowResponse updated_at
      * @property {string|null} [humanize_created_at] ProjectShowResponse humanize_created_at
      * @property {string|null} [humanize_updated_at] ProjectShowResponse humanize_updated_at
+     * @property {Array.<ProjectExtraItem>|null} [extra_values] ProjectShowResponse extra_values
      */
 
     /**
@@ -13843,6 +14043,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      */
     function ProjectShowResponse(properties) {
         this.urls = [];
+        this.extra_values = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -14018,6 +14219,14 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
     ProjectShowResponse.prototype.humanize_updated_at = "";
 
     /**
+     * ProjectShowResponse extra_values.
+     * @member {Array.<ProjectExtraItem>} extra_values
+     * @memberof ProjectShowResponse
+     * @instance
+     */
+    ProjectShowResponse.prototype.extra_values = $util.emptyArray;
+
+    /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
      * @function encode
      * @memberof ProjectShowResponse
@@ -14072,6 +14281,9 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
             writer.uint32(/* id 20, wireType 2 =*/162).string(message.humanize_created_at);
         if (message.humanize_updated_at != null && Object.hasOwnProperty.call(message, "humanize_updated_at"))
             writer.uint32(/* id 21, wireType 2 =*/170).string(message.humanize_updated_at);
+        if (message.extra_values != null && message.extra_values.length)
+            for (let i = 0; i < message.extra_values.length; ++i)
+                $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 22, wireType 2 =*/178).fork()).ldelim();
         return writer;
     };
 
@@ -14157,6 +14369,11 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
                 break;
             case 21:
                 message.humanize_updated_at = reader.string();
+                break;
+            case 22:
+                if (!(message.extra_values && message.extra_values.length))
+                    message.extra_values = [];
+                message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -15042,6 +15259,7 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
      * @property {string|null} [config] ProjectApplyRequest config
      * @property {boolean|null} [atomic] ProjectApplyRequest atomic
      * @property {boolean|null} [websocket_sync] ProjectApplyRequest websocket_sync
+     * @property {Array.<ProjectExtraItem>|null} [extra_values] ProjectApplyRequest extra_values
      */
 
     /**
@@ -15053,6 +15271,7 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
      * @param {IProjectApplyRequest=} [properties] Properties to set
      */
     function ProjectApplyRequest(properties) {
+        this.extra_values = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -15124,6 +15343,14 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
     ProjectApplyRequest.prototype.websocket_sync = false;
 
     /**
+     * ProjectApplyRequest extra_values.
+     * @member {Array.<ProjectExtraItem>} extra_values
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.extra_values = $util.emptyArray;
+
+    /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
      * @function encode
      * @memberof ProjectApplyRequest
@@ -15151,6 +15378,9 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
             writer.uint32(/* id 7, wireType 0 =*/56).bool(message.atomic);
         if (message.websocket_sync != null && Object.hasOwnProperty.call(message, "websocket_sync"))
             writer.uint32(/* id 8, wireType 0 =*/64).bool(message.websocket_sync);
+        if (message.extra_values != null && message.extra_values.length)
+            for (let i = 0; i < message.extra_values.length; ++i)
+                $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         return writer;
     };
 
@@ -15195,6 +15425,11 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
                 break;
             case 8:
                 message.websocket_sync = reader.bool();
+                break;
+            case 9:
+                if (!(message.extra_values && message.extra_values.length))
+                    message.extra_values = [];
+                message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -17048,6 +17283,101 @@ export const CancelInput = $root.CancelInput = (() => {
     return CancelInput;
 })();
 
+export const ProjectExtraItem = $root.ProjectExtraItem = (() => {
+
+    /**
+     * Properties of a ProjectExtraItem.
+     * @exports IProjectExtraItem
+     * @interface IProjectExtraItem
+     * @property {string|null} [path] ProjectExtraItem path
+     * @property {string|null} [value] ProjectExtraItem value
+     */
+
+    /**
+     * Constructs a new ProjectExtraItem.
+     * @exports ProjectExtraItem
+     * @classdesc Represents a ProjectExtraItem.
+     * @implements IProjectExtraItem
+     * @constructor
+     * @param {IProjectExtraItem=} [properties] Properties to set
+     */
+    function ProjectExtraItem(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectExtraItem path.
+     * @member {string} path
+     * @memberof ProjectExtraItem
+     * @instance
+     */
+    ProjectExtraItem.prototype.path = "";
+
+    /**
+     * ProjectExtraItem value.
+     * @member {string} value
+     * @memberof ProjectExtraItem
+     * @instance
+     */
+    ProjectExtraItem.prototype.value = "";
+
+    /**
+     * Encodes the specified ProjectExtraItem message. Does not implicitly {@link ProjectExtraItem.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectExtraItem
+     * @static
+     * @param {ProjectExtraItem} message ProjectExtraItem message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectExtraItem.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.path);
+        if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.value);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectExtraItem message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectExtraItem
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectExtraItem} ProjectExtraItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectExtraItem.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectExtraItem();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.path = reader.string();
+                break;
+            case 2:
+                message.value = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectExtraItem;
+})();
+
 export const ProjectInput = $root.ProjectInput = (() => {
 
     /**
@@ -17062,6 +17392,7 @@ export const ProjectInput = $root.ProjectInput = (() => {
      * @property {string|null} [gitlab_commit] ProjectInput gitlab_commit
      * @property {string|null} [config] ProjectInput config
      * @property {boolean|null} [atomic] ProjectInput atomic
+     * @property {Array.<ProjectExtraItem>|null} [extra_values] ProjectInput extra_values
      */
 
     /**
@@ -17073,6 +17404,7 @@ export const ProjectInput = $root.ProjectInput = (() => {
      * @param {IProjectInput=} [properties] Properties to set
      */
     function ProjectInput(properties) {
+        this.extra_values = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -17144,6 +17476,14 @@ export const ProjectInput = $root.ProjectInput = (() => {
     ProjectInput.prototype.atomic = false;
 
     /**
+     * ProjectInput extra_values.
+     * @member {Array.<ProjectExtraItem>} extra_values
+     * @memberof ProjectInput
+     * @instance
+     */
+    ProjectInput.prototype.extra_values = $util.emptyArray;
+
+    /**
      * Encodes the specified ProjectInput message. Does not implicitly {@link ProjectInput.verify|verify} messages.
      * @function encode
      * @memberof ProjectInput
@@ -17171,6 +17511,9 @@ export const ProjectInput = $root.ProjectInput = (() => {
             writer.uint32(/* id 7, wireType 2 =*/58).string(message.config);
         if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
             writer.uint32(/* id 8, wireType 0 =*/64).bool(message.atomic);
+        if (message.extra_values != null && message.extra_values.length)
+            for (let i = 0; i < message.extra_values.length; ++i)
+                $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         return writer;
     };
 
@@ -17216,6 +17559,11 @@ export const ProjectInput = $root.ProjectInput = (() => {
             case 8:
                 message.atomic = reader.bool();
                 break;
+            case 9:
+                if (!(message.extra_values && message.extra_values.length))
+                    message.extra_values = [];
+                message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
+                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -17239,6 +17587,7 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
      * @property {string|null} [gitlab_commit] UpdateProjectInput gitlab_commit
      * @property {string|null} [config] UpdateProjectInput config
      * @property {boolean|null} [atomic] UpdateProjectInput atomic
+     * @property {Array.<ProjectExtraItem>|null} [extra_values] UpdateProjectInput extra_values
      */
 
     /**
@@ -17250,6 +17599,7 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
      * @param {IUpdateProjectInput=} [properties] Properties to set
      */
     function UpdateProjectInput(properties) {
+        this.extra_values = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -17305,6 +17655,14 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
     UpdateProjectInput.prototype.atomic = false;
 
     /**
+     * UpdateProjectInput extra_values.
+     * @member {Array.<ProjectExtraItem>} extra_values
+     * @memberof UpdateProjectInput
+     * @instance
+     */
+    UpdateProjectInput.prototype.extra_values = $util.emptyArray;
+
+    /**
      * Encodes the specified UpdateProjectInput message. Does not implicitly {@link UpdateProjectInput.verify|verify} messages.
      * @function encode
      * @memberof UpdateProjectInput
@@ -17328,6 +17686,9 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
             writer.uint32(/* id 5, wireType 2 =*/42).string(message.config);
         if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
             writer.uint32(/* id 6, wireType 0 =*/48).bool(message.atomic);
+        if (message.extra_values != null && message.extra_values.length)
+            for (let i = 0; i < message.extra_values.length; ++i)
+                $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
         return writer;
     };
 
@@ -17366,6 +17727,11 @@ export const UpdateProjectInput = $root.UpdateProjectInput = (() => {
                 break;
             case 6:
                 message.atomic = reader.bool();
+                break;
+            case 7:
+                if (!(message.extra_values && message.extra_values.length))
+                    message.extra_values = [];
+                message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);

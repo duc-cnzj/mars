@@ -327,6 +327,41 @@
     }
   },
   "definitions": {
+    "Element": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/ElementType"
+        },
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "select_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ElementType": {
+      "type": "string",
+      "enum": [
+        "ElementTypeUnknown",
+        "ElementTypeInput",
+        "ElementTypeInputNumber",
+        "ElementTypeSelect",
+        "ElementTypeRadio",
+        "ElementTypeSwitch"
+      ],
+      "default": "ElementTypeUnknown"
+    },
     "GitAllProjectsResponse": {
       "type": "object",
       "properties": {
@@ -376,6 +411,12 @@
         },
         "type": {
           "type": "string"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
         }
       }
     },

@@ -1,10 +1,12 @@
 import React, { useMemo, useState, useEffect, useCallback, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import ReactDiffViewer from "react-diff-viewer";
+import Elements from "./elements/Elements";
 import PipelineInfo from "./PipelineInfo";
 import ConfigHistory from "./ConfigHistory";
 import { commit, configFile } from "../api/gitlab";
 import { getHighlightSyntax } from "../utils/highlight";
+import {orderBy} from 'lodash';
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -43,6 +45,7 @@ const ModalSub: React.FC<{
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
   const list = useSelector(selectList);
   const dispatch = useDispatch();
+  const [elements, setElements] = useState<pb.Element[]>();
   const [data, setData] = useState<Mars.CreateItemInterface>({
     name: detail.name,
     gitlabProjectId: Number(detail.gitlab_project_id),
@@ -51,6 +54,7 @@ const ModalSub: React.FC<{
     config: detail.config,
     config_type: "yaml",
     debug: !detail.atomic,
+    extra_values: detail.extra_values,
   });
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [initValue, setInitValue] = useState<{
@@ -78,6 +82,7 @@ const ModalSub: React.FC<{
         branch: detail.gitlab_branch,
       }).then((res) => {
         setData((d) => ({ ...d, config_type: res.data.type }));
+        setElements(res.data.elements);
       });
       commit({
         project_id: String(detail.gitlab_project_id),
@@ -117,6 +122,7 @@ const ModalSub: React.FC<{
         config: res.data.data,
         config_type: res.data.type,
       }));
+      setElements(res.data.elements);
     });
   }, [data.gitlabProjectId, data.gitlabBranch]);
 
@@ -165,6 +171,7 @@ const ModalSub: React.FC<{
       let s = pb.UpdateProjectInput.encode({
         type: pb.Type.UpdateProject,
 
+        extra_values: data.extra_values,
         project_id: Number(id),
         gitlab_branch: data.gitlabBranch,
         gitlab_commit: data.gitlabCommit,
@@ -175,6 +182,7 @@ const ModalSub: React.FC<{
 
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
+      console.log(s);
       ws?.send(s);
     }
   };
@@ -195,6 +203,7 @@ const ModalSub: React.FC<{
       config: detail.config,
       debug: !detail.atomic,
       config_type: data.config_type,
+      extra_values: data.extra_values,
     });
     if (initValue) {
       setInitValue({ ...initValue, time: new Date().getUTCSeconds() });
@@ -281,7 +290,7 @@ const ModalSub: React.FC<{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingBottom: 10,
+            // paddingBottom: 10,
           }}
         >
           <div
@@ -289,7 +298,7 @@ const ModalSub: React.FC<{
               "edit-project--hidden": list[slug]?.isLoading,
             })}
           >
-            <span style={{ marginRight: 5 }}>配置文件:</span>
+            <span style={{ marginRight: 5 }}>编辑配置:</span>
 
             <Button
               size="small"
@@ -327,7 +336,34 @@ const ModalSub: React.FC<{
             }}
           />
         </div>
-        <div style={{ minWidth: 200, marginBottom: 20, height: "100%" }}>
+        <div style={{ minWidth: 200, marginBottom: 20, height: "100%",display: "flex", flexDirection: "column" }}>
+          {elements && (
+            <Elements
+              value={data.extra_values}
+              onChange={(v: pb.ProjectExtraItem[]) => {
+                console.log("vvvvvvvvvvvvvvvvvv", v);
+                setData((data) => ({
+                  ...data,
+                  extra_values: v.map((i) => ({
+                    path: i.path,
+                    value: String(i.value),
+                  })),
+                }));
+              }}
+              elements={orderBy(elements, ['type'], ['asc'])}
+              style={{
+                inputNumber: { fontSize: 10, width: "100%" },
+                input: { fontSize: 10 },
+                label: { fontSize: 10 },
+                formItem: {
+                  marginBottom: 5,
+                  display: "inline-block",
+                  width: "calc(30% - 8px)",
+                  marginRight: 8,
+                },
+              }}
+            />
+          )}
           <Row style={{ height: "100%" }}>
             <Col span={detail.config === data.config ? 24 : 12}>
               <CodeMirror

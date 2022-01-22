@@ -101,6 +101,7 @@ func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Proje
 		GitlabCommit:    input.GitlabCommit,
 		Config:          input.Config,
 		Atomic:          input.Atomic,
+		ExtraValues:     input.ExtraValues,
 	}, *user, "", &messager{
 		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
 		t:        t,
@@ -274,6 +275,7 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		UpdatedAt:         utils.ToRFC3339DatetimeString(&projectModel.UpdatedAt),
 		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
 		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
+		ExtraValues:       projectModel.GetExtraValues(),
 	}, nil
 }
 

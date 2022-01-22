@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/api/annotations.proto";
 import "validate/validate.proto";
+import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/gitserver;gitserver";
 
@@ -91,6 +92,7 @@ message GitConfigFileRequest {
 message GitConfigFileResponse {
   string data = 1;
   string type = 2;
+  repeated Element elements = 3;
 }
 
 message GitEnableProjectResponse {}

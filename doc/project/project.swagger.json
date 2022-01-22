@@ -420,6 +420,17 @@
     "ProjectDeleteResponse": {
       "type": "object"
     },
+    "ProjectExtraItem": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "ProjectIsPodExistsResponse": {
       "type": "object",
       "properties": {
@@ -607,6 +618,12 @@
         },
         "humanize_updated_at": {
           "type": "string"
+        },
+        "extra_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectExtraItem"
+          }
         }
       }
     },

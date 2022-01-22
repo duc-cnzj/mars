@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
+import Elements from "./elements/Elements";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
+import { orderBy } from "lodash";
 
 import { configFile } from "../api/gitlab";
 import {
@@ -39,6 +41,7 @@ const initItemData: Mars.CreateItemInterface = {
   config: "",
   debug: true,
   config_type: "yaml",
+  extra_values: [],
 };
 
 const CreateProjectModal: React.FC<{
@@ -51,6 +54,7 @@ const CreateProjectModal: React.FC<{
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
+  const [elements, setElements] = useState<pb.Element[]>();
 
   let slug = useMemo(
     () => toSlug(namespaceId, data.name),
@@ -92,6 +96,7 @@ const CreateProjectModal: React.FC<{
         config: res.data.data,
         config_type: res.data.type,
       }));
+      setElements(res.data.elements);
     });
   }, [data.gitlabBranch, data.gitlabProjectId]);
 
@@ -156,6 +161,7 @@ const CreateProjectModal: React.FC<{
         gitlab_commit: data.gitlabCommit,
         config: data.config,
         atomic: !data.debug,
+        extra_values: data.extra_values,
       }).finish();
 
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
@@ -258,6 +264,33 @@ const CreateProjectModal: React.FC<{
               height: "100%",
             }}
           >
+            {elements && (
+              <Elements
+                value={data.extra_values}
+                onChange={(v: pb.ProjectExtraItem[]) => {
+                  console.log("vvvvvvvvvvvvvvvvvv", v);
+                  setData((data) => ({
+                    ...data,
+                    extra_values: v.map((i) => ({
+                      path: i.path,
+                      value: String(i.value),
+                    })),
+                  }));
+                }}
+                elements={orderBy(elements, ['type'], ['asc'])}
+                style={{
+                  inputNumber: { fontSize: 10, width: "100%" },
+                  input: { fontSize: 10 },
+                  label: { fontSize: 10 },
+                  formItem: {
+                    marginBottom: 5,
+                    display: "inline-block",
+                    width: "calc(33% - 8px)",
+                    marginRight: 8,
+                  },
+                }}
+              />
+            )}
             <CodeMirror
               value={data.config}
               options={{

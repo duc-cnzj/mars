@@ -2,6 +2,10 @@ import React, { useState, useCallback, useEffect, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+// import Elements from "./elements/Elements";
+import DynamicElement from "./elements/DynamicElement";
+import SelectFileType from "./SelectFileType";
+import {cloneDeep} from 'lodash';
 
 import pb from "../api/compiled";
 import { get, debounce } from "lodash";
@@ -51,6 +55,7 @@ const initConfig = {
   local_chart_path: "",
   branches: [],
   values_yaml: "",
+  elements: [],
 };
 
 const initDefaultValues = "# 没找到对应的 values.yaml";
@@ -89,8 +94,9 @@ const ConfigModal: React.FC<{
       marsConfig({ branch, project_id: id })
         .then(({ data }) => {
           if (data.config) {
-            setConfig(data.config);
-            setOld(data.config);
+            setConfig(cloneDeep(data.config));
+            console.log("oldoldoldold", data.config);
+            setOld(cloneDeep(data.config));
           }
           setModalBranch(data.branch);
           setLoading(false);
@@ -105,10 +111,10 @@ const ConfigModal: React.FC<{
   );
 
   useEffect(() => {
-    if (config) {
+    if (visible && config) {
       setMode(getMode(config.config_file_type));
     }
-  }, [config]);
+  }, [config, visible]);
 
   const loadGlobalConfig = useCallback(
     (id: number) => {
@@ -116,8 +122,9 @@ const ConfigModal: React.FC<{
       globalConfigApi({ project_id: id })
         .then(({ data }) => {
           if (data.config) {
-            setConfig(data.config);
-            setOld(data.config);
+            setConfig(cloneDeep(data.config));
+            console.log("oldoldoldold", data.config);
+            setOld(cloneDeep(data.config));
           }
           loadDefaultValues(id, "");
           setLoading(false);
@@ -145,8 +152,9 @@ const ConfigModal: React.FC<{
           } else {
             console.log(data.config, !!data.config);
             if (data.config) {
-              setOld(data.config);
-              setConfig(data.config);
+              console.log("oldoldoldold", data.config);
+              setOld(cloneDeep(data.config));
+              setConfig(cloneDeep(data.config));
             }
             loadDefaultValues(item.id, "");
             setLoading(false);
@@ -161,7 +169,7 @@ const ConfigModal: React.FC<{
   const resetModal = useCallback(() => {
     setMbranches([]);
     setLoading(false);
-    setConfig(initConfig);
+    setConfig({...initConfig});
     setConfigVisible(false);
     setEditMode(true);
     setConfigFileContent("");
@@ -203,7 +211,7 @@ const ConfigModal: React.FC<{
   );
 
   useEffect(() => {
-    if (editMode) {
+    if (editMode && visible) {
       let d = debounce(() => {
         console.log("debounce called");
         if (config.config_field && defaultValues) {
@@ -226,7 +234,7 @@ const ConfigModal: React.FC<{
         console.log("cancel called");
       };
     }
-  }, [editMode, config.config_field, defaultValues]);
+  }, [editMode, config.config_field, defaultValues, visible]);
 
   const onSave = () => {
     item &&
@@ -239,7 +247,7 @@ const ConfigModal: React.FC<{
           res.data.config &&
             setConfig((c) => {
               let a = { ...c, ...res.data.config };
-              setOld(a);
+              setOld(cloneDeep(a));
 
               return a;
             });
@@ -250,7 +258,7 @@ const ConfigModal: React.FC<{
           message.error(e.response.data.message);
           globalConfigApi({ project_id: item.id }).then(({ data }) => {
             setGlobalEnabled(data.enabled);
-            data.config && setOld(data.config);
+            data.config && setOld(cloneDeep(data.config));
             console.log(data.config);
             // setConfig(res.config);
           });
@@ -313,7 +321,8 @@ const ConfigModal: React.FC<{
                       if (editMode) {
                         setConfigFileTip(false);
                         setConfigFileContent("");
-                        old && setConfig({ ...old });
+                        console.log("old", old);
+                        old && setConfig(cloneDeep(old));
                       }
                       console.log(old, config);
                       return !editMode;
@@ -521,7 +530,7 @@ const ConfigModal: React.FC<{
                             width: "calc(50% - 8px)",
                           }}
                         >
-                          <Select
+                          <SelectFileType
                             showArrow={editMode}
                             disabled={!editMode || !globalEnabled}
                             value={config.config_file_type}
@@ -531,19 +540,27 @@ const ConfigModal: React.FC<{
                                 config_file_type: value,
                               }));
                             }}
-                          >
-                            <Select.Option value="env">.env</Select.Option>
-                            <Select.Option value="yaml">yaml</Select.Option>
-                            <Select.Option value="js">js</Select.Option>
-                            <Select.Option value="ini">ini</Select.Option>
-                            <Select.Option value="php">php</Select.Option>
-                            <Select.Option value="sql">sql</Select.Option>
-                            <Select.Option value="go">go</Select.Option>
-                            <Select.Option value="python">python</Select.Option>
-                            <Select.Option value="json">json</Select.Option>
-                            <Select.Option value="others">其他</Select.Option>
-                          </Select>
+                          />
                         </Form.Item>
+                      </Form.Item>
+
+                      <Form.Item
+                        label="动态配置"
+                        style={{
+                          width: "100%",
+                        }}
+                      >
+                        <DynamicElement
+                          disabled={!editMode || !globalEnabled}
+                          value={config.elements ? config.elements : []}
+                          onChange={(v: pb.Element[]) => {
+                            console.log("duccc", v);
+                            setConfig((c) => ({
+                              ...c,
+                              elements: v,
+                            }));
+                          }}
+                        />
                       </Form.Item>
 
                       <Form.Item style={{ marginBottom: 0 }}>

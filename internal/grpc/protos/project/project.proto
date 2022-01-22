@@ -43,6 +43,7 @@ message ProjectShowResponse {
   string updated_at = 19;
   string humanize_created_at = 20;
   string humanize_updated_at = 21;
+  repeated ProjectExtraItem extra_values = 22;
 }
 
 message ProjectAllPodContainersRequest {
@@ -95,6 +96,7 @@ message ProjectApplyRequest {
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;
+  repeated ProjectExtraItem extra_values = 9;
 }
 
 message ProjectDeleteResponse {}

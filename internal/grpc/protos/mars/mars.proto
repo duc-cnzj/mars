@@ -20,6 +20,26 @@ message MarsConfig {
   repeated string branches = 7;
   // values_yaml 和 values.yaml 一样
   string values_yaml = 8;
+
+  // elements 自定义字段
+  repeated Element elements = 9;
+}
+
+enum ElementType {
+  ElementTypeUnknown = 0;
+  ElementTypeInput = 1;
+  ElementTypeInputNumber = 2;
+  ElementTypeSelect = 3;
+  ElementTypeRadio = 4;
+  ElementTypeSwitch = 5;
+}
+
+message Element {
+  string path = 1 [(validate.rules).string.min_bytes = 1];
+  ElementType type = 2 [(validate.rules).enum.defined_only = true];
+  string default = 3;
+  string description = 4;
+  repeated string select_values = 6;
 }
 
 message MarsShowRequest {

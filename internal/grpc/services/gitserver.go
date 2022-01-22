@@ -308,8 +308,9 @@ func (g *GitServer) MarsConfigFile(ctx context.Context, request *gitserver.GitCo
 			ct = "yaml"
 		}
 		return &gitserver.GitConfigFileResponse{
-			Data: marsC.ConfigFileValues,
-			Type: ct,
+			Data:     marsC.ConfigFileValues,
+			Type:     ct,
+			Elements: marsC.Elements,
 		}, nil
 	}
 	// 如果有 ConfigFile，则获取内容，如果没有内容，则使用 ConfigFileValues
@@ -335,13 +336,15 @@ func (g *GitServer) MarsConfigFile(ctx context.Context, request *gitserver.GitCo
 	if err != nil {
 		mlog.Debug(err)
 		return &gitserver.GitConfigFileResponse{
-			Data: marsC.ConfigFileValues,
-			Type: marsC.ConfigFileType,
+			Data:     marsC.ConfigFileValues,
+			Type:     marsC.ConfigFileType,
+			Elements: marsC.Elements,
 		}, nil
 	}
 
 	return &gitserver.GitConfigFileResponse{
-		Data: content,
-		Type: marsC.ConfigFileType,
+		Data:     content,
+		Type:     marsC.ConfigFileType,
+		Elements: marsC.Elements,
 	}, nil
 }
