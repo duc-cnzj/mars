@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Switch,
   Form,
@@ -15,14 +15,24 @@ import pb from "../../api/compiled";
 const DynamicElement: React.FC<{
   form: FormInstance;
   disabled: boolean;
-}> = ({form, disabled }) => {
+}> = ({ form, disabled }) => {
   const [type, setType] = useState<{ [key: number]: number }>({});
+  useEffect(() => {
+    if (form) {
+      (form.getFieldValue("elements") as Array<any>).forEach((e, i) => {
+        setType((t) => ({
+          ...t,
+          [i]: e.type,
+        }));
+      });
+    }
+  }, [form]);
 
   return (
     <Form.List name="elements">
       {(fields, { add, remove }) => (
         <>
-          {fields.map((field) => {
+          {fields.map((field, i, a) => {
             return (
               <div key={field.name} className="dynamic-element">
                 <div className="dynamic-element__wrapper">
