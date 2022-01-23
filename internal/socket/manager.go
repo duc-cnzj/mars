@@ -630,6 +630,8 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		var fieldValid bool
 		for _, element := range j.config.Elements {
 			if value.Path == element.Path {
+				fieldValid = true
+
 				switch element.Type {
 				case mars.ElementType_ElementTypeSwitch:
 					if value.Value == "" {
@@ -669,7 +671,6 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 				default:
 					validValues[value.Path] = value.Value
 				}
-				fieldValid = true
 			}
 		}
 		if !fieldValid {
