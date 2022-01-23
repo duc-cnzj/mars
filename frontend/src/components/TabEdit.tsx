@@ -120,6 +120,13 @@ const ModalSub: React.FC<{
     }
   }, [wsReady, dispatch, slug]);
   const updateDeploy = (values: any) => {
+    if (values.extra_values) {
+      values.extra_values = values.extra_values.map((i: any) => ({
+        ...i,
+        value: String(i.value),
+      }));
+    }
+    console.log("#######", values);
     if (!wsReady) {
       message.error("连接断开了");
       return;
@@ -149,7 +156,7 @@ const ModalSub: React.FC<{
   };
   const [start, setStart] = useState(false);
 
-  const onRemove = useCallback(() => {
+  const onCancel = useCallback(() => {
     if (!wsReady) {
       message.error("连接断开了");
       return;
@@ -184,6 +191,7 @@ const ModalSub: React.FC<{
   return (
     <div className="edit-project">
       <Form
+        style={{ height: "100%"}}
         initialValues={formInitData}
         layout="horizontal"
         form={form}
@@ -306,9 +314,9 @@ const ModalSub: React.FC<{
                 }}
               />
             </Form.Item>
-            <Row style={{ height: "100%" }}>
+            <Row style={{ height: "100%", marginTop: 3 }}>
               <Col span={detail.config === data.config ? 24 : 12}>
-                <Form.Item name={"config"}>
+                <Form.Item name={"config"} noStyle>
                   <CodeMirror
                     options={{
                       mode: getMode(detail.config_type),
@@ -351,66 +359,66 @@ const ModalSub: React.FC<{
             </Row>
           </div>
         </div>
-      </Form>
-      <div
-        id="preview"
-        style={{ height: "100%", overflow: "auto" }}
-        className={classNames("preview", {
-          "display-none": !timelineVisible,
-        })}
-      >
         <div
-          style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
+          id="preview"
+          style={{ height: "100%", overflow: "auto" }}
+          className={classNames("preview", {
+            "display-none": !timelineVisible,
+          })}
         >
-          <Button
-            type="dashed"
-            disabled={list[slug]?.isLoading}
-            onClick={() => {
-              setEditVisible(true);
-              setTimelineVisible(false);
-            }}
-            icon={<ArrowLeftOutlined />}
-          />
-          <Progress
-            strokeColor={{
-              from: "#108ee9",
-              to: "#87d068",
-            }}
-            style={{ padding: "0 10px" }}
-            percent={list[slug]?.processPercent}
-            status="active"
-          />
-        </div>
-        <div
-          style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
-        >
-          <TimeCost start={start} />
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
+          >
+            <Button
+              type="dashed"
+              disabled={list[slug]?.isLoading}
+              onClick={() => {
+                setEditVisible(true);
+                setTimelineVisible(false);
+              }}
+              icon={<ArrowLeftOutlined />}
+            />
+            <Progress
+              strokeColor={{
+                from: "#108ee9",
+                to: "#87d068",
+              }}
+              style={{ padding: "0 10px" }}
+              percent={list[slug]?.processPercent}
+              status="active"
+            />
+          </div>
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+          >
+            <TimeCost start={start} />
 
-          <Button
-            size="small"
-            type="primary"
-            loading={list[slug]?.isLoading}
-            onClick={updateDeploy}
-            style={{ marginRight: 10, marginLeft: 10, fontSize: 12 }}
-          >
-            部署
-          </Button>
-          <Button
-            style={{ fontSize: 12 }}
-            size="small"
-            hidden={
-              list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
-            }
-            danger
-            icon={<StopOutlined />}
-            type="dashed"
-            onClick={onRemove}
-          >
-            取消
-          </Button>
+            <Button
+              size="small"
+              type="primary"
+              loading={list[slug]?.isLoading}
+              htmlType="submit"
+              style={{ marginRight: 10, marginLeft: 10, fontSize: 12 }}
+            >
+              部署
+            </Button>
+            <Button
+              style={{ fontSize: 12 }}
+              size="small"
+              hidden={
+                list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
+              }
+              danger
+              icon={<StopOutlined />}
+              type="dashed"
+              onClick={onCancel}
+            >
+              取消
+            </Button>
+          </div>
+          <LogOutput slug={slug} />
         </div>
-        <LogOutput slug={slug} />
-      </div>
+      </Form>
     </div>
   );
 };

@@ -632,14 +632,22 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 			if value.Path == element.Path {
 				switch element.Type {
 				case mars.ElementType_ElementTypeSwitch:
+					if value.Value == "" {
+						value.Value = "false"
+					}
 					v, err := strconv.ParseBool(value.Value)
 					if err != nil {
+						mlog.Error(err)
 						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value))
 					}
 					validValues[value.Path] = v
 				case mars.ElementType_ElementTypeInputNumber:
+					if value.Value == "" {
+						value.Value = "0"
+					}
 					v, err := strconv.ParseInt(value.Value, 10, 64)
 					if err != nil {
+						mlog.Error(err)
 						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value))
 					}
 					validValues[value.Path] = v

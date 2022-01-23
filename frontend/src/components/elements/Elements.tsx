@@ -1,4 +1,4 @@
-import React, { useState, Fragment, useEffect, useCallback } from "react";
+import React, { useState, Fragment, useMemo } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 const Option = Select.Option;
@@ -43,7 +43,7 @@ const Elements: React.FC<{
   elements: pb.Element[];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
-  let fn = useCallback(() => {
+  let vvv = useMemo(() => {
     return elements
       ? elements.map((item): pb.ProjectExtraItem => {
           let de: any = item.default;
@@ -66,13 +66,6 @@ const Elements: React.FC<{
       : [];
   }, [elements, value]);
 
-  const [v, setV] = useState(fn());
-  console.log(v);
-
-  useEffect(() => {
-    setV(fn());
-  }, [elements, fn]);
-
   const getElement = (
     v: pb.ProjectExtraItem,
     e: pb.Element[],
@@ -86,12 +79,10 @@ const Elements: React.FC<{
           <Element
             value={v.value}
             onChange={(vv) => {
-              setV((v) => {
-                let va = v;
-                va[index].value = String(vv);
-                onChange?.(va);
-                return va;
-              });
+              let va: any = vvv;
+              va[index].value = String(vv)
+              onChange?.(va);
+              return va;
             }}
             element={ev}
             style={style ? style : initStyle}
@@ -103,7 +94,7 @@ const Elements: React.FC<{
   };
   return (
     <div style={{ width: "100%" }}>
-      {v.map((item, index) => (
+      {vvv.map((item, index) => (
         <Fragment key={item.path}>{getElement(item, elements, index)}</Fragment>
       ))}
     </div>

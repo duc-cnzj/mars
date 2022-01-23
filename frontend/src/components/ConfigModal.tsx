@@ -57,6 +57,11 @@ const initConfig = {
   elements: [],
 };
 
+interface WatchData {
+  config_field: string;
+  config_file_values: string;
+}
+
 const initDefaultValues = "# 没找到对应的 values.yaml";
 
 const ConfigModal: React.FC<{
@@ -64,6 +69,10 @@ const ConfigModal: React.FC<{
   item: undefined | pb.GitProjectItem;
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
+  const [watch, setWatch] = useState<WatchData>({
+    config_field: initConfig.config_field,
+    config_file_values: initConfig.config_file_values,
+  });
   const [editMode, setEditMode] = useState(true);
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [config, setConfig] = useState<Config>(initConfig);
@@ -207,12 +216,13 @@ const ConfigModal: React.FC<{
     if (editMode && visible) {
       let d = debounce(() => {
         console.log("debounce called");
-        if (config.config_field && defaultValues) {
+        if (watch.config_field && defaultValues) {
           let data = get(
             yaml.load(defaultValues),
-            config.config_field.split("->"),
+            watch.config_field.split("->"),
             ""
           );
+          console.log(data);
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
@@ -227,7 +237,7 @@ const ConfigModal: React.FC<{
         console.log("cancel called");
       };
     }
-  }, [editMode, config.config_field, defaultValues, visible]);
+  }, [editMode, watch.config_field, defaultValues, visible]);
 
   const onSave = (values: any) => {
     item &&
@@ -249,21 +259,21 @@ const ConfigModal: React.FC<{
           message.error(e.response.data.message);
           globalConfigApi({ project_id: item.id }).then(({ data }) => {
             setGlobalEnabled(data.enabled);
-            // data.config && setOld(cloneDeep(data.config));
             console.log(data.config);
-            // setConfig(res.config);
           });
         });
   };
 
   const [configFileContent, setConfigFileContent] = useState("");
   const [configFileTip, setConfigFileTip] = useState(false);
-  useEffect(() => {
-    setConfigFileTip(!!configFileContent && !config.config_file_values);
-  }, [configFileContent, config.config_file_values]);
   const [form] = Form.useForm();
 
   useEffect(() => {
+    setConfigFileTip(!!configFileContent && !watch.config_file_values);
+  }, [configFileContent, watch.config_file_values]);
+
+  useEffect(() => {
+    setWatch((w) => ({ ...w, ...config }));
     form.setFieldsValue(config);
   }, [config, form]);
 
@@ -434,66 +444,6 @@ const ConfigModal: React.FC<{
                       </Form.Item>
 
                       <Row style={{ marginBottom: 0 }}>
-                        <Popover
-                          overlayInnerStyle={{
-                            maxHeight: 600,
-                            overflowY: "scroll",
-                          }}
-                          content={
-                            <div>
-                              <SyntaxHighlighter
-                                language="yaml"
-                                style={materialDark}
-                                customStyle={{
-                                  lineHeight: 1.2,
-                                  padding: "10px",
-                                  fontFamily:
-                                    '"Fira code", "Fira Mono", monospace',
-                                  fontSize: 12,
-                                  margin: 0,
-                                  height: "100%",
-                                }}
-                              >
-                                {String(configFileContent)}
-                              </SyntaxHighlighter>
-                              <Button
-                                size="small"
-                                onClick={() => {
-                                  setConfig((c) => ({
-                                    ...c,
-                                    config_file_values: configFileContent,
-                                  }));
-                                  setConfigFileTip(false);
-                                }}
-                                type="dashed"
-                                style={{ marginTop: 3, fontSize: 12 }}
-                              >
-                                使用该配置
-                              </Button>
-                            </div>
-                          }
-                          title={
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                            >
-                              <div>检测到可用配置</div>
-                              <Button
-                                size="small"
-                                type="link"
-                                onClick={() => setConfigFileTip(false)}
-                                icon={<CloseOutlined />}
-                              ></Button>
-                            </div>
-                          }
-                          trigger="focus"
-                          visible={configFileTip && editMode}
-                          onVisibleChange={(v) => setConfigFileTip(v)}
-                        ></Popover>
-
                         <Form.Item
                           label="用户输入配置字段"
                           tooltip={`用户在部署时使用的自定义配置字段, 比如 "conf->config"`}
@@ -504,7 +454,18 @@ const ConfigModal: React.FC<{
                           }}
                           name={"config_field"}
                         >
-                          <Input disabled={!editMode || !globalEnabled} />
+                          <Input
+                            disabled={!editMode || !globalEnabled}
+                            onChange={(e) => {
+                              form.setFieldsValue({
+                                config_field: e.target.value,
+                              });
+                              setWatch((w) => ({
+                                ...w,
+                                config_field: e.target.value,
+                              }));
+                            }}
+                          />
                         </Form.Item>
 
                         <Form.Item
@@ -565,12 +526,78 @@ const ConfigModal: React.FC<{
                         </Form.Item>
                       </Form.Item>
                       <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                        <Popover
+                          overlayInnerStyle={{
+                            maxHeight: 600,
+                            overflowY: "scroll",
+                          }}
+                          content={
+                            <div>
+                              <SyntaxHighlighter
+                                language="yaml"
+                                style={materialDark}
+                                customStyle={{
+                                  lineHeight: 1.2,
+                                  padding: "10px",
+                                  fontFamily:
+                                    '"Fira code", "Fira Mono", monospace',
+                                  fontSize: 12,
+                                  margin: 0,
+                                  height: "100%",
+                                }}
+                              >
+                                {String(configFileContent)}
+                              </SyntaxHighlighter>
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  setConfig((c) => ({
+                                    ...c,
+                                    config_file_values: configFileContent,
+                                  }));
+                                  setConfigFileTip(false);
+                                }}
+                                type="dashed"
+                                style={{ marginTop: 3, fontSize: 12 }}
+                              >
+                                使用该配置
+                              </Button>
+                            </div>
+                          }
+                          title={
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <div>检测到可用配置</div>
+                              <Button
+                                size="small"
+                                type="link"
+                                onClick={() => setConfigFileTip(false)}
+                                icon={<CloseOutlined />}
+                              ></Button>
+                            </div>
+                          }
+                          trigger="focus"
+                          visible={configFileTip && editMode}
+                          onVisibleChange={(v) => setConfigFileTip(v)}
+                        ></Popover>
                         <Form.Item
                           label="全局配置文件"
                           tooltip="全局默认配置文件，如果没有设置 config_file 则使用这个"
                           name={"config_file_values"}
                         >
                           <CodeMirror
+                            onChange={(v) => {
+                              form.setFieldsValue({ config_file_values: v });
+                              setWatch((w) => ({
+                                ...w,
+                                config_file_values: v,
+                              }));
+                            }}
                             options={{
                               readOnly:
                                 !editMode || !globalEnabled

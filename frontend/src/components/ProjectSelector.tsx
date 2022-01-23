@@ -38,19 +38,7 @@ const ProjectSelector: React.FC<{
         let r = res.data.data.find(
           (item) => item.projectId === String(v.gitlabProjectId)
         );
-        if (!isCreate && v?.gitlabProjectId) {
-          if (r) {
-            (r as any).children = [];
-          }
-          setOptions(r ? [r] : []);
-        } else {
-          setOptions(
-            res.data.data.map((i: any) => {
-              i.children = [];
-              return i;
-            })
-          );
-        }
+
         commit({
           project_id: String(v.gitlabProjectId),
           branch: v.gitlabBranch,
@@ -63,7 +51,31 @@ const ProjectSelector: React.FC<{
         });
       });
     }
-  }, [v, value, isCreate]);
+  }, [v, value]);
+
+  useEffect(() => {
+    console.log(v, "vvv");
+    projectOptions().then((res) => {
+      if (!isCreate && v?.gitlabProjectId) {
+        console.log(res.data.data, v.gitlabProjectId);
+        let r = res.data.data.find(
+          (item) => item.projectId === String(v.gitlabProjectId)
+        );
+        console.log(r);
+        if (r) {
+          (r as any).children = [];
+        }
+        setOptions(r ? [r] : []);
+      } else {
+        setOptions(
+          res.data.data.map((i: any) => {
+            i.children = [];
+            return i;
+          })
+        );
+      }
+    });
+  }, [v, isCreate]);
 
   const loadData = useCallback((selectedOptions: any | undefined) => {
     if (!selectedOptions) {

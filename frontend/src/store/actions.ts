@@ -81,8 +81,8 @@ export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
 });
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
-    dispatch(setNamespaceReload(true))
-    console.log("duc calllllll")
+  dispatch(setNamespaceReload(true));
+  console.log("duc calllllll");
 }, 500);
 
 export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
@@ -112,7 +112,7 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
             case pb.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
-              message.error("部署已取消");
+              message.warn("部署已取消");
               break;
             case pb.ResultType.DeployedFailed:
             default:
@@ -138,7 +138,7 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
             case pb.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
-              message.error("部署已取消");
+              message.warn("部署已取消");
               break;
             case pb.ResultType.DeployedFailed:
             default:
