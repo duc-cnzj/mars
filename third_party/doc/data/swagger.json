@@ -2303,6 +2303,9 @@
         "docker_image": {
           "type": "string"
         },
+        "extra_values": {
+          "type": "string"
+        },
         "gitlab_branch": {
           "type": "string"
         },

@@ -400,6 +400,7 @@ func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string,
 			Atomic:          p.Atomic,
 			CreatedAt:       utils.ToRFC3339DatetimeString(&p.CreatedAt),
 			UpdatedAt:       utils.ToRFC3339DatetimeString(&p.UpdatedAt),
+			ExtraValues:     p.ExtraValues,
 			Namespace:       &ns,
 		},
 	})

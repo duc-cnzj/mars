@@ -553,6 +553,9 @@
         "updated_at": {
           "type": "string"
         },
+        "extra_values": {
+          "type": "string"
+        },
         "namespace": {
           "$ref": "#/definitions/NamespaceModel"
         }

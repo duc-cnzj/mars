@@ -4769,6 +4769,9 @@ export class ProjectModel implements IProjectModel {
     /** ProjectModel updated_at. */
     public updated_at: string;
 
+    /** ProjectModel extra_values. */
+    public extra_values: string;
+
     /** ProjectModel namespace. */
     public namespace?: (NamespaceModel|null);
 

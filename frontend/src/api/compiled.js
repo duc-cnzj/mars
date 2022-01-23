@@ -11462,6 +11462,7 @@ export const ProjectModel = $root.ProjectModel = (() => {
      * @property {boolean|null} [atomic] ProjectModel atomic
      * @property {string|null} [created_at] ProjectModel created_at
      * @property {string|null} [updated_at] ProjectModel updated_at
+     * @property {string|null} [extra_values] ProjectModel extra_values
      * @property {NamespaceModel|null} [namespace] ProjectModel namespace
      */
 
@@ -11585,6 +11586,14 @@ export const ProjectModel = $root.ProjectModel = (() => {
     ProjectModel.prototype.updated_at = "";
 
     /**
+     * ProjectModel extra_values.
+     * @member {string} extra_values
+     * @memberof ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.extra_values = "";
+
+    /**
      * ProjectModel namespace.
      * @member {NamespaceModel|null|undefined} namespace
      * @memberof ProjectModel
@@ -11630,6 +11639,8 @@ export const ProjectModel = $root.ProjectModel = (() => {
             writer.uint32(/* id 12, wireType 2 =*/98).string(message.created_at);
         if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
             writer.uint32(/* id 13, wireType 2 =*/106).string(message.updated_at);
+        if (message.extra_values != null && Object.hasOwnProperty.call(message, "extra_values"))
+            writer.uint32(/* id 14, wireType 2 =*/114).string(message.extra_values);
         if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
             $root.NamespaceModel.encode(message.namespace, writer.uint32(/* id 15, wireType 2 =*/122).fork()).ldelim();
         return writer;
@@ -11691,6 +11702,9 @@ export const ProjectModel = $root.ProjectModel = (() => {
                 break;
             case 13:
                 message.updated_at = reader.string();
+                break;
+            case 14:
+                message.extra_values = reader.string();
                 break;
             case 15:
                 message.namespace = $root.NamespaceModel.decode(reader, reader.uint32());

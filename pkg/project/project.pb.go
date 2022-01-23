@@ -798,15 +798,16 @@ type ProjectApplyRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	NamespaceId     int64                         `protobuf:"varint,1,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
-	Name            string                        `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	GitlabProjectId int64                         `protobuf:"varint,3,opt,name=gitlab_project_id,json=gitlabProjectId,proto3" json:"gitlab_project_id,omitempty"`
-	GitlabBranch    string                        `protobuf:"bytes,4,opt,name=gitlab_branch,json=gitlabBranch,proto3" json:"gitlab_branch,omitempty"`
-	GitlabCommit    string                        `protobuf:"bytes,5,opt,name=gitlab_commit,json=gitlabCommit,proto3" json:"gitlab_commit,omitempty"`
-	Config          string                        `protobuf:"bytes,6,opt,name=config,proto3" json:"config,omitempty"`
-	Atomic          bool                          `protobuf:"varint,7,opt,name=atomic,proto3" json:"atomic,omitempty"`
-	WebsocketSync   bool                          `protobuf:"varint,8,opt,name=websocket_sync,json=websocketSync,proto3" json:"websocket_sync,omitempty"`
-	ExtraValues     []*websocket.ProjectExtraItem `protobuf:"bytes,9,rep,name=extra_values,json=extraValues,proto3" json:"extra_values,omitempty"`
+	NamespaceId     int64  `protobuf:"varint,1,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
+	Name            string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	GitlabProjectId int64  `protobuf:"varint,3,opt,name=gitlab_project_id,json=gitlabProjectId,proto3" json:"gitlab_project_id,omitempty"`
+	GitlabBranch    string `protobuf:"bytes,4,opt,name=gitlab_branch,json=gitlabBranch,proto3" json:"gitlab_branch,omitempty"`
+	//  gitlab_commit 不传就用最新的 commit
+	GitlabCommit  string                        `protobuf:"bytes,5,opt,name=gitlab_commit,json=gitlabCommit,proto3" json:"gitlab_commit,omitempty"`
+	Config        string                        `protobuf:"bytes,6,opt,name=config,proto3" json:"config,omitempty"`
+	Atomic        bool                          `protobuf:"varint,7,opt,name=atomic,proto3" json:"atomic,omitempty"`
+	WebsocketSync bool                          `protobuf:"varint,8,opt,name=websocket_sync,json=websocketSync,proto3" json:"websocket_sync,omitempty"`
+	ExtraValues   []*websocket.ProjectExtraItem `protobuf:"bytes,9,rep,name=extra_values,json=extraValues,proto3" json:"extra_values,omitempty"`
 }
 
 func (x *ProjectApplyRequest) Reset() {
