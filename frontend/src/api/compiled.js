@@ -14031,6 +14031,8 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
      * @property {string|null} [humanize_created_at] ProjectShowResponse humanize_created_at
      * @property {string|null} [humanize_updated_at] ProjectShowResponse humanize_updated_at
      * @property {Array.<ProjectExtraItem>|null} [extra_values] ProjectShowResponse extra_values
+     * @property {Array.<Element>|null} [elements] ProjectShowResponse elements
+     * @property {string|null} [config_type] ProjectShowResponse config_type
      */
 
     /**
@@ -14044,6 +14046,7 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
     function ProjectShowResponse(properties) {
         this.urls = [];
         this.extra_values = [];
+        this.elements = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -14227,6 +14230,22 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
     ProjectShowResponse.prototype.extra_values = $util.emptyArray;
 
     /**
+     * ProjectShowResponse elements.
+     * @member {Array.<Element>} elements
+     * @memberof ProjectShowResponse
+     * @instance
+     */
+    ProjectShowResponse.prototype.elements = $util.emptyArray;
+
+    /**
+     * ProjectShowResponse config_type.
+     * @member {string} config_type
+     * @memberof ProjectShowResponse
+     * @instance
+     */
+    ProjectShowResponse.prototype.config_type = "";
+
+    /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
      * @function encode
      * @memberof ProjectShowResponse
@@ -14284,6 +14303,11 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
         if (message.extra_values != null && message.extra_values.length)
             for (let i = 0; i < message.extra_values.length; ++i)
                 $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 22, wireType 2 =*/178).fork()).ldelim();
+        if (message.elements != null && message.elements.length)
+            for (let i = 0; i < message.elements.length; ++i)
+                $root.Element.encode(message.elements[i], writer.uint32(/* id 23, wireType 2 =*/186).fork()).ldelim();
+        if (message.config_type != null && Object.hasOwnProperty.call(message, "config_type"))
+            writer.uint32(/* id 24, wireType 2 =*/194).string(message.config_type);
         return writer;
     };
 
@@ -14374,6 +14398,14 @@ export const ProjectShowResponse = $root.ProjectShowResponse = (() => {
                 if (!(message.extra_values && message.extra_values.length))
                     message.extra_values = [];
                 message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
+                break;
+            case 23:
+                if (!(message.elements && message.elements.length))
+                    message.elements = [];
+                message.elements.push($root.Element.decode(reader, reader.uint32()));
+                break;
+            case 24:
+                message.config_type = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);

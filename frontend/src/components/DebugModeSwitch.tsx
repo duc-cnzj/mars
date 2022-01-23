@@ -1,18 +1,18 @@
-import React, { useState, memo } from "react";
-import { Tooltip, Switch } from "antd";
+import React, { memo } from "react";
+import { Tooltip, Switch, Form } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 
 const DebugModeSwitch: React.FC<{
-  value: boolean;
-  onchange?: (checked: boolean, event: MouseEvent) => void;
-}> = ({ value, onchange }) => {
-  const [checked, setChecked] = useState(value);
+  value?: boolean;
+  onChange?: (v: boolean) => void;
+}> = ({ value, onChange }) => {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         paddingBottom: 10,
+        justifyContent: "center",
       }}
     >
       <div
@@ -39,13 +39,8 @@ const DebugModeSwitch: React.FC<{
           <span>debug 模式:</span>
         </div>
       </div>
-      <Switch
-        checked={checked}
-        onChange={(checked: boolean, event: MouseEvent) => {
-          setChecked(checked);
-          onchange?.(checked, event);
-        }}
-      />
+
+      <Switch checked={value} onChange={onChange} />
     </div>
   );
 };

@@ -227,7 +227,7 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
+	marsC, _ := GetProjectMarsConfig(projectModel.GitlabProjectId, projectModel.GitlabBranch)
 	cpu, memory := utils.GetCpuAndMemory(projectModel.GetAllPodMetrics())
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModel.GitlabProjectId), projectModel.GitlabCommit)
 	if err != nil {
@@ -276,6 +276,8 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
 		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
 		ExtraValues:       projectModel.GetExtraValues(),
+		Elements:          marsC.GetElements(),
+		ConfigType:        marsC.GetConfigFileType(),
 	}, nil
 }
 

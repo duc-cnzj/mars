@@ -5,6 +5,7 @@ import "websocket/websocket.proto";
 import "model/model.proto";
 import "namespace/namespace.proto";
 import "validate/validate.proto";
+import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
 
@@ -44,6 +45,8 @@ message ProjectShowResponse {
   string humanize_created_at = 20;
   string humanize_updated_at = 21;
   repeated ProjectExtraItem extra_values = 22;
+  repeated Element elements = 23;
+  string config_type = 24;
 }
 
 message ProjectAllPodContainersRequest {

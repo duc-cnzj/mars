@@ -5772,6 +5772,12 @@ export class ProjectShowResponse implements IProjectShowResponse {
     /** ProjectShowResponse extra_values. */
     public extra_values: ProjectExtraItem[];
 
+    /** ProjectShowResponse elements. */
+    public elements: Element[];
+
+    /** ProjectShowResponse config_type. */
+    public config_type: string;
+
     /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
      * @param message ProjectShowResponse message or plain object to encode

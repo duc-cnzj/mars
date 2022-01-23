@@ -2372,6 +2372,9 @@
         "config": {
           "type": "string"
         },
+        "config_type": {
+          "type": "string"
+        },
         "cpu": {
           "type": "string"
         },
@@ -2380,6 +2383,12 @@
         },
         "docker_image": {
           "type": "string"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
         },
         "extra_values": {
           "type": "array",

@@ -180,6 +180,7 @@ func main()  {
 
 ## TODO
 
+- [ ] 重构所有表单，增加表单验证
 - [ ] 自定义额外字段，组合模式
 - [ ] ratelimiter
 - [ ] 所有 gitlab 都改成 git

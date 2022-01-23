@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useEffect, useCallback } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 const Option = Select.Option;
@@ -27,23 +27,40 @@ const initStyle = {
 };
 
 const Elements: React.FC<{
-  value: pb.ProjectExtraItem[];
-  onChange: (value: pb.ProjectExtraItem[]) => void;
+  value?: pb.ProjectExtraItem[];
+  onChange?: (value: pb.ProjectExtraItem[]) => void;
   elements: pb.Element[];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
-  let initItems = elements.map((item): pb.ProjectExtraItem => {
-    let de = item.default;
-    for (let i = 0; i < value.length; i++) {
-      if (value[i].path === item.path) {
-        de = value[i].value;
-        break;
-      }
-    }
-    return { path: item.path, value: de };
-  });
-  const [v, setV] = useState(initItems);
+  let fn = useCallback(() => {
+    return elements
+      ? elements.map((item): pb.ProjectExtraItem => {
+          let de: any = item.default;
+          if (!!value) {
+            for (let i = 0; i < value.length; i++) {
+              if (value[i].path === item.path) {
+                de = value[i].value;
+                if (item.type === pb.ElementType.ElementTypeSwitch) {
+                  de = de === "true";
+                }
+                if (item.type === pb.ElementType.ElementTypeInputNumber) {
+                  de = Number(de);
+                }
+                break;
+              }
+            }
+          }
+          return { path: item.path, value: de };
+        })
+      : [];
+  }, [elements, value]);
+
+  const [v, setV] = useState(fn());
   console.log(v);
+
+  useEffect(() => {
+    setV(fn());
+  }, [elements, fn]);
 
   const getElement = (
     v: pb.ProjectExtraItem,
@@ -60,9 +77,8 @@ const Elements: React.FC<{
             onChange={(vv) => {
               setV((v) => {
                 let va = v;
-                va[index].value = vv;
-                onChange(va);
-                console.log("vava",va);
+                va[index].value = String(vv);
+                onChange?.(va);
                 return va;
               });
             }}
@@ -77,7 +93,7 @@ const Elements: React.FC<{
   return (
     <div style={{ width: "100%" }}>
       {v.map((item, index) => (
-        <Fragment key={index}>{getElement(item, elements, index)}</Fragment>
+        <Fragment key={item.path}>{getElement(item, elements, index)}</Fragment>
       ))}
     </div>
   );
@@ -89,6 +105,7 @@ const Element: React.FC<{
   element: pb.Element;
   style: st;
 }> = ({ element, style, value: v, onChange }) => {
+  console.log(v, Boolean("0"));
   const [value, setValue] = useState(v);
   switch (element.type) {
     case pb.ElementType.ElementTypeInput:
@@ -178,10 +195,11 @@ const Element: React.FC<{
           style={style.formItem}
         >
           <Switch
-            defaultChecked={Boolean(element.default)}
+            // defaultChecked={Boolean(element.default)}
             style={style.switch}
-            checked={Boolean(value)}
+            checked={value}
             onChange={(e) => {
+              console.log("eee", e);
               setValue(e);
               onChange(e);
             }}

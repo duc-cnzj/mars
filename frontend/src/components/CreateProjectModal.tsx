@@ -13,7 +13,7 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Progress, Button } from "antd";
+import { message, Progress, Button, Form, Input } from "antd";
 import {
   PlusOutlined,
   StopOutlined,
@@ -33,107 +33,76 @@ import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
-const initItemData: Mars.CreateItemInterface = {
-  name: "",
-  gitlabProjectId: 0,
-  gitlabBranch: "",
-  gitlabCommit: "",
-  config: "",
-  debug: true,
-  config_type: "yaml",
-  extra_values: [],
-};
-
 const CreateProjectModal: React.FC<{
   namespaceId: number;
 }> = ({ namespaceId }) => {
   const list = useSelector(selectList);
   const dispatch = useDispatch();
-  const [data, setData] = useState<Mars.CreateItemInterface>(initItemData);
+  const [form] = Form.useForm();
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
+  const ws = useWs();
+  const wsReady = useWsReady();
+  const [data, setData] = useState<{
+    projectName: string;
+    gitlabProjectId: number;
+    gitlabBranch: string;
+    gitlabCommit: string;
+  }>();
   const [elements, setElements] = useState<pb.Element[]>();
-
   let slug = useMemo(
-    () => toSlug(namespaceId, data.name),
-    [namespaceId, data.name]
+    () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
+    [namespaceId, data]
   );
 
   const onCancel = useCallback(() => {
+    form.resetFields();
+    setData(undefined);
     setVisible(false);
     setEditVisible(true);
     setTimelineVisible(false);
-    setData(initItemData);
     dispatch(clearCreateProjectLog(slug));
-  }, [dispatch, slug]);
+  }, [dispatch, slug, form]);
 
   useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
     if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
       setTimelineVisible(false);
       setEditVisible(true);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
-        setData(initItemData);
       }, 500);
     }
   }, [list, dispatch, slug]);
-  useEffect(() => {
-    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
-      setStart(false);
-    }
-  }, [list, slug]);
 
-  const loadConfigFile = useCallback(() => {
-    configFile({
-      project_id: String(data.gitlabProjectId),
-      branch: data.gitlabBranch,
-    }).then((res) => {
-      setData((d) => ({
-        ...d,
-        config: res.data.data,
-        config_type: res.data.type,
-      }));
-      setElements(res.data.elements);
-    });
-  }, [data.gitlabBranch, data.gitlabProjectId]);
-
-  const onChange = useCallback(
-    ({
-      projectName,
-      gitlabProjectId,
-      gitlabBranch,
-      gitlabCommit,
-    }: {
-      projectName: string;
-      gitlabProjectId: number;
-      gitlabBranch: string;
-      gitlabCommit: string;
-    }) => {
-      setData((d) => ({
-        ...d,
-        name: projectName,
-        gitlabProjectId: gitlabProjectId,
-        gitlabBranch: gitlabBranch,
-        gitlabCommit: gitlabCommit,
-      }));
-
-      if (gitlabCommit !== "" && data.config === "") {
-        loadConfigFile();
-      }
+  const loadConfigFile = useCallback(
+    (gitlabProjectId: string, gitlabBranch: string) => {
+      configFile({
+        project_id: gitlabProjectId,
+        branch: gitlabBranch,
+      }).then((res) => {
+        if (!form.getFieldValue("config")) {
+          form.setFieldsValue({ config: res.data.data });
+        }
+        setMode(getMode(res.data.type));
+        setElements(res.data.elements);
+      });
     },
-    [data.config, loadConfigFile]
+    [form]
   );
 
-  useEffect(() => {
-    setMode(getMode(data.config_type));
-  }, [data.config_type]);
-
-  const ws = useWs();
-  const wsReady = useWsReady();
-
+  const onChange = (v:any) => {
+    setData(v);
+    form.setFieldsValue({ selectors: v });
+    if (v.gitlabCommit !== "") {
+      loadConfigFile(String(v.gitlabProjectId), v.gitlabBranch);
+    }
+  }
   useEffect(() => {
     if (!wsReady) {
       setStart(false);
@@ -141,51 +110,63 @@ const CreateProjectModal: React.FC<{
     }
   }, [wsReady, dispatch, slug]);
 
-  const onOk = useCallback(() => {
-    console.log(data);
-    if (!wsReady) {
-      message.error("连接断开了");
-      return;
-    }
-    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
-      // todo ws connected!
-      setEditVisible(false);
-      setTimelineVisible(true);
+  const onOk = useCallback(
+    (values: any) => {
+      if (!wsReady) {
+        message.error("连接断开了");
+        return;
+      }
+      if (
+        data &&
+        data.gitlabProjectId &&
+        data.gitlabBranch &&
+        data.gitlabCommit
+      ) {
+        // todo ws connected!
+        setEditVisible(false);
+        setTimelineVisible(true);
 
-      let s = pb.ProjectInput.encode({
-        type: pb.Type.CreateProject,
-        namespace_id: Number(namespaceId),
-        name: data.name,
-        gitlab_project_id: Number(data.gitlabProjectId),
-        gitlab_branch: data.gitlabBranch,
-        gitlab_commit: data.gitlabCommit,
-        config: data.config,
-        atomic: !data.debug,
-        extra_values: data.extra_values,
-      }).finish();
+        let s = pb.ProjectInput.encode({
+          type: pb.Type.CreateProject,
+          namespace_id: Number(namespaceId),
+          name: data.projectName,
+          gitlab_project_id: Number(data.gitlabProjectId),
+          gitlab_branch: data.gitlabBranch,
+          gitlab_commit: data.gitlabCommit,
+          config: values.config,
+          atomic: !values.debug,
+          extra_values: values.extra_values,
+        }).finish();
 
-      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+        dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
-      dispatch(clearCreateProjectLog(slug));
-      dispatch(setCreateProjectLoading(slug, true));
-      setStart(true);
-      ws?.send(s);
-      return;
-    }
+        dispatch(clearCreateProjectLog(slug));
+        dispatch(setCreateProjectLoading(slug, true));
+        setStart(true);
+        ws?.send(s);
+        return;
+      }
 
-    message.error("项目id, 分支，提交必填");
-  }, [data, dispatch, slug, ws, namespaceId, wsReady]);
+      message.error("项目id, 分支，提交必填");
+    },
+    [dispatch, slug, ws, namespaceId, wsReady, data]
+  );
   const onRemove = useCallback(() => {
-    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
+    if (
+      data &&
+      data.gitlabProjectId &&
+      data.gitlabBranch &&
+      data.gitlabCommit
+    ) {
       let s = pb.CancelInput.encode({
         type: pb.Type.CancelProject,
         namespace_id: namespaceId,
-        name: data.name,
+        name: data.projectName,
       }).finish();
       ws?.send(s);
       return;
     }
-  }, [data, ws, namespaceId]);
+  }, [ws, namespaceId, data]);
 
   const [start, setStart] = useState(false);
   const info = useSelector(selectClusterInfo);
@@ -205,105 +186,121 @@ const CreateProjectModal: React.FC<{
           loading: list[slug]?.isLoading,
           danger: info.status === "bad",
         }}
+        onCancel={onCancel}
         cancelButtonProps={{ disabled: list[slug]?.isLoading }}
         closable={!list[slug]?.isLoading}
-        okText={info.status === "bad" ? "集群资源不足" : "部署"}
-        cancelText="取消"
-        onOk={onOk}
+        footer={null}
         initialWidth={900}
         initialHeight={600}
         title={<div style={{ textAlign: "center" }}>创建项目</div>}
         className="draggable-modal drag-item-modal"
-        onCancel={onCancel}
       >
-        <PipelineInfo
-          projectId={data.gitlabProjectId}
-          branch={data.gitlabBranch}
-          commit={data.gitlabCommit}
-        />
+        {data ? (
+          <PipelineInfo
+            projectId={data.gitlabProjectId}
+            branch={data.gitlabBranch}
+            commit={data.gitlabCommit}
+          />
+        ) : (
+          <></>
+        )}
         <div className={classNames({ "display-none": !editVisible })}>
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+          <Form
+            layout="horizontal"
+            form={form}
+            labelWrap
+            autoComplete="off"
+            onFinish={onOk}
           >
-            {list[slug]?.output?.length > 0 ? (
-              <Button
-                style={{ marginRight: 5 }}
-                type="dashed"
-                disabled={list[slug]?.isLoading}
-                onClick={() => {
-                  setEditVisible(false);
-                  setTimelineVisible(true);
-                }}
-                icon={<ArrowRightOutlined />}
-              />
-            ) : (
-              ""
-            )}
-            <ProjectSelector onChange={onChange} />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: 10,
-            }}
-          >
-            <span>配置文件:</span>
-            <DebugModeSwitch
-              value={data.debug}
-              onchange={(checked: boolean, event: MouseEvent) => {
-                setData((data) => ({ ...data, debug: checked }));
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 10,
               }}
-            />
-          </div>
-          <div
-            style={{
-              minWidth: 200,
-              marginBottom: 20,
-              height: "100%",
-            }}
-          >
-            {elements && (
-              <Elements
-                value={data.extra_values}
-                onChange={(v: pb.ProjectExtraItem[]) => {
-                  console.log("vvvvvvvvvvvvvvvvvv", v);
-                  setData((data) => ({
-                    ...data,
-                    extra_values: v.map((i) => ({
-                      path: i.path,
-                      value: String(i.value),
-                    })),
-                  }));
-                }}
-                elements={orderBy(elements, ['type'], ['asc'])}
-                style={{
-                  inputNumber: { fontSize: 10, width: "100%" },
-                  input: { fontSize: 10 },
-                  label: { fontSize: 10 },
-                  formItem: {
-                    marginBottom: 5,
-                    display: "inline-block",
-                    width: "calc(33% - 8px)",
-                    marginRight: 8,
-                  },
-                }}
-              />
-            )}
-            <CodeMirror
-              value={data.config}
-              options={{
-                mode: mode,
-                theme: "dracula",
-                lineNumbers: true,
+            >
+              {list[slug]?.output?.length > 0 ? (
+                <Button
+                  style={{ marginRight: 5 }}
+                  type="dashed"
+                  disabled={list[slug]?.isLoading}
+                  onClick={() => {
+                    setEditVisible(false);
+                    setTimelineVisible(true);
+                  }}
+                  icon={<ArrowRightOutlined />}
+                />
+              ) : (
+                <></>
+              )}
+              <Form.Item
+                name="selectors"
+                style={{ width: "100%", margin: 0 }}
+                rules={[{ required: true, message: "项目必选" }]}
+              >
+                <ProjectSelector created onChange={onChange} />
+              </Form.Item>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: 10,
               }}
-              onBeforeChange={(editor, d, value) => {
-                console.log(editor, d, value);
-                setData({ ...data, config: value });
+            >
+              <div style={{ display: "flex" }}>
+                <span style={{ marginRight: 5 }}>配置文件:</span>
+
+                <Button
+                  htmlType="submit"
+                  style={{ fontSize: 12, marginRight: 5 }}
+                  size="small"
+                  type="primary"
+                  loading={list[slug]?.isLoading}
+                >
+                  {info.status === "bad" ? "集群资源不足" : "部署"}
+                </Button>
+              </div>
+              <Form.Item noStyle name={"debug"}>
+                <DebugModeSwitch />
+              </Form.Item>
+            </div>
+            <div
+              style={{
+                minWidth: 200,
+                marginBottom: 20,
+                height: "100%",
               }}
-            />
-          </div>
+            >
+              <Form.Item name="extra_values" noStyle>
+                <Elements
+                  elements={orderBy(elements, ["type"], ["asc"])}
+                  style={{
+                    inputNumber: { fontSize: 10, width: "100%" },
+                    input: { fontSize: 10 },
+                    label: { fontSize: 10 },
+                    formItem: {
+                      marginBottom: 5,
+                      display: "inline-block",
+                      width: "calc(33% - 8px)",
+                      marginRight: 8,
+                    },
+                  }}
+                />
+              </Form.Item>
+              <Form.Item name="config">
+                <CodeMirror
+                  options={{
+                    mode: mode,
+                    theme: "dracula",
+                    lineNumbers: true,
+                  }}
+                />
+              </Form.Item>
+            </div>
+          </Form>
         </div>
 
         <div

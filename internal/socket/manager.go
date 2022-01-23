@@ -609,7 +609,7 @@ func (d *DynamicLoader) Load(j *Jober) error {
 	return nil
 }
 
-type ExtraValuesLoader struct {}
+type ExtraValuesLoader struct{}
 
 func (d *ExtraValuesLoader) Load(j *Jober) error {
 	const loaderName = "[ExtraValuesLoader]: "
