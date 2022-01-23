@@ -38,7 +38,6 @@ const GitlabProjectManager: React.FC = () => {
 
   const toggleStatus = async (item: pb.GitProjectItem) => {
     setLoadingList((l) => ({ ...l, [item.id]: true }));
-    console.log("loadingList", loadingList);
     try {
       if (item.enabled) {
         await disabledProject({ git_project_id: String(item.id) });
@@ -63,7 +62,6 @@ const GitlabProjectManager: React.FC = () => {
 
   const onChange = useCallback(
     (v: any) => {
-      console.log(v);
       if (!v) {
         setSelected(undefined);
         return;
@@ -71,7 +69,6 @@ const GitlabProjectManager: React.FC = () => {
       let item = list.find((item) => item.id === v);
       if (item) {
         setSelected(item);
-        console.log(item);
       }
     },
     [list]

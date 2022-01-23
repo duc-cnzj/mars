@@ -71,7 +71,6 @@ const Elements: React.FC<{
     e: pb.Element[],
     index: number
   ): React.ReactNode => {
-    console.log(v, e);
     for (let i = 0; i < e.length; i++) {
       let ev = e[i];
       if (ev.path === v.path) {
@@ -107,7 +106,6 @@ const Element: React.FC<{
   element: pb.Element;
   style: st;
 }> = ({ element, style, value: v, onChange }) => {
-  console.log(v, Boolean("0"));
   const [value, setValue] = useState(v);
   switch (element.type) {
     case pb.ElementType.ElementTypeInput:
@@ -201,7 +199,6 @@ const Element: React.FC<{
             style={style.switch}
             checked={value}
             onChange={(e) => {
-              console.log("eee", e);
               setValue(e);
               onChange(e);
             }}

@@ -28,10 +28,6 @@ export default function shell(
         },
       };
     case SET_SHELL_SESSION_ID:
-      console.log("SET_SHELL_SESSION_ID", {
-        ...state,
-        [action.data.id]: { sessionID: action.data?.sessionID },
-      });
       return {
         ...state,
         [action.data.id]: { sessionID: action.data?.sessionID },

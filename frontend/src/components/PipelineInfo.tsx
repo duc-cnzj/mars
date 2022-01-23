@@ -34,7 +34,6 @@ const PipelineInfo: React.FC<{
     if (projectId && branch && commit) {
       pipelineInfo({ project_id: String(projectId), branch, commit })
         .then((res) => {
-          console.log(res.data);
           let p = pipelines[res.data.status];
           if (p) {
             setInfo({

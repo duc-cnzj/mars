@@ -25,7 +25,6 @@ const realAuth = {
 
 function ProvideAuth({ children }: { children: any }) {
   const auth = useProvideAuth();
-  console.log("auth", auth);
   return <authContext.Provider value={auth}>{children}</authContext.Provider>;
 }
 
@@ -45,7 +44,6 @@ function useProvideAuth() {
   const h = useHistory();
   useEffect(() => {
     if (getToken() && !user) {
-      console.log("set user");
       info()
         .then((res) => {
           setUser(res.data);

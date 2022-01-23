@@ -103,7 +103,6 @@ const ConfigModal: React.FC<{
         .then(({ data }) => {
           if (data.config) {
             setConfig(data.config);
-            console.log("oldoldoldold", data.config);
           }
           setModalBranch(data.branch);
           setLoading(false);
@@ -216,14 +215,12 @@ const ConfigModal: React.FC<{
   useEffect(() => {
     if (editMode && visible) {
       let d = debounce(() => {
-        console.log("debounce called");
         if (watch.config_field && defaultValues) {
           let data = get(
             yaml.load(defaultValues),
             watch.config_field.split("->"),
             ""
           );
-          console.log(data);
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
@@ -235,7 +232,6 @@ const ConfigModal: React.FC<{
       d();
       return () => {
         d.cancel();
-        console.log("cancel called");
       };
     }
   }, [editMode, watch.config_field, defaultValues, visible]);
@@ -260,7 +256,6 @@ const ConfigModal: React.FC<{
           message.error(e.response.data.message);
           globalConfigApi({ project_id: item.id }).then(({ data }) => {
             setGlobalEnabled(data.enabled);
-            console.log(data.config);
           });
         });
   };

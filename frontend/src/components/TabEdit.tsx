@@ -126,7 +126,6 @@ const ModalSub: React.FC<{
         value: String(i.value),
       }));
     }
-    console.log("#######", values);
     if (!wsReady) {
       message.error("连接断开了");
       return;
@@ -150,7 +149,6 @@ const ModalSub: React.FC<{
 
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
-      console.log(s);
       ws?.send(s);
     }
   };

@@ -275,7 +275,6 @@ export default class LazyLog extends Component {
 
   componentDidMount() {
     this.request();
-    console.log("componentDidMount")
     this.setState({isBottom: true})
   }
 
@@ -285,7 +284,6 @@ export default class LazyLog extends Component {
       prevState.url !== this.state.url ||
       prevProps.text !== this.props.text
     ) {
-      console.log("url reloaded")
       this.setState({isBottom: true})
       this.request();
     }

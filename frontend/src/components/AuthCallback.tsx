@@ -21,7 +21,6 @@ const Callback: React.FC = () => {
   useEffect(() => {
     if (code) {
       if (state === getState()) {
-        console.log("do query");
         exchange({ code }).then((res) => {
           setToken(res.data.token);
           info().then((res) => {

@@ -37,7 +37,6 @@ const ServiceEndpoint: React.FC<{ namespaceId: number; projectName?: string }> =
           style={{ width: 18, height: 18, flexShrink: 0 }}
           stroke="currentColor"
           onMouseEnter={(e) => {
-            console.log("projectName", projectName)
             getServiceEndpoints({project_name: projectName || "", namespace_id: namespaceId}).then((res) => {
                 setEndpoints(res.data.data);
             });

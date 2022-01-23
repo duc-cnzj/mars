@@ -54,14 +54,11 @@ const ProjectSelector: React.FC<{
   }, [v, value]);
 
   useEffect(() => {
-    console.log(v, "vvv");
     projectOptions().then((res) => {
       if (!isCreate && v?.gitlabProjectId) {
-        console.log(res.data.data, v.gitlabProjectId);
         let r = res.data.data.find(
           (item) => item.projectId === String(v.gitlabProjectId)
         );
-        console.log(r);
         if (r) {
           (r as any).children = [];
         }
@@ -95,7 +92,6 @@ const ProjectSelector: React.FC<{
           targetOption.children = res.data.data;
           setOptions((opts) => [...opts]);
         });
-        console.log("onchange onchange");
         return;
       case "branch":
         commitOptions({
@@ -132,7 +128,6 @@ const ProjectSelector: React.FC<{
                 (item: pb.GitOption) => item.value === gcommit
               );
               setValue([o.label, b.label, c ? c.label : ""]);
-              // console.log(onCh);
               onCh?.({
                 projectName: get(
                   options.find((item) => item.value === values[0]),

@@ -37,7 +37,6 @@ const ItemDetailModal: React.FC<{
   useEffect(() => {
     if (visible && namespaceId && item.id) {
       detailProject(item.id).then((res) => {
-        console.log(res.data);
         setDetail(res.data);
       });
     }
@@ -45,7 +44,6 @@ const ItemDetailModal: React.FC<{
 
   const onSuccess = useCallback(() => {
     detailProject(item.id || 0).then((res) => {
-      console.log(res.data);
       setDetail(res.data);
     });
   }, [item.id]);
@@ -86,7 +84,6 @@ const ItemDetailModal: React.FC<{
       </Button>
       <DraggableModal
         onResize={() => {
-          console.log("DraggableModal onResize");
           setResizeAt(new Date().getTime());
         }}
         className="draggable-modal"

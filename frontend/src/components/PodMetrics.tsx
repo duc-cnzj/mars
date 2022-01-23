@@ -36,7 +36,6 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
                 time: r.result.time,
               },
             ];
-            console.log(ll);
             return ll;
           });
           setMemoryMetrics((l) => {
@@ -51,7 +50,6 @@ const PodMetrics: React.FC<{ namespace: string; pod: string; timestamp: any }> =
                 time: r.result.time,
               },
             ];
-            console.log(ll);
             return ll;
           });
         } else {

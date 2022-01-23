@@ -11,7 +11,6 @@ export default function namespace(
 ) {
   switch (action.type) {
     case SET_NAMESPACE_RELOAD:
-      console.log("SET_NAMESPACE_RELOAD", action.data);
       return { ...state, reload: action.data ? action.data.reload : false };
     default:
       return state;

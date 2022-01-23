@@ -296,10 +296,8 @@ const DetailTab: React.FC<{
                   message.error("删除失败");
                   setLoading(false);
                 });
-              console.log("OK");
             },
             onCancel() {
-              console.log("Cancel");
             },
           })
         }

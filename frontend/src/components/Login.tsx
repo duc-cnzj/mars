@@ -84,7 +84,6 @@ const Login: React.FC = () => {
           <Form
             name="basic"
             onFinish={(values: any) => {
-              console.log(values);
               auth.login(values.username, values.password, () => {
                 h.push("/");
               });

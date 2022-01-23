@@ -95,7 +95,6 @@ const ProjectContainerLogs: React.FC<{
             }}
             stream
             onError={(e: any) => {
-              console.log(e);
               if (e.status === 404) {
                 listContainer().then((res) => {
                   if (res.data.data.length > 0) {

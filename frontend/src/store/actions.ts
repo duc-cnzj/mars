@@ -82,7 +82,6 @@ export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
   dispatch(setNamespaceReload(true));
-  console.log("duc calllllll");
 }, 500);
 
 export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
@@ -100,7 +99,6 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
         break;
       case pb.Type.UpdateProject:
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
-        console.log("update_project", data);
 
         if (data.end) {
           switch (data.result) {
@@ -125,7 +123,6 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
         }
         break;
       case pb.Type.CreateProject:
-        console.log("create_project", data);
         dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
 
         if (data.end) {
