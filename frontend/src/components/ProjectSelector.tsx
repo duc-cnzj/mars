@@ -23,7 +23,7 @@ const ProjectSelector: React.FC<{
 }> = ({ value: v, onChange: onCh, isCreate }) => {
   const [options, setOptions] = useState<pb.GitOption[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
-  const [loading, setLoading] = useState(v ? !v.gitlabCommit : false);
+  const [loading, setLoading] = useState(v ? !!v.gitlabCommit : false);
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -34,41 +34,36 @@ const ProjectSelector: React.FC<{
       v.gitlabBranch &&
       v.gitlabProjectId
     ) {
-      commit({
-        project_id: String(v.gitlabProjectId),
-        branch: v.gitlabBranch,
-        commit: v.gitlabCommit,
-      }).then((res) => {
-        res.data.data &&
-          setValue([v.projectName, v.gitlabBranch, res.data.data.label]);
-        setLoading(false);
-      });
-    }
-  }, [v, value]);
-
-  useEffect(() => {
-    console.log(v, "vvv");
-    projectOptions().then((res) => {
-      if (!isCreate && v?.gitlabProjectId) {
-        console.log(res.data.data, v.gitlabProjectId);
+      projectOptions().then((res) => {
         let r = res.data.data.find(
           (item) => item.projectId === String(v.gitlabProjectId)
         );
-        console.log(r);
-        if (r) {
-          (r as any).children = [];
+        if (!isCreate && v?.gitlabProjectId) {
+          if (r) {
+            (r as any).children = [];
+          }
+          setOptions(r ? [r] : []);
+        } else {
+          setOptions(
+            res.data.data.map((i: any) => {
+              i.children = [];
+              return i;
+            })
+          );
         }
-        setOptions(r ? [r] : []);
-      } else {
-        setOptions(
-          res.data.data.map((i: any) => {
-            i.children = [];
-            return i;
-          })
-        );
-      }
-    });
-  }, [v, isCreate]);
+        commit({
+          project_id: String(v.gitlabProjectId),
+          branch: v.gitlabBranch,
+          commit: v.gitlabCommit,
+        }).then((res) => {
+          r &&
+            res.data.data &&
+            setValue([r.label, v.gitlabBranch, res.data.data.label]);
+          setLoading(false);
+        });
+      });
+    }
+  }, [v, value, isCreate]);
 
   const loadData = useCallback((selectedOptions: any | undefined) => {
     if (!selectedOptions) {
