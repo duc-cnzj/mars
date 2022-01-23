@@ -95,7 +95,8 @@ message ProjectApplyRequest {
   string name = 2 [(validate.rules).string.min_bytes = 1];
   int64 gitlab_project_id = 3 [(validate.rules).int64.gt = 0];
   string gitlab_branch = 4 [(validate.rules).string.min_bytes = 1];
-  string gitlab_commit = 5 [(validate.rules).string.min_bytes = 1];
+  //  gitlab_commit 不传就用最新的 commit
+  string gitlab_commit = 5;
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;

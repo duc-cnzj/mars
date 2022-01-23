@@ -6,15 +6,13 @@ import (
 	"strings"
 	"time"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/pkg/websocket"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-
-	"gorm.io/gorm"
 )
 
 type Project struct {

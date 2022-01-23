@@ -1607,16 +1607,7 @@ func (m *ProjectApplyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetGitlabCommit()) < 1 {
-		err := ProjectApplyRequestValidationError{
-			field:  "GitlabCommit",
-			reason: "value length must be at least 1 bytes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for GitlabCommit
 
 	// no validation rules for Config
 

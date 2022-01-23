@@ -23,8 +23,6 @@ const DynamicElement: React.FC<{
       {(fields, { add, remove }) => (
         <>
           {fields.map((field) => {
-            console.log(form.getFieldValue("elements"), field);
-            // setType(t=>[...t, form.getFieldValue("elements")[field.key]["type"]])
             return (
               <div className="dynamic-element">
                 <div className="dynamic-element__wrapper">
@@ -46,7 +44,6 @@ const DynamicElement: React.FC<{
                       <Select
                         disabled={disabled}
                         onChange={(v) => {
-                          console.log(v, field);
                           setType((t) => ({ ...t, [field.key]: v }));
                           form.setFieldsValue(["elements", Number(v)]);
                         }}

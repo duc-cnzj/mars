@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -622,17 +623,64 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		return nil
 	}
 
-	var v []string
-	for _, item := range j.input.ExtraValues {
-		ysk, err := utils.YamlDeepSetKey(item.Path, item.Value)
+	var validValues = make(map[string]interface{})
+
+	// validate
+	for _, value := range j.input.ExtraValues {
+		var fieldValid bool
+		for _, element := range j.config.Elements {
+			if value.Path == element.Path {
+				switch element.Type {
+				case mars.ElementType_ElementTypeSwitch:
+					v, err := strconv.ParseBool(value.Value)
+					if err != nil {
+						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value))
+					}
+					validValues[value.Path] = v
+				case mars.ElementType_ElementTypeInputNumber:
+					v, err := strconv.ParseInt(value.Value, 10, 64)
+					if err != nil {
+						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value))
+					}
+					validValues[value.Path] = v
+				case mars.ElementType_ElementTypeRadio:
+					fallthrough
+				case mars.ElementType_ElementTypeSelect:
+					var in bool
+					for _, selectValue := range element.SelectValues {
+						if value.Value == selectValue {
+							in = true
+							break
+						}
+					}
+					if !in {
+						return errors.New(fmt.Sprintf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value))
+					}
+					validValues[value.Path] = value.Value
+					continue
+				default:
+					validValues[value.Path] = value.Value
+				}
+				fieldValid = true
+			}
+		}
+		if !fieldValid {
+			return errors.New(fmt.Sprintf("不允许自定义字段 %s", value.Path))
+		}
+		continue
+	}
+
+	var evs []string
+	for k, v := range validValues {
+		ysk, err := utils.YamlDeepSetKey(k, v)
 		if err != nil {
 			mlog.Error(fmt.Sprintf("%s find error %v", loaderName, err))
 			continue
 		}
-		v = append(v, string(ysk))
+		evs = append(evs, string(ysk))
 	}
 
-	j.extraValues = v
+	j.extraValues = evs
 	mlog.Debug(j.extraValues)
 
 	return nil

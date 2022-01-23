@@ -238,7 +238,7 @@ const CreateProjectModal: React.FC<{
                 style={{ width: "100%", margin: 0 }}
                 rules={[{ required: true, message: "项目必选" }]}
               >
-                <ProjectSelector created onChange={onChange} />
+                <ProjectSelector isCreate onChange={onChange} />
               </Form.Item>
             </div>
 

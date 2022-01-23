@@ -14,7 +14,18 @@ interface st {
   selectOption?: React.CSSProperties;
   switch?: React.CSSProperties;
 }
-
+const isTrue = (v: any): boolean => {
+  switch (v) {
+    case 1:
+    case true:
+    case "1":
+    case "True":
+    case "true":
+      return true;
+    default:
+      return false;
+  }
+};
 const initStyle = {
   input: {},
   label: {},
@@ -41,7 +52,7 @@ const Elements: React.FC<{
               if (value[i].path === item.path) {
                 de = value[i].value;
                 if (item.type === pb.ElementType.ElementTypeSwitch) {
-                  de = de === "true";
+                  de = isTrue(de);
                 }
                 if (item.type === pb.ElementType.ElementTypeInputNumber) {
                   de = Number(de);
@@ -195,7 +206,7 @@ const Element: React.FC<{
           style={style.formItem}
         >
           <Switch
-            // defaultChecked={Boolean(element.default)}
+            defaultChecked={isTrue(element.default)}
             style={style.switch}
             checked={value}
             onChange={(e) => {

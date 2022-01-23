@@ -6,7 +6,7 @@ import { get } from "lodash";
 import pb from "../api/compiled";
 
 const ProjectSelector: React.FC<{
-  created: boolean;
+  isCreate: boolean;
   value?: {
     projectName: string;
     gitlabProjectId: string;
@@ -20,7 +20,7 @@ const ProjectSelector: React.FC<{
     gitlabBranch: string;
     gitlabCommit: string;
   }) => void;
-}> = ({ value: v, onChange: onCh, created }) => {
+}> = ({ value: v, onChange: onCh, isCreate }) => {
   const [options, setOptions] = useState<pb.GitOption[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !v.gitlabCommit : false);
@@ -49,7 +49,7 @@ const ProjectSelector: React.FC<{
   useEffect(() => {
     console.log(v, "vvv");
     projectOptions().then((res) => {
-      if (!created && v?.gitlabProjectId) {
+      if (!isCreate && v?.gitlabProjectId) {
         console.log(res.data.data, v.gitlabProjectId);
         let r = res.data.data.find(
           (item) => item.projectId === String(v.gitlabProjectId)
@@ -68,7 +68,7 @@ const ProjectSelector: React.FC<{
         );
       }
     });
-  }, [v, created]);
+  }, [v, isCreate]);
 
   const loadData = useCallback((selectedOptions: any | undefined) => {
     if (!selectedOptions) {

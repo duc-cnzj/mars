@@ -180,8 +180,6 @@ func main()  {
 
 ## TODO
 
-- [ ] 重构所有表单，增加表单验证
-- [ ] 自定义额外字段，组合模式
 - [ ] ratelimiter
 - [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
@@ -189,6 +187,8 @@ func main()  {
 - [ ] namespace all -> list
 - [ ] 增加 basic? or CA? auth，参考 k8s 的做法
 - [ ] grpc 可配置使用 tls
+- [x] 重构所有表单，增加表单验证
+- [x] 自定义额外字段，组合模式(前端就算了，连类都不用了，都是 FC)
 - [x] client 集成 copy to pod & uploader
 - [x] rpc 增加远程执行容器命令接口
 - [x] 接口验证
