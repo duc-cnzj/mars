@@ -42,6 +42,7 @@ func (g GitlabProject) PrettyYaml() string {
 		LocalChartPath   string                 `yaml:"local_chart_path"`
 		Branches         []string               `yaml:"branches"`
 		ValuesYaml       map[string]interface{} `yaml:"values_yaml"`
+		Elements         []*mars.Element        `yaml:"elements"`
 	}{
 		ConfigFile:       clone.ConfigFile,
 		ConfigFileValues: clone.ConfigFileValues,
@@ -51,6 +52,7 @@ func (g GitlabProject) PrettyYaml() string {
 		LocalChartPath:   clone.LocalChartPath,
 		Branches:         clone.Branches,
 		ValuesYaml:       v,
+		Elements:         clone.Elements,
 	}
 	bf := bytes.Buffer{}
 	yaml.NewEncoder(&bf).Encode(data)
