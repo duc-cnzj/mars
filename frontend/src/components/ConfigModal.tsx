@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect, memo } from "react";
+import React, { useCallback, useEffect, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import DynamicElement from "./elements/DynamicElement";
 import SelectFileType from "./SelectFileType";
+import { useAsyncState } from "../utils/async";
 
 import pb from "../api/compiled";
 import { get, debounce } from "lodash";
@@ -69,32 +70,37 @@ const ConfigModal: React.FC<{
   item: undefined | pb.GitProjectItem;
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
-  const [watch, setWatch] = useState<WatchData>({
+  const [watch, setWatch] = useAsyncState<WatchData>({
     config_field: initConfig.config_field,
     config_file_values: initConfig.config_file_values,
     config_file_type: initConfig.config_file_type,
   });
-  const [editMode, setEditMode] = useState(true);
-  const [globalEnabled, setGlobalEnabled] = useState(false);
-  const [config, setConfig] = useState<Config>(initConfig);
-  const [modalBranch, setModalBranch] = useState("");
-  const [configVisible, setConfigVisible] = useState(visible);
-  const [mbranches, setMbranches] = useState<string[]>([]);
-  const [defaultValues, setDefaultValues] = useState<string>(initDefaultValues);
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState("");
-
-  const loadDefaultValues = useCallback((projectId: number, branch: string) => {
-    if (projectId) {
-      getDefaultValues({ project_id: projectId, branch: branch })
-        .then((res) => {
-          setDefaultValues(res.data.value);
-        })
-        .catch((e) => {
-          setDefaultValues(initDefaultValues);
-        });
-    }
-  }, []);
+  const [editMode, setEditMode] = useAsyncState(true);
+  const [globalEnabled, setGlobalEnabled] = useAsyncState(false);
+  const [config, setConfig] = useAsyncState<Config>(initConfig);
+  const [modalBranch, setModalBranch] = useAsyncState("");
+  const [configVisible, setConfigVisible] = useAsyncState(visible);
+  const [mbranches, setMbranches] = useAsyncState<string[]>([]);
+  const [defaultValues, setDefaultValues] =
+    useAsyncState<string>(initDefaultValues);
+  const [loading, setLoading] = useAsyncState(false);
+  const [mode, setMode] = useAsyncState("");
+  const [configFileContent, setConfigFileContent] = useAsyncState("");
+  const [configFileTip, setConfigFileTip] = useAsyncState(false);
+  const loadDefaultValues = useCallback(
+    (projectId: number, branch: string) => {
+      if (projectId) {
+        getDefaultValues({ project_id: projectId, branch: branch })
+          .then((res) => {
+            setDefaultValues(res.data.value);
+          })
+          .catch((e) => {
+            setDefaultValues(initDefaultValues);
+          });
+      }
+    },
+    [setDefaultValues]
+  );
 
   const loadConfig = useCallback(
     (id: number, branch = "") => {
@@ -113,14 +119,14 @@ const ConfigModal: React.FC<{
           setLoading(false);
         });
     },
-    [loadDefaultValues]
+    [loadDefaultValues, setConfig, setLoading, setModalBranch]
   );
 
   useEffect(() => {
     if (visible && watch.config_file_type) {
       setMode(getMode(watch.config_file_type));
     }
-  }, [watch, visible]);
+  }, [watch, visible, setMode]);
 
   const loadGlobalConfig = useCallback(
     (id: number) => {
@@ -139,7 +145,7 @@ const ConfigModal: React.FC<{
           setLoading(false);
         });
     },
-    [loadDefaultValues]
+    [loadDefaultValues, setConfig, setLoading]
   );
 
   useEffect(() => {
@@ -166,18 +172,37 @@ const ConfigModal: React.FC<{
           message.error(e.response.data.message);
         });
     }
-  }, [item, loadConfig, visible, loadDefaultValues]);
+  }, [
+    item,
+    loadConfig,
+    visible,
+    loadDefaultValues,
+    setConfig,
+    setConfigVisible,
+    setGlobalEnabled,
+    setLoading,
+    setMbranches,
+  ]);
 
   const resetModal = useCallback(() => {
     setMbranches([]);
-    setLoading(true);
+    setLoading(false);
     setConfig({ ...initConfig });
     setConfigVisible(false);
     setEditMode(true);
     setConfigFileContent("");
     setConfigFileTip(false);
     onCancel();
-  }, [onCancel]);
+  }, [
+    onCancel,
+    setConfig,
+    setConfigFileContent,
+    setConfigFileTip,
+    setConfigVisible,
+    setEditMode,
+    setLoading,
+    setMbranches,
+  ]);
 
   const selectBranch = useCallback(
     (value: string) => {
@@ -209,7 +234,14 @@ const ConfigModal: React.FC<{
             message.error(e.message);
           });
     },
-    [loadGlobalConfig, loadConfig, item]
+    [
+      loadGlobalConfig,
+      loadConfig,
+      item,
+      setConfigFileContent,
+      setEditMode,
+      setGlobalEnabled,
+    ]
   );
 
   useEffect(() => {
@@ -234,7 +266,13 @@ const ConfigModal: React.FC<{
         d.cancel();
       };
     }
-  }, [editMode, watch.config_field, defaultValues, visible]);
+  }, [
+    editMode,
+    watch.config_field,
+    defaultValues,
+    visible,
+    setConfigFileContent,
+  ]);
 
   const onSave = (values: any) => {
     item &&
@@ -260,22 +298,19 @@ const ConfigModal: React.FC<{
         });
   };
 
-  const [configFileContent, setConfigFileContent] = useState("");
-  const [configFileTip, setConfigFileTip] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
     setConfigFileTip(!!configFileContent && !watch.config_file_values);
-  }, [configFileContent, watch.config_file_values]);
+  }, [configFileContent, watch.config_file_values, setConfigFileTip]);
 
   useEffect(() => {
     setWatch((w) => ({ ...w, ...config }));
     form.setFieldsValue(config);
-  }, [config, form]);
+  }, [config, form, setWatch]);
 
   return (
     <Modal
-      destroyOnClose
       keyboard={false}
       title={
         <div>
