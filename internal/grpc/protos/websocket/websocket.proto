@@ -88,6 +88,11 @@ message CancelInput {
   string name = 3;
 }
 
+message ProjectExtraItem {
+  string path = 1;
+  string value = 2;
+}
+
 message ProjectInput {
   Type type = 1;
 
@@ -98,6 +103,7 @@ message ProjectInput {
   string gitlab_commit = 6;
   string config = 7;
   bool atomic = 8;
+  repeated ProjectExtraItem extra_values = 9;
 }
 
 message UpdateProjectInput {
@@ -108,6 +114,7 @@ message UpdateProjectInput {
   string gitlab_commit = 4;
   string config = 5;
   bool atomic = 6;
+  repeated ProjectExtraItem extra_values = 7;
 }
 
 // Response

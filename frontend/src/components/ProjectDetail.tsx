@@ -55,7 +55,7 @@ const ItemDetailModal: React.FC<{
   }, []);
 
   return (
-    <>
+    <div className="project-detail">
       <Button
         onClick={() => {
           onOk();
@@ -143,7 +143,7 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
                   {detail ? (
-                    <TabEdit detail={detail} onSuccess={onSuccess} />
+                    <TabEdit detail={detail} updatedAt={detail.updated_at} onSuccess={onSuccess} />
                   ) : (
                     <></>
                   )}
@@ -170,7 +170,7 @@ const ItemDetailModal: React.FC<{
           </TabPane>
         </Tabs>
       </DraggableModal>
-    </>
+    </div>
   );
 };
 

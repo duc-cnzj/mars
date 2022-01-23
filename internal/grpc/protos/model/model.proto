@@ -38,5 +38,7 @@ message ProjectModel {
   bool atomic = 11;
   string created_at = 12;
   string updated_at = 13;
+  string extra_values = 14;
+
   NamespaceModel namespace = 15;
 }

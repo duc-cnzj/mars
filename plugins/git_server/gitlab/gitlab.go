@@ -238,6 +238,9 @@ func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseIn
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
 	})
+	if err != nil {
+		return nil, err
+	}
 	nextPage := r.Header.Get("x-next-page")
 	var projects = make([]plugins.ProjectInterface, 0, len(res))
 	for _, re := range res {

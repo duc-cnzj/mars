@@ -3,11 +3,13 @@ package socket
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -132,6 +134,7 @@ type Jober struct {
 	imagePullSecrets  []string
 	vars              vars
 	dynamicConfigYaml string
+	extraValues       []string
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
@@ -263,11 +266,12 @@ func (j *Jober) AddDestroyFunc(fn func()) {
 }
 
 type userConfig struct {
-	Config string `yaml:"config"`
-	Branch string `yaml:"branch"`
-	Commit string `yaml:"commit"`
-	Atomic bool   `yaml:"atomic"`
-	WebUrl string `yaml:"web_url"`
+	Config      string `yaml:"config"`
+	Branch      string `yaml:"branch"`
+	Commit      string `yaml:"commit"`
+	Atomic      bool   `yaml:"atomic"`
+	WebUrl      string `yaml:"web_url"`
+	ExtraValues string `yaml:"extra_values"`
 }
 
 func (u userConfig) PrettyYaml() string {
@@ -300,24 +304,27 @@ func (j *Jober) Run() error {
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest)
+			marshal, _ := json.Marshal(j.input.ExtraValues)
+			j.project.ExtraValues = string(marshal)
 
 			var (
 				p                models.Project
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic").
+				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
 				app.DB().Model(j.project).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic").
+					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
 					Updates(&j.project)
 				oldConf = userConfig{
-					Config: p.Config,
-					Branch: p.GitlabBranch,
-					Commit: p.GitlabCommit,
-					Atomic: p.Atomic,
+					Config:      p.Config,
+					Branch:      p.GitlabBranch,
+					Commit:      p.GitlabCommit,
+					Atomic:      p.Atomic,
+					ExtraValues: p.ExtraValues,
 				}
 				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitlabProjectId), p.GitlabCommit)
 				if err == nil {
@@ -327,11 +334,12 @@ func (j *Jober) Run() error {
 				app.DB().Create(&j.project)
 			}
 			newConf = userConfig{
-				Config: j.project.Config,
-				Branch: j.project.GitlabBranch,
-				Commit: j.project.GitlabCommit,
-				Atomic: j.project.Atomic,
-				WebUrl: j.Commit().GetWebURL(),
+				Config:      j.project.Config,
+				Branch:      j.project.GitlabBranch,
+				Commit:      j.project.GitlabCommit,
+				Atomic:      j.project.Atomic,
+				WebUrl:      j.Commit().GetWebURL(),
+				ExtraValues: j.project.ExtraValues,
 			}
 			app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
 				Project:  j.project,
@@ -440,6 +448,7 @@ func defaultLoaders() []Loader {
 		&ChartFileLoader{},
 		&VariableLoader{},
 		&DynamicLoader{},
+		&ExtraValuesLoader{},
 		&MergeValuesLoader{},
 		&ReleaseInstallerLoader{},
 	}
@@ -601,6 +610,91 @@ func (d *DynamicLoader) Load(j *Jober) error {
 	return nil
 }
 
+type ExtraValuesLoader struct{}
+
+func (d *ExtraValuesLoader) Load(j *Jober) error {
+	const loaderName = "[ExtraValuesLoader]: "
+
+	j.Percenter().To(50)
+	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查项目额外的配置"))
+
+	if len(j.input.ExtraValues) <= 0 {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
+		return nil
+	}
+
+	var validValues = make(map[string]interface{})
+
+	// validate
+	for _, value := range j.input.ExtraValues {
+		var fieldValid bool
+		for _, element := range j.config.Elements {
+			if value.Path == element.Path {
+				fieldValid = true
+
+				switch element.Type {
+				case mars.ElementType_ElementTypeSwitch:
+					if value.Value == "" {
+						value.Value = "false"
+					}
+					v, err := strconv.ParseBool(value.Value)
+					if err != nil {
+						mlog.Error(err)
+						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value))
+					}
+					validValues[value.Path] = v
+				case mars.ElementType_ElementTypeInputNumber:
+					if value.Value == "" {
+						value.Value = "0"
+					}
+					v, err := strconv.ParseInt(value.Value, 10, 64)
+					if err != nil {
+						mlog.Error(err)
+						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value))
+					}
+					validValues[value.Path] = v
+				case mars.ElementType_ElementTypeRadio:
+					fallthrough
+				case mars.ElementType_ElementTypeSelect:
+					var in bool
+					for _, selectValue := range element.SelectValues {
+						if value.Value == selectValue {
+							in = true
+							break
+						}
+					}
+					if !in {
+						return errors.New(fmt.Sprintf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value))
+					}
+					validValues[value.Path] = value.Value
+					continue
+				default:
+					validValues[value.Path] = value.Value
+				}
+			}
+		}
+		if !fieldValid {
+			return errors.New(fmt.Sprintf("不允许自定义字段 %s", value.Path))
+		}
+		continue
+	}
+
+	var evs []string
+	for k, v := range validValues {
+		ysk, err := utils.YamlDeepSetKey(k, v)
+		if err != nil {
+			mlog.Error(fmt.Sprintf("%s find error %v", loaderName, err))
+			continue
+		}
+		evs = append(evs, string(ysk))
+	}
+
+	j.extraValues = evs
+	mlog.Debug(j.extraValues)
+
+	return nil
+}
+
 const (
 	leftDelim  = "<"
 	rightDelim = ">"
@@ -622,7 +716,7 @@ type VariableLoader struct {
 
 func (v *VariableLoader) Load(j *Jober) error {
 	const loaderName = "[VariableLoader]: "
-	j.Percenter().To(50)
+	j.Percenter().To(60)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
 
 	if j.config.ValuesYaml == "" {
@@ -702,7 +796,7 @@ type MergeValuesLoader struct{}
 // imagePullSecrets 会自动注入到 imagePullSecrets 中
 func (m *MergeValuesLoader) Load(j *Jober) error {
 	const loaderName = "[MergeValuesLoader]: "
-	j.Percenter().To(60)
+	j.Percenter().To(70)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
 	// 自动注入 imagePullSecrets
@@ -723,6 +817,11 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	}
 	if len(yamlImagePullSecrets) != 0 {
 		opts = append(opts, config.Source(bytes.NewReader(yamlImagePullSecrets)))
+	}
+	if len(j.extraValues) > 0 {
+		for _, value := range j.extraValues {
+			opts = append(opts, config.Source(strings.NewReader(value)))
+		}
 	}
 
 	if len(opts) < 1 {
@@ -748,6 +847,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 		return err
 	}
 	fileData := bf.String()
+	mlog.Debug("fileData", fileData)
 	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile([]byte(fileData))
 	if err != nil {
 		return err
@@ -763,7 +863,7 @@ type ReleaseInstallerLoader struct{}
 func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
-	j.Percenter().To(70)
+	j.Percenter().To(80)
 	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic)
 	return nil
 }

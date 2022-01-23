@@ -382,6 +382,76 @@ func (m *ProjectShowResponse) validate(all bool) error {
 
 	// no validation rules for HumanizeUpdatedAt
 
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectShowResponseValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetElements() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("Elements[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectShowResponseValidationError{
+						field:  fmt.Sprintf("Elements[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectShowResponseValidationError{
+					field:  fmt.Sprintf("Elements[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for ConfigType
+
 	if len(errors) > 0 {
 		return ProjectShowResponseMultiError(errors)
 	}
@@ -1537,22 +1607,47 @@ func (m *ProjectApplyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetGitlabCommit()) < 1 {
-		err := ProjectApplyRequestValidationError{
-			field:  "GitlabCommit",
-			reason: "value length must be at least 1 bytes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for GitlabCommit
 
 	// no validation rules for Config
 
 	// no validation rules for Atomic
 
 	// no validation rules for WebsocketSync
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectApplyRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectApplyRequestValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectApplyRequestValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return ProjectApplyRequestMultiError(errors)

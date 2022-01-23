@@ -697,6 +697,109 @@ var _ interface {
 	ErrorName() string
 } = CancelInputValidationError{}
 
+// Validate checks the field values on ProjectExtraItem with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProjectExtraItem) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectExtraItem with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectExtraItemMultiError, or nil if none found.
+func (m *ProjectExtraItem) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectExtraItem) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for Value
+
+	if len(errors) > 0 {
+		return ProjectExtraItemMultiError(errors)
+	}
+	return nil
+}
+
+// ProjectExtraItemMultiError is an error wrapping multiple validation errors
+// returned by ProjectExtraItem.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectExtraItemMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectExtraItemMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectExtraItemMultiError) AllErrors() []error { return m }
+
+// ProjectExtraItemValidationError is the validation error returned by
+// ProjectExtraItem.Validate if the designated constraints aren't met.
+type ProjectExtraItemValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectExtraItemValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectExtraItemValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectExtraItemValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectExtraItemValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectExtraItemValidationError) ErrorName() string { return "ProjectExtraItemValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProjectExtraItemValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectExtraItem.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectExtraItemValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectExtraItemValidationError{}
+
 // Validate checks the field values on ProjectInput with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -734,6 +837,40 @@ func (m *ProjectInput) validate(all bool) error {
 	// no validation rules for Config
 
 	// no validation rules for Atomic
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectInputValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectInputValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectInputValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return ProjectInputMultiError(errors)
@@ -844,6 +981,40 @@ func (m *UpdateProjectInput) validate(all bool) error {
 	// no validation rules for Config
 
 	// no validation rules for Atomic
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UpdateProjectInputValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UpdateProjectInputValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UpdateProjectInputValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return UpdateProjectInputMultiError(errors)

@@ -3592,6 +3592,9 @@ export class GitConfigFileResponse implements IGitConfigFileResponse {
     /** GitConfigFileResponse type. */
     public type: string;
 
+    /** GitConfigFileResponse elements. */
+    public elements: Element[];
+
     /**
      * Encodes the specified GitConfigFileResponse message. Does not implicitly {@link GitConfigFileResponse.verify|verify} messages.
      * @param message GitConfigFileResponse message or plain object to encode
@@ -3960,6 +3963,9 @@ export class MarsConfig implements IMarsConfig {
     /** MarsConfig values_yaml. */
     public values_yaml: string;
 
+    /** MarsConfig elements. */
+    public elements: Element[];
+
     /**
      * Encodes the specified MarsConfig message. Does not implicitly {@link MarsConfig.verify|verify} messages.
      * @param message MarsConfig message or plain object to encode
@@ -3977,6 +3983,59 @@ export class MarsConfig implements IMarsConfig {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsConfig;
+}
+
+/** ElementType enum. */
+export enum ElementType {
+    ElementTypeUnknown = 0,
+    ElementTypeInput = 1,
+    ElementTypeInputNumber = 2,
+    ElementTypeSelect = 3,
+    ElementTypeRadio = 4,
+    ElementTypeSwitch = 5
+}
+
+/** Represents an Element. */
+export class Element implements IElement {
+
+    /**
+     * Constructs a new Element.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IElement);
+
+    /** Element path. */
+    public path: string;
+
+    /** Element type. */
+    public type: ElementType;
+
+    /** Element default. */
+    public default: string;
+
+    /** Element description. */
+    public description: string;
+
+    /** Element select_values. */
+    public select_values: string[];
+
+    /**
+     * Encodes the specified Element message. Does not implicitly {@link Element.verify|verify} messages.
+     * @param message Element message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: Element, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an Element message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Element
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Element;
 }
 
 /** Represents a MarsShowRequest. */
@@ -4709,6 +4768,9 @@ export class ProjectModel implements IProjectModel {
 
     /** ProjectModel updated_at. */
     public updated_at: string;
+
+    /** ProjectModel extra_values. */
+    public extra_values: string;
 
     /** ProjectModel namespace. */
     public namespace?: (NamespaceModel|null);
@@ -5710,6 +5772,15 @@ export class ProjectShowResponse implements IProjectShowResponse {
     /** ProjectShowResponse humanize_updated_at. */
     public humanize_updated_at: string;
 
+    /** ProjectShowResponse extra_values. */
+    public extra_values: ProjectExtraItem[];
+
+    /** ProjectShowResponse elements. */
+    public elements: Element[];
+
+    /** ProjectShowResponse config_type. */
+    public config_type: string;
+
     /**
      * Encodes the specified ProjectShowResponse message. Does not implicitly {@link ProjectShowResponse.verify|verify} messages.
      * @param message ProjectShowResponse message or plain object to encode
@@ -6080,6 +6151,9 @@ export class ProjectApplyRequest implements IProjectApplyRequest {
 
     /** ProjectApplyRequest websocket_sync. */
     public websocket_sync: boolean;
+
+    /** ProjectApplyRequest extra_values. */
+    public extra_values: ProjectExtraItem[];
 
     /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
@@ -6850,6 +6924,40 @@ export class CancelInput implements ICancelInput {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CancelInput;
 }
 
+/** Represents a ProjectExtraItem. */
+export class ProjectExtraItem implements IProjectExtraItem {
+
+    /**
+     * Constructs a new ProjectExtraItem.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectExtraItem);
+
+    /** ProjectExtraItem path. */
+    public path: string;
+
+    /** ProjectExtraItem value. */
+    public value: string;
+
+    /**
+     * Encodes the specified ProjectExtraItem message. Does not implicitly {@link ProjectExtraItem.verify|verify} messages.
+     * @param message ProjectExtraItem message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectExtraItem, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectExtraItem message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectExtraItem
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectExtraItem;
+}
+
 /** Represents a ProjectInput. */
 export class ProjectInput implements IProjectInput {
 
@@ -6882,6 +6990,9 @@ export class ProjectInput implements IProjectInput {
 
     /** ProjectInput atomic. */
     public atomic: boolean;
+
+    /** ProjectInput extra_values. */
+    public extra_values: ProjectExtraItem[];
 
     /**
      * Encodes the specified ProjectInput message. Does not implicitly {@link ProjectInput.verify|verify} messages.
@@ -6928,6 +7039,9 @@ export class UpdateProjectInput implements IUpdateProjectInput {
 
     /** UpdateProjectInput atomic. */
     public atomic: boolean;
+
+    /** UpdateProjectInput extra_values. */
+    public extra_values: ProjectExtraItem[];
 
     /**
      * Encodes the specified UpdateProjectInput message. Does not implicitly {@link UpdateProjectInput.verify|verify} messages.

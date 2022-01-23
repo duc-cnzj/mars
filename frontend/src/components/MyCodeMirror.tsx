@@ -1,7 +1,7 @@
 import React from "react";
 import {
   Controlled as CodeMirror,
-  IControlledCodeMirror,
+  ICodeMirror,
   Controlled,
 } from "react-codemirror2";
 
@@ -65,7 +65,7 @@ const list = [
     displayText: "certManager",
   },
   {
-    text: '<.Branch>-<.Pipeline>',
+    text: "<.Branch>-<.Pipeline>",
     displayText: "imageTag",
   },
 ];
@@ -144,17 +144,23 @@ const defaultOpt = {
   },
 };
 
+interface InputMirror extends ICodeMirror {
+  onChange?: (v: string) => void;
+  value?: string;
+}
+
 const myCodeMirror: React.ForwardRefRenderFunction<
   Controlled,
-  IControlledCodeMirror & React.RefAttributes<Controlled>
+  React.RefAttributes<Controlled> & InputMirror
 > = (props, ref) => {
-  return (
-    <CodeMirror
+  return <CodeMirror
       ref={ref}
-      {...props}
+      value={props.value ? props.value : ""}
+      onBeforeChange={(e: any, d: any, v: string) => {
+        props.onChange?.(v);
+      }}
       options={{ ...props.options, ...defaultOpt }}
     />
-  );
 };
 export const MyCodeMirror = React.forwardRef(myCodeMirror);
 

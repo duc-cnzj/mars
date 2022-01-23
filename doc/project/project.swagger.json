@@ -322,6 +322,41 @@
     }
   },
   "definitions": {
+    "Element": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/ElementType"
+        },
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "select_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ElementType": {
+      "type": "string",
+      "enum": [
+        "ElementTypeUnknown",
+        "ElementTypeInput",
+        "ElementTypeInputNumber",
+        "ElementTypeSelect",
+        "ElementTypeRadio",
+        "ElementTypeSwitch"
+      ],
+      "default": "ElementTypeUnknown"
+    },
     "Metadata": {
       "type": "object",
       "properties": {
@@ -420,6 +455,17 @@
     "ProjectDeleteResponse": {
       "type": "object"
     },
+    "ProjectExtraItem": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "ProjectIsPodExistsResponse": {
       "type": "object",
       "properties": {
@@ -505,6 +551,9 @@
           "type": "string"
         },
         "updated_at": {
+          "type": "string"
+        },
+        "extra_values": {
           "type": "string"
         },
         "namespace": {
@@ -606,6 +655,21 @@
           "type": "string"
         },
         "humanize_updated_at": {
+          "type": "string"
+        },
+        "extra_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectExtraItem"
+          }
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
+        },
+        "config_type": {
           "type": "string"
         }
       }

@@ -2,16 +2,17 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/pkg/websocket"
 
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-
-	"gorm.io/gorm"
 )
 
 type Project struct {
@@ -27,12 +28,18 @@ type Project struct {
 	PodSelectors    string `json:"pod_selectors" gorm:"type:text;nullable;"`
 	NamespaceId     int    `json:"namespace_id"`
 	Atomic          bool   `json:"atomic"`
+	ExtraValues     string `json:"extra_values" gorm:"type:text;nullable;"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 
 	Namespace Namespace
+}
+
+func (project *Project) GetExtraValues() (res []*websocket.ProjectExtraItem) {
+	json.Unmarshal([]byte(project.ExtraValues), &res)
+	return res
 }
 
 func (project *Project) SetPodSelectors(selectors []string) {

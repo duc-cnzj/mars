@@ -89,9 +89,24 @@ func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Proje
 	if input.WebsocketSync {
 		pubsub = plugins.GetWsSender().New("", "")
 	}
+	t := websocket.Type_ApplyProject
+	msger := &messager{
+		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
+		t:        t,
+		server:   server,
+	}
+	if input.GitlabCommit == "" {
+		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitlabProjectId), input.GitlabBranch)
+		if len(commits) < 1 {
+			return errors.New("没有可用的 commit")
+		}
+		lastCommit := commits[0]
+		input.GitlabCommit = lastCommit.GetID()
+		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.GetTitle(), lastCommit.GetWebURL()))
+	}
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{}, 1)
-	t := websocket.Type_ApplyProject
+
 	job := socket.NewJober(&websocket.ProjectInput{
 		Type:            t,
 		NamespaceId:     input.NamespaceId,
@@ -101,11 +116,8 @@ func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Proje
 		GitlabCommit:    input.GitlabCommit,
 		Config:          input.Config,
 		Atomic:          input.Atomic,
-	}, *user, "", &messager{
-		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
-		t:        t,
-		server:   server,
-	}, pubsub)
+		ExtraValues:     input.ExtraValues,
+	}, *user, "", msger, pubsub)
 
 	go func() {
 		select {
@@ -226,7 +238,7 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
+	marsC, _ := GetProjectMarsConfig(projectModel.GitlabProjectId, projectModel.GitlabBranch)
 	cpu, memory := utils.GetCpuAndMemory(projectModel.GetAllPodMetrics())
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModel.GitlabProjectId), projectModel.GitlabCommit)
 	if err != nil {
@@ -274,6 +286,9 @@ func (p *Project) Show(ctx context.Context, request *project.ProjectShowRequest)
 		UpdatedAt:         utils.ToRFC3339DatetimeString(&projectModel.UpdatedAt),
 		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
 		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
+		ExtraValues:       projectModel.GetExtraValues(),
+		Elements:          marsC.GetElements(),
+		ConfigType:        marsC.GetConfigFileType(),
 	}, nil
 }
 
@@ -385,6 +400,7 @@ func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string,
 			Atomic:          p.Atomic,
 			CreatedAt:       utils.ToRFC3339DatetimeString(&p.CreatedAt),
 			UpdatedAt:       utils.ToRFC3339DatetimeString(&p.UpdatedAt),
+			ExtraValues:     p.ExtraValues,
 			Namespace:       &ns,
 		},
 	})

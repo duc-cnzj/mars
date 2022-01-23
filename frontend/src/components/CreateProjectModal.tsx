@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import PipelineInfo from "./PipelineInfo";
+import Elements from "./elements/Elements";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
+import { orderBy } from "lodash";
 
 import { configFile } from "../api/gitlab";
 import {
@@ -11,7 +13,7 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Progress, Button } from "antd";
+import { message, Progress, Button, Form } from "antd";
 import {
   PlusOutlined,
   StopOutlined,
@@ -31,104 +33,77 @@ import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
-const initItemData: Mars.CreateItemInterface = {
-  name: "",
-  gitlabProjectId: 0,
-  gitlabBranch: "",
-  gitlabCommit: "",
-  config: "",
-  debug: true,
-  config_type: "yaml",
-};
-
 const CreateProjectModal: React.FC<{
   namespaceId: number;
 }> = ({ namespaceId }) => {
   const list = useSelector(selectList);
   const dispatch = useDispatch();
-  const [data, setData] = useState<Mars.CreateItemInterface>(initItemData);
+  const [form] = Form.useForm();
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
-
+  const ws = useWs();
+  const wsReady = useWsReady();
+  const [data, setData] = useState<{
+    projectName: string;
+    gitlabProjectId: number;
+    gitlabBranch: string;
+    gitlabCommit: string;
+  }>();
+  const [elements, setElements] = useState<pb.Element[]>();
   let slug = useMemo(
-    () => toSlug(namespaceId, data.name),
-    [namespaceId, data.name]
+    () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
+    [namespaceId, data]
   );
 
   const onCancel = useCallback(() => {
+    setElements([]);
+    form.resetFields();
+    setData(undefined);
     setVisible(false);
     setEditVisible(true);
     setTimelineVisible(false);
-    setData(initItemData);
     dispatch(clearCreateProjectLog(slug));
-  }, [dispatch, slug]);
+  }, [dispatch, slug, form]);
 
   useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
     if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
       setTimelineVisible(false);
       setEditVisible(true);
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
-        setData(initItemData);
       }, 500);
     }
   }, [list, dispatch, slug]);
-  useEffect(() => {
-    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
-      setStart(false);
-    }
-  }, [list, slug]);
 
-  const loadConfigFile = useCallback(() => {
-    configFile({
-      project_id: String(data.gitlabProjectId),
-      branch: data.gitlabBranch,
-    }).then((res) => {
-      setData((d) => ({
-        ...d,
-        config: res.data.data,
-        config_type: res.data.type,
-      }));
-    });
-  }, [data.gitlabBranch, data.gitlabProjectId]);
-
-  const onChange = useCallback(
-    ({
-      projectName,
-      gitlabProjectId,
-      gitlabBranch,
-      gitlabCommit,
-    }: {
-      projectName: string;
-      gitlabProjectId: number;
-      gitlabBranch: string;
-      gitlabCommit: string;
-    }) => {
-      setData((d) => ({
-        ...d,
-        name: projectName,
-        gitlabProjectId: gitlabProjectId,
-        gitlabBranch: gitlabBranch,
-        gitlabCommit: gitlabCommit,
-      }));
-
-      if (gitlabCommit !== "" && data.config === "") {
-        loadConfigFile();
-      }
+  const loadConfigFile = useCallback(
+    (gitlabProjectId: string, gitlabBranch: string) => {
+      configFile({
+        project_id: gitlabProjectId,
+        branch: gitlabBranch,
+      }).then((res) => {
+        if (!form.getFieldValue("config")) {
+          form.setFieldsValue({ config: res.data.data });
+        }
+        setMode(getMode(res.data.type));
+        setElements(res.data.elements);
+      });
     },
-    [data.config, loadConfigFile]
+    [form]
   );
 
-  useEffect(() => {
-    setMode(getMode(data.config_type));
-  }, [data.config_type]);
-
-  const ws = useWs();
-  const wsReady = useWsReady();
-
+  const onChange = (v: any) => {
+    setData(v);
+    form.setFieldsValue({ selectors: v });
+    if (v.gitlabCommit !== "") {
+      loadConfigFile(String(v.gitlabProjectId), v.gitlabBranch);
+    }
+  };
   useEffect(() => {
     if (!wsReady) {
       setStart(false);
@@ -136,50 +111,69 @@ const CreateProjectModal: React.FC<{
     }
   }, [wsReady, dispatch, slug]);
 
-  const onOk = useCallback(() => {
-    console.log(data);
-    if (!wsReady) {
-      message.error("连接断开了");
-      return;
-    }
-    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
-      // todo ws connected!
-      setEditVisible(false);
-      setTimelineVisible(true);
+  const onOk = useCallback(
+    (values: any) => {
+      if (values.extra_values) {
+        values.extra_values = values.extra_values.map((i: any) => ({
+          ...i,
+          value: String(i.value),
+        }));
+      }
+      if (!wsReady) {
+        message.error("连接断开了");
+        return;
+      }
+      if (
+        data &&
+        data.gitlabProjectId &&
+        data.gitlabBranch &&
+        data.gitlabCommit
+      ) {
+        // todo ws connected!
+        setEditVisible(false);
+        setTimelineVisible(true);
 
-      let s = pb.ProjectInput.encode({
-        type: pb.Type.CreateProject,
-        namespace_id: Number(namespaceId),
-        name: data.name,
-        gitlab_project_id: Number(data.gitlabProjectId),
-        gitlab_branch: data.gitlabBranch,
-        gitlab_commit: data.gitlabCommit,
-        config: data.config,
-        atomic: !data.debug,
-      }).finish();
+        let s = pb.ProjectInput.encode({
+          type: pb.Type.CreateProject,
+          namespace_id: Number(namespaceId),
+          name: data.projectName,
+          gitlab_project_id: Number(data.gitlabProjectId),
+          gitlab_branch: data.gitlabBranch,
+          gitlab_commit: data.gitlabCommit,
+          config: values.config,
+          atomic: !values.debug,
+          extra_values: values.extra_values,
+        }).finish();
 
-      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+        dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
-      dispatch(clearCreateProjectLog(slug));
-      dispatch(setCreateProjectLoading(slug, true));
-      setStart(true);
-      ws?.send(s);
-      return;
-    }
+        dispatch(clearCreateProjectLog(slug));
+        dispatch(setCreateProjectLoading(slug, true));
+        setStart(true);
+        ws?.send(s);
+        return;
+      }
 
-    message.error("项目id, 分支，提交必填");
-  }, [data, dispatch, slug, ws, namespaceId, wsReady]);
+      message.error("项目id, 分支，提交必填");
+    },
+    [dispatch, slug, ws, namespaceId, wsReady, data]
+  );
   const onRemove = useCallback(() => {
-    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
+    if (
+      data &&
+      data.gitlabProjectId &&
+      data.gitlabBranch &&
+      data.gitlabCommit
+    ) {
       let s = pb.CancelInput.encode({
         type: pb.Type.CancelProject,
         namespace_id: namespaceId,
-        name: data.name,
+        name: data.projectName,
       }).finish();
       ws?.send(s);
       return;
     }
-  }, [data, ws, namespaceId]);
+  }, [ws, namespaceId, data]);
 
   const [start, setStart] = useState(false);
   const info = useSelector(selectClusterInfo);
@@ -199,130 +193,194 @@ const CreateProjectModal: React.FC<{
           loading: list[slug]?.isLoading,
           danger: info.status === "bad",
         }}
+        onCancel={onCancel}
         cancelButtonProps={{ disabled: list[slug]?.isLoading }}
         closable={!list[slug]?.isLoading}
-        okText={info.status === "bad" ? "集群资源不足" : "部署"}
-        cancelText="取消"
-        onOk={onOk}
+        footer={null}
         initialWidth={900}
         initialHeight={600}
         title={<div style={{ textAlign: "center" }}>创建项目</div>}
         className="draggable-modal drag-item-modal"
-        onCancel={onCancel}
       >
-        <PipelineInfo
-          projectId={data.gitlabProjectId}
-          branch={data.gitlabBranch}
-          commit={data.gitlabCommit}
-        />
-        <div className={classNames({ "display-none": !editVisible })}>
+        <div
+          className="create-project-modal"
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          {data ? (
+            <PipelineInfo
+              projectId={data.gitlabProjectId}
+              branch={data.gitlabBranch}
+              commit={data.gitlabCommit}
+            />
+          ) : (
+            <></>
+          )}
           <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+            style={{ height: "100%" }}
+            className={classNames({ "display-none": !editVisible })}
           >
-            {list[slug]?.output?.length > 0 ? (
+            <Form
+              layout="horizontal"
+              form={form}
+              labelWrap
+              autoComplete="off"
+              onFinish={onOk}
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
+                {list[slug]?.output?.length > 0 ? (
+                  <Button
+                    style={{ marginRight: 5 }}
+                    type="dashed"
+                    disabled={list[slug]?.isLoading}
+                    onClick={() => {
+                      setEditVisible(false);
+                      setTimelineVisible(true);
+                    }}
+                    icon={<ArrowRightOutlined />}
+                  />
+                ) : (
+                  <></>
+                )}
+                <Form.Item
+                  name="selectors"
+                  style={{ width: "100%", margin: 0 }}
+                  rules={[{ required: true, message: "项目必选" }]}
+                >
+                  <ProjectSelector isCreate onChange={onChange} />
+                </Form.Item>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingBottom: 10,
+                }}
+              >
+                <div style={{ display: "flex" }}>
+                  <span style={{ marginRight: 5 }}>配置文件:</span>
+
+                  <Button
+                    htmlType="submit"
+                    style={{ fontSize: 12, marginRight: 5 }}
+                    size="small"
+                    type="primary"
+                    loading={list[slug]?.isLoading}
+                  >
+                    {info.status === "bad" ? "集群资源不足" : "部署"}
+                  </Button>
+                </div>
+                <Form.Item noStyle name={"debug"}>
+                  <DebugModeSwitch />
+                </Form.Item>
+              </div>
+              <div
+                style={{
+                  minWidth: 200,
+                  marginBottom: 20,
+                  height: "100%",
+                }}
+              >
+                <Form.Item name="extra_values" noStyle>
+                  <Elements
+                    elements={orderBy(elements, ["type"], ["asc"])}
+                    style={{
+                      inputNumber: { fontSize: 10, width: "100%" },
+                      input: { fontSize: 10 },
+                      label: { fontSize: 10 },
+                      formItem: {
+                        marginBottom: 5,
+                        display: "inline-block",
+                        width: "calc(33% - 8px)",
+                        marginRight: 8,
+                      },
+                    }}
+                  />
+                </Form.Item>
+                <Form.Item name="config" style={{ height: "100%" }} noStyle>
+                  <CodeMirror
+                    options={{
+                      mode: mode,
+                      theme: "dracula",
+                      lineNumbers: true,
+                    }}
+                  />
+                </Form.Item>
+              </div>
+            </Form>
+          </div>
+
+          <div
+            id="preview"
+            style={{ height: "100%", overflow: "auto" }}
+            className={classNames("preview", {
+              "display-none": !timelineVisible,
+            })}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
               <Button
-                style={{ marginRight: 5 }}
                 type="dashed"
                 disabled={list[slug]?.isLoading}
                 onClick={() => {
-                  setEditVisible(false);
-                  setTimelineVisible(true);
+                  setEditVisible(true);
+                  setTimelineVisible(false);
                 }}
-                icon={<ArrowRightOutlined />}
+                icon={<ArrowLeftOutlined />}
               />
-            ) : (
-              ""
-            )}
-            <ProjectSelector onChange={onChange} />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: 10,
-            }}
-          >
-            <span>配置文件:</span>
-            <DebugModeSwitch
-              value={data.debug}
-              onchange={(checked: boolean, event: MouseEvent) => {
-                setData((data) => ({ ...data, debug: checked }));
-              }}
-            />
-          </div>
-          <div
-            style={{
-              minWidth: 200,
-              marginBottom: 20,
-              height: "100%",
-            }}
-          >
-            <CodeMirror
-              value={data.config}
-              options={{
-                mode: mode,
-                theme: "dracula",
-                lineNumbers: true,
-              }}
-              onBeforeChange={(editor, d, value) => {
-                console.log(editor, d, value);
-                setData({ ...data, config: value });
-              }}
-            />
-          </div>
-        </div>
 
-        <div
-          id="preview"
-          style={{ height: "100%", overflow: "auto" }}
-          className={classNames("preview", {
-            "display-none": !timelineVisible,
-          })}
-        >
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
-          >
-            <Button
-              type="dashed"
-              disabled={list[slug]?.isLoading}
-              onClick={() => {
-                setEditVisible(true);
-                setTimelineVisible(false);
-              }}
-              icon={<ArrowLeftOutlined />}
-            />
+              <Progress
+                strokeColor={{
+                  from: "#108ee9",
+                  to: "#87d068",
+                }}
+                style={{ padding: "0 10px" }}
+                percent={list[slug]?.processPercent}
+                status="active"
+              />
+            </div>
 
-            <Progress
-              strokeColor={{
-                from: "#108ee9",
-                to: "#87d068",
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 10,
               }}
-              style={{ padding: "0 10px" }}
-              percent={list[slug]?.processPercent}
-              status="active"
-            />
-          </div>
-
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
-          >
-            <Button
-              hidden={
-                list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
-              }
-              style={{ marginRight: 10 }}
-              danger
-              icon={<StopOutlined />}
-              type="dashed"
-              onClick={onRemove}
             >
-              取消
-            </Button>
-            <TimeCost start={start} />
-          </div>
+              <Button
+                hidden={
+                  list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
+                }
+                style={{ marginRight: 10 }}
+                danger
+                icon={<StopOutlined />}
+                type="dashed"
+                onClick={onRemove}
+              >
+                取消
+              </Button>
+              <TimeCost start={start} />
+            </div>
 
-          <LogOutput slug={slug} />
+            <LogOutput slug={slug} />
+          </div>
         </div>
       </DraggableModal>
     </div>

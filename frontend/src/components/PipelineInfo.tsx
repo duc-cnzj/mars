@@ -2,7 +2,9 @@ import React, { memo, useEffect, useState } from "react";
 import { pipelineInfo } from "../api/gitlab";
 import { Alert } from "antd";
 
-const pipelines: {[status: string]: {type: "error" | "success" | "warning";message: string}} = {
+const pipelines: {
+  [status: string]: { type: "error" | "success" | "warning"; message: string };
+} = {
   failed: {
     type: "error",
     message: "pipeline 执行失败",
@@ -22,26 +24,29 @@ const PipelineInfo: React.FC<{
   branch: string;
   commit: string;
 }> = ({ projectId, branch, commit }) => {
-  const [info, setInfo] =
-    useState<{
-      message: string;
-      web_url: string;
-      type: "success" | "warning" | "error";
-    }>();
+  const [info, setInfo] = useState<{
+    message: string;
+    web_url: string;
+    type: "success" | "warning" | "error";
+  }>();
 
   useEffect(() => {
     if (projectId && branch && commit) {
-      pipelineInfo({project_id: String(projectId), branch, commit}).then((res) => {
-        console.log(res.data);
-        let p = pipelines[res.data.status];
-        if (p) {
-          setInfo({
-            type: p.type,
-            message: p.message,
-            web_url: res.data.web_url,
-          });
-        }
-      }).catch(e=>console.log(e));
+      pipelineInfo({ project_id: String(projectId), branch, commit })
+        .then((res) => {
+          console.log(res.data);
+          let p = pipelines[res.data.status];
+          if (p) {
+            setInfo({
+              type: p.type,
+              message: p.message,
+              web_url: res.data.web_url,
+            });
+          }
+        })
+        .catch((e) => {
+          setInfo(undefined);
+        });
     }
   }, [projectId, branch, commit]);
 

@@ -1627,6 +1627,41 @@
         }
       }
     },
+    "Element": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "select_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/ElementType"
+        }
+      }
+    },
+    "ElementType": {
+      "type": "string",
+      "default": "ElementTypeUnknown",
+      "enum": [
+        "ElementTypeUnknown",
+        "ElementTypeInput",
+        "ElementTypeInputNumber",
+        "ElementTypeSelect",
+        "ElementTypeRadio",
+        "ElementTypeSwitch"
+      ]
+    },
     "EventListItem": {
       "type": "object",
       "properties": {
@@ -1731,6 +1766,12 @@
       "properties": {
         "data": {
           "type": "string"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
         },
         "type": {
           "type": "string"
@@ -1859,6 +1900,13 @@
         "config_file_values": {
           "type": "string",
           "title": "config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个"
+        },
+        "elements": {
+          "type": "array",
+          "title": "elements 自定义字段",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
         },
         "is_simple_env": {
           "type": "boolean"
@@ -2187,6 +2235,17 @@
     "ProjectDeleteResponse": {
       "type": "object"
     },
+    "ProjectExtraItem": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "ProjectIsPodExistsResponse": {
       "type": "object",
       "properties": {
@@ -2242,6 +2301,9 @@
           "type": "string"
         },
         "docker_image": {
+          "type": "string"
+        },
+        "extra_values": {
           "type": "string"
         },
         "gitlab_branch": {
@@ -2313,6 +2375,9 @@
         "config": {
           "type": "string"
         },
+        "config_type": {
+          "type": "string"
+        },
         "cpu": {
           "type": "string"
         },
@@ -2321,6 +2386,18 @@
         },
         "docker_image": {
           "type": "string"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Element"
+          }
+        },
+        "extra_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectExtraItem"
+          }
         },
         "gitlab_branch": {
           "type": "string"

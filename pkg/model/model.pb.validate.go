@@ -343,6 +343,8 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for UpdatedAt
 
+	// no validation rules for ExtraValues
+
 	if all {
 		switch v := interface{}(m.GetNamespace()).(type) {
 		case interface{ ValidateAll() error }:

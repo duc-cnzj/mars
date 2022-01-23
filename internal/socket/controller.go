@@ -394,6 +394,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		GitlabCommit:    input.GitlabCommit,
 		Config:          input.Config,
 		Atomic:          input.Atomic,
+		ExtraValues:     input.ExtraValues,
 	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)

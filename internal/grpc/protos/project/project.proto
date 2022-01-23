@@ -5,6 +5,7 @@ import "websocket/websocket.proto";
 import "model/model.proto";
 import "namespace/namespace.proto";
 import "validate/validate.proto";
+import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars/pkg/project;project";
 
@@ -43,6 +44,9 @@ message ProjectShowResponse {
   string updated_at = 19;
   string humanize_created_at = 20;
   string humanize_updated_at = 21;
+  repeated ProjectExtraItem extra_values = 22;
+  repeated Element elements = 23;
+  string config_type = 24;
 }
 
 message ProjectAllPodContainersRequest {
@@ -91,10 +95,12 @@ message ProjectApplyRequest {
   string name = 2 [(validate.rules).string.min_bytes = 1];
   int64 gitlab_project_id = 3 [(validate.rules).int64.gt = 0];
   string gitlab_branch = 4 [(validate.rules).string.min_bytes = 1];
-  string gitlab_commit = 5 [(validate.rules).string.min_bytes = 1];
+  //  gitlab_commit 不传就用最新的 commit
+  string gitlab_commit = 5;
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;
+  repeated ProjectExtraItem extra_values = 9;
 }
 
 message ProjectDeleteResponse {}
