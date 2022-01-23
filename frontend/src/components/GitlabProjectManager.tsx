@@ -191,11 +191,15 @@ const GitlabProjectManager: React.FC = () => {
             </List.Item>
           )}
         />
-        <ConfigModal
-          visible={configVisible}
-          item={currentItem}
-          onCancel={() => setConfigVisible(false)}
-        />
+        {configVisible ? (
+          <ConfigModal
+            visible={configVisible}
+            item={currentItem}
+            onCancel={() => setConfigVisible(false)}
+          />
+        ) : (
+          <></>
+        )}
       </Card>
     </>
   );

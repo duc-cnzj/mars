@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-// import Elements from "./elements/Elements";
 import DynamicElement from "./elements/DynamicElement";
 import SelectFileType from "./SelectFileType";
 
@@ -50,7 +49,7 @@ const initConfig = {
   config_file_values: "",
   config_field: "",
   is_simple_env: false,
-  config_file_type: "",
+  config_file_type: "yaml",
   local_chart_path: "",
   branches: [],
   values_yaml: "",
@@ -60,6 +59,7 @@ const initConfig = {
 interface WatchData {
   config_field: string;
   config_file_values: string;
+  config_file_type: string;
 }
 
 const initDefaultValues = "# 没找到对应的 values.yaml";
@@ -72,6 +72,7 @@ const ConfigModal: React.FC<{
   const [watch, setWatch] = useState<WatchData>({
     config_field: initConfig.config_field,
     config_file_values: initConfig.config_file_values,
+    config_file_type: initConfig.config_file_type,
   });
   const [editMode, setEditMode] = useState(true);
   const [globalEnabled, setGlobalEnabled] = useState(false);
@@ -117,10 +118,10 @@ const ConfigModal: React.FC<{
   );
 
   useEffect(() => {
-    if (visible && config) {
-      setMode(getMode(config.config_file_type));
+    if (visible && watch.config_file_type) {
+      setMode(getMode(watch.config_file_type));
     }
-  }, [config, visible]);
+  }, [watch, visible]);
 
   const loadGlobalConfig = useCallback(
     (id: number) => {
@@ -337,6 +338,11 @@ const ConfigModal: React.FC<{
                           setConfigFileTip(false);
                           setConfigFileContent("");
                           form.resetFields();
+                          setWatch({
+                            config_field: initConfig.config_field,
+                            config_file_values: initConfig.config_file_values,
+                            config_file_type: initConfig.config_file_type,
+                          });
                         }
                         return !editMode;
                       });
@@ -477,6 +483,10 @@ const ConfigModal: React.FC<{
                           name={"config_file_type"}
                         >
                           <SelectFileType
+                            onChange={(v) => {
+                              setWatch((w) => ({ ...w, config_file_type: v }));
+                              form.setFieldsValue({ config_file_type: v });
+                            }}
                             showArrow={editMode}
                             disabled={!editMode || !globalEnabled}
                           />
@@ -497,6 +507,7 @@ const ConfigModal: React.FC<{
                             width: "calc(15% - 8px)",
                           }}
                           name={"is_simple_env"}
+                          valuePropName="checked"
                         >
                           <Switch
                             disabled={!editMode || !globalEnabled}

@@ -24,7 +24,7 @@ const DynamicElement: React.FC<{
         <>
           {fields.map((field) => {
             return (
-              <div className="dynamic-element">
+              <div key={field.name} className="dynamic-element">
                 <div className="dynamic-element__wrapper">
                   <div style={{ display: "flex", width: "100%" }}>
                     <Form.Item
