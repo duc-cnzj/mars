@@ -493,11 +493,6 @@ const ConfigModal: React.FC<{
                         </Form.Item>
                       </Row>
 
-                      <DynamicElement
-                        form={form}
-                        disabled={!editMode || !globalEnabled}
-                      />
-
                       <Form.Item style={{ marginBottom: 0 }}>
                         <Form.Item
                           label="单字段"
@@ -621,6 +616,10 @@ const ConfigModal: React.FC<{
                         </Form.Item>
                       </div>
 
+                      <DynamicElement
+                        form={form}
+                        disabled={!editMode || !globalEnabled}
+                      />
                       <div
                         style={{
                           maxHeight: "800px",
