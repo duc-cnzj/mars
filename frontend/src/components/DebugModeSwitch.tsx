@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Tooltip, Switch, Form } from "antd";
+import { Tooltip, Switch } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 
 const DebugModeSwitch: React.FC<{

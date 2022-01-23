@@ -13,7 +13,7 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Progress, Button, Form, Input } from "antd";
+import { message, Progress, Button, Form } from "antd";
 import {
   PlusOutlined,
   StopOutlined,
