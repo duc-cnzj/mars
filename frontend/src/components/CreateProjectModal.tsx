@@ -45,6 +45,8 @@ const CreateProjectModal: React.FC<{
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
   const ws = useWs();
   const wsReady = useWsReady();
+  const [start, setStart] = useState(false);
+  const info = useSelector(selectClusterInfo);
   const [data, setData] = useState<{
     projectName: string;
     gitlabProjectId: number;
@@ -52,6 +54,7 @@ const CreateProjectModal: React.FC<{
     gitlabCommit: string;
   }>();
   const [elements, setElements] = useState<pb.Element[]>();
+
   let slug = useMemo(
     () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
     [namespaceId, data]
@@ -66,50 +69,6 @@ const CreateProjectModal: React.FC<{
     setTimelineVisible(false);
     dispatch(clearCreateProjectLog(slug));
   }, [dispatch, slug, form]);
-
-  useEffect(() => {
-    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
-      setStart(false);
-    }
-    if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
-      setTimelineVisible(false);
-      setEditVisible(true);
-      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
-      setTimeout(() => {
-        setVisible(false);
-      }, 500);
-    }
-  }, [list, dispatch, slug]);
-
-  const loadConfigFile = useCallback(
-    (gitlabProjectId: string, gitlabBranch: string) => {
-      configFile({
-        project_id: gitlabProjectId,
-        branch: gitlabBranch,
-      }).then((res) => {
-        if (!form.getFieldValue("config")) {
-          form.setFieldsValue({ config: res.data.data });
-        }
-        setMode(getMode(res.data.type));
-        setElements(res.data.elements);
-      });
-    },
-    [form]
-  );
-
-  const onChange = (v: any) => {
-    setData(v);
-    form.setFieldsValue({ selectors: v });
-    if (v.gitlabCommit !== "") {
-      loadConfigFile(String(v.gitlabProjectId), v.gitlabBranch);
-    }
-  };
-  useEffect(() => {
-    if (!wsReady) {
-      setStart(false);
-      dispatch(setCreateProjectLoading(slug, false));
-    }
-  }, [wsReady, dispatch, slug]);
 
   const onOk = useCallback(
     (values: any) => {
@@ -158,6 +117,7 @@ const CreateProjectModal: React.FC<{
     },
     [dispatch, slug, ws, namespaceId, wsReady, data]
   );
+
   const onRemove = useCallback(() => {
     if (
       data &&
@@ -175,8 +135,53 @@ const CreateProjectModal: React.FC<{
     }
   }, [ws, namespaceId, data]);
 
-  const [start, setStart] = useState(false);
-  const info = useSelector(selectClusterInfo);
+  const loadConfigFile = useCallback(
+    (gitlabProjectId: string, gitlabBranch: string) => {
+      configFile({
+        project_id: gitlabProjectId,
+        branch: gitlabBranch,
+      }).then((res) => {
+        if (!form.getFieldValue("config")) {
+          form.setFieldsValue({ config: res.data.data });
+        }
+        setMode(getMode(res.data.type));
+        setElements(res.data.elements);
+      });
+    },
+    [form]
+  );
+
+  const onChange = useCallback(
+    (v: any) => {
+      setData(v);
+      form.setFieldsValue({ selectors: v });
+      if (v.gitlabCommit !== "") {
+        loadConfigFile(String(v.gitlabProjectId), v.gitlabBranch);
+      }
+    },
+    [form, loadConfigFile]
+  );
+
+  useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
+    if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
+      setTimelineVisible(false);
+      setEditVisible(true);
+      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+      setTimeout(() => {
+        setVisible(false);
+      }, 500);
+    }
+  }, [list, dispatch, slug]);
+
+  useEffect(() => {
+    if (!wsReady) {
+      setStart(false);
+      dispatch(setCreateProjectLoading(slug, false));
+    }
+  }, [wsReady, dispatch, slug]);
 
   return (
     <div>
@@ -206,7 +211,7 @@ const CreateProjectModal: React.FC<{
           className="create-project-modal"
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
-          {data ? (
+          {data?.gitlabCommit ? (
             <PipelineInfo
               projectId={data.gitlabProjectId}
               branch={data.gitlabBranch}

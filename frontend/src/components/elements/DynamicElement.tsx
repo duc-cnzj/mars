@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import {
   Switch,
   Form,
@@ -32,7 +32,7 @@ const DynamicElement: React.FC<{
     <Form.List name="elements">
       {(fields, { add, remove }) => (
         <>
-          {fields.map((field, i, a) => {
+          {fields.map((field) => {
             return (
               <div key={field.name} className="dynamic-element">
                 <div className="dynamic-element__wrapper">
@@ -86,6 +86,11 @@ const DynamicElement: React.FC<{
                       style={{ width: "100%" }}
                       label="默认值"
                       name={[field.name, "default"]}
+                      valuePropName={
+                        type[field.key] === pb.ElementType.ElementTypeSwitch
+                          ? "checked"
+                          : "value"
+                      }
                     >
                       <DefaultValueElement
                         disabled={disabled}
@@ -158,7 +163,7 @@ const MySelect: React.FC<
       style={{ width: "100%" }}
       tokenSeparators={[","]}
       onChange={onChange}
-    ></Select>
+    />
   );
 };
 
@@ -176,4 +181,4 @@ const DefaultValueElement: React.FC<{
   }
 };
 
-export default DynamicElement;
+export default memo(DynamicElement);

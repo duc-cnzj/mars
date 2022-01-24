@@ -60,6 +60,7 @@ const ModalSub: React.FC<{
     gitlabCommit: detail.gitlab_commit,
     config: detail.config,
   });
+  const [start, setStart] = useState(false);
 
   const formInitData = useMemo(
     () => ({
@@ -87,20 +88,6 @@ const ModalSub: React.FC<{
     [namespaceId, detail.name]
   );
 
-  // 更新成功，触发 onSuccess
-  useEffect(() => {
-    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
-      setStart(false);
-    }
-    if (list[slug]?.deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
-      setStart(false);
-      setTimelineVisible(false);
-      setEditVisible(true);
-      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
-      onSuccess();
-    }
-  }, [list, dispatch, slug, onSuccess]);
-
   const onChange = useCallback(
     (v: {
       projectName: string;
@@ -113,12 +100,6 @@ const ModalSub: React.FC<{
     },
     [form]
   );
-  useEffect(() => {
-    if (!wsReady) {
-      setStart(false);
-      dispatch(setCreateProjectLoading(slug, false));
-    }
-  }, [wsReady, dispatch, slug]);
   const updateDeploy = (values: any) => {
     if (values.extra_values) {
       values.extra_values = values.extra_values.map((i: any) => ({
@@ -152,7 +133,6 @@ const ModalSub: React.FC<{
       ws?.send(s);
     }
   };
-  const [start, setStart] = useState(false);
 
   const onCancel = useCallback(() => {
     if (!wsReady) {
@@ -186,10 +166,31 @@ const ModalSub: React.FC<{
     setData((d) => ({ ...d, ...formInitData }));
   }, [form, formInitData]);
 
+  // 更新成功，触发 onSuccess
+  useEffect(() => {
+    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
+      setStart(false);
+    }
+    if (list[slug]?.deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
+      setStart(false);
+      setTimelineVisible(false);
+      setEditVisible(true);
+      dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+      onSuccess();
+    }
+  }, [list, dispatch, slug, onSuccess]);
+
+  useEffect(() => {
+    if (!wsReady) {
+      setStart(false);
+      dispatch(setCreateProjectLoading(slug, false));
+    }
+  }, [wsReady, dispatch, slug]);
+
   return (
     <div className="edit-project">
       <Form
-        style={{ height: "100%"}}
+        style={{ height: "100%" }}
         initialValues={formInitData}
         layout="horizontal"
         form={form}

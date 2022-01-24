@@ -188,7 +188,7 @@ const GitlabProjectManager: React.FC = () => {
             </List.Item>
           )}
         />
-        {configVisible ? (
+        {configVisible && currentItem ? (
           <ConfigModal
             visible={configVisible}
             item={currentItem}

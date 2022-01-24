@@ -1,4 +1,4 @@
-import React, { useState, Fragment, useMemo } from "react";
+import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 const Option = Select.Option;
@@ -43,57 +43,61 @@ const Elements: React.FC<{
   elements: pb.Element[];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
-  let vvv = useMemo(() => {
+  let initValues = useMemo(() => {
     return elements
       ? elements.map((item): pb.ProjectExtraItem => {
-          let de: any = item.default;
+          let itemValue: any = item.default;
           if (!!value) {
             for (let i = 0; i < value.length; i++) {
               if (value[i].path === item.path) {
-                de = value[i].value;
+                itemValue = value[i].value;
                 if (item.type === pb.ElementType.ElementTypeSwitch) {
-                  de = isTrue(de);
+                  itemValue = isTrue(itemValue);
                 }
                 if (item.type === pb.ElementType.ElementTypeInputNumber) {
-                  de = Number(de);
+                  itemValue = Number(itemValue);
                 }
                 break;
               }
             }
           }
-          return { path: item.path, value: de };
+          return { path: item.path, value: itemValue };
         })
       : [];
   }, [elements, value]);
 
-  const getElement = (
-    v: pb.ProjectExtraItem,
-    e: pb.Element[],
-    index: number
-  ): React.ReactNode => {
-    for (let i = 0; i < e.length; i++) {
-      let ev = e[i];
-      if (ev.path === v.path) {
-        return (
-          <Element
-            value={v.value}
-            onChange={(vv) => {
-              let va: any = vvv;
-              va[index].value = String(vv)
-              onChange?.(va);
-              return va;
-            }}
-            element={ev}
-            style={style ? style : initStyle}
-          />
-        );
+  const getElement = useCallback(
+    (
+      item: pb.ProjectExtraItem,
+      ele: pb.Element[],
+      index: number
+    ): React.ReactNode => {
+      for (let i = 0; i < ele.length; i++) {
+        let ev = ele[i];
+        if (ev.path === item.path) {
+          return (
+            <Element
+              value={item.value}
+              onChange={(changeValue) => {
+                let tmp: any = initValues;
+                tmp[index].value = String(changeValue);
+                onChange?.(tmp);
+                return tmp;
+              }}
+              element={ev}
+              style={style ? style : initStyle}
+            />
+          );
+        }
       }
-    }
-    return <></>;
-  };
+      return <></>;
+    },
+    [onChange, style, initValues]
+  );
+
   return (
     <div style={{ width: "100%" }}>
-      {vvv.map((item, index) => (
+      {initValues.map((item, index) => (
         <Fragment key={item.path}>{getElement(item, elements, index)}</Fragment>
       ))}
     </div>
@@ -210,4 +214,4 @@ const Element: React.FC<{
   }
 };
 
-export default Elements;
+export default memo(Elements);
