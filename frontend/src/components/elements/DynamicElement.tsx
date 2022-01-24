@@ -86,11 +86,6 @@ const DynamicElement: React.FC<{
                       style={{ width: "100%" }}
                       label="默认值"
                       name={[field.name, "default"]}
-                      valuePropName={
-                        type[field.key] === pb.ElementType.ElementTypeSwitch
-                          ? "checked"
-                          : "value"
-                      }
                     >
                       <DefaultValueElement
                         disabled={disabled}
@@ -168,16 +163,39 @@ const MySelect: React.FC<
 };
 
 const DefaultValueElement: React.FC<{
+  value?: any;
+  onChange?: (v: any) => void;
   type: pb.ElementType;
   disabled: boolean;
-}> = ({ type, disabled }) => {
+}> = ({ type, disabled, value, onChange }) => {
   switch (type) {
     case pb.ElementType.ElementTypeInputNumber:
-      return <InputNumber disabled={disabled} placeholder="默认值" />;
+      return (
+        <InputNumber
+          disabled={disabled}
+          value={value}
+          onChange={onChange}
+          placeholder="默认值"
+        />
+      );
     case pb.ElementType.ElementTypeSwitch:
-      return <Switch disabled={disabled} defaultChecked={false} />;
+      return (
+        <Switch
+          disabled={disabled}
+          checked={value}
+          onChange={onChange}
+          defaultChecked={false}
+        />
+      );
     default:
-      return <Input disabled={disabled} placeholder="默认值" />;
+      return (
+        <Input
+          disabled={disabled}
+          value={value}
+          onChange={onChange}
+          placeholder="默认值"
+        />
+      );
   }
 };
 
