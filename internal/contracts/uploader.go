@@ -19,4 +19,5 @@ type Uploader interface {
 	AbsolutePath(path string) string
 	Put(path string, content io.Reader) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
+	RemoveEmptyDir(dir string) error
 }

@@ -79,6 +79,7 @@ func (m *FileSvc) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUnd
 			}
 		}
 	}
+	app.Uploader().RemoveEmptyDir(app.Config().UploadDir)
 	events.AuditLog(MustGetUser(ctx).Name, eventpb.ActionType_Delete, "删除未被记录的文件", nil, clearList)
 
 	return &file.DeleteUndocumentedFilesResponse{Files: clearList}, nil

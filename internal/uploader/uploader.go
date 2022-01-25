@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -131,6 +132,29 @@ func (f *fileInfo) Path() string {
 
 func (f *fileInfo) Size() uint64 {
 	return f.size
+}
+
+func (u *Uploader) RemoveEmptyDir(dir string) error {
+	var dirs []string
+	filepath.WalkDir(u.getPath(dir), func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			dirs = append(dirs, path)
+		}
+		return nil
+	})
+	sort.Sort(sort.Reverse(sort.StringSlice(dirs)))
+	for _, root := range dirs {
+		readDir, err := os.ReadDir(root)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
+		if len(readDir) == 0 && root != u.getPath(dir) {
+			os.Remove(root)
+			mlog.Debug("rm: ", root)
+		}
+	}
+	return nil
 }
 
 func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {

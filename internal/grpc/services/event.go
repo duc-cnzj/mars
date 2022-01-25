@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -25,7 +27,9 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 		count    int64
 	)
 
-	if err := app.DB().Preload("File").Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
+	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
+		return db.Select("ID")
+	}).Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
 	}
 	app.DB().Model(&models.Event{}).Count(&count)
