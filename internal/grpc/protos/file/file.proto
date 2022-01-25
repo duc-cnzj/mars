@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/duc-cnzj/mars/pkg/file;file";
+
+message FileDeleteRequest {
+  int64 id = 1 [(validate.rules).int64.gte = 1];
+}
+
+message FileDeleteResponse {
+  File file = 1;
+}
+
+message DeleteUndocumentedFilesRequest {}
+
+message File {
+  string path = 1;
+  string humanize_size = 2;
+  int64 size = 3;
+  string upload_by = 4;
+}
+
+message DeleteUndocumentedFilesResponse {
+  repeated File files = 1;
+}
+
+message DiskInfoRequest {}
+message DiskInfoResponse {
+  int64 usage = 1;
+  string humanize_usage = 2;
+}
+
+service FileSvc {
+  rpc Delete(FileDeleteRequest) returns (FileDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/api/files/{id}",
+    };
+  }
+
+  //  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
+  rpc DeleteUndocumentedFiles(DeleteUndocumentedFilesRequest) returns(DeleteUndocumentedFilesResponse) {
+    option (google.api.http) = {
+      delete: "/api/files/delete_undocumented_files",
+    };
+  }
+
+  rpc DiskInfo(DiskInfoRequest) returns (DiskInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/files/disk_info",
+    };
+  }
+}

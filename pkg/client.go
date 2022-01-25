@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars/pkg/file"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/changelog"
@@ -35,6 +37,7 @@ type Interface interface {
 	Metrics() metrics.MetricsClient
 	Namespace() namespace.NamespaceClient
 	Picture() picture.PictureClient
+	File() file.FileSvcClient
 	Project() project.ProjectClient
 	Version() version.VersionClient
 }
@@ -63,6 +66,7 @@ type Client struct {
 	picture   picture.PictureClient
 	project   project.ProjectClient
 	version   version.VersionClient
+	file      file.FileSvcClient
 }
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
@@ -90,6 +94,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.picture = picture.NewPictureClient(dial)
 	c.project = project.NewProjectClient(dial)
 	c.version = version.NewVersionClient(dial)
+	c.file = file.NewFileSvcClient(dial)
 
 	if c.password != "" || c.username != "" {
 		if err := c.getToken(); err != nil {
@@ -118,6 +123,10 @@ func (c *Client) Container() container.ContainerSvcClient {
 
 func (c *Client) Event() event.EventClient {
 	return c.event
+}
+
+func (c *Client) File() file.FileSvcClient {
+	return c.file
 }
 
 func (c *Client) GitServer() gitserver.GitServerClient {

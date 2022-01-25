@@ -1,11 +1,25 @@
 package bootstrappers
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
 	"time"
+
+	e "github.com/duc-cnzj/mars/internal/event/events"
+	"github.com/dustin/go-humanize"
+
+	"gorm.io/gorm"
+
+	"github.com/duc-cnzj/mars/pkg/file"
 
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -100,6 +114,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		version.RegisterVersionHandlerFromEndpoint,
 		changelog.RegisterChangelogHandlerFromEndpoint,
 		event.RegisterEventHandlerFromEndpoint,
+		file.RegisterFileSvcHandlerFromEndpoint,
 	}
 
 	for _, f := range serviceList {
@@ -108,7 +123,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}
 	}
 
-	handUploadFile(gmux)
+	handFile(gmux)
 	router.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		writer.Write([]byte("pong"))
@@ -141,7 +156,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	return nil
 }
 
-func handUploadFile(gmux *runtime.ServeMux) {
+func handFile(gmux *runtime.ServeMux) {
 	gmux.HandlePath("POST", "/api/files", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		if req, ok := authenticated(r); ok {
 			handleBinaryFileUpload(w, req)
@@ -149,6 +164,55 @@ func handUploadFile(gmux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
+	gmux.HandlePath("GET", "/api/download_file", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		if req, ok := authenticated(r); ok {
+			handleDownload(w, req)
+			return
+		}
+		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+	})
+}
+
+func handleDownload(w http.ResponseWriter, r *http.Request) {
+	fid := r.URL.Query().Get("file_id")
+	atoi, err := strconv.Atoi(fid)
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+	var fil = &models.File{ID: atoi}
+	if err := app.DB().First(&fil).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	fileName := filepath.Base(fil.Path)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape(fileName)))
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Content-Transfer-Encoding", "binary")
+	w.Header().Set("Access-Control-Expose-Headers", "*")
+
+	user := r.Context().Value(authCtx{}).(*contracts.UserInfo)
+	e.AuditLog(user.Name,
+		event.ActionType_Download,
+		fmt.Sprintf("下载文件 '%s', 大小 %s",
+			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
+	open, err := os.Open(fil.Path)
+	if err != nil {
+		mlog.Error(err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	defer open.Close()
+
+	if _, err := io.Copy(w, bufio.NewReaderSize(open, 1024*1024*5)); err != nil {
+		mlog.Error(err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}
 }
 
 type authCtx struct{}
@@ -189,7 +253,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file := models.File{Path: put.GetFile().Name(), Username: info.Name, Size: put.Size()}
+	file := models.File{Path: put.Path(), Username: info.Name, Size: put.Size()}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

@@ -192,6 +192,8 @@ func (m *EventListItem) validate(all bool) error {
 
 	// no validation rules for EventAt
 
+	// no validation rules for FileId
+
 	if len(errors) > 0 {
 		return EventListItemMultiError(errors)
 	}

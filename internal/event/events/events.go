@@ -25,6 +25,7 @@ type EventAuditLogData struct {
 	Username        string
 	Action          eventpb.ActionType
 	Msg, OldS, NewS string
+	FileId          int
 }
 
 type ProjectChangedData struct {
@@ -46,12 +47,17 @@ type NamespaceDeletedData struct {
 
 func HandleAuditLog(data interface{}, e contracts.Event) error {
 	logData := data.(EventAuditLogData)
+	var fid *int
+	if logData.FileId != 0 {
+		fid = &logData.FileId
+	}
 	app.DB().Create(&models.Event{
 		Action:   uint8(logData.Action),
 		Username: logData.Username,
 		Message:  logData.Msg,
 		Old:      logData.OldS,
 		New:      logData.NewS,
+		FileID:   fid,
 	})
 
 	return nil
@@ -79,6 +85,15 @@ func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS
 		Msg:      msg,
 		OldS:     oldS.PrettyYaml(),
 		NewS:     newS.PrettyYaml(),
+	})
+}
+
+func FileAuditLog(username string, msg string, fileId int) {
+	app.Event().Dispatch(EventAuditLog, EventAuditLogData{
+		Username: username,
+		Action:   eventpb.ActionType_Upload,
+		Msg:      msg,
+		FileId:   fileId,
 	})
 }
 

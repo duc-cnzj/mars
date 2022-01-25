@@ -63,7 +63,9 @@
         "Unknown",
         "Create",
         "Update",
-        "Delete"
+        "Delete",
+        "Upload",
+        "Download"
       ],
       "default": "Unknown"
     },
@@ -91,6 +93,10 @@
         },
         "event_at": {
           "type": "string"
+        },
+        "file_id": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

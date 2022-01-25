@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/duc-cnzj/mars/pkg/file"
+
 	"github.com/duc-cnzj/mars/internal/validator"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -134,6 +136,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	version.RegisterVersionServer(server, new(services.VersionService))
 	changelog.RegisterChangelogServer(server, new(services.Changelog))
 	event.RegisterEventServer(server, new(services.EventSvc))
+	file.RegisterFileSvcServer(server, new(services.FileSvc))
 
 	g.server = server
 	go func() {

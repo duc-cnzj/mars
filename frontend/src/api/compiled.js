@@ -6572,6 +6572,8 @@ export const ContainerSvc = $root.ContainerSvc = (() => {
  * @property {number} Create=1 Create value
  * @property {number} Update=2 Update value
  * @property {number} Delete=3 Delete value
+ * @property {number} Upload=4 Upload value
+ * @property {number} Download=5 Download value
  */
 export const ActionType = $root.ActionType = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -6579,6 +6581,8 @@ export const ActionType = $root.ActionType = (() => {
     values[valuesById[1] = "Create"] = 1;
     values[valuesById[2] = "Update"] = 2;
     values[valuesById[3] = "Delete"] = 3;
+    values[valuesById[4] = "Upload"] = 4;
+    values[valuesById[5] = "Download"] = 5;
     return values;
 })();
 
@@ -6690,6 +6694,7 @@ export const EventListItem = $root.EventListItem = (() => {
      * @property {string|null} [old] EventListItem old
      * @property {string|null} ["new"] EventListItem new
      * @property {string|null} [event_at] EventListItem event_at
+     * @property {number|null} [file_id] EventListItem file_id
      */
 
     /**
@@ -6764,6 +6769,14 @@ export const EventListItem = $root.EventListItem = (() => {
     EventListItem.prototype.event_at = "";
 
     /**
+     * EventListItem file_id.
+     * @member {number} file_id
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.file_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
      * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
      * @function encode
      * @memberof EventListItem
@@ -6789,6 +6802,8 @@ export const EventListItem = $root.EventListItem = (() => {
             writer.uint32(/* id 6, wireType 2 =*/50).string(message["new"]);
         if (message.event_at != null && Object.hasOwnProperty.call(message, "event_at"))
             writer.uint32(/* id 7, wireType 2 =*/58).string(message.event_at);
+        if (message.file_id != null && Object.hasOwnProperty.call(message, "file_id"))
+            writer.uint32(/* id 8, wireType 0 =*/64).int64(message.file_id);
         return writer;
     };
 
@@ -6830,6 +6845,9 @@ export const EventListItem = $root.EventListItem = (() => {
                 break;
             case 7:
                 message.event_at = reader.string();
+                break;
+            case 8:
+                message.file_id = reader.int64();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -7021,6 +7039,725 @@ export const Event = $root.Event = (() => {
      */
 
     return Event;
+})();
+
+export const FileDeleteRequest = $root.FileDeleteRequest = (() => {
+
+    /**
+     * Properties of a FileDeleteRequest.
+     * @exports IFileDeleteRequest
+     * @interface IFileDeleteRequest
+     * @property {number|null} [id] FileDeleteRequest id
+     */
+
+    /**
+     * Constructs a new FileDeleteRequest.
+     * @exports FileDeleteRequest
+     * @classdesc Represents a FileDeleteRequest.
+     * @implements IFileDeleteRequest
+     * @constructor
+     * @param {IFileDeleteRequest=} [properties] Properties to set
+     */
+    function FileDeleteRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FileDeleteRequest id.
+     * @member {number} id
+     * @memberof FileDeleteRequest
+     * @instance
+     */
+    FileDeleteRequest.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified FileDeleteRequest message. Does not implicitly {@link FileDeleteRequest.verify|verify} messages.
+     * @function encode
+     * @memberof FileDeleteRequest
+     * @static
+     * @param {FileDeleteRequest} message FileDeleteRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FileDeleteRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        return writer;
+    };
+
+    /**
+     * Decodes a FileDeleteRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof FileDeleteRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FileDeleteRequest} FileDeleteRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FileDeleteRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.FileDeleteRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return FileDeleteRequest;
+})();
+
+export const FileDeleteResponse = $root.FileDeleteResponse = (() => {
+
+    /**
+     * Properties of a FileDeleteResponse.
+     * @exports IFileDeleteResponse
+     * @interface IFileDeleteResponse
+     * @property {File|null} [file] FileDeleteResponse file
+     */
+
+    /**
+     * Constructs a new FileDeleteResponse.
+     * @exports FileDeleteResponse
+     * @classdesc Represents a FileDeleteResponse.
+     * @implements IFileDeleteResponse
+     * @constructor
+     * @param {IFileDeleteResponse=} [properties] Properties to set
+     */
+    function FileDeleteResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FileDeleteResponse file.
+     * @member {File|null|undefined} file
+     * @memberof FileDeleteResponse
+     * @instance
+     */
+    FileDeleteResponse.prototype.file = null;
+
+    /**
+     * Encodes the specified FileDeleteResponse message. Does not implicitly {@link FileDeleteResponse.verify|verify} messages.
+     * @function encode
+     * @memberof FileDeleteResponse
+     * @static
+     * @param {FileDeleteResponse} message FileDeleteResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FileDeleteResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.file != null && Object.hasOwnProperty.call(message, "file"))
+            $root.File.encode(message.file, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a FileDeleteResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof FileDeleteResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FileDeleteResponse} FileDeleteResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FileDeleteResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.FileDeleteResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.file = $root.File.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return FileDeleteResponse;
+})();
+
+export const DeleteUndocumentedFilesRequest = $root.DeleteUndocumentedFilesRequest = (() => {
+
+    /**
+     * Properties of a DeleteUndocumentedFilesRequest.
+     * @exports IDeleteUndocumentedFilesRequest
+     * @interface IDeleteUndocumentedFilesRequest
+     */
+
+    /**
+     * Constructs a new DeleteUndocumentedFilesRequest.
+     * @exports DeleteUndocumentedFilesRequest
+     * @classdesc Represents a DeleteUndocumentedFilesRequest.
+     * @implements IDeleteUndocumentedFilesRequest
+     * @constructor
+     * @param {IDeleteUndocumentedFilesRequest=} [properties] Properties to set
+     */
+    function DeleteUndocumentedFilesRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified DeleteUndocumentedFilesRequest message. Does not implicitly {@link DeleteUndocumentedFilesRequest.verify|verify} messages.
+     * @function encode
+     * @memberof DeleteUndocumentedFilesRequest
+     * @static
+     * @param {DeleteUndocumentedFilesRequest} message DeleteUndocumentedFilesRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    DeleteUndocumentedFilesRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a DeleteUndocumentedFilesRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof DeleteUndocumentedFilesRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {DeleteUndocumentedFilesRequest} DeleteUndocumentedFilesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    DeleteUndocumentedFilesRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DeleteUndocumentedFilesRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return DeleteUndocumentedFilesRequest;
+})();
+
+export const File = $root.File = (() => {
+
+    /**
+     * Properties of a File.
+     * @exports IFile
+     * @interface IFile
+     * @property {string|null} [path] File path
+     * @property {string|null} [humanize_size] File humanize_size
+     * @property {number|null} [size] File size
+     * @property {string|null} [upload_by] File upload_by
+     */
+
+    /**
+     * Constructs a new File.
+     * @exports File
+     * @classdesc Represents a File.
+     * @implements IFile
+     * @constructor
+     * @param {IFile=} [properties] Properties to set
+     */
+    function File(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * File path.
+     * @member {string} path
+     * @memberof File
+     * @instance
+     */
+    File.prototype.path = "";
+
+    /**
+     * File humanize_size.
+     * @member {string} humanize_size
+     * @memberof File
+     * @instance
+     */
+    File.prototype.humanize_size = "";
+
+    /**
+     * File size.
+     * @member {number} size
+     * @memberof File
+     * @instance
+     */
+    File.prototype.size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * File upload_by.
+     * @member {string} upload_by
+     * @memberof File
+     * @instance
+     */
+    File.prototype.upload_by = "";
+
+    /**
+     * Encodes the specified File message. Does not implicitly {@link File.verify|verify} messages.
+     * @function encode
+     * @memberof File
+     * @static
+     * @param {File} message File message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    File.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.path);
+        if (message.humanize_size != null && Object.hasOwnProperty.call(message, "humanize_size"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.humanize_size);
+        if (message.size != null && Object.hasOwnProperty.call(message, "size"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.size);
+        if (message.upload_by != null && Object.hasOwnProperty.call(message, "upload_by"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.upload_by);
+        return writer;
+    };
+
+    /**
+     * Decodes a File message from the specified reader or buffer.
+     * @function decode
+     * @memberof File
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {File} File
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    File.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.File();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.path = reader.string();
+                break;
+            case 2:
+                message.humanize_size = reader.string();
+                break;
+            case 3:
+                message.size = reader.int64();
+                break;
+            case 4:
+                message.upload_by = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return File;
+})();
+
+export const DeleteUndocumentedFilesResponse = $root.DeleteUndocumentedFilesResponse = (() => {
+
+    /**
+     * Properties of a DeleteUndocumentedFilesResponse.
+     * @exports IDeleteUndocumentedFilesResponse
+     * @interface IDeleteUndocumentedFilesResponse
+     * @property {Array.<File>|null} [files] DeleteUndocumentedFilesResponse files
+     */
+
+    /**
+     * Constructs a new DeleteUndocumentedFilesResponse.
+     * @exports DeleteUndocumentedFilesResponse
+     * @classdesc Represents a DeleteUndocumentedFilesResponse.
+     * @implements IDeleteUndocumentedFilesResponse
+     * @constructor
+     * @param {IDeleteUndocumentedFilesResponse=} [properties] Properties to set
+     */
+    function DeleteUndocumentedFilesResponse(properties) {
+        this.files = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * DeleteUndocumentedFilesResponse files.
+     * @member {Array.<File>} files
+     * @memberof DeleteUndocumentedFilesResponse
+     * @instance
+     */
+    DeleteUndocumentedFilesResponse.prototype.files = $util.emptyArray;
+
+    /**
+     * Encodes the specified DeleteUndocumentedFilesResponse message. Does not implicitly {@link DeleteUndocumentedFilesResponse.verify|verify} messages.
+     * @function encode
+     * @memberof DeleteUndocumentedFilesResponse
+     * @static
+     * @param {DeleteUndocumentedFilesResponse} message DeleteUndocumentedFilesResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    DeleteUndocumentedFilesResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.files != null && message.files.length)
+            for (let i = 0; i < message.files.length; ++i)
+                $root.File.encode(message.files[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes a DeleteUndocumentedFilesResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof DeleteUndocumentedFilesResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {DeleteUndocumentedFilesResponse} DeleteUndocumentedFilesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    DeleteUndocumentedFilesResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DeleteUndocumentedFilesResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.files && message.files.length))
+                    message.files = [];
+                message.files.push($root.File.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return DeleteUndocumentedFilesResponse;
+})();
+
+export const DiskInfoRequest = $root.DiskInfoRequest = (() => {
+
+    /**
+     * Properties of a DiskInfoRequest.
+     * @exports IDiskInfoRequest
+     * @interface IDiskInfoRequest
+     */
+
+    /**
+     * Constructs a new DiskInfoRequest.
+     * @exports DiskInfoRequest
+     * @classdesc Represents a DiskInfoRequest.
+     * @implements IDiskInfoRequest
+     * @constructor
+     * @param {IDiskInfoRequest=} [properties] Properties to set
+     */
+    function DiskInfoRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Encodes the specified DiskInfoRequest message. Does not implicitly {@link DiskInfoRequest.verify|verify} messages.
+     * @function encode
+     * @memberof DiskInfoRequest
+     * @static
+     * @param {DiskInfoRequest} message DiskInfoRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    DiskInfoRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Decodes a DiskInfoRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof DiskInfoRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {DiskInfoRequest} DiskInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    DiskInfoRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DiskInfoRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return DiskInfoRequest;
+})();
+
+export const DiskInfoResponse = $root.DiskInfoResponse = (() => {
+
+    /**
+     * Properties of a DiskInfoResponse.
+     * @exports IDiskInfoResponse
+     * @interface IDiskInfoResponse
+     * @property {number|null} [usage] DiskInfoResponse usage
+     * @property {string|null} [humanize_usage] DiskInfoResponse humanize_usage
+     */
+
+    /**
+     * Constructs a new DiskInfoResponse.
+     * @exports DiskInfoResponse
+     * @classdesc Represents a DiskInfoResponse.
+     * @implements IDiskInfoResponse
+     * @constructor
+     * @param {IDiskInfoResponse=} [properties] Properties to set
+     */
+    function DiskInfoResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * DiskInfoResponse usage.
+     * @member {number} usage
+     * @memberof DiskInfoResponse
+     * @instance
+     */
+    DiskInfoResponse.prototype.usage = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * DiskInfoResponse humanize_usage.
+     * @member {string} humanize_usage
+     * @memberof DiskInfoResponse
+     * @instance
+     */
+    DiskInfoResponse.prototype.humanize_usage = "";
+
+    /**
+     * Encodes the specified DiskInfoResponse message. Does not implicitly {@link DiskInfoResponse.verify|verify} messages.
+     * @function encode
+     * @memberof DiskInfoResponse
+     * @static
+     * @param {DiskInfoResponse} message DiskInfoResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    DiskInfoResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.usage != null && Object.hasOwnProperty.call(message, "usage"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.usage);
+        if (message.humanize_usage != null && Object.hasOwnProperty.call(message, "humanize_usage"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.humanize_usage);
+        return writer;
+    };
+
+    /**
+     * Decodes a DiskInfoResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof DiskInfoResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {DiskInfoResponse} DiskInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    DiskInfoResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.DiskInfoResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.usage = reader.int64();
+                break;
+            case 2:
+                message.humanize_usage = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return DiskInfoResponse;
+})();
+
+export const FileSvc = $root.FileSvc = (() => {
+
+    /**
+     * Constructs a new FileSvc service.
+     * @exports FileSvc
+     * @classdesc Represents a FileSvc
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function FileSvc(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (FileSvc.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = FileSvc;
+
+    /**
+     * Callback as used by {@link FileSvc#delete_}.
+     * @memberof FileSvc
+     * @typedef DeleteCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {FileDeleteResponse} [response] FileDeleteResponse
+     */
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof FileSvc
+     * @instance
+     * @param {FileDeleteRequest} request FileDeleteRequest message or plain object
+     * @param {FileSvc.DeleteCallback} callback Node-style callback called with the error, if any, and FileDeleteResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(FileSvc.prototype["delete"] = function delete_(request, callback) {
+        return this.rpcCall(delete_, $root.FileDeleteRequest, $root.FileDeleteResponse, request, callback);
+    }, "name", { value: "Delete" });
+
+    /**
+     * Calls Delete.
+     * @function delete
+     * @memberof FileSvc
+     * @instance
+     * @param {FileDeleteRequest} request FileDeleteRequest message or plain object
+     * @returns {Promise<FileDeleteResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link FileSvc#deleteUndocumentedFiles}.
+     * @memberof FileSvc
+     * @typedef DeleteUndocumentedFilesCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {DeleteUndocumentedFilesResponse} [response] DeleteUndocumentedFilesResponse
+     */
+
+    /**
+     * Calls DeleteUndocumentedFiles.
+     * @function deleteUndocumentedFiles
+     * @memberof FileSvc
+     * @instance
+     * @param {DeleteUndocumentedFilesRequest} request DeleteUndocumentedFilesRequest message or plain object
+     * @param {FileSvc.DeleteUndocumentedFilesCallback} callback Node-style callback called with the error, if any, and DeleteUndocumentedFilesResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(FileSvc.prototype.deleteUndocumentedFiles = function deleteUndocumentedFiles(request, callback) {
+        return this.rpcCall(deleteUndocumentedFiles, $root.DeleteUndocumentedFilesRequest, $root.DeleteUndocumentedFilesResponse, request, callback);
+    }, "name", { value: "DeleteUndocumentedFiles" });
+
+    /**
+     * Calls DeleteUndocumentedFiles.
+     * @function deleteUndocumentedFiles
+     * @memberof FileSvc
+     * @instance
+     * @param {DeleteUndocumentedFilesRequest} request DeleteUndocumentedFilesRequest message or plain object
+     * @returns {Promise<DeleteUndocumentedFilesResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link FileSvc#diskInfo}.
+     * @memberof FileSvc
+     * @typedef DiskInfoCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {DiskInfoResponse} [response] DiskInfoResponse
+     */
+
+    /**
+     * Calls DiskInfo.
+     * @function diskInfo
+     * @memberof FileSvc
+     * @instance
+     * @param {DiskInfoRequest} request DiskInfoRequest message or plain object
+     * @param {FileSvc.DiskInfoCallback} callback Node-style callback called with the error, if any, and DiskInfoResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(FileSvc.prototype.diskInfo = function diskInfo(request, callback) {
+        return this.rpcCall(diskInfo, $root.DiskInfoRequest, $root.DiskInfoResponse, request, callback);
+    }, "name", { value: "DiskInfo" });
+
+    /**
+     * Calls DiskInfo.
+     * @function diskInfo
+     * @memberof FileSvc
+     * @instance
+     * @param {DiskInfoRequest} request DiskInfoRequest message or plain object
+     * @returns {Promise<DiskInfoResponse>} Promise
+     * @variation 2
+     */
+
+    return FileSvc;
 })();
 
 export const GitDestroyRequest = $root.GitDestroyRequest = (() => {

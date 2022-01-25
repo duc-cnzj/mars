@@ -10,6 +10,8 @@ enum ActionType {
   Create = 1;
   Update = 2;
   Delete = 3;
+  Upload = 4;
+  Download = 5;
 }
 
 message EventListRequest {
@@ -25,7 +27,9 @@ message EventListItem {
   string old = 5;
   string new = 6;
   string event_at = 7;
+  int64 file_id = 8;
 }
+
 message EventListResponse {
   int64 page = 1;
   int64 page_size = 2;

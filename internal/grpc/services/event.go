@@ -25,12 +25,16 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 		count    int64
 	)
 
-	if err := app.DB().Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
+	if err := app.DB().Preload("File").Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
 	}
 	app.DB().Model(&models.Event{}).Count(&count)
 	res := make([]*event.EventListItem, 0, len(events))
 	for _, m := range events {
+		var fid int64
+		if m.File != nil {
+			fid = int64(m.File.ID)
+		}
 		res = append(res, &event.EventListItem{
 			Id:       int64(m.ID),
 			Action:   event.ActionType(m.Action),
@@ -38,6 +42,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 			Message:  m.Message,
 			Old:      m.Old,
 			New:      m.New,
+			FileId:   fid,
 			EventAt:  utils.ToHumanizeDatetimeString(&m.CreatedAt),
 		})
 	}
