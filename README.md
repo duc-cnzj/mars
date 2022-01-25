@@ -180,6 +180,7 @@ func main()  {
 
 ## TODO
 
+- [ ] 国际化
 - [ ] ratelimiter
 - [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
