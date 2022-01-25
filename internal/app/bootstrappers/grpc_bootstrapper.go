@@ -7,9 +7,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/duc-cnzj/mars/pkg/file"
-
-	"github.com/duc-cnzj/mars/internal/validator"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -23,11 +20,13 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/validator"
 	"github.com/duc-cnzj/mars/pkg/auth"
 	"github.com/duc-cnzj/mars/pkg/changelog"
 	"github.com/duc-cnzj/mars/pkg/cluster"
 	"github.com/duc-cnzj/mars/pkg/container"
 	"github.com/duc-cnzj/mars/pkg/event"
+	"github.com/duc-cnzj/mars/pkg/file"
 	"github.com/duc-cnzj/mars/pkg/gitserver"
 	"github.com/duc-cnzj/mars/pkg/mars"
 	rpcmetrics "github.com/duc-cnzj/mars/pkg/metrics"
