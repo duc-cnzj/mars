@@ -15,7 +15,7 @@ export function deleteUndocumentedFiles() {
 
 export function downloadFile(id: number) {
   return ajax
-    .get(`/api/download_file?file_id=${id}`, { responseType: "blob" })
+    .get(`/api/download_file/${id}`, { responseType: "blob" })
     .then((res) => {
       const url = window.URL.createObjectURL(res.data);
       const contentDisposition = res.headers["content-disposition"];

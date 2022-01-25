@@ -164,23 +164,27 @@ func handFile(gmux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
-	gmux.HandlePath("GET", "/api/download_file", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	gmux.HandlePath("GET", "/api/download_file/{id}", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		idstr, ok := pathParams["id"]
+		if !ok {
+			http.Error(w, fmt.Sprintf("missing id"), http.StatusBadRequest)
+			return
+		}
+		id, err := strconv.Atoi(idstr)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("bad id"), http.StatusBadRequest)
+			return
+		}
 		if req, ok := authenticated(r); ok {
-			handleDownload(w, req)
+			handleDownload(w, req, id)
 			return
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
 }
 
-func handleDownload(w http.ResponseWriter, r *http.Request) {
-	fid := r.URL.Query().Get("file_id")
-	atoi, err := strconv.Atoi(fid)
-	if err != nil {
-		http.Error(w, "invalid file id", http.StatusBadRequest)
-		return
-	}
-	var fil = &models.File{ID: atoi}
+func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
+	var fil = &models.File{ID: fid}
 	if err := app.DB().First(&fil).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.NotFound(w, r)
