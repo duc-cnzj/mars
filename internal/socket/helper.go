@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/plugins"
 
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -86,17 +86,9 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifest string) []stri
 		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
 		switch a := obj.(type) {
 		case *v1.Deployment:
-			var labels []string
-			for k, v := range a.Spec.Selector.MatchLabels {
-				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
-			}
-			selectors = append(selectors, strings.Join(labels, ","))
+			selectors = append(selectors, labels.SelectorFromSet(a.Spec.Selector.MatchLabels).String())
 		case *v1.StatefulSet:
-			var labels []string
-			for k, v := range a.Spec.Selector.MatchLabels {
-				labels = append(labels, fmt.Sprintf("%s=%s", k, v))
-			}
-			selectors = append(selectors, strings.Join(labels, ","))
+			selectors = append(selectors, labels.SelectorFromSet(a.Spec.Selector.MatchLabels).String())
 		}
 	}
 

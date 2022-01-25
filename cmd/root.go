@@ -24,7 +24,9 @@ var (
 
 func Execute(configFile []byte) {
 	configExampleFile = configFile
-	rootCmd.AddCommand(testCmd)
+	if !version.GetVersion().HasBuildInfo() {
+		rootCmd.AddCommand(testCmd)
+	}
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
 

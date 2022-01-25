@@ -20,6 +20,7 @@ func NewZapLogger(app contracts.ApplicationInterface) contracts.LoggerInterface 
 	opts := []zap.Option{zap.AddStacktrace(zapcore.ErrorLevel), zap.AddCallerSkip(2)}
 	if app.IsDebug() {
 		cfg = zap.NewDevelopmentConfig()
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	} else {
 		cfg = zap.NewProductionConfig()
 	}

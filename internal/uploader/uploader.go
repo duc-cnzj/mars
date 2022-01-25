@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -77,6 +79,20 @@ func (u *Uploader) Delete(path string) error {
 	return os.Remove(u.getPath(path))
 }
 
+func (u *Uploader) DirSize(dir string) (int64, error) {
+	var size int64
+	if err := filepath.Walk(u.getPath(dir), func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+
+	return size, nil
+}
+
 func (u *Uploader) Exists(path string) bool {
 	_, err := os.Stat(u.getPath(path))
 	if err != nil {
@@ -106,16 +122,60 @@ func dirExists(dir string) bool {
 }
 
 type fileInfo struct {
-	f    *os.File
+	path string
 	size uint64
 }
 
-func (f *fileInfo) GetFile() *os.File {
-	return f.f
+func (f *fileInfo) Path() string {
+	return f.path
 }
 
 func (f *fileInfo) Size() uint64 {
 	return f.size
+}
+
+func (u *Uploader) RemoveEmptyDir(dir string) error {
+	var dirs []string
+	filepath.WalkDir(u.getPath(dir), func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			dirs = append(dirs, path)
+		}
+		return nil
+	})
+	sort.Sort(sort.Reverse(sort.StringSlice(dirs)))
+	for _, root := range dirs {
+		readDir, err := os.ReadDir(root)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
+		if len(readDir) == 0 && root != u.getPath(dir) {
+			os.Remove(root)
+			mlog.Debug("rm: ", root)
+		}
+	}
+	return nil
+}
+
+func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
+	var files []contracts.FileInfo
+	err := filepath.Walk(u.getPath(dir),
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				files = append(files, &fileInfo{
+					path: path,
+					size: uint64(info.Size()),
+				})
+			}
+			return nil
+		})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
 }
 
 func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, error) {
@@ -142,7 +202,7 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 	stat, _ := create.Stat()
 
 	return &fileInfo{
-		f:    create,
+		path: create.Name(),
 		size: uint64(stat.Size()),
 	}, nil
 }

@@ -1,7 +1,7 @@
 package adapter
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -18,7 +18,7 @@ func NewGoCacheAdapter(c *cache.Cache) *GoCacheAdapter {
 func (g *GoCacheAdapter) Get(key string) (value []byte, err error) {
 	v, b := g.c.Get(key)
 	if !b {
-		return nil, errors.New("not found")
+		return nil, fmt.Errorf("key %s not found", key)
 	}
 	return v.([]byte), nil
 }

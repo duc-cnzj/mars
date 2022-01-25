@@ -2856,7 +2856,9 @@ export enum ActionType {
     Unknown = 0,
     Create = 1,
     Update = 2,
-    Delete = 3
+    Delete = 3,
+    Upload = 4,
+    Download = 5
 }
 
 /** Represents an EventListRequest. */
@@ -2922,6 +2924,9 @@ export class EventListItem implements IEventListItem {
 
     /** EventListItem event_at. */
     public event_at: string;
+
+    /** EventListItem file_id. */
+    public file_id: number;
 
     /**
      * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
@@ -3016,6 +3021,307 @@ export namespace Event {
      * @param [response] EventListResponse
      */
     type ListCallback = (error: (Error|null), response?: EventListResponse) => void;
+}
+
+/** Represents a FileDeleteRequest. */
+export class FileDeleteRequest implements IFileDeleteRequest {
+
+    /**
+     * Constructs a new FileDeleteRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFileDeleteRequest);
+
+    /** FileDeleteRequest id. */
+    public id: number;
+
+    /**
+     * Encodes the specified FileDeleteRequest message. Does not implicitly {@link FileDeleteRequest.verify|verify} messages.
+     * @param message FileDeleteRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: FileDeleteRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a FileDeleteRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns FileDeleteRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): FileDeleteRequest;
+}
+
+/** Represents a FileDeleteResponse. */
+export class FileDeleteResponse implements IFileDeleteResponse {
+
+    /**
+     * Constructs a new FileDeleteResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFileDeleteResponse);
+
+    /** FileDeleteResponse file. */
+    public file?: (File|null);
+
+    /**
+     * Encodes the specified FileDeleteResponse message. Does not implicitly {@link FileDeleteResponse.verify|verify} messages.
+     * @param message FileDeleteResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: FileDeleteResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a FileDeleteResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns FileDeleteResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): FileDeleteResponse;
+}
+
+/** Represents a DeleteUndocumentedFilesRequest. */
+export class DeleteUndocumentedFilesRequest implements IDeleteUndocumentedFilesRequest {
+
+    /**
+     * Constructs a new DeleteUndocumentedFilesRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDeleteUndocumentedFilesRequest);
+
+    /**
+     * Encodes the specified DeleteUndocumentedFilesRequest message. Does not implicitly {@link DeleteUndocumentedFilesRequest.verify|verify} messages.
+     * @param message DeleteUndocumentedFilesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DeleteUndocumentedFilesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DeleteUndocumentedFilesRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DeleteUndocumentedFilesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DeleteUndocumentedFilesRequest;
+}
+
+/** Represents a File. */
+export class File implements IFile {
+
+    /**
+     * Constructs a new File.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFile);
+
+    /** File path. */
+    public path: string;
+
+    /** File humanize_size. */
+    public humanize_size: string;
+
+    /** File size. */
+    public size: number;
+
+    /** File upload_by. */
+    public upload_by: string;
+
+    /**
+     * Encodes the specified File message. Does not implicitly {@link File.verify|verify} messages.
+     * @param message File message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: File, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a File message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns File
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): File;
+}
+
+/** Represents a DeleteUndocumentedFilesResponse. */
+export class DeleteUndocumentedFilesResponse implements IDeleteUndocumentedFilesResponse {
+
+    /**
+     * Constructs a new DeleteUndocumentedFilesResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDeleteUndocumentedFilesResponse);
+
+    /** DeleteUndocumentedFilesResponse files. */
+    public files: File[];
+
+    /**
+     * Encodes the specified DeleteUndocumentedFilesResponse message. Does not implicitly {@link DeleteUndocumentedFilesResponse.verify|verify} messages.
+     * @param message DeleteUndocumentedFilesResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DeleteUndocumentedFilesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DeleteUndocumentedFilesResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DeleteUndocumentedFilesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DeleteUndocumentedFilesResponse;
+}
+
+/** Represents a DiskInfoRequest. */
+export class DiskInfoRequest implements IDiskInfoRequest {
+
+    /**
+     * Constructs a new DiskInfoRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDiskInfoRequest);
+
+    /**
+     * Encodes the specified DiskInfoRequest message. Does not implicitly {@link DiskInfoRequest.verify|verify} messages.
+     * @param message DiskInfoRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DiskInfoRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DiskInfoRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DiskInfoRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DiskInfoRequest;
+}
+
+/** Represents a DiskInfoResponse. */
+export class DiskInfoResponse implements IDiskInfoResponse {
+
+    /**
+     * Constructs a new DiskInfoResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IDiskInfoResponse);
+
+    /** DiskInfoResponse usage. */
+    public usage: number;
+
+    /** DiskInfoResponse humanize_usage. */
+    public humanize_usage: string;
+
+    /**
+     * Encodes the specified DiskInfoResponse message. Does not implicitly {@link DiskInfoResponse.verify|verify} messages.
+     * @param message DiskInfoResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: DiskInfoResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a DiskInfoResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns DiskInfoResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DiskInfoResponse;
+}
+
+/** Represents a FileSvc */
+export class FileSvc extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new FileSvc service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Delete.
+     * @param request FileDeleteRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and FileDeleteResponse
+     */
+    public delete(request: FileDeleteRequest, callback: FileSvc.DeleteCallback): void;
+
+    /**
+     * Calls Delete.
+     * @param request FileDeleteRequest message or plain object
+     * @returns Promise
+     */
+    public delete(request: FileDeleteRequest): Promise<FileDeleteResponse>;
+
+    /**
+     * Calls DeleteUndocumentedFiles.
+     * @param request DeleteUndocumentedFilesRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and DeleteUndocumentedFilesResponse
+     */
+    public deleteUndocumentedFiles(request: DeleteUndocumentedFilesRequest, callback: FileSvc.DeleteUndocumentedFilesCallback): void;
+
+    /**
+     * Calls DeleteUndocumentedFiles.
+     * @param request DeleteUndocumentedFilesRequest message or plain object
+     * @returns Promise
+     */
+    public deleteUndocumentedFiles(request: DeleteUndocumentedFilesRequest): Promise<DeleteUndocumentedFilesResponse>;
+
+    /**
+     * Calls DiskInfo.
+     * @param request DiskInfoRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and DiskInfoResponse
+     */
+    public diskInfo(request: DiskInfoRequest, callback: FileSvc.DiskInfoCallback): void;
+
+    /**
+     * Calls DiskInfo.
+     * @param request DiskInfoRequest message or plain object
+     * @returns Promise
+     */
+    public diskInfo(request: DiskInfoRequest): Promise<DiskInfoResponse>;
+}
+
+export namespace FileSvc {
+
+    /**
+     * Callback as used by {@link FileSvc#delete_}.
+     * @param error Error, if any
+     * @param [response] FileDeleteResponse
+     */
+    type DeleteCallback = (error: (Error|null), response?: FileDeleteResponse) => void;
+
+    /**
+     * Callback as used by {@link FileSvc#deleteUndocumentedFiles}.
+     * @param error Error, if any
+     * @param [response] DeleteUndocumentedFilesResponse
+     */
+    type DeleteUndocumentedFilesCallback = (error: (Error|null), response?: DeleteUndocumentedFilesResponse) => void;
+
+    /**
+     * Callback as used by {@link FileSvc#diskInfo}.
+     * @param error Error, if any
+     * @param [response] DiskInfoResponse
+     */
+    type DiskInfoCallback = (error: (Error|null), response?: DiskInfoResponse) => void;
 }
 
 /** Represents a GitDestroyRequest. */

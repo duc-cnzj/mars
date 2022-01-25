@@ -14,18 +14,29 @@ import {
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
+import {
+  deleteFile,
+  downloadFile,
+  diskInfo as diskInfoApi,
+  deleteUndocumentedFiles,
+} from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 
 const defaultPageSize = 15;
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [diskInfo, setDiskInfo] = useState<pb.DiskInfoResponse>();
   const [paginate, setPaginate] = useState<{
     page: number;
     page_size: number;
     count: number;
   }>({ page: 0, page_size: defaultPageSize, count: 0 });
   const [data, setData] = useState<pb.EventListItem[]>([]);
+
+  useEffect(() => {
+    diskInfoApi().then(({ data }) => setDiskInfo(data));
+  }, []);
 
   const loadMoreData = () => {
     if (loading) {
@@ -86,6 +97,18 @@ const EventList: React.FC = () => {
             删除
           </Tag>
         );
+      case pb.ActionType.Upload:
+        return (
+          <Tag color="#fcd34d" style={style}>
+            上传文件
+          </Tag>
+        );
+      case pb.ActionType.Download:
+        return (
+          <Tag color="#2dd4bf" style={style}>
+            下载文件
+          </Tag>
+        );
       default:
         return (
           <Tag color="#f1c40f" style={style}>
@@ -115,6 +138,21 @@ const EventList: React.FC = () => {
     setIsModalVisible(false);
   }, []);
 
+  const [clearLoading, setClearLoading] = useState(false);
+  const clearDisk = useCallback(() => {
+    setClearLoading(true);
+    deleteUndocumentedFiles().then((res) => {
+      message.success("清理成功");
+      diskInfoApi()
+        .then(({ data }) => {
+          setDiskInfo(data);
+        })
+        .finally(() => {
+          setClearLoading(false);
+        });
+    });
+  }, []);
+
   const handleCancel = useCallback(() => {
     setIsModalVisible(false);
   }, []);
@@ -128,7 +166,28 @@ const EventList: React.FC = () => {
 
   return (
     <Card
-      title={<div>事件日志: {paginate.count} 条</div>}
+      title={
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>事件日志: {paginate.count} 条</div>
+          <div style={{ fontSize: 12, fontWeight: "normal" }}>
+            文件占用:{" "}
+            <Button
+              loading={clearLoading}
+              style={{ fontSize: 10 }}
+              type="link"
+              onClick={clearDisk}
+            >
+              {diskInfo?.humanize_usage} 点击清理
+            </Button>
+          </div>
+        </div>
+      }
       bordered={false}
       bodyStyle={{
         height: getHeight(),
@@ -140,10 +199,7 @@ const EventList: React.FC = () => {
         marginBottom: 30,
       }}
     >
-      <div
-        id="scrollableDiv"
-        style={{ height: "100%", overflowY: "auto" }}
-      >
+      <div id="scrollableDiv" style={{ height: "100%", overflowY: "auto" }}>
         <InfiniteScroll
           dataLength={data.length}
           next={loadMoreData}
@@ -173,7 +229,41 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.action === pb.ActionType.Update ? (
+                {item.file_id > 0 ? (
+                  <>
+                    <Button
+                      type="dashed"
+                      style={{ marginRight: 5 }}
+                      onClick={() => {
+                        downloadFile(item.file_id);
+                      }}
+                    >
+                      下载文件
+                    </Button>
+                    <Button
+                      type="dashed"
+                      style={{ marginRight: 5 }}
+                      danger
+                      onClick={() => {
+                        deleteFile({ id: item.file_id })
+                          .then((res) => {
+                            setData(
+                              data.map((v) =>
+                                v.id === item.id ? { ...v, file_id: 0 } : v
+                              )
+                            );
+                            message.success("删除成功");
+                          })
+                          .catch((e) => message.error(e.response.data.message));
+                      }}
+                    >
+                      删除文件
+                    </Button>
+                  </>
+                ) : (
+                  <></>
+                )}
+                {!!(item.old || item.new) ? (
                   <Button
                     type="dashed"
                     onClick={() => {

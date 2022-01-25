@@ -14,6 +14,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type DockerConfig map[string]DockerConfigEntry
@@ -142,7 +143,7 @@ func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
 func CleanEvictedPods(namespace string, selectors string) {
 	list, err := app.K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selectors,
-		FieldSelector: "status.phase==" + string(v1.PodFailed),
+		FieldSelector: labels.Set{"status.phase": string(v1.PodFailed)}.String(),
 	})
 	if err != nil {
 		mlog.Error(err)

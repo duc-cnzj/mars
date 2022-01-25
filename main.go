@@ -16,6 +16,5 @@ import (
 var configFile []byte
 
 func main() {
-	//cmd.ApiGatewayCmd.Execute()
 	cmd.Execute(configFile)
 }

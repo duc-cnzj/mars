@@ -23,7 +23,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/pkg/container"
-	"github.com/duc-cnzj/mars/pkg/event"
 )
 
 type Container struct {
@@ -123,15 +122,14 @@ func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodR
 		"container_path": res.ContainerPath,
 	})
 
-	AuditLog(MustGetUser(ctx).Name,
-		event.ActionType_Create,
+	FileAuditLog(MustGetUser(ctx).Name,
 		fmt.Sprintf("上传文件到 pod: %s/%s/%s, 容器路径: '%s', 大小: %s。",
 			request.Namespace,
 			request.Pod,
 			request.Container,
 			res.ContainerPath,
 			humanize.Bytes(file.Size),
-		))
+		), file.ID)
 
 	return &container.CopyToPodResponse{
 		PodFilePath: res.TargetDir,

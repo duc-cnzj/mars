@@ -218,6 +218,82 @@
         }
       }
     },
+    "/api/files/delete_undocumented_files": {
+      "delete": {
+        "tags": [
+          "FileSvc"
+        ],
+        "summary": "DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有",
+        "operationId": "FileSvc_DeleteUndocumentedFiles",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DeleteUndocumentedFilesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/files/disk_info": {
+      "get": {
+        "tags": [
+          "FileSvc"
+        ],
+        "operationId": "FileSvc_DiskInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DiskInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}": {
+      "delete": {
+        "tags": [
+          "FileSvc"
+        ],
+        "operationId": "FileSvc_Delete",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/FileDeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/gitlab/projects/{project_id}/default_values": {
       "get": {
         "tags": [
@@ -1414,7 +1490,9 @@
         "Unknown",
         "Create",
         "Update",
-        "Delete"
+        "Delete",
+        "Upload",
+        "Download"
       ]
     },
     "AuthExchangeRequest": {
@@ -1627,6 +1705,29 @@
         }
       }
     },
+    "DeleteUndocumentedFilesResponse": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/File"
+          }
+        }
+      }
+    },
+    "DiskInfoResponse": {
+      "type": "object",
+      "properties": {
+        "humanize_usage": {
+          "type": "string"
+        },
+        "usage": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "Element": {
       "type": "object",
       "properties": {
@@ -1670,6 +1771,10 @@
         },
         "event_at": {
           "type": "string"
+        },
+        "file_id": {
+          "type": "string",
+          "format": "int64"
         },
         "id": {
           "type": "string",
@@ -1717,6 +1822,32 @@
       "properties": {
         "data": {
           "type": "string"
+        }
+      }
+    },
+    "File": {
+      "type": "object",
+      "properties": {
+        "humanize_size": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "upload_by": {
+          "type": "string"
+        }
+      }
+    },
+    "FileDeleteResponse": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "$ref": "#/definitions/File"
         }
       }
     },
@@ -2628,6 +2759,9 @@
     },
     {
       "name": "Event"
+    },
+    {
+      "name": "FileSvc"
     },
     {
       "name": "GitServer"
