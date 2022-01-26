@@ -40,7 +40,7 @@ const DebugModeSwitch: React.FC<{
         </div>
       </div>
 
-      <Switch checked={value} onChange={onChange} />
+      <Switch checked={value} defaultChecked={true} onChange={onChange} />
     </div>
   );
 };

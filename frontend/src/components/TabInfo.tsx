@@ -121,14 +121,9 @@ const DetailTab: React.FC<{
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
           {detail.urls.map((item, index) => (
-            <li>
+            <li key={index}>
               {index + 1}.
-              <a
-                key={index}
-                href={item.url}
-                target="_blank"
-                className="detail-data"
-              >
+              <a href={item.url} target="_blank" className="detail-data">
                 {item.url}
                 {item.port_name ? `(${item.port_name})` : ""}
               </a>
@@ -297,8 +292,7 @@ const DetailTab: React.FC<{
                   setLoading(false);
                 });
             },
-            onCancel() {
-            },
+            onCancel() {},
           })
         }
         disabled={loading}

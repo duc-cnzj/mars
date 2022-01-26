@@ -6,6 +6,7 @@ import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
 import { orderBy } from "lodash";
+import { useAsyncState } from "../utils/async";
 
 import { configFile } from "../api/gitlab";
 import {
@@ -33,6 +34,12 @@ import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
+const initFormValues = {
+  debug: true,
+  extra_values: [],
+  config: "",
+};
+
 const CreateProjectModal: React.FC<{
   namespaceId: number;
 }> = ({ namespaceId }) => {
@@ -40,7 +47,7 @@ const CreateProjectModal: React.FC<{
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const [mode, setMode] = useState<string>("text/x-yaml");
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visible, setVisible] = useAsyncState<boolean>(false);
   const [editVisible, setEditVisible] = useState<boolean>(true);
   const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
   const ws = useWs();
@@ -68,15 +75,24 @@ const CreateProjectModal: React.FC<{
     setEditVisible(true);
     setTimelineVisible(false);
     dispatch(clearCreateProjectLog(slug));
-  }, [dispatch, slug, form]);
+  }, [dispatch, slug, form, setVisible]);
 
   const onOk = useCallback(
     (values: any) => {
       if (values.extra_values) {
-        values.extra_values = values.extra_values.map((i: any) => ({
-          ...i,
-          value: String(i.value),
-        }));
+        let defaults = elements
+          ? elements.map((i) => ({
+              path: i.path,
+              value: i.default,
+            }))
+          : [];
+        values.extra_values =
+          values.extra_values.length > 0
+            ? values.extra_values.map((i: any) => ({
+                ...i,
+                value: String(i.value),
+              }))
+            : defaults;
       }
       if (!wsReady) {
         message.error("连接断开了");
@@ -91,7 +107,6 @@ const CreateProjectModal: React.FC<{
         // todo ws connected!
         setEditVisible(false);
         setTimelineVisible(true);
-
         let s = pb.ProjectInput.encode({
           type: pb.Type.CreateProject,
           namespace_id: Number(namespaceId),
@@ -115,7 +130,7 @@ const CreateProjectModal: React.FC<{
 
       message.error("项目id, 分支，提交必填");
     },
-    [dispatch, slug, ws, namespaceId, wsReady, data]
+    [dispatch, slug, ws, namespaceId, wsReady, data, elements]
   );
 
   const onRemove = useCallback(() => {
@@ -169,12 +184,14 @@ const CreateProjectModal: React.FC<{
     if (list[slug]?.deployStatus === DeployStatusEnum.DeploySuccess) {
       setTimelineVisible(false);
       setEditVisible(true);
+      setElements([]);
+      form.resetFields();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setTimeout(() => {
         setVisible(false);
       }, 500);
     }
-  }, [list, dispatch, slug]);
+  }, [list, dispatch, slug, onCancel, form, setVisible]);
 
   useEffect(() => {
     if (!wsReady) {
@@ -230,6 +247,7 @@ const CreateProjectModal: React.FC<{
               labelWrap
               autoComplete="off"
               onFinish={onOk}
+              initialValues={initFormValues}
               style={{
                 height: "100%",
                 display: "flex",

@@ -77,7 +77,6 @@ const ModalSub: React.FC<{
       config: detail.config,
       config_type: detail.config_type,
       debug: !detail.atomic,
-      aaa: true,
       extra_values: detail.extra_values,
     }),
     [detail]
