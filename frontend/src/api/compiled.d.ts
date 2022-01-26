@@ -3246,6 +3246,83 @@ export class DiskInfoResponse implements IDiskInfoResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): DiskInfoResponse;
 }
 
+/** Represents a FileListRequest. */
+export class FileListRequest implements IFileListRequest {
+
+    /**
+     * Constructs a new FileListRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFileListRequest);
+
+    /** FileListRequest page. */
+    public page: number;
+
+    /** FileListRequest page_size. */
+    public page_size: number;
+
+    /** FileListRequest without_deleted. */
+    public without_deleted: boolean;
+
+    /**
+     * Encodes the specified FileListRequest message. Does not implicitly {@link FileListRequest.verify|verify} messages.
+     * @param message FileListRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: FileListRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a FileListRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns FileListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): FileListRequest;
+}
+
+/** Represents a FileListResponse. */
+export class FileListResponse implements IFileListResponse {
+
+    /**
+     * Constructs a new FileListResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFileListResponse);
+
+    /** FileListResponse page. */
+    public page: number;
+
+    /** FileListResponse page_size. */
+    public page_size: number;
+
+    /** FileListResponse items. */
+    public items: FileModel[];
+
+    /** FileListResponse count. */
+    public count: number;
+
+    /**
+     * Encodes the specified FileListResponse message. Does not implicitly {@link FileListResponse.verify|verify} messages.
+     * @param message FileListResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: FileListResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a FileListResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns FileListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): FileListResponse;
+}
+
 /** Represents a FileSvc */
 export class FileSvc extends $protobuf.rpc.Service {
 
@@ -3256,6 +3333,20 @@ export class FileSvc extends $protobuf.rpc.Service {
      * @param [responseDelimited=false] Whether responses are length-delimited
      */
     constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls List.
+     * @param request FileListRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and FileListResponse
+     */
+    public list(request: FileListRequest, callback: FileSvc.ListCallback): void;
+
+    /**
+     * Calls List.
+     * @param request FileListRequest message or plain object
+     * @returns Promise
+     */
+    public list(request: FileListRequest): Promise<FileListResponse>;
 
     /**
      * Calls Delete.
@@ -3301,6 +3392,13 @@ export class FileSvc extends $protobuf.rpc.Service {
 }
 
 export namespace FileSvc {
+
+    /**
+     * Callback as used by {@link FileSvc#list}.
+     * @param error Error, if any
+     * @param [response] FileListResponse
+     */
+    type ListCallback = (error: (Error|null), response?: FileListResponse) => void;
 
     /**
      * Callback as used by {@link FileSvc#delete_}.
@@ -5098,6 +5196,70 @@ export class ProjectModel implements IProjectModel {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectModel;
+}
+
+/** Represents a FileModel. */
+export class FileModel implements IFileModel {
+
+    /**
+     * Constructs a new FileModel.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IFileModel);
+
+    /** FileModel id. */
+    public id: number;
+
+    /** FileModel path. */
+    public path: string;
+
+    /** FileModel size. */
+    public size: number;
+
+    /** FileModel username. */
+    public username: string;
+
+    /** FileModel namespace. */
+    public namespace: string;
+
+    /** FileModel pod. */
+    public pod: string;
+
+    /** FileModel container. */
+    public container: string;
+
+    /** FileModel container_path. */
+    public container_path: string;
+
+    /** FileModel created_at. */
+    public created_at: string;
+
+    /** FileModel updated_at. */
+    public updated_at: string;
+
+    /** FileModel deleted_at. */
+    public deleted_at: string;
+
+    /** FileModel is_deleted. */
+    public is_deleted: boolean;
+
+    /**
+     * Encodes the specified FileModel message. Does not implicitly {@link FileModel.verify|verify} messages.
+     * @param message FileModel message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: FileModel, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a FileModel message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns FileModel
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): FileModel;
 }
 
 /** Represents a NamespaceCreateRequest. */

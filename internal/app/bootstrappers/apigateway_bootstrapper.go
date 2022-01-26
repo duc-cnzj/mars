@@ -146,12 +146,12 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	a.server = s
 
-	go func() {
+	go func(s *http.Server) {
 		mlog.Info("api-gateway start at ", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
-	}()
+	}(s)
 
 	return nil
 }

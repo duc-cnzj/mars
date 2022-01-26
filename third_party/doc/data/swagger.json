@@ -218,6 +218,48 @@
         }
       }
     },
+    "/api/files": {
+      "get": {
+        "tags": [
+          "FileSvc"
+        ],
+        "summary": "文件列表",
+        "operationId": "FileSvc_List",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page_size",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "name": "without_deleted",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/FileListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/files/delete_undocumented_files": {
       "delete": {
         "tags": [
@@ -246,6 +288,7 @@
         "tags": [
           "FileSvc"
         ],
+        "summary": "DiskInfo 查看上传文件目录大小",
         "operationId": "FileSvc_DiskInfo",
         "responses": {
           "200": {
@@ -268,6 +311,7 @@
         "tags": [
           "FileSvc"
         ],
+        "summary": "删除文件",
         "operationId": "FileSvc_Delete",
         "parameters": [
           {
@@ -1848,6 +1892,72 @@
       "properties": {
         "file": {
           "$ref": "#/definitions/File"
+        }
+      }
+    },
+    "FileListResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FileModel"
+          }
+        },
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "FileModel": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "container_path": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "is_deleted": {
+          "type": "boolean"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
         }
       }
     },

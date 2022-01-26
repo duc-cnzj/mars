@@ -821,3 +821,265 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DiskInfoResponseValidationError{}
+
+// Validate checks the field values on FileListRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *FileListRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FileListRequestMultiError, or nil if none found.
+func (m *FileListRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileListRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetPage() < 1 {
+		err := FileListRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := FileListRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for WithoutDeleted
+
+	if len(errors) > 0 {
+		return FileListRequestMultiError(errors)
+	}
+	return nil
+}
+
+// FileListRequestMultiError is an error wrapping multiple validation errors
+// returned by FileListRequest.ValidateAll() if the designated constraints
+// aren't met.
+type FileListRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileListRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileListRequestMultiError) AllErrors() []error { return m }
+
+// FileListRequestValidationError is the validation error returned by
+// FileListRequest.Validate if the designated constraints aren't met.
+type FileListRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FileListRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FileListRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FileListRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FileListRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FileListRequestValidationError) ErrorName() string { return "FileListRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FileListRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFileListRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FileListRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FileListRequestValidationError{}
+
+// Validate checks the field values on FileListResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *FileListResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FileListResponseMultiError, or nil if none found.
+func (m *FileListResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileListResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Page
+
+	// no validation rules for PageSize
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileListResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileListResponseValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return FileListResponseValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Count
+
+	if len(errors) > 0 {
+		return FileListResponseMultiError(errors)
+	}
+	return nil
+}
+
+// FileListResponseMultiError is an error wrapping multiple validation errors
+// returned by FileListResponse.ValidateAll() if the designated constraints
+// aren't met.
+type FileListResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileListResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileListResponseMultiError) AllErrors() []error { return m }
+
+// FileListResponseValidationError is the validation error returned by
+// FileListResponse.Validate if the designated constraints aren't met.
+type FileListResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FileListResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FileListResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FileListResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FileListResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FileListResponseValidationError) ErrorName() string { return "FileListResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FileListResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFileListResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FileListResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FileListResponseValidationError{}

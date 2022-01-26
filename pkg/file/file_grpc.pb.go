@@ -19,9 +19,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileSvcClient interface {
+	//  文件列表
+	List(ctx context.Context, in *FileListRequest, opts ...grpc.CallOption) (*FileListResponse, error)
+	//  删除文件
 	Delete(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*FileDeleteResponse, error)
 	//  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
 	DeleteUndocumentedFiles(ctx context.Context, in *DeleteUndocumentedFilesRequest, opts ...grpc.CallOption) (*DeleteUndocumentedFilesResponse, error)
+	// DiskInfo 查看上传文件目录大小
 	DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error)
 }
 
@@ -31,6 +35,15 @@ type fileSvcClient struct {
 
 func NewFileSvcClient(cc grpc.ClientConnInterface) FileSvcClient {
 	return &fileSvcClient{cc}
+}
+
+func (c *fileSvcClient) List(ctx context.Context, in *FileListRequest, opts ...grpc.CallOption) (*FileListResponse, error) {
+	out := new(FileListResponse)
+	err := c.cc.Invoke(ctx, "/FileSvc/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *fileSvcClient) Delete(ctx context.Context, in *FileDeleteRequest, opts ...grpc.CallOption) (*FileDeleteResponse, error) {
@@ -64,9 +77,13 @@ func (c *fileSvcClient) DiskInfo(ctx context.Context, in *DiskInfoRequest, opts 
 // All implementations must embed UnimplementedFileSvcServer
 // for forward compatibility
 type FileSvcServer interface {
+	//  文件列表
+	List(context.Context, *FileListRequest) (*FileListResponse, error)
+	//  删除文件
 	Delete(context.Context, *FileDeleteRequest) (*FileDeleteResponse, error)
 	//  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
 	DeleteUndocumentedFiles(context.Context, *DeleteUndocumentedFilesRequest) (*DeleteUndocumentedFilesResponse, error)
+	// DiskInfo 查看上传文件目录大小
 	DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error)
 	mustEmbedUnimplementedFileSvcServer()
 }
@@ -75,6 +92,9 @@ type FileSvcServer interface {
 type UnimplementedFileSvcServer struct {
 }
 
+func (UnimplementedFileSvcServer) List(context.Context, *FileListRequest) (*FileListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
 func (UnimplementedFileSvcServer) Delete(context.Context, *FileDeleteRequest) (*FileDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
@@ -95,6 +115,24 @@ type UnsafeFileSvcServer interface {
 
 func RegisterFileSvcServer(s grpc.ServiceRegistrar, srv FileSvcServer) {
 	s.RegisterService(&FileSvc_ServiceDesc, srv)
+}
+
+func _FileSvc_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileSvcServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/FileSvc/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileSvcServer).List(ctx, req.(*FileListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _FileSvc_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -158,6 +196,10 @@ var FileSvc_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "FileSvc",
 	HandlerType: (*FileSvcServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "List",
+			Handler:    _FileSvc_List_Handler,
+		},
 		{
 			MethodName: "Delete",
 			Handler:    _FileSvc_Delete_Handler,

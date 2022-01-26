@@ -38,7 +38,7 @@ func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	case "mysql":
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	case "sqlite":
-		db, err = gorm.Open(sqlite.Open(cfg.DBDatabase), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(cfg.DBDatabase), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	default:
 		return errors.New("db_driver must in ['sqlite', 'mysql']")
 	}

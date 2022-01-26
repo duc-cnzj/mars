@@ -7640,6 +7640,242 @@ export const DiskInfoResponse = $root.DiskInfoResponse = (() => {
     return DiskInfoResponse;
 })();
 
+export const FileListRequest = $root.FileListRequest = (() => {
+
+    /**
+     * Properties of a FileListRequest.
+     * @exports IFileListRequest
+     * @interface IFileListRequest
+     * @property {number|null} [page] FileListRequest page
+     * @property {number|null} [page_size] FileListRequest page_size
+     * @property {boolean|null} [without_deleted] FileListRequest without_deleted
+     */
+
+    /**
+     * Constructs a new FileListRequest.
+     * @exports FileListRequest
+     * @classdesc Represents a FileListRequest.
+     * @implements IFileListRequest
+     * @constructor
+     * @param {IFileListRequest=} [properties] Properties to set
+     */
+    function FileListRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FileListRequest page.
+     * @member {number} page
+     * @memberof FileListRequest
+     * @instance
+     */
+    FileListRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * FileListRequest page_size.
+     * @member {number} page_size
+     * @memberof FileListRequest
+     * @instance
+     */
+    FileListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * FileListRequest without_deleted.
+     * @member {boolean} without_deleted
+     * @memberof FileListRequest
+     * @instance
+     */
+    FileListRequest.prototype.without_deleted = false;
+
+    /**
+     * Encodes the specified FileListRequest message. Does not implicitly {@link FileListRequest.verify|verify} messages.
+     * @function encode
+     * @memberof FileListRequest
+     * @static
+     * @param {FileListRequest} message FileListRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FileListRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.without_deleted != null && Object.hasOwnProperty.call(message, "without_deleted"))
+            writer.uint32(/* id 3, wireType 0 =*/24).bool(message.without_deleted);
+        return writer;
+    };
+
+    /**
+     * Decodes a FileListRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof FileListRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FileListRequest} FileListRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FileListRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.FileListRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                message.without_deleted = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return FileListRequest;
+})();
+
+export const FileListResponse = $root.FileListResponse = (() => {
+
+    /**
+     * Properties of a FileListResponse.
+     * @exports IFileListResponse
+     * @interface IFileListResponse
+     * @property {number|null} [page] FileListResponse page
+     * @property {number|null} [page_size] FileListResponse page_size
+     * @property {Array.<FileModel>|null} [items] FileListResponse items
+     * @property {number|null} [count] FileListResponse count
+     */
+
+    /**
+     * Constructs a new FileListResponse.
+     * @exports FileListResponse
+     * @classdesc Represents a FileListResponse.
+     * @implements IFileListResponse
+     * @constructor
+     * @param {IFileListResponse=} [properties] Properties to set
+     */
+    function FileListResponse(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FileListResponse page.
+     * @member {number} page
+     * @memberof FileListResponse
+     * @instance
+     */
+    FileListResponse.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * FileListResponse page_size.
+     * @member {number} page_size
+     * @memberof FileListResponse
+     * @instance
+     */
+    FileListResponse.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * FileListResponse items.
+     * @member {Array.<FileModel>} items
+     * @memberof FileListResponse
+     * @instance
+     */
+    FileListResponse.prototype.items = $util.emptyArray;
+
+    /**
+     * FileListResponse count.
+     * @member {number} count
+     * @memberof FileListResponse
+     * @instance
+     */
+    FileListResponse.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified FileListResponse message. Does not implicitly {@link FileListResponse.verify|verify} messages.
+     * @function encode
+     * @memberof FileListResponse
+     * @static
+     * @param {FileListResponse} message FileListResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FileListResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+        if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.FileModel.encode(message.items[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int64(message.count);
+        return writer;
+    };
+
+    /**
+     * Decodes a FileListResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof FileListResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FileListResponse} FileListResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FileListResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.FileListResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.page = reader.int64();
+                break;
+            case 2:
+                message.page_size = reader.int64();
+                break;
+            case 3:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.FileModel.decode(reader, reader.uint32()));
+                break;
+            case 4:
+                message.count = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return FileListResponse;
+})();
+
 export const FileSvc = $root.FileSvc = (() => {
 
     /**
@@ -7657,6 +7893,39 @@ export const FileSvc = $root.FileSvc = (() => {
     }
 
     (FileSvc.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = FileSvc;
+
+    /**
+     * Callback as used by {@link FileSvc#list}.
+     * @memberof FileSvc
+     * @typedef ListCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {FileListResponse} [response] FileListResponse
+     */
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof FileSvc
+     * @instance
+     * @param {FileListRequest} request FileListRequest message or plain object
+     * @param {FileSvc.ListCallback} callback Node-style callback called with the error, if any, and FileListResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(FileSvc.prototype.list = function list(request, callback) {
+        return this.rpcCall(list, $root.FileListRequest, $root.FileListResponse, request, callback);
+    }, "name", { value: "List" });
+
+    /**
+     * Calls List.
+     * @function list
+     * @memberof FileSvc
+     * @instance
+     * @param {FileListRequest} request FileListRequest message or plain object
+     * @returns {Promise<FileListResponse>} Promise
+     * @variation 2
+     */
 
     /**
      * Callback as used by {@link FileSvc#delete_}.
@@ -12455,6 +12724,241 @@ export const ProjectModel = $root.ProjectModel = (() => {
     };
 
     return ProjectModel;
+})();
+
+export const FileModel = $root.FileModel = (() => {
+
+    /**
+     * Properties of a FileModel.
+     * @exports IFileModel
+     * @interface IFileModel
+     * @property {number|null} [id] FileModel id
+     * @property {string|null} [path] FileModel path
+     * @property {number|null} [size] FileModel size
+     * @property {string|null} [username] FileModel username
+     * @property {string|null} [namespace] FileModel namespace
+     * @property {string|null} [pod] FileModel pod
+     * @property {string|null} [container] FileModel container
+     * @property {string|null} [container_path] FileModel container_path
+     * @property {string|null} [created_at] FileModel created_at
+     * @property {string|null} [updated_at] FileModel updated_at
+     * @property {string|null} [deleted_at] FileModel deleted_at
+     * @property {boolean|null} [is_deleted] FileModel is_deleted
+     */
+
+    /**
+     * Constructs a new FileModel.
+     * @exports FileModel
+     * @classdesc Represents a FileModel.
+     * @implements IFileModel
+     * @constructor
+     * @param {IFileModel=} [properties] Properties to set
+     */
+    function FileModel(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * FileModel id.
+     * @member {number} id
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * FileModel path.
+     * @member {string} path
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.path = "";
+
+    /**
+     * FileModel size.
+     * @member {number} size
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.size = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+    /**
+     * FileModel username.
+     * @member {string} username
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.username = "";
+
+    /**
+     * FileModel namespace.
+     * @member {string} namespace
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.namespace = "";
+
+    /**
+     * FileModel pod.
+     * @member {string} pod
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.pod = "";
+
+    /**
+     * FileModel container.
+     * @member {string} container
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.container = "";
+
+    /**
+     * FileModel container_path.
+     * @member {string} container_path
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.container_path = "";
+
+    /**
+     * FileModel created_at.
+     * @member {string} created_at
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.created_at = "";
+
+    /**
+     * FileModel updated_at.
+     * @member {string} updated_at
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.updated_at = "";
+
+    /**
+     * FileModel deleted_at.
+     * @member {string} deleted_at
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.deleted_at = "";
+
+    /**
+     * FileModel is_deleted.
+     * @member {boolean} is_deleted
+     * @memberof FileModel
+     * @instance
+     */
+    FileModel.prototype.is_deleted = false;
+
+    /**
+     * Encodes the specified FileModel message. Does not implicitly {@link FileModel.verify|verify} messages.
+     * @function encode
+     * @memberof FileModel
+     * @static
+     * @param {FileModel} message FileModel message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    FileModel.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+        if (message.path != null && Object.hasOwnProperty.call(message, "path"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.path);
+        if (message.size != null && Object.hasOwnProperty.call(message, "size"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.size);
+        if (message.username != null && Object.hasOwnProperty.call(message, "username"))
+            writer.uint32(/* id 4, wireType 2 =*/34).string(message.username);
+        if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+            writer.uint32(/* id 5, wireType 2 =*/42).string(message.namespace);
+        if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+            writer.uint32(/* id 6, wireType 2 =*/50).string(message.pod);
+        if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+            writer.uint32(/* id 7, wireType 2 =*/58).string(message.container);
+        if (message.container_path != null && Object.hasOwnProperty.call(message, "container_path"))
+            writer.uint32(/* id 8, wireType 2 =*/66).string(message.container_path);
+        if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+            writer.uint32(/* id 9, wireType 2 =*/74).string(message.created_at);
+        if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+            writer.uint32(/* id 10, wireType 2 =*/82).string(message.updated_at);
+        if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
+            writer.uint32(/* id 11, wireType 2 =*/90).string(message.deleted_at);
+        if (message.is_deleted != null && Object.hasOwnProperty.call(message, "is_deleted"))
+            writer.uint32(/* id 12, wireType 0 =*/96).bool(message.is_deleted);
+        return writer;
+    };
+
+    /**
+     * Decodes a FileModel message from the specified reader or buffer.
+     * @function decode
+     * @memberof FileModel
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {FileModel} FileModel
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    FileModel.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.FileModel();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.int64();
+                break;
+            case 2:
+                message.path = reader.string();
+                break;
+            case 3:
+                message.size = reader.uint64();
+                break;
+            case 4:
+                message.username = reader.string();
+                break;
+            case 5:
+                message.namespace = reader.string();
+                break;
+            case 6:
+                message.pod = reader.string();
+                break;
+            case 7:
+                message.container = reader.string();
+                break;
+            case 8:
+                message.container_path = reader.string();
+                break;
+            case 9:
+                message.created_at = reader.string();
+                break;
+            case 10:
+                message.updated_at = reader.string();
+                break;
+            case 11:
+                message.deleted_at = reader.string();
+                break;
+            case 12:
+                message.is_deleted = reader.bool();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return FileModel;
 })();
 
 export const NamespaceCreateRequest = $root.NamespaceCreateRequest = (() => {

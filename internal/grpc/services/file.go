@@ -5,6 +5,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/duc-cnzj/mars/internal/scopes"
+	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/pkg/model"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -21,6 +25,60 @@ import (
 
 type FileSvc struct {
 	file.UnimplementedFileSvcServer
+}
+
+func (m *FileSvc) List(ctx context.Context, request *file.FileListRequest) (*file.FileListResponse, error) {
+	var (
+		page     = int(request.Page)
+		pageSize = int(request.PageSize)
+		files    []models.File
+		count    int64
+	)
+	ss := []func(*gorm.DB) *gorm.DB{
+		func(db *gorm.DB) *gorm.DB {
+			if !request.GetWithoutDeleted() {
+				db = db.Unscoped()
+			}
+			return db
+		},
+	}
+	if err := app.DB().Scopes(append(ss, scopes.Paginate(&page, &pageSize))...).Order("`id` DESC").Find(&files).Error; err != nil {
+		return nil, err
+	}
+	app.DB().Model(&models.File{}).Scopes(ss...).Count(&count)
+
+	var res = make([]*model.FileModel, 0, len(files))
+	for _, ff := range files {
+		var (
+			deletedAt string
+			isDeleted bool
+		)
+		if ff.DeletedAt.Valid {
+			isDeleted = true
+			deletedAt = utils.ToRFC3339DatetimeString(&ff.DeletedAt.Time)
+		}
+		res = append(res, &model.FileModel{
+			Id:            int64(ff.ID),
+			Path:          ff.Path,
+			Size:          ff.Size,
+			Username:      ff.Username,
+			Namespace:     ff.Namespace,
+			Pod:           ff.Pod,
+			Container:     ff.Container,
+			ContainerPath: ff.ContainerPath,
+			CreatedAt:     utils.ToRFC3339DatetimeString(&ff.CreatedAt),
+			UpdatedAt:     utils.ToRFC3339DatetimeString(&ff.UpdatedAt),
+			DeletedAt:     deletedAt,
+			IsDeleted:     isDeleted,
+		})
+	}
+
+	return &file.FileListResponse{
+		Page:     int64(page),
+		PageSize: int64(pageSize),
+		Items:    res,
+		Count:    count,
+	}, nil
 }
 
 func (m *FileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {

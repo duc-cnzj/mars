@@ -42,3 +42,18 @@ message ProjectModel {
 
   NamespaceModel namespace = 15;
 }
+
+message FileModel {
+  int64 id = 1;
+  string path = 2;
+  uint64 size = 3;
+  string username = 4;
+  string namespace = 5;
+  string pod = 6;
+  string container = 7;
+  string container_path = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  string deleted_at = 11;
+  bool is_deleted = 12;
+}

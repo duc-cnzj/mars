@@ -138,11 +138,11 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	file.RegisterFileSvcServer(server, new(services.FileSvc))
 
 	g.server = server
-	go func() {
+	go func(server *grpc.Server) {
 		if err := server.Serve(listen); err != nil {
 			mlog.Error(err)
 		}
-	}()
+	}(server)
 
 	return nil
 }
