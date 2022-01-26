@@ -4,6 +4,7 @@ import { commit } from "../api/gitlab";
 import { branchOptions, commitOptions, projectOptions } from "../api/gitlab";
 import { get } from "lodash";
 import pb from "../api/compiled";
+import { useAsyncState } from "../utils/async";
 
 const ProjectSelector: React.FC<{
   isCreate: boolean;
@@ -21,7 +22,7 @@ const ProjectSelector: React.FC<{
     gitlabCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate }) => {
-  const [options, setOptions] = useState<pb.GitOption[]>([]);
+  const [options, setOptions] = useAsyncState<pb.GitOption[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitlabCommit : false);
 
@@ -72,39 +73,42 @@ const ProjectSelector: React.FC<{
         );
       }
     });
-  }, [v, isCreate]);
+  }, [v, isCreate, setOptions]);
 
-  const loadData = useCallback((selectedOptions: any | undefined) => {
-    if (!selectedOptions) {
-      return;
-    }
-    const targetOption = selectedOptions[selectedOptions.length - 1];
-    targetOption.loading = true;
-    targetOption.children = undefined;
+  const loadData = useCallback(
+    (selectedOptions: any | undefined) => {
+      if (!selectedOptions) {
+        return;
+      }
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      targetOption.loading = true;
+      targetOption.children = undefined;
 
-    switch (targetOption.type) {
-      case "project":
-        branchOptions({
-          project_id: String(targetOption.value),
-          all: false,
-        }).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions((opts) => [...opts]);
-        });
-        return;
-      case "branch":
-        commitOptions({
-          project_id: String(targetOption.projectId),
-          branch: String(targetOption.value),
-        }).then((res) => {
-          targetOption.loading = false;
-          targetOption.children = res.data.data;
-          setOptions((opts) => [...opts]);
-        });
-        return;
-    }
-  }, []);
+      switch (targetOption.type) {
+        case "project":
+          branchOptions({
+            project_id: String(targetOption.value),
+            all: false,
+          }).then((res) => {
+            targetOption.loading = false;
+            targetOption.children = res.data.data;
+            setOptions((opts) => [...opts]);
+          });
+          return;
+        case "branch":
+          commitOptions({
+            project_id: String(targetOption.projectId),
+            branch: String(targetOption.value),
+          }).then((res) => {
+            targetOption.loading = false;
+            targetOption.children = res.data.data;
+            setOptions((opts) => [...opts]);
+          });
+          return;
+      }
+    },
+    [setOptions]
+  );
 
   const onChange = (values: (string | number)[]) => {
     let gitlabId = get(values, 0, 0);
