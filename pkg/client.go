@@ -242,9 +242,9 @@ func WithBearerToken(token string) Option {
 	}
 }
 
-// WithTokenAuthRefresh
+// WithTokenAutoRefresh
 // TODO c.StreamClientInterceptors 有点难搞，好在目前没用到，之后用到了需要搞一下
-func WithTokenAuthRefresh() Option {
+func WithTokenAutoRefresh() Option {
 	return func(c *Client) {
 		c.UnaryClientInterceptors = append(c.UnaryClientInterceptors,
 			func(
