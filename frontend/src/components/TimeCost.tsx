@@ -1,20 +1,40 @@
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, { useEffect, useState, useCallback, memo, useRef } from "react";
 import { FieldTimeOutlined } from "@ant-design/icons";
 
 const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
-  const [seconds, setSeconds] = useState<number>(0.0);
+  const [startTime, setStartTime] = useState(0);
+  const [now, setNow] = useState(0);
+  const intervalRef = useRef<NodeJS.Timer>();
+
+  const handleStart = useCallback(() => {
+    setStartTime(Date.now());
+    setNow(Date.now());
+
+    intervalRef.current && clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setNow(Date.now());
+    }, 10);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    intervalRef.current && clearInterval(intervalRef.current);
+  }, []);
+
   useEffect(() => {
     if (start) {
-      setSeconds(0.0);
-      let id = setInterval(() => {
-        setSeconds((c) => (c += 0.1));
-      }, 100);
-      return () => {
-        clearInterval(id);
-        console.log("clearInterval(id)");
-      };
+      handleStart();
     }
-  }, [start, setSeconds]);
+
+    return () => {
+      console.log("clear");
+      handleStop();
+    };
+  }, [start, handleStart, handleStop]);
+
+  let secondsPassed = 0;
+  if (startTime != null && now != null) {
+    secondsPassed = (now - startTime) / 1000;
+  }
 
   const getColor = useCallback((seconds: number): string => {
     if (seconds < 10) {
@@ -37,7 +57,10 @@ const TimeCost: React.FC<{ start: boolean }> = ({ start }) => {
     <div style={{ paddingTop: 10, paddingBottom: 10 }}>
       <FieldTimeOutlined />
       &nbsp; 耗时：
-      <span style={{ color: getColor(seconds) }}>{seconds.toFixed(1)}</span> s
+      <span style={{ color: getColor(secondsPassed) }}>
+        {secondsPassed.toFixed(1)}
+      </span>{" "}
+      s
     </div>
   );
 };
