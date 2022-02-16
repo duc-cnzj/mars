@@ -86,7 +86,7 @@ func ClusterInfo() *InfoResponse {
 		if !notWork {
 			workerNodes = append(workerNodes, node)
 		} else {
-			notWorkNodes = append(workerNodes, node)
+			notWorkNodes = append(notWorkNodes, node)
 		}
 	}
 
@@ -106,7 +106,19 @@ func ClusterInfo() *InfoResponse {
 		LabelSelector: selector.String(),
 	})
 
+	IsStatisticalNode := func(workerNodes []v1.Node, name string) bool {
+		for _, node := range workerNodes {
+			if node.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+
 	for _, item := range list.Items {
+		if !IsStatisticalNode(workerNodes, item.Name) {
+			continue
+		}
 		usedCpu.Add(item.Usage.Cpu().DeepCopy())
 		usedMemory.Add(item.Usage.Memory().DeepCopy())
 	}
@@ -156,8 +168,7 @@ func getNodeRequestCpuAndMemory(noExecuteNodes []v1.Node) (*resource.Quantity, *
 	)
 
 	var nodeSelector []string = []string{
-		"status.phase!=" + string(v1.PodSucceeded),
-		"status.phase!=" + string(v1.PodFailed),
+		"status.phase==" + string(v1.PodRunning),
 	}
 	for _, node := range noExecuteNodes {
 		nodeSelector = append(nodeSelector, "spec.nodeName!="+node.Name)

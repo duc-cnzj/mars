@@ -2,8 +2,6 @@
 <p align="center">专为devops而生，30秒内部署一个应用。</p>
 <br><br>
 
-![build](https://github.com/DuC-cnZj/mars/actions/workflows/ci.yaml/badge.svg)
-
 [查看文档](https://youngduc.gitbook.io/mars/)
 
 ## 💡 简介
