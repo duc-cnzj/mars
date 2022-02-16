@@ -299,7 +299,8 @@ const CreateProjectModal: React.FC<{
                     htmlType="submit"
                     style={{ fontSize: 12, marginRight: 5 }}
                     size="small"
-                    type="primary"
+                    danger={info.status === "bad"}
+                    type={"primary"}
                     loading={list[slug]?.isLoading}
                   >
                     {info.status === "bad" ? "集群资源不足" : "部署"}
