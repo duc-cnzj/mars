@@ -42,6 +42,7 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.MetricsBootstrapper{},
 	&bootstrappers.OidcBootstrapper{},
 	&bootstrappers.TracingBootstrapper{},
+	&bootstrappers.AppBootstrapper{},
 }
 
 type emptyMetrics struct{}
@@ -64,11 +65,14 @@ type Application struct {
 	metrics       contracts.Metrics
 	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
-	hooks         map[Hook][]contracts.Callback
-	plugins       map[string]contracts.PluginInterface
-	oidcProvider  contracts.OidcConfig
-	uploader      contracts.Uploader
-	auth          contracts.AuthInterface
+
+	hooksMu sync.RWMutex
+	hooks   map[Hook][]contracts.Callback
+
+	plugins      map[string]contracts.PluginInterface
+	oidcProvider contracts.OidcConfig
+	uploader     contracts.Uploader
+	auth         contracts.AuthInterface
 
 	sf    *singleflight.Group
 	cache contracts.CacheInterface
@@ -269,14 +273,20 @@ func (app *Application) Shutdown() {
 }
 
 func (app *Application) RegisterAfterShutdownFunc(fn contracts.Callback) {
+	app.hooksMu.Lock()
+	defer app.hooksMu.Unlock()
 	app.hooks[AfterDownHook] = append(app.hooks[AfterDownHook], fn)
 }
 
 func (app *Application) RegisterBeforeShutdownFunc(fn contracts.Callback) {
+	app.hooksMu.Lock()
+	defer app.hooksMu.Unlock()
 	app.hooks[BeforeDownHook] = append(app.hooks[BeforeDownHook], fn)
 }
 
 func (app *Application) RunServerHooks(hook Hook) {
+	app.hooksMu.RLock()
+	defer app.hooksMu.RUnlock()
 	wg := sync.WaitGroup{}
 	for _, cb := range app.hooks[hook] {
 		wg.Add(1)
@@ -289,5 +299,7 @@ func (app *Application) RunServerHooks(hook Hook) {
 }
 
 func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {
+	app.hooksMu.Lock()
+	defer app.hooksMu.Unlock()
 	app.hooks[BeforeRunHook] = append(app.hooks[BeforeRunHook], cb)
 }

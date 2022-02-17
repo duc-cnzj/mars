@@ -751,8 +751,8 @@ func (v *VariableLoader) Load(j *Jober) error {
 	//Host1...Host10
 	sub := getPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	for i := 1; i <= 10; i++ {
-		v.values[fmt.Sprintf("%s%d", VarHost, i)] = getDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
-		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", j.project.Name, i)))
+		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
+		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = plugins.GetDomainManager().GetCertSecretName(j.project.Name, i)
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
@@ -779,7 +779,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	v.values[VarPipeline] = pipelineID
 
 	// ingress
-	v.values[VarClusterIssuer] = app.Config().ClusterIssuer
+	v.values[VarClusterIssuer] = plugins.GetDomainManager().GetClusterIssuer()
 
 	tpl, err := template.New("values_yaml").Delims(leftDelim, rightDelim).Parse(j.config.ValuesYaml)
 	if err != nil {

@@ -184,8 +184,8 @@ func main()  {
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
 - [ ] namespace all -> list
-- [ ] 增加 basic? or CA? auth，参考 k8s 的做法
 - [ ] grpc 可配置使用 tls
+- [ ] ~~增加 basic? or CA? auth，参考 k8s 的做法~~
 - [x] 重构所有表单，增加表单验证
 - [x] 自定义额外字段，组合模式(前端就算了，连类都不用了，都是 FC)
 - [x] client 集成 copy to pod & uploader

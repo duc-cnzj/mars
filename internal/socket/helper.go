@@ -7,10 +7,7 @@ import (
 	"sync"
 	"time"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/plugins"
-
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -106,14 +103,6 @@ func getPreOccupiedLenByValuesYaml(values string) int {
 		}
 	}
 	return sub
-}
-
-func getDomainByIndex(project, namespace string, index, preOccupiedLen int) string {
-	if !app.Config().HasWildcardDomain() {
-		return ""
-	}
-
-	return plugins.GetDomainResolver().GetDomainByIndex(strings.TrimLeft(app.Config().WildcardDomain, "*."), project, namespace, index, preOccupiedLen)
 }
 
 func max(a, b int) int {
