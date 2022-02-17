@@ -36,8 +36,8 @@ domain_manager_plugin:
 #    tls_crt: ""
 #  name: cert-manager_domain_manager
 #  args:
-#    wildcard_domain: "*.test.aliyun-app.ebeauty.beauty"
-#    cluster_issuer: "letsencrypt-demo"
+#    wildcard_domain: "*.mars.local"
+#    cluster_issuer: "letsencrypt-mars"
 picture_plugin:
   name: picture_cartoon
 #  name: picture_bing
@@ -65,10 +65,6 @@ jaeger_user: ""
 jaeger_password: ""
 jaeger_agent_host_port: ""
 
-# 通配符域名，自动生成对应命名空间下的 https 域名
-wildcard_domain: "*.test.local"
-# cert-manager 的 cluster_issuer 名称
-cluster_issuer: "prod"
 # 集群外网访问 ip
 external_ip: "127.0.0.1"
 
