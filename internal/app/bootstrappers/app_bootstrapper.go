@@ -16,13 +16,13 @@ import (
 type AppBootstrapper struct{}
 
 func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) {
-		// 预加载插件
-		plugins.GetWsSender()
-		plugins.GetPicture()
-		plugins.GetGitServer()
-		plugins.GetDomainManager()
+	// 预加载插件
+	plugins.GetWsSender()
+	plugins.GetPicture()
+	plugins.GetGitServer()
+	plugins.GetDomainManager()
 
+	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) {
 		// 需要更新 tls 证书
 		name, key, crt := plugins.GetDomainManager().GetCerts()
 		if name != "" && key != "" && crt != "" {
