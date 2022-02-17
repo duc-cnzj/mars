@@ -1,4 +1,4 @@
-package domain_resolver
+package domain_manager
 
 import (
 	"crypto/md5"
@@ -9,62 +9,92 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/internal/utils"
 )
 
 var (
-	name            = "domain_resolver_default"
+	name            = "cert-manager_domain_manager"
 	maxDomainLength = 64
 )
 
-var _ plugins.DomainResolver = (*DefaultDomainResolver)(nil)
+var _ plugins.DomainManager = (*CertManager)(nil)
 
 func init() {
-	dr := &DefaultDomainResolver{}
+	dr := &CertManager{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
-// DefaultDomainResolver 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
-type DefaultDomainResolver struct {
-	nsPrefix string
+// CertManager 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
+type CertManager struct {
+	nsPrefix       string
+	clusterIssuer  string
+	wildcardDomain string
+	domainSuffix   string
 }
 
-func (d *DefaultDomainResolver) Name() string {
+func (d *CertManager) Name() string {
 	return name
 }
 
-func (d *DefaultDomainResolver) Initialize(args map[string]interface{}) error {
+func (d *CertManager) Initialize(args map[string]interface{}) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
+
+	if issuer, ok := args["cluster_issuer"]; ok {
+		d.clusterIssuer = issuer.(string)
+	}
+
+	if wd, ok := args["wildcard_domain"]; ok {
+		d.wildcardDomain = wd.(string)
+		d.domainSuffix = strings.TrimLeft(d.wildcardDomain, "*.")
+	}
+
+	if d.clusterIssuer == "" || d.wildcardDomain == "" {
+		return errors.New("cluster_issuer, wildcard_domain required")
+	}
+
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
-func (d *DefaultDomainResolver) Destroy() error {
+func (d *CertManager) Destroy() error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (d *DefaultDomainResolver) GetDomainByIndex(domainSuffix, projectName, namespace string, index, preOccupiedLen int) string {
+func (d *CertManager) GetCertSecretName(projectName string, index int) string {
+	return fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", projectName, index)))
+}
+
+func (d *CertManager) GetClusterIssuer() string {
+	return d.clusterIssuer
+}
+
+func (d *CertManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
 		namespace:    namespace,
 		index:        index,
 		nsPrefix:     d.nsPrefix,
-		domainSuffix: domainSuffix,
+		domainSuffix: d.domainSuffix,
 	}.SubStr()
 }
 
-func (d *DefaultDomainResolver) GetDomain(domainSuffix, projectName, namespace string, preOccupiedLen int) string {
+func (d *CertManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
 		namespace:    namespace,
 		index:        -1,
 		nsPrefix:     d.nsPrefix,
-		domainSuffix: domainSuffix,
+		domainSuffix: d.domainSuffix,
 	}.SubStr()
+}
+
+func (d *CertManager) GetCerts() (name, key, crt string) {
+	return "", "", ""
 }
 
 type Subdomain struct {

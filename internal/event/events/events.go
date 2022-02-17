@@ -6,6 +6,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/internal/utils"
 	eventpb "github.com/duc-cnzj/mars/pkg/event"
 	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 	v1 "k8s.io/api/core/v1"
@@ -136,6 +137,20 @@ func HandleProjectChanged(data interface{}, e contracts.Event) error {
 			ProjectID:       changedData.Project.ID,
 			GitlabProjectID: gp.ID,
 		})
+	}
+	return nil
+}
+
+func HandleInjectTlsSecret(data interface{}, e contracts.Event) error {
+	if createdData, ok := data.(NamespaceCreatedData); ok {
+		name, key, crt := plugins.GetDomainManager().GetCerts()
+		if name != "" && key != "" && crt != "" {
+			ns := createdData.NsK8sObj.Name
+			err := utils.AddTlsSecret(ns, name, key, crt)
+			if err != nil {
+				mlog.Error(err)
+			}
+		}
 	}
 	return nil
 }

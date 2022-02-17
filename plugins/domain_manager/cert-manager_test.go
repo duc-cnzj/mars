@@ -1,4 +1,4 @@
-package domain_resolver
+package domain_manager
 
 import (
 	"testing"

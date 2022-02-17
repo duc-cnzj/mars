@@ -27,8 +27,17 @@ ws_sender_plugin:
 #    addr: 127.0.0.1:6379
 #    password: ""
 #    db: 1
-domain_resolver_plugin:
-  name: domain_resolver_default
+domain_manager_plugin:
+  name: default_domain_manager
+#  name: manual_domain_manager
+#  args:
+#    wildcard_domain: "*.mars.local"
+#    tls_key: ""
+#    tls_crt: ""
+#  name: cert-manager_domain_manager
+#  args:
+#    wildcard_domain: "*.test.aliyun-app.ebeauty.beauty"
+#    cluster_issuer: "letsencrypt-demo"
 picture_plugin:
   name: picture_cartoon
 #  name: picture_bing

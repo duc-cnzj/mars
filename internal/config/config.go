@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -42,19 +41,17 @@ type Config struct {
 	AdminPassword string `mapstructure:"admin_password"`
 	PrivateKey    string `mapstructure:"private_key"`
 
-	DomainResolverPlugin Plugin `mapstructure:"domain_resolver_plugin"`
-	WsSenderPlugin       Plugin `mapstructure:"ws_sender_plugin"`
-	PicturePlugin        Plugin `mapstructure:"picture_plugin"`
-	GitServerPlugin      Plugin `mapstructure:"git_server_plugin"`
+	DomainManagerPlugin Plugin `mapstructure:"domain_manager_plugin"`
+	WsSenderPlugin      Plugin `mapstructure:"ws_sender_plugin"`
+	PicturePlugin       Plugin `mapstructure:"picture_plugin"`
+	GitServerPlugin     Plugin `mapstructure:"git_server_plugin"`
 
 	UploadDir     string `mapstructure:"upload_dir"`
 	UploadMaxSize string `mapstructure:"upload_max_size"`
 
-	KubeConfig     string `mapstructure:"kubeconfig"`
-	NsPrefix       string `mapstructure:"ns_prefix"`
-	WildcardDomain string `mapstructure:"wildcard_domain"`
-	ClusterIssuer  string `mapstructure:"cluster_issuer"`
-	ExternalIp     string `mapstructure:"external_ip"`
+	KubeConfig string `mapstructure:"kubeconfig"`
+	NsPrefix   string `mapstructure:"ns_prefix"`
+	ExternalIp string `mapstructure:"external_ip"`
 
 	JaegerUser          string `mapstructure:"jaeger_user"`
 	JaegerPassword      string `mapstructure:"jaeger_password"`
@@ -106,14 +103,16 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
-	viper.SetDefault("domain_resolver_plugin", map[string]interface{}{
-		"name": "domain_resolver_default",
+	viper.SetDefault("domain_manager_plugin", map[string]interface{}{
+		"name": "default_domain_manager",
 		"args": nil,
 	})
+
 	viper.SetDefault("ws_sender_plugin", map[string]interface{}{
 		"name": "ws_sender_memory",
 		"args": nil,
 	})
+
 	viper.SetDefault("picture_plugin", map[string]interface{}{
 		"name": "picture_bing",
 		"args": nil,
@@ -139,14 +138,6 @@ func (c *Config) MaxUploadSize() uint64 {
 		return 50 << 20
 	}
 	return bytes
-}
-
-func (c *Config) HasWildcardDomain() bool {
-	if c.WildcardDomain != "" {
-		return strings.HasPrefix(c.WildcardDomain, "*.")
-	}
-
-	return false
 }
 
 func GetFreePort() (int, error) {

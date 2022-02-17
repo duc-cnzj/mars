@@ -10,6 +10,9 @@ import (
 type EventBootstrapper struct{}
 
 var events map[contracts.Event][]contracts.Listener = map[contracts.Event][]contracts.Listener{
+	mevent.EventNamespaceCreated: {
+		mevent.HandleInjectTlsSecret,
+	},
 	mevent.EventNamespaceDeleted: {
 		mevent.HandleNamespaceDeleted,
 	},

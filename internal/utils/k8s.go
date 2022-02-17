@@ -177,3 +177,25 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 
 	return false, "pod not running."
 }
+
+func AddTlsSecret(ns string, name string, key string, crt string) error {
+	_, err := app.K8sClientSet().CoreV1().Secrets(ns).Create(context.TODO(), &v1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Annotations: map[string]string{
+				"created-by": "mars",
+			},
+		},
+		StringData: map[string]string{
+			"tls.key": key,
+			"tls.crt": crt,
+		},
+		Type: v1.SecretTypeTLS,
+	}, metav1.CreateOptions{})
+	return err
+}
