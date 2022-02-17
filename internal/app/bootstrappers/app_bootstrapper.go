@@ -2,7 +2,6 @@ package bootstrappers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -29,9 +28,7 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 				secret, err := app.K8sClient().Client.CoreV1().Secrets(n.Name).Get(context.TODO(), name, metav1.GetOptions{})
 				if err != nil {
 					if apierrors.IsNotFound(err) {
-						if err := utils.AddTlsSecret(n.Name, name, key, crt); err != nil {
-							mlog.Errorf(fmt.Sprintf("[TLS]: add cert error %v", err))
-						}
+						utils.AddTlsSecret(n.Name, name, key, crt)
 						continue
 					}
 				}
