@@ -25,7 +25,6 @@ type ManualDomainManager struct {
 	wildcardDomain string
 	domainSuffix   string
 
-	//	cert here
 	tlsCrt string
 	tlsKey string
 }
