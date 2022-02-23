@@ -284,7 +284,7 @@ const ConfigModal: React.FC<{
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
-          setConfigFileContent(data);
+          setConfigFileContent(String(data));
         } else {
           setConfigFileContent("");
         }
@@ -304,7 +304,7 @@ const ConfigModal: React.FC<{
   ]);
 
   useEffect(() => {
-    setConfigFileTip(!!configFileContent && !watch.config_file_values);
+    setConfigFileTip(configFileContent.length > 0 && !watch.config_file_values);
   }, [configFileContent, watch.config_file_values, setConfigFileTip]);
 
   useEffect(() => {
