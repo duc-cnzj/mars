@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"sync"
 
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -336,14 +335,6 @@ func (p *Project) PodContainerLog(ctx context.Context, request *project.ProjectP
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
 	if err != nil {
-		if status, ok := err.(apierrors.APIStatus); ok {
-			if status.Status().Code == http.StatusBadRequest {
-				mlog.Warningf("CleanEvictedPods code: %d message: %s", status.Status().Code, status.Status().Reason)
-				for _, selector := range projectModel.GetPodSelectors() {
-					utils.CleanEvictedPods(projectModel.Namespace.Name, selector)
-				}
-			}
-		}
 		return nil, err
 	}
 

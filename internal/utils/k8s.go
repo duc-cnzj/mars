@@ -176,7 +176,7 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 	}
 
 	if podInfo.Status.Phase == v1.PodFailed && podInfo.Status.Reason == "Evicted" {
-		app.K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), podName, metav1.DeleteOptions{})
+		go CleanEvictedPods(namespace, labels.Everything().String())
 		return false, fmt.Sprintf("delete po %s when evicted in namespace %s!", podName, namespace)
 	}
 
