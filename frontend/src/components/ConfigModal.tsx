@@ -371,9 +371,9 @@ const ConfigModal: React.FC<{
                         setConfigFileContent("");
                         form.resetFields();
                         setWatch({
-                          config_field: initConfig.config_field,
-                          config_file_values: initConfig.config_file_values,
-                          config_file_type: initConfig.config_file_type,
+                          config_field: config.config_field,
+                          config_file_values: config.config_file_values,
+                          config_file_type: config.config_file_type,
                         });
                       }
                       return !editMode;
