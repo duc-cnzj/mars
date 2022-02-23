@@ -141,6 +141,7 @@ func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
 }
 
 func CleanEvictedPods(namespace string, selectors string) {
+	mlog.Warningf("[K8s]: delete Evicted pods namespace: %s", namespace)
 	list, err := app.K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selectors,
 		FieldSelector: labels.Set{"status.phase": string(v1.PodFailed)}.String(),
