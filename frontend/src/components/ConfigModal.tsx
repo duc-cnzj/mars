@@ -87,6 +87,7 @@ const ConfigModal: React.FC<{
   const [mode, setMode] = useAsyncState("");
   const [form] = Form.useForm();
   const [configFileContent, setConfigFileContent] = useAsyncState("");
+  const [singleConfig, setSingleConfig] = useAsyncState(true);
   const [configFileTip, setConfigFileTip] = useAsyncState(false);
   const loadDefaultValues = useCallback(
     (projectId: number, branch: string) => {
@@ -279,6 +280,7 @@ const ConfigModal: React.FC<{
             watch.config_field.split("->"),
             ""
           );
+          setSingleConfig(typeof data === "object" ? false : true);
           if (typeof data === "object") {
             data = yaml.dump(data);
           }
@@ -295,6 +297,7 @@ const ConfigModal: React.FC<{
   }, [
     editMode,
     watch.config_field,
+    setSingleConfig,
     defaultValues,
     visible,
     setConfigFileContent,
@@ -560,6 +563,7 @@ const ConfigModal: React.FC<{
                           maxHeight: 600,
                           overflowY: "scroll",
                         }}
+                        placement="left"
                         content={
                           <div>
                             <SyntaxHighlighter
@@ -580,9 +584,13 @@ const ConfigModal: React.FC<{
                             <Button
                               size="small"
                               onClick={() => {
-                                setConfig((c) => ({
-                                  ...c,
-                                  config_file_values: configFileContent,
+                                form.setFieldsValue({
+                                  config_file_values: String(configFileContent),
+                                  is_simple_env: singleConfig,
+                                });
+                                setWatch((w) => ({
+                                  ...w,
+                                  config_file_values: String(configFileContent),
                                 }));
                                 setConfigFileTip(false);
                               }}
