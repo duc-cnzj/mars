@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -12,13 +11,12 @@ import (
 	"sync"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
+	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
+
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -390,15 +388,8 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 
 	if err != nil {
 		mlog.Debugf("[Websocket]: %v", err.Error())
-		if strings.Contains(err.Error(), "unable to upgrade connection") {
-			if pod, e := app.K8sClientSet().CoreV1().Pods(container.Namespace).Get(context.Background(), container.Pod, metav1.GetOptions{}); e == nil && pod.Status.Phase == metav1.StatusFailure && pod.Status.Reason == "Evicted" {
-				app.K8sClientSet().CoreV1().Pods(container.Namespace).Delete(context.TODO(), container.Pod, metav1.DeleteOptions{})
-				session.Toast(fmt.Sprintf("delete po %session when evicted in namespace %session!", container.Pod, container.Namespace))
-			}
-		} else {
-			if !silence(err) {
-				session.Toast(err.Error())
-			}
+		if !silence(err) {
+			session.Toast(err.Error())
 		}
 		conn.terminalSessions.Close(sessionId, 2, err.Error())
 		return

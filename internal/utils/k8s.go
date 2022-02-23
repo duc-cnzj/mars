@@ -166,9 +166,18 @@ func CleanEvictedPods(namespace string, selectors string) {
 }
 
 func IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, _ := app.K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	podInfo, err := app.K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return false, err.Error()
+	}
+
 	if podInfo.Status.Phase == v1.PodRunning {
 		return true, ""
+	}
+
+	if podInfo.Status.Phase == v1.PodFailed && podInfo.Status.Reason == "Evicted" {
+		app.K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), podName, metav1.DeleteOptions{})
+		return false, fmt.Sprintf("delete po %s when evicted in namespace %s!", podName, namespace)
 	}
 
 	for _, status := range podInfo.Status.ContainerStatuses {
