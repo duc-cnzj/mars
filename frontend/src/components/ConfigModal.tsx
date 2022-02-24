@@ -560,8 +560,8 @@ const ConfigModal: React.FC<{
                     <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                       <Popover
                         overlayInnerStyle={{
-                          maxHeight: 600,
-                          maxWidth: 400,
+                          maxHeight: 400,
+                          maxWidth: 600,
                           overflowY: "scroll",
                         }}
                         placement="left"
