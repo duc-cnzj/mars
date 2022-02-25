@@ -18,7 +18,7 @@ jobs:
           (cd pkg  && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
           git push origin master) || \
-          (cd pkg && \
+          (mkdir /tmp/new-client && cp -r ./pkg/* /tmp/new-client && cd /tmp/new-client \
           git init && \
           git add . && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
