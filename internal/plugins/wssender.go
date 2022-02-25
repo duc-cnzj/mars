@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 var wsSenderOnce sync.Once

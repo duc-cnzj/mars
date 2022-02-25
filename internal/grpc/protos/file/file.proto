@@ -4,7 +4,7 @@ import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "model/model.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/file;file";
+option go_package = "github.com/duc-cnzj/mars-client/v3/file;file";
 
 message FileDeleteRequest {
   int64 id = 1 [(validate.rules).int64.gte = 1];

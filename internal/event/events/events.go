@@ -1,14 +1,14 @@
 package events
 
 import (
+	eventpb "github.com/duc-cnzj/mars-client/v3/event"
+	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	eventpb "github.com/duc-cnzj/mars/pkg/event"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 	v1 "k8s.io/api/core/v1"
 )
 

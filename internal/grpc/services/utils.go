@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 
+	eventpb "github.com/duc-cnzj/mars-client/v3/event"
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/event/events"
-	eventpb "github.com/duc-cnzj/mars/pkg/event"
 )
 
 var ErrorPermissionDenied = errors.New("没有权限执行该操作")

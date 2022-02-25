@@ -5,8 +5,8 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 
+	"github.com/duc-cnzj/mars-client/v3/cluster"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/cluster"
 )
 
 type Cluster struct {

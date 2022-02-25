@@ -3,9 +3,9 @@ package socket
 import (
 	"sync"
 
+	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 type Msger interface {

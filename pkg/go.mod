@@ -1,9 +1,10 @@
-module github.com/duc-cnzj/mars/pkg
+module github.com/duc-cnzj/mars-client/v3
 
 go 1.17
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
+	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	google.golang.org/genproto v0.0.0-20211018162055-cf77aa76bad2
 	google.golang.org/grpc v1.41.0

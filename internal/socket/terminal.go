@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

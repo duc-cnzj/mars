@@ -9,6 +9,11 @@ import (
 
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/duc-cnzj/mars-client/v3/event"
+	"github.com/duc-cnzj/mars-client/v3/model"
+	"github.com/duc-cnzj/mars-client/v3/namespace"
+	"github.com/duc-cnzj/mars-client/v3/project"
+	"github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -17,11 +22,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/model"
-	"github.com/duc-cnzj/mars/pkg/namespace"
-	"github.com/duc-cnzj/mars/pkg/project"
-	"github.com/duc-cnzj/mars/pkg/websocket"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

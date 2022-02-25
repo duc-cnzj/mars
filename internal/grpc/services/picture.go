@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars-client/v3/picture"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
-	"github.com/duc-cnzj/mars/pkg/picture"
 )
 
 type Picture struct {

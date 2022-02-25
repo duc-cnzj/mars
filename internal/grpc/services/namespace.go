@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v3/event"
+	modelspb "github.com/duc-cnzj/mars-client/v3/model"
+	"github.com/duc-cnzj/mars-client/v3/namespace"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/event"
-	modelspb "github.com/duc-cnzj/mars/pkg/model"
-	"github.com/duc-cnzj/mars/pkg/namespace"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

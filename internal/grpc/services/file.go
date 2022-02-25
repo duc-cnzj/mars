@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/duc-cnzj/mars-client/v3/model"
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/model"
 
+	eventpb "github.com/duc-cnzj/mars-client/v3/event"
+	"github.com/duc-cnzj/mars-client/v3/file"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
-	eventpb "github.com/duc-cnzj/mars/pkg/event"
-	"github.com/duc-cnzj/mars/pkg/file"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v2"
 

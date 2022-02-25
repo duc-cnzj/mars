@@ -11,14 +11,14 @@ import (
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/duc-cnzj/mars-client/v3/cluster"
+	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/pkg/cluster"
-	websocket_pb "github.com/duc-cnzj/mars/pkg/websocket"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)

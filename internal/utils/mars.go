@@ -11,7 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 
-	"github.com/duc-cnzj/mars/pkg/mars"
+	"github.com/duc-cnzj/mars-client/v3/mars"
 	"gopkg.in/yaml.v2"
 )
 

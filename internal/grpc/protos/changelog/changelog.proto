@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/changelog;changelog";
+option go_package = "github.com/duc-cnzj/mars-client/v3/changelog;changelog";
 
 message ChangelogShowRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];

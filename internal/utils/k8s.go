@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/duc-cnzj/mars-client/v3/namespace"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/pkg/namespace"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

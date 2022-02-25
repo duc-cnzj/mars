@@ -1,0 +1,25 @@
+name: release-client
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  release-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - uses: actions/checkout@v2
+      - run: |
+          git config --global user.email "1025434218@qq.com"
+          git config --global user.name "release-robot"
+          git clone https://github.com/DuC-cnZj/mars-client.git /tmp/client && mv /tmp/client/.git ./pkg/ && \
+          (cd pkg  && \
+          git commit -am "release ${{ steps.vars.outputs.tag }}" && \
+          git push origin master) || \
+          (cd pkg && \
+          git init && \
+          git commit -am "release ${{ steps.vars.outputs.tag }}" && \
+          git remote add origin https://github.com/DuC-cnZj/mars-client.git && \
+          git push -u origin master)

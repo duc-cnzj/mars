@@ -4,7 +4,7 @@ import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
 
-option go_package = "github.com/duc-cnzj/mars/pkg/gitserver;gitserver";
+option go_package = "github.com/duc-cnzj/mars-client/v3/gitserver;gitserver";
 
 message GitDestroyRequest {
   string namespace_id = 1 [(validate.rules).string.min_bytes = 1];

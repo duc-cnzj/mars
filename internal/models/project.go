@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v3/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/pkg/websocket"
 
 	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"

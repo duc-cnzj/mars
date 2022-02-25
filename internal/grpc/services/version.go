@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars-client/v3/version"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/pkg/version"
 	marsVersion "github.com/duc-cnzj/mars/version"
 )
 
