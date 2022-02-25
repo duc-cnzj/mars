@@ -181,14 +181,14 @@ jobs:
           cp -r ./pkg/* /tmp/new-client && \
           mv /tmp/client/.git /tmp/new-client && \
           cd /tmp/new-client  && \
-          echo ${{ steps.vars.outputs.tag }} > README.md && \
+          echo ${{ steps.vars.outputs.tag }} > /tmp/new-client/README.md && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
           git push origin master) || \
           (mkdir /tmp/new-client && \
           cp -r ./pkg/* /tmp/new-client && \
           cd /tmp/new-client && \
           git init && \
-          echo ${{ steps.vars.outputs.tag }} > README.md && \
+          echo ${{ steps.vars.outputs.tag }} > /tmp/new-client/README.md && \
           git add . && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
           git remote add origin https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git && \
