@@ -15,7 +15,7 @@ jobs:
           git config --global user.email "1025434218@qq.com"
           git config --global user.name "release-robot"
           git config --global init.defaultBranch "master"
-          git clone https://github.com/DuC-cnZj/mars-client.git /tmp/client && mv /tmp/client/.git ./pkg/ && \
+          git clone https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}github.com/DuC-cnZj/mars-client.git /tmp/client && mv /tmp/client/.git ./pkg/ && \
           (cd pkg  && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
           git push origin master) || \
@@ -23,5 +23,5 @@ jobs:
           git init && \
           git add . && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
-          git remote add origin https://github.com/DuC-cnZj/mars-client.git && \
+          git remote add origin https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}github.com/DuC-cnZj/mars-client.git && \
           git push -u origin master)
