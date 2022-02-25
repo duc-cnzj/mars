@@ -20,13 +20,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars-client/v3/file"
-
 	"github.com/duc-cnzj/mars-client/v3/auth"
 	"github.com/duc-cnzj/mars-client/v3/changelog"
 	"github.com/duc-cnzj/mars-client/v3/cluster"
 	"github.com/duc-cnzj/mars-client/v3/container"
 	"github.com/duc-cnzj/mars-client/v3/event"
+	"github.com/duc-cnzj/mars-client/v3/file"
 	"github.com/duc-cnzj/mars-client/v3/gitserver"
 	"github.com/duc-cnzj/mars-client/v3/mars"
 	rpcmetrics "github.com/duc-cnzj/mars-client/v3/metrics"

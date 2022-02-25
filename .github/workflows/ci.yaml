@@ -165,7 +165,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
   release-client:
-#    needs: [release]
+    needs: [release]
     runs-on: ubuntu-latest
     steps:
       - name: Set output
