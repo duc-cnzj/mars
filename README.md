@@ -186,6 +186,7 @@ func main()  {
 - [ ] namespace all -> list
 - [ ] grpc 可配置使用 tls
 - [ ] ~~增加 basic? or CA? auth，参考 k8s 的做法~~
+- [x] export/import 配置文件
 - [x] 重构所有表单，增加表单验证
 - [x] 自定义额外字段，组合模式(前端就算了，连类都不用了，都是 FC)
 - [x] client 集成 copy to pod & uploader

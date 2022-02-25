@@ -73,6 +73,14 @@ func (e *emptyYamlPrettier) PrettyYaml() string {
 	return ""
 }
 
+type StringYamlPrettier struct {
+	Str string
+}
+
+func (s *StringYamlPrettier) PrettyYaml() string {
+	return s.Str
+}
+
 func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS YamlPrettier) {
 	if oldS == nil {
 		oldS = &emptyYamlPrettier{}

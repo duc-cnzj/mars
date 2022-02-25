@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -124,6 +125,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	}
 
 	handFile(gmux)
+	handleDownloadConfig(gmux)
 	router.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		writer.Write([]byte("pong"))
@@ -154,6 +156,15 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	}(s)
 
 	return nil
+}
+
+func (a *apiGateway) Shutdown(ctx context.Context) error {
+	defer mlog.Info("[Server]: shutdown api-gateway runner.")
+	if a.server == nil {
+		return nil
+	}
+
+	return a.server.Shutdown(ctx)
 }
 
 func handFile(gmux *runtime.ServeMux) {
@@ -194,11 +205,6 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		return
 	}
 	fileName := filepath.Base(fil.Path)
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape(fileName)))
-	w.Header().Set("Expires", "0")
-	w.Header().Set("Content-Transfer-Encoding", "binary")
-	w.Header().Set("Access-Control-Expose-Headers", "*")
 
 	user := r.Context().Value(authCtx{}).(*contracts.UserInfo)
 	e.AuditLog(user.Name,
@@ -213,13 +219,21 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 	}
 	defer open.Close()
 
-	if _, err := io.Copy(w, bufio.NewReaderSize(open, 1024*1024*5)); err != nil {
+	download(w, fileName, open)
+}
+
+func download(w http.ResponseWriter, filename string, reader io.Reader) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape(filename)))
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Content-Transfer-Encoding", "binary")
+	w.Header().Set("Access-Control-Expose-Headers", "*")
+
+	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*5)); err != nil {
 		mlog.Error(err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
-
-type authCtx struct{}
 
 func authenticated(r *http.Request) (*http.Request, bool) {
 	if verifyToken, b := app.Auth().VerifyToken(r.Header.Get("Authorization")); b {
@@ -271,20 +285,114 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 	w.Write(marshal)
 }
 
-func (a *apiGateway) Shutdown(ctx context.Context) error {
-	defer mlog.Info("[Server]: shutdown api-gateway runner.")
-	if a.server == nil {
-		return nil
-	}
-
-	return a.server.Shutdown(ctx)
-}
-
 func serveWs(mux *mux.Router) {
 	ws := socket.NewWebsocketManager()
 	ws.TickClusterHealth()
 	mux.HandleFunc("/api/ws_info", ws.Info)
 	mux.HandleFunc("/ws", ws.Ws)
+}
+
+type ExportProject struct {
+	DefaultBranch   string `json:"default_branch"`
+	Name            string `json:"name"`
+	GitlabProjectId int    `json:"gitlab_project_id"`
+	Enabled         bool   `json:"enabled"`
+	GlobalEnabled   bool   `json:"global_enabled"`
+	GlobalConfig    string `json:"global_config"`
+}
+
+func handleDownloadConfig(gmux *runtime.ServeMux) {
+	gmux.HandlePath("GET", "/api/config/export", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		req, ok := authenticated(r)
+		if !ok {
+			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		user := req.Context().Value(authCtx{}).(*contracts.UserInfo)
+		if !user.IsAdmin() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		var projects []models.GitlabProject
+		app.DB().Find(&projects)
+		data := make([]ExportProject, 0, len(projects))
+		for _, gitlabProject := range projects {
+			data = append(data, ExportProject{
+				DefaultBranch:   gitlabProject.DefaultBranch,
+				Name:            gitlabProject.Name,
+				GitlabProjectId: gitlabProject.GitlabProjectId,
+				Enabled:         gitlabProject.Enabled,
+				GlobalEnabled:   gitlabProject.GlobalEnabled,
+				GlobalConfig:    gitlabProject.GlobalConfig,
+			})
+		}
+		marshal, _ := json.MarshalIndent(&data, "", "\t")
+		e.AuditLog(user.Name,
+			event.ActionType_Download,
+			fmt.Sprintf("下载配置文件"), nil, &e.StringYamlPrettier{Str: string(marshal)})
+		download(w, "mars-config.json", bytes.NewReader(marshal))
+	})
+	gmux.HandlePath("POST", "/api/config/import", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		req, ok := authenticated(r)
+		if !ok {
+			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		user := req.Context().Value(authCtx{}).(*contracts.UserInfo)
+		if !user.IsAdmin() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		if err := r.ParseMultipartForm(int64(app.Config().MaxUploadSize())); err != nil {
+			http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		f, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get file 'attachment': %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+		defer f.Close()
+		all, err := io.ReadAll(f)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		e.AuditLog(user.Name,
+			event.ActionType_Upload,
+			fmt.Sprintf("导入配置文件"), nil, &e.StringYamlPrettier{Str: string(all)})
+		var data []ExportProject
+		err = json.Unmarshal(all, &data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		for _, item := range data {
+			var p models.GitlabProject
+			if err := app.DB().Where("`gitlab_project_id` = ?", item.GitlabProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+				app.DB().Create(&models.GitlabProject{
+					DefaultBranch:   item.DefaultBranch,
+					Name:            item.Name,
+					GitlabProjectId: item.GitlabProjectId,
+					Enabled:         item.Enabled,
+					GlobalEnabled:   item.GlobalEnabled,
+					GlobalConfig:    item.GlobalConfig,
+				})
+			} else {
+				app.DB().Model(&p).Select("DefaultBranch", "Name", "GitlabProjectId", "Enabled", "GlobalEnabled", "GlobalConfig").Updates(&models.GitlabProject{
+					DefaultBranch:   item.DefaultBranch,
+					Name:            item.Name,
+					GitlabProjectId: item.GitlabProjectId,
+					Enabled:         item.Enabled,
+					GlobalEnabled:   item.GlobalEnabled,
+					GlobalConfig:    item.GlobalConfig,
+				})
+			}
+		}
+		w.WriteHeader(204)
+		w.Write([]byte(""))
+	})
 }
 
 func LoadSwaggerUI(mux *mux.Router) {
@@ -302,3 +410,5 @@ func LoadSwaggerUI(mux *mux.Router) {
 		http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
 	)
 }
+
+type authCtx struct{}

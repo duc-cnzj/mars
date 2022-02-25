@@ -11,10 +11,13 @@ import {
   message,
   Tooltip,
   Divider,
+  Upload,
 } from "antd";
 import ConfigModal from "./ConfigModal";
-import { GlobalOutlined } from "@ant-design/icons";
+import { GlobalOutlined, UploadOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
+import { downloadConfig } from "../api/file";
+import { getToken } from "../utils/token";
 
 const { Option } = Select;
 const GitlabProjectManager: React.FC = () => {
@@ -74,11 +77,62 @@ const GitlabProjectManager: React.FC = () => {
     [list]
   );
 
+  const [loading, setLoading] = useState(false);
+  const beforeUpload = useCallback((file: any) => {
+    const isLt50M = file.size / 1024 / 1024 <= 50;
+    if (!isLt50M) {
+      message.error("文件最大不能超过 50MB!");
+    }
+    setLoading(isLt50M);
+
+    return isLt50M;
+  }, []);
+  const props = {
+    name: "file",
+    beforeUpload: beforeUpload,
+    action: process.env.REACT_APP_BASE_URL + "/api/config/import",
+    headers: {
+      authorization: getToken(),
+    },
+    showUploadList: false,
+    onChange(info: any) {
+      if (info.file.status !== "uploading") {
+        console.log(info.file, info.fileList);
+      }
+      if (info.file.status === "done") {
+        message.success("导入成功");
+        setLoading(false);
+      } else if (info.file.status === "error") {
+        message.error(`文件 ${info.file.name} 导入失败`);
+        setLoading(false);
+      }
+    },
+  };
   return (
     <>
       <Card
         className="gitlab"
-        title={"gitlab项目管理"}
+        title={
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>gitlab项目管理</span>
+            <div>
+              <Button type="link" size="small" onClick={() => downloadConfig()}>
+                下载配置
+              </Button>
+              <Upload {...props}>
+                <Button
+                  disabled={loading}
+                  loading={loading}
+                  size="small"
+                  style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
+                  icon={<UploadOutlined />}
+                >
+                  {loading ? "导入中" : "导入配置"}
+                </Button>
+              </Upload>
+            </div>
+          </div>
+        }
         style={{ marginTop: 20, marginBottom: 30 }}
         bodyStyle={{ padding: 0 }}
       >
