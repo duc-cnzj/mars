@@ -163,3 +163,27 @@ jobs:
         allowUpdates: true
         artifacts: "/tmp/app*"
         token: ${{ secrets.GITHUB_TOKEN }}
+
+  release-client:
+#    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - uses: actions/checkout@v2
+      - run: |
+          git config --global user.email "1025434218@qq.com"
+          git config --global user.name "release-robot"
+          git config --global init.defaultBranch "master"
+          git clone https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git /tmp/client && \
+          (mkdir /tmp/new-client && cp -r ./pkg/* /tmp/new-client && mv /tmp/client/.git /tmp/new-client  && \
+          git commit -am "release ${{ steps.vars.outputs.tag }}" && \
+          git push origin master) || \
+          (mkdir /tmp/new-client && cp -r ./pkg/* /tmp/new-client && cd /tmp/new-client && \
+          git init && \
+          git add . && \
+          git commit -am "release ${{ steps.vars.outputs.tag }}" && \
+          git remote add origin https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git && \
+          git push -u origin master)
+          cd /tmp/new-client && git tag ${{ steps.vars.outputs.tag }} && git push --tag
