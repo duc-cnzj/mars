@@ -22,5 +22,6 @@ jobs:
           git init && \
           git add . && \
           git commit -m "release ${{ steps.vars.outputs.tag }}" && \
+          git remote rm origin && \
           git remote add origin https://github.com/DuC-cnZj/mars-client.git && \
           git push -u origin master)
