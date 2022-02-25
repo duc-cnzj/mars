@@ -59,14 +59,14 @@ web 页面配置项目，开启全局配置。
 ## 🍀 go-sdk 接入
 
 ```
-go get -u github.com/duc-cnzj/mars/pkg
+go get -u github.com/duc-cnzj/mars-client/v3
 ```
 
 ```golang
 package main
 
 import (
-  client "github.com/duc-cnzj/mars/pkg"
+  client "github.com/duc-cnzj/mars-client/v3"
 )
 
 func main()  {
