@@ -182,6 +182,7 @@ jobs:
           mv /tmp/client/.git /tmp/new-client && \
           cd /tmp/new-client  && \
           echo ${{ steps.vars.outputs.tag }} > /tmp/new-client/README.md && \
+          git add . && \
           git commit -am "release ${{ steps.vars.outputs.tag }}" && \
           git push origin master) || \
           (mkdir /tmp/new-client && \
