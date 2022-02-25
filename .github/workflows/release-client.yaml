@@ -20,6 +20,7 @@ jobs:
           git push origin master) || \
           (cd pkg && \
           git init && \
-          git commit -am "release ${{ steps.vars.outputs.tag }}" && \
+          git add . && \
+          git commit -m "release ${{ steps.vars.outputs.tag }}" && \
           git remote add origin https://github.com/DuC-cnZj/mars-client.git && \
           git push -u origin master)
