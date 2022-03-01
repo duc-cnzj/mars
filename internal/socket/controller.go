@@ -359,7 +359,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 	slug := getSlugName(input.NamespaceId, input.Name)
-	job := NewJober(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub)
+	job := NewJober(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
@@ -395,7 +395,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		Config:          input.Config,
 		Atomic:          input.Atomic,
 		ExtraValues:     input.ExtraValues,
-	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub)
+	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
