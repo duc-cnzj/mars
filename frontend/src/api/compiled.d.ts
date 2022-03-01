@@ -6623,6 +6623,9 @@ export class ProjectApplyRequest implements IProjectApplyRequest {
     /** ProjectApplyRequest extra_values. */
     public extra_values: ProjectExtraItem[];
 
+    /** ProjectApplyRequest install_timeout_seconds. */
+    public install_timeout_seconds: number;
+
     /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
      * @param message ProjectApplyRequest message or plain object to encode

@@ -154,7 +154,8 @@ type Jober struct {
 
 	pubsub plugins.PubSub
 
-	user contracts.UserInfo
+	user           contracts.UserInfo
+	timeoutSeconds int64
 }
 
 func NewJober(
@@ -163,16 +164,18 @@ func NewJober(
 	slugName string,
 	messager DeployMsger,
 	pubsub plugins.PubSub,
+	timeoutSeconds int64,
 ) Job {
 	return &Jober{
-		user:          user,
-		pubsub:        pubsub,
-		messager:      messager,
-		vars:          vars{},
-		valuesOptions: &values.Options{},
-		slugName:      slugName,
-		input:         input,
-		wsType:        input.Type,
+		user:           user,
+		pubsub:         pubsub,
+		messager:       messager,
+		vars:           vars{},
+		valuesOptions:  &values.Options{},
+		slugName:       slugName,
+		input:          input,
+		wsType:         input.Type,
+		timeoutSeconds: timeoutSeconds,
 	}
 }
 
@@ -867,6 +870,6 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic)
+	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds)
 	return nil
 }

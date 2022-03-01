@@ -116,7 +116,7 @@ func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Proje
 		Config:          input.Config,
 		Atomic:          input.Atomic,
 		ExtraValues:     input.ExtraValues,
-	}, *user, "", msger, pubsub)
+	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds)
 
 	go func() {
 		select {

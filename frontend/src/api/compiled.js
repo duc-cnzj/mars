@@ -16547,6 +16547,7 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
      * @property {boolean|null} [atomic] ProjectApplyRequest atomic
      * @property {boolean|null} [websocket_sync] ProjectApplyRequest websocket_sync
      * @property {Array.<ProjectExtraItem>|null} [extra_values] ProjectApplyRequest extra_values
+     * @property {number|null} [install_timeout_seconds] ProjectApplyRequest install_timeout_seconds
      */
 
     /**
@@ -16638,6 +16639,14 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
     ProjectApplyRequest.prototype.extra_values = $util.emptyArray;
 
     /**
+     * ProjectApplyRequest install_timeout_seconds.
+     * @member {number} install_timeout_seconds
+     * @memberof ProjectApplyRequest
+     * @instance
+     */
+    ProjectApplyRequest.prototype.install_timeout_seconds = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
      * Encodes the specified ProjectApplyRequest message. Does not implicitly {@link ProjectApplyRequest.verify|verify} messages.
      * @function encode
      * @memberof ProjectApplyRequest
@@ -16668,6 +16677,8 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
         if (message.extra_values != null && message.extra_values.length)
             for (let i = 0; i < message.extra_values.length; ++i)
                 $root.ProjectExtraItem.encode(message.extra_values[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
+        if (message.install_timeout_seconds != null && Object.hasOwnProperty.call(message, "install_timeout_seconds"))
+            writer.uint32(/* id 10, wireType 0 =*/80).int64(message.install_timeout_seconds);
         return writer;
     };
 
@@ -16717,6 +16728,9 @@ export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
                 if (!(message.extra_values && message.extra_values.length))
                     message.extra_values = [];
                 message.extra_values.push($root.ProjectExtraItem.decode(reader, reader.uint32()));
+                break;
+            case 10:
+                message.install_timeout_seconds = reader.int64();
                 break;
             default:
                 reader.skipType(tag & 7);

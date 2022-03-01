@@ -101,6 +101,8 @@ message ProjectApplyRequest {
   bool atomic = 7;
   bool websocket_sync = 8;
   repeated ProjectExtraItem extra_values = 9;
+  // 部署超时时间
+  int64 install_timeout_seconds = 10 [(validate.rules).int64.gte = 0];
 }
 
 message ProjectDeleteResponse {}

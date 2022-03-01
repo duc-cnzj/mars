@@ -1649,6 +1649,17 @@ func (m *ProjectApplyRequest) validate(all bool) error {
 
 	}
 
+	if m.GetInstallTimeoutSeconds() < 0 {
+		err := ProjectApplyRequestValidationError{
+			field:  "InstallTimeoutSeconds",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return ProjectApplyRequestMultiError(errors)
 	}

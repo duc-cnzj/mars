@@ -19,25 +19,27 @@ type ReleaseInstaller interface {
 }
 
 type releaseInstaller struct {
-	chart       *chart.Chart
-	releaseName string
-	namespace   string
-	percenter   Percentable
-	startTime   time.Time
-	atomic      bool
-	valueOpts   *values.Options
-	logs        *timeOrderedSetString
-	messageCh   chan MessageItem
+	chart          *chart.Chart
+	timeoutSeconds int64
+	releaseName    string
+	namespace      string
+	percenter      Percentable
+	startTime      time.Time
+	atomic         bool
+	valueOpts      *values.Options
+	logs           *timeOrderedSetString
+	messageCh      chan MessageItem
 }
 
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, atomic bool) ReleaseInstaller {
+func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, atomic bool, timeoutSeconds int64) ReleaseInstaller {
 	return &releaseInstaller{
-		chart:       chart,
-		valueOpts:   valueOpts,
-		releaseName: releaseName,
-		atomic:      atomic,
-		namespace:   namespace,
-		logs:        NewTimeOrderedSetString(),
+		chart:          chart,
+		valueOpts:      valueOpts,
+		releaseName:    releaseName,
+		atomic:         atomic,
+		namespace:      namespace,
+		logs:           NewTimeOrderedSetString(),
+		timeoutSeconds: timeoutSeconds,
 	}
 }
 
@@ -51,7 +53,7 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh chan MessageIt
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
-	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.atomic)
+	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.atomic, r.timeoutSeconds)
 }
 
 func (r *releaseInstaller) Logs() []string {

@@ -68,7 +68,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 }
 
 // UpgradeOrInstall TODO
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool) (*release.Release, error) {
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool, timeoutSeconds int64) (*release.Release, error) {
 	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,9 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 
 		client.Atomic = true
 		client.Wait = true
-		if app.Config().InstallTimeout != 0 {
+		if timeoutSeconds != 0 {
+			client.Timeout = time.Duration(timeoutSeconds) * time.Second
+		} else if app.Config().InstallTimeout != 0 {
 			client.Timeout = app.Config().InstallTimeout
 		} else {
 			client.Timeout = 5 * 60 * time.Second
