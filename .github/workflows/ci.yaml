@@ -78,7 +78,7 @@ jobs:
         with:
           go-version: '1.17'
       - run: |
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo apt update --fix-missing && sudo apt-get install -y gcc-aarch64-linux-gnu
           make build_linux_amd64
           make build_linux_arm64
       - name: upload app-linux-amd64
