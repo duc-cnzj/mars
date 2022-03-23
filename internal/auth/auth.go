@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/golang-jwt/jwt"
 )
@@ -31,8 +29,6 @@ func (a *Auth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 		})
 		if err == nil && parse.Valid {
 			return parse.Claims.(*contracts.JwtClaims), true
-		} else {
-			mlog.Error(err)
 		}
 	}
 

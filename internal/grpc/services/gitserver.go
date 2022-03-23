@@ -80,12 +80,12 @@ func (g *GitServer) DisableProject(ctx context.Context, request *gitserver.GitDi
 func (g *GitServer) All(ctx context.Context, req *gitserver.GitAllProjectsRequest) (*gitserver.GitAllProjectsResponse, error) {
 	do, err, _ := app.Singleflight().Do("GitServerAll", func() (interface{}, error) {
 		mlog.Debug("sfGitServerAll...")
-		return plugins.GetGitServer().ListProjects(1, 100)
+		return plugins.GetGitServer().AllProjects()
 	})
 	if err != nil {
 		return nil, err
 	}
-	var projects = do.(plugins.ListProjectResponseInterface)
+	var projects = do.([]plugins.ProjectInterface)
 
 	var gps []models.GitlabProject
 	app.DB().Find(&gps)
@@ -97,7 +97,7 @@ func (g *GitServer) All(ctx context.Context, req *gitserver.GitAllProjectsReques
 
 	var infos = make([]*gitserver.GitProjectItem, 0)
 
-	for _, project := range projects.GetItems() {
+	for _, project := range projects {
 		var enabled, GlobalEnabled bool
 		if gitlabProject, ok := m[int(project.GetID())]; ok {
 			enabled = gitlabProject.Enabled
