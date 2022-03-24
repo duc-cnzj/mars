@@ -28,7 +28,7 @@ func (p *redisSender) Name() string {
 	return redisSenderName
 }
 
-func (p *redisSender) Initialize(args map[string]interface{}) error {
+func (p *redisSender) Initialize(args map[string]any) error {
 	addr := args["addr"]
 	pwd := args["password"]
 	db := args["db"]
@@ -74,7 +74,7 @@ func (p *rdsPubSub) Close() error {
 	return nil
 }
 
-func (p *rdsPubSub) Info() interface{} {
+func (p *rdsPubSub) Info() any {
 	return "<unknown>"
 }
 func (p *rdsPubSub) Uid() string {

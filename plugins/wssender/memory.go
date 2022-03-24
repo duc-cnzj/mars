@@ -62,7 +62,7 @@ func (ms *memorySender) Name() string {
 	return memorySenderName
 }
 
-func (ms *memorySender) Initialize(args map[string]interface{}) error {
+func (ms *memorySender) Initialize(args map[string]any) error {
 	ms.conns = map[string]map[string]*Conn{}
 	mlog.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil
@@ -84,7 +84,7 @@ type memoryPubSub struct {
 	id      string
 }
 
-func (p *memoryPubSub) Info() interface{} {
+func (p *memoryPubSub) Info() any {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	return p.manager.conns

@@ -43,7 +43,7 @@ func (c *Cartoon) Name() string {
 	return nameCartoon
 }
 
-func (c *Cartoon) Initialize(args map[string]interface{}) error {
+func (c *Cartoon) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
 	return nil
 }

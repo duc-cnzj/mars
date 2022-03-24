@@ -11,42 +11,42 @@ func SetLogger(l contracts.LoggerInterface) {
 	logger = l
 }
 
-func Debug(v ...interface{}) {
+func Debug(v ...any) {
 	logger.Debug(v...)
 }
 
-func Debugf(format string, v ...interface{}) {
+func Debugf(format string, v ...any) {
 	logger.Debugf(format, v...)
 }
 
-func Warning(v ...interface{}) {
+func Warning(v ...any) {
 	logger.Warning(v...)
 }
 
-func Warningf(format string, v ...interface{}) {
+func Warningf(format string, v ...any) {
 	logger.Warningf(format, v...)
 }
 
-func Info(v ...interface{}) {
+func Info(v ...any) {
 	logger.Info(v...)
 }
 
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	logger.Infof(format, v...)
 }
 
-func Error(v ...interface{}) {
+func Error(v ...any) {
 	logger.Error(v...)
 }
 
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	logger.Errorf(format, v...)
 }
 
-func Fatal(v ...interface{}) {
+func Fatal(v ...any) {
 	logger.Fatal(v...)
 }
 
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	logger.Fatalf(format, v...)
 }

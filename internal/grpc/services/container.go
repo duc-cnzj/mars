@@ -115,7 +115,7 @@ func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	app.DB().Model(&file).Updates(map[string]interface{}{
+	app.DB().Model(&file).Updates(map[string]any{
 		"namespace":      request.Namespace,
 		"pod":            request.Pod,
 		"container":      request.Container,

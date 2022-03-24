@@ -36,7 +36,7 @@ func (d *CertManager) Name() string {
 	return name
 }
 
-func (d *CertManager) Initialize(args map[string]interface{}) error {
+func (d *CertManager) Initialize(args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -149,7 +149,7 @@ func (s Subdomain) MediumSubdomain() string {
 func (s Subdomain) SimpleSubdomain() string {
 	leftLen := s.maxLen - len(s.domainSuffix) - 1
 	if leftLen <= 0 {
-		panic(errors.New(fmt.Sprintf("substr error: max len: %d, left len: %d, domainSuffix: %s, project: %s, ns: %s, index: %d", s.maxLen, leftLen, s.domainSuffix, s.projectName, s.namespace, s.index)))
+		panic(fmt.Errorf("substr error: max len: %d, left len: %d, domainSuffix: %s, project: %s, ns: %s, index: %d", s.maxLen, leftLen, s.domainSuffix, s.projectName, s.namespace, s.index))
 	}
 	var str = fmt.Sprintf("%s-%s", s.projectName, s.namespace)
 	if s.HasIndex() {

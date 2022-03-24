@@ -95,10 +95,7 @@ func (u *Uploader) DirSize(dir string) (int64, error) {
 
 func (u *Uploader) Exists(path string) bool {
 	_, err := os.Stat(u.getPath(path))
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (u *Uploader) MkDir(path string, recursive bool) error {

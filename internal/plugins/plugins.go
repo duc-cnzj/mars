@@ -13,7 +13,7 @@ var (
 
 func GetPlugins() map[string]contracts.PluginInterface {
 	mu.RLock()
-	defer mu.RLock()
+	defer mu.RUnlock()
 	return pluginSet
 }
 

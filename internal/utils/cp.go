@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,7 +39,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		return nil, err
 	}
 	if uint64(st.Size()) > app.Config().MaxUploadSize() {
-		return nil, errors.New(fmt.Sprintf("最大不得超过 %s, 你上传的文件大小是 %s", humanize.Bytes(app.Config().MaxUploadSize()), humanize.Bytes(uint64(st.Size()))))
+		return nil, fmt.Errorf("最大不得超过 %s, 你上传的文件大小是 %s", humanize.Bytes(app.Config().MaxUploadSize()), humanize.Bytes(uint64(st.Size())))
 	}
 
 	base := filepath.Base(fpath)

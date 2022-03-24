@@ -12,13 +12,13 @@ import (
 )
 
 type Plugin struct {
-	Name string                 `mapstructure:"name"`
-	Args map[string]interface{} `mapstructure:"args"`
+	Name string         `mapstructure:"name"`
+	Args map[string]any `mapstructure:"args"`
 }
 
-func (p Plugin) GetArgs() map[string]interface{} {
+func (p Plugin) GetArgs() map[string]any {
 	if p.Args == nil {
-		return map[string]interface{}{}
+		return map[string]any{}
 	}
 
 	return p.Args
@@ -103,17 +103,17 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
-	viper.SetDefault("domain_manager_plugin", map[string]interface{}{
+	viper.SetDefault("domain_manager_plugin", map[string]any{
 		"name": "default_domain_manager",
 		"args": nil,
 	})
 
-	viper.SetDefault("ws_sender_plugin", map[string]interface{}{
+	viper.SetDefault("ws_sender_plugin", map[string]any{
 		"name": "ws_sender_memory",
 		"args": nil,
 	})
 
-	viper.SetDefault("picture_plugin", map[string]interface{}{
+	viper.SetDefault("picture_plugin", map[string]any{
 		"name": "picture_bing",
 		"args": nil,
 	})

@@ -33,7 +33,7 @@ func (m *ManualDomainManager) Name() string {
 	return "manual_domain_manager"
 }
 
-func (m *ManualDomainManager) Initialize(args map[string]interface{}) error {
+func (m *ManualDomainManager) Initialize(args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		m.nsPrefix = p.(string)
 	}
@@ -70,7 +70,7 @@ func (m *ManualDomainManager) Initialize(args map[string]interface{}) error {
 		continue
 	}
 	if !validDomain {
-		return errors.New(fmt.Sprintf("域名和证书不匹配, cert dnsNames: %v, 域名: %s", certificate.DNSNames, m.wildcardDomain))
+		return fmt.Errorf("域名和证书不匹配, cert dnsNames: %v, 域名: %s", certificate.DNSNames, m.wildcardDomain)
 	}
 
 	mlog.Info("[Plugin]: " + m.Name() + " plugin Initialize...")

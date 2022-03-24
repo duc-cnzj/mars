@@ -6,5 +6,5 @@ type DBManager interface {
 	DB() *gorm.DB
 	SetDB(*gorm.DB)
 
-	AutoMigrate(dst ...interface{}) error
+	AutoMigrate(dst ...any) error
 }

@@ -15,14 +15,14 @@ var (
 	ErrorInvalidSeparator = errors.New("error invalid separator")
 )
 
-func deepSet(key string, data interface{}) map[string]interface{} {
-	res := map[string]interface{}{}
+func deepSet(key string, data any) map[string]any {
+	res := map[string]any{}
 
 	s := strings.SplitN(key, separator, 2)
 	if len(s) > 1 {
 		res[s[0]] = deepSet(s[1], data)
 	} else {
-		res = map[string]interface{}{key: data}
+		res = map[string]any{key: data}
 	}
 
 	return res
@@ -31,7 +31,7 @@ func deepSet(key string, data interface{}) map[string]interface{} {
 // YamlDeepSetKey 把 'user->name: duc' 设置成
 // user:
 //   name: duc
-func YamlDeepSetKey(field string, data interface{}) ([]byte, error) {
+func YamlDeepSetKey(field string, data any) ([]byte, error) {
 	if strings.HasPrefix(field, separator) || strings.HasSuffix(field, separator) {
 		return nil, fmt.Errorf("%w: %s", ErrorInvalidSeparator, field)
 	}

@@ -37,42 +37,42 @@ func NewZapLogger(app contracts.ApplicationInterface) contracts.LoggerInterface 
 	return &ZapLogger{app: app, sugar: logger.Sugar()}
 }
 
-func (z *ZapLogger) Debug(v ...interface{}) {
+func (z *ZapLogger) Debug(v ...any) {
 	z.sugar.Debug(v...)
 }
 
-func (z *ZapLogger) Debugf(format string, v ...interface{}) {
+func (z *ZapLogger) Debugf(format string, v ...any) {
 	z.sugar.Debugf(format, v...)
 }
 
-func (z *ZapLogger) Warning(v ...interface{}) {
+func (z *ZapLogger) Warning(v ...any) {
 	z.sugar.Warn(v...)
 }
 
-func (z *ZapLogger) Warningf(format string, v ...interface{}) {
+func (z *ZapLogger) Warningf(format string, v ...any) {
 	z.sugar.Warnf(format, v...)
 }
 
-func (z *ZapLogger) Info(v ...interface{}) {
+func (z *ZapLogger) Info(v ...any) {
 	z.sugar.Info(v...)
 }
 
-func (z *ZapLogger) Infof(format string, v ...interface{}) {
+func (z *ZapLogger) Infof(format string, v ...any) {
 	z.sugar.Infof(format, v...)
 }
 
-func (z *ZapLogger) Error(v ...interface{}) {
+func (z *ZapLogger) Error(v ...any) {
 	z.sugar.Error(v...)
 }
 
-func (z *ZapLogger) Errorf(format string, v ...interface{}) {
+func (z *ZapLogger) Errorf(format string, v ...any) {
 	z.sugar.Errorf(format, v...)
 }
 
-func (z *ZapLogger) Fatal(v ...interface{}) {
+func (z *ZapLogger) Fatal(v ...any) {
 	z.sugar.Fatal(v...)
 }
 
-func (z *ZapLogger) Fatalf(format string, v ...interface{}) {
+func (z *ZapLogger) Fatalf(format string, v ...any) {
 	z.sugar.Fatalf(format, v...)
 }

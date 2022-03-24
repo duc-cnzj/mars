@@ -15,9 +15,8 @@ import (
 	"strconv"
 	"time"
 
-	e "github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/dustin/go-humanize"
-
+	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v3/auth"
@@ -36,6 +35,7 @@ import (
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	e "github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/middlewares"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -98,7 +98,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}))
 
 	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
 	}
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
@@ -177,12 +177,12 @@ func handFile(gmux *runtime.ServeMux) {
 	gmux.HandlePath("GET", "/api/download_file/{id}", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		idstr, ok := pathParams["id"]
 		if !ok {
-			http.Error(w, fmt.Sprintf("missing id"), http.StatusBadRequest)
+			http.Error(w, "missing id", http.StatusBadRequest)
 			return
 		}
 		id, err := strconv.Atoi(idstr)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("bad id"), http.StatusBadRequest)
+			http.Error(w, "bad id", http.StatusBadRequest)
 			return
 		}
 		if req, ok := authenticated(r); ok {
@@ -328,7 +328,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 		marshal, _ := json.MarshalIndent(&data, "", "\t")
 		e.AuditLog(user.Name,
 			event.ActionType_Download,
-			fmt.Sprintf("下载配置文件"), nil, &e.StringYamlPrettier{Str: string(marshal)})
+			"下载配置文件", nil, &e.StringYamlPrettier{Str: string(marshal)})
 		download(w, "mars-config.json", bytes.NewReader(marshal))
 	})
 	gmux.HandlePath("POST", "/api/config/import", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
@@ -360,7 +360,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 		}
 		e.AuditLog(user.Name,
 			event.ActionType_Upload,
-			fmt.Sprintf("导入配置文件"), nil, &e.StringYamlPrettier{Str: string(all)})
+			"导入配置文件", nil, &e.StringYamlPrettier{Str: string(all)})
 		var data []ExportProject
 		err = json.Unmarshal(all, &data)
 		if err != nil {

@@ -22,7 +22,7 @@ func (m *Manager) SetDB(db *gorm.DB) {
 	m.db = db
 }
 
-func (m *Manager) AutoMigrate(dst ...interface{}) error {
+func (m *Manager) AutoMigrate(dst ...any) error {
 	if err := m.db.AutoMigrate(dst...); err != nil {
 		return err
 	}

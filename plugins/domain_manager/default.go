@@ -18,7 +18,7 @@ func (d *DefaultDomainManager) Name() string {
 	return "default_domain_manager"
 }
 
-func (d *DefaultDomainManager) Initialize(args map[string]interface{}) error {
+func (d *DefaultDomainManager) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }

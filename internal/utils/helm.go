@@ -68,7 +68,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 }
 
 // UpgradeOrInstall TODO
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...interface{}), atomic bool, timeoutSeconds int64) (*release.Release, error) {
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), atomic bool, timeoutSeconds int64) (*release.Release, error) {
 	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
 	if err != nil {
 		return nil, err
@@ -82,22 +82,22 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		inf := informers.NewSharedInformerFactoryWithOptions(
 			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
 		inf.Events().V1().Events().Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
+			FilterFunc: func(obj any) bool {
 				e := obj.(*v1.Event)
 				return e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
+				AddFunc: func(obj any) {
 					send(obj, releaseName, fn)
 				},
-				UpdateFunc: func(oldObj, newObj interface{}) {
+				UpdateFunc: func(oldObj, newObj any) {
 					o := oldObj.(*v1.Event)
 					n := oldObj.(*v1.Event)
 					if o.ResourceVersion != n.ResourceVersion {
 						send(newObj, releaseName, fn)
 					}
 				},
-				DeleteFunc: func(obj interface{}) {
+				DeleteFunc: func(obj any) {
 					send(obj, releaseName, fn)
 				},
 			},
@@ -171,7 +171,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
-func send(obj interface{}, releaseName string, fn func(format string, v ...interface{})) {
+func send(obj any, releaseName string, fn func(format string, v ...any)) {
 	event := obj.(*v1.Event)
 	p := event.Regarding
 	get, _ := app.K8sClientSet().CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, v12.GetOptions{ResourceVersion: p.ResourceVersion})
@@ -353,7 +353,7 @@ func PackageChart(path string, destDir string) (string, error) {
 	return newPackage.Run(path, nil)
 }
 
-func getActionConfigAndSettings(namespace string, log func(format string, v ...interface{})) (*action.Configuration, *cli.EnvSettings, error) {
+func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, *cli.EnvSettings, error) {
 	settings := cli.New()
 	sflags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	settings.AddFlags(sflags)

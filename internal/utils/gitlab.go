@@ -11,7 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
 
-func DownloadFiles(pid interface{}, commit string, files []string) (string, func(), error) {
+func DownloadFiles(pid any, commit string, files []string) (string, func(), error) {
 	id := fmt.Sprintf("%v", pid)
 	dir := fmt.Sprintf("mars_tmp_%s", RandomString(10))
 	if err := app.Uploader().MkDir(dir, false); err != nil {
@@ -21,7 +21,7 @@ func DownloadFiles(pid interface{}, commit string, files []string) (string, func
 	return DownloadFilesToDir(id, commit, files, app.Uploader().AbsolutePath(dir))
 }
 
-func DownloadFilesToDir(pid interface{}, commit string, files []string, dir string) (string, func(), error) {
+func DownloadFilesToDir(pid any, commit string, files []string, dir string) (string, func(), error) {
 	uploader := app.Uploader()
 
 	wg := &sync.WaitGroup{}

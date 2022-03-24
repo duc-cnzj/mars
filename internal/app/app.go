@@ -23,8 +23,8 @@ type Hook string
 
 const (
 	BeforeRunHook  Hook = "before_run"
-	BeforeDownHook      = "before_down"
-	AfterDownHook       = "after_down"
+	BeforeDownHook Hook = "before_down"
+	AfterDownHook  Hook = "after_down"
 )
 
 var _ contracts.ApplicationInterface = (*Application)(nil)
@@ -48,11 +48,9 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 type emptyMetrics struct{}
 
 func (e *emptyMetrics) IncWebsocketConn() {
-	return
 }
 
 func (e *emptyMetrics) DecWebsocketConn() {
-	return
 }
 
 type Application struct {

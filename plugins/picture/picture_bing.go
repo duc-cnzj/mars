@@ -30,21 +30,21 @@ func init() {
 }
 
 type Item struct {
-	Startdate     string        `json:"startdate"`
-	Fullstartdate string        `json:"fullstartdate"`
-	Enddate       string        `json:"enddate"`
-	URL           string        `json:"url"`
-	Urlbase       string        `json:"urlbase"`
-	Copyright     string        `json:"copyright"`
-	Copyrightlink string        `json:"copyrightlink"`
-	Title         string        `json:"title"`
-	Quiz          string        `json:"quiz"`
-	Wp            bool          `json:"wp"`
-	Hsh           string        `json:"hsh"`
-	Drk           int           `json:"drk"`
-	Top           int           `json:"top"`
-	Bot           int           `json:"bot"`
-	Hs            []interface{} `json:"hs"`
+	Startdate     string `json:"startdate"`
+	Fullstartdate string `json:"fullstartdate"`
+	Enddate       string `json:"enddate"`
+	URL           string `json:"url"`
+	Urlbase       string `json:"urlbase"`
+	Copyright     string `json:"copyright"`
+	Copyrightlink string `json:"copyrightlink"`
+	Title         string `json:"title"`
+	Quiz          string `json:"quiz"`
+	Wp            bool   `json:"wp"`
+	Hsh           string `json:"hsh"`
+	Drk           int    `json:"drk"`
+	Top           int    `json:"top"`
+	Bot           int    `json:"bot"`
+	Hs            []any  `json:"hs"`
 }
 
 type Res struct {
@@ -61,7 +61,7 @@ func (b *Bing) Name() string {
 	return bingname
 }
 
-func (b *Bing) Initialize(args map[string]interface{}) error {
+func (b *Bing) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + b.Name() + " plugin Initialize...")
 	return nil
 }

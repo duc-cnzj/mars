@@ -14,9 +14,9 @@ type Status = string
 
 const (
 	StatusUnknown Status = "unknown"
-	StatusSuccess        = "success"
-	StatusFailed         = "failed"
-	StatusRunning        = "running"
+	StatusSuccess Status = "success"
+	StatusFailed  Status = "failed"
+	StatusRunning Status = "running"
 )
 
 type ProjectInterface interface {

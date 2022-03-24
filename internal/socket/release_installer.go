@@ -60,15 +60,15 @@ func (r *releaseInstaller) Logs() []string {
 	return r.logs.sortedItems()
 }
 
-func (r *releaseInstaller) logger() func(format string, v ...interface{}) {
-	return func(format string, v ...interface{}) {
+func (r *releaseInstaller) logger() func(format string, v ...any) {
+	return func(format string, v ...any) {
 		if r.percenter.Current() < 99 {
 			r.percenter.Add()
 		}
 
 		msg := fmt.Sprintf(format, v...)
 
-		if time.Now().Sub(r.startTime.Add(time.Minute*3)).Seconds() > 0 {
+		if time.Since(r.startTime.Add(time.Minute*3)).Seconds() > 0 {
 			msg = fmt.Sprintf("[如果长时间未成功，请试试 debug 模式]: %s", msg)
 		}
 

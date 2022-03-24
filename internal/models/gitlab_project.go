@@ -31,18 +31,18 @@ func (g GitlabProject) PrettyYaml() string {
 	cfg := mars.MarsConfig{}
 	json.Unmarshal([]byte(g.GlobalConfig), &cfg)
 	clone := proto.Clone(&cfg).(*mars.MarsConfig)
-	var v map[string]interface{}
+	var v map[string]any
 	yaml.Unmarshal([]byte(cfg.ValuesYaml), &v)
 	var data = struct {
-		ConfigFile       string                 `yaml:"config_file"`
-		ConfigFileValues string                 `yaml:"config_file_values"`
-		ConfigField      string                 `yaml:"config_field"`
-		IsSimpleEnv      bool                   `yaml:"is_simple_env"`
-		ConfigFileType   string                 `yaml:"config_file_type"`
-		LocalChartPath   string                 `yaml:"local_chart_path"`
-		Branches         []string               `yaml:"branches"`
-		ValuesYaml       map[string]interface{} `yaml:"values_yaml"`
-		Elements         []*mars.Element        `yaml:"elements"`
+		ConfigFile       string          `yaml:"config_file"`
+		ConfigFileValues string          `yaml:"config_file_values"`
+		ConfigField      string          `yaml:"config_field"`
+		IsSimpleEnv      bool            `yaml:"is_simple_env"`
+		ConfigFileType   string          `yaml:"config_file_type"`
+		LocalChartPath   string          `yaml:"local_chart_path"`
+		Branches         []string        `yaml:"branches"`
+		ValuesYaml       map[string]any  `yaml:"values_yaml"`
+		Elements         []*mars.Element `yaml:"elements"`
 	}{
 		ConfigFile:       clone.ConfigFile,
 		ConfigFileValues: clone.ConfigFileValues,

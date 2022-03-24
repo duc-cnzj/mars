@@ -12,12 +12,12 @@ import (
 func TestYamlDeepSetKey(t *testing.T) {
 	type args struct {
 		field string
-		data  interface{}
+		data  any
 	}
 	tests := []struct {
 		name string
 		args args
-		want interface{}
+		want any
 		err  error
 	}{
 		{
@@ -26,8 +26,8 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "name->duc",
 				data:  "duc",
 			},
-			want: map[string]interface{}{
-				"name": map[string]interface{}{
+			want: map[string]any{
+				"name": map[string]any{
 					"duc": "duc",
 				},
 			},
@@ -39,7 +39,7 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "name",
 				data:  "duc",
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name": "duc",
 			},
 			err: nil,
@@ -50,10 +50,10 @@ func TestYamlDeepSetKey(t *testing.T) {
 				field: "name->duc->a->b",
 				data:  "duc",
 			},
-			want: map[string]interface{}{
-				"name": map[string]interface{}{
-					"duc": map[string]interface{}{
-						"a": map[string]interface{}{
+			want: map[string]any{
+				"name": map[string]any{
+					"duc": map[string]any{
+						"a": map[string]any{
 							"b": "duc",
 						},
 					},

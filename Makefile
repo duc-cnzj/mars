@@ -8,6 +8,16 @@ LDFLAGS=-w -s  \
  -X ${VERSION_PATH}.kubectlVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep k8s.io/client-go | cut -d " " -f2) \
  -X ${VERSION_PATH}.helmVersion=$(shell go list -m -f "{{.Path}} {{.Version}}" all | grep helm.sh/helm/v3 | cut -d " " -f2)
 
+.PHONY: build_tools
+build_tools:
+	go install \
+		github.com/envoyproxy/protoc-gen-validate \
+		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
+		github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
+		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
+		google.golang.org/protobuf/cmd/protoc-gen-go \
+		github.com/golangci/golangci-lint/cmd/golangci-lint \
+		golang.org/x/tools/cmd/goimports
 
 .PHONY: gen
 gen:
@@ -15,14 +25,16 @@ gen:
 
 .PHONY: vet
 vet:
-	go vet ./...
+	go vet ./... && golangci-lint run -D errcheck
 
 .PHONY: release
-release: build_linux_amd64 build_drawin_amd64 build_drawin_arm64
+release: build_linux_amd64 build_darwin_amd64 build_darwin_arm64
 
 .PHONY: fmt
 fmt:
-	gofmt -s -w ./ && goimports -w ./
+	gofmt -s -w ./pkg && \
+	gofmt -s -w -r 'interface{} -> any' ./internal ./plugins ./tools ./version ./third_party ./cmd && \
+	goimports -w ./
 
 .PHONY: serve
 serve:
@@ -52,12 +64,12 @@ build_linux_amd64:
 build_linux_arm64:
 	CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS} -extldflags '-static'" -o app-linux-arm64 main.go
 
-.PHONY: build_drawin_amd64
-build_drawin_amd64:
+.PHONY: build_darwin_amd64
+build_darwin_amd64:
 	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o app-darwin-amd64 main.go
 
-.PHONY: build_drawin_arm64
-build_drawin_arm64:
+.PHONY: build_darwin_arm64
+build_darwin_arm64:
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o app-darwin-arm64 main.go
 
 .PHONY: build_windows

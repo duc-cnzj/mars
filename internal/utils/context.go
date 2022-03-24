@@ -39,6 +39,6 @@ func (m *CustomErrorContext) Err() error {
 	return m.err
 }
 
-func (m *CustomErrorContext) Value(key interface{}) interface{} {
+func (m *CustomErrorContext) Value(key any) any {
 	return nil
 }

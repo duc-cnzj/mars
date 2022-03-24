@@ -36,43 +36,43 @@ func NewLogrusLogger(app contracts.ApplicationInterface) contracts.LoggerInterfa
 	}
 }
 
-func (z *LogrusLogger) Debug(v ...interface{}) {
+func (z *LogrusLogger) Debug(v ...any) {
 	z.logrus.WithField(callerField()).Debug(v...)
 }
 
-func (z *LogrusLogger) Debugf(format string, v ...interface{}) {
+func (z *LogrusLogger) Debugf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Debugf(format, v...)
 }
 
-func (z *LogrusLogger) Warning(v ...interface{}) {
+func (z *LogrusLogger) Warning(v ...any) {
 	z.logrus.WithField(callerField()).Warn(v...)
 }
 
-func (z *LogrusLogger) Warningf(format string, v ...interface{}) {
+func (z *LogrusLogger) Warningf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Warnf(format, v...)
 }
 
-func (z *LogrusLogger) Info(v ...interface{}) {
+func (z *LogrusLogger) Info(v ...any) {
 	z.logrus.WithField(callerField()).Info(v...)
 }
 
-func (z *LogrusLogger) Infof(format string, v ...interface{}) {
+func (z *LogrusLogger) Infof(format string, v ...any) {
 	z.logrus.WithField(callerField()).Infof(format, v...)
 }
 
-func (z *LogrusLogger) Error(v ...interface{}) {
+func (z *LogrusLogger) Error(v ...any) {
 	z.logrus.WithField(callerField()).Error(v...)
 }
 
-func (z *LogrusLogger) Errorf(format string, v ...interface{}) {
+func (z *LogrusLogger) Errorf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Errorf(format, v...)
 }
 
-func (z *LogrusLogger) Fatal(v ...interface{}) {
+func (z *LogrusLogger) Fatal(v ...any) {
 	z.logrus.WithField(callerField()).Fatal(v...)
 }
 
-func (z *LogrusLogger) Fatalf(format string, v ...interface{}) {
+func (z *LogrusLogger) Fatalf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Fatalf(format, v...)
 }
 

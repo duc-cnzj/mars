@@ -38,7 +38,7 @@ func BranchPass(mars *mars.MarsConfig, name string) bool {
 	return false
 }
 
-func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.MarsConfig, error) {
+func GetProjectMarsConfig(projectId any, branch string) (*mars.MarsConfig, error) {
 	var marsC mars.MarsConfig
 
 	var gp models.GitlabProject
@@ -55,7 +55,7 @@ func GetProjectMarsConfig(projectId interface{}, branch string) (*mars.MarsConfi
 		return nil, err
 	}
 	decoder := yaml.NewDecoder(strings.NewReader(data))
-	var m map[string]interface{}
+	var m map[string]any
 	if err := decoder.Decode(&m); err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func ParseInputConfig(mars *mars.MarsConfig, input string) (string, error) {
 			return "", err
 		}
 	} else {
-		var data map[string]interface{}
+		var data map[string]any
 		decoder := yaml.NewDecoder(strings.NewReader(input))
 		if err := decoder.Decode(&data); err != nil {
 			return "", err

@@ -31,7 +31,7 @@ func (n *NsqSender) Name() string {
 	return nsqSenderName
 }
 
-func (n *NsqSender) Initialize(args map[string]interface{}) (err error) {
+func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	n.cfg = gonsq.NewConfig()
 	if s, ok := args["addr"]; ok {
 		n.addr = s.(string)
@@ -72,7 +72,7 @@ type nsq struct {
 	msgCh             chan []byte
 }
 
-func (n *nsq) Info() interface{} {
+func (n *nsq) Info() any {
 	return nil
 }
 
@@ -160,7 +160,7 @@ func (h *handler) HandleMessage(m *gonsq.Message) error {
 	return nil
 }
 
-func setLogLevel(s interface{}) {
+func setLogLevel(s any) {
 	if ss, ok := s.(*gonsq.Consumer); ok {
 		ss.SetLoggerLevel(gonsq.LogLevelError)
 		ss.SetLoggerForLevel(&adapter.NsqLoggerAdapter{}, gonsq.LogLevelError)

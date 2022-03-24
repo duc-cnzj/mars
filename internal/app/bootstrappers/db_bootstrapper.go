@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var Models = []interface{}{
+var Models = []any{
 	&models.Namespace{},
 	&models.Project{},
 	&models.GitlabProject{},

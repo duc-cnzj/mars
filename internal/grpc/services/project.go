@@ -221,7 +221,7 @@ func (p *Project) Delete(ctx context.Context, request *project.ProjectDeleteRequ
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
-	app.Event().Dispatch(events.EventProjectDeleted, map[string]interface{}{"data": &projectModel})
+	app.Event().Dispatch(events.EventProjectDeleted, map[string]any{"data": &projectModel})
 
 	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete,
 		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name))
@@ -331,7 +331,6 @@ func (p *Project) PodContainerLog(ctx context.Context, request *project.ProjectP
 		Container: request.Container,
 		TailLines: &limit,
 	})
-	var raw = []byte("未找到日志")
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
 	if err != nil {

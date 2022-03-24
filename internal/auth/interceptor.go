@@ -10,7 +10,7 @@ import (
 )
 
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if authorizeInterface, ok := info.Server.(contracts.AuthorizeInterface); ok {
 			ctx, err = authorizeInterface.Authorize(ctx, info.FullMethod)
 			if err != nil {
@@ -23,7 +23,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func StreamServerInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		var (
 			newCtx context.Context
 			err    error

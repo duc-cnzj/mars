@@ -32,7 +32,7 @@ func (g *GitServer) EnableProject(ctx context.Context, request *gitserver.GitEna
 
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitProjectId).First(&gp).Error == nil {
-		app.DB().Model(&gp).Updates(map[string]interface{}{
+		app.DB().Model(&gp).Updates(map[string]any{
 			"enabled":        true,
 			"default_branch": project.GetDefaultBranch(),
 			"name":           project.GetName(),
@@ -58,7 +58,7 @@ func (g *GitServer) DisableProject(ctx context.Context, request *gitserver.GitDi
 	project, _ := plugins.GetGitServer().GetProject(request.GitProjectId)
 	var gp models.GitlabProject
 	if app.DB().Where("`gitlab_project_id` = ?", request.GitProjectId).First(&gp).Error == nil {
-		app.DB().Model(&gp).Updates(map[string]interface{}{
+		app.DB().Model(&gp).Updates(map[string]any{
 			"enabled":        false,
 			"default_branch": project.GetDefaultBranch(),
 			"name":           project.GetName(),
@@ -78,7 +78,7 @@ func (g *GitServer) DisableProject(ctx context.Context, request *gitserver.GitDi
 }
 
 func (g *GitServer) All(ctx context.Context, req *gitserver.GitAllProjectsRequest) (*gitserver.GitAllProjectsResponse, error) {
-	do, err, _ := app.Singleflight().Do("GitServerAll", func() (interface{}, error) {
+	do, err, _ := app.Singleflight().Do("GitServerAll", func() (any, error) {
 		mlog.Debug("sfGitServerAll...")
 		return plugins.GetGitServer().AllProjects()
 	})

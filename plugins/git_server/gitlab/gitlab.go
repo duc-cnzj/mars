@@ -185,7 +185,7 @@ func (g *server) Name() string {
 	return name
 }
 
-func (g *server) Initialize(args map[string]interface{}) error {
+func (g *server) Initialize(args map[string]any) error {
 	client, err := gitlab.NewClient(args["token"].(string), gitlab.WithBaseURL(args["baseurl"].(string)))
 	if err != nil {
 		return err
@@ -274,9 +274,7 @@ func (g *server) AllProjects() ([]plugins.ProjectInterface, error) {
 		} else {
 			page = -1
 		}
-		for _, p := range projects.GetItems() {
-			ps = append(ps, p)
-		}
+		ps = append(ps, projects.GetItems()...)
 	}
 
 	return ps, nil
@@ -347,9 +345,7 @@ func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 		} else {
 			page = -1
 		}
-		for _, gitlabBranch := range gitlabBranches.GetItems() {
-			branches = append(branches, gitlabBranch)
-		}
+		branches = append(branches, gitlabBranches.GetItems()...)
 	}
 
 	return branches, nil
@@ -394,7 +390,7 @@ func (g *server) GetFileContentWithBranch(pid string, branch string, filename st
 	return getRawFile(g.client, pid, branch, filename)
 }
 
-func getDirectoryFiles(g *gitlab.Client, pid interface{}, commit string, path string, recursive bool) ([]string, error) {
+func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, recursive bool) ([]string, error) {
 	var files []string
 
 	// TODO: 坑, GitlabClient().Repositories.ListTree 带分页！！凸(艹皿艹 )

@@ -1,6 +1,6 @@
 package contracts
 
-type Listener func(interface{}, Event) error
+type Listener func(any, Event) error
 
 type Event string
 
@@ -20,7 +20,7 @@ type DispatcherInterface interface {
 	HasListeners(Event) bool
 
 	// Dispatch Fire an event and call the listeners.
-	Dispatch(Event, interface{}) error
+	Dispatch(Event, any) error
 
 	// Forget Remove a set of listeners from the dispatcher.
 	Forget(Event)

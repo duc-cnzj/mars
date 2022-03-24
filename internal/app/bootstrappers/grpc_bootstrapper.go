@@ -81,13 +81,13 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(Authenticate),
 			marsauthorizor.StreamServerInterceptor(),
 			validator.StreamServerInterceptor(),
-			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
+			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p any) (err error) {
 				bf := make([]byte, 1024*5)
 				runtime.Stack(bf, false)
 				mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 				return nil
 			})),
-			func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 				defer func(t time.Time) {
 					user, err := marsauthorizor.GetUser(ctx)
 					if err == nil {
@@ -104,7 +104,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(Authenticate),
 			marsauthorizor.UnaryServerInterceptor(),
 			validator.UnaryServerInterceptor(),
-			func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+			func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 				defer func(t time.Time) {
 					user, err := marsauthorizor.GetUser(ctx)
 					if err == nil {
@@ -114,7 +114,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 				return handler(ctx, req)
 			},
-			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
+			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p any) (err error) {
 				bf := make([]byte, 1024*5)
 				runtime.Stack(bf, false)
 				mlog.Error("[Grpc]: recovery error: ", p, string(bf))

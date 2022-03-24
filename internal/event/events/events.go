@@ -46,7 +46,7 @@ type NamespaceDeletedData struct {
 	NsModel *models.Namespace
 }
 
-func HandleAuditLog(data interface{}, e contracts.Event) error {
+func HandleAuditLog(data any, e contracts.Event) error {
 	logData := data.(EventAuditLogData)
 	var fid *int
 	if logData.FileId != 0 {
@@ -106,21 +106,21 @@ func FileAuditLog(username string, msg string, fileId int) {
 	})
 }
 
-func HandleNamespaceDeleted(data interface{}, e contracts.Event) error {
+func HandleNamespaceDeleted(data any, e contracts.Event) error {
 	plugins.GetWsSender().New("", "").ToAll(&plugins.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects}})
 	mlog.Debug("event handled: ", e.String())
 
 	return nil
 }
 
-func HandleProjectDeleted(data interface{}, e contracts.Event) error {
+func HandleProjectDeleted(data any, e contracts.Event) error {
 	plugins.GetWsSender().New("", "").ToAll(&plugins.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects}})
 	mlog.Debug("event handled: ", e.String(), data)
 
 	return nil
 }
 
-func HandleProjectChanged(data interface{}, e contracts.Event) error {
+func HandleProjectChanged(data any, e contracts.Event) error {
 	if changedData, ok := data.(*ProjectChangedData); ok {
 		last := &models.Changelog{}
 		app.DB().Select("Config", "ID", "Version").Order("`id` desc").First(&last)
@@ -149,7 +149,7 @@ func HandleProjectChanged(data interface{}, e contracts.Event) error {
 	return nil
 }
 
-func HandleInjectTlsSecret(data interface{}, e contracts.Event) error {
+func HandleInjectTlsSecret(data any, e contracts.Event) error {
 	if createdData, ok := data.(NamespaceCreatedData); ok {
 		name, key, crt := plugins.GetDomainManager().GetCerts()
 		if name != "" && key != "" && crt != "" {

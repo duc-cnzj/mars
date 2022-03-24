@@ -24,7 +24,7 @@ func (a *Auth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 		token = strings.TrimSpace(t[6:])
 	}
 	if token != "" {
-		parse, err := jwt.ParseWithClaims(token, &contracts.JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
+		parse, err := jwt.ParseWithClaims(token, &contracts.JwtClaims{}, func(token *jwt.Token) (any, error) {
 			return a.pubKey, nil
 		})
 		if err == nil && parse.Valid {

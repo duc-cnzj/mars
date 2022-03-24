@@ -59,7 +59,7 @@ type WsSender interface {
 }
 
 type PubSub interface {
-	Info() interface{}
+	Info() any
 	Uid() string
 	ID() string
 	ToSelf(WebsocketMessage) error
@@ -86,7 +86,7 @@ func GetWsSender() WsSender {
 
 type EmptyPubSub struct{}
 
-func (e *EmptyPubSub) Info() interface{} {
+func (e *EmptyPubSub) Info() any {
 	return nil
 }
 

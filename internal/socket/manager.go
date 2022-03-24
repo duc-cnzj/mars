@@ -84,7 +84,7 @@ type MessageItem struct {
 	Type MessageType
 }
 
-type vars map[string]interface{}
+type vars map[string]any
 
 func (v vars) MustGetString(key string) string {
 	if v != nil {
@@ -592,9 +592,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	return nil
 }
 
-type DynamicLoader struct {
-	values map[string]interface{}
-}
+type DynamicLoader struct{}
 
 func (d *DynamicLoader) Load(j *Jober) error {
 	const loaderName = "[DynamicLoader]: "
@@ -629,7 +627,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		return nil
 	}
 
-	var validValues = make(map[string]interface{})
+	var validValues = make(map[string]any)
 
 	// validate
 	for _, value := range j.input.ExtraValues {
@@ -646,7 +644,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 					v, err := strconv.ParseBool(value.Value)
 					if err != nil {
 						mlog.Error(err)
-						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value))
+						return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
 					}
 					validValues[value.Path] = v
 				case mars.ElementType_ElementTypeInputNumber:
@@ -656,7 +654,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 					v, err := strconv.ParseInt(value.Value, 10, 64)
 					if err != nil {
 						mlog.Error(err)
-						return errors.New(fmt.Sprintf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value))
+						return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
 					}
 					validValues[value.Path] = v
 				case mars.ElementType_ElementTypeRadio:
@@ -670,7 +668,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 						}
 					}
 					if !in {
-						return errors.New(fmt.Sprintf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value))
+						return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
 					}
 					validValues[value.Path] = value.Value
 					continue
@@ -680,7 +678,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 			}
 		}
 		if !fieldValid {
-			return errors.New(fmt.Sprintf("不允许自定义字段 %s", value.Path))
+			return fmt.Errorf("不允许自定义字段 %s", value.Path)
 		}
 		continue
 	}
@@ -806,11 +804,11 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
 
 	// 自动注入 imagePullSecrets
-	var imagePullSecrets = make([]map[string]interface{}, len(j.imagePullSecrets))
+	var imagePullSecrets = make([]map[string]any, len(j.imagePullSecrets))
 	for i, s := range j.imagePullSecrets {
-		imagePullSecrets[i] = map[string]interface{}{"name": s}
+		imagePullSecrets[i] = map[string]any{"name": s}
 	}
-	yamlImagePullSecrets, _ := yaml.Marshal(map[string]interface{}{
+	yamlImagePullSecrets, _ := yaml.Marshal(map[string]any{
 		"imagePullSecrets": imagePullSecrets,
 	})
 
@@ -841,7 +839,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 
 		return err
 	}
-	var mergedDefaultAndConfigYamlValues map[string]interface{}
+	var mergedDefaultAndConfigYamlValues map[string]any
 	if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
 		mlog.Error(loaderName, mergedDefaultAndConfigYamlValues, err)
 		return err

@@ -24,19 +24,19 @@ func (g *GormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
 	return g
 }
 
-func (g *GormLoggerAdapter) Info(ctx context.Context, s string, i ...interface{}) {
+func (g *GormLoggerAdapter) Info(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Info {
 		mlog.Infof(s, i...)
 	}
 }
 
-func (g *GormLoggerAdapter) Warn(ctx context.Context, s string, i ...interface{}) {
+func (g *GormLoggerAdapter) Warn(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Warn {
 		mlog.Warningf(s, i...)
 	}
 }
 
-func (g *GormLoggerAdapter) Error(ctx context.Context, s string, i ...interface{}) {
+func (g *GormLoggerAdapter) Error(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Error {
 		mlog.Errorf(s, i...)
 	}
