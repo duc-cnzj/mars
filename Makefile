@@ -23,9 +23,9 @@ build_tools:
 gen:
 	cd hack && ./gen_proto.sh && cd .. && make fmt
 
-.PHONY: vet
-vet:
-	go vet ./... && golangci-lint run -D errcheck
+.PHONY: lint
+lint:
+	golangci-lint run -D errcheck
 
 .PHONY: release
 release: build_linux_amd64 build_darwin_amd64 build_darwin_arm64
