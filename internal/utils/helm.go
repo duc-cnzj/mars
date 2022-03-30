@@ -68,16 +68,17 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 }
 
 // UpgradeOrInstall TODO
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), atomic bool, timeoutSeconds int64) (*release.Release, error) {
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), atomic bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
 	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
 	if err != nil {
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
+	client.DryRun = dryRun
 	client.DisableOpenAPIValidation = true
 
-	if atomic {
+	if atomic && !dryRun {
 		stopch := make(chan struct{}, 1)
 		inf := informers.NewSharedInformerFactoryWithOptions(
 			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
@@ -249,7 +250,7 @@ func ReleaseStatus(releaseName, namespace string) (string, error) {
 	statusClient := action.NewStatus(actionConfig)
 	run, err := statusClient.Run(releaseName)
 	if err != nil {
-		mlog.Error(err)
+		mlog.Warning(err)
 		return "", err
 	}
 

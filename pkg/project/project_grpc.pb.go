@@ -23,6 +23,8 @@ type ProjectClient interface {
 	List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
+	// ApplyDryRun 创建/更新项目 '--dry-run' mode
+	ApplyDryRun(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (*ProjectDryRunApplyResponse, error)
 	// Delete 删除项目
 	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
 	// Show 项目详情
@@ -86,6 +88,15 @@ func (x *projectApplyClient) Recv() (*ProjectApplyResponse, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *projectClient) ApplyDryRun(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (*ProjectDryRunApplyResponse, error) {
+	out := new(ProjectDryRunApplyResponse)
+	err := c.cc.Invoke(ctx, "/Project/ApplyDryRun", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *projectClient) Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error) {
@@ -182,6 +193,8 @@ type ProjectServer interface {
 	List(context.Context, *ProjectListRequest) (*ProjectListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(*ProjectApplyRequest, Project_ApplyServer) error
+	// ApplyDryRun 创建/更新项目 '--dry-run' mode
+	ApplyDryRun(context.Context, *ProjectApplyRequest) (*ProjectDryRunApplyResponse, error)
 	// Delete 删除项目
 	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
 	// Show 项目详情
@@ -208,6 +221,9 @@ func (UnimplementedProjectServer) List(context.Context, *ProjectListRequest) (*P
 }
 func (UnimplementedProjectServer) Apply(*ProjectApplyRequest, Project_ApplyServer) error {
 	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ProjectApplyRequest) (*ProjectDryRunApplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyDryRun not implemented")
 }
 func (UnimplementedProjectServer) Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -280,6 +296,24 @@ type projectApplyServer struct {
 
 func (x *projectApplyServer) Send(m *ProjectApplyResponse) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServer).ApplyDryRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Project/ApplyDryRun",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ProjectApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -421,6 +455,10 @@ var Project_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _Project_List_Handler,
+		},
+		{
+			MethodName: "ApplyDryRun",
+			Handler:    _Project_ApplyDryRun_Handler,
 		},
 		{
 			MethodName: "Delete",

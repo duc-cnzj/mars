@@ -2858,7 +2858,8 @@ export enum ActionType {
     Update = 2,
     Delete = 3,
     Upload = 4,
-    Download = 5
+    Download = 5,
+    DryRun = 6
 }
 
 /** Represents an EventListRequest. */
@@ -6587,6 +6588,37 @@ export class ProjectApplyResponse implements IProjectApplyResponse {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectApplyResponse;
 }
 
+/** Represents a ProjectDryRunApplyResponse. */
+export class ProjectDryRunApplyResponse implements IProjectDryRunApplyResponse {
+
+    /**
+     * Constructs a new ProjectDryRunApplyResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IProjectDryRunApplyResponse);
+
+    /** ProjectDryRunApplyResponse results. */
+    public results: string[];
+
+    /**
+     * Encodes the specified ProjectDryRunApplyResponse message. Does not implicitly {@link ProjectDryRunApplyResponse.verify|verify} messages.
+     * @param message ProjectDryRunApplyResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ProjectDryRunApplyResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ProjectDryRunApplyResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ProjectDryRunApplyResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectDryRunApplyResponse;
+}
+
 /** Represents a ProjectApplyRequest. */
 export class ProjectApplyRequest implements IProjectApplyRequest {
 
@@ -6852,6 +6884,20 @@ export class Project extends $protobuf.rpc.Service {
     public apply(request: ProjectApplyRequest): Promise<ProjectApplyResponse>;
 
     /**
+     * Calls ApplyDryRun.
+     * @param request ProjectApplyRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectDryRunApplyResponse
+     */
+    public applyDryRun(request: ProjectApplyRequest, callback: Project.ApplyDryRunCallback): void;
+
+    /**
+     * Calls ApplyDryRun.
+     * @param request ProjectApplyRequest message or plain object
+     * @returns Promise
+     */
+    public applyDryRun(request: ProjectApplyRequest): Promise<ProjectDryRunApplyResponse>;
+
+    /**
      * Calls Delete.
      * @param request ProjectDeleteRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectDeleteResponse
@@ -6965,6 +7011,13 @@ export namespace Project {
      * @param [response] ProjectApplyResponse
      */
     type ApplyCallback = (error: (Error|null), response?: ProjectApplyResponse) => void;
+
+    /**
+     * Callback as used by {@link Project#applyDryRun}.
+     * @param error Error, if any
+     * @param [response] ProjectDryRunApplyResponse
+     */
+    type ApplyDryRunCallback = (error: (Error|null), response?: ProjectDryRunApplyResponse) => void;
 
     /**
      * Callback as used by {@link Project#delete_}.

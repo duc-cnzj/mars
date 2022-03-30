@@ -455,6 +455,17 @@
     "ProjectDeleteResponse": {
       "type": "object"
     },
+    "ProjectDryRunApplyResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "ProjectExtraItem": {
       "type": "object",
       "properties": {

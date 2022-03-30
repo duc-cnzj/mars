@@ -103,6 +103,7 @@ type Job interface {
 
 	Run() error
 	Logs() []string
+	Manifests() []string
 
 	User() contracts.UserInfo
 	IsNew() bool
@@ -124,6 +125,9 @@ type Job interface {
 }
 
 type Jober struct {
+	dryRun    bool
+	manifests []string
+
 	input    *websocket_pb.ProjectInput
 	wsType   websocket_pb.Type
 	slugName string
@@ -158,6 +162,14 @@ type Jober struct {
 	timeoutSeconds int64
 }
 
+type Option func(*Jober)
+
+func WithDryRun() Option {
+	return func(j *Jober) {
+		j.dryRun = true
+	}
+}
+
 func NewJober(
 	input *websocket_pb.ProjectInput,
 	user contracts.UserInfo,
@@ -165,8 +177,9 @@ func NewJober(
 	messager DeployMsger,
 	pubsub plugins.PubSub,
 	timeoutSeconds int64,
+	opts ...Option,
 ) Job {
-	return &Jober{
+	jb := &Jober{
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -177,6 +190,15 @@ func NewJober(
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
 	}
+	for _, opt := range opts {
+		opt(jb)
+	}
+
+	return jb
+}
+
+func (j *Jober) Manifests() []string {
+	return j.manifests
 }
 
 func (j *Jober) ID() string {
@@ -304,14 +326,17 @@ func (j *Jober) Run() error {
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
-			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
+			j.manifests = strings.Split(result.Manifest, "---")
+			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
 				Pipeline: j.vars.MustGetString("Pipeline"),
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest)
-			marshal, _ := json.Marshal(j.input.ExtraValues)
-			j.project.ExtraValues = string(marshal)
+			if len(j.input.ExtraValues) > 0 {
+				marshal, _ := json.Marshal(j.input.ExtraValues)
+				j.project.ExtraValues = string(marshal)
+			}
 
 			var (
 				p                models.Project
@@ -322,9 +347,11 @@ func (j *Jober) Run() error {
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
-				app.DB().Model(j.project).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
-					Updates(&j.project)
+				if !j.dryRun {
+					app.DB().Model(j.project).
+						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
+						Updates(&j.project)
+				}
 				oldConf = userConfig{
 					Config:      p.Config,
 					Branch:      p.GitlabBranch,
@@ -337,7 +364,9 @@ func (j *Jober) Run() error {
 					oldConf.WebUrl = commit.GetWebURL()
 				}
 			} else {
-				app.DB().Create(&j.project)
+				if !j.dryRun {
+					app.DB().Create(&j.project)
+				}
 			}
 			newConf = userConfig{
 				Config:      j.project.Config,
@@ -347,15 +376,20 @@ func (j *Jober) Run() error {
 				WebUrl:      j.Commit().GetWebURL(),
 				ExtraValues: j.project.ExtraValues,
 			}
-			app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
-				Project:  j.project,
-				Manifest: result.Manifest,
-				Config:   j.input.Config,
-				Username: j.User().Name,
-			})
+			if !j.dryRun {
+				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
+					Project:  j.project,
+					Manifest: result.Manifest,
+					Config:   j.input.Config,
+					Username: j.User().Name,
+				})
+			}
 			var act event.ActionType = event.ActionType_Create
 			if !j.IsNew() {
 				act = event.ActionType_Update
+			}
+			if j.dryRun {
+				act = event.ActionType_DryRun
 			}
 			AuditLogWithChange(j.User().Name, act,
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
@@ -409,8 +443,7 @@ func (j *Jober) Validate() error {
 
 	var ns models.Namespace
 	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
-		j.Messager().SendMsg(fmt.Sprintf("[FAILED]: 校验名称空间: %s", err.Error()))
-		return err
+		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
 	}
 
 	j.project = &models.Project{
@@ -428,7 +461,9 @@ func (j *Jober) Validate() error {
 
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		app.DB().Create(&j.project)
+		if !j.dryRun {
+			app.DB().Create(&j.project)
+		}
 		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
 	}
@@ -535,7 +570,6 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
-		mlog.Warning(files)
 		var err error
 		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(pid, branch, files)
 		if err != nil {
@@ -870,6 +904,6 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds)
+	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
 }
