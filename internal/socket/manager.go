@@ -629,58 +629,60 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 
 	var validValues = make(map[string]any)
 
+	var configElementsMap = make(map[string]*mars.Element)
+	for _, element := range j.config.Elements {
+		configElementsMap[element.Path] = element
+		validValues[element.Path] = element.Default
+	}
+
 	// validate
 	for _, value := range j.input.ExtraValues {
 		var fieldValid bool
-		for _, element := range j.config.Elements {
-			if value.Path == element.Path {
-				fieldValid = true
-
-				switch element.Type {
-				case mars.ElementType_ElementTypeSwitch:
-					if value.Value == "" {
-						value.Value = "false"
-					}
-					v, err := strconv.ParseBool(value.Value)
-					if err != nil {
-						mlog.Error(err)
-						return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
-					}
-					validValues[value.Path] = v
-				case mars.ElementType_ElementTypeInputNumber:
-					if value.Value == "" {
-						value.Value = "0"
-					}
-					v, err := strconv.ParseInt(value.Value, 10, 64)
-					if err != nil {
-						mlog.Error(err)
-						return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
-					}
-					validValues[value.Path] = v
-				case mars.ElementType_ElementTypeRadio:
-					fallthrough
-				case mars.ElementType_ElementTypeSelect:
-					var in bool
-					for _, selectValue := range element.SelectValues {
-						if value.Value == selectValue {
-							in = true
-							break
-						}
-					}
-					if !in {
-						return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
-					}
-					validValues[value.Path] = value.Value
-					continue
-				default:
-					validValues[value.Path] = value.Value
+		if element, ok := configElementsMap[value.Path]; ok {
+			fieldValid = true
+			switch element.Type {
+			case mars.ElementType_ElementTypeSwitch:
+				if value.Value == "" {
+					value.Value = "false"
 				}
+				v, err := strconv.ParseBool(value.Value)
+				if err != nil {
+					mlog.Error(err)
+					return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
+				}
+				validValues[value.Path] = v
+			case mars.ElementType_ElementTypeInputNumber:
+				if value.Value == "" {
+					value.Value = "0"
+				}
+				v, err := strconv.ParseInt(value.Value, 10, 64)
+				if err != nil {
+					mlog.Error(err)
+					return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
+				}
+				validValues[value.Path] = v
+			case mars.ElementType_ElementTypeRadio:
+				fallthrough
+			case mars.ElementType_ElementTypeSelect:
+				var in bool
+				for _, selectValue := range element.SelectValues {
+					if value.Value == selectValue {
+						in = true
+						break
+					}
+				}
+				if !in {
+					return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
+				}
+				validValues[value.Path] = value.Value
+				continue
+			default:
+				validValues[value.Path] = value.Value
 			}
 		}
 		if !fieldValid {
 			return fmt.Errorf("不允许自定义字段 %s", value.Path)
 		}
-		continue
 	}
 
 	var evs []string
