@@ -408,7 +408,7 @@ func InstallProject(job Job) {
 	var err error
 	defer func() {
 		job.CallDestroyFuncs()
-		if err != nil {
+		if err != nil && !job.IsDryRun() {
 			job.Prune()
 		}
 	}()

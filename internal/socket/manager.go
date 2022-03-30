@@ -103,6 +103,7 @@ type Job interface {
 
 	Run() error
 	Logs() []string
+	IsDryRun() bool
 	Manifests() []string
 
 	User() contracts.UserInfo
@@ -251,7 +252,7 @@ func (j *Jober) IsStopped() bool {
 }
 
 func (j *Jober) Prune() {
-	if j.IsNew() && !j.IsDryRun() {
+	if j.IsNew() {
 		mlog.Debug("清理项目")
 		app.DB().Delete(&j.project)
 	}
