@@ -236,6 +236,7 @@ func (j *Jober) Project() *models.Project {
 // TODO 这里有一个问题，如果上一次成功的部署(deployed) 不是 atomic, 而且 pod 起不来，
 //   这一次部署是atomic, 那么回滚的时候会失败
 func (j *Jober) Stop(err error) {
+	mlog.Debugf("stop deploy job, because '%v'", err)
 	j.stopFn(err)
 }
 

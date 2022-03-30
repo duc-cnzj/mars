@@ -431,6 +431,7 @@ func (e *errorMessager) SendError(err error) {
 }
 
 func (e *errorMessager) SendMsg(s string) {
+	mlog.Debug(s)
 }
 
 func (e *errorMessager) SendProtoMsg(message plugins.WebsocketMessage) {
