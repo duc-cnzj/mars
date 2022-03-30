@@ -189,7 +189,10 @@ func NewJober(
 		input:          input,
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
+		messageCh:      make(chan MessageItem),
+		percenter:      newProcessPercent(messager),
 	}
+	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
 	for _, opt := range opts {
 		opt(jb)
 	}
@@ -211,6 +214,10 @@ func (j *Jober) Logs() []string {
 
 func (j *Jober) IsNew() bool {
 	return j.isNew
+}
+
+func (j *Jober) IsDryRun() bool {
+	return j.dryRun
 }
 
 func (j *Jober) Commit() plugins.CommitInterface {
@@ -243,7 +250,7 @@ func (j *Jober) IsStopped() bool {
 }
 
 func (j *Jober) Prune() {
-	if j.IsNew() {
+	if j.IsNew() && !j.IsDryRun() {
 		mlog.Debug("清理项目")
 		app.DB().Delete(&j.project)
 	}
@@ -271,7 +278,7 @@ func (j *Jober) HandleMessage() {
 			case MessageText:
 				j.Messager().SendMsg(s.Msg)
 			case MessageError:
-				if j.IsNew() {
+				if j.IsNew() && !j.IsDryRun() {
 					app.DB().Delete(&j.project)
 				}
 				select {
@@ -347,7 +354,7 @@ func (j *Jober) Run() error {
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
-				if !j.dryRun {
+				if !j.IsDryRun() {
 					app.DB().Model(j.project).
 						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
 						Updates(&j.project)
@@ -364,7 +371,7 @@ func (j *Jober) Run() error {
 					oldConf.WebUrl = commit.GetWebURL()
 				}
 			} else {
-				if !j.dryRun {
+				if !j.IsDryRun() {
 					app.DB().Create(&j.project)
 				}
 			}
@@ -376,7 +383,7 @@ func (j *Jober) Run() error {
 				WebUrl:      j.Commit().GetWebURL(),
 				ExtraValues: j.project.ExtraValues,
 			}
-			if !j.dryRun {
+			if !j.IsDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
 					Project:  j.project,
 					Manifest: result.Manifest,
@@ -388,7 +395,7 @@ func (j *Jober) Run() error {
 			if !j.IsNew() {
 				act = event.ActionType_Update
 			}
-			if j.dryRun {
+			if j.IsDryRun() {
 				act = event.ActionType_DryRun
 			}
 			AuditLogWithChange(j.User().Name, act,
@@ -431,11 +438,6 @@ func (j *Jober) Validate() error {
 	if !(j.wsType == websocket_pb.Type_CreateProject || j.wsType == websocket_pb.Type_UpdateProject || j.wsType == websocket_pb.Type_ApplyProject) {
 		return errors.New("type error: " + j.wsType.String())
 	}
-
-	j.percenter = newProcessPercent(j.messager)
-	j.stopCtx, j.stopFn = utils.NewCustomErrorContext()
-	j.messageCh = make(chan MessageItem)
-
 	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
 	j.Percenter().To(5)
 
@@ -461,7 +463,7 @@ func (j *Jober) Validate() error {
 
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		if !j.dryRun {
+		if !j.IsDryRun() {
 			app.DB().Create(&j.project)
 		}
 		j.Messager().SendMsg("[Check]: 新建项目")

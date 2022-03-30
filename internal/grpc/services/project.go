@@ -109,7 +109,17 @@ func (p *Project) ApplyDryRun(ctx context.Context, input *project.ProjectApplyRe
 		ExtraValues:     input.ExtraValues,
 	}, *user, "", errMsger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
 
+	ch := make(chan struct{}, 1)
+	go func() {
+		select {
+		case <-ctx.Done():
+			job.Stop(ctx.Err())
+		case <-ch:
+		}
+	}()
 	socket.InstallProject(job)
+	ch <- struct{}{}
+
 	if errMsger.HasErrors() {
 		return nil, errMsger
 	}
