@@ -18,17 +18,18 @@ import (
 type Project struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Name            string `json:"name" gorm:"size:100;not null;comment:'项目名'"`
-	GitlabProjectId int    `json:"gitlab_project_id" gorm:"not null;type:integer;"`
-	GitlabBranch    string `json:"gitlab_branch" gorm:"not null;size:255;"`
-	GitlabCommit    string `json:"gitlab_commit" gorm:"not null;size:255;"`
-	Config          string `json:"config"`
-	OverrideValues  string `json:"override_values"`
-	DockerImage     string `json:"docker_image" gorm:"not null;size:255;default:''"`
-	PodSelectors    string `json:"pod_selectors" gorm:"type:text;nullable;"`
-	NamespaceId     int    `json:"namespace_id"`
-	Atomic          bool   `json:"atomic"`
-	ExtraValues     string `json:"extra_values" gorm:"type:text;nullable;"`
+	Name             string `json:"name" gorm:"size:100;not null;comment:'项目名'"`
+	GitlabProjectId  int    `json:"gitlab_project_id" gorm:"not null;type:integer;"`
+	GitlabBranch     string `json:"gitlab_branch" gorm:"not null;size:255;"`
+	GitlabCommit     string `json:"gitlab_commit" gorm:"not null;size:255;"`
+	Config           string `json:"config"`
+	OverrideValues   string `json:"override_values"`
+	DockerImage      string `json:"docker_image" gorm:"not null;size:255;default:''"`
+	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
+	NamespaceId      int    `json:"namespace_id"`
+	Atomic           bool   `json:"atomic"`
+	ExtraValues      string `json:"extra_values" gorm:"type:text;nullable;comment:'用户表单传入的额外值'"`
+	FinalExtraValues string `json:"final_extra_values" gorm:"type:text;nullable;comment:'用户表单传入的额外值 + 系统默认的额外值'"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

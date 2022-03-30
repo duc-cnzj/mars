@@ -6574,6 +6574,7 @@ export const ContainerSvc = $root.ContainerSvc = (() => {
  * @property {number} Delete=3 Delete value
  * @property {number} Upload=4 Upload value
  * @property {number} Download=5 Download value
+ * @property {number} DryRun=6 DryRun value
  */
 export const ActionType = $root.ActionType = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -6583,6 +6584,7 @@ export const ActionType = $root.ActionType = (() => {
     values[valuesById[3] = "Delete"] = 3;
     values[valuesById[4] = "Upload"] = 4;
     values[valuesById[5] = "Download"] = 5;
+    values[valuesById[6] = "DryRun"] = 6;
     return values;
 })();
 
@@ -16532,6 +16534,91 @@ export const ProjectApplyResponse = $root.ProjectApplyResponse = (() => {
     return ProjectApplyResponse;
 })();
 
+export const ProjectDryRunApplyResponse = $root.ProjectDryRunApplyResponse = (() => {
+
+    /**
+     * Properties of a ProjectDryRunApplyResponse.
+     * @exports IProjectDryRunApplyResponse
+     * @interface IProjectDryRunApplyResponse
+     * @property {Array.<string>|null} [results] ProjectDryRunApplyResponse results
+     */
+
+    /**
+     * Constructs a new ProjectDryRunApplyResponse.
+     * @exports ProjectDryRunApplyResponse
+     * @classdesc Represents a ProjectDryRunApplyResponse.
+     * @implements IProjectDryRunApplyResponse
+     * @constructor
+     * @param {IProjectDryRunApplyResponse=} [properties] Properties to set
+     */
+    function ProjectDryRunApplyResponse(properties) {
+        this.results = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ProjectDryRunApplyResponse results.
+     * @member {Array.<string>} results
+     * @memberof ProjectDryRunApplyResponse
+     * @instance
+     */
+    ProjectDryRunApplyResponse.prototype.results = $util.emptyArray;
+
+    /**
+     * Encodes the specified ProjectDryRunApplyResponse message. Does not implicitly {@link ProjectDryRunApplyResponse.verify|verify} messages.
+     * @function encode
+     * @memberof ProjectDryRunApplyResponse
+     * @static
+     * @param {ProjectDryRunApplyResponse} message ProjectDryRunApplyResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ProjectDryRunApplyResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.results != null && message.results.length)
+            for (let i = 0; i < message.results.length; ++i)
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.results[i]);
+        return writer;
+    };
+
+    /**
+     * Decodes a ProjectDryRunApplyResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof ProjectDryRunApplyResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ProjectDryRunApplyResponse} ProjectDryRunApplyResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ProjectDryRunApplyResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ProjectDryRunApplyResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.results && message.results.length))
+                    message.results = [];
+                message.results.push(reader.string());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return ProjectDryRunApplyResponse;
+})();
+
 export const ProjectApplyRequest = $root.ProjectApplyRequest = (() => {
 
     /**
@@ -17289,6 +17376,39 @@ export const Project = $root.Project = (() => {
      * @instance
      * @param {ProjectApplyRequest} request ProjectApplyRequest message or plain object
      * @returns {Promise<ProjectApplyResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Project#applyDryRun}.
+     * @memberof Project
+     * @typedef ApplyDryRunCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ProjectDryRunApplyResponse} [response] ProjectDryRunApplyResponse
+     */
+
+    /**
+     * Calls ApplyDryRun.
+     * @function applyDryRun
+     * @memberof Project
+     * @instance
+     * @param {ProjectApplyRequest} request ProjectApplyRequest message or plain object
+     * @param {Project.ApplyDryRunCallback} callback Node-style callback called with the error, if any, and ProjectDryRunApplyResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Project.prototype.applyDryRun = function applyDryRun(request, callback) {
+        return this.rpcCall(applyDryRun, $root.ProjectApplyRequest, $root.ProjectDryRunApplyResponse, request, callback);
+    }, "name", { value: "ApplyDryRun" });
+
+    /**
+     * Calls ApplyDryRun.
+     * @function applyDryRun
+     * @memberof Project
+     * @instance
+     * @param {ProjectApplyRequest} request ProjectApplyRequest message or plain object
+     * @returns {Promise<ProjectDryRunApplyResponse>} Promise
      * @variation 2
      */
 

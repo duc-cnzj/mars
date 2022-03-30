@@ -89,6 +89,10 @@ message ProjectApplyResponse {
   ProjectModel project = 2;
 }
 
+message ProjectDryRunApplyResponse {
+  repeated string results = 1;
+}
+
 // ProjectApplyRequest same as ProjectInput
 message ProjectApplyRequest {
   int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
@@ -135,6 +139,9 @@ service Project {
 
   // Apply grpc 创建/更新项目
   rpc Apply(ProjectApplyRequest) returns (stream ProjectApplyResponse);
+
+  // ApplyDryRun 创建/更新项目 '--dry-run' mode
+  rpc ApplyDryRun(ProjectApplyRequest) returns (ProjectDryRunApplyResponse);
 
   // Delete 删除项目
   rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {

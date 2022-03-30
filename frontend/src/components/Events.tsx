@@ -109,6 +109,12 @@ const EventList: React.FC = () => {
             下载文件
           </Tag>
         );
+      case pb.ActionType.DryRun:
+        return (
+          <Tag color="#818cf8" style={style}>
+            试运行
+          </Tag>
+        );
       default:
         return (
           <Tag color="#f1c40f" style={style}>

@@ -12,6 +12,7 @@ enum ActionType {
   Delete = 3;
   Upload = 4;
   Download = 5;
+  DryRun = 6;
 }
 
 message EventListRequest {

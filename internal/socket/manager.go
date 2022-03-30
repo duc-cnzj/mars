@@ -103,6 +103,8 @@ type Job interface {
 
 	Run() error
 	Logs() []string
+	IsDryRun() bool
+	Manifests() []string
 
 	User() contracts.UserInfo
 	IsNew() bool
@@ -124,6 +126,9 @@ type Job interface {
 }
 
 type Jober struct {
+	dryRun    bool
+	manifests []string
+
 	input    *websocket_pb.ProjectInput
 	wsType   websocket_pb.Type
 	slugName string
@@ -134,7 +139,7 @@ type Jober struct {
 	imagePullSecrets  []string
 	vars              vars
 	dynamicConfigYaml string
-	extraValues       []string
+	extraValues       []*websocket_pb.ProjectExtraItem
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
@@ -158,6 +163,14 @@ type Jober struct {
 	timeoutSeconds int64
 }
 
+type Option func(*Jober)
+
+func WithDryRun() Option {
+	return func(j *Jober) {
+		j.dryRun = true
+	}
+}
+
 func NewJober(
 	input *websocket_pb.ProjectInput,
 	user contracts.UserInfo,
@@ -165,8 +178,9 @@ func NewJober(
 	messager DeployMsger,
 	pubsub plugins.PubSub,
 	timeoutSeconds int64,
+	opts ...Option,
 ) Job {
-	return &Jober{
+	jb := &Jober{
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -176,7 +190,19 @@ func NewJober(
 		input:          input,
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
+		messageCh:      make(chan MessageItem),
+		percenter:      newProcessPercent(messager),
 	}
+	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
+	for _, opt := range opts {
+		opt(jb)
+	}
+
+	return jb
+}
+
+func (j *Jober) Manifests() []string {
+	return j.manifests
 }
 
 func (j *Jober) ID() string {
@@ -189,6 +215,10 @@ func (j *Jober) Logs() []string {
 
 func (j *Jober) IsNew() bool {
 	return j.isNew
+}
+
+func (j *Jober) IsDryRun() bool {
+	return j.dryRun
 }
 
 func (j *Jober) Commit() plugins.CommitInterface {
@@ -207,6 +237,7 @@ func (j *Jober) Project() *models.Project {
 // TODO 这里有一个问题，如果上一次成功的部署(deployed) 不是 atomic, 而且 pod 起不来，
 //   这一次部署是atomic, 那么回滚的时候会失败
 func (j *Jober) Stop(err error) {
+	mlog.Debugf("stop deploy job, because '%v'", err)
 	j.stopFn(err)
 }
 
@@ -249,7 +280,7 @@ func (j *Jober) HandleMessage() {
 			case MessageText:
 				j.Messager().SendMsg(s.Msg)
 			case MessageError:
-				if j.IsNew() {
+				if j.IsNew() && !j.IsDryRun() {
 					app.DB().Delete(&j.project)
 				}
 				select {
@@ -272,12 +303,13 @@ func (j *Jober) AddDestroyFunc(fn func()) {
 }
 
 type userConfig struct {
-	Config      string `yaml:"config"`
-	Branch      string `yaml:"branch"`
-	Commit      string `yaml:"commit"`
-	Atomic      bool   `yaml:"atomic"`
-	WebUrl      string `yaml:"web_url"`
-	ExtraValues string `yaml:"extra_values"`
+	Config           string                           `yaml:"config"`
+	Branch           string                           `yaml:"branch"`
+	Commit           string                           `yaml:"commit"`
+	Atomic           bool                             `yaml:"atomic"`
+	WebUrl           string                           `yaml:"web_url"`
+	ExtraValues      []*websocket_pb.ProjectExtraItem `yaml:"extra_values"`
+	FinalExtraValues []*websocket_pb.ProjectExtraItem `yaml:"sys_extra_values"`
 }
 
 func (u userConfig) PrettyYaml() string {
@@ -304,58 +336,86 @@ func (j *Jober) Run() error {
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
-			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(result.Manifest))
+			j.manifests = strings.Split(result.Manifest, "---")
+			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
 				Pipeline: j.vars.MustGetString("Pipeline"),
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest)
-			marshal, _ := json.Marshal(j.input.ExtraValues)
-			j.project.ExtraValues = string(marshal)
+			if len(j.input.ExtraValues) > 0 {
+				marshal, _ := json.Marshal(j.input.ExtraValues)
+				j.project.ExtraValues = string(marshal)
+			}
+			if len(j.extraValues) > 0 {
+				marshal, _ := json.Marshal(j.extraValues)
+				j.project.FinalExtraValues = string(marshal)
+			}
 
 			var (
 				p                models.Project
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues").
+				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues", "FinalExtraValues").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
-				app.DB().Model(j.project).
-					Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
-					Updates(&j.project)
+				if !j.IsDryRun() {
+					app.DB().Model(j.project).
+						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues").
+						Updates(&j.project)
+				}
+				var (
+					ev  []*websocket_pb.ProjectExtraItem
+					fev []*websocket_pb.ProjectExtraItem
+				)
+				if len(p.ExtraValues) > 0 {
+					json.Unmarshal([]byte(p.ExtraValues), &ev)
+				}
+				if len(p.FinalExtraValues) > 0 {
+					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
+				}
 				oldConf = userConfig{
-					Config:      p.Config,
-					Branch:      p.GitlabBranch,
-					Commit:      p.GitlabCommit,
-					Atomic:      p.Atomic,
-					ExtraValues: p.ExtraValues,
+					Config:           p.Config,
+					Branch:           p.GitlabBranch,
+					Commit:           p.GitlabCommit,
+					Atomic:           p.Atomic,
+					ExtraValues:      ev,
+					FinalExtraValues: fev,
 				}
 				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitlabProjectId), p.GitlabCommit)
 				if err == nil {
 					oldConf.WebUrl = commit.GetWebURL()
 				}
 			} else {
-				app.DB().Create(&j.project)
+				if !j.IsDryRun() {
+					app.DB().Create(&j.project)
+				}
 			}
 			newConf = userConfig{
-				Config:      j.project.Config,
-				Branch:      j.project.GitlabBranch,
-				Commit:      j.project.GitlabCommit,
-				Atomic:      j.project.Atomic,
-				WebUrl:      j.Commit().GetWebURL(),
-				ExtraValues: j.project.ExtraValues,
+				Config:           j.project.Config,
+				Branch:           j.project.GitlabBranch,
+				Commit:           j.project.GitlabCommit,
+				Atomic:           j.project.Atomic,
+				WebUrl:           j.Commit().GetWebURL(),
+				ExtraValues:      j.input.ExtraValues,
+				FinalExtraValues: j.extraValues,
 			}
-			app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
-				Project:  j.project,
-				Manifest: result.Manifest,
-				Config:   j.input.Config,
-				Username: j.User().Name,
-			})
+			if !j.IsDryRun() {
+				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
+					Project:  j.project,
+					Manifest: result.Manifest,
+					Config:   j.input.Config,
+					Username: j.User().Name,
+				})
+			}
 			var act event.ActionType = event.ActionType_Create
 			if !j.IsNew() {
 				act = event.ActionType_Update
+			}
+			if j.IsDryRun() {
+				act = event.ActionType_DryRun
 			}
 			AuditLogWithChange(j.User().Name, act,
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
@@ -397,11 +457,6 @@ func (j *Jober) Validate() error {
 	if !(j.wsType == websocket_pb.Type_CreateProject || j.wsType == websocket_pb.Type_UpdateProject || j.wsType == websocket_pb.Type_ApplyProject) {
 		return errors.New("type error: " + j.wsType.String())
 	}
-
-	j.percenter = newProcessPercent(j.messager)
-	j.stopCtx, j.stopFn = utils.NewCustomErrorContext()
-	j.messageCh = make(chan MessageItem)
-
 	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
 	j.Percenter().To(5)
 
@@ -409,8 +464,7 @@ func (j *Jober) Validate() error {
 
 	var ns models.Namespace
 	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
-		j.Messager().SendMsg(fmt.Sprintf("[FAILED]: 校验名称空间: %s", err.Error()))
-		return err
+		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
 	}
 
 	j.project = &models.Project{
@@ -428,7 +482,9 @@ func (j *Jober) Validate() error {
 
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		app.DB().Create(&j.project)
+		if !j.IsDryRun() {
+			app.DB().Create(&j.project)
+		}
 		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
 	}
@@ -535,7 +591,6 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
-		mlog.Warning(files)
 		var err error
 		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(pid, branch, files)
 		if err != nil {
@@ -624,77 +679,92 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 
 	if len(j.input.ExtraValues) <= 0 {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
-		return nil
 	}
 
 	var validValues = make(map[string]any)
+	var useDefaultMap = make(map[string]bool)
+
+	var configElementsMap = make(map[string]*mars.Element)
+	for _, element := range j.config.Elements {
+		configElementsMap[element.Path] = element
+		validValues[element.Path] = element.Default
+		useDefaultMap[element.Path] = true
+	}
 
 	// validate
 	for _, value := range j.input.ExtraValues {
 		var fieldValid bool
-		for _, element := range j.config.Elements {
-			if value.Path == element.Path {
-				fieldValid = true
-
-				switch element.Type {
-				case mars.ElementType_ElementTypeSwitch:
-					if value.Value == "" {
-						value.Value = "false"
-					}
-					v, err := strconv.ParseBool(value.Value)
-					if err != nil {
-						mlog.Error(err)
-						return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
-					}
-					validValues[value.Path] = v
-				case mars.ElementType_ElementTypeInputNumber:
-					if value.Value == "" {
-						value.Value = "0"
-					}
-					v, err := strconv.ParseInt(value.Value, 10, 64)
-					if err != nil {
-						mlog.Error(err)
-						return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
-					}
-					validValues[value.Path] = v
-				case mars.ElementType_ElementTypeRadio:
-					fallthrough
-				case mars.ElementType_ElementTypeSelect:
-					var in bool
-					for _, selectValue := range element.SelectValues {
-						if value.Value == selectValue {
-							in = true
-							break
-						}
-					}
-					if !in {
-						return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
-					}
-					validValues[value.Path] = value.Value
-					continue
-				default:
-					validValues[value.Path] = value.Value
+		if element, ok := configElementsMap[value.Path]; ok {
+			fieldValid = true
+			useDefaultMap[value.Path] = false
+			switch element.Type {
+			case mars.ElementType_ElementTypeSwitch:
+				if value.Value == "" {
+					value.Value = "false"
 				}
+				v, err := strconv.ParseBool(value.Value)
+				if err != nil {
+					mlog.Error(err)
+					return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
+				}
+				validValues[value.Path] = v
+			case mars.ElementType_ElementTypeInputNumber:
+				if value.Value == "" {
+					value.Value = "0"
+				}
+				v, err := strconv.ParseInt(value.Value, 10, 64)
+				if err != nil {
+					mlog.Error(err)
+					return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
+				}
+				validValues[value.Path] = v
+			case mars.ElementType_ElementTypeRadio:
+				fallthrough
+			case mars.ElementType_ElementTypeSelect:
+				var in bool
+				for _, selectValue := range element.SelectValues {
+					if value.Value == selectValue {
+						in = true
+						break
+					}
+				}
+				if !in {
+					return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
+				}
+				validValues[value.Path] = value.Value
+				continue
+			default:
+				validValues[value.Path] = value.Value
 			}
 		}
 		if !fieldValid {
 			return fmt.Errorf("不允许自定义字段 %s", value.Path)
 		}
-		continue
 	}
 
-	var evs []string
+	var evs []*websocket_pb.ProjectExtraItem
 	for k, v := range validValues {
 		ysk, err := utils.YamlDeepSetKey(k, v)
 		if err != nil {
 			mlog.Error(fmt.Sprintf("%s find error %v", loaderName, err))
 			continue
 		}
-		evs = append(evs, string(ysk))
+		evs = append(evs, &websocket_pb.ProjectExtraItem{
+			Path:  k,
+			Value: string(ysk),
+		})
+	}
+	var ds []string
+	for k, ok := range useDefaultMap {
+		if ok {
+			ds = append(ds, k)
+		}
 	}
 
 	j.extraValues = evs
-	mlog.Debug(j.extraValues)
+	if len(ds) > 0 {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"已经为 '%s' 设置系统默认值", strings.Join(ds, ",")))
+	}
 
 	return nil
 }
@@ -822,10 +892,9 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	if len(yamlImagePullSecrets) != 0 {
 		opts = append(opts, config.Source(bytes.NewReader(yamlImagePullSecrets)))
 	}
-	if len(j.extraValues) > 0 {
-		for _, value := range j.extraValues {
-			opts = append(opts, config.Source(strings.NewReader(value)))
-		}
+
+	for _, value := range j.extraValues {
+		opts = append(opts, config.Source(strings.NewReader(value.Value)))
 	}
 
 	if len(opts) < 1 {
@@ -868,6 +937,6 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds)
+	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
 }

@@ -83,6 +83,50 @@ func (p *Project) List(ctx context.Context, request *project.ProjectListRequest)
 	}, nil
 }
 
+func (p *Project) ApplyDryRun(ctx context.Context, input *project.ProjectApplyRequest) (*project.ProjectDryRunApplyResponse, error) {
+	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
+	t := websocket.Type_ApplyProject
+	if input.GitlabCommit == "" {
+		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitlabProjectId), input.GitlabBranch)
+		if len(commits) < 1 {
+			return nil, errors.New("没有可用的 commit")
+		}
+		lastCommit := commits[0]
+		input.GitlabCommit = lastCommit.GetID()
+	}
+	mlog.Debug("ApplyDryRun..")
+	user := MustGetUser(ctx)
+	errMsger := newErrorMessager()
+	job := socket.NewJober(&websocket.ProjectInput{
+		Type:            t,
+		NamespaceId:     input.NamespaceId,
+		Name:            input.Name,
+		GitlabProjectId: input.GitlabProjectId,
+		GitlabBranch:    input.GitlabBranch,
+		GitlabCommit:    input.GitlabCommit,
+		Config:          input.Config,
+		Atomic:          input.Atomic,
+		ExtraValues:     input.ExtraValues,
+	}, *user, "", errMsger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
+
+	ch := make(chan struct{}, 1)
+	go func() {
+		select {
+		case <-ctx.Done():
+			job.Stop(ctx.Err())
+		case <-ch:
+		}
+	}()
+	socket.InstallProject(job)
+	ch <- struct{}{}
+
+	if errMsger.HasErrors() {
+		return nil, errMsger
+	}
+
+	return &project.ProjectDryRunApplyResponse{Results: job.Manifests()}, nil
+}
+
 func (p *Project) Apply(input *project.ProjectApplyRequest, server project.Project_ApplyServer) error {
 	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
 	if input.WebsocketSync {
@@ -345,6 +389,62 @@ func (p *Project) PodContainerLog(ctx context.Context, request *project.ProjectP
 			Log:           string(raw),
 		},
 	}, nil
+}
+
+type errorMessager struct {
+	sync.RWMutex
+	errors []error
+}
+
+func newErrorMessager() *errorMessager {
+	return &errorMessager{errors: make([]error, 0)}
+}
+
+func (e *errorMessager) HasErrors() bool {
+	e.RLock()
+	defer e.RUnlock()
+	return len(e.errors) > 0
+}
+
+func (e *errorMessager) Error() string {
+	e.RLock()
+	defer e.RUnlock()
+	var line string
+	for _, err := range e.errors {
+		line += err.Error() + "\n"
+	}
+	return line
+}
+
+func (e *errorMessager) addError(err error) {
+	e.Lock()
+	defer e.Unlock()
+	e.errors = append(e.errors, err)
+}
+
+func (e *errorMessager) SendEndError(err error) {
+	e.addError(err)
+}
+
+func (e *errorMessager) SendError(err error) {
+	e.addError(err)
+}
+
+func (e *errorMessager) SendMsg(s string) {
+	mlog.Debug(s)
+}
+
+func (e *errorMessager) SendProtoMsg(message plugins.WebsocketMessage) {
+}
+
+func (e *errorMessager) SendProcessPercent(s string) {
+}
+
+func (e *errorMessager) Stop(err error) {
+	e.addError(err)
+}
+
+func (e *errorMessager) SendDeployedResult(resultType websocket.ResultType, s string, m *models.Project) {
 }
 
 type messager struct {

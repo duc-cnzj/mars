@@ -86,6 +86,7 @@ const DynamicElement: React.FC<{
                       style={{ width: "100%" }}
                       label="默认值"
                       name={[field.name, "default"]}
+                      rules={[{ required: true, message: "默认值必填" }]}
                     >
                       <DefaultValueElement
                         disabled={disabled}
@@ -174,7 +175,7 @@ const DefaultValueElement: React.FC<{
         <InputNumber
           disabled={disabled}
           value={value}
-          onChange={onChange}
+          onChange={(v) => onChange?.(String(v))}
           placeholder="默认值"
         />
       );

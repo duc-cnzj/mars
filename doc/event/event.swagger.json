@@ -65,7 +65,8 @@
         "Update",
         "Delete",
         "Upload",
-        "Download"
+        "Download",
+        "DryRun"
       ],
       "default": "Unknown"
     },

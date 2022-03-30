@@ -19,6 +19,7 @@ type ReleaseInstaller interface {
 }
 
 type releaseInstaller struct {
+	dryRun         bool
 	chart          *chart.Chart
 	timeoutSeconds int64
 	releaseName    string
@@ -31,8 +32,9 @@ type releaseInstaller struct {
 	messageCh      chan MessageItem
 }
 
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, atomic bool, timeoutSeconds int64) ReleaseInstaller {
+func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, atomic bool, timeoutSeconds int64, dryRun bool) ReleaseInstaller {
 	return &releaseInstaller{
+		dryRun:         dryRun,
 		chart:          chart,
 		valueOpts:      valueOpts,
 		releaseName:    releaseName,
@@ -53,7 +55,7 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh chan MessageIt
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
-	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.atomic, r.timeoutSeconds)
+	return utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.atomic, r.timeoutSeconds, r.dryRun)
 }
 
 func (r *releaseInstaller) Logs() []string {
