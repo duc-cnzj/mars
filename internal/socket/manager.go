@@ -138,7 +138,7 @@ type Jober struct {
 	imagePullSecrets  []string
 	vars              vars
 	dynamicConfigYaml string
-	extraValues       []string
+	extraValues       []*websocket_pb.ProjectExtraItem
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
@@ -302,12 +302,13 @@ func (j *Jober) AddDestroyFunc(fn func()) {
 }
 
 type userConfig struct {
-	Config      string `yaml:"config"`
-	Branch      string `yaml:"branch"`
-	Commit      string `yaml:"commit"`
-	Atomic      bool   `yaml:"atomic"`
-	WebUrl      string `yaml:"web_url"`
-	ExtraValues string `yaml:"extra_values"`
+	Config           string                           `yaml:"config"`
+	Branch           string                           `yaml:"branch"`
+	Commit           string                           `yaml:"commit"`
+	Atomic           bool                             `yaml:"atomic"`
+	WebUrl           string                           `yaml:"web_url"`
+	ExtraValues      []*websocket_pb.ProjectExtraItem `yaml:"extra_values"`
+	FinalExtraValues []*websocket_pb.ProjectExtraItem `yaml:"sys_extra_values"`
 }
 
 func (u userConfig) PrettyYaml() string {
@@ -345,27 +346,42 @@ func (j *Jober) Run() error {
 				marshal, _ := json.Marshal(j.input.ExtraValues)
 				j.project.ExtraValues = string(marshal)
 			}
+			if len(j.extraValues) > 0 {
+				marshal, _ := json.Marshal(j.extraValues)
+				j.project.FinalExtraValues = string(marshal)
+			}
 
 			var (
 				p                models.Project
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues").
+				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues", "FinalExtraValues").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
 					app.DB().Model(j.project).
-						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues").
+						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues").
 						Updates(&j.project)
 				}
+				var (
+					ev  []*websocket_pb.ProjectExtraItem
+					fev []*websocket_pb.ProjectExtraItem
+				)
+				if len(p.ExtraValues) > 0 {
+					json.Unmarshal([]byte(p.ExtraValues), &ev)
+				}
+				if len(p.FinalExtraValues) > 0 {
+					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
+				}
 				oldConf = userConfig{
-					Config:      p.Config,
-					Branch:      p.GitlabBranch,
-					Commit:      p.GitlabCommit,
-					Atomic:      p.Atomic,
-					ExtraValues: p.ExtraValues,
+					Config:           p.Config,
+					Branch:           p.GitlabBranch,
+					Commit:           p.GitlabCommit,
+					Atomic:           p.Atomic,
+					ExtraValues:      ev,
+					FinalExtraValues: fev,
 				}
 				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitlabProjectId), p.GitlabCommit)
 				if err == nil {
@@ -377,12 +393,13 @@ func (j *Jober) Run() error {
 				}
 			}
 			newConf = userConfig{
-				Config:      j.project.Config,
-				Branch:      j.project.GitlabBranch,
-				Commit:      j.project.GitlabCommit,
-				Atomic:      j.project.Atomic,
-				WebUrl:      j.Commit().GetWebURL(),
-				ExtraValues: j.project.ExtraValues,
+				Config:           j.project.Config,
+				Branch:           j.project.GitlabBranch,
+				Commit:           j.project.GitlabCommit,
+				Atomic:           j.project.Atomic,
+				WebUrl:           j.Commit().GetWebURL(),
+				ExtraValues:      j.input.ExtraValues,
+				FinalExtraValues: j.extraValues,
 			}
 			if !j.IsDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
@@ -661,15 +678,16 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 
 	if len(j.input.ExtraValues) <= 0 {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
-		return nil
 	}
 
 	var validValues = make(map[string]any)
+	var useDefaultMap = make(map[string]bool)
 
 	var configElementsMap = make(map[string]*mars.Element)
 	for _, element := range j.config.Elements {
 		configElementsMap[element.Path] = element
 		validValues[element.Path] = element.Default
+		useDefaultMap[element.Path] = true
 	}
 
 	// validate
@@ -677,6 +695,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		var fieldValid bool
 		if element, ok := configElementsMap[value.Path]; ok {
 			fieldValid = true
+			useDefaultMap[value.Path] = false
 			switch element.Type {
 			case mars.ElementType_ElementTypeSwitch:
 				if value.Value == "" {
@@ -722,18 +741,29 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		}
 	}
 
-	var evs []string
+	var evs []*websocket_pb.ProjectExtraItem
 	for k, v := range validValues {
 		ysk, err := utils.YamlDeepSetKey(k, v)
 		if err != nil {
 			mlog.Error(fmt.Sprintf("%s find error %v", loaderName, err))
 			continue
 		}
-		evs = append(evs, string(ysk))
+		evs = append(evs, &websocket_pb.ProjectExtraItem{
+			Path:  k,
+			Value: string(ysk),
+		})
+	}
+	var ds []string
+	for k, ok := range useDefaultMap {
+		if ok {
+			ds = append(ds, k)
+		}
 	}
 
 	j.extraValues = evs
-	mlog.Debug(j.extraValues)
+	if len(ds) > 0 {
+		j.Messager().SendMsg(fmt.Sprintf(loaderName+"已经为 '%s' 设置系统默认值", strings.Join(ds, ",")))
+	}
 
 	return nil
 }
@@ -861,10 +891,9 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	if len(yamlImagePullSecrets) != 0 {
 		opts = append(opts, config.Source(bytes.NewReader(yamlImagePullSecrets)))
 	}
-	if len(j.extraValues) > 0 {
-		for _, value := range j.extraValues {
-			opts = append(opts, config.Source(strings.NewReader(value)))
-		}
+
+	for _, value := range j.extraValues {
+		opts = append(opts, config.Source(strings.NewReader(value.Value)))
 	}
 
 	if len(opts) < 1 {
