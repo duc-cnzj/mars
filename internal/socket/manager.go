@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -312,8 +313,24 @@ type userConfig struct {
 	FinalExtraValues []*websocket_pb.ProjectExtraItem `yaml:"sys_extra_values"`
 }
 
+type sortableProjectExtraItem []*websocket_pb.ProjectExtraItem
+
+func (s sortableProjectExtraItem) Len() int {
+	return len(s)
+}
+
+func (s sortableProjectExtraItem) Less(i, j int) bool {
+	return s[i].Path < s[j].Path
+}
+
+func (s sortableProjectExtraItem) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (u userConfig) PrettyYaml() string {
 	bf := bytes.Buffer{}
+	sort.Sort(sortableProjectExtraItem(u.ExtraValues))
+	sort.Sort(sortableProjectExtraItem(u.FinalExtraValues))
 	yaml.NewEncoder(&bf).Encode(&u)
 	return bf.String()
 }
