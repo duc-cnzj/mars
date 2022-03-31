@@ -304,18 +304,11 @@ const EventList: React.FC = () => {
           <ReactDiffViewer
             disableWordDiff
             styles={{
-              line: { fontSize: 12 },
-              gutter: { padding: "0 5px", minWidth: 20 },
-              marker: { padding: "0 6px" },
-              diffContainer: {
-                display: "block",
-                overflow: "auto",
-                width: "100%",
-              },
+              line: { fontSize: 12, wordBreak: "break-word" },
             }}
             useDarkTheme
             showDiffOnly
-            splitView={false}
+            splitView
             renderContent={highlightSyntax}
             oldValue={config.old}
             newValue={config.new}

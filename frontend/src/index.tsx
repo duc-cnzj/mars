@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom";
-import "normalize.css";
 import "./styles/index.less";
 import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";

@@ -140,7 +140,7 @@ type Jober struct {
 	imagePullSecrets  []string
 	vars              vars
 	dynamicConfigYaml string
-	extraValues       []*websocket_pb.ProjectExtraItem
+	extraValues       []string
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
@@ -310,7 +310,27 @@ type userConfig struct {
 	Atomic           bool                             `yaml:"atomic"`
 	WebUrl           string                           `yaml:"web_url"`
 	ExtraValues      []*websocket_pb.ProjectExtraItem `yaml:"extra_values"`
-	FinalExtraValues []*websocket_pb.ProjectExtraItem `yaml:"sys_extra_values"`
+	FinalExtraValues mergeYamlString                  `yaml:"final_extra_values"`
+}
+
+type mergeYamlString []string
+
+func (s mergeYamlString) MarshalYAML() (any, error) {
+	var opts []config.YAMLOption
+	for _, item := range s {
+		opts = append(opts, config.Source(strings.NewReader(item)))
+	}
+	if len(opts) == 0 {
+		return "", nil
+	}
+	provider, _ := config.NewYAML(opts...)
+	var merged map[string]any
+	provider.Get("").Populate(&merged)
+
+	bf := &bytes.Buffer{}
+	yaml.NewEncoder(bf).Encode(&merged)
+
+	return bf.String(), nil
 }
 
 type sortableProjectExtraItem []*websocket_pb.ProjectExtraItem
@@ -330,7 +350,6 @@ func (s sortableProjectExtraItem) Swap(i, j int) {
 func (u userConfig) PrettyYaml() string {
 	bf := bytes.Buffer{}
 	sort.Sort(sortableProjectExtraItem(u.ExtraValues))
-	sort.Sort(sortableProjectExtraItem(u.FinalExtraValues))
 	yaml.NewEncoder(&bf).Encode(&u)
 	return bf.String()
 }
@@ -385,7 +404,7 @@ func (j *Jober) Run() error {
 				}
 				var (
 					ev  []*websocket_pb.ProjectExtraItem
-					fev []*websocket_pb.ProjectExtraItem
+					fev mergeYamlString
 				)
 				if len(p.ExtraValues) > 0 {
 					json.Unmarshal([]byte(p.ExtraValues), &ev)
@@ -417,7 +436,7 @@ func (j *Jober) Run() error {
 				Atomic:           j.project.Atomic,
 				WebUrl:           j.Commit().GetWebURL(),
 				ExtraValues:      j.input.ExtraValues,
-				FinalExtraValues: j.extraValues,
+				FinalExtraValues: mergeYamlString(j.extraValues),
 			}
 			if !j.IsDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
@@ -698,13 +717,17 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "未发现项目额外的配置"))
 	}
 
-	var validValues = make(map[string]any)
+	var validValuesMap = make(map[string]any)
 	var useDefaultMap = make(map[string]bool)
 
 	var configElementsMap = make(map[string]*mars.Element)
 	for _, element := range j.config.Elements {
 		configElementsMap[element.Path] = element
-		validValues[element.Path] = element.Default
+		defaultValue, e := d.typeValue(element, element.Default)
+		if e != nil {
+			return e
+		}
+		validValuesMap[element.Path] = defaultValue
 		useDefaultMap[element.Path] = true
 	}
 
@@ -714,76 +737,84 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 		if element, ok := configElementsMap[value.Path]; ok {
 			fieldValid = true
 			useDefaultMap[value.Path] = false
-			switch element.Type {
-			case mars.ElementType_ElementTypeSwitch:
-				if value.Value == "" {
-					value.Value = "false"
-				}
-				v, err := strconv.ParseBool(value.Value)
-				if err != nil {
-					mlog.Error(err)
-					return fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", value.Path, value.Value)
-				}
-				validValues[value.Path] = v
-			case mars.ElementType_ElementTypeInputNumber:
-				if value.Value == "" {
-					value.Value = "0"
-				}
-				v, err := strconv.ParseInt(value.Value, 10, 64)
-				if err != nil {
-					mlog.Error(err)
-					return fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", value.Path, value.Value)
-				}
-				validValues[value.Path] = v
-			case mars.ElementType_ElementTypeRadio:
-				fallthrough
-			case mars.ElementType_ElementTypeSelect:
-				var in bool
-				for _, selectValue := range element.SelectValues {
-					if value.Value == selectValue {
-						in = true
-						break
-					}
-				}
-				if !in {
-					return fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", value.Path, element.SelectValues, value.Value)
-				}
-				validValues[value.Path] = value.Value
-				continue
-			default:
-				validValues[value.Path] = value.Value
+			typeValue, err := d.typeValue(element, value.Value)
+			if err != nil {
+				return err
 			}
+			validValuesMap[value.Path] = typeValue
 		}
 		if !fieldValid {
 			return fmt.Errorf("不允许自定义字段 %s", value.Path)
 		}
 	}
 
-	var evs []*websocket_pb.ProjectExtraItem
-	for k, v := range validValues {
-		ysk, err := utils.YamlDeepSetKey(k, v)
-		if err != nil {
-			mlog.Error(fmt.Sprintf("%s find error %v", loaderName, err))
-			continue
-		}
-		evs = append(evs, &websocket_pb.ProjectExtraItem{
-			Path:  k,
-			Value: string(ysk),
-		})
-	}
+	j.extraValues = d.deepSetItems(validValuesMap)
 	var ds []string
 	for k, ok := range useDefaultMap {
 		if ok {
 			ds = append(ds, k)
 		}
 	}
-
-	j.extraValues = evs
 	if len(ds) > 0 {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"已经为 '%s' 设置系统默认值", strings.Join(ds, ",")))
 	}
 
 	return nil
+}
+
+func (d *ExtraValuesLoader) typeValue(element *mars.Element, input string) (any, error) {
+	switch element.Type {
+	case mars.ElementType_ElementTypeSwitch:
+		if input == "" {
+			input = "false"
+		}
+		v, err := strconv.ParseBool(input)
+		if err != nil {
+			mlog.Error(err)
+			return nil, fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", element.Path, input)
+		}
+		return v, nil
+	case mars.ElementType_ElementTypeInputNumber:
+		if input == "" {
+			input = "0"
+		}
+		v, err := strconv.ParseInt(input, 10, 64)
+		if err != nil {
+			mlog.Error(err)
+			return nil, fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", element.Path, input)
+		}
+		return v, nil
+	case mars.ElementType_ElementTypeRadio:
+		fallthrough
+	case mars.ElementType_ElementTypeSelect:
+		var in bool
+		for _, selectValue := range element.SelectValues {
+			if input == selectValue {
+				in = true
+				break
+			}
+		}
+		if !in {
+			return nil, fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", element.Path, element.SelectValues, input)
+		}
+
+		return input, nil
+	default:
+		return input, nil
+	}
+}
+
+func (d *ExtraValuesLoader) deepSetItems(items map[string]any) []string {
+	var evs []string
+	for k, v := range items {
+		ysk, err := utils.YamlDeepSetKey(k, v)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
+		evs = append(evs, string(ysk))
+	}
+	return evs
 }
 
 const (
@@ -911,7 +942,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	}
 
 	for _, value := range j.extraValues {
-		opts = append(opts, config.Source(strings.NewReader(value.Value)))
+		opts = append(opts, config.Source(strings.NewReader(value)))
 	}
 
 	if len(opts) < 1 {

@@ -30,7 +30,6 @@
     "jsonlint": "^1.6.3",
     "lodash": "^4.17.21",
     "mitt": "^3.0.0",
-    "normalize.css": "^8.0.1",
     "prism-themes": "^1.9.0",
     "protobufjs": "^6.11.2",
     "react": "^17.0.2",
