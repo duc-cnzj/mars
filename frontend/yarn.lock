@@ -2029,13 +2029,6 @@
   resolved "https://registry.npmmirror.com/@types/range-parser/download/@types/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
   integrity sha1-zWZ7z90CUhOq+3ylkVqTJZCs3Nw=
 
-"@types/react-copy-to-clipboard@^5.0.1":
-  version "5.0.2"
-  resolved "https://registry.npmmirror.com/@types/react-copy-to-clipboard/download/@types/react-copy-to-clipboard-5.0.2.tgz#c29690b472a54edff35916f0d1c6c797ad0fd34b"
-  integrity sha1-wpaQtHKlTt/zWRbw0cbHl60P00s=
-  dependencies:
-    "@types/react" "*"
-
 "@types/react-dom@^17.0.11":
   version "17.0.11"
   resolved "https://registry.npmmirror.com/@types/react-dom/download/@types/react-dom-17.0.11.tgz#e1eadc3c5e86bdb5f7684e00274ae228e7bcc466"
@@ -3478,7 +3471,7 @@ copy-anything@^2.0.1:
   dependencies:
     is-what "^3.12.0"
 
-copy-to-clipboard@^3, copy-to-clipboard@^3.2.0:
+copy-to-clipboard@^3.2.0:
   version "3.3.1"
   resolved "https://registry.npm.taobao.org/copy-to-clipboard/download/copy-to-clipboard-3.3.1.tgz#115aa1a9998ffab6196f93076ad6da3b913662ae"
   integrity sha1-EVqhqZmP+rYZb5MHatbaO5E2Yq4=
@@ -7925,7 +7918,7 @@ prompts@^2.0.1, prompts@^2.4.2:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-prop-types@^15.5.8, prop-types@^15.6.2, prop-types@^15.7.2:
+prop-types@^15.6.2, prop-types@^15.7.2:
   version "15.8.0"
   resolved "https://registry.npmmirror.com/prop-types/download/prop-types-15.8.0.tgz#d237e624c45a9846e469f5f31117f970017ff588"
   integrity sha512-fDGekdaHh65eI3lMi5OnErU6a8Ighg2KjcjQxO7m8VHyWjcPyj5kiOgV1LQDOOOgVy3+5FgjXvdSSX7B8/5/4g==
@@ -8395,14 +8388,6 @@ react-codemirror2@^7.2.1:
   version "7.2.1"
   resolved "https://registry.nlark.com/react-codemirror2/download/react-codemirror2-7.2.1.tgz#38dab492fcbe5fb8ebf5630e5bb7922db8d3a10c"
   integrity sha1-ONq0kvy+X7jr9WMOW7eSLbjToQw=
-
-react-copy-to-clipboard@^5.0.3:
-  version "5.0.4"
-  resolved "https://registry.npmmirror.com/react-copy-to-clipboard/download/react-copy-to-clipboard-5.0.4.tgz#42ec519b03eb9413b118af92d1780c403a5f19bf"
-  integrity sha1-QuxRmwPrlBOxGK+S0XgMQDpfGb8=
-  dependencies:
-    copy-to-clipboard "^3"
-    prop-types "^15.5.8"
 
 react-dev-utils@^12.0.0:
   version "12.0.0"

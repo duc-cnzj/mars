@@ -1,8 +1,8 @@
 import React, { memo } from "react";
 import { xonokai } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { message, Popover } from "antd";
+import { Popover } from "antd";
 import { CopyOutlined, QuestionCircleOutlined } from "@ant-design/icons";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import  CopyToClipboard  from "./CopyToClipboard";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
 
@@ -77,7 +77,7 @@ values_yaml: |
           example
           <CopyToClipboard
             text={example}
-            onCopy={() => message.success("已复制！")}
+            successText="已复制！"
           >
             <CopyOutlined />
           </CopyToClipboard>

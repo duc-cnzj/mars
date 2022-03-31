@@ -1,8 +1,8 @@
 import React, { memo, useState } from "react";
 import { getServiceEndpoints } from "../api/namespace";
-import { Popover, message } from "antd";
+import { Popover } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import CopyToClipboard from "./CopyToClipboard";
 import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{
@@ -29,10 +29,7 @@ const ServiceEndpoint: React.FC<{
             v.url
           )}
 
-          <CopyToClipboard
-            text={v.url}
-            onCopy={() => message.success("已复制！")}
-          >
+          <CopyToClipboard text={v.url} successText="已复制！">
             <CopyOutlined />
           </CopyToClipboard>
         </div>

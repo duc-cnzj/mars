@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import CopyToClipboard from "./CopyToClipboard";
 import DynamicElement from "./elements/DynamicElement";
 import SelectFileType from "./SelectFileType";
 import { useAsyncState } from "../utils/async";
@@ -435,7 +435,7 @@ const ConfigModal: React.FC<{
                         >
                           <CopyToClipboard
                             text={defaultValues}
-                            onCopy={() => message.success("已复制！")}
+                            successText="已复制！"
                           >
                             <CopyOutlined />
                           </CopyToClipboard>

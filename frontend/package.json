@@ -35,7 +35,6 @@
     "protobufjs": "^6.11.2",
     "react": "^17.0.2",
     "react-codemirror2": "^7.2.1",
-    "react-copy-to-clipboard": "^5.0.3",
     "react-diff-viewer": "^3.1.1",
     "react-dom": "^17.0.2",
     "react-infinite-scroll-component": "^6.1.0",
@@ -91,7 +90,6 @@
     "@types/jshint": "^2.12.1",
     "@types/lodash": "^4.14.169",
     "@types/prismjs": "^1.16.6",
-    "@types/react-copy-to-clipboard": "^5.0.1",
     "@types/react-router-dom": "^5.1.7",
     "@types/react-syntax-highlighter": "^13.5.0",
     "babel-plugin-transform-remove-console": "^6.9.4"

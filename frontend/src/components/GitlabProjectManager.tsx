@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { disabledProject, enabledProject, allProjects } from "../api/gitlab";
 import { CopyOutlined } from "@ant-design/icons";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import { copy } from "../utils/copy";
 import {
   List,
   Avatar,
@@ -209,12 +209,12 @@ const GitlabProjectManager: React.FC = () => {
                       }}
                     >
                       (id: <span style={{ marginRight: 1 }}>{item.id}</span>
-                      <CopyToClipboard
-                        text={String(item.id)}
-                        onCopy={() => message.success("已复制项目id！")}
+                      <span
+                        style={{ cursor: "pointer" }}
+                        onClick={() => copy(String(item.id), "已复制项目id！")}
                       >
                         <CopyOutlined />
-                      </CopyToClipboard>
+                      </span>
                       )
                     </div>
                     {item.global_enabled ? (

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"strings"
 	"sync/atomic"
 
@@ -23,10 +24,14 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
 type Interface interface {
+	io.Closer
+	SetBearerToken(string)
+
 	Auth() auth.AuthClient
 	Changelog() changelog.ChangelogClient
 	Cluster() cluster.ClusterClient
@@ -52,6 +57,7 @@ type Client struct {
 
 	tls *tls.Config
 
+	conn        *grpc.ClientConn
 	dialOptions []grpc.DialOption
 
 	auth      auth.AuthClient
@@ -81,6 +87,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.conn = dial
 
 	c.auth = auth.NewAuthClient(dial)
 	c.changelog = changelog.NewChangelogClient(dial)
@@ -103,6 +110,22 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	}
 
 	return c, nil
+}
+
+func (c *Client) SetBearerToken(token string) {
+	c.setToken(token)
+}
+
+func (c *Client) hasCredentials() bool {
+	return c.username != "" && c.password != ""
+}
+
+func (c *Client) Close() error {
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+
+	return nil
 }
 
 func (c *Client) Auth() auth.AuthClient {
@@ -167,7 +190,10 @@ func (c *Client) authToken() string {
 
 func (c *Client) buildDialOptions() []grpc.DialOption {
 	if c.tls == nil {
-		c.dialOptions = append(c.dialOptions, grpc.WithInsecure())
+		c.dialOptions = append(c.dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+	if !c.hasCredentials() && c.authTokenValue.Load() == nil {
+		c.dialOptions = append(c.dialOptions, grpc.WithPerRPCCredentials(&clientauth{c: c}))
 	}
 
 	c.dialOptions = append(c.dialOptions, grpc.WithChainUnaryInterceptor(c.UnaryClientInterceptors...))
@@ -214,20 +240,6 @@ func (a *clientauth) RequireTransportSecurity() bool {
 	return false
 }
 
-type clienttokenauth struct {
-	token string
-}
-
-func (a *clienttokenauth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{
-		"Authorization": a.token,
-	}, nil
-}
-
-func (a *clienttokenauth) RequireTransportSecurity() bool {
-	return false
-}
-
 func WithAuth(username, password string) Option {
 	return func(c *Client) {
 		c.username = username
@@ -238,7 +250,8 @@ func WithAuth(username, password string) Option {
 
 func WithBearerToken(token string) Option {
 	return func(c *Client) {
-		c.dialOptions = append(c.dialOptions, grpc.WithPerRPCCredentials(&clienttokenauth{token: token}))
+		c.setToken(token)
+		c.dialOptions = append(c.dialOptions, grpc.WithPerRPCCredentials(&clientauth{c: c}))
 	}
 }
 
@@ -264,7 +277,7 @@ func WithTokenAutoRefresh() Option {
 				var bf backoff.BackOff = backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 				bf = backoff.WithMaxRetries(bf, 5)
 
-				if status.Code(err) == codes.Unauthenticated && method != "/Auth/Login" {
+				if c.hasCredentials() && status.Code(err) == codes.Unauthenticated && method != "/Auth/Login" {
 					return backoff.Retry(operation, bf)
 				}
 				return err

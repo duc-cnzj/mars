@@ -4,13 +4,15 @@ import ClusterInfo from "./ClusterInfo";
 import { useWsReady } from "../contexts/useWebsocket";
 import { UserOutlined } from "@ant-design/icons";
 import { useAuth } from "../contexts/auth";
-import { removeToken } from "../utils/token";
+import { getToken, removeToken } from "../utils/token";
 import { useHistory } from "react-router-dom";
 import { Dropdown, Menu } from "antd";
+import { copy } from "../utils/copy";
 import {
   LogoutOutlined,
   SettingOutlined,
   ReadOutlined,
+  KeyOutlined,
   NotificationOutlined,
 } from "@ant-design/icons";
 
@@ -77,6 +79,17 @@ const AppHeader: React.FC = () => {
                 ) : (
                   <></>
                 )}
+                <Menu.Item style={{ fontSize: 12 }} key="3">
+                  <a
+                    href="javascript(0);"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      copy(getToken());
+                    }}
+                  >
+                    <KeyOutlined /> 获取令牌
+                  </a>
+                </Menu.Item>
 
                 <Menu.Divider />
                 <Menu.Item style={{ fontSize: 12 }} key="100">
@@ -121,7 +134,7 @@ const AppHeader: React.FC = () => {
             </a>
           </Dropdown>
         ) : (
-          ""
+          <></>
         )}
       </div>
     </div>
