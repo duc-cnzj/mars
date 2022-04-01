@@ -82,6 +82,7 @@ func (m *ClusterInfoResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return ClusterInfoResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -183,6 +184,7 @@ func (m *ClusterInfoRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return ClusterInfoRequestMultiError(errors)
 	}
+
 	return nil
 }
 

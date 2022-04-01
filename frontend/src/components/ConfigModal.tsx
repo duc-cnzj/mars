@@ -33,7 +33,7 @@ import {
   updateGlobalConfig,
   getDefaultValues,
 } from "../api/mars";
-import { branchOptions as branches } from "../api/gitlab";
+import { branchOptions as branches } from "../api/git";
 import MarsExample from "./MarsExample";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -92,7 +92,7 @@ const ConfigModal: React.FC<{
   const loadDefaultValues = useCallback(
     (projectId: number, branch: string) => {
       if (projectId) {
-        getDefaultValues({ project_id: projectId, branch: branch })
+        getDefaultValues({ git_project_id: projectId, branch: branch })
           .then((res) => {
             setDefaultValues(res.data.value);
           })
@@ -107,7 +107,7 @@ const ConfigModal: React.FC<{
   const loadConfig = useCallback(
     (id: number, branch = "") => {
       setLoading(true);
-      marsConfig({ branch, project_id: id })
+      marsConfig({ branch, git_project_id: id })
         .then(({ data }) => {
           if (data.config) {
             setConfig(data.config);
@@ -127,7 +127,7 @@ const ConfigModal: React.FC<{
   const loadGlobalConfig = useCallback(
     (id: number) => {
       setLoading(true);
-      globalConfigApi({ project_id: id })
+      globalConfigApi({ git_project_id: id })
         .then(({ data }) => {
           if (data.config) {
             setConfig(data.config);
@@ -179,7 +179,7 @@ const ConfigModal: React.FC<{
       if (!enabled) {
         setEditMode(false);
       }
-      toggleGlobalEnabledApi({ project_id: item.id, enabled })
+      toggleGlobalEnabledApi({ git_project_id: item.id, enabled })
         .then(() => {
           message.success("操作成功");
           setGlobalEnabled(enabled);
@@ -206,7 +206,7 @@ const ConfigModal: React.FC<{
   const onSave = useCallback(
     (values: any) => {
       updateGlobalConfig({
-        project_id: item.id,
+        git_project_id: item.id,
         config: values,
       })
         .then((res) => {
@@ -221,7 +221,7 @@ const ConfigModal: React.FC<{
         })
         .catch((e) => {
           message.error(e.response.data.message);
-          globalConfigApi({ project_id: item.id }).then(({ data }) => {
+          globalConfigApi({ git_project_id: item.id }).then(({ data }) => {
             setGlobalEnabled(data.enabled);
           });
         });
@@ -239,10 +239,10 @@ const ConfigModal: React.FC<{
     setConfigVisible(visible);
     if (visible) {
       setLoading(true);
-      branches({ project_id: String(item.id), all: true }).then((res) => {
-        setMbranches(res.data.data.map((op) => op.value));
+      branches({ git_project_id: String(item.id), all: true }).then((res) => {
+        setMbranches(res.data.items.map((op) => op.value));
       });
-      globalConfigApi({ project_id: item.id })
+      globalConfigApi({ git_project_id: item.id })
         .then(({ data }) => {
           setGlobalEnabled(data.enabled);
           if (!data.enabled) {

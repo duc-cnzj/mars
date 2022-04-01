@@ -27,9 +27,9 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/duc-cnzj/mars-client/v3/event"
-	"github.com/duc-cnzj/mars-client/v3/mars"
-	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
+	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/mars"
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
@@ -393,13 +393,13 @@ func (j *Jober) Run() error {
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "GitlabProjectId", "Name", "NamespaceId", "Config", "GitlabBranch", "GitlabCommit", "Atomic", "ExtraValues", "FinalExtraValues").
+				Select("ID", "GitProjectId", "Name", "NamespaceId", "Config", "GitBranch", "GitCommit", "Atomic", "ExtraValues", "FinalExtraValues").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
 					app.DB().Model(j.project).
-						Select("Config", "GitlabProjectId", "GitlabCommit", "GitlabBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues").
+						Select("Config", "GitProjectId", "GitCommit", "GitBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues").
 						Updates(&j.project)
 				}
 				var (
@@ -414,13 +414,13 @@ func (j *Jober) Run() error {
 				}
 				oldConf = userConfig{
 					Config:           p.Config,
-					Branch:           p.GitlabBranch,
-					Commit:           p.GitlabCommit,
+					Branch:           p.GitBranch,
+					Commit:           p.GitCommit,
 					Atomic:           p.Atomic,
 					ExtraValues:      ev,
 					FinalExtraValues: fev,
 				}
-				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitlabProjectId), p.GitlabCommit)
+				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
 				if err == nil {
 					oldConf.WebUrl = commit.GetWebURL()
 				}
@@ -431,8 +431,8 @@ func (j *Jober) Run() error {
 			}
 			newConf = userConfig{
 				Config:           j.project.Config,
-				Branch:           j.project.GitlabBranch,
-				Commit:           j.project.GitlabCommit,
+				Branch:           j.project.GitBranch,
+				Commit:           j.project.GitCommit,
 				Atomic:           j.project.Atomic,
 				WebUrl:           j.Commit().GetWebURL(),
 				ExtraValues:      j.input.ExtraValues,
@@ -504,14 +504,14 @@ func (j *Jober) Validate() error {
 	}
 
 	j.project = &models.Project{
-		Name:            slug.Make(j.input.Name),
-		GitlabProjectId: int(j.input.GitlabProjectId),
-		GitlabBranch:    j.input.GitlabBranch,
-		GitlabCommit:    j.input.GitlabCommit,
-		Config:          j.input.Config,
-		NamespaceId:     ns.ID,
-		Namespace:       ns,
-		Atomic:          j.input.Atomic,
+		Name:         slug.Make(j.input.Name),
+		GitProjectId: int(j.input.GitProjectId),
+		GitBranch:    j.input.GitBranch,
+		GitCommit:    j.input.GitCommit,
+		Config:       j.input.Config,
+		NamespaceId:  ns.ID,
+		Namespace:    ns,
+		Atomic:       j.input.Atomic,
 	}
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")
@@ -531,7 +531,7 @@ func (j *Jober) Validate() error {
 		return errors.New("有别人也在操作这个项目，等等哦~")
 	}
 
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit)
+	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
 	if err != nil {
 		return err
 	}
@@ -591,7 +591,7 @@ func (m *MarsLoader) Load(j *Jober) error {
 	j.Messager().SendMsg(loaderName + "加载用户配置")
 	j.Percenter().To(10)
 
-	marsC, err := utils.GetProjectMarsConfig(j.input.GitlabProjectId, j.input.GitlabBranch)
+	marsC, err := utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
 	if err != nil {
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"加载 mars config 失败: %s", err.Error()))
 		return err
@@ -653,8 +653,8 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	} else {
 		var err error
 		dir = j.config.LocalChartPath
-		files, _ = plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitlabProjectId), j.input.GitlabCommit, j.config.LocalChartPath, true)
-		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(j.input.GitlabProjectId, j.input.GitlabCommit, files)
+		files, _ = plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitProjectId), j.input.GitCommit, j.config.LocalChartPath, true)
+		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(j.input.GitProjectId, j.input.GitCommit, files)
 		if err != nil {
 			return err
 		}
@@ -882,7 +882,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
-	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitlabProjectId), j.project.GitlabCommit); e == nil {
+	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit); e == nil {
 		pipelineID = pipeline.GetID()
 		pipelineBranch = pipeline.GetRef()
 

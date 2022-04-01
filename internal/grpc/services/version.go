@@ -3,16 +3,16 @@ package services
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars-client/v3/version"
+	"github.com/duc-cnzj/mars-client/v4/version"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	marsVersion "github.com/duc-cnzj/mars/version"
 )
 
-type VersionService struct {
+type VersionSvc struct {
 	version.UnsafeVersionServer
 }
 
-func (*VersionService) Version(ctx context.Context, request *version.VersionRequest) (*version.VersionResponse, error) {
+func (*VersionSvc) Version(ctx context.Context, request *version.VersionRequest) (*version.VersionResponse, error) {
 	vv := marsVersion.GetVersion()
 
 	return &version.VersionResponse{
@@ -30,7 +30,7 @@ func (*VersionService) Version(ctx context.Context, request *version.VersionRequ
 	}, nil
 }
 
-func (*VersionService) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (*VersionSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	mlog.Debug("client is calling method:", fullMethodName)
 	return ctx, nil
 }

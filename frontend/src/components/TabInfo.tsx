@@ -98,7 +98,7 @@ const DetailTab: React.FC<{
           }}
         />
         <p>
-          分支: <span className="detail-data">{detail.gitlab_branch}</span>
+          分支: <span className="detail-data">{detail.git_branch}</span>
         </p>
       </div>
 
@@ -169,10 +169,10 @@ const DetailTab: React.FC<{
         <p>
           提交:
           <span className="detail-data">
-            <a href={detail.gitlab_commit_web_url} target="_blank">
-              {detail.gitlab_commit_title}
+            <a href={detail.git_commit_web_url} target="_blank">
+              {detail.git_commit_title}
             </a>
-            by {detail.gitlab_commit_author} 于 {detail.gitlab_commit_date}
+            by {detail.git_commit_author} 于 {detail.git_commit_date}
           </span>
         </p>
       </div>

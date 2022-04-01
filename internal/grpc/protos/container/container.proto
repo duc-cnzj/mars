@@ -3,33 +3,33 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/container;container";
+option go_package = "github.com/duc-cnzj/mars-client/v4/container;container";
 
-message CopyToPodRequest {
+message ContainerCopyToPodRequest {
   int64 file_id = 1 [(validate.rules).int64.gt = 0];
   string namespace = 2 [(validate.rules).string.min_bytes = 1];
   string pod = 3 [(validate.rules).string.min_bytes = 1];
   string container = 4 [(validate.rules).string.min_bytes = 1];
 }
 
-message CopyToPodResponse {
-  string podFilePath = 1;
+message ContainerCopyToPodResponse {
+  string pod_file_path = 1;
   string output = 2;
   string file_name = 3;
 }
 
-message ExecRequest {
+message ContainerExecRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];
   string pod = 2 [(validate.rules).string.min_bytes = 1];
   string container = 3;
   repeated string command = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}];
 }
 
-message ExecResponse {
+message ContainerExecResponse {
   string data = 1;
 }
 
-message StreamCopyToPodRequest {
+message ContainerStreamCopyToPodRequest {
   string file_name = 1 [(validate.rules).string.min_bytes = 1];
   bytes data = 2;
   string namespace = 3  [(validate.rules).string.min_bytes = 1];
@@ -37,9 +37,9 @@ message StreamCopyToPodRequest {
   string container = 5;
 }
 
-message StreamCopyToPodResponse {
+message ContainerStreamCopyToPodResponse {
   int64 size = 1;
-  string podFilePath = 2;
+  string pod_file_path = 2;
   string output = 3;
   string pod = 4;
   string namespace = 5;
@@ -47,17 +47,49 @@ message StreamCopyToPodResponse {
   string filename = 7;
 }
 
+message ContainerIsPodRunningRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+}
+
+message ContainerIsPodRunningResponse {
+  bool running = 1;
+  string reason = 2;
+}
+
+message ContainerIsPodExistsRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+}
+
+message ContainerIsPodExistsResponse {
+  bool exists = 1;
+}
+
+message ContainerLogRequest {
+  string namespace = 1 [(validate.rules).string.min_bytes = 1];
+  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string container = 3 [(validate.rules).string.min_bytes = 1];
+}
+
+message ContainerLogResponse {
+  string namespace = 1;
+  string pod_name = 2;
+  string container_name = 3;
+  string log = 4;
+}
+
 service ContainerSvc {
   // CopyToPod (web): 页面上传文件到 pod 内部
-  rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
+  rpc CopyToPod(ContainerCopyToPodRequest) returns (ContainerCopyToPodResponse) {
     option (google.api.http) = {
-      post: "/api/container_copy/copy_to_pod",
+      post: "/api/containers/copy_to_pod",
       body: "*"
     };
   }
 
   // Exec grpc 执行 pod 命令
-  rpc Exec(ExecRequest) returns (stream ExecResponse);
+  rpc Exec(ContainerExecRequest) returns (stream ContainerExecResponse);
 
   // StreamCopyToPod grpc 上传文件到 pod
   //  demo:
@@ -76,7 +108,7 @@ service ContainerSvc {
   //		_, err := bf.Read(bts)
   //		if err != nil {
   //			if err == io.EOF {
-  //				cp.Send(&container.StreamCopyToPodRequest{
+  //				cp.Send(&container.ContainerStreamCopyToPodRequest{
   //					FileName:  filename,
   //					Data:      bts,
   //					Namespace: namespace,
@@ -91,7 +123,7 @@ service ContainerSvc {
   //			}
   //			return
   //		}
-  //		 cp.Send(&container.StreamCopyToPodRequest{
+  //		 cp.Send(&container.ContainerStreamCopyToPodRequest{
   //			FileName:  filename,
   //			Data:      bts,
   //			Namespace: namespace,
@@ -99,5 +131,35 @@ service ContainerSvc {
   //			Container: containerName,
   //		 })
   //	}
-  rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
+  rpc StreamCopyToPod(stream ContainerStreamCopyToPodRequest) returns (ContainerStreamCopyToPodResponse);
+
+  // IsPodRunning pod 是否正常在跑
+  rpc IsPodRunning(ContainerIsPodRunningRequest) returns (ContainerIsPodRunningResponse) {
+    option (google.api.http) = {
+      post: "/api/containers/pod_running_status",
+      body: "*"
+    };
+  }
+
+  //  IsPodExists pod 是否存在
+  rpc IsPodExists(ContainerIsPodExistsRequest) returns (ContainerIsPodExistsResponse) {
+    option (google.api.http) = {
+      post: "/api/containers/pod_exists",
+      body: "*"
+    };
+  }
+
+  // ContainerLog 查看 pod 日志
+  rpc ContainerLog(ContainerLogRequest) returns (ContainerLogResponse) {
+    option (google.api.http) = {
+      get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs"
+    };
+  }
+
+  // StreamContainerLog stream 方式查看 pod 日志
+  rpc StreamContainerLog(ContainerLogRequest) returns (stream ContainerLogResponse) {
+    option (google.api.http) = {
+      get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"
+    };
+  }
 }

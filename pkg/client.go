@@ -7,19 +7,19 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/duc-cnzj/mars-client/v3/auth"
-	"github.com/duc-cnzj/mars-client/v3/changelog"
-	"github.com/duc-cnzj/mars-client/v3/cluster"
-	"github.com/duc-cnzj/mars-client/v3/container"
-	"github.com/duc-cnzj/mars-client/v3/event"
-	"github.com/duc-cnzj/mars-client/v3/file"
-	"github.com/duc-cnzj/mars-client/v3/gitserver"
-	"github.com/duc-cnzj/mars-client/v3/mars"
-	"github.com/duc-cnzj/mars-client/v3/metrics"
-	"github.com/duc-cnzj/mars-client/v3/namespace"
-	"github.com/duc-cnzj/mars-client/v3/picture"
-	"github.com/duc-cnzj/mars-client/v3/project"
-	"github.com/duc-cnzj/mars-client/v3/version"
+	"github.com/duc-cnzj/mars-client/v4/auth"
+	"github.com/duc-cnzj/mars-client/v4/changelog"
+	"github.com/duc-cnzj/mars-client/v4/cluster"
+	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/endpoint"
+	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/file"
+	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	"github.com/duc-cnzj/mars-client/v4/metrics"
+	"github.com/duc-cnzj/mars-client/v4/namespace"
+	"github.com/duc-cnzj/mars-client/v4/picture"
+	"github.com/duc-cnzj/mars-client/v4/project"
+	"github.com/duc-cnzj/mars-client/v4/version"
 
 	"github.com/cenkalti/backoff/v4"
 	"google.golang.org/grpc"
@@ -33,18 +33,22 @@ type Interface interface {
 	SetBearerToken(string)
 
 	Auth() auth.AuthClient
-	Changelog() changelog.ChangelogClient
-	Cluster() cluster.ClusterClient
-	Container() container.ContainerSvcClient
-	Event() event.EventClient
-	GitServer() gitserver.GitServerClient
-	Mars() mars.MarsClient
-	Metrics() metrics.MetricsClient
-	Namespace() namespace.NamespaceClient
 	Picture() picture.PictureClient
-	File() file.FileSvcClient
-	Project() project.ProjectClient
 	Version() version.VersionClient
+	Cluster() cluster.ClusterClient
+	Changelog() changelog.ChangelogClient
+	Event() event.EventClient
+
+	Container() container.ContainerSvcClient
+	File() file.FileSvcClient
+
+	GitProject() gitproject.GitProjectClient
+	GitProjectConfig() gitproject.GitProjectConfigClient
+
+	Namespace() namespace.NamespaceClient
+	Project() project.ProjectClient
+	Endpoint() endpoint.EndpointClient
+	Metrics() metrics.MetricsClient
 }
 
 type Client struct {
@@ -60,19 +64,20 @@ type Client struct {
 	conn        *grpc.ClientConn
 	dialOptions []grpc.DialOption
 
-	auth      auth.AuthClient
-	changelog changelog.ChangelogClient
-	cluster   cluster.ClusterClient
-	container container.ContainerSvcClient
-	event     event.EventClient
-	gitServer gitserver.GitServerClient
-	mars      mars.MarsClient
-	metrics   metrics.MetricsClient
-	namespace namespace.NamespaceClient
-	picture   picture.PictureClient
-	project   project.ProjectClient
-	version   version.VersionClient
-	file      file.FileSvcClient
+	auth                   auth.AuthClient
+	changelog              changelog.ChangelogClient
+	cluster                cluster.ClusterClient
+	container              container.ContainerSvcClient
+	event                  event.EventClient
+	gitProjectClient       gitproject.GitProjectClient
+	gitProjectConfigClient gitproject.GitProjectConfigClient
+	metrics                metrics.MetricsClient
+	namespace              namespace.NamespaceClient
+	picture                picture.PictureClient
+	project                project.ProjectClient
+	version                version.VersionClient
+	file                   file.FileSvcClient
+	endpoint               endpoint.EndpointClient
 }
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
@@ -94,14 +99,15 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.cluster = cluster.NewClusterClient(dial)
 	c.container = container.NewContainerSvcClient(dial)
 	c.event = event.NewEventClient(dial)
-	c.gitServer = gitserver.NewGitServerClient(dial)
-	c.mars = mars.NewMarsClient(dial)
+	c.gitProjectClient = gitproject.NewGitProjectClient(dial)
+	c.gitProjectConfigClient = gitproject.NewGitProjectConfigClient(dial)
 	c.metrics = metrics.NewMetricsClient(dial)
 	c.namespace = namespace.NewNamespaceClient(dial)
 	c.picture = picture.NewPictureClient(dial)
 	c.project = project.NewProjectClient(dial)
 	c.version = version.NewVersionClient(dial)
 	c.file = file.NewFileSvcClient(dial)
+	c.endpoint = endpoint.NewEndpointClient(dial)
 
 	if c.password != "" || c.username != "" {
 		if err := c.getToken(); err != nil {
@@ -152,12 +158,12 @@ func (c *Client) File() file.FileSvcClient {
 	return c.file
 }
 
-func (c *Client) GitServer() gitserver.GitServerClient {
-	return c.gitServer
+func (c *Client) GitProject() gitproject.GitProjectClient {
+	return c.gitProjectClient
 }
 
-func (c *Client) Mars() mars.MarsClient {
-	return c.mars
+func (c *Client) GitProjectConfig() gitproject.GitProjectConfigClient {
+	return c.gitProjectConfigClient
 }
 
 func (c *Client) Metrics() metrics.MetricsClient {
@@ -178,6 +184,10 @@ func (c *Client) Project() project.ProjectClient {
 
 func (c *Client) Version() version.VersionClient {
 	return c.version
+}
+
+func (c *Client) Endpoint() endpoint.EndpointClient {
+	return c.endpoint
 }
 
 func (c *Client) authToken() string {

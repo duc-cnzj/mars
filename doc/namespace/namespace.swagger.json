@@ -88,6 +88,14 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Namespace"
         ]
@@ -154,98 +162,17 @@
           "Namespace"
         ]
       }
-    },
-    "/api/namespaces/{namespace_id}/cpu_memory": {
-      "get": {
-        "summary": "CpuMemory 名称空间总共使用的 cpu memory",
-        "operationId": "Namespace_CpuMemory",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/NamespaceCpuMemoryResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "Namespace"
-        ]
-      }
-    },
-    "/api/namespaces/{namespace_id}/service_endpoints": {
-      "get": {
-        "summary": "ServiceEndpoints 名称空间下面所有服务的 endpoint",
-        "operationId": "Namespace_ServiceEndpoints",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/NamespaceServiceEndpointsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "project_name",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Namespace"
-        ]
-      }
     }
   },
   "definitions": {
     "NamespaceAllResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/NamespaceItem"
           }
-        }
-      }
-    },
-    "NamespaceCpuMemoryResponse": {
-      "type": "object",
-      "properties": {
-        "cpu": {
-          "type": "string"
-        },
-        "memory": {
-          "type": "string"
         }
       }
     },
@@ -350,31 +277,6 @@
         }
       }
     },
-    "NamespaceServiceEndpoint": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "port_name": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceServiceEndpointsResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpoint"
-          }
-        }
-      }
-    },
     "NamespaceShowResponse": {
       "type": "object",
       "properties": {
@@ -430,14 +332,14 @@
         "name": {
           "type": "string"
         },
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string",
           "format": "int64"
         },
-        "gitlab_branch": {
+        "git_branch": {
           "type": "string"
         },
-        "gitlab_commit": {
+        "git_commit": {
           "type": "string"
         },
         "config": {

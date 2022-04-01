@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/container_copy/copy_to_pod": {
+    "/api/containers/copy_to_pod": {
       "post": {
         "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
         "operationId": "ContainerSvc_CopyToPod",
@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/CopyToPodResponse"
+              "$ref": "#/definitions/ContainerCopyToPodResponse"
             }
           },
           "default": {
@@ -40,7 +40,168 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CopyToPodRequest"
+              "$ref": "#/definitions/ContainerCopyToPodRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ContainerSvc"
+        ]
+      }
+    },
+    "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
+      "get": {
+        "summary": "ContainerLog 查看 pod 日志",
+        "operationId": "ContainerSvc_ContainerLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "container",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ContainerSvc"
+        ]
+      }
+    },
+    "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
+      "get": {
+        "summary": "StreamContainerLog stream 方式查看 pod 日志",
+        "operationId": "ContainerSvc_StreamContainerLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/ContainerLogResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of ContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pod",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "container",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ContainerSvc"
+        ]
+      }
+    },
+    "/api/containers/pod_exists": {
+      "post": {
+        "summary": "IsPodExists pod 是否存在",
+        "operationId": "ContainerSvc_IsPodExists",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodExistsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodExistsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ContainerSvc"
+        ]
+      }
+    },
+    "/api/containers/pod_running_status": {
+      "post": {
+        "summary": "IsPodRunning pod 是否正常在跑",
+        "operationId": "ContainerSvc_IsPodRunning",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodRunningResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodRunningRequest"
             }
           }
         ],
@@ -51,7 +212,7 @@
     }
   },
   "definitions": {
-    "CopyToPodRequest": {
+    "ContainerCopyToPodRequest": {
       "type": "object",
       "properties": {
         "file_id": {
@@ -69,10 +230,10 @@
         }
       }
     },
-    "CopyToPodResponse": {
+    "ContainerCopyToPodResponse": {
       "type": "object",
       "properties": {
-        "podFilePath": {
+        "pod_file_path": {
           "type": "string"
         },
         "output": {
@@ -83,7 +244,7 @@
         }
       }
     },
-    "ExecResponse": {
+    "ContainerExecResponse": {
       "type": "object",
       "properties": {
         "data": {
@@ -91,14 +252,72 @@
         }
       }
     },
-    "StreamCopyToPodResponse": {
+    "ContainerIsPodExistsRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerIsPodExistsResponse": {
+      "type": "object",
+      "properties": {
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ContainerIsPodRunningRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerIsPodRunningResponse": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerLogResponse": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod_name": {
+          "type": "string"
+        },
+        "container_name": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerStreamCopyToPodResponse": {
       "type": "object",
       "properties": {
         "size": {
           "type": "string",
           "format": "int64"
         },
-        "podFilePath": {
+        "pod_file_path": {
           "type": "string"
         },
         "output": {

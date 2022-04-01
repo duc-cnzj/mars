@@ -15,23 +15,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dustin/go-humanize"
-	"google.golang.org/grpc/credentials/insecure"
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars-client/v3/auth"
-	"github.com/duc-cnzj/mars-client/v3/changelog"
-	"github.com/duc-cnzj/mars-client/v3/cluster"
-	"github.com/duc-cnzj/mars-client/v3/container"
-	"github.com/duc-cnzj/mars-client/v3/event"
-	"github.com/duc-cnzj/mars-client/v3/file"
-	"github.com/duc-cnzj/mars-client/v3/gitserver"
-	"github.com/duc-cnzj/mars-client/v3/mars"
-	rpcmetrics "github.com/duc-cnzj/mars-client/v3/metrics"
-	"github.com/duc-cnzj/mars-client/v3/namespace"
-	"github.com/duc-cnzj/mars-client/v3/picture"
-	"github.com/duc-cnzj/mars-client/v3/project"
-	"github.com/duc-cnzj/mars-client/v3/version"
+	"github.com/duc-cnzj/mars-client/v4/auth"
+	"github.com/duc-cnzj/mars-client/v4/changelog"
+	"github.com/duc-cnzj/mars-client/v4/cluster"
+	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/endpoint"
+	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/file"
+	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
+	"github.com/duc-cnzj/mars-client/v4/namespace"
+	"github.com/duc-cnzj/mars-client/v4/picture"
+	"github.com/duc-cnzj/mars-client/v4/project"
+	"github.com/duc-cnzj/mars-client/v4/version"
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -44,12 +40,15 @@ import (
 	"github.com/duc-cnzj/mars/third_party/doc/data"
 
 	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
+	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
+	"gorm.io/gorm"
 )
 
 type ApiGatewayBootstrapper struct{}
@@ -104,11 +103,12 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
 		cluster.RegisterClusterHandlerFromEndpoint,
-		gitserver.RegisterGitServerHandlerFromEndpoint,
-		mars.RegisterMarsHandlerFromEndpoint,
+		gitproject.RegisterGitProjectHandlerFromEndpoint,
+		gitproject.RegisterGitProjectConfigHandlerFromEndpoint,
 		project.RegisterProjectHandlerFromEndpoint,
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,
+		endpoint.RegisterEndpointHandlerFromEndpoint,
 		container.RegisterContainerSvcHandlerFromEndpoint,
 		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
 		version.RegisterVersionHandlerFromEndpoint,
@@ -292,12 +292,12 @@ func serveWs(mux *mux.Router) {
 }
 
 type ExportProject struct {
-	DefaultBranch   string `json:"default_branch"`
-	Name            string `json:"name"`
-	GitlabProjectId int    `json:"gitlab_project_id"`
-	Enabled         bool   `json:"enabled"`
-	GlobalEnabled   bool   `json:"global_enabled"`
-	GlobalConfig    string `json:"global_config"`
+	DefaultBranch string `json:"default_branch"`
+	Name          string `json:"name"`
+	GitProjectId  int    `json:"git_project_id"`
+	Enabled       bool   `json:"enabled"`
+	GlobalEnabled bool   `json:"global_enabled"`
+	GlobalConfig  string `json:"global_config"`
 }
 
 func handleDownloadConfig(gmux *runtime.ServeMux) {
@@ -312,17 +312,17 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		var projects []models.GitlabProject
+		var projects []models.GitProject
 		app.DB().Find(&projects)
 		data := make([]ExportProject, 0, len(projects))
-		for _, gitlabProject := range projects {
+		for _, gitProject := range projects {
 			data = append(data, ExportProject{
-				DefaultBranch:   gitlabProject.DefaultBranch,
-				Name:            gitlabProject.Name,
-				GitlabProjectId: gitlabProject.GitlabProjectId,
-				Enabled:         gitlabProject.Enabled,
-				GlobalEnabled:   gitlabProject.GlobalEnabled,
-				GlobalConfig:    gitlabProject.GlobalConfig,
+				DefaultBranch: gitProject.DefaultBranch,
+				Name:          gitProject.Name,
+				GitProjectId:  gitProject.GitProjectId,
+				Enabled:       gitProject.Enabled,
+				GlobalEnabled: gitProject.GlobalEnabled,
+				GlobalConfig:  gitProject.GlobalConfig,
 			})
 		}
 		marshal, _ := json.MarshalIndent(&data, "", "\t")
@@ -368,24 +368,24 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 			return
 		}
 		for _, item := range data {
-			var p models.GitlabProject
-			if err := app.DB().Where("`gitlab_project_id` = ?", item.GitlabProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-				app.DB().Create(&models.GitlabProject{
-					DefaultBranch:   item.DefaultBranch,
-					Name:            item.Name,
-					GitlabProjectId: item.GitlabProjectId,
-					Enabled:         item.Enabled,
-					GlobalEnabled:   item.GlobalEnabled,
-					GlobalConfig:    item.GlobalConfig,
+			var p models.GitProject
+			if err := app.DB().Where("`git_project_id` = ?", item.GitProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+				app.DB().Create(&models.GitProject{
+					DefaultBranch: item.DefaultBranch,
+					Name:          item.Name,
+					GitProjectId:  item.GitProjectId,
+					Enabled:       item.Enabled,
+					GlobalEnabled: item.GlobalEnabled,
+					GlobalConfig:  item.GlobalConfig,
 				})
 			} else {
-				app.DB().Model(&p).Select("DefaultBranch", "Name", "GitlabProjectId", "Enabled", "GlobalEnabled", "GlobalConfig").Updates(&models.GitlabProject{
-					DefaultBranch:   item.DefaultBranch,
-					Name:            item.Name,
-					GitlabProjectId: item.GitlabProjectId,
-					Enabled:         item.Enabled,
-					GlobalEnabled:   item.GlobalEnabled,
-					GlobalConfig:    item.GlobalConfig,
+				app.DB().Model(&p).Select("DefaultBranch", "Name", "GitProjectId", "Enabled", "GlobalEnabled", "GlobalConfig").Updates(&models.GitProject{
+					DefaultBranch: item.DefaultBranch,
+					Name:          item.Name,
+					GitProjectId:  item.GitProjectId,
+					Enabled:       item.Enabled,
+					GlobalEnabled: item.GlobalEnabled,
+					GlobalConfig:  item.GlobalConfig,
 				})
 			}
 		}

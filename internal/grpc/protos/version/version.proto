@@ -3,23 +3,24 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/version;version";
-
-message VersionResponse {
-  string Version = 1;
-  string BuildDate = 2;
-  string gitBranch = 3;
-  string GitCommit = 4;
-  string GitTag = 5;
-  string GoVersion = 6;
-  string Compiler = 7;
-  string Platform = 8;
-  string KubectlVersion = 9;
-  string HelmVersion = 10;
-  string GitRepo = 11;
-}
+option go_package = "github.com/duc-cnzj/mars-client/v4/version;version";
 
 message VersionRequest{}
+
+message VersionResponse {
+  string version = 1;
+  string build_date = 2;
+  string git_branch = 3;
+  string git_commit = 4;
+  string git_tag = 5;
+  string go_version = 6;
+  string compiler = 7;
+  string platform = 8;
+  string kubectl_version = 9;
+  string helm_version = 10;
+  string git_repo = 11;
+}
+
 service Version {
   // Version 获取当前版本信息
   rpc Version(VersionRequest) returns (VersionResponse) {
@@ -28,7 +29,7 @@ service Version {
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: { } // Disable security key
+      security: {} // Disable security key
     };
   }
 }

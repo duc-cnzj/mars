@@ -75,8 +75,7 @@ const ItemDetailModal: React.FC<{
         </span>
         {item.status === "deployed" ? (
           <ServiceEndpoint
-            namespaceId={namespaceId}
-            projectName={item.name || ""}
+            projectId={item.id}
           />
         ) : (
           <></>
@@ -116,7 +115,7 @@ const ItemDetailModal: React.FC<{
                   <TabLog
                     updatedAt={detail.updated_at}
                     id={detail.id}
-                    namespaceId={detail.namespace?.id || 0}
+                    namespace={detail.namespace?.name || ""}
                   />
                 ) : (
                   <Skeleton active />

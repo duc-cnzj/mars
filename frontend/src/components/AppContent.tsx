@@ -9,23 +9,24 @@ import { setNamespaceReload } from "../store/actions";
 import { selectReload } from "../store/reducers/namespace";
 import pb from "../api/compiled";
 import AddNamespace from "./AddNamespace";
+import { useAsyncState } from "../utils/async";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [namespaceItems, setNamespaceItems] = useState<pb.NamespaceItem[]>([]);
+  const [namespaceItems, setNamespaceItems] = useAsyncState<pb.NamespaceItem[]>([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     allNamespaces()
       .then((res) => {
-        setNamespaceItems(res.data.data);
+        setNamespaceItems(res.data.items);
         setLoading(false);
       })
       .catch((e) => {
         setLoading(false);
       });
-  }, []);
+  }, [setNamespaceItems]);
 
   const onNamespaceCreated = useCallback(
     ({ id, name }: { id: number; name: string }) => {

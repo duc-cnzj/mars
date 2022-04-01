@@ -71,6 +71,7 @@ func (m *NamespaceCreateRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceCreateRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -183,6 +184,7 @@ func (m *NamespaceShowRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceShowRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -295,6 +297,7 @@ func (m *NamespaceDeleteRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceDeleteRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -407,6 +410,7 @@ func (m *NamespaceIsExistsRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceIsExistsRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -483,235 +487,6 @@ var _ interface {
 	ErrorName() string
 } = NamespaceIsExistsRequestValidationError{}
 
-// Validate checks the field values on NamespaceCpuMemoryRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *NamespaceCpuMemoryRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NamespaceCpuMemoryRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NamespaceCpuMemoryRequestMultiError, or nil if none found.
-func (m *NamespaceCpuMemoryRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NamespaceCpuMemoryRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if m.GetNamespaceId() <= 0 {
-		err := NamespaceCpuMemoryRequestValidationError{
-			field:  "NamespaceId",
-			reason: "value must be greater than 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return NamespaceCpuMemoryRequestMultiError(errors)
-	}
-	return nil
-}
-
-// NamespaceCpuMemoryRequestMultiError is an error wrapping multiple validation
-// errors returned by NamespaceCpuMemoryRequest.ValidateAll() if the
-// designated constraints aren't met.
-type NamespaceCpuMemoryRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NamespaceCpuMemoryRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NamespaceCpuMemoryRequestMultiError) AllErrors() []error { return m }
-
-// NamespaceCpuMemoryRequestValidationError is the validation error returned by
-// NamespaceCpuMemoryRequest.Validate if the designated constraints aren't met.
-type NamespaceCpuMemoryRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NamespaceCpuMemoryRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NamespaceCpuMemoryRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NamespaceCpuMemoryRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NamespaceCpuMemoryRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NamespaceCpuMemoryRequestValidationError) ErrorName() string {
-	return "NamespaceCpuMemoryRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NamespaceCpuMemoryRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNamespaceCpuMemoryRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NamespaceCpuMemoryRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NamespaceCpuMemoryRequestValidationError{}
-
-// Validate checks the field values on NamespaceServiceEndpointsRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *NamespaceServiceEndpointsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NamespaceServiceEndpointsRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// NamespaceServiceEndpointsRequestMultiError, or nil if none found.
-func (m *NamespaceServiceEndpointsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NamespaceServiceEndpointsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if m.GetNamespaceId() <= 0 {
-		err := NamespaceServiceEndpointsRequestValidationError{
-			field:  "NamespaceId",
-			reason: "value must be greater than 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for ProjectName
-
-	if len(errors) > 0 {
-		return NamespaceServiceEndpointsRequestMultiError(errors)
-	}
-	return nil
-}
-
-// NamespaceServiceEndpointsRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// NamespaceServiceEndpointsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type NamespaceServiceEndpointsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NamespaceServiceEndpointsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NamespaceServiceEndpointsRequestMultiError) AllErrors() []error { return m }
-
-// NamespaceServiceEndpointsRequestValidationError is the validation error
-// returned by NamespaceServiceEndpointsRequest.Validate if the designated
-// constraints aren't met.
-type NamespaceServiceEndpointsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NamespaceServiceEndpointsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NamespaceServiceEndpointsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NamespaceServiceEndpointsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NamespaceServiceEndpointsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NamespaceServiceEndpointsRequestValidationError) ErrorName() string {
-	return "NamespaceServiceEndpointsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NamespaceServiceEndpointsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNamespaceServiceEndpointsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NamespaceServiceEndpointsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NamespaceServiceEndpointsRequestValidationError{}
-
 // Validate checks the field values on NamespaceSimpleProject with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -743,6 +518,7 @@ func (m *NamespaceSimpleProject) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceSimpleProjectMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -886,6 +662,7 @@ func (m *NamespaceItem) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceItemMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -982,7 +759,7 @@ func (m *NamespaceAllResponse) validate(all bool) error {
 
 	var errors []error
 
-	for idx, item := range m.GetData() {
+	for idx, item := range m.GetItems() {
 		_, _ = idx, item
 
 		if all {
@@ -990,7 +767,7 @@ func (m *NamespaceAllResponse) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, NamespaceAllResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -998,7 +775,7 @@ func (m *NamespaceAllResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, NamespaceAllResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -1007,7 +784,7 @@ func (m *NamespaceAllResponse) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return NamespaceAllResponseValidationError{
-					field:  fmt.Sprintf("Data[%v]", idx),
+					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -1019,6 +796,7 @@ func (m *NamespaceAllResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceAllResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1128,6 +906,7 @@ func (m *NamespaceCreateResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceCreateResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1271,6 +1050,7 @@ func (m *NamespaceShowResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceShowResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1347,356 +1127,6 @@ var _ interface {
 	ErrorName() string
 } = NamespaceShowResponseValidationError{}
 
-// Validate checks the field values on NamespaceCpuMemoryResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *NamespaceCpuMemoryResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NamespaceCpuMemoryResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NamespaceCpuMemoryResponseMultiError, or nil if none found.
-func (m *NamespaceCpuMemoryResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NamespaceCpuMemoryResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Cpu
-
-	// no validation rules for Memory
-
-	if len(errors) > 0 {
-		return NamespaceCpuMemoryResponseMultiError(errors)
-	}
-	return nil
-}
-
-// NamespaceCpuMemoryResponseMultiError is an error wrapping multiple
-// validation errors returned by NamespaceCpuMemoryResponse.ValidateAll() if
-// the designated constraints aren't met.
-type NamespaceCpuMemoryResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NamespaceCpuMemoryResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NamespaceCpuMemoryResponseMultiError) AllErrors() []error { return m }
-
-// NamespaceCpuMemoryResponseValidationError is the validation error returned
-// by NamespaceCpuMemoryResponse.Validate if the designated constraints aren't met.
-type NamespaceCpuMemoryResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NamespaceCpuMemoryResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NamespaceCpuMemoryResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NamespaceCpuMemoryResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NamespaceCpuMemoryResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NamespaceCpuMemoryResponseValidationError) ErrorName() string {
-	return "NamespaceCpuMemoryResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NamespaceCpuMemoryResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNamespaceCpuMemoryResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NamespaceCpuMemoryResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NamespaceCpuMemoryResponseValidationError{}
-
-// Validate checks the field values on NamespaceServiceEndpoint with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *NamespaceServiceEndpoint) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NamespaceServiceEndpoint with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// NamespaceServiceEndpointMultiError, or nil if none found.
-func (m *NamespaceServiceEndpoint) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NamespaceServiceEndpoint) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	// no validation rules for Url
-
-	// no validation rules for PortName
-
-	if len(errors) > 0 {
-		return NamespaceServiceEndpointMultiError(errors)
-	}
-	return nil
-}
-
-// NamespaceServiceEndpointMultiError is an error wrapping multiple validation
-// errors returned by NamespaceServiceEndpoint.ValidateAll() if the designated
-// constraints aren't met.
-type NamespaceServiceEndpointMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NamespaceServiceEndpointMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NamespaceServiceEndpointMultiError) AllErrors() []error { return m }
-
-// NamespaceServiceEndpointValidationError is the validation error returned by
-// NamespaceServiceEndpoint.Validate if the designated constraints aren't met.
-type NamespaceServiceEndpointValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NamespaceServiceEndpointValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NamespaceServiceEndpointValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NamespaceServiceEndpointValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NamespaceServiceEndpointValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NamespaceServiceEndpointValidationError) ErrorName() string {
-	return "NamespaceServiceEndpointValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NamespaceServiceEndpointValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNamespaceServiceEndpoint.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NamespaceServiceEndpointValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NamespaceServiceEndpointValidationError{}
-
-// Validate checks the field values on NamespaceServiceEndpointsResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *NamespaceServiceEndpointsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on NamespaceServiceEndpointsResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// NamespaceServiceEndpointsResponseMultiError, or nil if none found.
-func (m *NamespaceServiceEndpointsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *NamespaceServiceEndpointsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetData() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, NamespaceServiceEndpointsResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, NamespaceServiceEndpointsResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return NamespaceServiceEndpointsResponseValidationError{
-					field:  fmt.Sprintf("Data[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return NamespaceServiceEndpointsResponseMultiError(errors)
-	}
-	return nil
-}
-
-// NamespaceServiceEndpointsResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// NamespaceServiceEndpointsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type NamespaceServiceEndpointsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m NamespaceServiceEndpointsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m NamespaceServiceEndpointsResponseMultiError) AllErrors() []error { return m }
-
-// NamespaceServiceEndpointsResponseValidationError is the validation error
-// returned by NamespaceServiceEndpointsResponse.Validate if the designated
-// constraints aren't met.
-type NamespaceServiceEndpointsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e NamespaceServiceEndpointsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e NamespaceServiceEndpointsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e NamespaceServiceEndpointsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e NamespaceServiceEndpointsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e NamespaceServiceEndpointsResponseValidationError) ErrorName() string {
-	return "NamespaceServiceEndpointsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e NamespaceServiceEndpointsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sNamespaceServiceEndpointsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = NamespaceServiceEndpointsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = NamespaceServiceEndpointsResponseValidationError{}
-
 // Validate checks the field values on NamespaceIsExistsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -1726,6 +1156,7 @@ func (m *NamespaceIsExistsResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceIsExistsResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1827,6 +1258,7 @@ func (m *NamespaceAllRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceAllRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1928,6 +1360,7 @@ func (m *NamespaceDeleteResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceDeleteResponseMultiError(errors)
 	}
+
 	return nil
 }
 

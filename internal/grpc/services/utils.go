@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 
-	eventpb "github.com/duc-cnzj/mars-client/v3/event"
+	eventpb "github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/event/events"
 )

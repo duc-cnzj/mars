@@ -28,7 +28,7 @@ import "codemirror/addon/lint/lint.js";
 import { JSHINT } from "jshint";
 import jsyaml from "js-yaml";
 import { lowerCase } from "lodash";
-require("./autorefresh.ext");
+
 (window as any).JSHINT = JSHINT;
 (window as any).jsyaml = jsyaml;
 
@@ -130,7 +130,6 @@ export const getMode = (mode: string): string => {
 };
 
 const defaultOpt = {
-  autoRefresh: { force: true },
   lineNumbers: true,
   lint: true,
   gutters: ["CodeMirror-lint-markers"],
@@ -153,14 +152,21 @@ const myCodeMirror: React.ForwardRefRenderFunction<
   Controlled,
   React.RefAttributes<Controlled> & InputMirror
 > = (props, ref) => {
-  return <CodeMirror
+  return (
+    <CodeMirror
       ref={ref}
+      editorDidMount={(editor) => {
+        setTimeout(() => {
+          editor.refresh();
+        }, 200);
+      }}
       value={props.value ? props.value : ""}
       onBeforeChange={(e: any, d: any, v: string) => {
         props.onChange?.(v);
       }}
       options={{ ...props.options, ...defaultOpt }}
     />
+  );
 };
 export const MyCodeMirror = React.forwardRef(myCodeMirror);
 

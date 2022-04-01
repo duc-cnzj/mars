@@ -62,6 +62,7 @@ func (m *BackgroundRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return BackgroundRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -167,6 +168,7 @@ func (m *BackgroundResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return BackgroundResponseMultiError(errors)
 	}
+
 	return nil
 }
 

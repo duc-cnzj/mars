@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars-client/v3/auth"
+	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -15,15 +15,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Auth struct {
+type AuthSvc struct {
 	cfg      contracts.OidcConfig
 	adminPwd string
 	authsvc  contracts.AuthInterface
 	auth.UnimplementedAuthServer
 }
 
-func NewAuth(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string) *Auth {
-	return &Auth{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd}
+func NewAuthSvc(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string) *AuthSvc {
+	return &AuthSvc{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd}
 }
 
 func verify(cfg oauth2.Config, provider *oidc.Provider, code string) (*oidc.IDToken, error) {
@@ -48,7 +48,7 @@ func verify(cfg oauth2.Config, provider *oidc.Provider, code string) (*oidc.IDTo
 	return idtoken, nil
 }
 
-func (a *Auth) Login(ctx context.Context, request *auth.AuthLoginRequest) (*auth.AuthLoginResponse, error) {
+func (a *AuthSvc) Login(ctx context.Context, request *auth.AuthLoginRequest) (*auth.AuthLoginResponse, error) {
 	if request.Username == "admin" && request.Password == a.adminPwd {
 		data, err := a.authsvc.Sign(contracts.UserInfo{
 			LogoutUrl: "",
@@ -71,7 +71,7 @@ func (a *Auth) Login(ctx context.Context, request *auth.AuthLoginRequest) (*auth
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *Auth) Info(ctx context.Context, req *auth.AuthInfoRequest) (*auth.AuthInfoResponse, error) {
+func (a *AuthSvc) Info(ctx context.Context, req *auth.AuthInfoRequest) (*auth.AuthInfoResponse, error) {
 	incomingContext, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		tokenSlice := incomingContext.Get("Authorization")
@@ -92,7 +92,7 @@ func (a *Auth) Info(ctx context.Context, req *auth.AuthInfoRequest) (*auth.AuthI
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *Auth) Settings(ctx context.Context, request *auth.AuthSettingsRequest) (*auth.AuthSettingsResponse, error) {
+func (a *AuthSvc) Settings(ctx context.Context, request *auth.AuthSettingsRequest) (*auth.AuthSettingsResponse, error) {
 	var items = make([]*auth.AuthSettingsResponse_OidcSetting, 0, len(a.cfg))
 	for name, setting := range a.cfg {
 		state := utils.RandomString(32)
@@ -113,7 +113,7 @@ func (a *Auth) Settings(ctx context.Context, request *auth.AuthSettingsRequest) 
 	return &auth.AuthSettingsResponse{Items: items}, nil
 }
 
-func (a *Auth) Exchange(ctx context.Context, request *auth.AuthExchangeRequest) (*auth.AuthExchangeResponse, error) {
+func (a *AuthSvc) Exchange(ctx context.Context, request *auth.AuthExchangeRequest) (*auth.AuthExchangeResponse, error) {
 	var (
 		idtoken  *oidc.IDToken
 		err      error
@@ -150,7 +150,7 @@ func (a *Auth) Exchange(ctx context.Context, request *auth.AuthExchangeRequest) 
 	}, nil
 }
 
-func (a *Auth) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (a *AuthSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	mlog.Debug("client is calling method:", fullMethodName)
 	return ctx, nil
 }

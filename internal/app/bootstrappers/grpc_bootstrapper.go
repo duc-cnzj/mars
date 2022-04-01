@@ -15,19 +15,19 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/duc-cnzj/mars-client/v3/auth"
-	"github.com/duc-cnzj/mars-client/v3/changelog"
-	"github.com/duc-cnzj/mars-client/v3/cluster"
-	"github.com/duc-cnzj/mars-client/v3/container"
-	"github.com/duc-cnzj/mars-client/v3/event"
-	"github.com/duc-cnzj/mars-client/v3/file"
-	"github.com/duc-cnzj/mars-client/v3/gitserver"
-	"github.com/duc-cnzj/mars-client/v3/mars"
-	rpcmetrics "github.com/duc-cnzj/mars-client/v3/metrics"
-	"github.com/duc-cnzj/mars-client/v3/namespace"
-	"github.com/duc-cnzj/mars-client/v3/picture"
-	"github.com/duc-cnzj/mars-client/v3/project"
-	"github.com/duc-cnzj/mars-client/v3/version"
+	"github.com/duc-cnzj/mars-client/v4/auth"
+	"github.com/duc-cnzj/mars-client/v4/changelog"
+	"github.com/duc-cnzj/mars-client/v4/cluster"
+	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/endpoint"
+	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/file"
+	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
+	"github.com/duc-cnzj/mars-client/v4/namespace"
+	"github.com/duc-cnzj/mars-client/v4/picture"
+	"github.com/duc-cnzj/mars-client/v4/project"
+	"github.com/duc-cnzj/mars-client/v4/version"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -126,19 +126,20 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 	grpc_prometheus.Register(server)
 
-	cluster.RegisterClusterServer(server, new(services.Cluster))
-	gitserver.RegisterGitServerServer(server, new(services.GitServer))
-	mars.RegisterMarsServer(server, new(services.Mars))
-	namespace.RegisterNamespaceServer(server, new(services.Namespace))
-	project.RegisterProjectServer(server, new(services.Project))
-	picture.RegisterPictureServer(server, new(services.Picture))
-	container.RegisterContainerSvcServer(server, new(services.Container))
-	auth.RegisterAuthServer(server, services.NewAuth(app.Auth(), app.Oidc(), app.Config().AdminPassword))
-	rpcmetrics.RegisterMetricsServer(server, new(services.Metrics))
-	version.RegisterVersionServer(server, new(services.VersionService))
-	changelog.RegisterChangelogServer(server, new(services.Changelog))
+	cluster.RegisterClusterServer(server, new(services.ClusterSvc))
+	gitproject.RegisterGitProjectServer(server, new(services.GitProjectSvc))
+	gitproject.RegisterGitProjectConfigServer(server, new(services.GitProjectConfigSvc))
+	namespace.RegisterNamespaceServer(server, new(services.NamespaceSvc))
+	project.RegisterProjectServer(server, new(services.ProjectSvc))
+	picture.RegisterPictureServer(server, new(services.PictureSvc))
+	container.RegisterContainerSvcServer(server, new(services.ContainerSvc))
+	auth.RegisterAuthServer(server, services.NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword))
+	rpcmetrics.RegisterMetricsServer(server, new(services.MetricsSvc))
+	version.RegisterVersionServer(server, new(services.VersionSvc))
+	changelog.RegisterChangelogServer(server, new(services.ChangelogSvc))
 	event.RegisterEventServer(server, new(services.EventSvc))
 	file.RegisterFileSvcServer(server, new(services.FileSvc))
+	endpoint.RegisterEndpointServer(server, new(services.EndpointSvc))
 
 	g.server = server
 	go func(server *grpc.Server) {

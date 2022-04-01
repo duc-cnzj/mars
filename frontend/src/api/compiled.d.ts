@@ -2533,244 +2533,454 @@ export namespace Cluster {
     type ClusterInfoCallback = (error: (Error|null), response?: ClusterInfoResponse) => void;
 }
 
-/** Represents a CopyToPodRequest. */
-export class CopyToPodRequest implements ICopyToPodRequest {
+/** Represents a ContainerCopyToPodRequest. */
+export class ContainerCopyToPodRequest implements IContainerCopyToPodRequest {
 
     /**
-     * Constructs a new CopyToPodRequest.
+     * Constructs a new ContainerCopyToPodRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: ICopyToPodRequest);
+    constructor(properties?: IContainerCopyToPodRequest);
 
-    /** CopyToPodRequest file_id. */
+    /** ContainerCopyToPodRequest file_id. */
     public file_id: number;
 
-    /** CopyToPodRequest namespace. */
+    /** ContainerCopyToPodRequest namespace. */
     public namespace: string;
 
-    /** CopyToPodRequest pod. */
+    /** ContainerCopyToPodRequest pod. */
     public pod: string;
 
-    /** CopyToPodRequest container. */
+    /** ContainerCopyToPodRequest container. */
     public container: string;
 
     /**
-     * Encodes the specified CopyToPodRequest message. Does not implicitly {@link CopyToPodRequest.verify|verify} messages.
-     * @param message CopyToPodRequest message or plain object to encode
+     * Encodes the specified ContainerCopyToPodRequest message. Does not implicitly {@link ContainerCopyToPodRequest.verify|verify} messages.
+     * @param message ContainerCopyToPodRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: CopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerCopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a CopyToPodRequest message from the specified reader or buffer.
+     * Decodes a ContainerCopyToPodRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns CopyToPodRequest
+     * @returns ContainerCopyToPodRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CopyToPodRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerCopyToPodRequest;
 }
 
-/** Represents a CopyToPodResponse. */
-export class CopyToPodResponse implements ICopyToPodResponse {
+/** Represents a ContainerCopyToPodResponse. */
+export class ContainerCopyToPodResponse implements IContainerCopyToPodResponse {
 
     /**
-     * Constructs a new CopyToPodResponse.
+     * Constructs a new ContainerCopyToPodResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: ICopyToPodResponse);
+    constructor(properties?: IContainerCopyToPodResponse);
 
-    /** CopyToPodResponse podFilePath. */
-    public podFilePath: string;
+    /** ContainerCopyToPodResponse pod_file_path. */
+    public pod_file_path: string;
 
-    /** CopyToPodResponse output. */
+    /** ContainerCopyToPodResponse output. */
     public output: string;
 
-    /** CopyToPodResponse file_name. */
+    /** ContainerCopyToPodResponse file_name. */
     public file_name: string;
 
     /**
-     * Encodes the specified CopyToPodResponse message. Does not implicitly {@link CopyToPodResponse.verify|verify} messages.
-     * @param message CopyToPodResponse message or plain object to encode
+     * Encodes the specified ContainerCopyToPodResponse message. Does not implicitly {@link ContainerCopyToPodResponse.verify|verify} messages.
+     * @param message ContainerCopyToPodResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: CopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerCopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a CopyToPodResponse message from the specified reader or buffer.
+     * Decodes a ContainerCopyToPodResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns CopyToPodResponse
+     * @returns ContainerCopyToPodResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CopyToPodResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerCopyToPodResponse;
 }
 
-/** Represents an ExecRequest. */
-export class ExecRequest implements IExecRequest {
+/** Represents a ContainerExecRequest. */
+export class ContainerExecRequest implements IContainerExecRequest {
 
     /**
-     * Constructs a new ExecRequest.
+     * Constructs a new ContainerExecRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IExecRequest);
+    constructor(properties?: IContainerExecRequest);
 
-    /** ExecRequest namespace. */
+    /** ContainerExecRequest namespace. */
     public namespace: string;
 
-    /** ExecRequest pod. */
+    /** ContainerExecRequest pod. */
     public pod: string;
 
-    /** ExecRequest container. */
+    /** ContainerExecRequest container. */
     public container: string;
 
-    /** ExecRequest command. */
+    /** ContainerExecRequest command. */
     public command: string[];
 
     /**
-     * Encodes the specified ExecRequest message. Does not implicitly {@link ExecRequest.verify|verify} messages.
-     * @param message ExecRequest message or plain object to encode
+     * Encodes the specified ContainerExecRequest message. Does not implicitly {@link ContainerExecRequest.verify|verify} messages.
+     * @param message ContainerExecRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ExecRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerExecRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes an ExecRequest message from the specified reader or buffer.
+     * Decodes a ContainerExecRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns ExecRequest
+     * @returns ContainerExecRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExecRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerExecRequest;
 }
 
-/** Represents an ExecResponse. */
-export class ExecResponse implements IExecResponse {
+/** Represents a ContainerExecResponse. */
+export class ContainerExecResponse implements IContainerExecResponse {
 
     /**
-     * Constructs a new ExecResponse.
+     * Constructs a new ContainerExecResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IExecResponse);
+    constructor(properties?: IContainerExecResponse);
 
-    /** ExecResponse data. */
+    /** ContainerExecResponse data. */
     public data: string;
 
     /**
-     * Encodes the specified ExecResponse message. Does not implicitly {@link ExecResponse.verify|verify} messages.
-     * @param message ExecResponse message or plain object to encode
+     * Encodes the specified ContainerExecResponse message. Does not implicitly {@link ContainerExecResponse.verify|verify} messages.
+     * @param message ContainerExecResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ExecResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerExecResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes an ExecResponse message from the specified reader or buffer.
+     * Decodes a ContainerExecResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns ExecResponse
+     * @returns ContainerExecResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ExecResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerExecResponse;
 }
 
-/** Represents a StreamCopyToPodRequest. */
-export class StreamCopyToPodRequest implements IStreamCopyToPodRequest {
+/** Represents a ContainerStreamCopyToPodRequest. */
+export class ContainerStreamCopyToPodRequest implements IContainerStreamCopyToPodRequest {
 
     /**
-     * Constructs a new StreamCopyToPodRequest.
+     * Constructs a new ContainerStreamCopyToPodRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IStreamCopyToPodRequest);
+    constructor(properties?: IContainerStreamCopyToPodRequest);
 
-    /** StreamCopyToPodRequest file_name. */
+    /** ContainerStreamCopyToPodRequest file_name. */
     public file_name: string;
 
-    /** StreamCopyToPodRequest data. */
+    /** ContainerStreamCopyToPodRequest data. */
     public data: Uint8Array;
 
-    /** StreamCopyToPodRequest namespace. */
+    /** ContainerStreamCopyToPodRequest namespace. */
     public namespace: string;
 
-    /** StreamCopyToPodRequest pod. */
+    /** ContainerStreamCopyToPodRequest pod. */
     public pod: string;
 
-    /** StreamCopyToPodRequest container. */
+    /** ContainerStreamCopyToPodRequest container. */
     public container: string;
 
     /**
-     * Encodes the specified StreamCopyToPodRequest message. Does not implicitly {@link StreamCopyToPodRequest.verify|verify} messages.
-     * @param message StreamCopyToPodRequest message or plain object to encode
+     * Encodes the specified ContainerStreamCopyToPodRequest message. Does not implicitly {@link ContainerStreamCopyToPodRequest.verify|verify} messages.
+     * @param message ContainerStreamCopyToPodRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: StreamCopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerStreamCopyToPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a StreamCopyToPodRequest message from the specified reader or buffer.
+     * Decodes a ContainerStreamCopyToPodRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns StreamCopyToPodRequest
+     * @returns ContainerStreamCopyToPodRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): StreamCopyToPodRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerStreamCopyToPodRequest;
 }
 
-/** Represents a StreamCopyToPodResponse. */
-export class StreamCopyToPodResponse implements IStreamCopyToPodResponse {
+/** Represents a ContainerStreamCopyToPodResponse. */
+export class ContainerStreamCopyToPodResponse implements IContainerStreamCopyToPodResponse {
 
     /**
-     * Constructs a new StreamCopyToPodResponse.
+     * Constructs a new ContainerStreamCopyToPodResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IStreamCopyToPodResponse);
+    constructor(properties?: IContainerStreamCopyToPodResponse);
 
-    /** StreamCopyToPodResponse size. */
+    /** ContainerStreamCopyToPodResponse size. */
     public size: number;
 
-    /** StreamCopyToPodResponse podFilePath. */
-    public podFilePath: string;
+    /** ContainerStreamCopyToPodResponse pod_file_path. */
+    public pod_file_path: string;
 
-    /** StreamCopyToPodResponse output. */
+    /** ContainerStreamCopyToPodResponse output. */
     public output: string;
 
-    /** StreamCopyToPodResponse pod. */
+    /** ContainerStreamCopyToPodResponse pod. */
     public pod: string;
 
-    /** StreamCopyToPodResponse namespace. */
+    /** ContainerStreamCopyToPodResponse namespace. */
     public namespace: string;
 
-    /** StreamCopyToPodResponse container. */
+    /** ContainerStreamCopyToPodResponse container. */
     public container: string;
 
-    /** StreamCopyToPodResponse filename. */
+    /** ContainerStreamCopyToPodResponse filename. */
     public filename: string;
 
     /**
-     * Encodes the specified StreamCopyToPodResponse message. Does not implicitly {@link StreamCopyToPodResponse.verify|verify} messages.
-     * @param message StreamCopyToPodResponse message or plain object to encode
+     * Encodes the specified ContainerStreamCopyToPodResponse message. Does not implicitly {@link ContainerStreamCopyToPodResponse.verify|verify} messages.
+     * @param message ContainerStreamCopyToPodResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: StreamCopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ContainerStreamCopyToPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a StreamCopyToPodResponse message from the specified reader or buffer.
+     * Decodes a ContainerStreamCopyToPodResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns StreamCopyToPodResponse
+     * @returns ContainerStreamCopyToPodResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): StreamCopyToPodResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerStreamCopyToPodResponse;
+}
+
+/** Represents a ContainerIsPodRunningRequest. */
+export class ContainerIsPodRunningRequest implements IContainerIsPodRunningRequest {
+
+    /**
+     * Constructs a new ContainerIsPodRunningRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerIsPodRunningRequest);
+
+    /** ContainerIsPodRunningRequest namespace. */
+    public namespace: string;
+
+    /** ContainerIsPodRunningRequest pod. */
+    public pod: string;
+
+    /**
+     * Encodes the specified ContainerIsPodRunningRequest message. Does not implicitly {@link ContainerIsPodRunningRequest.verify|verify} messages.
+     * @param message ContainerIsPodRunningRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerIsPodRunningRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerIsPodRunningRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerIsPodRunningRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerIsPodRunningRequest;
+}
+
+/** Represents a ContainerIsPodRunningResponse. */
+export class ContainerIsPodRunningResponse implements IContainerIsPodRunningResponse {
+
+    /**
+     * Constructs a new ContainerIsPodRunningResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerIsPodRunningResponse);
+
+    /** ContainerIsPodRunningResponse running. */
+    public running: boolean;
+
+    /** ContainerIsPodRunningResponse reason. */
+    public reason: string;
+
+    /**
+     * Encodes the specified ContainerIsPodRunningResponse message. Does not implicitly {@link ContainerIsPodRunningResponse.verify|verify} messages.
+     * @param message ContainerIsPodRunningResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerIsPodRunningResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerIsPodRunningResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerIsPodRunningResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerIsPodRunningResponse;
+}
+
+/** Represents a ContainerIsPodExistsRequest. */
+export class ContainerIsPodExistsRequest implements IContainerIsPodExistsRequest {
+
+    /**
+     * Constructs a new ContainerIsPodExistsRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerIsPodExistsRequest);
+
+    /** ContainerIsPodExistsRequest namespace. */
+    public namespace: string;
+
+    /** ContainerIsPodExistsRequest pod. */
+    public pod: string;
+
+    /**
+     * Encodes the specified ContainerIsPodExistsRequest message. Does not implicitly {@link ContainerIsPodExistsRequest.verify|verify} messages.
+     * @param message ContainerIsPodExistsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerIsPodExistsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerIsPodExistsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerIsPodExistsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerIsPodExistsRequest;
+}
+
+/** Represents a ContainerIsPodExistsResponse. */
+export class ContainerIsPodExistsResponse implements IContainerIsPodExistsResponse {
+
+    /**
+     * Constructs a new ContainerIsPodExistsResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerIsPodExistsResponse);
+
+    /** ContainerIsPodExistsResponse exists. */
+    public exists: boolean;
+
+    /**
+     * Encodes the specified ContainerIsPodExistsResponse message. Does not implicitly {@link ContainerIsPodExistsResponse.verify|verify} messages.
+     * @param message ContainerIsPodExistsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerIsPodExistsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerIsPodExistsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerIsPodExistsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerIsPodExistsResponse;
+}
+
+/** Represents a ContainerLogRequest. */
+export class ContainerLogRequest implements IContainerLogRequest {
+
+    /**
+     * Constructs a new ContainerLogRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerLogRequest);
+
+    /** ContainerLogRequest namespace. */
+    public namespace: string;
+
+    /** ContainerLogRequest pod. */
+    public pod: string;
+
+    /** ContainerLogRequest container. */
+    public container: string;
+
+    /**
+     * Encodes the specified ContainerLogRequest message. Does not implicitly {@link ContainerLogRequest.verify|verify} messages.
+     * @param message ContainerLogRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerLogRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerLogRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerLogRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerLogRequest;
+}
+
+/** Represents a ContainerLogResponse. */
+export class ContainerLogResponse implements IContainerLogResponse {
+
+    /**
+     * Constructs a new ContainerLogResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IContainerLogResponse);
+
+    /** ContainerLogResponse namespace. */
+    public namespace: string;
+
+    /** ContainerLogResponse pod_name. */
+    public pod_name: string;
+
+    /** ContainerLogResponse container_name. */
+    public container_name: string;
+
+    /** ContainerLogResponse log. */
+    public log: string;
+
+    /**
+     * Encodes the specified ContainerLogResponse message. Does not implicitly {@link ContainerLogResponse.verify|verify} messages.
+     * @param message ContainerLogResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ContainerLogResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ContainerLogResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ContainerLogResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ContainerLogResponse;
 }
 
 /** Represents a ContainerSvc */
@@ -2786,45 +2996,101 @@ export class ContainerSvc extends $protobuf.rpc.Service {
 
     /**
      * Calls CopyToPod.
-     * @param request CopyToPodRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and CopyToPodResponse
+     * @param request ContainerCopyToPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerCopyToPodResponse
      */
-    public copyToPod(request: CopyToPodRequest, callback: ContainerSvc.CopyToPodCallback): void;
+    public copyToPod(request: ContainerCopyToPodRequest, callback: ContainerSvc.CopyToPodCallback): void;
 
     /**
      * Calls CopyToPod.
-     * @param request CopyToPodRequest message or plain object
+     * @param request ContainerCopyToPodRequest message or plain object
      * @returns Promise
      */
-    public copyToPod(request: CopyToPodRequest): Promise<CopyToPodResponse>;
+    public copyToPod(request: ContainerCopyToPodRequest): Promise<ContainerCopyToPodResponse>;
 
     /**
      * Calls Exec.
-     * @param request ExecRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ExecResponse
+     * @param request ContainerExecRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerExecResponse
      */
-    public exec(request: ExecRequest, callback: ContainerSvc.ExecCallback): void;
+    public exec(request: ContainerExecRequest, callback: ContainerSvc.ExecCallback): void;
 
     /**
      * Calls Exec.
-     * @param request ExecRequest message or plain object
+     * @param request ContainerExecRequest message or plain object
      * @returns Promise
      */
-    public exec(request: ExecRequest): Promise<ExecResponse>;
+    public exec(request: ContainerExecRequest): Promise<ContainerExecResponse>;
 
     /**
      * Calls StreamCopyToPod.
-     * @param request StreamCopyToPodRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and StreamCopyToPodResponse
+     * @param request ContainerStreamCopyToPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerStreamCopyToPodResponse
      */
-    public streamCopyToPod(request: StreamCopyToPodRequest, callback: ContainerSvc.StreamCopyToPodCallback): void;
+    public streamCopyToPod(request: ContainerStreamCopyToPodRequest, callback: ContainerSvc.StreamCopyToPodCallback): void;
 
     /**
      * Calls StreamCopyToPod.
-     * @param request StreamCopyToPodRequest message or plain object
+     * @param request ContainerStreamCopyToPodRequest message or plain object
      * @returns Promise
      */
-    public streamCopyToPod(request: StreamCopyToPodRequest): Promise<StreamCopyToPodResponse>;
+    public streamCopyToPod(request: ContainerStreamCopyToPodRequest): Promise<ContainerStreamCopyToPodResponse>;
+
+    /**
+     * Calls IsPodRunning.
+     * @param request ContainerIsPodRunningRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerIsPodRunningResponse
+     */
+    public isPodRunning(request: ContainerIsPodRunningRequest, callback: ContainerSvc.IsPodRunningCallback): void;
+
+    /**
+     * Calls IsPodRunning.
+     * @param request ContainerIsPodRunningRequest message or plain object
+     * @returns Promise
+     */
+    public isPodRunning(request: ContainerIsPodRunningRequest): Promise<ContainerIsPodRunningResponse>;
+
+    /**
+     * Calls IsPodExists.
+     * @param request ContainerIsPodExistsRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerIsPodExistsResponse
+     */
+    public isPodExists(request: ContainerIsPodExistsRequest, callback: ContainerSvc.IsPodExistsCallback): void;
+
+    /**
+     * Calls IsPodExists.
+     * @param request ContainerIsPodExistsRequest message or plain object
+     * @returns Promise
+     */
+    public isPodExists(request: ContainerIsPodExistsRequest): Promise<ContainerIsPodExistsResponse>;
+
+    /**
+     * Calls ContainerLog.
+     * @param request ContainerLogRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerLogResponse
+     */
+    public containerLog(request: ContainerLogRequest, callback: ContainerSvc.ContainerLogCallback): void;
+
+    /**
+     * Calls ContainerLog.
+     * @param request ContainerLogRequest message or plain object
+     * @returns Promise
+     */
+    public containerLog(request: ContainerLogRequest): Promise<ContainerLogResponse>;
+
+    /**
+     * Calls StreamContainerLog.
+     * @param request ContainerLogRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ContainerLogResponse
+     */
+    public streamContainerLog(request: ContainerLogRequest, callback: ContainerSvc.StreamContainerLogCallback): void;
+
+    /**
+     * Calls StreamContainerLog.
+     * @param request ContainerLogRequest message or plain object
+     * @returns Promise
+     */
+    public streamContainerLog(request: ContainerLogRequest): Promise<ContainerLogResponse>;
 }
 
 export namespace ContainerSvc {
@@ -2832,23 +3098,269 @@ export namespace ContainerSvc {
     /**
      * Callback as used by {@link ContainerSvc#copyToPod}.
      * @param error Error, if any
-     * @param [response] CopyToPodResponse
+     * @param [response] ContainerCopyToPodResponse
      */
-    type CopyToPodCallback = (error: (Error|null), response?: CopyToPodResponse) => void;
+    type CopyToPodCallback = (error: (Error|null), response?: ContainerCopyToPodResponse) => void;
 
     /**
      * Callback as used by {@link ContainerSvc#exec}.
      * @param error Error, if any
-     * @param [response] ExecResponse
+     * @param [response] ContainerExecResponse
      */
-    type ExecCallback = (error: (Error|null), response?: ExecResponse) => void;
+    type ExecCallback = (error: (Error|null), response?: ContainerExecResponse) => void;
 
     /**
      * Callback as used by {@link ContainerSvc#streamCopyToPod}.
      * @param error Error, if any
-     * @param [response] StreamCopyToPodResponse
+     * @param [response] ContainerStreamCopyToPodResponse
      */
-    type StreamCopyToPodCallback = (error: (Error|null), response?: StreamCopyToPodResponse) => void;
+    type StreamCopyToPodCallback = (error: (Error|null), response?: ContainerStreamCopyToPodResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#isPodRunning}.
+     * @param error Error, if any
+     * @param [response] ContainerIsPodRunningResponse
+     */
+    type IsPodRunningCallback = (error: (Error|null), response?: ContainerIsPodRunningResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#isPodExists}.
+     * @param error Error, if any
+     * @param [response] ContainerIsPodExistsResponse
+     */
+    type IsPodExistsCallback = (error: (Error|null), response?: ContainerIsPodExistsResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#containerLog}.
+     * @param error Error, if any
+     * @param [response] ContainerLogResponse
+     */
+    type ContainerLogCallback = (error: (Error|null), response?: ContainerLogResponse) => void;
+
+    /**
+     * Callback as used by {@link ContainerSvc#streamContainerLog}.
+     * @param error Error, if any
+     * @param [response] ContainerLogResponse
+     */
+    type StreamContainerLogCallback = (error: (Error|null), response?: ContainerLogResponse) => void;
+}
+
+/** Represents a ServiceEndpoint. */
+export class ServiceEndpoint implements IServiceEndpoint {
+
+    /**
+     * Constructs a new ServiceEndpoint.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IServiceEndpoint);
+
+    /** ServiceEndpoint name. */
+    public name: string;
+
+    /** ServiceEndpoint url. */
+    public url: string;
+
+    /** ServiceEndpoint port_name. */
+    public port_name: string;
+
+    /**
+     * Encodes the specified ServiceEndpoint message. Does not implicitly {@link ServiceEndpoint.verify|verify} messages.
+     * @param message ServiceEndpoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ServiceEndpoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ServiceEndpoint message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ServiceEndpoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServiceEndpoint;
+}
+
+/** Represents an EndpointInNamespaceRequest. */
+export class EndpointInNamespaceRequest implements IEndpointInNamespaceRequest {
+
+    /**
+     * Constructs a new EndpointInNamespaceRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInNamespaceRequest);
+
+    /** EndpointInNamespaceRequest namespace_id. */
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified EndpointInNamespaceRequest message. Does not implicitly {@link EndpointInNamespaceRequest.verify|verify} messages.
+     * @param message EndpointInNamespaceRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInNamespaceRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInNamespaceRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInNamespaceRequest;
+}
+
+/** Represents an EndpointInNamespaceResponse. */
+export class EndpointInNamespaceResponse implements IEndpointInNamespaceResponse {
+
+    /**
+     * Constructs a new EndpointInNamespaceResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInNamespaceResponse);
+
+    /** EndpointInNamespaceResponse items. */
+    public items: ServiceEndpoint[];
+
+    /**
+     * Encodes the specified EndpointInNamespaceResponse message. Does not implicitly {@link EndpointInNamespaceResponse.verify|verify} messages.
+     * @param message EndpointInNamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInNamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInNamespaceResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInNamespaceResponse;
+}
+
+/** Represents an EndpointInProjectRequest. */
+export class EndpointInProjectRequest implements IEndpointInProjectRequest {
+
+    /**
+     * Constructs a new EndpointInProjectRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInProjectRequest);
+
+    /** EndpointInProjectRequest project_id. */
+    public project_id: number;
+
+    /**
+     * Encodes the specified EndpointInProjectRequest message. Does not implicitly {@link EndpointInProjectRequest.verify|verify} messages.
+     * @param message EndpointInProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInProjectRequest;
+}
+
+/** Represents an EndpointInProjectResponse. */
+export class EndpointInProjectResponse implements IEndpointInProjectResponse {
+
+    /**
+     * Constructs a new EndpointInProjectResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInProjectResponse);
+
+    /** EndpointInProjectResponse items. */
+    public items: ServiceEndpoint[];
+
+    /**
+     * Encodes the specified EndpointInProjectResponse message. Does not implicitly {@link EndpointInProjectResponse.verify|verify} messages.
+     * @param message EndpointInProjectResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInProjectResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInProjectResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInProjectResponse;
+}
+
+/** Represents an Endpoint */
+export class Endpoint extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Endpoint service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls InNamespace.
+     * @param request EndpointInNamespaceRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and EndpointInNamespaceResponse
+     */
+    public inNamespace(request: EndpointInNamespaceRequest, callback: Endpoint.InNamespaceCallback): void;
+
+    /**
+     * Calls InNamespace.
+     * @param request EndpointInNamespaceRequest message or plain object
+     * @returns Promise
+     */
+    public inNamespace(request: EndpointInNamespaceRequest): Promise<EndpointInNamespaceResponse>;
+
+    /**
+     * Calls InProject.
+     * @param request EndpointInProjectRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and EndpointInProjectResponse
+     */
+    public inProject(request: EndpointInProjectRequest, callback: Endpoint.InProjectCallback): void;
+
+    /**
+     * Calls InProject.
+     * @param request EndpointInProjectRequest message or plain object
+     * @returns Promise
+     */
+    public inProject(request: EndpointInProjectRequest): Promise<EndpointInProjectResponse>;
+}
+
+export namespace Endpoint {
+
+    /**
+     * Callback as used by {@link Endpoint#inNamespace}.
+     * @param error Error, if any
+     * @param [response] EndpointInNamespaceResponse
+     */
+    type InNamespaceCallback = (error: (Error|null), response?: EndpointInNamespaceResponse) => void;
+
+    /**
+     * Callback as used by {@link Endpoint#inProject}.
+     * @param error Error, if any
+     * @param [response] EndpointInProjectResponse
+     */
+    type InProjectCallback = (error: (Error|null), response?: EndpointInProjectResponse) => void;
 }
 
 /** ActionType enum. */
@@ -3163,8 +3675,8 @@ export class DeleteUndocumentedFilesResponse implements IDeleteUndocumentedFiles
      */
     constructor(properties?: IDeleteUndocumentedFilesResponse);
 
-    /** DeleteUndocumentedFilesResponse files. */
-    public files: File[];
+    /** DeleteUndocumentedFilesResponse items. */
+    public items: File[];
 
     /**
      * Encodes the specified DeleteUndocumentedFilesResponse message. Does not implicitly {@link DeleteUndocumentedFilesResponse.verify|verify} messages.
@@ -3423,40 +3935,6 @@ export namespace FileSvc {
     type DiskInfoCallback = (error: (Error|null), response?: DiskInfoResponse) => void;
 }
 
-/** Represents a GitDestroyRequest. */
-export class GitDestroyRequest implements IGitDestroyRequest {
-
-    /**
-     * Constructs a new GitDestroyRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IGitDestroyRequest);
-
-    /** GitDestroyRequest namespace_id. */
-    public namespace_id: string;
-
-    /** GitDestroyRequest project_id. */
-    public project_id: string;
-
-    /**
-     * Encodes the specified GitDestroyRequest message. Does not implicitly {@link GitDestroyRequest.verify|verify} messages.
-     * @param message GitDestroyRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: GitDestroyRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a GitDestroyRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns GitDestroyRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitDestroyRequest;
-}
-
 /** Represents a GitEnableProjectRequest. */
 export class GitEnableProjectRequest implements IGitEnableProjectRequest {
 
@@ -3580,8 +4058,8 @@ export class GitAllProjectsResponse implements IGitAllProjectsResponse {
      */
     constructor(properties?: IGitAllProjectsResponse);
 
-    /** GitAllProjectsResponse data. */
-    public data: GitProjectItem[];
+    /** GitAllProjectsResponse items. */
+    public items: GitProjectItem[];
 
     /**
      * Encodes the specified GitAllProjectsResponse message. Does not implicitly {@link GitAllProjectsResponse.verify|verify} messages.
@@ -3623,8 +4101,8 @@ export class GitOption implements IGitOption {
     /** GitOption isLeaf. */
     public isLeaf: boolean;
 
-    /** GitOption projectId. */
-    public projectId: string;
+    /** GitOption gitProjectId. */
+    public gitProjectId: string;
 
     /** GitOption branch. */
     public branch: string;
@@ -3657,8 +4135,8 @@ export class GitProjectOptionsResponse implements IGitProjectOptionsResponse {
      */
     constructor(properties?: IGitProjectOptionsResponse);
 
-    /** GitProjectOptionsResponse data. */
-    public data: GitOption[];
+    /** GitProjectOptionsResponse items. */
+    public items: GitOption[];
 
     /**
      * Encodes the specified GitProjectOptionsResponse message. Does not implicitly {@link GitProjectOptionsResponse.verify|verify} messages.
@@ -3688,8 +4166,8 @@ export class GitBranchOptionsRequest implements IGitBranchOptionsRequest {
      */
     constructor(properties?: IGitBranchOptionsRequest);
 
-    /** GitBranchOptionsRequest project_id. */
-    public project_id: string;
+    /** GitBranchOptionsRequest git_project_id. */
+    public git_project_id: string;
 
     /** GitBranchOptionsRequest all. */
     public all: boolean;
@@ -3722,8 +4200,8 @@ export class GitBranchOptionsResponse implements IGitBranchOptionsResponse {
      */
     constructor(properties?: IGitBranchOptionsResponse);
 
-    /** GitBranchOptionsResponse data. */
-    public data: GitOption[];
+    /** GitBranchOptionsResponse items. */
+    public items: GitOption[];
 
     /**
      * Encodes the specified GitBranchOptionsResponse message. Does not implicitly {@link GitBranchOptionsResponse.verify|verify} messages.
@@ -3753,8 +4231,8 @@ export class GitCommitOptionsRequest implements IGitCommitOptionsRequest {
      */
     constructor(properties?: IGitCommitOptionsRequest);
 
-    /** GitCommitOptionsRequest project_id. */
-    public project_id: string;
+    /** GitCommitOptionsRequest git_project_id. */
+    public git_project_id: string;
 
     /** GitCommitOptionsRequest branch. */
     public branch: string;
@@ -3787,8 +4265,8 @@ export class GitCommitOptionsResponse implements IGitCommitOptionsResponse {
      */
     constructor(properties?: IGitCommitOptionsResponse);
 
-    /** GitCommitOptionsResponse data. */
-    public data: GitOption[];
+    /** GitCommitOptionsResponse items. */
+    public items: GitOption[];
 
     /**
      * Encodes the specified GitCommitOptionsResponse message. Does not implicitly {@link GitCommitOptionsResponse.verify|verify} messages.
@@ -3818,8 +4296,8 @@ export class GitCommitRequest implements IGitCommitRequest {
      */
     constructor(properties?: IGitCommitRequest);
 
-    /** GitCommitRequest project_id. */
-    public project_id: string;
+    /** GitCommitRequest git_project_id. */
+    public git_project_id: string;
 
     /** GitCommitRequest branch. */
     public branch: string;
@@ -3855,8 +4333,47 @@ export class GitCommitResponse implements IGitCommitResponse {
      */
     constructor(properties?: IGitCommitResponse);
 
-    /** GitCommitResponse data. */
-    public data?: (GitOption|null);
+    /** GitCommitResponse id. */
+    public id: string;
+
+    /** GitCommitResponse short_id. */
+    public short_id: string;
+
+    /** GitCommitResponse git_project_id. */
+    public git_project_id: string;
+
+    /** GitCommitResponse label. */
+    public label: string;
+
+    /** GitCommitResponse title. */
+    public title: string;
+
+    /** GitCommitResponse branch. */
+    public branch: string;
+
+    /** GitCommitResponse author_name. */
+    public author_name: string;
+
+    /** GitCommitResponse author_email. */
+    public author_email: string;
+
+    /** GitCommitResponse committer_name. */
+    public committer_name: string;
+
+    /** GitCommitResponse committer_email. */
+    public committer_email: string;
+
+    /** GitCommitResponse web_url. */
+    public web_url: string;
+
+    /** GitCommitResponse message. */
+    public message: string;
+
+    /** GitCommitResponse committed_date. */
+    public committed_date: string;
+
+    /** GitCommitResponse created_at. */
+    public created_at: string;
 
     /**
      * Encodes the specified GitCommitResponse message. Does not implicitly {@link GitCommitResponse.verify|verify} messages.
@@ -3886,8 +4403,8 @@ export class GitPipelineInfoRequest implements IGitPipelineInfoRequest {
      */
     constructor(properties?: IGitPipelineInfoRequest);
 
-    /** GitPipelineInfoRequest project_id. */
-    public project_id: string;
+    /** GitPipelineInfoRequest git_project_id. */
+    public git_project_id: string;
 
     /** GitPipelineInfoRequest branch. */
     public branch: string;
@@ -3957,8 +4474,8 @@ export class GitConfigFileRequest implements IGitConfigFileRequest {
      */
     constructor(properties?: IGitConfigFileRequest);
 
-    /** GitConfigFileRequest project_id. */
-    public project_id: string;
+    /** GitConfigFileRequest git_project_id. */
+    public git_project_id: string;
 
     /** GitConfigFileRequest branch. */
     public branch: string;
@@ -4131,11 +4648,11 @@ export class GitProjectOptionsRequest implements IGitProjectOptionsRequest {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectOptionsRequest;
 }
 
-/** Represents a GitServer */
-export class GitServer extends $protobuf.rpc.Service {
+/** Represents a GitProject */
+export class GitProject extends $protobuf.rpc.Service {
 
     /**
-     * Constructs a new GitServer service.
+     * Constructs a new GitProject service.
      * @param rpcImpl RPC implementation
      * @param [requestDelimited=false] Whether requests are length-delimited
      * @param [responseDelimited=false] Whether responses are length-delimited
@@ -4147,7 +4664,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitEnableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitEnableProjectResponse
      */
-    public enableProject(request: GitEnableProjectRequest, callback: GitServer.EnableProjectCallback): void;
+    public enableProject(request: GitEnableProjectRequest, callback: GitProject.EnableProjectCallback): void;
 
     /**
      * Calls EnableProject.
@@ -4161,7 +4678,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitDisableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitDisableProjectResponse
      */
-    public disableProject(request: GitDisableProjectRequest, callback: GitServer.DisableProjectCallback): void;
+    public disableProject(request: GitDisableProjectRequest, callback: GitProject.DisableProjectCallback): void;
 
     /**
      * Calls DisableProject.
@@ -4175,7 +4692,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitAllProjectsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitAllProjectsResponse
      */
-    public all(request: GitAllProjectsRequest, callback: GitServer.AllCallback): void;
+    public all(request: GitAllProjectsRequest, callback: GitProject.AllCallback): void;
 
     /**
      * Calls All.
@@ -4189,7 +4706,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitProjectOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitProjectOptionsResponse
      */
-    public projectOptions(request: GitProjectOptionsRequest, callback: GitServer.ProjectOptionsCallback): void;
+    public projectOptions(request: GitProjectOptionsRequest, callback: GitProject.ProjectOptionsCallback): void;
 
     /**
      * Calls ProjectOptions.
@@ -4203,7 +4720,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitBranchOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitBranchOptionsResponse
      */
-    public branchOptions(request: GitBranchOptionsRequest, callback: GitServer.BranchOptionsCallback): void;
+    public branchOptions(request: GitBranchOptionsRequest, callback: GitProject.BranchOptionsCallback): void;
 
     /**
      * Calls BranchOptions.
@@ -4217,7 +4734,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitCommitOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitCommitOptionsResponse
      */
-    public commitOptions(request: GitCommitOptionsRequest, callback: GitServer.CommitOptionsCallback): void;
+    public commitOptions(request: GitCommitOptionsRequest, callback: GitProject.CommitOptionsCallback): void;
 
     /**
      * Calls CommitOptions.
@@ -4231,7 +4748,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitCommitRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitCommitResponse
      */
-    public commit(request: GitCommitRequest, callback: GitServer.CommitCallback): void;
+    public commit(request: GitCommitRequest, callback: GitProject.CommitCallback): void;
 
     /**
      * Calls Commit.
@@ -4245,7 +4762,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitPipelineInfoRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitPipelineInfoResponse
      */
-    public pipelineInfo(request: GitPipelineInfoRequest, callback: GitServer.PipelineInfoCallback): void;
+    public pipelineInfo(request: GitPipelineInfoRequest, callback: GitProject.PipelineInfoCallback): void;
 
     /**
      * Calls PipelineInfo.
@@ -4259,7 +4776,7 @@ export class GitServer extends $protobuf.rpc.Service {
      * @param request GitConfigFileRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitConfigFileResponse
      */
-    public marsConfigFile(request: GitConfigFileRequest, callback: GitServer.MarsConfigFileCallback): void;
+    public marsConfigFile(request: GitConfigFileRequest, callback: GitProject.MarsConfigFileCallback): void;
 
     /**
      * Calls MarsConfigFile.
@@ -4269,70 +4786,515 @@ export class GitServer extends $protobuf.rpc.Service {
     public marsConfigFile(request: GitConfigFileRequest): Promise<GitConfigFileResponse>;
 }
 
-export namespace GitServer {
+export namespace GitProject {
 
     /**
-     * Callback as used by {@link GitServer#enableProject}.
+     * Callback as used by {@link GitProject#enableProject}.
      * @param error Error, if any
      * @param [response] GitEnableProjectResponse
      */
     type EnableProjectCallback = (error: (Error|null), response?: GitEnableProjectResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#disableProject}.
+     * Callback as used by {@link GitProject#disableProject}.
      * @param error Error, if any
      * @param [response] GitDisableProjectResponse
      */
     type DisableProjectCallback = (error: (Error|null), response?: GitDisableProjectResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#all}.
+     * Callback as used by {@link GitProject#all}.
      * @param error Error, if any
      * @param [response] GitAllProjectsResponse
      */
     type AllCallback = (error: (Error|null), response?: GitAllProjectsResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#projectOptions}.
+     * Callback as used by {@link GitProject#projectOptions}.
      * @param error Error, if any
      * @param [response] GitProjectOptionsResponse
      */
     type ProjectOptionsCallback = (error: (Error|null), response?: GitProjectOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#branchOptions}.
+     * Callback as used by {@link GitProject#branchOptions}.
      * @param error Error, if any
      * @param [response] GitBranchOptionsResponse
      */
     type BranchOptionsCallback = (error: (Error|null), response?: GitBranchOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#commitOptions}.
+     * Callback as used by {@link GitProject#commitOptions}.
      * @param error Error, if any
      * @param [response] GitCommitOptionsResponse
      */
     type CommitOptionsCallback = (error: (Error|null), response?: GitCommitOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#commit}.
+     * Callback as used by {@link GitProject#commit}.
      * @param error Error, if any
      * @param [response] GitCommitResponse
      */
     type CommitCallback = (error: (Error|null), response?: GitCommitResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#pipelineInfo}.
+     * Callback as used by {@link GitProject#pipelineInfo}.
      * @param error Error, if any
      * @param [response] GitPipelineInfoResponse
      */
     type PipelineInfoCallback = (error: (Error|null), response?: GitPipelineInfoResponse) => void;
 
     /**
-     * Callback as used by {@link GitServer#marsConfigFile}.
+     * Callback as used by {@link GitProject#marsConfigFile}.
      * @param error Error, if any
      * @param [response] GitConfigFileResponse
      */
     type MarsConfigFileCallback = (error: (Error|null), response?: GitConfigFileResponse) => void;
+}
+
+/** Represents a GitProjectConfigShowRequest. */
+export class GitProjectConfigShowRequest implements IGitProjectConfigShowRequest {
+
+    /**
+     * Constructs a new GitProjectConfigShowRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigShowRequest);
+
+    /** GitProjectConfigShowRequest git_project_id. */
+    public git_project_id: number;
+
+    /** GitProjectConfigShowRequest branch. */
+    public branch: string;
+
+    /**
+     * Encodes the specified GitProjectConfigShowRequest message. Does not implicitly {@link GitProjectConfigShowRequest.verify|verify} messages.
+     * @param message GitProjectConfigShowRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigShowRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigShowRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigShowRequest;
+}
+
+/** Represents a GitProjectConfigShowResponse. */
+export class GitProjectConfigShowResponse implements IGitProjectConfigShowResponse {
+
+    /**
+     * Constructs a new GitProjectConfigShowResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigShowResponse);
+
+    /** GitProjectConfigShowResponse branch. */
+    public branch: string;
+
+    /** GitProjectConfigShowResponse config. */
+    public config?: (MarsConfig|null);
+
+    /**
+     * Encodes the specified GitProjectConfigShowResponse message. Does not implicitly {@link GitProjectConfigShowResponse.verify|verify} messages.
+     * @param message GitProjectConfigShowResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigShowResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigShowResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigShowResponse;
+}
+
+/** Represents a GitProjectConfigGlobalConfigRequest. */
+export class GitProjectConfigGlobalConfigRequest implements IGitProjectConfigGlobalConfigRequest {
+
+    /**
+     * Constructs a new GitProjectConfigGlobalConfigRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigGlobalConfigRequest);
+
+    /** GitProjectConfigGlobalConfigRequest git_project_id. */
+    public git_project_id: number;
+
+    /**
+     * Encodes the specified GitProjectConfigGlobalConfigRequest message. Does not implicitly {@link GitProjectConfigGlobalConfigRequest.verify|verify} messages.
+     * @param message GitProjectConfigGlobalConfigRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigGlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigGlobalConfigRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigGlobalConfigRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigGlobalConfigRequest;
+}
+
+/** Represents a GitProjectConfigGlobalConfigResponse. */
+export class GitProjectConfigGlobalConfigResponse implements IGitProjectConfigGlobalConfigResponse {
+
+    /**
+     * Constructs a new GitProjectConfigGlobalConfigResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigGlobalConfigResponse);
+
+    /** GitProjectConfigGlobalConfigResponse enabled. */
+    public enabled: boolean;
+
+    /** GitProjectConfigGlobalConfigResponse config. */
+    public config?: (MarsConfig|null);
+
+    /**
+     * Encodes the specified GitProjectConfigGlobalConfigResponse message. Does not implicitly {@link GitProjectConfigGlobalConfigResponse.verify|verify} messages.
+     * @param message GitProjectConfigGlobalConfigResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigGlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigGlobalConfigResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigGlobalConfigResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigGlobalConfigResponse;
+}
+
+/** Represents a GitProjectConfigUpdateRequest. */
+export class GitProjectConfigUpdateRequest implements IGitProjectConfigUpdateRequest {
+
+    /**
+     * Constructs a new GitProjectConfigUpdateRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigUpdateRequest);
+
+    /** GitProjectConfigUpdateRequest git_project_id. */
+    public git_project_id: number;
+
+    /** GitProjectConfigUpdateRequest config. */
+    public config?: (MarsConfig|null);
+
+    /**
+     * Encodes the specified GitProjectConfigUpdateRequest message. Does not implicitly {@link GitProjectConfigUpdateRequest.verify|verify} messages.
+     * @param message GitProjectConfigUpdateRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigUpdateRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigUpdateRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigUpdateRequest;
+}
+
+/** Represents a GitProjectConfigUpdateResponse. */
+export class GitProjectConfigUpdateResponse implements IGitProjectConfigUpdateResponse {
+
+    /**
+     * Constructs a new GitProjectConfigUpdateResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigUpdateResponse);
+
+    /** GitProjectConfigUpdateResponse config. */
+    public config?: (MarsConfig|null);
+
+    /**
+     * Encodes the specified GitProjectConfigUpdateResponse message. Does not implicitly {@link GitProjectConfigUpdateResponse.verify|verify} messages.
+     * @param message GitProjectConfigUpdateResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigUpdateResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigUpdateResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigUpdateResponse;
+}
+
+/** Represents a GitProjectConfigToggleGlobalStatusRequest. */
+export class GitProjectConfigToggleGlobalStatusRequest implements IGitProjectConfigToggleGlobalStatusRequest {
+
+    /**
+     * Constructs a new GitProjectConfigToggleGlobalStatusRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigToggleGlobalStatusRequest);
+
+    /** GitProjectConfigToggleGlobalStatusRequest git_project_id. */
+    public git_project_id: number;
+
+    /** GitProjectConfigToggleGlobalStatusRequest enabled. */
+    public enabled: boolean;
+
+    /**
+     * Encodes the specified GitProjectConfigToggleGlobalStatusRequest message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusRequest.verify|verify} messages.
+     * @param message GitProjectConfigToggleGlobalStatusRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigToggleGlobalStatusRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigToggleGlobalStatusRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigToggleGlobalStatusRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigToggleGlobalStatusRequest;
+}
+
+/** Represents a GitProjectConfigDefaultChartValuesRequest. */
+export class GitProjectConfigDefaultChartValuesRequest implements IGitProjectConfigDefaultChartValuesRequest {
+
+    /**
+     * Constructs a new GitProjectConfigDefaultChartValuesRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigDefaultChartValuesRequest);
+
+    /** GitProjectConfigDefaultChartValuesRequest git_project_id. */
+    public git_project_id: number;
+
+    /** GitProjectConfigDefaultChartValuesRequest branch. */
+    public branch: string;
+
+    /**
+     * Encodes the specified GitProjectConfigDefaultChartValuesRequest message. Does not implicitly {@link GitProjectConfigDefaultChartValuesRequest.verify|verify} messages.
+     * @param message GitProjectConfigDefaultChartValuesRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigDefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigDefaultChartValuesRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigDefaultChartValuesRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigDefaultChartValuesRequest;
+}
+
+/** Represents a GitProjectConfigDefaultChartValuesResponse. */
+export class GitProjectConfigDefaultChartValuesResponse implements IGitProjectConfigDefaultChartValuesResponse {
+
+    /**
+     * Constructs a new GitProjectConfigDefaultChartValuesResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigDefaultChartValuesResponse);
+
+    /** GitProjectConfigDefaultChartValuesResponse value. */
+    public value: string;
+
+    /**
+     * Encodes the specified GitProjectConfigDefaultChartValuesResponse message. Does not implicitly {@link GitProjectConfigDefaultChartValuesResponse.verify|verify} messages.
+     * @param message GitProjectConfigDefaultChartValuesResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigDefaultChartValuesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigDefaultChartValuesResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigDefaultChartValuesResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigDefaultChartValuesResponse;
+}
+
+/** Represents a GitProjectConfigToggleGlobalStatusResponse. */
+export class GitProjectConfigToggleGlobalStatusResponse implements IGitProjectConfigToggleGlobalStatusResponse {
+
+    /**
+     * Constructs a new GitProjectConfigToggleGlobalStatusResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGitProjectConfigToggleGlobalStatusResponse);
+
+    /**
+     * Encodes the specified GitProjectConfigToggleGlobalStatusResponse message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusResponse.verify|verify} messages.
+     * @param message GitProjectConfigToggleGlobalStatusResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: GitProjectConfigToggleGlobalStatusResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a GitProjectConfigToggleGlobalStatusResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns GitProjectConfigToggleGlobalStatusResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigToggleGlobalStatusResponse;
+}
+
+/** Represents a GitProjectConfig */
+export class GitProjectConfig extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new GitProjectConfig service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls Show.
+     * @param request GitProjectConfigShowRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitProjectConfigShowResponse
+     */
+    public show(request: GitProjectConfigShowRequest, callback: GitProjectConfig.ShowCallback): void;
+
+    /**
+     * Calls Show.
+     * @param request GitProjectConfigShowRequest message or plain object
+     * @returns Promise
+     */
+    public show(request: GitProjectConfigShowRequest): Promise<GitProjectConfigShowResponse>;
+
+    /**
+     * Calls GlobalConfig.
+     * @param request GitProjectConfigGlobalConfigRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitProjectConfigGlobalConfigResponse
+     */
+    public globalConfig(request: GitProjectConfigGlobalConfigRequest, callback: GitProjectConfig.GlobalConfigCallback): void;
+
+    /**
+     * Calls GlobalConfig.
+     * @param request GitProjectConfigGlobalConfigRequest message or plain object
+     * @returns Promise
+     */
+    public globalConfig(request: GitProjectConfigGlobalConfigRequest): Promise<GitProjectConfigGlobalConfigResponse>;
+
+    /**
+     * Calls ToggleGlobalStatus.
+     * @param request GitProjectConfigToggleGlobalStatusRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitProjectConfigToggleGlobalStatusResponse
+     */
+    public toggleGlobalStatus(request: GitProjectConfigToggleGlobalStatusRequest, callback: GitProjectConfig.ToggleGlobalStatusCallback): void;
+
+    /**
+     * Calls ToggleGlobalStatus.
+     * @param request GitProjectConfigToggleGlobalStatusRequest message or plain object
+     * @returns Promise
+     */
+    public toggleGlobalStatus(request: GitProjectConfigToggleGlobalStatusRequest): Promise<GitProjectConfigToggleGlobalStatusResponse>;
+
+    /**
+     * Calls Update.
+     * @param request GitProjectConfigUpdateRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitProjectConfigUpdateResponse
+     */
+    public update(request: GitProjectConfigUpdateRequest, callback: GitProjectConfig.UpdateCallback): void;
+
+    /**
+     * Calls Update.
+     * @param request GitProjectConfigUpdateRequest message or plain object
+     * @returns Promise
+     */
+    public update(request: GitProjectConfigUpdateRequest): Promise<GitProjectConfigUpdateResponse>;
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @param request GitProjectConfigDefaultChartValuesRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitProjectConfigDefaultChartValuesResponse
+     */
+    public getDefaultChartValues(request: GitProjectConfigDefaultChartValuesRequest, callback: GitProjectConfig.GetDefaultChartValuesCallback): void;
+
+    /**
+     * Calls GetDefaultChartValues.
+     * @param request GitProjectConfigDefaultChartValuesRequest message or plain object
+     * @returns Promise
+     */
+    public getDefaultChartValues(request: GitProjectConfigDefaultChartValuesRequest): Promise<GitProjectConfigDefaultChartValuesResponse>;
+}
+
+export namespace GitProjectConfig {
+
+    /**
+     * Callback as used by {@link GitProjectConfig#show}.
+     * @param error Error, if any
+     * @param [response] GitProjectConfigShowResponse
+     */
+    type ShowCallback = (error: (Error|null), response?: GitProjectConfigShowResponse) => void;
+
+    /**
+     * Callback as used by {@link GitProjectConfig#globalConfig}.
+     * @param error Error, if any
+     * @param [response] GitProjectConfigGlobalConfigResponse
+     */
+    type GlobalConfigCallback = (error: (Error|null), response?: GitProjectConfigGlobalConfigResponse) => void;
+
+    /**
+     * Callback as used by {@link GitProjectConfig#toggleGlobalStatus}.
+     * @param error Error, if any
+     * @param [response] GitProjectConfigToggleGlobalStatusResponse
+     */
+    type ToggleGlobalStatusCallback = (error: (Error|null), response?: GitProjectConfigToggleGlobalStatusResponse) => void;
+
+    /**
+     * Callback as used by {@link GitProjectConfig#update}.
+     * @param error Error, if any
+     * @param [response] GitProjectConfigUpdateResponse
+     */
+    type UpdateCallback = (error: (Error|null), response?: GitProjectConfigUpdateResponse) => void;
+
+    /**
+     * Callback as used by {@link GitProjectConfig#getDefaultChartValues}.
+     * @param error Error, if any
+     * @param [response] GitProjectConfigDefaultChartValuesResponse
+     */
+    type GetDefaultChartValuesCallback = (error: (Error|null), response?: GitProjectConfigDefaultChartValuesResponse) => void;
 }
 
 /** Represents a MarsConfig. */
@@ -4443,529 +5405,214 @@ export class Element implements IElement {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Element;
 }
 
-/** Represents a MarsShowRequest. */
-export class MarsShowRequest implements IMarsShowRequest {
+/** Represents a MetricsTopPodRequest. */
+export class MetricsTopPodRequest implements IMetricsTopPodRequest {
 
     /**
-     * Constructs a new MarsShowRequest.
+     * Constructs a new MetricsTopPodRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IMarsShowRequest);
+    constructor(properties?: IMetricsTopPodRequest);
 
-    /** MarsShowRequest project_id. */
-    public project_id: number;
-
-    /** MarsShowRequest branch. */
-    public branch: string;
-
-    /**
-     * Encodes the specified MarsShowRequest message. Does not implicitly {@link MarsShowRequest.verify|verify} messages.
-     * @param message MarsShowRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsShowRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsShowRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsShowRequest;
-}
-
-/** Represents a MarsShowResponse. */
-export class MarsShowResponse implements IMarsShowResponse {
-
-    /**
-     * Constructs a new MarsShowResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsShowResponse);
-
-    /** MarsShowResponse branch. */
-    public branch: string;
-
-    /** MarsShowResponse config. */
-    public config?: (MarsConfig|null);
-
-    /**
-     * Encodes the specified MarsShowResponse message. Does not implicitly {@link MarsShowResponse.verify|verify} messages.
-     * @param message MarsShowResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsShowResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsShowResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsShowResponse;
-}
-
-/** Represents a MarsGlobalConfigRequest. */
-export class MarsGlobalConfigRequest implements IMarsGlobalConfigRequest {
-
-    /**
-     * Constructs a new MarsGlobalConfigRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsGlobalConfigRequest);
-
-    /** MarsGlobalConfigRequest project_id. */
-    public project_id: number;
-
-    /**
-     * Encodes the specified MarsGlobalConfigRequest message. Does not implicitly {@link MarsGlobalConfigRequest.verify|verify} messages.
-     * @param message MarsGlobalConfigRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsGlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsGlobalConfigRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsGlobalConfigRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsGlobalConfigRequest;
-}
-
-/** Represents a MarsGlobalConfigResponse. */
-export class MarsGlobalConfigResponse implements IMarsGlobalConfigResponse {
-
-    /**
-     * Constructs a new MarsGlobalConfigResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsGlobalConfigResponse);
-
-    /** MarsGlobalConfigResponse enabled. */
-    public enabled: boolean;
-
-    /** MarsGlobalConfigResponse config. */
-    public config?: (MarsConfig|null);
-
-    /**
-     * Encodes the specified MarsGlobalConfigResponse message. Does not implicitly {@link MarsGlobalConfigResponse.verify|verify} messages.
-     * @param message MarsGlobalConfigResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsGlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsGlobalConfigResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsGlobalConfigResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsGlobalConfigResponse;
-}
-
-/** Represents a MarsUpdateRequest. */
-export class MarsUpdateRequest implements IMarsUpdateRequest {
-
-    /**
-     * Constructs a new MarsUpdateRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsUpdateRequest);
-
-    /** MarsUpdateRequest project_id. */
-    public project_id: number;
-
-    /** MarsUpdateRequest config. */
-    public config?: (MarsConfig|null);
-
-    /**
-     * Encodes the specified MarsUpdateRequest message. Does not implicitly {@link MarsUpdateRequest.verify|verify} messages.
-     * @param message MarsUpdateRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsUpdateRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsUpdateRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsUpdateRequest;
-}
-
-/** Represents a MarsUpdateResponse. */
-export class MarsUpdateResponse implements IMarsUpdateResponse {
-
-    /**
-     * Constructs a new MarsUpdateResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsUpdateResponse);
-
-    /** MarsUpdateResponse config. */
-    public config?: (MarsConfig|null);
-
-    /**
-     * Encodes the specified MarsUpdateResponse message. Does not implicitly {@link MarsUpdateResponse.verify|verify} messages.
-     * @param message MarsUpdateResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsUpdateResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsUpdateResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsUpdateResponse;
-}
-
-/** Represents a MarsToggleEnabledRequest. */
-export class MarsToggleEnabledRequest implements IMarsToggleEnabledRequest {
-
-    /**
-     * Constructs a new MarsToggleEnabledRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsToggleEnabledRequest);
-
-    /** MarsToggleEnabledRequest project_id. */
-    public project_id: number;
-
-    /** MarsToggleEnabledRequest enabled. */
-    public enabled: boolean;
-
-    /**
-     * Encodes the specified MarsToggleEnabledRequest message. Does not implicitly {@link MarsToggleEnabledRequest.verify|verify} messages.
-     * @param message MarsToggleEnabledRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsToggleEnabledRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsToggleEnabledRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsToggleEnabledRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsToggleEnabledRequest;
-}
-
-/** Represents a MarsDefaultChartValuesRequest. */
-export class MarsDefaultChartValuesRequest implements IMarsDefaultChartValuesRequest {
-
-    /**
-     * Constructs a new MarsDefaultChartValuesRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsDefaultChartValuesRequest);
-
-    /** MarsDefaultChartValuesRequest project_id. */
-    public project_id: number;
-
-    /** MarsDefaultChartValuesRequest branch. */
-    public branch: string;
-
-    /**
-     * Encodes the specified MarsDefaultChartValuesRequest message. Does not implicitly {@link MarsDefaultChartValuesRequest.verify|verify} messages.
-     * @param message MarsDefaultChartValuesRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsDefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsDefaultChartValuesRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsDefaultChartValuesRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsDefaultChartValuesRequest;
-}
-
-/** Represents a MarsDefaultChartValuesResponse. */
-export class MarsDefaultChartValuesResponse implements IMarsDefaultChartValuesResponse {
-
-    /**
-     * Constructs a new MarsDefaultChartValuesResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsDefaultChartValuesResponse);
-
-    /** MarsDefaultChartValuesResponse value. */
-    public value: string;
-
-    /**
-     * Encodes the specified MarsDefaultChartValuesResponse message. Does not implicitly {@link MarsDefaultChartValuesResponse.verify|verify} messages.
-     * @param message MarsDefaultChartValuesResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsDefaultChartValuesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsDefaultChartValuesResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsDefaultChartValuesResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsDefaultChartValuesResponse;
-}
-
-/** Represents a MarsToggleEnabledResponse. */
-export class MarsToggleEnabledResponse implements IMarsToggleEnabledResponse {
-
-    /**
-     * Constructs a new MarsToggleEnabledResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMarsToggleEnabledResponse);
-
-    /**
-     * Encodes the specified MarsToggleEnabledResponse message. Does not implicitly {@link MarsToggleEnabledResponse.verify|verify} messages.
-     * @param message MarsToggleEnabledResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: MarsToggleEnabledResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a MarsToggleEnabledResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns MarsToggleEnabledResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MarsToggleEnabledResponse;
-}
-
-/** Represents a Mars */
-export class Mars extends $protobuf.rpc.Service {
-
-    /**
-     * Constructs a new Mars service.
-     * @param rpcImpl RPC implementation
-     * @param [requestDelimited=false] Whether requests are length-delimited
-     * @param [responseDelimited=false] Whether responses are length-delimited
-     */
-    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
-
-    /**
-     * Calls Show.
-     * @param request MarsShowRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MarsShowResponse
-     */
-    public show(request: MarsShowRequest, callback: Mars.ShowCallback): void;
-
-    /**
-     * Calls Show.
-     * @param request MarsShowRequest message or plain object
-     * @returns Promise
-     */
-    public show(request: MarsShowRequest): Promise<MarsShowResponse>;
-
-    /**
-     * Calls GlobalConfig.
-     * @param request MarsGlobalConfigRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MarsGlobalConfigResponse
-     */
-    public globalConfig(request: MarsGlobalConfigRequest, callback: Mars.GlobalConfigCallback): void;
-
-    /**
-     * Calls GlobalConfig.
-     * @param request MarsGlobalConfigRequest message or plain object
-     * @returns Promise
-     */
-    public globalConfig(request: MarsGlobalConfigRequest): Promise<MarsGlobalConfigResponse>;
-
-    /**
-     * Calls ToggleEnabled.
-     * @param request MarsToggleEnabledRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MarsToggleEnabledResponse
-     */
-    public toggleEnabled(request: MarsToggleEnabledRequest, callback: Mars.ToggleEnabledCallback): void;
-
-    /**
-     * Calls ToggleEnabled.
-     * @param request MarsToggleEnabledRequest message or plain object
-     * @returns Promise
-     */
-    public toggleEnabled(request: MarsToggleEnabledRequest): Promise<MarsToggleEnabledResponse>;
-
-    /**
-     * Calls Update.
-     * @param request MarsUpdateRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MarsUpdateResponse
-     */
-    public update(request: MarsUpdateRequest, callback: Mars.UpdateCallback): void;
-
-    /**
-     * Calls Update.
-     * @param request MarsUpdateRequest message or plain object
-     * @returns Promise
-     */
-    public update(request: MarsUpdateRequest): Promise<MarsUpdateResponse>;
-
-    /**
-     * Calls GetDefaultChartValues.
-     * @param request MarsDefaultChartValuesRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MarsDefaultChartValuesResponse
-     */
-    public getDefaultChartValues(request: MarsDefaultChartValuesRequest, callback: Mars.GetDefaultChartValuesCallback): void;
-
-    /**
-     * Calls GetDefaultChartValues.
-     * @param request MarsDefaultChartValuesRequest message or plain object
-     * @returns Promise
-     */
-    public getDefaultChartValues(request: MarsDefaultChartValuesRequest): Promise<MarsDefaultChartValuesResponse>;
-}
-
-export namespace Mars {
-
-    /**
-     * Callback as used by {@link Mars#show}.
-     * @param error Error, if any
-     * @param [response] MarsShowResponse
-     */
-    type ShowCallback = (error: (Error|null), response?: MarsShowResponse) => void;
-
-    /**
-     * Callback as used by {@link Mars#globalConfig}.
-     * @param error Error, if any
-     * @param [response] MarsGlobalConfigResponse
-     */
-    type GlobalConfigCallback = (error: (Error|null), response?: MarsGlobalConfigResponse) => void;
-
-    /**
-     * Callback as used by {@link Mars#toggleEnabled}.
-     * @param error Error, if any
-     * @param [response] MarsToggleEnabledResponse
-     */
-    type ToggleEnabledCallback = (error: (Error|null), response?: MarsToggleEnabledResponse) => void;
-
-    /**
-     * Callback as used by {@link Mars#update}.
-     * @param error Error, if any
-     * @param [response] MarsUpdateResponse
-     */
-    type UpdateCallback = (error: (Error|null), response?: MarsUpdateResponse) => void;
-
-    /**
-     * Callback as used by {@link Mars#getDefaultChartValues}.
-     * @param error Error, if any
-     * @param [response] MarsDefaultChartValuesResponse
-     */
-    type GetDefaultChartValuesCallback = (error: (Error|null), response?: MarsDefaultChartValuesResponse) => void;
-}
-
-/** Represents a MetricsShowRequest. */
-export class MetricsShowRequest implements IMetricsShowRequest {
-
-    /**
-     * Constructs a new MetricsShowRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IMetricsShowRequest);
-
-    /** MetricsShowRequest namespace. */
+    /** MetricsTopPodRequest namespace. */
     public namespace: string;
 
-    /** MetricsShowRequest pod. */
+    /** MetricsTopPodRequest pod. */
     public pod: string;
 
     /**
-     * Encodes the specified MetricsShowRequest message. Does not implicitly {@link MetricsShowRequest.verify|verify} messages.
-     * @param message MetricsShowRequest message or plain object to encode
+     * Encodes the specified MetricsTopPodRequest message. Does not implicitly {@link MetricsTopPodRequest.verify|verify} messages.
+     * @param message MetricsTopPodRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: MetricsShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: MetricsTopPodRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a MetricsShowRequest message from the specified reader or buffer.
+     * Decodes a MetricsTopPodRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns MetricsShowRequest
+     * @returns MetricsTopPodRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsShowRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsTopPodRequest;
 }
 
-/** Represents a MetricsShowResponse. */
-export class MetricsShowResponse implements IMetricsShowResponse {
+/** Represents a MetricsTopPodResponse. */
+export class MetricsTopPodResponse implements IMetricsTopPodResponse {
 
     /**
-     * Constructs a new MetricsShowResponse.
+     * Constructs a new MetricsTopPodResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IMetricsShowResponse);
+    constructor(properties?: IMetricsTopPodResponse);
 
-    /** MetricsShowResponse cpu. */
+    /** MetricsTopPodResponse cpu. */
     public cpu: number;
 
-    /** MetricsShowResponse memory. */
+    /** MetricsTopPodResponse memory. */
     public memory: number;
 
-    /** MetricsShowResponse humanize_cpu. */
+    /** MetricsTopPodResponse humanize_cpu. */
     public humanize_cpu: string;
 
-    /** MetricsShowResponse humanize_memory. */
+    /** MetricsTopPodResponse humanize_memory. */
     public humanize_memory: string;
 
-    /** MetricsShowResponse time. */
+    /** MetricsTopPodResponse time. */
     public time: string;
 
-    /** MetricsShowResponse length. */
+    /** MetricsTopPodResponse length. */
     public length: number;
 
     /**
-     * Encodes the specified MetricsShowResponse message. Does not implicitly {@link MetricsShowResponse.verify|verify} messages.
-     * @param message MetricsShowResponse message or plain object to encode
+     * Encodes the specified MetricsTopPodResponse message. Does not implicitly {@link MetricsTopPodResponse.verify|verify} messages.
+     * @param message MetricsTopPodResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: MetricsShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: MetricsTopPodResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a MetricsShowResponse message from the specified reader or buffer.
+     * Decodes a MetricsTopPodResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns MetricsShowResponse
+     * @returns MetricsTopPodResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsShowResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsTopPodResponse;
+}
+
+/** Represents a MetricsCpuMemoryInNamespaceRequest. */
+export class MetricsCpuMemoryInNamespaceRequest implements IMetricsCpuMemoryInNamespaceRequest {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInNamespaceRequest);
+
+    /** MetricsCpuMemoryInNamespaceRequest namespace_id. */
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceRequest message. Does not implicitly {@link MetricsCpuMemoryInNamespaceRequest.verify|verify} messages.
+     * @param message MetricsCpuMemoryInNamespaceRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInNamespaceRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInNamespaceRequest;
+}
+
+/** Represents a MetricsCpuMemoryInNamespaceResponse. */
+export class MetricsCpuMemoryInNamespaceResponse implements IMetricsCpuMemoryInNamespaceResponse {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInNamespaceResponse);
+
+    /** MetricsCpuMemoryInNamespaceResponse cpu. */
+    public cpu: string;
+
+    /** MetricsCpuMemoryInNamespaceResponse memory. */
+    public memory: string;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceResponse message. Does not implicitly {@link MetricsCpuMemoryInNamespaceResponse.verify|verify} messages.
+     * @param message MetricsCpuMemoryInNamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInNamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInNamespaceResponse;
+}
+
+/** Represents a MetricsCpuMemoryInProjectRequest. */
+export class MetricsCpuMemoryInProjectRequest implements IMetricsCpuMemoryInProjectRequest {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInProjectRequest);
+
+    /** MetricsCpuMemoryInProjectRequest project_id. */
+    public project_id: number;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectRequest message. Does not implicitly {@link MetricsCpuMemoryInProjectRequest.verify|verify} messages.
+     * @param message MetricsCpuMemoryInProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInProjectRequest;
+}
+
+/** Represents a MetricsCpuMemoryInProjectResponse. */
+export class MetricsCpuMemoryInProjectResponse implements IMetricsCpuMemoryInProjectResponse {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInProjectResponse);
+
+    /** MetricsCpuMemoryInProjectResponse cpu. */
+    public cpu: string;
+
+    /** MetricsCpuMemoryInProjectResponse memory. */
+    public memory: string;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectResponse message. Does not implicitly {@link MetricsCpuMemoryInProjectResponse.verify|verify} messages.
+     * @param message MetricsCpuMemoryInProjectResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInProjectResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInProjectResponse;
 }
 
 /** Represents a Metrics */
@@ -4980,104 +5627,146 @@ export class Metrics extends $protobuf.rpc.Service {
     constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
 
     /**
-     * Calls Show.
-     * @param request MetricsShowRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MetricsShowResponse
+     * Calls CpuMemoryInNamespace.
+     * @param request MetricsCpuMemoryInNamespaceRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsCpuMemoryInNamespaceResponse
      */
-    public show(request: MetricsShowRequest, callback: Metrics.ShowCallback): void;
+    public cpuMemoryInNamespace(request: MetricsCpuMemoryInNamespaceRequest, callback: Metrics.CpuMemoryInNamespaceCallback): void;
 
     /**
-     * Calls Show.
-     * @param request MetricsShowRequest message or plain object
+     * Calls CpuMemoryInNamespace.
+     * @param request MetricsCpuMemoryInNamespaceRequest message or plain object
      * @returns Promise
      */
-    public show(request: MetricsShowRequest): Promise<MetricsShowResponse>;
+    public cpuMemoryInNamespace(request: MetricsCpuMemoryInNamespaceRequest): Promise<MetricsCpuMemoryInNamespaceResponse>;
 
     /**
-     * Calls StreamShow.
-     * @param request MetricsShowRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and MetricsShowResponse
+     * Calls CpuMemoryInProject.
+     * @param request MetricsCpuMemoryInProjectRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsCpuMemoryInProjectResponse
      */
-    public streamShow(request: MetricsShowRequest, callback: Metrics.StreamShowCallback): void;
+    public cpuMemoryInProject(request: MetricsCpuMemoryInProjectRequest, callback: Metrics.CpuMemoryInProjectCallback): void;
 
     /**
-     * Calls StreamShow.
-     * @param request MetricsShowRequest message or plain object
+     * Calls CpuMemoryInProject.
+     * @param request MetricsCpuMemoryInProjectRequest message or plain object
      * @returns Promise
      */
-    public streamShow(request: MetricsShowRequest): Promise<MetricsShowResponse>;
+    public cpuMemoryInProject(request: MetricsCpuMemoryInProjectRequest): Promise<MetricsCpuMemoryInProjectResponse>;
+
+    /**
+     * Calls TopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     */
+    public topPod(request: MetricsTopPodRequest, callback: Metrics.TopPodCallback): void;
+
+    /**
+     * Calls TopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @returns Promise
+     */
+    public topPod(request: MetricsTopPodRequest): Promise<MetricsTopPodResponse>;
+
+    /**
+     * Calls StreamTopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     */
+    public streamTopPod(request: MetricsTopPodRequest, callback: Metrics.StreamTopPodCallback): void;
+
+    /**
+     * Calls StreamTopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @returns Promise
+     */
+    public streamTopPod(request: MetricsTopPodRequest): Promise<MetricsTopPodResponse>;
 }
 
 export namespace Metrics {
 
     /**
-     * Callback as used by {@link Metrics#show}.
+     * Callback as used by {@link Metrics#cpuMemoryInNamespace}.
      * @param error Error, if any
-     * @param [response] MetricsShowResponse
+     * @param [response] MetricsCpuMemoryInNamespaceResponse
      */
-    type ShowCallback = (error: (Error|null), response?: MetricsShowResponse) => void;
+    type CpuMemoryInNamespaceCallback = (error: (Error|null), response?: MetricsCpuMemoryInNamespaceResponse) => void;
 
     /**
-     * Callback as used by {@link Metrics#streamShow}.
+     * Callback as used by {@link Metrics#cpuMemoryInProject}.
      * @param error Error, if any
-     * @param [response] MetricsShowResponse
+     * @param [response] MetricsCpuMemoryInProjectResponse
      */
-    type StreamShowCallback = (error: (Error|null), response?: MetricsShowResponse) => void;
+    type CpuMemoryInProjectCallback = (error: (Error|null), response?: MetricsCpuMemoryInProjectResponse) => void;
+
+    /**
+     * Callback as used by {@link Metrics#topPod}.
+     * @param error Error, if any
+     * @param [response] MetricsTopPodResponse
+     */
+    type TopPodCallback = (error: (Error|null), response?: MetricsTopPodResponse) => void;
+
+    /**
+     * Callback as used by {@link Metrics#streamTopPod}.
+     * @param error Error, if any
+     * @param [response] MetricsTopPodResponse
+     */
+    type StreamTopPodCallback = (error: (Error|null), response?: MetricsTopPodResponse) => void;
 }
 
-/** Represents a GitlabProjectModel. */
-export class GitlabProjectModel implements IGitlabProjectModel {
+/** Represents a GitProjectModel. */
+export class GitProjectModel implements IGitProjectModel {
 
     /**
-     * Constructs a new GitlabProjectModel.
+     * Constructs a new GitProjectModel.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitlabProjectModel);
+    constructor(properties?: IGitProjectModel);
 
-    /** GitlabProjectModel id. */
+    /** GitProjectModel id. */
     public id: number;
 
-    /** GitlabProjectModel default_branch. */
+    /** GitProjectModel default_branch. */
     public default_branch: string;
 
-    /** GitlabProjectModel name. */
+    /** GitProjectModel name. */
     public name: string;
 
-    /** GitlabProjectModel gitlab_project_id. */
-    public gitlab_project_id: number;
+    /** GitProjectModel git_project_id. */
+    public git_project_id: number;
 
-    /** GitlabProjectModel enabled. */
+    /** GitProjectModel enabled. */
     public enabled: boolean;
 
-    /** GitlabProjectModel global_enabled. */
+    /** GitProjectModel global_enabled. */
     public global_enabled: boolean;
 
-    /** GitlabProjectModel global_config. */
+    /** GitProjectModel global_config. */
     public global_config: string;
 
-    /** GitlabProjectModel created_at. */
+    /** GitProjectModel created_at. */
     public created_at: string;
 
-    /** GitlabProjectModel updated_at. */
+    /** GitProjectModel updated_at. */
     public updated_at: string;
 
     /**
-     * Encodes the specified GitlabProjectModel message. Does not implicitly {@link GitlabProjectModel.verify|verify} messages.
-     * @param message GitlabProjectModel message or plain object to encode
+     * Encodes the specified GitProjectModel message. Does not implicitly {@link GitProjectModel.verify|verify} messages.
+     * @param message GitProjectModel message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitlabProjectModel, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitProjectModel, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitlabProjectModel message from the specified reader or buffer.
+     * Decodes a GitProjectModel message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitlabProjectModel
+     * @returns GitProjectModel
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitlabProjectModel;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectModel;
 }
 
 /** Represents a NamespaceModel. */
@@ -5141,14 +5830,14 @@ export class ProjectModel implements IProjectModel {
     /** ProjectModel name. */
     public name: string;
 
-    /** ProjectModel gitlab_project_id. */
-    public gitlab_project_id: number;
+    /** ProjectModel git_project_id. */
+    public git_project_id: number;
 
-    /** ProjectModel gitlab_branch. */
-    public gitlab_branch: string;
+    /** ProjectModel git_branch. */
+    public git_branch: string;
 
-    /** ProjectModel gitlab_commit. */
-    public gitlab_commit: string;
+    /** ProjectModel git_commit. */
+    public git_commit: string;
 
     /** ProjectModel config. */
     public config: string;
@@ -5387,71 +6076,6 @@ export class NamespaceIsExistsRequest implements INamespaceIsExistsRequest {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceIsExistsRequest;
 }
 
-/** Represents a NamespaceCpuMemoryRequest. */
-export class NamespaceCpuMemoryRequest implements INamespaceCpuMemoryRequest {
-
-    /**
-     * Constructs a new NamespaceCpuMemoryRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: INamespaceCpuMemoryRequest);
-
-    /** NamespaceCpuMemoryRequest namespace_id. */
-    public namespace_id: number;
-
-    /**
-     * Encodes the specified NamespaceCpuMemoryRequest message. Does not implicitly {@link NamespaceCpuMemoryRequest.verify|verify} messages.
-     * @param message NamespaceCpuMemoryRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: NamespaceCpuMemoryRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a NamespaceCpuMemoryRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns NamespaceCpuMemoryRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceCpuMemoryRequest;
-}
-
-/** Represents a NamespaceServiceEndpointsRequest. */
-export class NamespaceServiceEndpointsRequest implements INamespaceServiceEndpointsRequest {
-
-    /**
-     * Constructs a new NamespaceServiceEndpointsRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: INamespaceServiceEndpointsRequest);
-
-    /** NamespaceServiceEndpointsRequest namespace_id. */
-    public namespace_id: number;
-
-    /** NamespaceServiceEndpointsRequest project_name. */
-    public project_name: string;
-
-    /**
-     * Encodes the specified NamespaceServiceEndpointsRequest message. Does not implicitly {@link NamespaceServiceEndpointsRequest.verify|verify} messages.
-     * @param message NamespaceServiceEndpointsRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: NamespaceServiceEndpointsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a NamespaceServiceEndpointsRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns NamespaceServiceEndpointsRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpointsRequest;
-}
-
 /** Represents a NamespaceSimpleProject. */
 export class NamespaceSimpleProject implements INamespaceSimpleProject {
 
@@ -5541,8 +6165,8 @@ export class NamespaceAllResponse implements INamespaceAllResponse {
      */
     constructor(properties?: INamespaceAllResponse);
 
-    /** NamespaceAllResponse data. */
-    public data: NamespaceItem[];
+    /** NamespaceAllResponse items. */
+    public items: NamespaceItem[];
 
     /**
      * Encodes the specified NamespaceAllResponse message. Does not implicitly {@link NamespaceAllResponse.verify|verify} messages.
@@ -5650,108 +6274,6 @@ export class NamespaceShowResponse implements INamespaceShowResponse {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceShowResponse;
-}
-
-/** Represents a NamespaceCpuMemoryResponse. */
-export class NamespaceCpuMemoryResponse implements INamespaceCpuMemoryResponse {
-
-    /**
-     * Constructs a new NamespaceCpuMemoryResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: INamespaceCpuMemoryResponse);
-
-    /** NamespaceCpuMemoryResponse cpu. */
-    public cpu: string;
-
-    /** NamespaceCpuMemoryResponse memory. */
-    public memory: string;
-
-    /**
-     * Encodes the specified NamespaceCpuMemoryResponse message. Does not implicitly {@link NamespaceCpuMemoryResponse.verify|verify} messages.
-     * @param message NamespaceCpuMemoryResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: NamespaceCpuMemoryResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a NamespaceCpuMemoryResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns NamespaceCpuMemoryResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceCpuMemoryResponse;
-}
-
-/** Represents a NamespaceServiceEndpoint. */
-export class NamespaceServiceEndpoint implements INamespaceServiceEndpoint {
-
-    /**
-     * Constructs a new NamespaceServiceEndpoint.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: INamespaceServiceEndpoint);
-
-    /** NamespaceServiceEndpoint name. */
-    public name: string;
-
-    /** NamespaceServiceEndpoint url. */
-    public url: string;
-
-    /** NamespaceServiceEndpoint port_name. */
-    public port_name: string;
-
-    /**
-     * Encodes the specified NamespaceServiceEndpoint message. Does not implicitly {@link NamespaceServiceEndpoint.verify|verify} messages.
-     * @param message NamespaceServiceEndpoint message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: NamespaceServiceEndpoint, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a NamespaceServiceEndpoint message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns NamespaceServiceEndpoint
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpoint;
-}
-
-/** Represents a NamespaceServiceEndpointsResponse. */
-export class NamespaceServiceEndpointsResponse implements INamespaceServiceEndpointsResponse {
-
-    /**
-     * Constructs a new NamespaceServiceEndpointsResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: INamespaceServiceEndpointsResponse);
-
-    /** NamespaceServiceEndpointsResponse data. */
-    public data: NamespaceServiceEndpoint[];
-
-    /**
-     * Encodes the specified NamespaceServiceEndpointsResponse message. Does not implicitly {@link NamespaceServiceEndpointsResponse.verify|verify} messages.
-     * @param message NamespaceServiceEndpointsResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: NamespaceServiceEndpointsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a NamespaceServiceEndpointsResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns NamespaceServiceEndpointsResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NamespaceServiceEndpointsResponse;
 }
 
 /** Represents a NamespaceIsExistsResponse. */
@@ -5924,34 +6446,6 @@ export class Namespace extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public isExists(request: NamespaceIsExistsRequest): Promise<NamespaceIsExistsResponse>;
-
-    /**
-     * Calls CpuMemory.
-     * @param request NamespaceCpuMemoryRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and NamespaceCpuMemoryResponse
-     */
-    public cpuMemory(request: NamespaceCpuMemoryRequest, callback: Namespace.CpuMemoryCallback): void;
-
-    /**
-     * Calls CpuMemory.
-     * @param request NamespaceCpuMemoryRequest message or plain object
-     * @returns Promise
-     */
-    public cpuMemory(request: NamespaceCpuMemoryRequest): Promise<NamespaceCpuMemoryResponse>;
-
-    /**
-     * Calls ServiceEndpoints.
-     * @param request NamespaceServiceEndpointsRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and NamespaceServiceEndpointsResponse
-     */
-    public serviceEndpoints(request: NamespaceServiceEndpointsRequest, callback: Namespace.ServiceEndpointsCallback): void;
-
-    /**
-     * Calls ServiceEndpoints.
-     * @param request NamespaceServiceEndpointsRequest message or plain object
-     * @returns Promise
-     */
-    public serviceEndpoints(request: NamespaceServiceEndpointsRequest): Promise<NamespaceServiceEndpointsResponse>;
 }
 
 export namespace Namespace {
@@ -5990,20 +6484,6 @@ export namespace Namespace {
      * @param [response] NamespaceIsExistsResponse
      */
     type IsExistsCallback = (error: (Error|null), response?: NamespaceIsExistsResponse) => void;
-
-    /**
-     * Callback as used by {@link Namespace#cpuMemory}.
-     * @param error Error, if any
-     * @param [response] NamespaceCpuMemoryResponse
-     */
-    type CpuMemoryCallback = (error: (Error|null), response?: NamespaceCpuMemoryResponse) => void;
-
-    /**
-     * Callback as used by {@link Namespace#serviceEndpoints}.
-     * @param error Error, if any
-     * @param [response] NamespaceServiceEndpointsResponse
-     */
-    type ServiceEndpointsCallback = (error: (Error|null), response?: NamespaceServiceEndpointsResponse) => void;
 }
 
 /** Represents a BackgroundRequest. */
@@ -6184,14 +6664,14 @@ export class ProjectShowResponse implements IProjectShowResponse {
     /** ProjectShowResponse name. */
     public name: string;
 
-    /** ProjectShowResponse gitlab_project_id. */
-    public gitlab_project_id: number;
+    /** ProjectShowResponse git_project_id. */
+    public git_project_id: number;
 
-    /** ProjectShowResponse gitlab_branch. */
-    public gitlab_branch: string;
+    /** ProjectShowResponse git_branch. */
+    public git_branch: string;
 
-    /** ProjectShowResponse gitlab_commit. */
-    public gitlab_commit: string;
+    /** ProjectShowResponse git_commit. */
+    public git_commit: string;
 
     /** ProjectShowResponse config. */
     public config: string;
@@ -6202,20 +6682,20 @@ export class ProjectShowResponse implements IProjectShowResponse {
     /** ProjectShowResponse atomic. */
     public atomic: boolean;
 
-    /** ProjectShowResponse gitlab_commit_web_url. */
-    public gitlab_commit_web_url: string;
+    /** ProjectShowResponse git_commit_web_url. */
+    public git_commit_web_url: string;
 
-    /** ProjectShowResponse gitlab_commit_title. */
-    public gitlab_commit_title: string;
+    /** ProjectShowResponse git_commit_title. */
+    public git_commit_title: string;
 
-    /** ProjectShowResponse gitlab_commit_author. */
-    public gitlab_commit_author: string;
+    /** ProjectShowResponse git_commit_author. */
+    public git_commit_author: string;
 
-    /** ProjectShowResponse gitlab_commit_date. */
-    public gitlab_commit_date: string;
+    /** ProjectShowResponse git_commit_date. */
+    public git_commit_date: string;
 
     /** ProjectShowResponse urls. */
-    public urls: NamespaceServiceEndpoint[];
+    public urls: ServiceEndpoint[];
 
     /** ProjectShowResponse namespace. */
     public namespace?: (ProjectShowResponse.Namespace|null);
@@ -6316,242 +6796,103 @@ export namespace ProjectShowResponse {
     }
 }
 
-/** Represents a ProjectAllPodContainersRequest. */
-export class ProjectAllPodContainersRequest implements IProjectAllPodContainersRequest {
+/** Represents a ProjectAllContainersRequest. */
+export class ProjectAllContainersRequest implements IProjectAllContainersRequest {
 
     /**
-     * Constructs a new ProjectAllPodContainersRequest.
+     * Constructs a new ProjectAllContainersRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IProjectAllPodContainersRequest);
+    constructor(properties?: IProjectAllContainersRequest);
 
-    /** ProjectAllPodContainersRequest project_id. */
+    /** ProjectAllContainersRequest project_id. */
     public project_id: number;
 
     /**
-     * Encodes the specified ProjectAllPodContainersRequest message. Does not implicitly {@link ProjectAllPodContainersRequest.verify|verify} messages.
-     * @param message ProjectAllPodContainersRequest message or plain object to encode
+     * Encodes the specified ProjectAllContainersRequest message. Does not implicitly {@link ProjectAllContainersRequest.verify|verify} messages.
+     * @param message ProjectAllContainersRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ProjectAllPodContainersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ProjectAllContainersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a ProjectAllPodContainersRequest message from the specified reader or buffer.
+     * Decodes a ProjectAllContainersRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns ProjectAllPodContainersRequest
+     * @returns ProjectAllContainersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectAllPodContainersRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectAllContainersRequest;
 }
 
-/** Represents a ProjectPodLog. */
-export class ProjectPodLog implements IProjectPodLog {
+/** Represents a ProjectPod. */
+export class ProjectPod implements IProjectPod {
 
     /**
-     * Constructs a new ProjectPodLog.
+     * Constructs a new ProjectPod.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IProjectPodLog);
+    constructor(properties?: IProjectPod);
 
-    /** ProjectPodLog namespace. */
+    /** ProjectPod namespace. */
     public namespace: string;
 
-    /** ProjectPodLog pod_name. */
+    /** ProjectPod pod_name. */
     public pod_name: string;
 
-    /** ProjectPodLog container_name. */
+    /** ProjectPod container_name. */
     public container_name: string;
 
-    /** ProjectPodLog log. */
-    public log: string;
-
     /**
-     * Encodes the specified ProjectPodLog message. Does not implicitly {@link ProjectPodLog.verify|verify} messages.
-     * @param message ProjectPodLog message or plain object to encode
+     * Encodes the specified ProjectPod message. Does not implicitly {@link ProjectPod.verify|verify} messages.
+     * @param message ProjectPod message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ProjectPodLog, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ProjectPod, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a ProjectPodLog message from the specified reader or buffer.
+     * Decodes a ProjectPod message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns ProjectPodLog
+     * @returns ProjectPod
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectPodLog;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectPod;
 }
 
-/** Represents a ProjectAllPodContainersResponse. */
-export class ProjectAllPodContainersResponse implements IProjectAllPodContainersResponse {
+/** Represents a ProjectAllContainersResponse. */
+export class ProjectAllContainersResponse implements IProjectAllContainersResponse {
 
     /**
-     * Constructs a new ProjectAllPodContainersResponse.
+     * Constructs a new ProjectAllContainersResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IProjectAllPodContainersResponse);
+    constructor(properties?: IProjectAllContainersResponse);
 
-    /** ProjectAllPodContainersResponse data. */
-    public data: ProjectPodLog[];
+    /** ProjectAllContainersResponse items. */
+    public items: ProjectPod[];
 
     /**
-     * Encodes the specified ProjectAllPodContainersResponse message. Does not implicitly {@link ProjectAllPodContainersResponse.verify|verify} messages.
-     * @param message ProjectAllPodContainersResponse message or plain object to encode
+     * Encodes the specified ProjectAllContainersResponse message. Does not implicitly {@link ProjectAllContainersResponse.verify|verify} messages.
+     * @param message ProjectAllContainersResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ProjectAllPodContainersResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: ProjectAllContainersResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a ProjectAllPodContainersResponse message from the specified reader or buffer.
+     * Decodes a ProjectAllContainersResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns ProjectAllPodContainersResponse
+     * @returns ProjectAllContainersResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectAllPodContainersResponse;
-}
-
-/** Represents a ProjectPodContainerLogRequest. */
-export class ProjectPodContainerLogRequest implements IProjectPodContainerLogRequest {
-
-    /**
-     * Constructs a new ProjectPodContainerLogRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectPodContainerLogRequest);
-
-    /** ProjectPodContainerLogRequest project_id. */
-    public project_id: number;
-
-    /** ProjectPodContainerLogRequest pod. */
-    public pod: string;
-
-    /** ProjectPodContainerLogRequest container. */
-    public container: string;
-
-    /**
-     * Encodes the specified ProjectPodContainerLogRequest message. Does not implicitly {@link ProjectPodContainerLogRequest.verify|verify} messages.
-     * @param message ProjectPodContainerLogRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectPodContainerLogRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectPodContainerLogRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectPodContainerLogRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectPodContainerLogRequest;
-}
-
-/** Represents a ProjectPodContainerLogResponse. */
-export class ProjectPodContainerLogResponse implements IProjectPodContainerLogResponse {
-
-    /**
-     * Constructs a new ProjectPodContainerLogResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectPodContainerLogResponse);
-
-    /** ProjectPodContainerLogResponse data. */
-    public data?: (ProjectPodLog|null);
-
-    /**
-     * Encodes the specified ProjectPodContainerLogResponse message. Does not implicitly {@link ProjectPodContainerLogResponse.verify|verify} messages.
-     * @param message ProjectPodContainerLogResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectPodContainerLogResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectPodContainerLogResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectPodContainerLogResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectPodContainerLogResponse;
-}
-
-/** Represents a ProjectIsPodRunningRequest. */
-export class ProjectIsPodRunningRequest implements IProjectIsPodRunningRequest {
-
-    /**
-     * Constructs a new ProjectIsPodRunningRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectIsPodRunningRequest);
-
-    /** ProjectIsPodRunningRequest namespace. */
-    public namespace: string;
-
-    /** ProjectIsPodRunningRequest pod. */
-    public pod: string;
-
-    /**
-     * Encodes the specified ProjectIsPodRunningRequest message. Does not implicitly {@link ProjectIsPodRunningRequest.verify|verify} messages.
-     * @param message ProjectIsPodRunningRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectIsPodRunningRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectIsPodRunningRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectIsPodRunningRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodRunningRequest;
-}
-
-/** Represents a ProjectIsPodRunningResponse. */
-export class ProjectIsPodRunningResponse implements IProjectIsPodRunningResponse {
-
-    /**
-     * Constructs a new ProjectIsPodRunningResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectIsPodRunningResponse);
-
-    /** ProjectIsPodRunningResponse running. */
-    public running: boolean;
-
-    /** ProjectIsPodRunningResponse reason. */
-    public reason: string;
-
-    /**
-     * Encodes the specified ProjectIsPodRunningResponse message. Does not implicitly {@link ProjectIsPodRunningResponse.verify|verify} messages.
-     * @param message ProjectIsPodRunningResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectIsPodRunningResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectIsPodRunningResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectIsPodRunningResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodRunningResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectAllContainersResponse;
 }
 
 /** Represents a ProjectApplyResponse. */
@@ -6634,14 +6975,14 @@ export class ProjectApplyRequest implements IProjectApplyRequest {
     /** ProjectApplyRequest name. */
     public name: string;
 
-    /** ProjectApplyRequest gitlab_project_id. */
-    public gitlab_project_id: number;
+    /** ProjectApplyRequest git_project_id. */
+    public git_project_id: number;
 
-    /** ProjectApplyRequest gitlab_branch. */
-    public gitlab_branch: string;
+    /** ProjectApplyRequest git_branch. */
+    public git_branch: string;
 
-    /** ProjectApplyRequest gitlab_commit. */
-    public gitlab_commit: string;
+    /** ProjectApplyRequest git_commit. */
+    public git_commit: string;
 
     /** ProjectApplyRequest config. */
     public config: string;
@@ -6757,8 +7098,8 @@ export class ProjectListResponse implements IProjectListResponse {
     /** ProjectListResponse count. */
     public count: number;
 
-    /** ProjectListResponse data. */
-    public data: ProjectModel[];
+    /** ProjectListResponse items. */
+    public items: ProjectModel[];
 
     /**
      * Encodes the specified ProjectListResponse message. Does not implicitly {@link ProjectListResponse.verify|verify} messages.
@@ -6777,71 +7118,6 @@ export class ProjectListResponse implements IProjectListResponse {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectListResponse;
-}
-
-/** Represents a ProjectIsPodExistsRequest. */
-export class ProjectIsPodExistsRequest implements IProjectIsPodExistsRequest {
-
-    /**
-     * Constructs a new ProjectIsPodExistsRequest.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectIsPodExistsRequest);
-
-    /** ProjectIsPodExistsRequest namespace. */
-    public namespace: string;
-
-    /** ProjectIsPodExistsRequest pod. */
-    public pod: string;
-
-    /**
-     * Encodes the specified ProjectIsPodExistsRequest message. Does not implicitly {@link ProjectIsPodExistsRequest.verify|verify} messages.
-     * @param message ProjectIsPodExistsRequest message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectIsPodExistsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectIsPodExistsRequest message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectIsPodExistsRequest
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodExistsRequest;
-}
-
-/** Represents a ProjectIsPodExistsResponse. */
-export class ProjectIsPodExistsResponse implements IProjectIsPodExistsResponse {
-
-    /**
-     * Constructs a new ProjectIsPodExistsResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IProjectIsPodExistsResponse);
-
-    /** ProjectIsPodExistsResponse exists. */
-    public exists: boolean;
-
-    /**
-     * Encodes the specified ProjectIsPodExistsResponse message. Does not implicitly {@link ProjectIsPodExistsResponse.verify|verify} messages.
-     * @param message ProjectIsPodExistsResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: ProjectIsPodExistsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ProjectIsPodExistsResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ProjectIsPodExistsResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ProjectIsPodExistsResponse;
 }
 
 /** Represents a Project */
@@ -6898,20 +7174,6 @@ export class Project extends $protobuf.rpc.Service {
     public applyDryRun(request: ProjectApplyRequest): Promise<ProjectDryRunApplyResponse>;
 
     /**
-     * Calls Delete.
-     * @param request ProjectDeleteRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectDeleteResponse
-     */
-    public delete(request: ProjectDeleteRequest, callback: Project.DeleteCallback): void;
-
-    /**
-     * Calls Delete.
-     * @param request ProjectDeleteRequest message or plain object
-     * @returns Promise
-     */
-    public delete(request: ProjectDeleteRequest): Promise<ProjectDeleteResponse>;
-
-    /**
      * Calls Show.
      * @param request ProjectShowRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and ProjectShowResponse
@@ -6926,74 +7188,32 @@ export class Project extends $protobuf.rpc.Service {
     public show(request: ProjectShowRequest): Promise<ProjectShowResponse>;
 
     /**
-     * Calls IsPodRunning.
-     * @param request ProjectIsPodRunningRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectIsPodRunningResponse
+     * Calls Delete.
+     * @param request ProjectDeleteRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectDeleteResponse
      */
-    public isPodRunning(request: ProjectIsPodRunningRequest, callback: Project.IsPodRunningCallback): void;
+    public delete(request: ProjectDeleteRequest, callback: Project.DeleteCallback): void;
 
     /**
-     * Calls IsPodRunning.
-     * @param request ProjectIsPodRunningRequest message or plain object
+     * Calls Delete.
+     * @param request ProjectDeleteRequest message or plain object
      * @returns Promise
      */
-    public isPodRunning(request: ProjectIsPodRunningRequest): Promise<ProjectIsPodRunningResponse>;
+    public delete(request: ProjectDeleteRequest): Promise<ProjectDeleteResponse>;
 
     /**
-     * Calls IsPodExists.
-     * @param request ProjectIsPodExistsRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectIsPodExistsResponse
+     * Calls AllContainers.
+     * @param request ProjectAllContainersRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and ProjectAllContainersResponse
      */
-    public isPodExists(request: ProjectIsPodExistsRequest, callback: Project.IsPodExistsCallback): void;
+    public allContainers(request: ProjectAllContainersRequest, callback: Project.AllContainersCallback): void;
 
     /**
-     * Calls IsPodExists.
-     * @param request ProjectIsPodExistsRequest message or plain object
+     * Calls AllContainers.
+     * @param request ProjectAllContainersRequest message or plain object
      * @returns Promise
      */
-    public isPodExists(request: ProjectIsPodExistsRequest): Promise<ProjectIsPodExistsResponse>;
-
-    /**
-     * Calls AllPodContainers.
-     * @param request ProjectAllPodContainersRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectAllPodContainersResponse
-     */
-    public allPodContainers(request: ProjectAllPodContainersRequest, callback: Project.AllPodContainersCallback): void;
-
-    /**
-     * Calls AllPodContainers.
-     * @param request ProjectAllPodContainersRequest message or plain object
-     * @returns Promise
-     */
-    public allPodContainers(request: ProjectAllPodContainersRequest): Promise<ProjectAllPodContainersResponse>;
-
-    /**
-     * Calls PodContainerLog.
-     * @param request ProjectPodContainerLogRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectPodContainerLogResponse
-     */
-    public podContainerLog(request: ProjectPodContainerLogRequest, callback: Project.PodContainerLogCallback): void;
-
-    /**
-     * Calls PodContainerLog.
-     * @param request ProjectPodContainerLogRequest message or plain object
-     * @returns Promise
-     */
-    public podContainerLog(request: ProjectPodContainerLogRequest): Promise<ProjectPodContainerLogResponse>;
-
-    /**
-     * Calls StreamPodContainerLog.
-     * @param request ProjectPodContainerLogRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and ProjectPodContainerLogResponse
-     */
-    public streamPodContainerLog(request: ProjectPodContainerLogRequest, callback: Project.StreamPodContainerLogCallback): void;
-
-    /**
-     * Calls StreamPodContainerLog.
-     * @param request ProjectPodContainerLogRequest message or plain object
-     * @returns Promise
-     */
-    public streamPodContainerLog(request: ProjectPodContainerLogRequest): Promise<ProjectPodContainerLogResponse>;
+    public allContainers(request: ProjectAllContainersRequest): Promise<ProjectAllContainersResponse>;
 }
 
 export namespace Project {
@@ -7020,13 +7240,6 @@ export namespace Project {
     type ApplyDryRunCallback = (error: (Error|null), response?: ProjectDryRunApplyResponse) => void;
 
     /**
-     * Callback as used by {@link Project#delete_}.
-     * @param error Error, if any
-     * @param [response] ProjectDeleteResponse
-     */
-    type DeleteCallback = (error: (Error|null), response?: ProjectDeleteResponse) => void;
-
-    /**
      * Callback as used by {@link Project#show}.
      * @param error Error, if any
      * @param [response] ProjectShowResponse
@@ -7034,100 +7247,18 @@ export namespace Project {
     type ShowCallback = (error: (Error|null), response?: ProjectShowResponse) => void;
 
     /**
-     * Callback as used by {@link Project#isPodRunning}.
+     * Callback as used by {@link Project#delete_}.
      * @param error Error, if any
-     * @param [response] ProjectIsPodRunningResponse
+     * @param [response] ProjectDeleteResponse
      */
-    type IsPodRunningCallback = (error: (Error|null), response?: ProjectIsPodRunningResponse) => void;
+    type DeleteCallback = (error: (Error|null), response?: ProjectDeleteResponse) => void;
 
     /**
-     * Callback as used by {@link Project#isPodExists}.
+     * Callback as used by {@link Project#allContainers}.
      * @param error Error, if any
-     * @param [response] ProjectIsPodExistsResponse
+     * @param [response] ProjectAllContainersResponse
      */
-    type IsPodExistsCallback = (error: (Error|null), response?: ProjectIsPodExistsResponse) => void;
-
-    /**
-     * Callback as used by {@link Project#allPodContainers}.
-     * @param error Error, if any
-     * @param [response] ProjectAllPodContainersResponse
-     */
-    type AllPodContainersCallback = (error: (Error|null), response?: ProjectAllPodContainersResponse) => void;
-
-    /**
-     * Callback as used by {@link Project#podContainerLog}.
-     * @param error Error, if any
-     * @param [response] ProjectPodContainerLogResponse
-     */
-    type PodContainerLogCallback = (error: (Error|null), response?: ProjectPodContainerLogResponse) => void;
-
-    /**
-     * Callback as used by {@link Project#streamPodContainerLog}.
-     * @param error Error, if any
-     * @param [response] ProjectPodContainerLogResponse
-     */
-    type StreamPodContainerLogCallback = (error: (Error|null), response?: ProjectPodContainerLogResponse) => void;
-}
-
-/** Represents a VersionResponse. */
-export class VersionResponse implements IVersionResponse {
-
-    /**
-     * Constructs a new VersionResponse.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IVersionResponse);
-
-    /** VersionResponse Version. */
-    public Version: string;
-
-    /** VersionResponse BuildDate. */
-    public BuildDate: string;
-
-    /** VersionResponse gitBranch. */
-    public gitBranch: string;
-
-    /** VersionResponse GitCommit. */
-    public GitCommit: string;
-
-    /** VersionResponse GitTag. */
-    public GitTag: string;
-
-    /** VersionResponse GoVersion. */
-    public GoVersion: string;
-
-    /** VersionResponse Compiler. */
-    public Compiler: string;
-
-    /** VersionResponse Platform. */
-    public Platform: string;
-
-    /** VersionResponse KubectlVersion. */
-    public KubectlVersion: string;
-
-    /** VersionResponse HelmVersion. */
-    public HelmVersion: string;
-
-    /** VersionResponse GitRepo. */
-    public GitRepo: string;
-
-    /**
-     * Encodes the specified VersionResponse message. Does not implicitly {@link VersionResponse.verify|verify} messages.
-     * @param message VersionResponse message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: VersionResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a VersionResponse message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns VersionResponse
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): VersionResponse;
+    type AllContainersCallback = (error: (Error|null), response?: ProjectAllContainersResponse) => void;
 }
 
 /** Represents a VersionRequest. */
@@ -7156,6 +7287,67 @@ export class VersionRequest implements IVersionRequest {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): VersionRequest;
+}
+
+/** Represents a VersionResponse. */
+export class VersionResponse implements IVersionResponse {
+
+    /**
+     * Constructs a new VersionResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IVersionResponse);
+
+    /** VersionResponse version. */
+    public version: string;
+
+    /** VersionResponse build_date. */
+    public build_date: string;
+
+    /** VersionResponse git_branch. */
+    public git_branch: string;
+
+    /** VersionResponse git_commit. */
+    public git_commit: string;
+
+    /** VersionResponse git_tag. */
+    public git_tag: string;
+
+    /** VersionResponse go_version. */
+    public go_version: string;
+
+    /** VersionResponse compiler. */
+    public compiler: string;
+
+    /** VersionResponse platform. */
+    public platform: string;
+
+    /** VersionResponse kubectl_version. */
+    public kubectl_version: string;
+
+    /** VersionResponse helm_version. */
+    public helm_version: string;
+
+    /** VersionResponse git_repo. */
+    public git_repo: string;
+
+    /**
+     * Encodes the specified VersionResponse message. Does not implicitly {@link VersionResponse.verify|verify} messages.
+     * @param message VersionResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: VersionResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a VersionResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns VersionResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): VersionResponse;
 }
 
 /** Represents a Version */
@@ -7500,14 +7692,14 @@ export class ProjectInput implements IProjectInput {
     /** ProjectInput name. */
     public name: string;
 
-    /** ProjectInput gitlab_project_id. */
-    public gitlab_project_id: number;
+    /** ProjectInput git_project_id. */
+    public git_project_id: number;
 
-    /** ProjectInput gitlab_branch. */
-    public gitlab_branch: string;
+    /** ProjectInput git_branch. */
+    public git_branch: string;
 
-    /** ProjectInput gitlab_commit. */
-    public gitlab_commit: string;
+    /** ProjectInput git_commit. */
+    public git_commit: string;
 
     /** ProjectInput config. */
     public config: string;
@@ -7552,11 +7744,11 @@ export class UpdateProjectInput implements IUpdateProjectInput {
     /** UpdateProjectInput project_id. */
     public project_id: number;
 
-    /** UpdateProjectInput gitlab_branch. */
-    public gitlab_branch: string;
+    /** UpdateProjectInput git_branch. */
+    public git_branch: string;
 
-    /** UpdateProjectInput gitlab_commit. */
-    public gitlab_commit: string;
+    /** UpdateProjectInput git_commit. */
+    public git_commit: string;
 
     /** UpdateProjectInput config. */
     public config: string;

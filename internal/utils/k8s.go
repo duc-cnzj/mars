@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/duc-cnzj/mars-client/v3/namespace"
+	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 
@@ -64,7 +64,7 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 	}, metav1.CreateOptions{})
 }
 
-type Endpoint = namespace.NamespaceServiceEndpoint
+type Endpoint = endpoint.ServiceEndpoint
 
 func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})

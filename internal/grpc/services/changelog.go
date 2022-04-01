@@ -5,17 +5,17 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars-client/v3/changelog"
+	"github.com/duc-cnzj/mars-client/v4/changelog"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
 
-type Changelog struct {
+type ChangelogSvc struct {
 	changelog.UnimplementedChangelogServer
 }
 
-func (c *Changelog) Show(ctx context.Context, request *changelog.ChangelogShowRequest) (*changelog.ChangelogShowResponse, error) {
+func (c *ChangelogSvc) Show(ctx context.Context, request *changelog.ChangelogShowRequest) (*changelog.ChangelogShowResponse, error) {
 	var logs []models.Changelog
 	err := app.DB().
 		Scopes(func(db *gorm.DB) *gorm.DB {

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/duc-cnzj/mars-client/v4/endpoint;endpoint";
+
+message ServiceEndpoint {
+  string name = 1;
+  string url = 2;
+  string port_name = 3;
+}
+
+message EndpointInNamespaceRequest {
+  int64 namespace_id = 1[(validate.rules).int64.gt = 0];
+}
+
+message EndpointInNamespaceResponse {
+  repeated ServiceEndpoint items = 1;
+}
+
+message EndpointInProjectRequest {
+  int64 project_id = 1[(validate.rules).int64.gt = 0];
+}
+
+message EndpointInProjectResponse {
+  repeated ServiceEndpoint items = 1;
+}
+
+service Endpoint {
+  // InNamespace 名称空间下所有的 endpoints
+  rpc InNamespace(EndpointInNamespaceRequest) returns (EndpointInNamespaceResponse) {
+    option (google.api.http) = {
+      get: "/api/endpoints/namespaces/{namespace_id}"
+    };
+  }
+
+  // InProject 项目下所有的 endpoints
+  rpc InProject(EndpointInProjectRequest) returns (EndpointInProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/endpoints/projects/{project_id}"
+    };
+  }
+}

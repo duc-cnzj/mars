@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 
-	"github.com/duc-cnzj/mars-client/v3/metrics"
+	"github.com/duc-cnzj/mars-client/v4/metrics"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/dustin/go-humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Metrics struct {
+type MetricsSvc struct {
 	metrics.UnsafeMetricsServer
 }
 
@@ -32,7 +32,7 @@ var now = func() string {
 	return time.Now().Format("15:04:05")
 }
 
-func (m *Metrics) Show(ctx context.Context, request *metrics.MetricsShowRequest) (*metrics.MetricsShowResponse, error) {
+func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.MetricsTopPodRequest) (*metrics.MetricsTopPodResponse, error) {
 	podMetrics, err := app.K8sMetrics().MetricsV1beta1().PodMetricses(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
 	if err != nil {
 		running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
@@ -45,7 +45,7 @@ func (m *Metrics) Show(ctx context.Context, request *metrics.MetricsShowRequest)
 	return m.metrics(podMetrics), nil
 }
 
-func (m *Metrics) StreamShow(request *metrics.MetricsShowRequest, server metrics.Metrics_StreamShowServer) error {
+func (m *MetricsSvc) StreamTopPod(request *metrics.MetricsTopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
 	ticker := time.NewTicker(tickDuration)
 	defer ticker.Stop()
 	defer mlog.Debug("ProjectByID exit")
@@ -84,7 +84,34 @@ func (m *Metrics) StreamShow(request *metrics.MetricsShowRequest, server metrics
 	}
 }
 
-func (m *Metrics) metrics(podMetrics *v1beta1.PodMetrics) *metrics.MetricsShowResponse {
+func (m *MetricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.MetricsCpuMemoryInProjectRequest) (*metrics.MetricsCpuMemoryInProjectResponse, error) {
+	var p models.Project
+	if err := app.DB().Where("`id` = ?", request.ProjectId).First(&p).Error; err != nil {
+		return nil, err
+	}
+	cpu, memory := utils.GetCpuAndMemory(p.GetAllPodMetrics())
+
+	return &metrics.MetricsCpuMemoryInProjectResponse{
+		Cpu:    cpu,
+		Memory: memory,
+	}, nil
+}
+
+func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.MetricsCpuMemoryInNamespaceRequest) (*metrics.MetricsCpuMemoryInNamespaceResponse, error) {
+	var ns models.Namespace
+	if err := app.DB().Preload("Projects").Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
+		return nil, err
+	}
+
+	cpu, memory := utils.GetCpuAndMemoryInNamespace(ns.Name)
+
+	return &metrics.MetricsCpuMemoryInNamespaceResponse{
+		Cpu:    cpu,
+		Memory: memory,
+	}, nil
+}
+
+func (m *MetricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.MetricsTopPodResponse {
 	cpu, memory := utils.GetCpuAndMemoryQuantity(*podMetrics)
 	cpuM := cpu.MilliValue()
 	var HumanizeCpu string = fmt.Sprintf("%v m", float64(cpu.MilliValue()))
@@ -93,7 +120,7 @@ func (m *Metrics) metrics(podMetrics *v1beta1.PodMetrics) *metrics.MetricsShowRe
 	}
 	asInt64, _ := memory.AsInt64()
 
-	return &metrics.MetricsShowResponse{
+	return &metrics.MetricsTopPodResponse{
 		Cpu:            float64(cpu.MilliValue()),
 		Memory:         float64(memory.ScaledValue(3)),
 		HumanizeCpu:    HumanizeCpu,

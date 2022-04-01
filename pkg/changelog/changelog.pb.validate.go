@@ -73,6 +73,7 @@ func (m *ChangelogShowRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return ChangelogShowRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -182,6 +183,7 @@ func (m *ChangelogShowItem) validate(all bool) error {
 	if len(errors) > 0 {
 		return ChangelogShowItemMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -317,6 +319,7 @@ func (m *ChangelogShowResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return ChangelogShowResponseMultiError(errors)
 	}
+
 	return nil
 }
 

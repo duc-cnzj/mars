@@ -8,8 +8,8 @@ import AppFooter from "./components/AppFooter";
 import { PrivateRoute } from "./contexts/auth";
 const { Header, Content, Footer } = Layout;
 
-const GitlabProjectManager = lazy(
-  () => import("./components/GitlabProjectManager")
+const GitProjectManager = lazy(
+  () => import("./components/GitProjectManager")
 );
 
 const Events = lazy(() => import("./components/Events"));
@@ -23,9 +23,9 @@ const App: FC = () => {
         </Header>
         <Content className="app-content">
           <Switch>
-            <PrivateRoute path={`/gitlab_project_manager`}>
+            <PrivateRoute path={`/git_project_manager`}>
               <Suspense fallback={null}>
-                <GitlabProjectManager />
+                <GitProjectManager />
               </Suspense>
             </PrivateRoute>
             <PrivateRoute path={`/events`}>

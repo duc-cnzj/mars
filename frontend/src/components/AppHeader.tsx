@@ -58,7 +58,7 @@ const AppHeader: React.FC = () => {
                         href="javascript(0);"
                         onClick={(e) => {
                           e.preventDefault();
-                          h.push("/gitlab_project_manager");
+                          h.push("/git_project_manager");
                         }}
                       >
                         <SettingOutlined /> 项目配置

@@ -4,7 +4,7 @@ import "google/api/annotations.proto";
 import "model/model.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/namespace;namespace";
+option go_package = "github.com/duc-cnzj/mars-client/v4/namespace;namespace";
 
 message NamespaceCreateRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];
@@ -22,15 +22,6 @@ message NamespaceIsExistsRequest {
   string name = 1 [(validate.rules).string.min_bytes = 1];
 }
 
-message NamespaceCpuMemoryRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-}
-
-message NamespaceServiceEndpointsRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-  string project_name = 2;
-}
-
 message NamespaceSimpleProject {
   int64 id = 1;
   string name = 2;
@@ -45,7 +36,7 @@ message NamespaceItem {
   repeated NamespaceSimpleProject projects = 5;
 }
 message NamespaceAllResponse {
-  repeated NamespaceItem data = 1;
+  repeated NamespaceItem items = 1;
 }
 
 message NamespaceCreateResponse {
@@ -63,21 +54,6 @@ message NamespaceShowResponse {
   string created_at = 4;
   string updated_at = 5;
   repeated ProjectModel projects = 6;
-}
-
-message NamespaceCpuMemoryResponse {
-  string cpu = 1;
-  string memory = 2;
-}
-
-message NamespaceServiceEndpoint {
-    string name = 1;
-    string url = 2;
-    string port_name = 3;
-}
-
-message NamespaceServiceEndpointsResponse {
-  repeated NamespaceServiceEndpoint data = 1;
 }
 
 message NamespaceIsExistsResponse {
@@ -121,20 +97,6 @@ service Namespace {
   rpc IsExists(NamespaceIsExistsRequest) returns (NamespaceIsExistsResponse) {
     option (google.api.http) = {
       post: "/api/namespaces/exists"
-    };
-  }
-
-  // CpuMemory 名称空间总共使用的 cpu memory
-  rpc CpuMemory(NamespaceCpuMemoryRequest) returns (NamespaceCpuMemoryResponse) {
-    option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/cpu_memory"
-    };
-  }
-
-  // ServiceEndpoints 名称空间下面所有服务的 endpoint
-  rpc ServiceEndpoints(NamespaceServiceEndpointsRequest) returns (NamespaceServiceEndpointsResponse) {
-    option (google.api.http) = {
-      get: "/api/namespaces/{namespace_id}/service_endpoints"
     };
   }
 }

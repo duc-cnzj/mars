@@ -8,15 +8,15 @@ import { getToken } from "./../utils/token";
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
   id: number;
-  namespaceId: number;
-}> = ({ id, namespaceId, updatedAt }) => {
+  namespace: string;
+}> = ({ id, namespace, updatedAt }) => {
   const [value, setValue] = useState<string>();
-  const [list, setList] = useState<pb.ProjectPodLog[]>();
+  const [list, setList] = useState<pb.ProjectPod[]>();
 
   const listContainer = useCallback(async () => {
     return allPodContainers({project_id: id }).then(
       (res) => {
-        setList(res.data.data);
+        setList(res.data.items);
         return res;
       }
     );
@@ -24,19 +24,19 @@ const ProjectContainerLogs: React.FC<{
 
   useEffect(() => {
     listContainer().then((res) => {
-      if (res.data.data.length > 0) {
-        let first = res.data.data[0];
+      if (res.data.items.length > 0) {
+        let first = res.data.items[0];
         setValue(first.pod_name + "|" + first.container_name);
       }
     });
-  }, [setList, id, namespaceId, updatedAt, listContainer]);
+  }, [setList, id, namespace, updatedAt, listContainer]);
 
   const [timestamp, setTimestamp] = useState(new Date().getTime());
 
   const getUrl = () => {
     let [pod, container] = (value as string).split("|");
 
-    return `${process.env.REACT_APP_BASE_URL}/api/projects/${id}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
+    return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
   };
 
   const reloadLog = useCallback((e: any) => {
@@ -91,14 +91,14 @@ const ProjectContainerLogs: React.FC<{
                   </span>
                 );
               }
-              return res.result.data.log;
+              return res.result.log;
             }}
             stream
             onError={(e: any) => {
               if (e.status === 404) {
                 listContainer().then((res) => {
-                  if (res.data.data.length > 0) {
-                    let first = res.data.data[0];
+                  if (res.data.items.length > 0) {
+                    let first = res.data.items[0];
                     setValue(first.pod_name + "|" + first.container_name);
                   }
                 });

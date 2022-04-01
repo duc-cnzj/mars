@@ -4,15 +4,13 @@ import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 	"golang.org/x/oauth2"
-
-	restclient "k8s.io/client-go/rest"
-
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 )
 
 type Callback func(ApplicationInterface)

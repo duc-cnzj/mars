@@ -19,7 +19,7 @@ import (
 var Models = []any{
 	&models.Namespace{},
 	&models.Project{},
-	&models.GitlabProject{},
+	&models.GitProject{},
 	&models.File{},
 	&models.Changelog{},
 	&models.Event{},

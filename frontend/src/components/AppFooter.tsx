@@ -18,12 +18,12 @@ const AppFooter: React.FC = () => {
     <div className="copyright">
       <div style={{ fontSize: 14 }}>created by duc@2021.</div>
       <div style={{ fontSize: 12 }}>
-        version: {version?.Version}, build at{" "}
-        {dayjs(version?.BuildDate).format("YYYY-MM-DD HH:mm:ss")}
+        version: {version?.version}, build at{" "}
+        {dayjs(version?.build_date).format("YYYY-MM-DD HH:mm:ss")}
         <Button
           icon={<GithubOutlined />}
           target={"_blank"}
-          href={version?.GitRepo}
+          href={version?.git_repo}
           type="link"
         ></Button>
       </div>

@@ -251,16 +251,16 @@ func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 	var branches []plugins.BranchInterface
 	page := 1
 	for page != -1 {
-		gitlabBranches, err := g.ListBranches(pid, page, 100)
+		githubBranches, err := g.ListBranches(pid, page, 100)
 		if err != nil {
 			return nil, err
 		}
-		if gitlabBranches.HasMore() {
-			page = gitlabBranches.NextPage()
+		if githubBranches.HasMore() {
+			page = githubBranches.NextPage()
 		} else {
 			page = -1
 		}
-		branches = append(branches, gitlabBranches.GetItems()...)
+		branches = append(branches, githubBranches.GetItems()...)
 	}
 
 	return branches, nil

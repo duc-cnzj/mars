@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/picture;picture";
+option go_package = "github.com/duc-cnzj/mars-client/v4/picture;picture";
 
 message BackgroundRequest {
   bool random = 1;

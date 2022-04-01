@@ -1,14 +1,15 @@
 package events
 
 import (
-	eventpb "github.com/duc-cnzj/mars-client/v3/event"
-	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
+	eventpb "github.com/duc-cnzj/mars-client/v4/event"
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -124,8 +125,8 @@ func HandleProjectChanged(data any, e contracts.Event) error {
 	if changedData, ok := data.(*ProjectChangedData); ok {
 		last := &models.Changelog{}
 		app.DB().Select("Config", "ID", "Version").Order("`id` desc").First(&last)
-		gp := models.GitlabProject{}
-		app.DB().Select("ID", "GitlabProjectId").Where("`gitlab_project_id` = ?", changedData.Project.GitlabProjectId).First(&gp)
+		gp := models.GitProject{}
+		app.DB().Select("ID", "GitProjectId").Where("`git_project_id` = ?", changedData.Project.GitProjectId).First(&gp)
 		var (
 			configChanged bool
 			version       uint8 = 1
@@ -137,13 +138,13 @@ func HandleProjectChanged(data any, e contracts.Event) error {
 			version = last.Version + 1
 		}
 		app.DB().Create(&models.Changelog{
-			Version:         version,
-			ConfigChanged:   configChanged,
-			Username:        changedData.Username,
-			Manifest:        changedData.Manifest,
-			Config:          changedData.Config,
-			ProjectID:       changedData.Project.ID,
-			GitlabProjectID: gp.ID,
+			Version:       version,
+			ConfigChanged: configChanged,
+			Username:      changedData.Username,
+			Manifest:      changedData.Manifest,
+			Config:        changedData.Config,
+			ProjectID:     changedData.Project.ID,
+			GitProjectID:  gp.ID,
 		})
 	}
 	return nil

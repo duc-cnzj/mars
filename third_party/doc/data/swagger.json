@@ -148,7 +148,7 @@
         }
       }
     },
-    "/api/container_copy/copy_to_pod": {
+    "/api/containers/copy_to_pod": {
       "post": {
         "tags": [
           "ContainerSvc"
@@ -161,7 +161,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CopyToPodRequest"
+              "$ref": "#/definitions/ContainerCopyToPodRequest"
             }
           }
         ],
@@ -169,7 +169,232 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/CopyToPodResponse"
+              "$ref": "#/definitions/ContainerCopyToPodResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
+      "get": {
+        "tags": [
+          "ContainerSvc"
+        ],
+        "summary": "ContainerLog 查看 pod 日志",
+        "operationId": "ContainerSvc_ContainerLog",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "pod",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "container",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
+      "get": {
+        "tags": [
+          "ContainerSvc"
+        ],
+        "summary": "StreamContainerLog stream 方式查看 pod 日志",
+        "operationId": "ContainerSvc_StreamContainerLog",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "pod",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "container",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of ContainerLogResponse",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                },
+                "result": {
+                  "$ref": "#/definitions/ContainerLogResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/pod_exists": {
+      "post": {
+        "tags": [
+          "ContainerSvc"
+        ],
+        "summary": "IsPodExists pod 是否存在",
+        "operationId": "ContainerSvc_IsPodExists",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodExistsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodExistsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/pod_running_status": {
+      "post": {
+        "tags": [
+          "ContainerSvc"
+        ],
+        "summary": "IsPodRunning pod 是否正常在跑",
+        "operationId": "ContainerSvc_IsPodRunning",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodRunningRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ContainerIsPodRunningResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/endpoints/namespaces/{namespace_id}": {
+      "get": {
+        "tags": [
+          "Endpoint"
+        ],
+        "summary": "InNamespace 名称空间下所有的 endpoints",
+        "operationId": "Endpoint_InNamespace",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "namespace_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EndpointInNamespaceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/endpoints/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Endpoint"
+        ],
+        "summary": "InProject 项目下所有的 endpoints",
+        "operationId": "Endpoint_InProject",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "project_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EndpointInProjectResponse"
             }
           },
           "default": {
@@ -338,207 +563,13 @@
         }
       }
     },
-    "/api/gitlab/projects/{project_id}/default_values": {
+    "/api/gitproject/project_options": {
       "get": {
         "tags": [
-          "Mars"
-        ],
-        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
-        "operationId": "Mars_GetDefaultChartValues",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "branch",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/MarsDefaultChartValuesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/gitlab/projects/{project_id}/global_config": {
-      "get": {
-        "tags": [
-          "Mars"
-        ],
-        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
-        "operationId": "Mars_GlobalConfig",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/MarsGlobalConfigResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/gitlab/projects/{project_id}/mars_config": {
-      "get": {
-        "tags": [
-          "Mars"
-        ],
-        "summary": "Show 查看项目配置",
-        "operationId": "Mars_Show",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "branch",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/MarsShowResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Mars"
-        ],
-        "summary": "Update 更新全局配置",
-        "operationId": "Mars_Update",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "config": {
-                  "$ref": "#/definitions/MarsConfig"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/MarsUpdateResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/gitlab/projects/{project_id}/toggle_enabled": {
-      "post": {
-        "tags": [
-          "Mars"
-        ],
-        "summary": "ToggleEnabled 开启/关闭全局配置",
-        "operationId": "Mars_ToggleEnabled",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/MarsToggleEnabledResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/gitserver/project_options": {
-      "get": {
-        "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "ProjectOptions 获取项目信息， 用在级联列表",
-        "operationId": "GitServer_ProjectOptions",
+        "operationId": "GitProject_ProjectOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -555,13 +586,13 @@
         }
       }
     },
-    "/api/gitserver/projects": {
+    "/api/gitproject/projects": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "All 获取所有的 git 项目",
-        "operationId": "GitServer_All",
+        "operationId": "GitProject_All",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -578,13 +609,13 @@
         }
       }
     },
-    "/api/gitserver/projects/disable": {
+    "/api/gitproject/projects/disable": {
       "post": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "DisableProject 关闭项目",
-        "operationId": "GitServer_DisableProject",
+        "operationId": "GitProject_DisableProject",
         "parameters": [
           {
             "name": "body",
@@ -611,13 +642,13 @@
         }
       }
     },
-    "/api/gitserver/projects/enable": {
+    "/api/gitproject/projects/enable": {
       "post": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
-        "operationId": "GitServer_EnableProject",
+        "operationId": "GitProject_EnableProject",
         "parameters": [
           {
             "name": "body",
@@ -644,17 +675,17 @@
         }
       }
     },
-    "/api/gitserver/projects/{project_id}/branch_options": {
+    "/api/gitproject/projects/{git_project_id}/branch_options": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "BranchOptions 获取分支信息， 用在级联列表",
-        "operationId": "GitServer_BranchOptions",
+        "operationId": "GitProject_BranchOptions",
         "parameters": [
           {
             "type": "string",
-            "name": "project_id",
+            "name": "git_project_id",
             "in": "path",
             "required": true
           },
@@ -680,17 +711,17 @@
         }
       }
     },
-    "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options": {
+    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commit_options": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "CommitOptions 获取commit信息， 用在级联列表",
-        "operationId": "GitServer_CommitOptions",
+        "operationId": "GitProject_CommitOptions",
         "parameters": [
           {
             "type": "string",
-            "name": "project_id",
+            "name": "git_project_id",
             "in": "path",
             "required": true
           },
@@ -717,17 +748,17 @@
         }
       }
     },
-    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}": {
+    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "Commit 获取 commit 详情",
-        "operationId": "GitServer_Commit",
+        "operationId": "GitProject_Commit",
         "parameters": [
           {
             "type": "string",
-            "name": "project_id",
+            "name": "git_project_id",
             "in": "path",
             "required": true
           },
@@ -760,17 +791,17 @@
         }
       }
     },
-    "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
+    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "PipelineInfo 获取 pipeline 详情",
-        "operationId": "GitServer_PipelineInfo",
+        "operationId": "GitProject_PipelineInfo",
         "parameters": [
           {
             "type": "string",
-            "name": "project_id",
+            "name": "git_project_id",
             "in": "path",
             "required": true
           },
@@ -803,17 +834,17 @@
         }
       }
     },
-    "/api/gitserver/projects/{project_id}/branches/{branch}/config_file": {
+    "/api/gitproject/projects/{git_project_id}/branches/{branch}/config_file": {
       "get": {
         "tags": [
-          "GitServer"
+          "GitProject"
         ],
         "summary": "MarsConfigFile 获取项目 mars 配置详情",
-        "operationId": "GitServer_MarsConfigFile",
+        "operationId": "GitProject_MarsConfigFile",
         "parameters": [
           {
             "type": "string",
-            "name": "project_id",
+            "name": "git_project_id",
             "in": "path",
             "required": true
           },
@@ -840,13 +871,239 @@
         }
       }
     },
+    "/api/gitproject/projects/{git_project_id}/default_values": {
+      "get": {
+        "tags": [
+          "GitProjectConfig"
+        ],
+        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
+        "operationId": "GitProjectConfig_GetDefaultChartValues",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "branch",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectConfigDefaultChartValuesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/gitproject/projects/{git_project_id}/global_config": {
+      "get": {
+        "tags": [
+          "GitProjectConfig"
+        ],
+        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
+        "operationId": "GitProjectConfig_GlobalConfig",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectConfigGlobalConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/gitproject/projects/{git_project_id}/mars_config": {
+      "get": {
+        "tags": [
+          "GitProjectConfig"
+        ],
+        "summary": "Show 查看项目配置",
+        "operationId": "GitProjectConfig_Show",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "branch",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectConfigShowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "GitProjectConfig"
+        ],
+        "summary": "Update 更新全局配置",
+        "operationId": "GitProjectConfig_Update",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "config": {
+                  "$ref": "#/definitions/MarsConfig"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectConfigUpdateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/gitproject/projects/{git_project_id}/toggle_status": {
+      "post": {
+        "tags": [
+          "GitProjectConfig"
+        ],
+        "summary": "ToggleGlobalStatus 开启/关闭全局配置",
+        "operationId": "GitProjectConfig_ToggleGlobalStatus",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GitProjectConfigToggleGlobalStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics/namespace/{namespace_id}/cpu_memory": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "CpuMemoryInNamespace 名称空间总共使用的 cpu memory",
+        "operationId": "Metrics_CpuMemoryInNamespace",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "namespace_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MetricsCpuMemoryInNamespaceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/metrics/namespace/{namespace}/pods/{pod}": {
       "get": {
         "tags": [
           "Metrics"
         ],
-        "summary": "Show 获取 pod 的 cpu memory 信息",
-        "operationId": "Metrics_Show",
+        "summary": "TopPod 获取 pod 的 cpu memory 信息",
+        "operationId": "Metrics_TopPod",
         "parameters": [
           {
             "type": "string",
@@ -865,7 +1122,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsShowResponse"
+              "$ref": "#/definitions/MetricsTopPodResponse"
             }
           },
           "default": {
@@ -882,8 +1139,8 @@
         "tags": [
           "Metrics"
         ],
-        "summary": "StreamShow stream 的方式获取 pod 的 cpu memory 信息",
-        "operationId": "Metrics_StreamShow",
+        "summary": "StreamTopPod stream 的方式获取 pod 的 cpu memory 信息",
+        "operationId": "Metrics_StreamTopPod",
         "parameters": [
           {
             "type": "string",
@@ -903,15 +1160,47 @@
             "description": "A successful response.(streaming responses)",
             "schema": {
               "type": "object",
-              "title": "Stream result of MetricsShowResponse",
+              "title": "Stream result of MetricsTopPodResponse",
               "properties": {
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 },
                 "result": {
-                  "$ref": "#/definitions/MetricsShowResponse"
+                  "$ref": "#/definitions/MetricsTopPodResponse"
                 }
               }
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics/projects/{project_id}/cpu_memory": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "CpuMemoryInProject 项目空间总共使用的 cpu memory",
+        "operationId": "Metrics_CpuMemoryInProject",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "project_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MetricsCpuMemoryInProjectResponse"
             }
           },
           "default": {
@@ -984,6 +1273,13 @@
         ],
         "summary": "IsExists 名称空间是否存在",
         "operationId": "Namespace_IsExists",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -1051,149 +1347,6 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/NamespaceDeleteResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/namespaces/{namespace_id}/cpu_memory": {
-      "get": {
-        "tags": [
-          "Namespace"
-        ],
-        "summary": "CpuMemory 名称空间总共使用的 cpu memory",
-        "operationId": "Namespace_CpuMemory",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "namespace_id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/NamespaceCpuMemoryResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/namespaces/{namespace_id}/service_endpoints": {
-      "get": {
-        "tags": [
-          "Namespace"
-        ],
-        "summary": "ServiceEndpoints 名称空间下面所有服务的 endpoint",
-        "operationId": "Namespace_ServiceEndpoints",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "namespace_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "project_name",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/NamespaceServiceEndpointsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/namespaces/{namespace}/pod/{pod}/exists": {
-      "post": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "IsPodExists pod 是否存在",
-        "operationId": "Project_IsPodExists",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "pod",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectIsPodExistsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/namespaces/{namespace}/pod/{pod}/status": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "IsPodRunning pod 是否正常在跑",
-        "operationId": "Project_IsPodRunning",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "pod",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectIsPodRunningResponse"
             }
           },
           "default": {
@@ -1377,8 +1530,8 @@
         "tags": [
           "Project"
         ],
-        "summary": "AllPodContainers 获取项目下的所有 pod",
-        "operationId": "Project_AllPodContainers",
+        "summary": "AllContainers 获取项目下的所有 pod",
+        "operationId": "Project_AllContainers",
         "parameters": [
           {
             "type": "string",
@@ -1392,104 +1545,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectAllPodContainersResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "PodContainerLog 查看 pod 日志",
-        "operationId": "Project_PodContainerLog",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "pod",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "container",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectPodContainerLogResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "StreamPodContainerLog stream 方式查看 pod 日志",
-        "operationId": "Project_StreamPodContainerLog",
-        "parameters": [
-          {
-            "type": "string",
-            "format": "int64",
-            "name": "project_id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "pod",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "container",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "title": "Stream result of ProjectPodContainerLogResponse",
-              "properties": {
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                },
-                "result": {
-                  "$ref": "#/definitions/ProjectPodContainerLogResponse"
-                }
-              }
+              "$ref": "#/definitions/ProjectAllContainersResponse"
             }
           },
           "default": {
@@ -1718,7 +1774,7 @@
         }
       }
     },
-    "CopyToPodRequest": {
+    "ContainerCopyToPodRequest": {
       "type": "object",
       "properties": {
         "container": {
@@ -1736,7 +1792,7 @@
         }
       }
     },
-    "CopyToPodResponse": {
+    "ContainerCopyToPodResponse": {
       "type": "object",
       "properties": {
         "file_name": {
@@ -1745,15 +1801,108 @@
         "output": {
           "type": "string"
         },
-        "podFilePath": {
+        "pod_file_path": {
           "type": "string"
+        }
+      }
+    },
+    "ContainerExecResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerIsPodExistsRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerIsPodExistsResponse": {
+      "type": "object",
+      "properties": {
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ContainerIsPodRunningRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerIsPodRunningResponse": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "running": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ContainerLogResponse": {
+      "type": "object",
+      "properties": {
+        "container_name": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod_name": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerStreamCopyToPodResponse": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "pod_file_path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
     "DeleteUndocumentedFilesResponse": {
       "type": "object",
       "properties": {
-        "files": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/File"
@@ -1808,6 +1957,28 @@
         "ElementTypeSwitch"
       ]
     },
+    "EndpointInNamespaceResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ServiceEndpoint"
+          }
+        }
+      }
+    },
+    "EndpointInProjectResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ServiceEndpoint"
+          }
+        }
+      }
+    },
     "EventListItem": {
       "type": "object",
       "properties": {
@@ -1859,14 +2030,6 @@
         "page_size": {
           "type": "string",
           "format": "int64"
-        }
-      }
-    },
-    "ExecResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string"
         }
       }
     },
@@ -1965,7 +2128,7 @@
     "GitAllProjectsResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/GitProjectItem"
@@ -1976,7 +2139,7 @@
     "GitBranchOptionsResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/GitOption"
@@ -1987,7 +2150,7 @@
     "GitCommitOptionsResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/GitOption"
@@ -1998,8 +2161,47 @@
     "GitCommitResponse": {
       "type": "object",
       "properties": {
-        "data": {
-          "$ref": "#/definitions/GitOption"
+        "author_email": {
+          "type": "string"
+        },
+        "author_name": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "committed_date": {
+          "type": "string"
+        },
+        "committer_email": {
+          "type": "string"
+        },
+        "committer_name": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "git_project_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "short_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "web_url": {
+          "type": "string"
         }
       }
     },
@@ -2048,14 +2250,14 @@
         "branch": {
           "type": "string"
         },
+        "gitProjectId": {
+          "type": "string"
+        },
         "isLeaf": {
           "type": "boolean",
           "title": "isLeaf 兼容 antd"
         },
         "label": {
-          "type": "string"
-        },
-        "projectId": {
           "type": "string"
         },
         "type": {
@@ -2074,6 +2276,47 @@
         },
         "web_url": {
           "type": "string"
+        }
+      }
+    },
+    "GitProjectConfigDefaultChartValuesResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "GitProjectConfigGlobalConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "GitProjectConfigShowResponse": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
+        }
+      }
+    },
+    "GitProjectConfigToggleGlobalStatusResponse": {
+      "type": "object"
+    },
+    "GitProjectConfigUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
         }
       }
     },
@@ -2110,7 +2353,7 @@
     "GitProjectOptionsResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/GitOption"
@@ -2163,47 +2406,6 @@
         }
       }
     },
-    "MarsDefaultChartValuesResponse": {
-      "type": "object",
-      "properties": {
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "MarsGlobalConfigResponse": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        },
-        "enabled": {
-          "type": "boolean"
-        }
-      }
-    },
-    "MarsShowResponse": {
-      "type": "object",
-      "properties": {
-        "branch": {
-          "type": "string"
-        },
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
-    "MarsToggleEnabledResponse": {
-      "type": "object"
-    },
-    "MarsUpdateResponse": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
     "Metadata": {
       "type": "object",
       "properties": {
@@ -2233,7 +2435,29 @@
         }
       }
     },
-    "MetricsShowResponse": {
+    "MetricsCpuMemoryInNamespaceResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      }
+    },
+    "MetricsCpuMemoryInProjectResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      }
+    },
+    "MetricsTopPodResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -2262,22 +2486,11 @@
     "NamespaceAllResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/NamespaceItem"
           }
-        }
-      }
-    },
-    "NamespaceCpuMemoryResponse": {
-      "type": "object",
-      "properties": {
-        "cpu": {
-          "type": "string"
-        },
-        "memory": {
-          "type": "string"
         }
       }
     },
@@ -2382,31 +2595,6 @@
         }
       }
     },
-    "NamespaceServiceEndpoint": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "port_name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceServiceEndpointsResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpoint"
-          }
-        }
-      }
-    },
     "NamespaceShowResponse": {
       "type": "object",
       "properties": {
@@ -2452,13 +2640,13 @@
         }
       }
     },
-    "ProjectAllPodContainersResponse": {
+    "ProjectAllContainersResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ProjectPodLog"
+            "$ref": "#/definitions/ProjectPod"
           }
         }
       }
@@ -2499,25 +2687,6 @@
         }
       }
     },
-    "ProjectIsPodExistsResponse": {
-      "type": "object",
-      "properties": {
-        "exists": {
-          "type": "boolean"
-        }
-      }
-    },
-    "ProjectIsPodRunningResponse": {
-      "type": "object",
-      "properties": {
-        "reason": {
-          "type": "string"
-        },
-        "running": {
-          "type": "boolean"
-        }
-      }
-    },
     "ProjectListResponse": {
       "type": "object",
       "properties": {
@@ -2525,7 +2694,7 @@
           "type": "string",
           "format": "int64"
         },
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ProjectModel"
@@ -2559,13 +2728,13 @@
         "extra_values": {
           "type": "string"
         },
-        "gitlab_branch": {
+        "git_branch": {
           "type": "string"
         },
-        "gitlab_commit": {
+        "git_commit": {
           "type": "string"
         },
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string",
           "format": "int64"
         },
@@ -2594,21 +2763,10 @@
         }
       }
     },
-    "ProjectPodContainerLogResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/ProjectPodLog"
-        }
-      }
-    },
-    "ProjectPodLog": {
+    "ProjectPod": {
       "type": "object",
       "properties": {
         "container_name": {
-          "type": "string"
-        },
-        "log": {
           "type": "string"
         },
         "namespace": {
@@ -2652,25 +2810,25 @@
             "$ref": "#/definitions/ProjectExtraItem"
           }
         },
-        "gitlab_branch": {
+        "git_branch": {
           "type": "string"
         },
-        "gitlab_commit": {
+        "git_commit": {
           "type": "string"
         },
-        "gitlab_commit_author": {
+        "git_commit_author": {
           "type": "string"
         },
-        "gitlab_commit_date": {
+        "git_commit_date": {
           "type": "string"
         },
-        "gitlab_commit_title": {
+        "git_commit_title": {
           "type": "string"
         },
-        "gitlab_commit_web_url": {
+        "git_commit_web_url": {
           "type": "string"
         },
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string",
           "format": "int64"
         },
@@ -2702,7 +2860,7 @@
         "urls": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpoint"
+            "$ref": "#/definitions/ServiceEndpoint"
           }
         }
       }
@@ -2731,30 +2889,17 @@
         "DeployedCanceled"
       ]
     },
-    "StreamCopyToPodResponse": {
+    "ServiceEndpoint": {
       "type": "object",
       "properties": {
-        "container": {
+        "name": {
           "type": "string"
         },
-        "filename": {
+        "port_name": {
           "type": "string"
         },
-        "namespace": {
+        "url": {
           "type": "string"
-        },
-        "output": {
-          "type": "string"
-        },
-        "pod": {
-          "type": "string"
-        },
-        "podFilePath": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "format": "int64"
         }
       }
     },
@@ -2790,37 +2935,37 @@
     "VersionResponse": {
       "type": "object",
       "properties": {
-        "BuildDate": {
+        "build_date": {
           "type": "string"
         },
-        "Compiler": {
+        "compiler": {
           "type": "string"
         },
-        "GitCommit": {
+        "git_branch": {
           "type": "string"
         },
-        "GitRepo": {
+        "git_commit": {
           "type": "string"
         },
-        "GitTag": {
+        "git_repo": {
           "type": "string"
         },
-        "GoVersion": {
+        "git_tag": {
           "type": "string"
         },
-        "HelmVersion": {
+        "go_version": {
           "type": "string"
         },
-        "KubectlVersion": {
+        "helm_version": {
           "type": "string"
         },
-        "Platform": {
+        "kubectl_version": {
           "type": "string"
         },
-        "Version": {
+        "platform": {
           "type": "string"
         },
-        "gitBranch": {
+        "version": {
           "type": "string"
         }
       }
@@ -2880,16 +3025,19 @@
       "name": "ContainerSvc"
     },
     {
+      "name": "Endpoint"
+    },
+    {
       "name": "Event"
     },
     {
       "name": "FileSvc"
     },
     {
-      "name": "GitServer"
+      "name": "GitProject"
     },
     {
-      "name": "Mars"
+      "name": "GitProjectConfig"
     },
     {
       "name": "Metrics"
