@@ -16,6 +16,7 @@ message ChangelogShowItem {
   string date = 3;
   string username = 4;
 }
+
 message ChangelogShowResponse {
   repeated ChangelogShowItem items = 1;
 }

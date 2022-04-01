@@ -2,11 +2,11 @@ syntax = "proto3";
 
 option go_package = "github.com/duc-cnzj/mars-client/v3/model;model";
 
-message GitlabProjectModel {
+message GitProjectModel {
   int64 id = 1;
   string default_branch = 2;
   string name = 3;
-  int64 gitlab_project_id = 4;
+  int64 git_project_id = 4;
   bool enabled = 5;
   bool global_enabled = 6;
   string global_config = 7;
@@ -27,9 +27,9 @@ message NamespaceModel {
 message ProjectModel {
   int64 id = 1;
   string name = 2;
-  int64 gitlab_project_id = 3;
-  string gitlab_branch = 4;
-  string gitlab_commit = 5;
+  int64 git_project_id = 3;
+  string git_branch = 4;
+  string git_commit = 5;
   string config = 6;
   string override_values = 7;
   string docker_image = 8;

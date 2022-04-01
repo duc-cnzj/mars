@@ -20,16 +20,16 @@ message ProjectShowRequest {
 message ProjectShowResponse {
   int64 id = 1;
   string name = 2;
-  int64 gitlab_project_id = 3;
-  string gitlab_branch = 4;
-  string gitlab_commit = 5;
+  int64 git_project_id = 3;
+  string git_branch = 4;
+  string git_commit = 5;
   string config = 6;
   string docker_image = 7;
   bool atomic = 8;
-  string gitlab_commit_web_url = 9;
-  string gitlab_commit_title = 10;
-  string gitlab_commit_author = 11;
-  string gitlab_commit_date = 12;
+  string git_commit_web_url = 9;
+  string git_commit_title = 10;
+  string git_commit_author = 11;
+  string git_commit_date = 12;
 
   repeated NamespaceServiceEndpoint urls = 13;
   message Namespace {
@@ -53,15 +53,14 @@ message ProjectAllPodContainersRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message ProjectPodLog {
+message ProjectPod {
   string namespace = 1;
   string pod_name = 2;
   string container_name = 3;
-  string log = 4;
 }
 
 message ProjectAllPodContainersResponse {
-  repeated ProjectPodLog data = 1;
+  repeated ProjectPod items = 1;
 }
 
 message ProjectPodContainerLogRequest {
@@ -71,7 +70,10 @@ message ProjectPodContainerLogRequest {
 }
 
 message ProjectPodContainerLogResponse {
-  ProjectPodLog data = 1;
+  string namespace = 1;
+  string pod_name = 2;
+  string container_name = 3;
+  string log = 4;
 }
 
 message ProjectIsPodRunningRequest {
@@ -97,10 +99,10 @@ message ProjectDryRunApplyResponse {
 message ProjectApplyRequest {
   int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
   string name = 2 [(validate.rules).string.min_bytes = 1];
-  int64 gitlab_project_id = 3 [(validate.rules).int64.gt = 0];
-  string gitlab_branch = 4 [(validate.rules).string.min_bytes = 1];
-  //  gitlab_commit 不传就用最新的 commit
-  string gitlab_commit = 5;
+  int64 git_project_id = 3 [(validate.rules).int64.gt = 0];
+  string git_branch = 4 [(validate.rules).string.min_bytes = 1];
+  //  git_commit 不传就用最新的 commit
+  string git_commit = 5;
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;
@@ -120,7 +122,7 @@ message ProjectListResponse {
   int64 page = 1;
   int64 page_size = 2;
   int64 count = 3;
-  repeated ProjectModel data = 4;
+  repeated ProjectModel items = 4;
 }
 message ProjectIsPodExistsRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];

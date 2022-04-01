@@ -25,8 +25,8 @@ message AuthExchangeResponse {
   int64 expires_in = 2;
 }
 
-message AuthInfoRequest {
-}
+message AuthInfoRequest {}
+
 message AuthInfoResponse {
   string id = 1;
   string avatar = 2;
@@ -36,8 +36,8 @@ message AuthInfoResponse {
   repeated string roles = 6;
 }
 
-message AuthSettingsRequest {
-}
+message AuthSettingsRequest {}
+
 message AuthSettingsResponse {
   message OidcSetting {
     bool enabled = 1;

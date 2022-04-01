@@ -43,7 +43,7 @@ message Element {
 }
 
 message MarsShowRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
@@ -53,7 +53,7 @@ message MarsShowResponse {
 }
 
 message MarsGlobalConfigRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
 message MarsGlobalConfigResponse {
@@ -62,7 +62,7 @@ message MarsGlobalConfigResponse {
 }
 
 message MarsUpdateRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   MarsConfig config = 2;
 }
 
@@ -71,39 +71,40 @@ message MarsUpdateResponse {
 }
 
 message MarsToggleEnabledRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   bool enabled = 2;
 }
 
 message MarsDefaultChartValuesRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
 message MarsDefaultChartValuesResponse {
   string value = 1;
 }
+
 message MarsToggleEnabledResponse {}
 
 service Mars {
   // Show 查看项目配置
   rpc Show(MarsShowRequest) returns (MarsShowResponse) {
     option (google.api.http) = {
-      get: "/api/gitlab/projects/{project_id}/mars_config"
+      get: "/api/git/projects/{git_project_id}/mars_config"
     };
   }
 
   // GlobalConfig 查看项目 GlobalConfig 配置
   rpc GlobalConfig(MarsGlobalConfigRequest) returns (MarsGlobalConfigResponse) {
     option (google.api.http) = {
-      get: "/api/gitlab/projects/{project_id}/global_config"
+      get: "/api/git/projects/{git_project_id}/global_config"
     };
   }
 
   // ToggleEnabled 开启/关闭全局配置
   rpc ToggleEnabled(MarsToggleEnabledRequest) returns (MarsToggleEnabledResponse) {
     option (google.api.http) = {
-      post: "/api/gitlab/projects/{project_id}/toggle_enabled",
+      post: "/api/git/projects/{git_project_id}/toggle_enabled",
       body: "*"
     };
   }
@@ -111,7 +112,7 @@ service Mars {
   // Update 更新全局配置
   rpc Update(MarsUpdateRequest) returns (MarsUpdateResponse) {
     option (google.api.http) = {
-      put: "/api/gitlab/projects/{project_id}/mars_config",
+      put: "/api/git/projects/{git_project_id}/mars_config",
       body: "*"
     };
   }
@@ -119,7 +120,7 @@ service Mars {
   // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
   rpc GetDefaultChartValues(MarsDefaultChartValuesRequest) returns (MarsDefaultChartValuesResponse) {
     option (google.api.http) = {
-      get: "/api/gitlab/projects/{project_id}/default_values",
+      get: "/api/git/projects/{git_project_id}/default_values",
     };
   }
 }

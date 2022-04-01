@@ -98,9 +98,9 @@ message ProjectInput {
 
   int64 namespace_id = 2;
   string name = 3;
-  int64 gitlab_project_id = 4;
-  string gitlab_branch = 5;
-  string gitlab_commit = 6;
+  int64 git_project_id = 4;
+  string git_branch = 5;
+  string git_commit = 6;
   string config = 7;
   bool atomic = 8;
   repeated ProjectExtraItem extra_values = 9;
@@ -110,8 +110,8 @@ message UpdateProjectInput {
   Type type = 1;
 
   int64 project_id = 2;
-  string gitlab_branch = 3;
-  string gitlab_commit = 4;
+  string git_branch = 3;
+  string git_commit = 4;
   string config = 5;
   bool atomic = 6;
   repeated ProjectExtraItem extra_values = 7;

@@ -114,7 +114,7 @@ const GitlabProjectManager: React.FC = () => {
         className="gitlab"
         title={
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>gitlab项目管理</span>
+            <span>git项目管理</span>
             <div>
               <Button type="link" size="small" onClick={() => downloadConfig()}>
                 下载配置

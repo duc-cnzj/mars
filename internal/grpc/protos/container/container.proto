@@ -13,7 +13,7 @@ message CopyToPodRequest {
 }
 
 message CopyToPodResponse {
-  string podFilePath = 1;
+  string pod_file_path = 1;
   string output = 2;
   string file_name = 3;
 }
@@ -39,7 +39,7 @@ message StreamCopyToPodRequest {
 
 message StreamCopyToPodResponse {
   int64 size = 1;
-  string podFilePath = 2;
+  string pod_file_path = 2;
   string output = 3;
   string pod = 4;
   string namespace = 5;

@@ -45,7 +45,7 @@ message NamespaceItem {
   repeated NamespaceSimpleProject projects = 5;
 }
 message NamespaceAllResponse {
-  repeated NamespaceItem data = 1;
+  repeated NamespaceItem items = 1;
 }
 
 message NamespaceCreateResponse {
@@ -77,7 +77,7 @@ message NamespaceServiceEndpoint {
 }
 
 message NamespaceServiceEndpointsResponse {
-  repeated NamespaceServiceEndpoint data = 1;
+  repeated NamespaceServiceEndpoint items = 1;
 }
 
 message NamespaceIsExistsResponse {

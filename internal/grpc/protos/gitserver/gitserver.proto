@@ -6,11 +6,6 @@ import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v3/gitserver;gitserver";
 
-message GitDestroyRequest {
-  string namespace_id = 1 [(validate.rules).string.min_bytes = 1];
-  string project_id = 2 [(validate.rules).string.min_bytes = 1];
-}
-
 message GitEnableProjectRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
 }
@@ -31,7 +26,7 @@ message GitProjectItem {
 }
 
 message GitAllProjectsResponse {
-  repeated GitProjectItem data = 1;
+  repeated GitProjectItem items = 1;
 }
 
 message GitOption {
@@ -40,41 +35,50 @@ message GitOption {
   string type = 3;
   // isLeaf 兼容 antd
   bool isLeaf = 4;
-  string projectId = 5;
+  string gitProjectId = 5;
   string branch = 6;
 }
 
 message GitProjectOptionsResponse {
-  repeated GitOption data = 1;
+  repeated GitOption items = 1;
 }
 
 message GitBranchOptionsRequest {
-  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   bool all = 2;
 }
+
 message GitBranchOptionsResponse {
-  repeated GitOption data = 1;
+  repeated GitOption items = 1;
 }
+
 message GitCommitOptionsRequest {
-  string project_id = 1;
+  string git_project_id = 1;
   string branch = 2;
 }
+
 message GitCommitOptionsResponse {
-  repeated GitOption data = 1;
+  repeated GitOption items = 1;
 }
 
 message GitCommitRequest {
-  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
   string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
 
 message GitCommitResponse {
-  GitOption data = 1;
+  string value = 1;
+  string label = 2;
+  string type = 3;
+  // isLeaf 兼容 antd
+  bool isLeaf = 4;
+  string git_project_id = 5;
+  string branch = 6;
 }
 
 message GitPipelineInfoRequest {
-  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
   string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
@@ -85,7 +89,7 @@ message GitPipelineInfoResponse {
 }
 
 message GitConfigFileRequest {
-  string project_id = 1 [(validate.rules).string.min_bytes = 1];
+  string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
 }
 
@@ -134,35 +138,35 @@ service GitServer {
   // BranchOptions 获取分支信息， 用在级联列表
   rpc BranchOptions(GitBranchOptionsRequest) returns (GitBranchOptionsResponse) {
     option (google.api.http) = {
-      get: "/api/gitserver/projects/{project_id}/branch_options",
+      get: "/api/gitserver/projects/{git_project_id}/branch_options",
     };
   }
 
   // CommitOptions 获取commit信息， 用在级联列表
   rpc CommitOptions(GitCommitOptionsRequest) returns (GitCommitOptionsResponse) {
     option (google.api.http) = {
-      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commit_options",
+      get: "/api/gitserver/projects/{git_project_id}/branches/{branch}/commit_options",
     };
   }
 
   // Commit 获取 commit 详情
   rpc Commit(GitCommitRequest) returns (GitCommitResponse) {
     option (google.api.http) = {
-      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}",
+      get: "/api/gitserver/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
   }
 
   // PipelineInfo 获取 pipeline 详情
   rpc PipelineInfo(GitPipelineInfoRequest) returns (GitPipelineInfoResponse) {
     option (google.api.http) = {
-      get: "/api/gitserver/projects/{project_id}/branches/{branch}/commits/{commit}/pipeline_info",
+      get: "/api/gitserver/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
   }
 
   // MarsConfigFile 获取项目 mars 配置详情
   rpc MarsConfigFile(GitConfigFileRequest) returns (GitConfigFileResponse) {
     option (google.api.http) = {
-      get: "/api/gitserver/projects/{project_id}/branches/{branch}/config_file",
+      get: "/api/gitserver/projects/{git_project_id}/branches/{branch}/config_file",
     };
   }
 }

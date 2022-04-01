@@ -24,10 +24,11 @@ message File {
 }
 
 message DeleteUndocumentedFilesResponse {
-  repeated File files = 1;
+  repeated File items = 1;
 }
 
 message DiskInfoRequest {}
+
 message DiskInfoResponse {
   int64 usage = 1;
   string humanize_usage = 2;

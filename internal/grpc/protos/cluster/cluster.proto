@@ -25,6 +25,7 @@ message ClusterInfoResponse {
   string request_memory_rate = 10;
   string request_cpu_rate = 11;
 }
+
 message ClusterInfoRequest {}
 
 service Cluster {
