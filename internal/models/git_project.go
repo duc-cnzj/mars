@@ -17,7 +17,7 @@ type GitProject struct {
 
 	DefaultBranch string `json:"default_branch" gorm:"type:varchar(255);not null;default:'';"`
 	Name          string `json:"name" gorm:"type:varchar(255);not null;default:'';"`
-	GitProjectId  int    `json:"git_project_id" gorm:"not null;type:integer;"`
+	GitProjectId  int    `json:"git_project_id" gorm:"not null;type:integer;default:0;"`
 	Enabled       bool   `json:"enabled" gorm:"not null;default:false;"`
 	GlobalEnabled bool   `json:"global_enabled" gorm:"not null;default:false;"`
 	GlobalConfig  string `json:"global_config" gorm:"type:text"`

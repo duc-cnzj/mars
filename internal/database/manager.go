@@ -25,7 +25,7 @@ func (m *Manager) SetDB(db *gorm.DB) {
 }
 
 func (m *Manager) AutoMigrate(dst ...any) error {
-	var migrateV3ToV4 = "migrating: v3 => v4 start."
+	var migrateV3ToV4 = "migrating: v3 => v4"
 
 	// v3 => v4 start.
 	if m.db.Migrator().HasColumn(&models.Changelog{}, "gitlab_project_id") {
