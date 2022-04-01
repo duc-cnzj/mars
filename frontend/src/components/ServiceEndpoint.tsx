@@ -1,15 +1,15 @@
 import React, { memo, useState } from "react";
-import { getServiceEndpoints } from "../api/namespace";
+import { getNamespaceServiceEndpoints, getProjectServiceEndpoints } from "../api/namespace";
 import { Popover } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
 import pb from "../api/compiled";
 
 const ServiceEndpoint: React.FC<{
-  namespaceId: number;
-  projectName?: string;
-}> = ({ namespaceId, projectName }) => {
-  const [endpoints, setEndpoints] = useState<pb.NamespaceServiceEndpoint[]>();
+  namespaceId?: number;
+  projectId?: number;
+}> = ({ namespaceId, projectId }) => {
+  const [endpoints, setEndpoints] = useState<pb.ServiceEndpoint[]>();
 
   return (
     <Popover
@@ -44,12 +44,20 @@ const ServiceEndpoint: React.FC<{
         style={{ width: 18, height: 18, flexShrink: 0 }}
         stroke="currentColor"
         onMouseEnter={(e) => {
-          getServiceEndpoints({
-            project_name: projectName || "",
-            namespace_id: namespaceId,
-          }).then((res) => {
-            setEndpoints(res.data.data);
-          });
+          if (namespaceId) {
+            getNamespaceServiceEndpoints({
+              namespace_id: namespaceId,
+            }).then((res) => {
+              setEndpoints(res.data.items);
+            });
+          }
+          if (projectId) {
+            getProjectServiceEndpoints({
+              project_id: projectId,
+            }).then((res) => {
+              setEndpoints(res.data.items);
+            });
+          }
         }}
       >
         <path

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { disabledProject, enabledProject, allProjects } from "../api/gitlab";
+import { disabledProject, enabledProject, allProjects } from "../api/git";
 import { CopyOutlined } from "@ant-design/icons";
 import { copy } from "../utils/copy";
 import {
@@ -20,7 +20,7 @@ import { downloadConfig } from "../api/file";
 import { getToken } from "../utils/token";
 
 const { Option } = Select;
-const GitlabProjectManager: React.FC = () => {
+const GitProjectManager: React.FC = () => {
   const [list, setList] = useState<pb.GitProjectItem[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
@@ -28,7 +28,7 @@ const GitlabProjectManager: React.FC = () => {
   const fetchList = useCallback(() => {
     return allProjects()
       .then((res) => {
-        setList(res.data.data);
+        setList(res.data.items);
       })
       .catch((e) => message.error(e.response.data.message));
   }, [setList]);
@@ -111,7 +111,7 @@ const GitlabProjectManager: React.FC = () => {
   return (
     <>
       <Card
-        className="gitlab"
+        className="git"
         title={
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>git项目管理</span>
@@ -168,7 +168,7 @@ const GitlabProjectManager: React.FC = () => {
           )}
           renderItem={(item: pb.GitProjectItem) => (
             <List.Item
-              className="gitlab__list-item"
+              className="git__list-item"
               key={item.id}
               actions={[
                 item.enabled ? (
@@ -256,4 +256,4 @@ const GitlabProjectManager: React.FC = () => {
   );
 };
 
-export default memo(GitlabProjectManager);
+export default memo(GitProjectManager);

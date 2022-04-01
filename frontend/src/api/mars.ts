@@ -1,43 +1,43 @@
 import ajax from "./ajax";
 import pb from "./compiled";
 
-export async function marsConfig({ project_id, branch }: pb.MarsShowRequest) {
+export async function marsConfig({ git_project_id, branch }: pb.GitProjectConfigShowRequest) {
   return ajax
-    .get<pb.MarsShowResponse>(
-      `/api/gitlab/projects/${project_id}/mars_config?branch=${branch || ""}`
+    .get<pb.GitProjectConfigShowResponse>(
+      `/api/gitproject/projects/${git_project_id}/mars_config?branch=${branch || ""}`
     )
 }
 
 export async function toggleGlobalEnabled({
-  project_id,
+  git_project_id,
   enabled,
-}: pb.MarsToggleEnabledRequest) {
-  return ajax.post<pb.MarsToggleEnabledResponse>(`/api/gitlab/projects/${project_id}/toggle_enabled`, {
+}: pb.GitProjectConfigToggleGlobalStatusRequest) {
+  return ajax.post<pb.GitProjectConfigToggleGlobalStatusResponse>(`/api/gitproject/projects/${git_project_id}/toggle_status`, {
     enabled,
   });
 }
 
-export async function globalConfig({ project_id }: pb.MarsGlobalConfigRequest) {
-  return ajax.get<pb.MarsGlobalConfigResponse>(
-    `/api/gitlab/projects/${project_id}/global_config`
+export async function globalConfig({ git_project_id }: pb.GitProjectConfigGlobalConfigRequest) {
+  return ajax.get<pb.GitProjectConfigGlobalConfigResponse>(
+    `/api/gitproject/projects/${git_project_id}/global_config`
   );
 }
 
 export async function updateGlobalConfig({
-  project_id,
+  git_project_id,
   config,
-}: pb.MarsUpdateRequest) {
-  return ajax.put<pb.MarsUpdateResponse>(
-    `/api/gitlab/projects/${project_id}/mars_config`,
+}: pb.GitProjectConfigUpdateRequest) {
+  return ajax.put<pb.GitProjectConfigUpdateResponse>(
+    `/api/gitproject/projects/${git_project_id}/mars_config`,
     { config: config }
   );
 }
 
 export async function getDefaultValues({
-  project_id,
+  git_project_id,
   branch,
-}: pb.MarsDefaultChartValuesRequest) {
-  return ajax.get<pb.MarsDefaultChartValuesResponse>(
-    `/api/gitlab/projects/${project_id}/default_values?branch=${branch}`
+}: pb.GitProjectConfigDefaultChartValuesRequest) {
+  return ajax.get<pb.GitProjectConfigDefaultChartValuesResponse>(
+    `/api/gitproject/projects/${git_project_id}/default_values?branch=${branch}`
   );
 }

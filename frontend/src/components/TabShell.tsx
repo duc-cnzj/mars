@@ -26,7 +26,7 @@ const TabShell: React.FC<{
   resizeAt: number;
   updatedAt: any;
 }> = ({ detail, resizeAt, updatedAt }) => {
-  const [list, setList] = useState<pb.ProjectPodLog[]>([]);
+  const [list, setList] = useState<pb.ProjectPod[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
@@ -48,7 +48,7 @@ const TabShell: React.FC<{
       allPodContainers({
         project_id: detail.id,
       }).then((res) => {
-        setList(res.data.data);
+        setList(res.data.items);
         return res;
       }),
     [detail.id]
@@ -148,7 +148,7 @@ const TabShell: React.FC<{
 
   useEffect(() => {
     listContainer().then((res) => {
-      let first = res.data.data[0];
+      let first = res.data.items[0];
       setValue(first.pod_name + "|" + first.container_name);
     });
   }, [updatedAt, listContainer]);
@@ -232,7 +232,7 @@ const TabShell: React.FC<{
             } else {
               // message.error(`容器列表有更新，请重试！`);
               listContainer().then((res) => {
-                let first = res.data.data[0];
+                let first = res.data.items[0];
                 setValue(first.pod_name + "|" + first.container_name);
               });
             }
@@ -279,7 +279,7 @@ const TabShell: React.FC<{
           .then((res) => {
             console.log(res);
             message.success(
-              `文件 ${info.file.name} 已上传到容器 ${res.data.podFilePath} 下`,
+              `文件 ${info.file.name} 已上传到容器 ${res.data.pod_file_path} 下`,
               2
             );
           })

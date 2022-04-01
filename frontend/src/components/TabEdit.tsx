@@ -33,9 +33,9 @@ import pb from "../api/compiled";
 
 interface WatchData {
   projectName: string;
-  gitlabProjectId: number;
-  gitlabBranch: string;
-  gitlabCommit: string;
+  gitProjectId: number;
+  gitBranch: string;
+  gitCommit: string;
   config: string;
 }
 
@@ -55,9 +55,9 @@ const ModalSub: React.FC<{
   const dispatch = useDispatch();
   const [data, setData] = useState<WatchData>({
     projectName: detail.name,
-    gitlabProjectId: Number(detail.gitlab_project_id),
-    gitlabBranch: detail.gitlab_branch,
-    gitlabCommit: detail.gitlab_commit,
+    gitProjectId: Number(detail.git_project_id),
+    gitBranch: detail.git_branch,
+    gitCommit: detail.git_commit,
     config: detail.config,
   });
   const [start, setStart] = useState(false);
@@ -66,14 +66,14 @@ const ModalSub: React.FC<{
     () => ({
       selectors: {
         projectName: detail.name,
-        gitlabProjectId: Number(detail.gitlab_project_id),
-        gitlabBranch: detail.gitlab_branch,
-        gitlabCommit: detail.gitlab_commit,
+        gitProjectId: Number(detail.git_project_id),
+        gitBranch: detail.git_branch,
+        gitCommit: detail.git_commit,
       },
       name: detail.name,
-      gitlabProjectId: Number(detail.gitlab_project_id),
-      gitlabBranch: detail.gitlab_branch,
-      gitlabCommit: detail.gitlab_commit,
+      gitProjectId: Number(detail.git_project_id),
+      gitBranch: detail.git_branch,
+      gitCommit: detail.git_commit,
       config: detail.config,
       config_type: detail.config_type,
       debug: !detail.atomic,
@@ -90,9 +90,9 @@ const ModalSub: React.FC<{
   const onChange = useCallback(
     (v: {
       projectName: string;
-      gitlabProjectId: number;
-      gitlabBranch: string;
-      gitlabCommit: string;
+      gitProjectId: number;
+      gitBranch: string;
+      gitCommit: string;
     }) => {
       setData((d) => ({ ...d, ...v }));
       form.setFieldsValue({ selectors: v });
@@ -110,7 +110,7 @@ const ModalSub: React.FC<{
       message.error("连接断开了");
       return;
     }
-    if (data.gitlabCommit && data.gitlabBranch) {
+    if (data.gitCommit && data.gitBranch) {
       setStart(true);
       setEditVisible(false);
       setTimelineVisible(true);
@@ -120,8 +120,8 @@ const ModalSub: React.FC<{
 
         extra_values: values.extra_values,
         project_id: Number(id),
-        gitlab_branch: data.gitlabBranch,
-        gitlab_commit: data.gitlabCommit,
+        git_branch: data.gitBranch,
+        git_commit: data.gitCommit,
         config: values.config,
         atomic: !values.debug,
       }).finish();
@@ -138,7 +138,7 @@ const ModalSub: React.FC<{
       message.error("连接断开了");
       return;
     }
-    if (data.gitlabProjectId && data.gitlabBranch && data.gitlabCommit) {
+    if (data.gitProjectId && data.gitBranch && data.gitCommit) {
       let s = pb.CancelInput.encode({
         type: pb.Type.CancelProject,
         namespace_id: Number(namespaceId),
@@ -202,9 +202,9 @@ const ModalSub: React.FC<{
           style={{ height: "100%", display: "flex", flexDirection: "column" }}
         >
           <PipelineInfo
-            projectId={data.gitlabProjectId}
-            branch={data.gitlabBranch}
-            commit={data.gitlabCommit}
+            projectId={data.gitProjectId}
+            branch={data.gitBranch}
+            commit={data.gitCommit}
           />
 
           <div

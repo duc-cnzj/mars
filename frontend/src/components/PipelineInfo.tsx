@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
-import { pipelineInfo } from "../api/gitlab";
+import { pipelineInfo } from "../api/git";
 import { Alert } from "antd";
 
 const pipelines: {
@@ -32,7 +32,7 @@ const PipelineInfo: React.FC<{
 
   useEffect(() => {
     if (projectId && branch && commit) {
-      pipelineInfo({ project_id: String(projectId), branch, commit })
+      pipelineInfo({ git_project_id: String(projectId), branch, commit })
         .then((res) => {
           let p = pipelines[res.data.status];
           if (p) {

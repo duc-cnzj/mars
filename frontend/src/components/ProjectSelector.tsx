@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
 import { Cascader, Skeleton } from "antd";
-import { commit } from "../api/gitlab";
-import { branchOptions, commitOptions, projectOptions } from "../api/gitlab";
+import { commit } from "../api/git";
+import { branchOptions, commitOptions, projectOptions } from "../api/git";
 import { get } from "lodash";
 import pb from "../api/compiled";
 import { useAsyncState } from "../utils/async";
@@ -10,44 +10,44 @@ const ProjectSelector: React.FC<{
   isCreate: boolean;
   value?: {
     projectName: string;
-    gitlabProjectId: string;
-    gitlabBranch: string;
-    gitlabCommit: string;
+    gitProjectId: string;
+    gitBranch: string;
+    gitCommit: string;
     time?: number;
   };
   onChange?: (data: {
     projectName: string;
-    gitlabProjectId: number;
-    gitlabBranch: string;
-    gitlabCommit: string;
+    gitProjectId: number;
+    gitBranch: string;
+    gitCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate }) => {
   const [options, setOptions] = useAsyncState<pb.GitOption[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
-  const [loading, setLoading] = useState(v ? !!v.gitlabCommit : false);
+  const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
 
   // 初始化，设置 initvalue
   useEffect(() => {
     if (
       value.length < 1 &&
       v &&
-      v.gitlabCommit &&
-      v.gitlabBranch &&
-      v.gitlabProjectId
+      v.gitCommit &&
+      v.gitBranch &&
+      v.gitProjectId
     ) {
       projectOptions().then((res) => {
-        let r = res.data.data.find(
-          (item) => item.projectId === String(v.gitlabProjectId)
+        let r = res.data.items.find(
+          (item) => item.gitProjectId === String(v.gitProjectId)
         );
 
         commit({
-          project_id: String(v.gitlabProjectId),
-          branch: v.gitlabBranch,
-          commit: v.gitlabCommit,
+          git_project_id: String(v.gitProjectId),
+          branch: v.gitBranch,
+          commit: v.gitCommit,
         }).then((res) => {
           r &&
-            res.data.data &&
-            setValue([r.label, v.gitlabBranch, res.data.data.label]);
+            res.data &&
+            setValue([r.label, v.gitBranch, res.data.label]);
           setLoading(false);
         });
       });
@@ -56,9 +56,9 @@ const ProjectSelector: React.FC<{
 
   useEffect(() => {
     projectOptions().then((res) => {
-      if (!isCreate && v?.gitlabProjectId) {
-        let r = res.data.data.find(
-          (item) => item.projectId === String(v.gitlabProjectId)
+      if (!isCreate && v?.gitProjectId) {
+        let r = res.data.items.find(
+          (item) => item.gitProjectId === String(v.gitProjectId)
         );
         if (r) {
           (r as any).children = [];
@@ -66,7 +66,7 @@ const ProjectSelector: React.FC<{
         setOptions(r ? [r] : []);
       } else {
         setOptions(
-          res.data.data.map((i: any) => {
+          res.data.items.map((i: any) => {
             i.children = [];
             return i;
           })
@@ -87,21 +87,21 @@ const ProjectSelector: React.FC<{
       switch (targetOption.type) {
         case "project":
           branchOptions({
-            project_id: String(targetOption.value),
+            git_project_id: String(targetOption.value),
             all: false,
           }).then((res) => {
             targetOption.loading = false;
-            targetOption.children = res.data.data;
+            targetOption.children = res.data.items;
             setOptions((opts) => [...opts]);
           });
           return;
         case "branch":
           commitOptions({
-            project_id: String(targetOption.projectId),
+            git_project_id: String(targetOption.gitProjectId),
             branch: String(targetOption.value),
           }).then((res) => {
             targetOption.loading = false;
-            targetOption.children = res.data.data;
+            targetOption.children = res.data.items;
             setOptions((opts) => [...opts]);
           });
           return;
@@ -111,11 +111,11 @@ const ProjectSelector: React.FC<{
   );
 
   const onChange = (values: (string | number)[]) => {
-    let gitlabId = get(values, 0, 0);
+    let gitId = get(values, 0, 0);
     let gbranch = get(values, 1, "");
     let gcommit = get(values, 2, "");
 
-    if (gitlabId) {
+    if (gitId) {
       let o = options.find((item) => item.value === values[0]);
       setValue([o ? o.label : ""]);
       if (gbranch) {
@@ -138,9 +138,9 @@ const ProjectSelector: React.FC<{
                   "label",
                   ""
                 ),
-                gitlabProjectId: Number(gitlabId),
-                gitlabBranch: String(gbranch),
-                gitlabCommit: String(gcommit),
+                gitProjectId: Number(gitId),
+                gitBranch: String(gbranch),
+                gitCommit: String(gcommit),
               });
             }
           }

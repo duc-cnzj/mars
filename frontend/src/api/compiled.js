@@ -7403,6 +7403,425 @@ export const ServiceEndpoint = $root.ServiceEndpoint = (() => {
     return ServiceEndpoint;
 })();
 
+export const EndpointInNamespaceRequest = $root.EndpointInNamespaceRequest = (() => {
+
+    /**
+     * Properties of an EndpointInNamespaceRequest.
+     * @exports IEndpointInNamespaceRequest
+     * @interface IEndpointInNamespaceRequest
+     * @property {number|null} [namespace_id] EndpointInNamespaceRequest namespace_id
+     */
+
+    /**
+     * Constructs a new EndpointInNamespaceRequest.
+     * @exports EndpointInNamespaceRequest
+     * @classdesc Represents an EndpointInNamespaceRequest.
+     * @implements IEndpointInNamespaceRequest
+     * @constructor
+     * @param {IEndpointInNamespaceRequest=} [properties] Properties to set
+     */
+    function EndpointInNamespaceRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EndpointInNamespaceRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof EndpointInNamespaceRequest
+     * @instance
+     */
+    EndpointInNamespaceRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EndpointInNamespaceRequest message. Does not implicitly {@link EndpointInNamespaceRequest.verify|verify} messages.
+     * @function encode
+     * @memberof EndpointInNamespaceRequest
+     * @static
+     * @param {EndpointInNamespaceRequest} message EndpointInNamespaceRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EndpointInNamespaceRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        return writer;
+    };
+
+    /**
+     * Decodes an EndpointInNamespaceRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof EndpointInNamespaceRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EndpointInNamespaceRequest} EndpointInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EndpointInNamespaceRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EndpointInNamespaceRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EndpointInNamespaceRequest;
+})();
+
+export const EndpointInNamespaceResponse = $root.EndpointInNamespaceResponse = (() => {
+
+    /**
+     * Properties of an EndpointInNamespaceResponse.
+     * @exports IEndpointInNamespaceResponse
+     * @interface IEndpointInNamespaceResponse
+     * @property {Array.<ServiceEndpoint>|null} [items] EndpointInNamespaceResponse items
+     */
+
+    /**
+     * Constructs a new EndpointInNamespaceResponse.
+     * @exports EndpointInNamespaceResponse
+     * @classdesc Represents an EndpointInNamespaceResponse.
+     * @implements IEndpointInNamespaceResponse
+     * @constructor
+     * @param {IEndpointInNamespaceResponse=} [properties] Properties to set
+     */
+    function EndpointInNamespaceResponse(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EndpointInNamespaceResponse items.
+     * @member {Array.<ServiceEndpoint>} items
+     * @memberof EndpointInNamespaceResponse
+     * @instance
+     */
+    EndpointInNamespaceResponse.prototype.items = $util.emptyArray;
+
+    /**
+     * Encodes the specified EndpointInNamespaceResponse message. Does not implicitly {@link EndpointInNamespaceResponse.verify|verify} messages.
+     * @function encode
+     * @memberof EndpointInNamespaceResponse
+     * @static
+     * @param {EndpointInNamespaceResponse} message EndpointInNamespaceResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EndpointInNamespaceResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.ServiceEndpoint.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes an EndpointInNamespaceResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof EndpointInNamespaceResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EndpointInNamespaceResponse} EndpointInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EndpointInNamespaceResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EndpointInNamespaceResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.ServiceEndpoint.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EndpointInNamespaceResponse;
+})();
+
+export const EndpointInProjectRequest = $root.EndpointInProjectRequest = (() => {
+
+    /**
+     * Properties of an EndpointInProjectRequest.
+     * @exports IEndpointInProjectRequest
+     * @interface IEndpointInProjectRequest
+     * @property {number|null} [project_id] EndpointInProjectRequest project_id
+     */
+
+    /**
+     * Constructs a new EndpointInProjectRequest.
+     * @exports EndpointInProjectRequest
+     * @classdesc Represents an EndpointInProjectRequest.
+     * @implements IEndpointInProjectRequest
+     * @constructor
+     * @param {IEndpointInProjectRequest=} [properties] Properties to set
+     */
+    function EndpointInProjectRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EndpointInProjectRequest project_id.
+     * @member {number} project_id
+     * @memberof EndpointInProjectRequest
+     * @instance
+     */
+    EndpointInProjectRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified EndpointInProjectRequest message. Does not implicitly {@link EndpointInProjectRequest.verify|verify} messages.
+     * @function encode
+     * @memberof EndpointInProjectRequest
+     * @static
+     * @param {EndpointInProjectRequest} message EndpointInProjectRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EndpointInProjectRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes an EndpointInProjectRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof EndpointInProjectRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EndpointInProjectRequest} EndpointInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EndpointInProjectRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EndpointInProjectRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EndpointInProjectRequest;
+})();
+
+export const EndpointInProjectResponse = $root.EndpointInProjectResponse = (() => {
+
+    /**
+     * Properties of an EndpointInProjectResponse.
+     * @exports IEndpointInProjectResponse
+     * @interface IEndpointInProjectResponse
+     * @property {Array.<ServiceEndpoint>|null} [items] EndpointInProjectResponse items
+     */
+
+    /**
+     * Constructs a new EndpointInProjectResponse.
+     * @exports EndpointInProjectResponse
+     * @classdesc Represents an EndpointInProjectResponse.
+     * @implements IEndpointInProjectResponse
+     * @constructor
+     * @param {IEndpointInProjectResponse=} [properties] Properties to set
+     */
+    function EndpointInProjectResponse(properties) {
+        this.items = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * EndpointInProjectResponse items.
+     * @member {Array.<ServiceEndpoint>} items
+     * @memberof EndpointInProjectResponse
+     * @instance
+     */
+    EndpointInProjectResponse.prototype.items = $util.emptyArray;
+
+    /**
+     * Encodes the specified EndpointInProjectResponse message. Does not implicitly {@link EndpointInProjectResponse.verify|verify} messages.
+     * @function encode
+     * @memberof EndpointInProjectResponse
+     * @static
+     * @param {EndpointInProjectResponse} message EndpointInProjectResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    EndpointInProjectResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.items != null && message.items.length)
+            for (let i = 0; i < message.items.length; ++i)
+                $root.ServiceEndpoint.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Decodes an EndpointInProjectResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof EndpointInProjectResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {EndpointInProjectResponse} EndpointInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    EndpointInProjectResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.EndpointInProjectResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.items && message.items.length))
+                    message.items = [];
+                message.items.push($root.ServiceEndpoint.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return EndpointInProjectResponse;
+})();
+
+export const Endpoint = $root.Endpoint = (() => {
+
+    /**
+     * Constructs a new Endpoint service.
+     * @exports Endpoint
+     * @classdesc Represents an Endpoint
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Endpoint(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Endpoint.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Endpoint;
+
+    /**
+     * Callback as used by {@link Endpoint#inNamespace}.
+     * @memberof Endpoint
+     * @typedef InNamespaceCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {EndpointInNamespaceResponse} [response] EndpointInNamespaceResponse
+     */
+
+    /**
+     * Calls InNamespace.
+     * @function inNamespace
+     * @memberof Endpoint
+     * @instance
+     * @param {EndpointInNamespaceRequest} request EndpointInNamespaceRequest message or plain object
+     * @param {Endpoint.InNamespaceCallback} callback Node-style callback called with the error, if any, and EndpointInNamespaceResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Endpoint.prototype.inNamespace = function inNamespace(request, callback) {
+        return this.rpcCall(inNamespace, $root.EndpointInNamespaceRequest, $root.EndpointInNamespaceResponse, request, callback);
+    }, "name", { value: "InNamespace" });
+
+    /**
+     * Calls InNamespace.
+     * @function inNamespace
+     * @memberof Endpoint
+     * @instance
+     * @param {EndpointInNamespaceRequest} request EndpointInNamespaceRequest message or plain object
+     * @returns {Promise<EndpointInNamespaceResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Endpoint#inProject}.
+     * @memberof Endpoint
+     * @typedef InProjectCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {EndpointInProjectResponse} [response] EndpointInProjectResponse
+     */
+
+    /**
+     * Calls InProject.
+     * @function inProject
+     * @memberof Endpoint
+     * @instance
+     * @param {EndpointInProjectRequest} request EndpointInProjectRequest message or plain object
+     * @param {Endpoint.InProjectCallback} callback Node-style callback called with the error, if any, and EndpointInProjectResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Endpoint.prototype.inProject = function inProject(request, callback) {
+        return this.rpcCall(inProject, $root.EndpointInProjectRequest, $root.EndpointInProjectResponse, request, callback);
+    }, "name", { value: "InProject" });
+
+    /**
+     * Calls InProject.
+     * @function inProject
+     * @memberof Endpoint
+     * @instance
+     * @param {EndpointInProjectRequest} request EndpointInProjectRequest message or plain object
+     * @returns {Promise<EndpointInProjectResponse>} Promise
+     * @variation 2
+     */
+
+    return Endpoint;
+})();
+
 /**
  * ActionType enum.
  * @exports ActionType
@@ -12936,6 +13355,511 @@ export const MetricsTopPodResponse = $root.MetricsTopPodResponse = (() => {
     };
 
     return MetricsTopPodResponse;
+})();
+
+export const MetricsCpuMemoryInNamespaceRequest = $root.MetricsCpuMemoryInNamespaceRequest = (() => {
+
+    /**
+     * Properties of a MetricsCpuMemoryInNamespaceRequest.
+     * @exports IMetricsCpuMemoryInNamespaceRequest
+     * @interface IMetricsCpuMemoryInNamespaceRequest
+     * @property {number|null} [namespace_id] MetricsCpuMemoryInNamespaceRequest namespace_id
+     */
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceRequest.
+     * @exports MetricsCpuMemoryInNamespaceRequest
+     * @classdesc Represents a MetricsCpuMemoryInNamespaceRequest.
+     * @implements IMetricsCpuMemoryInNamespaceRequest
+     * @constructor
+     * @param {IMetricsCpuMemoryInNamespaceRequest=} [properties] Properties to set
+     */
+    function MetricsCpuMemoryInNamespaceRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsCpuMemoryInNamespaceRequest namespace_id.
+     * @member {number} namespace_id
+     * @memberof MetricsCpuMemoryInNamespaceRequest
+     * @instance
+     */
+    MetricsCpuMemoryInNamespaceRequest.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceRequest message. Does not implicitly {@link MetricsCpuMemoryInNamespaceRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsCpuMemoryInNamespaceRequest
+     * @static
+     * @param {MetricsCpuMemoryInNamespaceRequest} message MetricsCpuMemoryInNamespaceRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsCpuMemoryInNamespaceRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.namespace_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsCpuMemoryInNamespaceRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsCpuMemoryInNamespaceRequest} MetricsCpuMemoryInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsCpuMemoryInNamespaceRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsCpuMemoryInNamespaceRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.namespace_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsCpuMemoryInNamespaceRequest;
+})();
+
+export const MetricsCpuMemoryInNamespaceResponse = $root.MetricsCpuMemoryInNamespaceResponse = (() => {
+
+    /**
+     * Properties of a MetricsCpuMemoryInNamespaceResponse.
+     * @exports IMetricsCpuMemoryInNamespaceResponse
+     * @interface IMetricsCpuMemoryInNamespaceResponse
+     * @property {string|null} [cpu] MetricsCpuMemoryInNamespaceResponse cpu
+     * @property {string|null} [memory] MetricsCpuMemoryInNamespaceResponse memory
+     */
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceResponse.
+     * @exports MetricsCpuMemoryInNamespaceResponse
+     * @classdesc Represents a MetricsCpuMemoryInNamespaceResponse.
+     * @implements IMetricsCpuMemoryInNamespaceResponse
+     * @constructor
+     * @param {IMetricsCpuMemoryInNamespaceResponse=} [properties] Properties to set
+     */
+    function MetricsCpuMemoryInNamespaceResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsCpuMemoryInNamespaceResponse cpu.
+     * @member {string} cpu
+     * @memberof MetricsCpuMemoryInNamespaceResponse
+     * @instance
+     */
+    MetricsCpuMemoryInNamespaceResponse.prototype.cpu = "";
+
+    /**
+     * MetricsCpuMemoryInNamespaceResponse memory.
+     * @member {string} memory
+     * @memberof MetricsCpuMemoryInNamespaceResponse
+     * @instance
+     */
+    MetricsCpuMemoryInNamespaceResponse.prototype.memory = "";
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceResponse message. Does not implicitly {@link MetricsCpuMemoryInNamespaceResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsCpuMemoryInNamespaceResponse
+     * @static
+     * @param {MetricsCpuMemoryInNamespaceResponse} message MetricsCpuMemoryInNamespaceResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsCpuMemoryInNamespaceResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.cpu);
+        if (message.memory != null && Object.hasOwnProperty.call(message, "memory"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.memory);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsCpuMemoryInNamespaceResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsCpuMemoryInNamespaceResponse} MetricsCpuMemoryInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsCpuMemoryInNamespaceResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsCpuMemoryInNamespaceResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.cpu = reader.string();
+                break;
+            case 2:
+                message.memory = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsCpuMemoryInNamespaceResponse;
+})();
+
+export const MetricsCpuMemoryInProjectRequest = $root.MetricsCpuMemoryInProjectRequest = (() => {
+
+    /**
+     * Properties of a MetricsCpuMemoryInProjectRequest.
+     * @exports IMetricsCpuMemoryInProjectRequest
+     * @interface IMetricsCpuMemoryInProjectRequest
+     * @property {number|null} [project_id] MetricsCpuMemoryInProjectRequest project_id
+     */
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectRequest.
+     * @exports MetricsCpuMemoryInProjectRequest
+     * @classdesc Represents a MetricsCpuMemoryInProjectRequest.
+     * @implements IMetricsCpuMemoryInProjectRequest
+     * @constructor
+     * @param {IMetricsCpuMemoryInProjectRequest=} [properties] Properties to set
+     */
+    function MetricsCpuMemoryInProjectRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsCpuMemoryInProjectRequest project_id.
+     * @member {number} project_id
+     * @memberof MetricsCpuMemoryInProjectRequest
+     * @instance
+     */
+    MetricsCpuMemoryInProjectRequest.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectRequest message. Does not implicitly {@link MetricsCpuMemoryInProjectRequest.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsCpuMemoryInProjectRequest
+     * @static
+     * @param {MetricsCpuMemoryInProjectRequest} message MetricsCpuMemoryInProjectRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsCpuMemoryInProjectRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int64(message.project_id);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsCpuMemoryInProjectRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsCpuMemoryInProjectRequest} MetricsCpuMemoryInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsCpuMemoryInProjectRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsCpuMemoryInProjectRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.project_id = reader.int64();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsCpuMemoryInProjectRequest;
+})();
+
+export const MetricsCpuMemoryInProjectResponse = $root.MetricsCpuMemoryInProjectResponse = (() => {
+
+    /**
+     * Properties of a MetricsCpuMemoryInProjectResponse.
+     * @exports IMetricsCpuMemoryInProjectResponse
+     * @interface IMetricsCpuMemoryInProjectResponse
+     * @property {string|null} [cpu] MetricsCpuMemoryInProjectResponse cpu
+     * @property {string|null} [memory] MetricsCpuMemoryInProjectResponse memory
+     */
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectResponse.
+     * @exports MetricsCpuMemoryInProjectResponse
+     * @classdesc Represents a MetricsCpuMemoryInProjectResponse.
+     * @implements IMetricsCpuMemoryInProjectResponse
+     * @constructor
+     * @param {IMetricsCpuMemoryInProjectResponse=} [properties] Properties to set
+     */
+    function MetricsCpuMemoryInProjectResponse(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * MetricsCpuMemoryInProjectResponse cpu.
+     * @member {string} cpu
+     * @memberof MetricsCpuMemoryInProjectResponse
+     * @instance
+     */
+    MetricsCpuMemoryInProjectResponse.prototype.cpu = "";
+
+    /**
+     * MetricsCpuMemoryInProjectResponse memory.
+     * @member {string} memory
+     * @memberof MetricsCpuMemoryInProjectResponse
+     * @instance
+     */
+    MetricsCpuMemoryInProjectResponse.prototype.memory = "";
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectResponse message. Does not implicitly {@link MetricsCpuMemoryInProjectResponse.verify|verify} messages.
+     * @function encode
+     * @memberof MetricsCpuMemoryInProjectResponse
+     * @static
+     * @param {MetricsCpuMemoryInProjectResponse} message MetricsCpuMemoryInProjectResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    MetricsCpuMemoryInProjectResponse.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.cpu != null && Object.hasOwnProperty.call(message, "cpu"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.cpu);
+        if (message.memory != null && Object.hasOwnProperty.call(message, "memory"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.memory);
+        return writer;
+    };
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof MetricsCpuMemoryInProjectResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {MetricsCpuMemoryInProjectResponse} MetricsCpuMemoryInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    MetricsCpuMemoryInProjectResponse.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.MetricsCpuMemoryInProjectResponse();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.cpu = reader.string();
+                break;
+            case 2:
+                message.memory = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return MetricsCpuMemoryInProjectResponse;
+})();
+
+export const Metrics = $root.Metrics = (() => {
+
+    /**
+     * Constructs a new Metrics service.
+     * @exports Metrics
+     * @classdesc Represents a Metrics
+     * @extends $protobuf.rpc.Service
+     * @constructor
+     * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+     * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+     * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+     */
+    function Metrics(rpcImpl, requestDelimited, responseDelimited) {
+        $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+    }
+
+    (Metrics.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Metrics;
+
+    /**
+     * Callback as used by {@link Metrics#cpuMemoryInNamespace}.
+     * @memberof Metrics
+     * @typedef CpuMemoryInNamespaceCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsCpuMemoryInNamespaceResponse} [response] MetricsCpuMemoryInNamespaceResponse
+     */
+
+    /**
+     * Calls CpuMemoryInNamespace.
+     * @function cpuMemoryInNamespace
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsCpuMemoryInNamespaceRequest} request MetricsCpuMemoryInNamespaceRequest message or plain object
+     * @param {Metrics.CpuMemoryInNamespaceCallback} callback Node-style callback called with the error, if any, and MetricsCpuMemoryInNamespaceResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.cpuMemoryInNamespace = function cpuMemoryInNamespace(request, callback) {
+        return this.rpcCall(cpuMemoryInNamespace, $root.MetricsCpuMemoryInNamespaceRequest, $root.MetricsCpuMemoryInNamespaceResponse, request, callback);
+    }, "name", { value: "CpuMemoryInNamespace" });
+
+    /**
+     * Calls CpuMemoryInNamespace.
+     * @function cpuMemoryInNamespace
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsCpuMemoryInNamespaceRequest} request MetricsCpuMemoryInNamespaceRequest message or plain object
+     * @returns {Promise<MetricsCpuMemoryInNamespaceResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Metrics#cpuMemoryInProject}.
+     * @memberof Metrics
+     * @typedef CpuMemoryInProjectCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsCpuMemoryInProjectResponse} [response] MetricsCpuMemoryInProjectResponse
+     */
+
+    /**
+     * Calls CpuMemoryInProject.
+     * @function cpuMemoryInProject
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsCpuMemoryInProjectRequest} request MetricsCpuMemoryInProjectRequest message or plain object
+     * @param {Metrics.CpuMemoryInProjectCallback} callback Node-style callback called with the error, if any, and MetricsCpuMemoryInProjectResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.cpuMemoryInProject = function cpuMemoryInProject(request, callback) {
+        return this.rpcCall(cpuMemoryInProject, $root.MetricsCpuMemoryInProjectRequest, $root.MetricsCpuMemoryInProjectResponse, request, callback);
+    }, "name", { value: "CpuMemoryInProject" });
+
+    /**
+     * Calls CpuMemoryInProject.
+     * @function cpuMemoryInProject
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsCpuMemoryInProjectRequest} request MetricsCpuMemoryInProjectRequest message or plain object
+     * @returns {Promise<MetricsCpuMemoryInProjectResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Metrics#topPod}.
+     * @memberof Metrics
+     * @typedef TopPodCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsTopPodResponse} [response] MetricsTopPodResponse
+     */
+
+    /**
+     * Calls TopPod.
+     * @function topPod
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsTopPodRequest} request MetricsTopPodRequest message or plain object
+     * @param {Metrics.TopPodCallback} callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.topPod = function topPod(request, callback) {
+        return this.rpcCall(topPod, $root.MetricsTopPodRequest, $root.MetricsTopPodResponse, request, callback);
+    }, "name", { value: "TopPod" });
+
+    /**
+     * Calls TopPod.
+     * @function topPod
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsTopPodRequest} request MetricsTopPodRequest message or plain object
+     * @returns {Promise<MetricsTopPodResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link Metrics#streamTopPod}.
+     * @memberof Metrics
+     * @typedef StreamTopPodCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {MetricsTopPodResponse} [response] MetricsTopPodResponse
+     */
+
+    /**
+     * Calls StreamTopPod.
+     * @function streamTopPod
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsTopPodRequest} request MetricsTopPodRequest message or plain object
+     * @param {Metrics.StreamTopPodCallback} callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(Metrics.prototype.streamTopPod = function streamTopPod(request, callback) {
+        return this.rpcCall(streamTopPod, $root.MetricsTopPodRequest, $root.MetricsTopPodResponse, request, callback);
+    }, "name", { value: "StreamTopPod" });
+
+    /**
+     * Calls StreamTopPod.
+     * @function streamTopPod
+     * @memberof Metrics
+     * @instance
+     * @param {MetricsTopPodRequest} request MetricsTopPodRequest message or plain object
+     * @returns {Promise<MetricsTopPodResponse>} Promise
+     * @variation 2
+     */
+
+    return Metrics;
 })();
 
 export const GitProjectModel = $root.GitProjectModel = (() => {

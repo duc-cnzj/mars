@@ -3182,6 +3182,187 @@ export class ServiceEndpoint implements IServiceEndpoint {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServiceEndpoint;
 }
 
+/** Represents an EndpointInNamespaceRequest. */
+export class EndpointInNamespaceRequest implements IEndpointInNamespaceRequest {
+
+    /**
+     * Constructs a new EndpointInNamespaceRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInNamespaceRequest);
+
+    /** EndpointInNamespaceRequest namespace_id. */
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified EndpointInNamespaceRequest message. Does not implicitly {@link EndpointInNamespaceRequest.verify|verify} messages.
+     * @param message EndpointInNamespaceRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInNamespaceRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInNamespaceRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInNamespaceRequest;
+}
+
+/** Represents an EndpointInNamespaceResponse. */
+export class EndpointInNamespaceResponse implements IEndpointInNamespaceResponse {
+
+    /**
+     * Constructs a new EndpointInNamespaceResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInNamespaceResponse);
+
+    /** EndpointInNamespaceResponse items. */
+    public items: ServiceEndpoint[];
+
+    /**
+     * Encodes the specified EndpointInNamespaceResponse message. Does not implicitly {@link EndpointInNamespaceResponse.verify|verify} messages.
+     * @param message EndpointInNamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInNamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInNamespaceResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInNamespaceResponse;
+}
+
+/** Represents an EndpointInProjectRequest. */
+export class EndpointInProjectRequest implements IEndpointInProjectRequest {
+
+    /**
+     * Constructs a new EndpointInProjectRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInProjectRequest);
+
+    /** EndpointInProjectRequest project_id. */
+    public project_id: number;
+
+    /**
+     * Encodes the specified EndpointInProjectRequest message. Does not implicitly {@link EndpointInProjectRequest.verify|verify} messages.
+     * @param message EndpointInProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInProjectRequest;
+}
+
+/** Represents an EndpointInProjectResponse. */
+export class EndpointInProjectResponse implements IEndpointInProjectResponse {
+
+    /**
+     * Constructs a new EndpointInProjectResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IEndpointInProjectResponse);
+
+    /** EndpointInProjectResponse items. */
+    public items: ServiceEndpoint[];
+
+    /**
+     * Encodes the specified EndpointInProjectResponse message. Does not implicitly {@link EndpointInProjectResponse.verify|verify} messages.
+     * @param message EndpointInProjectResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: EndpointInProjectResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes an EndpointInProjectResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns EndpointInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EndpointInProjectResponse;
+}
+
+/** Represents an Endpoint */
+export class Endpoint extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Endpoint service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls InNamespace.
+     * @param request EndpointInNamespaceRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and EndpointInNamespaceResponse
+     */
+    public inNamespace(request: EndpointInNamespaceRequest, callback: Endpoint.InNamespaceCallback): void;
+
+    /**
+     * Calls InNamespace.
+     * @param request EndpointInNamespaceRequest message or plain object
+     * @returns Promise
+     */
+    public inNamespace(request: EndpointInNamespaceRequest): Promise<EndpointInNamespaceResponse>;
+
+    /**
+     * Calls InProject.
+     * @param request EndpointInProjectRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and EndpointInProjectResponse
+     */
+    public inProject(request: EndpointInProjectRequest, callback: Endpoint.InProjectCallback): void;
+
+    /**
+     * Calls InProject.
+     * @param request EndpointInProjectRequest message or plain object
+     * @returns Promise
+     */
+    public inProject(request: EndpointInProjectRequest): Promise<EndpointInProjectResponse>;
+}
+
+export namespace Endpoint {
+
+    /**
+     * Callback as used by {@link Endpoint#inNamespace}.
+     * @param error Error, if any
+     * @param [response] EndpointInNamespaceResponse
+     */
+    type InNamespaceCallback = (error: (Error|null), response?: EndpointInNamespaceResponse) => void;
+
+    /**
+     * Callback as used by {@link Endpoint#inProject}.
+     * @param error Error, if any
+     * @param [response] EndpointInProjectResponse
+     */
+    type InProjectCallback = (error: (Error|null), response?: EndpointInProjectResponse) => void;
+}
+
 /** ActionType enum. */
 export enum ActionType {
     Unknown = 0,
@@ -5302,6 +5483,235 @@ export class MetricsTopPodResponse implements IMetricsTopPodResponse {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsTopPodResponse;
+}
+
+/** Represents a MetricsCpuMemoryInNamespaceRequest. */
+export class MetricsCpuMemoryInNamespaceRequest implements IMetricsCpuMemoryInNamespaceRequest {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInNamespaceRequest);
+
+    /** MetricsCpuMemoryInNamespaceRequest namespace_id. */
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceRequest message. Does not implicitly {@link MetricsCpuMemoryInNamespaceRequest.verify|verify} messages.
+     * @param message MetricsCpuMemoryInNamespaceRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInNamespaceRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInNamespaceRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInNamespaceRequest;
+}
+
+/** Represents a MetricsCpuMemoryInNamespaceResponse. */
+export class MetricsCpuMemoryInNamespaceResponse implements IMetricsCpuMemoryInNamespaceResponse {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInNamespaceResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInNamespaceResponse);
+
+    /** MetricsCpuMemoryInNamespaceResponse cpu. */
+    public cpu: string;
+
+    /** MetricsCpuMemoryInNamespaceResponse memory. */
+    public memory: string;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInNamespaceResponse message. Does not implicitly {@link MetricsCpuMemoryInNamespaceResponse.verify|verify} messages.
+     * @param message MetricsCpuMemoryInNamespaceResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInNamespaceResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInNamespaceResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInNamespaceResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInNamespaceResponse;
+}
+
+/** Represents a MetricsCpuMemoryInProjectRequest. */
+export class MetricsCpuMemoryInProjectRequest implements IMetricsCpuMemoryInProjectRequest {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInProjectRequest);
+
+    /** MetricsCpuMemoryInProjectRequest project_id. */
+    public project_id: number;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectRequest message. Does not implicitly {@link MetricsCpuMemoryInProjectRequest.verify|verify} messages.
+     * @param message MetricsCpuMemoryInProjectRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInProjectRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInProjectRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInProjectRequest;
+}
+
+/** Represents a MetricsCpuMemoryInProjectResponse. */
+export class MetricsCpuMemoryInProjectResponse implements IMetricsCpuMemoryInProjectResponse {
+
+    /**
+     * Constructs a new MetricsCpuMemoryInProjectResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IMetricsCpuMemoryInProjectResponse);
+
+    /** MetricsCpuMemoryInProjectResponse cpu. */
+    public cpu: string;
+
+    /** MetricsCpuMemoryInProjectResponse memory. */
+    public memory: string;
+
+    /**
+     * Encodes the specified MetricsCpuMemoryInProjectResponse message. Does not implicitly {@link MetricsCpuMemoryInProjectResponse.verify|verify} messages.
+     * @param message MetricsCpuMemoryInProjectResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: MetricsCpuMemoryInProjectResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a MetricsCpuMemoryInProjectResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns MetricsCpuMemoryInProjectResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): MetricsCpuMemoryInProjectResponse;
+}
+
+/** Represents a Metrics */
+export class Metrics extends $protobuf.rpc.Service {
+
+    /**
+     * Constructs a new Metrics service.
+     * @param rpcImpl RPC implementation
+     * @param [requestDelimited=false] Whether requests are length-delimited
+     * @param [responseDelimited=false] Whether responses are length-delimited
+     */
+    constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+    /**
+     * Calls CpuMemoryInNamespace.
+     * @param request MetricsCpuMemoryInNamespaceRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsCpuMemoryInNamespaceResponse
+     */
+    public cpuMemoryInNamespace(request: MetricsCpuMemoryInNamespaceRequest, callback: Metrics.CpuMemoryInNamespaceCallback): void;
+
+    /**
+     * Calls CpuMemoryInNamespace.
+     * @param request MetricsCpuMemoryInNamespaceRequest message or plain object
+     * @returns Promise
+     */
+    public cpuMemoryInNamespace(request: MetricsCpuMemoryInNamespaceRequest): Promise<MetricsCpuMemoryInNamespaceResponse>;
+
+    /**
+     * Calls CpuMemoryInProject.
+     * @param request MetricsCpuMemoryInProjectRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsCpuMemoryInProjectResponse
+     */
+    public cpuMemoryInProject(request: MetricsCpuMemoryInProjectRequest, callback: Metrics.CpuMemoryInProjectCallback): void;
+
+    /**
+     * Calls CpuMemoryInProject.
+     * @param request MetricsCpuMemoryInProjectRequest message or plain object
+     * @returns Promise
+     */
+    public cpuMemoryInProject(request: MetricsCpuMemoryInProjectRequest): Promise<MetricsCpuMemoryInProjectResponse>;
+
+    /**
+     * Calls TopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     */
+    public topPod(request: MetricsTopPodRequest, callback: Metrics.TopPodCallback): void;
+
+    /**
+     * Calls TopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @returns Promise
+     */
+    public topPod(request: MetricsTopPodRequest): Promise<MetricsTopPodResponse>;
+
+    /**
+     * Calls StreamTopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and MetricsTopPodResponse
+     */
+    public streamTopPod(request: MetricsTopPodRequest, callback: Metrics.StreamTopPodCallback): void;
+
+    /**
+     * Calls StreamTopPod.
+     * @param request MetricsTopPodRequest message or plain object
+     * @returns Promise
+     */
+    public streamTopPod(request: MetricsTopPodRequest): Promise<MetricsTopPodResponse>;
+}
+
+export namespace Metrics {
+
+    /**
+     * Callback as used by {@link Metrics#cpuMemoryInNamespace}.
+     * @param error Error, if any
+     * @param [response] MetricsCpuMemoryInNamespaceResponse
+     */
+    type CpuMemoryInNamespaceCallback = (error: (Error|null), response?: MetricsCpuMemoryInNamespaceResponse) => void;
+
+    /**
+     * Callback as used by {@link Metrics#cpuMemoryInProject}.
+     * @param error Error, if any
+     * @param [response] MetricsCpuMemoryInProjectResponse
+     */
+    type CpuMemoryInProjectCallback = (error: (Error|null), response?: MetricsCpuMemoryInProjectResponse) => void;
+
+    /**
+     * Callback as used by {@link Metrics#topPod}.
+     * @param error Error, if any
+     * @param [response] MetricsTopPodResponse
+     */
+    type TopPodCallback = (error: (Error|null), response?: MetricsTopPodResponse) => void;
+
+    /**
+     * Callback as used by {@link Metrics#streamTopPod}.
+     * @param error Error, if any
+     * @param [response] MetricsTopPodResponse
+     */
+    type StreamTopPodCallback = (error: (Error|null), response?: MetricsTopPodResponse) => void;
 }
 
 /** Represents a GitProjectModel. */

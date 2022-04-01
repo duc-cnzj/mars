@@ -9,20 +9,18 @@ export function deleteProject(projectId:number) {
   return ajax.delete<pb.ProjectDeleteResponse>(`/api/projects/${projectId}`);
 }
 
-export function allPodContainers({project_id}: pb.ProjectAllPodContainersRequest) {
-  return ajax.get<pb.ProjectAllPodContainersResponse>(`/api/projects/${project_id}/containers`);
+export function allPodContainers({project_id}: pb.ProjectAllContainersRequest) {
+  return ajax.get<pb.ProjectAllContainersResponse>(`/api/projects/${project_id}/containers`);
 }
 
-export function containerLog({pod, project_id, container}: pb.ProjectPodContainerLogRequest) {
-  return ajax.get<pb.ProjectPodContainerLogResponse>(`/api/projects/${project_id}/pods/${pod}/containers/${container}/logs`);
+export function containerLog({pod, namespace, container}: pb.ContainerLogRequest) {
+  return ajax.get<pb.ContainerLogResponse>(`/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/logs`);
 }
 
-export function isPodRunning({namespace, pod}: pb.ProjectIsPodRunningRequest) {
-  return ajax.get<pb.ProjectIsPodRunningResponse>(`/api/namespaces/${namespace}/pod/${pod}/status`);
+export function isPodRunning({namespace, pod}: pb.ContainerIsPodRunningRequest) {
+  return ajax.post<pb.ContainerIsPodRunningResponse>(`/api/containers/pod_running_status`, {namespace, pod});
 }
 
-export function isPodExists({namespace, pod}: pb.ProjectIsPodExistsRequest) {
-  return ajax.post<pb.ProjectIsPodExistsResponse>(`/api/namespaces/${namespace}/pod/${pod}/exists`);
+export function isPodExists({namespace, pod}: pb.ContainerIsPodExistsRequest) {
+  return ajax.post<pb.ContainerIsPodExistsResponse>(`/api/containers/pod_exists`, {namespace, pod});
 }
-
-

@@ -8,7 +8,7 @@ import pb from "../api/compiled";
 import { orderBy } from "lodash";
 import { useAsyncState } from "../utils/async";
 
-import { configFile } from "../api/gitlab";
+import { configFile } from "../api/git";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -56,9 +56,9 @@ const CreateProjectModal: React.FC<{
   const info = useSelector(selectClusterInfo);
   const [data, setData] = useState<{
     projectName: string;
-    gitlabProjectId: number;
-    gitlabBranch: string;
-    gitlabCommit: string;
+    gitProjectId: number;
+    gitBranch: string;
+    gitCommit: string;
   }>();
   const [elements, setElements] = useState<pb.Element[]>();
 
@@ -100,9 +100,9 @@ const CreateProjectModal: React.FC<{
       }
       if (
         data &&
-        data.gitlabProjectId &&
-        data.gitlabBranch &&
-        data.gitlabCommit
+        data.gitProjectId &&
+        data.gitBranch &&
+        data.gitCommit
       ) {
         // todo ws connected!
         setEditVisible(false);
@@ -111,9 +111,9 @@ const CreateProjectModal: React.FC<{
           type: pb.Type.CreateProject,
           namespace_id: Number(namespaceId),
           name: data.projectName,
-          gitlab_project_id: Number(data.gitlabProjectId),
-          gitlab_branch: data.gitlabBranch,
-          gitlab_commit: data.gitlabCommit,
+          git_project_id: Number(data.gitProjectId),
+          git_branch: data.gitBranch,
+          git_commit: data.gitCommit,
           config: values.config,
           atomic: !values.debug,
           extra_values: values.extra_values,
@@ -136,9 +136,9 @@ const CreateProjectModal: React.FC<{
   const onRemove = useCallback(() => {
     if (
       data &&
-      data.gitlabProjectId &&
-      data.gitlabBranch &&
-      data.gitlabCommit
+      data.gitProjectId &&
+      data.gitBranch &&
+      data.gitCommit
     ) {
       let s = pb.CancelInput.encode({
         type: pb.Type.CancelProject,
@@ -151,10 +151,10 @@ const CreateProjectModal: React.FC<{
   }, [ws, namespaceId, data]);
 
   const loadConfigFile = useCallback(
-    (gitlabProjectId: string, gitlabBranch: string) => {
+    (gitProjectId: string, gitBranch: string) => {
       configFile({
-        project_id: gitlabProjectId,
-        branch: gitlabBranch,
+        git_project_id: gitProjectId,
+        branch: gitBranch,
       }).then((res) => {
         if (!form.getFieldValue("config")) {
           form.setFieldsValue({ config: res.data.data });
@@ -170,8 +170,8 @@ const CreateProjectModal: React.FC<{
     (v: any) => {
       setData(v);
       form.setFieldsValue({ selectors: v });
-      if (v.gitlabCommit !== "") {
-        loadConfigFile(String(v.gitlabProjectId), v.gitlabBranch);
+      if (v.gitCommit !== "") {
+        loadConfigFile(String(v.gitProjectId), v.gitBranch);
       }
     },
     [form, loadConfigFile]
@@ -228,11 +228,11 @@ const CreateProjectModal: React.FC<{
           className="create-project-modal"
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
-          {data?.gitlabCommit ? (
+          {data?.gitCommit ? (
             <PipelineInfo
-              projectId={data.gitlabProjectId}
-              branch={data.gitlabBranch}
-              commit={data.gitlabCommit}
+              projectId={data.gitProjectId}
+              branch={data.gitBranch}
+              commit={data.gitCommit}
             />
           ) : (
             <></>
