@@ -6,7 +6,7 @@
 
 ## 💡 简介
 
-[Mars](https://github.com/DuC-cnZj/mars) 是一款专门为devops服务的一款应用，基于 kubernetes 之上，可以在短短几秒内部署一个和生产环境一模一样的应用。它打通了 gitlab、kubernetes、helm，通过 gitlab ci 构建镜像，然后通过kubernetes 部署高可用应用，一气呵成。
+[Mars](https://github.com/DuC-cnZj/mars) 是一款专门为devops服务的一款应用，基于 kubernetes 之上，可以在短短几秒内部署一个和生产环境一模一样的应用。它打通了 git、kubernetes、helm，通过 gitlab ci 构建镜像，然后通过kubernetes 部署高可用应用，一气呵成。
 
 ## 🗺️ 背景
 
@@ -84,12 +84,12 @@ func main()  {
 
 - [ ] 国际化
 - [ ] ratelimiter
-- [ ] 所有 gitlab 都改成 git
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
 - [ ] namespace all -> list
 - [ ] grpc 可配置使用 tls
 - [ ] ~~增加 basic? or CA? auth，参考 k8s 的做法~~
+- [x] 所有 gitlab 都改成 git
 - [x] 通过 ci 发布客户端
 - [x] export/import 配置文件
 - [x] 重构所有表单，增加表单验证
