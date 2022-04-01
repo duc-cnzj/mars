@@ -1185,16 +1185,7 @@ func (m *ProjectApplyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetName()) < 1 {
-		err := ProjectApplyRequestValidationError{
-			field:  "Name",
-			reason: "value length must be at least 1 bytes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Name
 
 	if m.GetGitProjectId() <= 0 {
 		err := ProjectApplyRequestValidationError{

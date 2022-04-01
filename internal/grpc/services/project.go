@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
-
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/model"
 	"github.com/duc-cnzj/mars-client/v4/project"
@@ -82,17 +82,12 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ProjectListReque
 func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ProjectApplyRequest) (*project.ProjectDryRunApplyResponse, error) {
 	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
-	if input.GitCommit == "" {
-		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
-		if len(commits) < 1 {
-			return nil, errors.New("没有可用的 commit")
-		}
-		lastCommit := commits[0]
-		input.GitCommit = lastCommit.GetID()
+	errMsger := newErrorMessager()
+	if err := p.completeInput(input, errMsger); err != nil {
+		return nil, err
 	}
 	mlog.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
-	errMsger := newErrorMessager()
 	job := socket.NewJober(&websocket.ProjectInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
@@ -134,14 +129,8 @@ func (p *ProjectSvc) Apply(input *project.ProjectApplyRequest, server project.Pr
 		t:        t,
 		server:   server,
 	}
-	if input.GitCommit == "" {
-		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
-		if len(commits) < 1 {
-			return errors.New("没有可用的 commit")
-		}
-		lastCommit := commits[0]
-		input.GitCommit = lastCommit.GetID()
-		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.GetTitle(), lastCommit.GetWebURL()))
+	if err := p.completeInput(input, msger); err != nil {
+		return err
 	}
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{}, 1)
@@ -169,6 +158,23 @@ func (p *ProjectSvc) Apply(input *project.ProjectApplyRequest, server project.Pr
 	socket.InstallProject(job)
 	ch <- struct{}{}
 
+	return nil
+}
+
+func (p *ProjectSvc) completeInput(input *project.ProjectApplyRequest, msger socket.Msger) error {
+	if input.GitCommit == "" {
+		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
+		if len(commits) < 1 {
+			return errors.New("没有可用的 commit")
+		}
+		lastCommit := commits[0]
+		input.GitCommit = lastCommit.GetID()
+		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.GetTitle(), lastCommit.GetWebURL()))
+	}
+	if input.Name == "" {
+		gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(input.GitProjectId)))
+		input.Name = gitProject.GetName()
+	}
 	return nil
 }
 

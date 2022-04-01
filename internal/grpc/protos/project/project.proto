@@ -75,7 +75,8 @@ message ProjectDryRunApplyResponse {
 // ProjectApplyRequest same as ProjectInput
 message ProjectApplyRequest {
   int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-  string name = 2 [(validate.rules).string.min_bytes = 1];
+  // name 不传就使用 git 默认的 name
+  string name = 2;
   int64 git_project_id = 3 [(validate.rules).int64.gt = 0];
   string git_branch = 4 [(validate.rules).string.min_bytes = 1];
   //  git_commit 不传就用最新的 commit
