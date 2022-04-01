@@ -12,7 +12,7 @@ message ServiceEndpoint {
 }
 
 message EndpointInNamespaceRequest {
-  int64 namespace_id = 1[(validate.rules).int64.gt = 0];;
+  int64 namespace_id = 1[(validate.rules).int64.gt = 0];
 }
 
 message EndpointInNamespaceResponse {
@@ -20,7 +20,7 @@ message EndpointInNamespaceResponse {
 }
 
 message EndpointInProjectRequest {
-  int64 project_id = 1[(validate.rules).int64.gt = 0];;
+  int64 project_id = 1[(validate.rules).int64.gt = 0];
 }
 
 message EndpointInProjectResponse {

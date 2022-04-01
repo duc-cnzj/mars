@@ -15,11 +15,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars-client/v4/changelog"
 	"github.com/duc-cnzj/mars-client/v4/cluster"
 	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
 	"github.com/duc-cnzj/mars-client/v4/gitproject"

@@ -23,14 +23,14 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	//  TopPod 获取 pod 的 cpu memory 信息
-	TopPod(ctx context.Context, in *MetricsTopPodRequest, opts ...grpc.CallOption) (*MetricsTopPodResponse, error)
-	//  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
-	StreamTopPod(ctx context.Context, in *MetricsTopPodRequest, opts ...grpc.CallOption) (Metrics_StreamTopPodClient, error)
 	// CpuMemoryInNamespace 名称空间总共使用的 cpu memory
 	CpuMemoryInNamespace(ctx context.Context, in *MetricsCpuMemoryInNamespaceRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInNamespaceResponse, error)
 	// CpuMemoryInProject 项目空间总共使用的 cpu memory
 	CpuMemoryInProject(ctx context.Context, in *MetricsCpuMemoryInProjectRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInProjectResponse, error)
+	//  TopPod 获取 pod 的 cpu memory 信息
+	TopPod(ctx context.Context, in *MetricsTopPodRequest, opts ...grpc.CallOption) (*MetricsTopPodResponse, error)
+	//  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
+	StreamTopPod(ctx context.Context, in *MetricsTopPodRequest, opts ...grpc.CallOption) (Metrics_StreamTopPodClient, error)
 }
 
 type metricsClient struct {
@@ -39,6 +39,24 @@ type metricsClient struct {
 
 func NewMetricsClient(cc grpc.ClientConnInterface) MetricsClient {
 	return &metricsClient{cc}
+}
+
+func (c *metricsClient) CpuMemoryInNamespace(ctx context.Context, in *MetricsCpuMemoryInNamespaceRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInNamespaceResponse, error) {
+	out := new(MetricsCpuMemoryInNamespaceResponse)
+	err := c.cc.Invoke(ctx, "/Metrics/CpuMemoryInNamespace", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricsClient) CpuMemoryInProject(ctx context.Context, in *MetricsCpuMemoryInProjectRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInProjectResponse, error) {
+	out := new(MetricsCpuMemoryInProjectResponse)
+	err := c.cc.Invoke(ctx, "/Metrics/CpuMemoryInProject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *metricsClient) TopPod(ctx context.Context, in *MetricsTopPodRequest, opts ...grpc.CallOption) (*MetricsTopPodResponse, error) {
@@ -82,36 +100,18 @@ func (x *metricsStreamTopPodClient) Recv() (*MetricsTopPodResponse, error) {
 	return m, nil
 }
 
-func (c *metricsClient) CpuMemoryInNamespace(ctx context.Context, in *MetricsCpuMemoryInNamespaceRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInNamespaceResponse, error) {
-	out := new(MetricsCpuMemoryInNamespaceResponse)
-	err := c.cc.Invoke(ctx, "/Metrics/CpuMemoryInNamespace", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metricsClient) CpuMemoryInProject(ctx context.Context, in *MetricsCpuMemoryInProjectRequest, opts ...grpc.CallOption) (*MetricsCpuMemoryInProjectResponse, error) {
-	out := new(MetricsCpuMemoryInProjectResponse)
-	err := c.cc.Invoke(ctx, "/Metrics/CpuMemoryInProject", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // MetricsServer is the server API for Metrics service.
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	//  TopPod 获取 pod 的 cpu memory 信息
-	TopPod(context.Context, *MetricsTopPodRequest) (*MetricsTopPodResponse, error)
-	//  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
-	StreamTopPod(*MetricsTopPodRequest, Metrics_StreamTopPodServer) error
 	// CpuMemoryInNamespace 名称空间总共使用的 cpu memory
 	CpuMemoryInNamespace(context.Context, *MetricsCpuMemoryInNamespaceRequest) (*MetricsCpuMemoryInNamespaceResponse, error)
 	// CpuMemoryInProject 项目空间总共使用的 cpu memory
 	CpuMemoryInProject(context.Context, *MetricsCpuMemoryInProjectRequest) (*MetricsCpuMemoryInProjectResponse, error)
+	//  TopPod 获取 pod 的 cpu memory 信息
+	TopPod(context.Context, *MetricsTopPodRequest) (*MetricsTopPodResponse, error)
+	//  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
+	StreamTopPod(*MetricsTopPodRequest, Metrics_StreamTopPodServer) error
 	mustEmbedUnimplementedMetricsServer()
 }
 
@@ -119,17 +119,17 @@ type MetricsServer interface {
 type UnimplementedMetricsServer struct {
 }
 
-func (UnimplementedMetricsServer) TopPod(context.Context, *MetricsTopPodRequest) (*MetricsTopPodResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TopPod not implemented")
-}
-func (UnimplementedMetricsServer) StreamTopPod(*MetricsTopPodRequest, Metrics_StreamTopPodServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamTopPod not implemented")
-}
 func (UnimplementedMetricsServer) CpuMemoryInNamespace(context.Context, *MetricsCpuMemoryInNamespaceRequest) (*MetricsCpuMemoryInNamespaceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CpuMemoryInNamespace not implemented")
 }
 func (UnimplementedMetricsServer) CpuMemoryInProject(context.Context, *MetricsCpuMemoryInProjectRequest) (*MetricsCpuMemoryInProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CpuMemoryInProject not implemented")
+}
+func (UnimplementedMetricsServer) TopPod(context.Context, *MetricsTopPodRequest) (*MetricsTopPodResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TopPod not implemented")
+}
+func (UnimplementedMetricsServer) StreamTopPod(*MetricsTopPodRequest, Metrics_StreamTopPodServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamTopPod not implemented")
 }
 func (UnimplementedMetricsServer) mustEmbedUnimplementedMetricsServer() {}
 
@@ -142,6 +142,42 @@ type UnsafeMetricsServer interface {
 
 func RegisterMetricsServer(s grpc.ServiceRegistrar, srv MetricsServer) {
 	s.RegisterService(&Metrics_ServiceDesc, srv)
+}
+
+func _Metrics_CpuMemoryInNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsCpuMemoryInNamespaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricsServer).CpuMemoryInNamespace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Metrics/CpuMemoryInNamespace",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricsServer).CpuMemoryInNamespace(ctx, req.(*MetricsCpuMemoryInNamespaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Metrics_CpuMemoryInProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsCpuMemoryInProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricsServer).CpuMemoryInProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Metrics/CpuMemoryInProject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricsServer).CpuMemoryInProject(ctx, req.(*MetricsCpuMemoryInProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Metrics_TopPod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -183,42 +219,6 @@ func (x *metricsStreamTopPodServer) Send(m *MetricsTopPodResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Metrics_CpuMemoryInNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MetricsCpuMemoryInNamespaceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetricsServer).CpuMemoryInNamespace(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Metrics/CpuMemoryInNamespace",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServer).CpuMemoryInNamespace(ctx, req.(*MetricsCpuMemoryInNamespaceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Metrics_CpuMemoryInProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MetricsCpuMemoryInProjectRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetricsServer).CpuMemoryInProject(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Metrics/CpuMemoryInProject",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServer).CpuMemoryInProject(ctx, req.(*MetricsCpuMemoryInProjectRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Metrics_ServiceDesc is the grpc.ServiceDesc for Metrics service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -227,16 +227,16 @@ var Metrics_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MetricsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "TopPod",
-			Handler:    _Metrics_TopPod_Handler,
-		},
-		{
 			MethodName: "CpuMemoryInNamespace",
 			Handler:    _Metrics_CpuMemoryInNamespace_Handler,
 		},
 		{
 			MethodName: "CpuMemoryInProject",
 			Handler:    _Metrics_CpuMemoryInProject_Handler,
+		},
+		{
+			MethodName: "TopPod",
+			Handler:    _Metrics_TopPod_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
