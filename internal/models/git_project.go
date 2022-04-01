@@ -9,25 +9,25 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars-client/v3/mars"
+	"github.com/duc-cnzj/mars-client/v4/mars"
 )
 
-type GitlabProject struct {
+type GitProject struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	DefaultBranch   string `json:"default_branch" gorm:"type:varchar(255);not null;default:'';"`
-	Name            string `json:"name" gorm:"type:varchar(255);not null;default:'';"`
-	GitlabProjectId int    `json:"gitlab_project_id" gorm:"not null;type:integer;"`
-	Enabled         bool   `json:"enabled" gorm:"not null;default:false;"`
-	GlobalEnabled   bool   `json:"global_enabled" gorm:"not null;default:false;"`
-	GlobalConfig    string `json:"global_config" gorm:"type:text"`
+	DefaultBranch string `json:"default_branch" gorm:"type:varchar(255);not null;default:'';"`
+	Name          string `json:"name" gorm:"type:varchar(255);not null;default:'';"`
+	GitProjectId  int    `json:"git_project_id" gorm:"not null;type:integer;"`
+	Enabled       bool   `json:"enabled" gorm:"not null;default:false;"`
+	GlobalEnabled bool   `json:"global_enabled" gorm:"not null;default:false;"`
+	GlobalConfig  string `json:"global_config" gorm:"type:text"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-func (g GitlabProject) PrettyYaml() string {
+func (g GitProject) PrettyYaml() string {
 	cfg := mars.MarsConfig{}
 	json.Unmarshal([]byte(g.GlobalConfig), &cfg)
 	clone := proto.Clone(&cfg).(*mars.MarsConfig)
@@ -59,7 +59,7 @@ func (g GitlabProject) PrettyYaml() string {
 	return bf.String()
 }
 
-func (g *GitlabProject) GlobalMarsConfig() *mars.MarsConfig {
+func (g *GitProject) GlobalMarsConfig() *mars.MarsConfig {
 	if g.GlobalConfig == "" {
 		return &mars.MarsConfig{}
 	}

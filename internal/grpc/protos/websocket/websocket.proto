@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "cluster/cluster.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/websocket;websocket";
+option go_package = "github.com/duc-cnzj/mars-client/v4/websocket;websocket";
 
 enum Type {
   TypeUnknown = 0;

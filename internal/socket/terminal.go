@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"

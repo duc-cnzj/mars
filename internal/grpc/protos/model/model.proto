@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/model;model";
+option go_package = "github.com/duc-cnzj/mars-client/v4/model;model";
 
 message GitProjectModel {
   int64 id = 1;

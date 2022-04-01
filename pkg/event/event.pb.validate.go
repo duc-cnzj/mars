@@ -82,6 +82,7 @@ func (m *EventListRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return EventListRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -197,6 +198,7 @@ func (m *EventListItem) validate(all bool) error {
 	if len(errors) > 0 {
 		return EventListItemMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -336,6 +338,7 @@ func (m *EventListResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return EventListResponseMultiError(errors)
 	}
+
 	return nil
 }
 

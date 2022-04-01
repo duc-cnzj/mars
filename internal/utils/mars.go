@@ -11,7 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 
-	"github.com/duc-cnzj/mars-client/v3/mars"
+	"github.com/duc-cnzj/mars-client/v4/mars"
 	"gopkg.in/yaml.v2"
 )
 
@@ -41,9 +41,9 @@ func BranchPass(mars *mars.MarsConfig, name string) bool {
 func GetProjectMarsConfig(projectId any, branch string) (*mars.MarsConfig, error) {
 	var marsC mars.MarsConfig
 
-	var gp models.GitlabProject
+	var gp models.GitProject
 	pid := fmt.Sprintf("%v", projectId)
-	if app.DB().Where("`gitlab_project_id` = ?", pid).First(&gp).Error == nil {
+	if app.DB().Where("`git_project_id` = ?", pid).First(&gp).Error == nil {
 		if gp.GlobalEnabled {
 			return gp.GlobalMarsConfig(), nil
 		}

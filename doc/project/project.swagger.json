@@ -16,80 +16,6 @@
     "application/json"
   ],
   "paths": {
-    "/api/namespaces/{namespace}/pod/{pod}/exists": {
-      "post": {
-        "summary": "IsPodExists pod 是否存在",
-        "operationId": "Project_IsPodExists",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectIsPodExistsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/namespaces/{namespace}/pod/{pod}/status": {
-      "get": {
-        "summary": "IsPodRunning pod 是否正常在跑",
-        "operationId": "Project_IsPodRunning",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectIsPodRunningResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
     "/api/projects": {
       "get": {
         "summary": "List 获取项目列表",
@@ -193,13 +119,13 @@
     },
     "/api/projects/{project_id}/containers": {
       "get": {
-        "summary": "AllPodContainers 获取项目下的所有 pod",
-        "operationId": "Project_AllPodContainers",
+        "summary": "AllContainers 获取项目下的所有 pod",
+        "operationId": "Project_AllContainers",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectAllPodContainersResponse"
+              "$ref": "#/definitions/ProjectAllContainersResponse"
             }
           },
           "default": {
@@ -216,103 +142,6 @@
             "required": true,
             "type": "string",
             "format": "int64"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs": {
-      "get": {
-        "summary": "PodContainerLog 查看 pod 日志",
-        "operationId": "Project_PodContainerLog",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ProjectPodContainerLogResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "container",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Project"
-        ]
-      }
-    },
-    "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs": {
-      "get": {
-        "summary": "StreamPodContainerLog stream 方式查看 pod 日志",
-        "operationId": "Project_StreamPodContainerLog",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/ProjectPodContainerLogResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of ProjectPodContainerLogResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "pod",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "container",
-            "in": "path",
-            "required": true,
-            "type": "string"
           }
         ],
         "tags": [
@@ -416,27 +245,13 @@
         }
       }
     },
-    "NamespaceServiceEndpoint": {
+    "ProjectAllContainersResponse": {
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "port_name": {
-          "type": "string"
-        }
-      }
-    },
-    "ProjectAllPodContainersResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
+        "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ProjectPodLog"
+            "$ref": "#/definitions/ProjectPod"
           }
         }
       }
@@ -477,25 +292,6 @@
         }
       }
     },
-    "ProjectIsPodExistsResponse": {
-      "type": "object",
-      "properties": {
-        "exists": {
-          "type": "boolean"
-        }
-      }
-    },
-    "ProjectIsPodRunningResponse": {
-      "type": "object",
-      "properties": {
-        "running": {
-          "type": "boolean"
-        },
-        "reason": {
-          "type": "string"
-        }
-      }
-    },
     "ProjectListResponse": {
       "type": "object",
       "properties": {
@@ -511,7 +307,7 @@
           "type": "string",
           "format": "int64"
         },
-        "data": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ProjectModel"
@@ -529,14 +325,14 @@
         "name": {
           "type": "string"
         },
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string",
           "format": "int64"
         },
-        "gitlab_branch": {
+        "git_branch": {
           "type": "string"
         },
-        "gitlab_commit": {
+        "git_commit": {
           "type": "string"
         },
         "config": {
@@ -572,15 +368,7 @@
         }
       }
     },
-    "ProjectPodContainerLogResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/ProjectPodLog"
-        }
-      }
-    },
-    "ProjectPodLog": {
+    "ProjectPod": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -590,9 +378,6 @@
           "type": "string"
         },
         "container_name": {
-          "type": "string"
-        },
-        "log": {
           "type": "string"
         }
       }
@@ -607,14 +392,14 @@
         "name": {
           "type": "string"
         },
-        "gitlab_project_id": {
+        "git_project_id": {
           "type": "string",
           "format": "int64"
         },
-        "gitlab_branch": {
+        "git_branch": {
           "type": "string"
         },
-        "gitlab_commit": {
+        "git_commit": {
           "type": "string"
         },
         "config": {
@@ -626,22 +411,22 @@
         "atomic": {
           "type": "boolean"
         },
-        "gitlab_commit_web_url": {
+        "git_commit_web_url": {
           "type": "string"
         },
-        "gitlab_commit_title": {
+        "git_commit_title": {
           "type": "string"
         },
-        "gitlab_commit_author": {
+        "git_commit_author": {
           "type": "string"
         },
-        "gitlab_commit_date": {
+        "git_commit_date": {
           "type": "string"
         },
         "urls": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NamespaceServiceEndpoint"
+            "$ref": "#/definitions/ServiceEndpoint"
           }
         },
         "namespace": {
@@ -708,6 +493,20 @@
         "DeployedCanceled"
       ],
       "default": "ResultUnknown"
+    },
+    "ServiceEndpoint": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
+        }
+      }
     },
     "To": {
       "type": "string",

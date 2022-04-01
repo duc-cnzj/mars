@@ -71,6 +71,7 @@ func (m *FileDeleteRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileDeleteRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -201,6 +202,7 @@ func (m *FileDeleteResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileDeleteResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -302,6 +304,7 @@ func (m *DeleteUndocumentedFilesRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return DeleteUndocumentedFilesRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -411,6 +414,7 @@ func (m *File) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -506,7 +510,7 @@ func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
 
 	var errors []error
 
-	for idx, item := range m.GetFiles() {
+	for idx, item := range m.GetItems() {
 		_, _ = idx, item
 
 		if all {
@@ -514,7 +518,7 @@ func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, DeleteUndocumentedFilesResponseValidationError{
-						field:  fmt.Sprintf("Files[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -522,7 +526,7 @@ func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, DeleteUndocumentedFilesResponseValidationError{
-						field:  fmt.Sprintf("Files[%v]", idx),
+						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -531,7 +535,7 @@ func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return DeleteUndocumentedFilesResponseValidationError{
-					field:  fmt.Sprintf("Files[%v]", idx),
+					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -543,6 +547,7 @@ func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return DeleteUndocumentedFilesResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -645,6 +650,7 @@ func (m *DiskInfoRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return DiskInfoRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -748,6 +754,7 @@ func (m *DiskInfoResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return DiskInfoResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -871,6 +878,7 @@ func (m *FileListRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileListRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1010,6 +1018,7 @@ func (m *FileListResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileListResponseMultiError(errors)
 	}
+
 	return nil
 }
 

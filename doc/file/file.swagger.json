@@ -144,7 +144,7 @@
     "DeleteUndocumentedFilesResponse": {
       "type": "object",
       "properties": {
-        "files": {
+        "items": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/File"

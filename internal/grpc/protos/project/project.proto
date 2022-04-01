@@ -3,11 +3,11 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "websocket/websocket.proto";
 import "model/model.proto";
-import "namespace/namespace.proto";
+import "endpoint/endpoint.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/project;project";
+option go_package = "github.com/duc-cnzj/mars-client/v4/project;project";
 
 message ProjectDeleteRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
@@ -31,7 +31,7 @@ message ProjectShowResponse {
   string git_commit_author = 11;
   string git_commit_date = 12;
 
-  repeated NamespaceServiceEndpoint urls = 13;
+  repeated ServiceEndpoint urls = 13;
   message Namespace {
     int64 id = 1;
     string name = 2;
@@ -49,7 +49,7 @@ message ProjectShowResponse {
   string config_type = 24;
 }
 
-message ProjectAllPodContainersRequest {
+message ProjectAllContainersRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
@@ -59,31 +59,8 @@ message ProjectPod {
   string container_name = 3;
 }
 
-message ProjectAllPodContainersResponse {
+message ProjectAllContainersResponse {
   repeated ProjectPod items = 1;
-}
-
-message ProjectPodContainerLogRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
-  string container = 3 [(validate.rules).string.min_bytes = 1];
-}
-
-message ProjectPodContainerLogResponse {
-  string namespace = 1;
-  string pod_name = 2;
-  string container_name = 3;
-  string log = 4;
-}
-
-message ProjectIsPodRunningRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
-}
-
-message ProjectIsPodRunningResponse {
-  bool running = 1;
-  string reason = 2;
 }
 
 message ProjectApplyResponse {
@@ -124,13 +101,7 @@ message ProjectListResponse {
   int64 count = 3;
   repeated ProjectModel items = 4;
 }
-message ProjectIsPodExistsRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
-}
-message ProjectIsPodExistsResponse {
-  bool exists = 1;
-}
+
 service Project {
   //  List 获取项目列表
   rpc List(ProjectListRequest) returns (ProjectListResponse) {
@@ -145,13 +116,6 @@ service Project {
   // ApplyDryRun 创建/更新项目 '--dry-run' mode
   rpc ApplyDryRun(ProjectApplyRequest) returns (ProjectDryRunApplyResponse);
 
-  // Delete 删除项目
-  rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {
-    option (google.api.http) = {
-      delete: "/api/projects/{project_id}"
-    };
-  }
-
   // Show 项目详情
   rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
     option (google.api.http) = {
@@ -159,38 +123,17 @@ service Project {
     };
   }
 
-  // IsPodRunning pod 是否正常在跑
-  rpc IsPodRunning(ProjectIsPodRunningRequest) returns (ProjectIsPodRunningResponse) {
+  // Delete 删除项目
+  rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {
     option (google.api.http) = {
-      get: "/api/namespaces/{namespace}/pod/{pod}/status"
+      delete: "/api/projects/{project_id}"
     };
   }
 
-  //  IsPodExists pod 是否存在
-  rpc IsPodExists(ProjectIsPodExistsRequest) returns (ProjectIsPodExistsResponse) {
-    option (google.api.http) = {
-      post: "/api/namespaces/{namespace}/pod/{pod}/exists"
-    };
-  }
-
-  // AllPodContainers 获取项目下的所有 pod
-  rpc AllPodContainers(ProjectAllPodContainersRequest) returns (ProjectAllPodContainersResponse) {
+  // AllContainers 获取项目下的所有 pod
+  rpc AllContainers(ProjectAllContainersRequest) returns (ProjectAllContainersResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/containers"
-    };
-  }
-
-  // PodContainerLog 查看 pod 日志
-  rpc PodContainerLog(ProjectPodContainerLogRequest) returns (ProjectPodContainerLogResponse) {
-    option (google.api.http) = {
-      get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/logs"
-    };
-  }
-
-  // StreamPodContainerLog stream 方式查看 pod 日志
-  rpc StreamPodContainerLog(ProjectPodContainerLogRequest) returns (stream ProjectPodContainerLogResponse) {
-    option (google.api.http) = {
-      get: "/api/projects/{project_id}/pods/{pod}/containers/{container}/stream_logs"
     };
   }
 }

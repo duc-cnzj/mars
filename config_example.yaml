@@ -71,15 +71,15 @@ external_ip: "127.0.0.1"
 install_timeout: 90s
 
 # imagepullsecrets: docker 私有镜像仓库需要配置相关的账号密码以及仓库地址
-imagepullsecrets:
-  - username: "jack"
-    password: "12345"
-    email: "jack@example.com"
-    server: "registry.cn-hangzhou.aliyuncs.com"
-  - username: "john"
-    password: "12345"
-    email: "john@example.com"
-    server: "registry.cn-hangzhou.aliyuncs.com"
+imagepullsecrets: []
+#  - username: "jack"
+#    password: "12345"
+#    email: "jack@example.com"
+#    server: "registry.cn-hangzhou.aliyuncs.com"
+#  - username: "john"
+#    password: "12345"
+#    email: "john@example.com"
+#    server: "registry.cn-hangzhou.aliyuncs.com"
 
 #oidc:
 #  - name: "sso1"

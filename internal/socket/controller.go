@@ -11,8 +11,8 @@ import (
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/duc-cnzj/mars-client/v3/cluster"
-	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
+	"github.com/duc-cnzj/mars-client/v4/cluster"
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -386,15 +386,15 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 	slug := getSlugName(int64(p.NamespaceId), p.Name)
 	job := NewJober(&websocket_pb.ProjectInput{
-		Type:            t,
-		NamespaceId:     int64(p.NamespaceId),
-		Name:            p.Name,
-		GitlabProjectId: int64(p.GitlabProjectId),
-		GitlabBranch:    input.GitlabBranch,
-		GitlabCommit:    input.GitlabCommit,
-		Config:          input.Config,
-		Atomic:          input.Atomic,
-		ExtraValues:     input.ExtraValues,
+		Type:         t,
+		NamespaceId:  int64(p.NamespaceId),
+		Name:         p.Name,
+		GitProjectId: int64(p.GitProjectId),
+		GitBranch:    input.GitBranch,
+		GitCommit:    input.GitCommit,
+		Config:       input.Config,
+		Atomic:       input.Atomic,
+		ExtraValues:  input.ExtraValues,
 	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)

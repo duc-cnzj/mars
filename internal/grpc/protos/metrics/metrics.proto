@@ -3,14 +3,14 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/metrics;metrics";
+option go_package = "github.com/duc-cnzj/mars-client/v4/metrics;metrics";
 
-message MetricsShowRequest {
+message MetricsTopPodRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];
   string pod = 2 [(validate.rules).string.min_bytes = 1];
 }
 
-message MetricsShowResponse {
+message MetricsTopPodResponse {
   double cpu = 1;
   double memory = 2;
   string humanize_cpu = 3;
@@ -19,18 +19,50 @@ message MetricsShowResponse {
   int64 length = 6;
 }
 
+message MetricsCpuMemoryInNamespaceRequest {
+  int64 namespace_id = 1[(validate.rules).int64.gt = 0];;
+}
+
+message MetricsCpuMemoryInNamespaceResponse {
+  string cpu = 1;
+  string memory = 2;
+}
+
+message MetricsCpuMemoryInProjectRequest {
+  int64 project_id = 1[(validate.rules).int64.gt = 0];;
+}
+
+message MetricsCpuMemoryInProjectResponse {
+  string cpu = 1;
+  string memory = 2;
+}
+
 service Metrics {
-  //  Show 获取 pod 的 cpu memory 信息
-  rpc Show(MetricsShowRequest) returns (MetricsShowResponse) {
+  //  TopPod 获取 pod 的 cpu memory 信息
+  rpc TopPod(MetricsTopPodRequest) returns (MetricsTopPodResponse) {
     option (google.api.http) = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}",
     };
   }
 
-  //  StreamShow stream 的方式获取 pod 的 cpu memory 信息
-  rpc StreamShow(MetricsShowRequest) returns (stream MetricsShowResponse) {
+  //  StreamTopPod stream 的方式获取 pod 的 cpu memory 信息
+  rpc StreamTopPod(MetricsTopPodRequest) returns (stream MetricsTopPodResponse) {
     option (google.api.http) = {
       get: "/api/metrics/namespace/{namespace}/pods/{pod}/stream",
+    };
+  }
+
+  // CpuMemoryInNamespace 名称空间总共使用的 cpu memory
+  rpc CpuMemoryInNamespace(MetricsCpuMemoryInNamespaceRequest) returns (MetricsCpuMemoryInNamespaceResponse) {
+    option (google.api.http) = {
+      get: "/api/metrics/namespace/{namespace_id}/cpu_memory"
+    };
+  }
+
+  // CpuMemoryInProject 项目空间总共使用的 cpu memory
+  rpc CpuMemoryInProject(MetricsCpuMemoryInProjectRequest) returns (MetricsCpuMemoryInProjectResponse) {
+    option (google.api.http) = {
+      get: "/api/metrics/projects/{project_id}/cpu_memory"
     };
   }
 }

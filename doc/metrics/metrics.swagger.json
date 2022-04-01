@@ -16,15 +16,47 @@
     "application/json"
   ],
   "paths": {
-    "/api/metrics/namespace/{namespace}/pods/{pod}": {
+    "/api/metrics/namespace/{namespace_id}/cpu_memory": {
       "get": {
-        "summary": "Show 获取 pod 的 cpu memory 信息",
-        "operationId": "Metrics_Show",
+        "summary": "CpuMemoryInNamespace 名称空间总共使用的 cpu memory",
+        "operationId": "Metrics_CpuMemoryInNamespace",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsShowResponse"
+              "$ref": "#/definitions/MetricsCpuMemoryInNamespaceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Metrics"
+        ]
+      }
+    },
+    "/api/metrics/namespace/{namespace}/pods/{pod}": {
+      "get": {
+        "summary": "TopPod 获取 pod 的 cpu memory 信息",
+        "operationId": "Metrics_TopPod",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MetricsTopPodResponse"
             }
           },
           "default": {
@@ -55,8 +87,8 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}/stream": {
       "get": {
-        "summary": "StreamShow stream 的方式获取 pod 的 cpu memory 信息",
-        "operationId": "Metrics_StreamShow",
+        "summary": "StreamTopPod stream 的方式获取 pod 的 cpu memory 信息",
+        "operationId": "Metrics_StreamTopPod",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
@@ -64,13 +96,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/MetricsShowResponse"
+                  "$ref": "#/definitions/MetricsTopPodResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 }
               },
-              "title": "Stream result of MetricsShowResponse"
+              "title": "Stream result of MetricsTopPodResponse"
             }
           },
           "default": {
@@ -98,10 +130,64 @@
           "Metrics"
         ]
       }
+    },
+    "/api/metrics/projects/{project_id}/cpu_memory": {
+      "get": {
+        "summary": "CpuMemoryInProject 项目空间总共使用的 cpu memory",
+        "operationId": "Metrics_CpuMemoryInProject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MetricsCpuMemoryInProjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Metrics"
+        ]
+      }
     }
   },
   "definitions": {
-    "MetricsShowResponse": {
+    "MetricsCpuMemoryInNamespaceResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      }
+    },
+    "MetricsCpuMemoryInProjectResponse": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      }
+    },
+    "MetricsTopPodResponse": {
       "type": "object",
       "properties": {
         "cpu": {

@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/event;event";
+option go_package = "github.com/duc-cnzj/mars-client/v4/event;event";
 
 enum ActionType {
   Unknown = 0;

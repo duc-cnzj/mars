@@ -82,6 +82,7 @@ func (m *AuthLoginRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthLoginRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -185,6 +186,7 @@ func (m *AuthLoginResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthLoginResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -297,6 +299,7 @@ func (m *AuthExchangeRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthExchangeRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -402,6 +405,7 @@ func (m *AuthExchangeResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthExchangeResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -503,6 +507,7 @@ func (m *AuthInfoRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthInfoRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -612,6 +617,7 @@ func (m *AuthInfoResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthInfoResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -711,6 +717,7 @@ func (m *AuthSettingsRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthSettingsRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -846,6 +853,7 @@ func (m *AuthSettingsResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthSettingsResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -958,6 +966,7 @@ func (m *AuthSettingsResponse_OidcSetting) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthSettingsResponse_OidcSettingMultiError(errors)
 	}
+
 	return nil
 }
 

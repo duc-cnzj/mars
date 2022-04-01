@@ -62,6 +62,7 @@ func (m *WsRequestMetadata) validate(all bool) error {
 	if len(errors) > 0 {
 		return WsRequestMetadataMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -167,6 +168,7 @@ func (m *AuthorizeTokenInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return AuthorizeTokenInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -278,6 +280,7 @@ func (m *TerminalMessage) validate(all bool) error {
 	if len(errors) > 0 {
 		return TerminalMessageMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -408,6 +411,7 @@ func (m *TerminalMessageInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return TerminalMessageInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -517,6 +521,7 @@ func (m *WsHandleExecShellInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return WsHandleExecShellInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -624,6 +629,7 @@ func (m *CancelInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return CancelInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -726,6 +732,7 @@ func (m *ProjectExtraItem) validate(all bool) error {
 	if len(errors) > 0 {
 		return ProjectExtraItemMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -828,11 +835,11 @@ func (m *ProjectInput) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for GitlabProjectId
+	// no validation rules for GitProjectId
 
-	// no validation rules for GitlabBranch
+	// no validation rules for GitBranch
 
-	// no validation rules for GitlabCommit
+	// no validation rules for GitCommit
 
 	// no validation rules for Config
 
@@ -875,6 +882,7 @@ func (m *ProjectInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return ProjectInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -974,9 +982,9 @@ func (m *UpdateProjectInput) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for GitlabBranch
+	// no validation rules for GitBranch
 
-	// no validation rules for GitlabCommit
+	// no validation rules for GitCommit
 
 	// no validation rules for Config
 
@@ -1019,6 +1027,7 @@ func (m *UpdateProjectInput) validate(all bool) error {
 	if len(errors) > 0 {
 		return UpdateProjectInputMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1136,6 +1145,7 @@ func (m *Metadata) validate(all bool) error {
 	if len(errors) > 0 {
 		return MetadataMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1240,6 +1250,7 @@ func (m *Container) validate(all bool) error {
 	if len(errors) > 0 {
 		return ContainerMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1367,6 +1378,7 @@ func (m *WsMetadataResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return WsMetadataResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1555,6 +1567,7 @@ func (m *WsHandleShellResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return WsHandleShellResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -1714,6 +1727,7 @@ func (m *WsHandleClusterResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return WsHandleClusterResponseMultiError(errors)
 	}
+
 	return nil
 }
 

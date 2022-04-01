@@ -3,17 +3,16 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars-client/v4/cluster"
 	"github.com/duc-cnzj/mars/internal/mlog"
-
-	"github.com/duc-cnzj/mars-client/v3/cluster"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
 
-type Cluster struct {
+type ClusterSvc struct {
 	cluster.UnimplementedClusterServer
 }
 
-func (c *Cluster) ClusterInfo(ctx context.Context, req *cluster.ClusterInfoRequest) (*cluster.ClusterInfoResponse, error) {
+func (c *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.ClusterInfoRequest) (*cluster.ClusterInfoResponse, error) {
 	info := utils.ClusterInfo()
 
 	return &cluster.ClusterInfoResponse{
@@ -31,7 +30,7 @@ func (c *Cluster) ClusterInfo(ctx context.Context, req *cluster.ClusterInfoReque
 	}, nil
 }
 
-func (c *Cluster) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (c *ClusterSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	mlog.Debug("client is calling method:", fullMethodName)
 	return ctx, nil
 }

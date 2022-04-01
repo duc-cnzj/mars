@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/duc-cnzj/mars-client/v3/model"
+	"github.com/duc-cnzj/mars-client/v4/model"
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
 
-	eventpb "github.com/duc-cnzj/mars-client/v3/event"
-	"github.com/duc-cnzj/mars-client/v3/file"
+	eventpb "github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/file"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -140,7 +140,7 @@ func (m *FileSvc) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUnd
 	app.Uploader().RemoveEmptyDir(app.Config().UploadDir)
 	events.AuditLog(MustGetUser(ctx).Name, eventpb.ActionType_Delete, "删除未被记录的文件", clearList, nil)
 
-	return &file.DeleteUndocumentedFilesResponse{Files: clearList}, nil
+	return &file.DeleteUndocumentedFilesResponse{Items: clearList}, nil
 }
 
 func (*FileSvc) Delete(ctx context.Context, request *file.FileDeleteRequest) (*file.FileDeleteResponse, error) {

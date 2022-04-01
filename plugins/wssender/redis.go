@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	websocket_pb "github.com/duc-cnzj/mars-client/v3/websocket"
-
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
+
 	"github.com/go-redis/redis/v8"
 )
 

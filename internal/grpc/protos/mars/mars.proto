@@ -1,9 +1,8 @@
 syntax = "proto3";
 
-import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v3/mars";
+option go_package = "github.com/duc-cnzj/mars-client/v4/mars";
 
 message MarsConfig {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
@@ -40,87 +39,4 @@ message Element {
   string default = 3 [(validate.rules).string.min_bytes = 1];
   string description = 4;
   repeated string select_values = 6;
-}
-
-message MarsShowRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
-}
-
-message MarsShowResponse {
-  string branch = 1;
-  MarsConfig config = 2;
-}
-
-message MarsGlobalConfigRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-}
-
-message MarsGlobalConfigResponse {
-  bool enabled = 1;
-  MarsConfig config = 2;
-}
-
-message MarsUpdateRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  MarsConfig config = 2;
-}
-
-message MarsUpdateResponse {
-  MarsConfig config = 1;
-}
-
-message MarsToggleEnabledRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  bool enabled = 2;
-}
-
-message MarsDefaultChartValuesRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
-}
-
-message MarsDefaultChartValuesResponse {
-  string value = 1;
-}
-
-message MarsToggleEnabledResponse {}
-
-service Mars {
-  // Show 查看项目配置
-  rpc Show(MarsShowRequest) returns (MarsShowResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/mars_config"
-    };
-  }
-
-  // GlobalConfig 查看项目 GlobalConfig 配置
-  rpc GlobalConfig(MarsGlobalConfigRequest) returns (MarsGlobalConfigResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/global_config"
-    };
-  }
-
-  // ToggleEnabled 开启/关闭全局配置
-  rpc ToggleEnabled(MarsToggleEnabledRequest) returns (MarsToggleEnabledResponse) {
-    option (google.api.http) = {
-      post: "/api/git/projects/{git_project_id}/toggle_enabled",
-      body: "*"
-    };
-  }
-
-  // Update 更新全局配置
-  rpc Update(MarsUpdateRequest) returns (MarsUpdateResponse) {
-    option (google.api.http) = {
-      put: "/api/git/projects/{git_project_id}/mars_config",
-      body: "*"
-    };
-  }
-
-  // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
-  rpc GetDefaultChartValues(MarsDefaultChartValuesRequest) returns (MarsDefaultChartValuesResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/default_values",
-    };
-  }
 }

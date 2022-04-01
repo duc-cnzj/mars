@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on GitlabProjectModel with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GitlabProjectModel) Validate() error {
+// Validate checks the field values on GitProjectModel with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitProjectModel) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GitlabProjectModel with the rules
+// ValidateAll checks the field values on GitProjectModel with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GitlabProjectModelMultiError, or nil if none found.
-func (m *GitlabProjectModel) ValidateAll() error {
+// GitProjectModelMultiError, or nil if none found.
+func (m *GitProjectModel) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GitlabProjectModel) validate(all bool) error {
+func (m *GitProjectModel) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (m *GitlabProjectModel) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for GitlabProjectId
+	// no validation rules for GitProjectId
 
 	// no validation rules for Enabled
 
@@ -76,18 +76,19 @@ func (m *GitlabProjectModel) validate(all bool) error {
 	// no validation rules for UpdatedAt
 
 	if len(errors) > 0 {
-		return GitlabProjectModelMultiError(errors)
+		return GitProjectModelMultiError(errors)
 	}
+
 	return nil
 }
 
-// GitlabProjectModelMultiError is an error wrapping multiple validation errors
-// returned by GitlabProjectModel.ValidateAll() if the designated constraints
+// GitProjectModelMultiError is an error wrapping multiple validation errors
+// returned by GitProjectModel.ValidateAll() if the designated constraints
 // aren't met.
-type GitlabProjectModelMultiError []error
+type GitProjectModelMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GitlabProjectModelMultiError) Error() string {
+func (m GitProjectModelMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -96,11 +97,11 @@ func (m GitlabProjectModelMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GitlabProjectModelMultiError) AllErrors() []error { return m }
+func (m GitProjectModelMultiError) AllErrors() []error { return m }
 
-// GitlabProjectModelValidationError is the validation error returned by
-// GitlabProjectModel.Validate if the designated constraints aren't met.
-type GitlabProjectModelValidationError struct {
+// GitProjectModelValidationError is the validation error returned by
+// GitProjectModel.Validate if the designated constraints aren't met.
+type GitProjectModelValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -108,24 +109,22 @@ type GitlabProjectModelValidationError struct {
 }
 
 // Field function returns field value.
-func (e GitlabProjectModelValidationError) Field() string { return e.field }
+func (e GitProjectModelValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GitlabProjectModelValidationError) Reason() string { return e.reason }
+func (e GitProjectModelValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GitlabProjectModelValidationError) Cause() error { return e.cause }
+func (e GitProjectModelValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GitlabProjectModelValidationError) Key() bool { return e.key }
+func (e GitProjectModelValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GitlabProjectModelValidationError) ErrorName() string {
-	return "GitlabProjectModelValidationError"
-}
+func (e GitProjectModelValidationError) ErrorName() string { return "GitProjectModelValidationError" }
 
 // Error satisfies the builtin error interface
-func (e GitlabProjectModelValidationError) Error() string {
+func (e GitProjectModelValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -137,14 +136,14 @@ func (e GitlabProjectModelValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGitlabProjectModel.%s: %s%s",
+		"invalid %sGitProjectModel.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GitlabProjectModelValidationError{}
+var _ error = GitProjectModelValidationError{}
 
 var _ interface {
 	Field() string
@@ -152,7 +151,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GitlabProjectModelValidationError{}
+} = GitProjectModelValidationError{}
 
 // Validate checks the field values on NamespaceModel with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -221,6 +220,7 @@ func (m *NamespaceModel) validate(all bool) error {
 	if len(errors) > 0 {
 		return NamespaceModelMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -321,11 +321,11 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for GitlabProjectId
+	// no validation rules for GitProjectId
 
-	// no validation rules for GitlabBranch
+	// no validation rules for GitBranch
 
-	// no validation rules for GitlabCommit
+	// no validation rules for GitCommit
 
 	// no validation rules for Config
 
@@ -377,6 +377,7 @@ func (m *ProjectModel) validate(all bool) error {
 	if len(errors) > 0 {
 		return ProjectModelMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -499,6 +500,7 @@ func (m *FileModel) validate(all bool) error {
 	if len(errors) > 0 {
 		return FileModelMultiError(errors)
 	}
+
 	return nil
 }
 

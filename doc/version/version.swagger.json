@@ -45,37 +45,37 @@
     "VersionResponse": {
       "type": "object",
       "properties": {
-        "Version": {
+        "version": {
           "type": "string"
         },
-        "BuildDate": {
+        "build_date": {
           "type": "string"
         },
-        "gitBranch": {
+        "git_branch": {
           "type": "string"
         },
-        "GitCommit": {
+        "git_commit": {
           "type": "string"
         },
-        "GitTag": {
+        "git_tag": {
           "type": "string"
         },
-        "GoVersion": {
+        "go_version": {
           "type": "string"
         },
-        "Compiler": {
+        "compiler": {
           "type": "string"
         },
-        "Platform": {
+        "platform": {
           "type": "string"
         },
-        "KubectlVersion": {
+        "kubectl_version": {
           "type": "string"
         },
-        "HelmVersion": {
+        "helm_version": {
           "type": "string"
         },
-        "GitRepo": {
+        "git_repo": {
           "type": "string"
         }
       }
