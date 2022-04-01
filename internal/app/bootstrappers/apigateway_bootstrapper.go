@@ -22,7 +22,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	"github.com/duc-cnzj/mars-client/v4/git"
 	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/picture"
@@ -103,8 +103,8 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
 		namespace.RegisterNamespaceHandlerFromEndpoint,
 		cluster.RegisterClusterHandlerFromEndpoint,
-		gitproject.RegisterGitProjectHandlerFromEndpoint,
-		gitproject.RegisterGitProjectConfigHandlerFromEndpoint,
+		git.RegisterGitHandlerFromEndpoint,
+		git.RegisterGitConfigHandlerFromEndpoint,
 		project.RegisterProjectHandlerFromEndpoint,
 		picture.RegisterPictureHandlerFromEndpoint,
 		auth.RegisterAuthHandlerFromEndpoint,

@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	"github.com/duc-cnzj/mars-client/v4/git"
 	"github.com/duc-cnzj/mars-client/v4/metrics"
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/picture"
@@ -42,8 +42,8 @@ type Interface interface {
 	Container() container.ContainerSvcClient
 	File() file.FileSvcClient
 
-	GitProject() gitproject.GitProjectClient
-	GitProjectConfig() gitproject.GitProjectConfigClient
+	Git() git.GitClient
+	GitConfig() git.GitConfigClient
 
 	Namespace() namespace.NamespaceClient
 	Project() project.ProjectClient
@@ -64,20 +64,20 @@ type Client struct {
 	conn        *grpc.ClientConn
 	dialOptions []grpc.DialOption
 
-	auth                   auth.AuthClient
-	changelog              changelog.ChangelogClient
-	cluster                cluster.ClusterClient
-	container              container.ContainerSvcClient
-	event                  event.EventClient
-	gitProjectClient       gitproject.GitProjectClient
-	gitProjectConfigClient gitproject.GitProjectConfigClient
-	metrics                metrics.MetricsClient
-	namespace              namespace.NamespaceClient
-	picture                picture.PictureClient
-	project                project.ProjectClient
-	version                version.VersionClient
-	file                   file.FileSvcClient
-	endpoint               endpoint.EndpointClient
+	auth      auth.AuthClient
+	changelog changelog.ChangelogClient
+	cluster   cluster.ClusterClient
+	container container.ContainerSvcClient
+	event     event.EventClient
+	git       git.GitClient
+	gitConfig git.GitConfigClient
+	metrics   metrics.MetricsClient
+	namespace namespace.NamespaceClient
+	picture   picture.PictureClient
+	project   project.ProjectClient
+	version   version.VersionClient
+	file      file.FileSvcClient
+	endpoint  endpoint.EndpointClient
 }
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
@@ -99,8 +99,8 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.cluster = cluster.NewClusterClient(dial)
 	c.container = container.NewContainerSvcClient(dial)
 	c.event = event.NewEventClient(dial)
-	c.gitProjectClient = gitproject.NewGitProjectClient(dial)
-	c.gitProjectConfigClient = gitproject.NewGitProjectConfigClient(dial)
+	c.git = git.NewGitClient(dial)
+	c.gitConfig = git.NewGitConfigClient(dial)
 	c.metrics = metrics.NewMetricsClient(dial)
 	c.namespace = namespace.NewNamespaceClient(dial)
 	c.picture = picture.NewPictureClient(dial)
@@ -158,12 +158,12 @@ func (c *Client) File() file.FileSvcClient {
 	return c.file
 }
 
-func (c *Client) GitProject() gitproject.GitProjectClient {
-	return c.gitProjectClient
+func (c *Client) Git() git.GitClient {
+	return c.git
 }
 
-func (c *Client) GitProjectConfig() gitproject.GitProjectConfigClient {
-	return c.gitProjectConfigClient
+func (c *Client) GitConfig() git.GitConfigClient {
+	return c.gitConfig
 }
 
 func (c *Client) Metrics() metrics.MetricsClient {

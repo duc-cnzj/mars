@@ -4648,11 +4648,11 @@ export class GitProjectOptionsRequest implements IGitProjectOptionsRequest {
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectOptionsRequest;
 }
 
-/** Represents a GitProject */
-export class GitProject extends $protobuf.rpc.Service {
+/** Represents a Git */
+export class Git extends $protobuf.rpc.Service {
 
     /**
-     * Constructs a new GitProject service.
+     * Constructs a new Git service.
      * @param rpcImpl RPC implementation
      * @param [requestDelimited=false] Whether requests are length-delimited
      * @param [responseDelimited=false] Whether responses are length-delimited
@@ -4664,7 +4664,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitEnableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitEnableProjectResponse
      */
-    public enableProject(request: GitEnableProjectRequest, callback: GitProject.EnableProjectCallback): void;
+    public enableProject(request: GitEnableProjectRequest, callback: Git.EnableProjectCallback): void;
 
     /**
      * Calls EnableProject.
@@ -4678,7 +4678,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitDisableProjectRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitDisableProjectResponse
      */
-    public disableProject(request: GitDisableProjectRequest, callback: GitProject.DisableProjectCallback): void;
+    public disableProject(request: GitDisableProjectRequest, callback: Git.DisableProjectCallback): void;
 
     /**
      * Calls DisableProject.
@@ -4692,7 +4692,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitAllProjectsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitAllProjectsResponse
      */
-    public all(request: GitAllProjectsRequest, callback: GitProject.AllCallback): void;
+    public all(request: GitAllProjectsRequest, callback: Git.AllCallback): void;
 
     /**
      * Calls All.
@@ -4706,7 +4706,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitProjectOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitProjectOptionsResponse
      */
-    public projectOptions(request: GitProjectOptionsRequest, callback: GitProject.ProjectOptionsCallback): void;
+    public projectOptions(request: GitProjectOptionsRequest, callback: Git.ProjectOptionsCallback): void;
 
     /**
      * Calls ProjectOptions.
@@ -4720,7 +4720,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitBranchOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitBranchOptionsResponse
      */
-    public branchOptions(request: GitBranchOptionsRequest, callback: GitProject.BranchOptionsCallback): void;
+    public branchOptions(request: GitBranchOptionsRequest, callback: Git.BranchOptionsCallback): void;
 
     /**
      * Calls BranchOptions.
@@ -4734,7 +4734,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitCommitOptionsRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitCommitOptionsResponse
      */
-    public commitOptions(request: GitCommitOptionsRequest, callback: GitProject.CommitOptionsCallback): void;
+    public commitOptions(request: GitCommitOptionsRequest, callback: Git.CommitOptionsCallback): void;
 
     /**
      * Calls CommitOptions.
@@ -4748,7 +4748,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitCommitRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitCommitResponse
      */
-    public commit(request: GitCommitRequest, callback: GitProject.CommitCallback): void;
+    public commit(request: GitCommitRequest, callback: Git.CommitCallback): void;
 
     /**
      * Calls Commit.
@@ -4762,7 +4762,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitPipelineInfoRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitPipelineInfoResponse
      */
-    public pipelineInfo(request: GitPipelineInfoRequest, callback: GitProject.PipelineInfoCallback): void;
+    public pipelineInfo(request: GitPipelineInfoRequest, callback: Git.PipelineInfoCallback): void;
 
     /**
      * Calls PipelineInfo.
@@ -4776,7 +4776,7 @@ export class GitProject extends $protobuf.rpc.Service {
      * @param request GitConfigFileRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and GitConfigFileResponse
      */
-    public marsConfigFile(request: GitConfigFileRequest, callback: GitProject.MarsConfigFileCallback): void;
+    public marsConfigFile(request: GitConfigFileRequest, callback: Git.MarsConfigFileCallback): void;
 
     /**
      * Calls MarsConfigFile.
@@ -4786,402 +4786,402 @@ export class GitProject extends $protobuf.rpc.Service {
     public marsConfigFile(request: GitConfigFileRequest): Promise<GitConfigFileResponse>;
 }
 
-export namespace GitProject {
+export namespace Git {
 
     /**
-     * Callback as used by {@link GitProject#enableProject}.
+     * Callback as used by {@link Git#enableProject}.
      * @param error Error, if any
      * @param [response] GitEnableProjectResponse
      */
     type EnableProjectCallback = (error: (Error|null), response?: GitEnableProjectResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#disableProject}.
+     * Callback as used by {@link Git#disableProject}.
      * @param error Error, if any
      * @param [response] GitDisableProjectResponse
      */
     type DisableProjectCallback = (error: (Error|null), response?: GitDisableProjectResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#all}.
+     * Callback as used by {@link Git#all}.
      * @param error Error, if any
      * @param [response] GitAllProjectsResponse
      */
     type AllCallback = (error: (Error|null), response?: GitAllProjectsResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#projectOptions}.
+     * Callback as used by {@link Git#projectOptions}.
      * @param error Error, if any
      * @param [response] GitProjectOptionsResponse
      */
     type ProjectOptionsCallback = (error: (Error|null), response?: GitProjectOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#branchOptions}.
+     * Callback as used by {@link Git#branchOptions}.
      * @param error Error, if any
      * @param [response] GitBranchOptionsResponse
      */
     type BranchOptionsCallback = (error: (Error|null), response?: GitBranchOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#commitOptions}.
+     * Callback as used by {@link Git#commitOptions}.
      * @param error Error, if any
      * @param [response] GitCommitOptionsResponse
      */
     type CommitOptionsCallback = (error: (Error|null), response?: GitCommitOptionsResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#commit}.
+     * Callback as used by {@link Git#commit}.
      * @param error Error, if any
      * @param [response] GitCommitResponse
      */
     type CommitCallback = (error: (Error|null), response?: GitCommitResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#pipelineInfo}.
+     * Callback as used by {@link Git#pipelineInfo}.
      * @param error Error, if any
      * @param [response] GitPipelineInfoResponse
      */
     type PipelineInfoCallback = (error: (Error|null), response?: GitPipelineInfoResponse) => void;
 
     /**
-     * Callback as used by {@link GitProject#marsConfigFile}.
+     * Callback as used by {@link Git#marsConfigFile}.
      * @param error Error, if any
      * @param [response] GitConfigFileResponse
      */
     type MarsConfigFileCallback = (error: (Error|null), response?: GitConfigFileResponse) => void;
 }
 
-/** Represents a GitProjectConfigShowRequest. */
-export class GitProjectConfigShowRequest implements IGitProjectConfigShowRequest {
+/** Represents a GitConfigShowRequest. */
+export class GitConfigShowRequest implements IGitConfigShowRequest {
 
     /**
-     * Constructs a new GitProjectConfigShowRequest.
+     * Constructs a new GitConfigShowRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigShowRequest);
+    constructor(properties?: IGitConfigShowRequest);
 
-    /** GitProjectConfigShowRequest git_project_id. */
+    /** GitConfigShowRequest git_project_id. */
     public git_project_id: number;
 
-    /** GitProjectConfigShowRequest branch. */
+    /** GitConfigShowRequest branch. */
     public branch: string;
 
     /**
-     * Encodes the specified GitProjectConfigShowRequest message. Does not implicitly {@link GitProjectConfigShowRequest.verify|verify} messages.
-     * @param message GitProjectConfigShowRequest message or plain object to encode
+     * Encodes the specified GitConfigShowRequest message. Does not implicitly {@link GitConfigShowRequest.verify|verify} messages.
+     * @param message GitConfigShowRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigShowRequest message from the specified reader or buffer.
+     * Decodes a GitConfigShowRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigShowRequest
+     * @returns GitConfigShowRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigShowRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigShowRequest;
 }
 
-/** Represents a GitProjectConfigShowResponse. */
-export class GitProjectConfigShowResponse implements IGitProjectConfigShowResponse {
+/** Represents a GitConfigShowResponse. */
+export class GitConfigShowResponse implements IGitConfigShowResponse {
 
     /**
-     * Constructs a new GitProjectConfigShowResponse.
+     * Constructs a new GitConfigShowResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigShowResponse);
+    constructor(properties?: IGitConfigShowResponse);
 
-    /** GitProjectConfigShowResponse branch. */
+    /** GitConfigShowResponse branch. */
     public branch: string;
 
-    /** GitProjectConfigShowResponse config. */
+    /** GitConfigShowResponse config. */
     public config?: (MarsConfig|null);
 
     /**
-     * Encodes the specified GitProjectConfigShowResponse message. Does not implicitly {@link GitProjectConfigShowResponse.verify|verify} messages.
-     * @param message GitProjectConfigShowResponse message or plain object to encode
+     * Encodes the specified GitConfigShowResponse message. Does not implicitly {@link GitConfigShowResponse.verify|verify} messages.
+     * @param message GitConfigShowResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigShowResponse message from the specified reader or buffer.
+     * Decodes a GitConfigShowResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigShowResponse
+     * @returns GitConfigShowResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigShowResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigShowResponse;
 }
 
-/** Represents a GitProjectConfigGlobalConfigRequest. */
-export class GitProjectConfigGlobalConfigRequest implements IGitProjectConfigGlobalConfigRequest {
+/** Represents a GitConfigGlobalConfigRequest. */
+export class GitConfigGlobalConfigRequest implements IGitConfigGlobalConfigRequest {
 
     /**
-     * Constructs a new GitProjectConfigGlobalConfigRequest.
+     * Constructs a new GitConfigGlobalConfigRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigGlobalConfigRequest);
+    constructor(properties?: IGitConfigGlobalConfigRequest);
 
-    /** GitProjectConfigGlobalConfigRequest git_project_id. */
+    /** GitConfigGlobalConfigRequest git_project_id. */
     public git_project_id: number;
 
     /**
-     * Encodes the specified GitProjectConfigGlobalConfigRequest message. Does not implicitly {@link GitProjectConfigGlobalConfigRequest.verify|verify} messages.
-     * @param message GitProjectConfigGlobalConfigRequest message or plain object to encode
+     * Encodes the specified GitConfigGlobalConfigRequest message. Does not implicitly {@link GitConfigGlobalConfigRequest.verify|verify} messages.
+     * @param message GitConfigGlobalConfigRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigGlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigGlobalConfigRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigGlobalConfigRequest message from the specified reader or buffer.
+     * Decodes a GitConfigGlobalConfigRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigGlobalConfigRequest
+     * @returns GitConfigGlobalConfigRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigGlobalConfigRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigGlobalConfigRequest;
 }
 
-/** Represents a GitProjectConfigGlobalConfigResponse. */
-export class GitProjectConfigGlobalConfigResponse implements IGitProjectConfigGlobalConfigResponse {
+/** Represents a GitConfigGlobalConfigResponse. */
+export class GitConfigGlobalConfigResponse implements IGitConfigGlobalConfigResponse {
 
     /**
-     * Constructs a new GitProjectConfigGlobalConfigResponse.
+     * Constructs a new GitConfigGlobalConfigResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigGlobalConfigResponse);
+    constructor(properties?: IGitConfigGlobalConfigResponse);
 
-    /** GitProjectConfigGlobalConfigResponse enabled. */
+    /** GitConfigGlobalConfigResponse enabled. */
     public enabled: boolean;
 
-    /** GitProjectConfigGlobalConfigResponse config. */
+    /** GitConfigGlobalConfigResponse config. */
     public config?: (MarsConfig|null);
 
     /**
-     * Encodes the specified GitProjectConfigGlobalConfigResponse message. Does not implicitly {@link GitProjectConfigGlobalConfigResponse.verify|verify} messages.
-     * @param message GitProjectConfigGlobalConfigResponse message or plain object to encode
+     * Encodes the specified GitConfigGlobalConfigResponse message. Does not implicitly {@link GitConfigGlobalConfigResponse.verify|verify} messages.
+     * @param message GitConfigGlobalConfigResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigGlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigGlobalConfigResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigGlobalConfigResponse message from the specified reader or buffer.
+     * Decodes a GitConfigGlobalConfigResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigGlobalConfigResponse
+     * @returns GitConfigGlobalConfigResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigGlobalConfigResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigGlobalConfigResponse;
 }
 
-/** Represents a GitProjectConfigUpdateRequest. */
-export class GitProjectConfigUpdateRequest implements IGitProjectConfigUpdateRequest {
+/** Represents a GitConfigUpdateRequest. */
+export class GitConfigUpdateRequest implements IGitConfigUpdateRequest {
 
     /**
-     * Constructs a new GitProjectConfigUpdateRequest.
+     * Constructs a new GitConfigUpdateRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigUpdateRequest);
+    constructor(properties?: IGitConfigUpdateRequest);
 
-    /** GitProjectConfigUpdateRequest git_project_id. */
+    /** GitConfigUpdateRequest git_project_id. */
     public git_project_id: number;
 
-    /** GitProjectConfigUpdateRequest config. */
+    /** GitConfigUpdateRequest config. */
     public config?: (MarsConfig|null);
 
     /**
-     * Encodes the specified GitProjectConfigUpdateRequest message. Does not implicitly {@link GitProjectConfigUpdateRequest.verify|verify} messages.
-     * @param message GitProjectConfigUpdateRequest message or plain object to encode
+     * Encodes the specified GitConfigUpdateRequest message. Does not implicitly {@link GitConfigUpdateRequest.verify|verify} messages.
+     * @param message GitConfigUpdateRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigUpdateRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigUpdateRequest message from the specified reader or buffer.
+     * Decodes a GitConfigUpdateRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigUpdateRequest
+     * @returns GitConfigUpdateRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigUpdateRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigUpdateRequest;
 }
 
-/** Represents a GitProjectConfigUpdateResponse. */
-export class GitProjectConfigUpdateResponse implements IGitProjectConfigUpdateResponse {
+/** Represents a GitConfigUpdateResponse. */
+export class GitConfigUpdateResponse implements IGitConfigUpdateResponse {
 
     /**
-     * Constructs a new GitProjectConfigUpdateResponse.
+     * Constructs a new GitConfigUpdateResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigUpdateResponse);
+    constructor(properties?: IGitConfigUpdateResponse);
 
-    /** GitProjectConfigUpdateResponse config. */
+    /** GitConfigUpdateResponse config. */
     public config?: (MarsConfig|null);
 
     /**
-     * Encodes the specified GitProjectConfigUpdateResponse message. Does not implicitly {@link GitProjectConfigUpdateResponse.verify|verify} messages.
-     * @param message GitProjectConfigUpdateResponse message or plain object to encode
+     * Encodes the specified GitConfigUpdateResponse message. Does not implicitly {@link GitConfigUpdateResponse.verify|verify} messages.
+     * @param message GitConfigUpdateResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigUpdateResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigUpdateResponse message from the specified reader or buffer.
+     * Decodes a GitConfigUpdateResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigUpdateResponse
+     * @returns GitConfigUpdateResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigUpdateResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigUpdateResponse;
 }
 
-/** Represents a GitProjectConfigToggleGlobalStatusRequest. */
-export class GitProjectConfigToggleGlobalStatusRequest implements IGitProjectConfigToggleGlobalStatusRequest {
+/** Represents a GitConfigToggleGlobalStatusRequest. */
+export class GitConfigToggleGlobalStatusRequest implements IGitConfigToggleGlobalStatusRequest {
 
     /**
-     * Constructs a new GitProjectConfigToggleGlobalStatusRequest.
+     * Constructs a new GitConfigToggleGlobalStatusRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigToggleGlobalStatusRequest);
+    constructor(properties?: IGitConfigToggleGlobalStatusRequest);
 
-    /** GitProjectConfigToggleGlobalStatusRequest git_project_id. */
+    /** GitConfigToggleGlobalStatusRequest git_project_id. */
     public git_project_id: number;
 
-    /** GitProjectConfigToggleGlobalStatusRequest enabled. */
+    /** GitConfigToggleGlobalStatusRequest enabled. */
     public enabled: boolean;
 
     /**
-     * Encodes the specified GitProjectConfigToggleGlobalStatusRequest message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusRequest.verify|verify} messages.
-     * @param message GitProjectConfigToggleGlobalStatusRequest message or plain object to encode
+     * Encodes the specified GitConfigToggleGlobalStatusRequest message. Does not implicitly {@link GitConfigToggleGlobalStatusRequest.verify|verify} messages.
+     * @param message GitConfigToggleGlobalStatusRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigToggleGlobalStatusRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigToggleGlobalStatusRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigToggleGlobalStatusRequest message from the specified reader or buffer.
+     * Decodes a GitConfigToggleGlobalStatusRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigToggleGlobalStatusRequest
+     * @returns GitConfigToggleGlobalStatusRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigToggleGlobalStatusRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigToggleGlobalStatusRequest;
 }
 
-/** Represents a GitProjectConfigDefaultChartValuesRequest. */
-export class GitProjectConfigDefaultChartValuesRequest implements IGitProjectConfigDefaultChartValuesRequest {
+/** Represents a GitConfigDefaultChartValuesRequest. */
+export class GitConfigDefaultChartValuesRequest implements IGitConfigDefaultChartValuesRequest {
 
     /**
-     * Constructs a new GitProjectConfigDefaultChartValuesRequest.
+     * Constructs a new GitConfigDefaultChartValuesRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigDefaultChartValuesRequest);
+    constructor(properties?: IGitConfigDefaultChartValuesRequest);
 
-    /** GitProjectConfigDefaultChartValuesRequest git_project_id. */
+    /** GitConfigDefaultChartValuesRequest git_project_id. */
     public git_project_id: number;
 
-    /** GitProjectConfigDefaultChartValuesRequest branch. */
+    /** GitConfigDefaultChartValuesRequest branch. */
     public branch: string;
 
     /**
-     * Encodes the specified GitProjectConfigDefaultChartValuesRequest message. Does not implicitly {@link GitProjectConfigDefaultChartValuesRequest.verify|verify} messages.
-     * @param message GitProjectConfigDefaultChartValuesRequest message or plain object to encode
+     * Encodes the specified GitConfigDefaultChartValuesRequest message. Does not implicitly {@link GitConfigDefaultChartValuesRequest.verify|verify} messages.
+     * @param message GitConfigDefaultChartValuesRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigDefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigDefaultChartValuesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigDefaultChartValuesRequest message from the specified reader or buffer.
+     * Decodes a GitConfigDefaultChartValuesRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigDefaultChartValuesRequest
+     * @returns GitConfigDefaultChartValuesRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigDefaultChartValuesRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigDefaultChartValuesRequest;
 }
 
-/** Represents a GitProjectConfigDefaultChartValuesResponse. */
-export class GitProjectConfigDefaultChartValuesResponse implements IGitProjectConfigDefaultChartValuesResponse {
+/** Represents a GitConfigDefaultChartValuesResponse. */
+export class GitConfigDefaultChartValuesResponse implements IGitConfigDefaultChartValuesResponse {
 
     /**
-     * Constructs a new GitProjectConfigDefaultChartValuesResponse.
+     * Constructs a new GitConfigDefaultChartValuesResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigDefaultChartValuesResponse);
+    constructor(properties?: IGitConfigDefaultChartValuesResponse);
 
-    /** GitProjectConfigDefaultChartValuesResponse value. */
+    /** GitConfigDefaultChartValuesResponse value. */
     public value: string;
 
     /**
-     * Encodes the specified GitProjectConfigDefaultChartValuesResponse message. Does not implicitly {@link GitProjectConfigDefaultChartValuesResponse.verify|verify} messages.
-     * @param message GitProjectConfigDefaultChartValuesResponse message or plain object to encode
+     * Encodes the specified GitConfigDefaultChartValuesResponse message. Does not implicitly {@link GitConfigDefaultChartValuesResponse.verify|verify} messages.
+     * @param message GitConfigDefaultChartValuesResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigDefaultChartValuesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigDefaultChartValuesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigDefaultChartValuesResponse message from the specified reader or buffer.
+     * Decodes a GitConfigDefaultChartValuesResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigDefaultChartValuesResponse
+     * @returns GitConfigDefaultChartValuesResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigDefaultChartValuesResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigDefaultChartValuesResponse;
 }
 
-/** Represents a GitProjectConfigToggleGlobalStatusResponse. */
-export class GitProjectConfigToggleGlobalStatusResponse implements IGitProjectConfigToggleGlobalStatusResponse {
+/** Represents a GitConfigToggleGlobalStatusResponse. */
+export class GitConfigToggleGlobalStatusResponse implements IGitConfigToggleGlobalStatusResponse {
 
     /**
-     * Constructs a new GitProjectConfigToggleGlobalStatusResponse.
+     * Constructs a new GitConfigToggleGlobalStatusResponse.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IGitProjectConfigToggleGlobalStatusResponse);
+    constructor(properties?: IGitConfigToggleGlobalStatusResponse);
 
     /**
-     * Encodes the specified GitProjectConfigToggleGlobalStatusResponse message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusResponse.verify|verify} messages.
-     * @param message GitProjectConfigToggleGlobalStatusResponse message or plain object to encode
+     * Encodes the specified GitConfigToggleGlobalStatusResponse message. Does not implicitly {@link GitConfigToggleGlobalStatusResponse.verify|verify} messages.
+     * @param message GitConfigToggleGlobalStatusResponse message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: GitProjectConfigToggleGlobalStatusResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: GitConfigToggleGlobalStatusResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a GitProjectConfigToggleGlobalStatusResponse message from the specified reader or buffer.
+     * Decodes a GitConfigToggleGlobalStatusResponse message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns GitProjectConfigToggleGlobalStatusResponse
+     * @returns GitConfigToggleGlobalStatusResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitProjectConfigToggleGlobalStatusResponse;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): GitConfigToggleGlobalStatusResponse;
 }
 
-/** Represents a GitProjectConfig */
-export class GitProjectConfig extends $protobuf.rpc.Service {
+/** Represents a GitConfig */
+export class GitConfig extends $protobuf.rpc.Service {
 
     /**
-     * Constructs a new GitProjectConfig service.
+     * Constructs a new GitConfig service.
      * @param rpcImpl RPC implementation
      * @param [requestDelimited=false] Whether requests are length-delimited
      * @param [responseDelimited=false] Whether responses are length-delimited
@@ -5190,111 +5190,111 @@ export class GitProjectConfig extends $protobuf.rpc.Service {
 
     /**
      * Calls Show.
-     * @param request GitProjectConfigShowRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and GitProjectConfigShowResponse
+     * @param request GitConfigShowRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitConfigShowResponse
      */
-    public show(request: GitProjectConfigShowRequest, callback: GitProjectConfig.ShowCallback): void;
+    public show(request: GitConfigShowRequest, callback: GitConfig.ShowCallback): void;
 
     /**
      * Calls Show.
-     * @param request GitProjectConfigShowRequest message or plain object
+     * @param request GitConfigShowRequest message or plain object
      * @returns Promise
      */
-    public show(request: GitProjectConfigShowRequest): Promise<GitProjectConfigShowResponse>;
+    public show(request: GitConfigShowRequest): Promise<GitConfigShowResponse>;
 
     /**
      * Calls GlobalConfig.
-     * @param request GitProjectConfigGlobalConfigRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and GitProjectConfigGlobalConfigResponse
+     * @param request GitConfigGlobalConfigRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitConfigGlobalConfigResponse
      */
-    public globalConfig(request: GitProjectConfigGlobalConfigRequest, callback: GitProjectConfig.GlobalConfigCallback): void;
+    public globalConfig(request: GitConfigGlobalConfigRequest, callback: GitConfig.GlobalConfigCallback): void;
 
     /**
      * Calls GlobalConfig.
-     * @param request GitProjectConfigGlobalConfigRequest message or plain object
+     * @param request GitConfigGlobalConfigRequest message or plain object
      * @returns Promise
      */
-    public globalConfig(request: GitProjectConfigGlobalConfigRequest): Promise<GitProjectConfigGlobalConfigResponse>;
+    public globalConfig(request: GitConfigGlobalConfigRequest): Promise<GitConfigGlobalConfigResponse>;
 
     /**
      * Calls ToggleGlobalStatus.
-     * @param request GitProjectConfigToggleGlobalStatusRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and GitProjectConfigToggleGlobalStatusResponse
+     * @param request GitConfigToggleGlobalStatusRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitConfigToggleGlobalStatusResponse
      */
-    public toggleGlobalStatus(request: GitProjectConfigToggleGlobalStatusRequest, callback: GitProjectConfig.ToggleGlobalStatusCallback): void;
+    public toggleGlobalStatus(request: GitConfigToggleGlobalStatusRequest, callback: GitConfig.ToggleGlobalStatusCallback): void;
 
     /**
      * Calls ToggleGlobalStatus.
-     * @param request GitProjectConfigToggleGlobalStatusRequest message or plain object
+     * @param request GitConfigToggleGlobalStatusRequest message or plain object
      * @returns Promise
      */
-    public toggleGlobalStatus(request: GitProjectConfigToggleGlobalStatusRequest): Promise<GitProjectConfigToggleGlobalStatusResponse>;
+    public toggleGlobalStatus(request: GitConfigToggleGlobalStatusRequest): Promise<GitConfigToggleGlobalStatusResponse>;
 
     /**
      * Calls Update.
-     * @param request GitProjectConfigUpdateRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and GitProjectConfigUpdateResponse
+     * @param request GitConfigUpdateRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitConfigUpdateResponse
      */
-    public update(request: GitProjectConfigUpdateRequest, callback: GitProjectConfig.UpdateCallback): void;
+    public update(request: GitConfigUpdateRequest, callback: GitConfig.UpdateCallback): void;
 
     /**
      * Calls Update.
-     * @param request GitProjectConfigUpdateRequest message or plain object
+     * @param request GitConfigUpdateRequest message or plain object
      * @returns Promise
      */
-    public update(request: GitProjectConfigUpdateRequest): Promise<GitProjectConfigUpdateResponse>;
+    public update(request: GitConfigUpdateRequest): Promise<GitConfigUpdateResponse>;
 
     /**
      * Calls GetDefaultChartValues.
-     * @param request GitProjectConfigDefaultChartValuesRequest message or plain object
-     * @param callback Node-style callback called with the error, if any, and GitProjectConfigDefaultChartValuesResponse
+     * @param request GitConfigDefaultChartValuesRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and GitConfigDefaultChartValuesResponse
      */
-    public getDefaultChartValues(request: GitProjectConfigDefaultChartValuesRequest, callback: GitProjectConfig.GetDefaultChartValuesCallback): void;
+    public getDefaultChartValues(request: GitConfigDefaultChartValuesRequest, callback: GitConfig.GetDefaultChartValuesCallback): void;
 
     /**
      * Calls GetDefaultChartValues.
-     * @param request GitProjectConfigDefaultChartValuesRequest message or plain object
+     * @param request GitConfigDefaultChartValuesRequest message or plain object
      * @returns Promise
      */
-    public getDefaultChartValues(request: GitProjectConfigDefaultChartValuesRequest): Promise<GitProjectConfigDefaultChartValuesResponse>;
+    public getDefaultChartValues(request: GitConfigDefaultChartValuesRequest): Promise<GitConfigDefaultChartValuesResponse>;
 }
 
-export namespace GitProjectConfig {
+export namespace GitConfig {
 
     /**
-     * Callback as used by {@link GitProjectConfig#show}.
+     * Callback as used by {@link GitConfig#show}.
      * @param error Error, if any
-     * @param [response] GitProjectConfigShowResponse
+     * @param [response] GitConfigShowResponse
      */
-    type ShowCallback = (error: (Error|null), response?: GitProjectConfigShowResponse) => void;
+    type ShowCallback = (error: (Error|null), response?: GitConfigShowResponse) => void;
 
     /**
-     * Callback as used by {@link GitProjectConfig#globalConfig}.
+     * Callback as used by {@link GitConfig#globalConfig}.
      * @param error Error, if any
-     * @param [response] GitProjectConfigGlobalConfigResponse
+     * @param [response] GitConfigGlobalConfigResponse
      */
-    type GlobalConfigCallback = (error: (Error|null), response?: GitProjectConfigGlobalConfigResponse) => void;
+    type GlobalConfigCallback = (error: (Error|null), response?: GitConfigGlobalConfigResponse) => void;
 
     /**
-     * Callback as used by {@link GitProjectConfig#toggleGlobalStatus}.
+     * Callback as used by {@link GitConfig#toggleGlobalStatus}.
      * @param error Error, if any
-     * @param [response] GitProjectConfigToggleGlobalStatusResponse
+     * @param [response] GitConfigToggleGlobalStatusResponse
      */
-    type ToggleGlobalStatusCallback = (error: (Error|null), response?: GitProjectConfigToggleGlobalStatusResponse) => void;
+    type ToggleGlobalStatusCallback = (error: (Error|null), response?: GitConfigToggleGlobalStatusResponse) => void;
 
     /**
-     * Callback as used by {@link GitProjectConfig#update}.
+     * Callback as used by {@link GitConfig#update}.
      * @param error Error, if any
-     * @param [response] GitProjectConfigUpdateResponse
+     * @param [response] GitConfigUpdateResponse
      */
-    type UpdateCallback = (error: (Error|null), response?: GitProjectConfigUpdateResponse) => void;
+    type UpdateCallback = (error: (Error|null), response?: GitConfigUpdateResponse) => void;
 
     /**
-     * Callback as used by {@link GitProjectConfig#getDefaultChartValues}.
+     * Callback as used by {@link GitConfig#getDefaultChartValues}.
      * @param error Error, if any
-     * @param [response] GitProjectConfigDefaultChartValuesResponse
+     * @param [response] GitConfigDefaultChartValuesResponse
      */
-    type GetDefaultChartValuesCallback = (error: (Error|null), response?: GitProjectConfigDefaultChartValuesResponse) => void;
+    type GetDefaultChartValuesCallback = (error: (Error|null), response?: GitConfigDefaultChartValuesResponse) => void;
 }
 
 /** Represents a MarsConfig. */

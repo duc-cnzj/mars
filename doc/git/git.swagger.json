@@ -1,15 +1,15 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "gitproject/gitproject.proto",
+    "title": "git/git.proto",
     "version": "version not set"
   },
   "tags": [
     {
-      "name": "GitProject"
+      "name": "Git"
     },
     {
-      "name": "GitProjectConfig"
+      "name": "GitConfig"
     }
   ],
   "consumes": [
@@ -19,10 +19,10 @@
     "application/json"
   ],
   "paths": {
-    "/api/gitproject/project_options": {
+    "/api/git/project_options": {
       "get": {
         "summary": "ProjectOptions 获取项目信息， 用在级联列表",
-        "operationId": "GitProject_ProjectOptions",
+        "operationId": "Git_ProjectOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -38,14 +38,14 @@
           }
         },
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects": {
+    "/api/git/projects": {
       "get": {
         "summary": "All 获取所有的 git 项目",
-        "operationId": "GitProject_All",
+        "operationId": "Git_All",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -61,14 +61,14 @@
           }
         },
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/disable": {
+    "/api/git/projects/disable": {
       "post": {
         "summary": "DisableProject 关闭项目",
-        "operationId": "GitProject_DisableProject",
+        "operationId": "Git_DisableProject",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -94,14 +94,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/enable": {
+    "/api/git/projects/enable": {
       "post": {
         "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
-        "operationId": "GitProject_EnableProject",
+        "operationId": "Git_EnableProject",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -127,14 +127,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/branch_options": {
+    "/api/git/projects/{git_project_id}/branch_options": {
       "get": {
         "summary": "BranchOptions 获取分支信息， 用在级联列表",
-        "operationId": "GitProject_BranchOptions",
+        "operationId": "Git_BranchOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -164,14 +164,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commit_options": {
+    "/api/git/projects/{git_project_id}/branches/{branch}/commit_options": {
       "get": {
         "summary": "CommitOptions 获取commit信息， 用在级联列表",
-        "operationId": "GitProject_CommitOptions",
+        "operationId": "Git_CommitOptions",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -201,14 +201,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
+    "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
       "get": {
         "summary": "Commit 获取 commit 详情",
-        "operationId": "GitProject_Commit",
+        "operationId": "Git_Commit",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -244,14 +244,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
+    "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
         "summary": "PipelineInfo 获取 pipeline 详情",
-        "operationId": "GitProject_PipelineInfo",
+        "operationId": "Git_PipelineInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -287,14 +287,14 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/branches/{branch}/config_file": {
+    "/api/git/projects/{git_project_id}/branches/{branch}/config_file": {
       "get": {
         "summary": "MarsConfigFile 获取项目 mars 配置详情",
-        "operationId": "GitProject_MarsConfigFile",
+        "operationId": "Git_MarsConfigFile",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -324,19 +324,19 @@
           }
         ],
         "tags": [
-          "GitProject"
+          "Git"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/default_values": {
+    "/api/git/projects/{git_project_id}/default_values": {
       "get": {
         "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
-        "operationId": "GitProjectConfig_GetDefaultChartValues",
+        "operationId": "GitConfig_GetDefaultChartValues",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectConfigDefaultChartValuesResponse"
+              "$ref": "#/definitions/GitConfigDefaultChartValuesResponse"
             }
           },
           "default": {
@@ -362,19 +362,19 @@
           }
         ],
         "tags": [
-          "GitProjectConfig"
+          "GitConfig"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/global_config": {
+    "/api/git/projects/{git_project_id}/global_config": {
       "get": {
         "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
-        "operationId": "GitProjectConfig_GlobalConfig",
+        "operationId": "GitConfig_GlobalConfig",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectConfigGlobalConfigResponse"
+              "$ref": "#/definitions/GitConfigGlobalConfigResponse"
             }
           },
           "default": {
@@ -394,19 +394,19 @@
           }
         ],
         "tags": [
-          "GitProjectConfig"
+          "GitConfig"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/mars_config": {
+    "/api/git/projects/{git_project_id}/mars_config": {
       "get": {
         "summary": "Show 查看项目配置",
-        "operationId": "GitProjectConfig_Show",
+        "operationId": "GitConfig_Show",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectConfigShowResponse"
+              "$ref": "#/definitions/GitConfigShowResponse"
             }
           },
           "default": {
@@ -432,17 +432,17 @@
           }
         ],
         "tags": [
-          "GitProjectConfig"
+          "GitConfig"
         ]
       },
       "put": {
         "summary": "Update 更新全局配置",
-        "operationId": "GitProjectConfig_Update",
+        "operationId": "GitConfig_Update",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectConfigUpdateResponse"
+              "$ref": "#/definitions/GitConfigUpdateResponse"
             }
           },
           "default": {
@@ -475,19 +475,19 @@
           }
         ],
         "tags": [
-          "GitProjectConfig"
+          "GitConfig"
         ]
       }
     },
-    "/api/gitproject/projects/{git_project_id}/toggle_status": {
+    "/api/git/projects/{git_project_id}/toggle_status": {
       "post": {
         "summary": "ToggleGlobalStatus 开启/关闭全局配置",
-        "operationId": "GitProjectConfig_ToggleGlobalStatus",
+        "operationId": "GitConfig_ToggleGlobalStatus",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectConfigToggleGlobalStatusResponse"
+              "$ref": "#/definitions/GitConfigToggleGlobalStatusResponse"
             }
           },
           "default": {
@@ -520,7 +520,7 @@
           }
         ],
         "tags": [
-          "GitProjectConfig"
+          "GitConfig"
         ]
       }
     }
@@ -641,6 +641,14 @@
         }
       }
     },
+    "GitConfigDefaultChartValuesResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "GitConfigFileResponse": {
       "type": "object",
       "properties": {
@@ -655,6 +663,39 @@
           "items": {
             "$ref": "#/definitions/Element"
           }
+        }
+      }
+    },
+    "GitConfigGlobalConfigResponse": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
+        }
+      }
+    },
+    "GitConfigShowResponse": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
+        }
+      }
+    },
+    "GitConfigToggleGlobalStatusResponse": {
+      "type": "object"
+    },
+    "GitConfigUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/MarsConfig"
         }
       }
     },
@@ -712,47 +753,6 @@
         },
         "web_url": {
           "type": "string"
-        }
-      }
-    },
-    "GitProjectConfigDefaultChartValuesResponse": {
-      "type": "object",
-      "properties": {
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "GitProjectConfigGlobalConfigResponse": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
-    "GitProjectConfigShowResponse": {
-      "type": "object",
-      "properties": {
-        "branch": {
-          "type": "string"
-        },
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
-    "GitProjectConfigToggleGlobalStatusResponse": {
-      "type": "object"
-    },
-    "GitProjectConfigUpdateResponse": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
         }
       }
     },

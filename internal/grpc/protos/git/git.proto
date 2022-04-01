@@ -4,7 +4,7 @@ import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
 
-option go_package = "github.com/duc-cnzj/mars-client/v4/gitproject;gitproject";
+option go_package = "github.com/duc-cnzj/mars-client/v4/git;git";
 
 message GitEnableProjectRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
@@ -113,11 +113,11 @@ message GitDisableProjectResponse {}
 message GitAllProjectsRequest {}
 message GitProjectOptionsRequest {}
 
-service GitProject {
+service Git {
   // EnableProject 开启项目，开启后可以在项目列表看到
   rpc EnableProject(GitEnableProjectRequest) returns (GitEnableProjectResponse) {
     option (google.api.http) = {
-      post: "/api/gitproject/projects/enable",
+      post: "/api/git/projects/enable",
       body: "*"
     };
   }
@@ -125,7 +125,7 @@ service GitProject {
   // DisableProject 关闭项目
   rpc DisableProject(GitDisableProjectRequest) returns (GitDisableProjectResponse) {
     option (google.api.http) = {
-      post: "/api/gitproject/projects/disable",
+      post: "/api/git/projects/disable",
       body: "*"
     };
   }
@@ -133,132 +133,132 @@ service GitProject {
   // All 获取所有的 git 项目
   rpc All(GitAllProjectsRequest) returns (GitAllProjectsResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects",
+      get: "/api/git/projects",
     };
   }
 
   // ProjectOptions 获取项目信息， 用在级联列表
   rpc ProjectOptions(GitProjectOptionsRequest) returns (GitProjectOptionsResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/project_options",
+      get: "/api/git/project_options",
     };
   }
 
   // BranchOptions 获取分支信息， 用在级联列表
   rpc BranchOptions(GitBranchOptionsRequest) returns (GitBranchOptionsResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/branch_options",
+      get: "/api/git/projects/{git_project_id}/branch_options",
     };
   }
 
   // CommitOptions 获取commit信息， 用在级联列表
   rpc CommitOptions(GitCommitOptionsRequest) returns (GitCommitOptionsResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/branches/{branch}/commit_options",
+      get: "/api/git/projects/{git_project_id}/branches/{branch}/commit_options",
     };
   }
 
   // Commit 获取 commit 详情
   rpc Commit(GitCommitRequest) returns (GitCommitResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}",
+      get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
   }
 
   // PipelineInfo 获取 pipeline 详情
   rpc PipelineInfo(GitPipelineInfoRequest) returns (GitPipelineInfoResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
+      get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
   }
 
   // MarsConfigFile 获取项目 mars 配置详情
   rpc MarsConfigFile(GitConfigFileRequest) returns (GitConfigFileResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/branches/{branch}/config_file",
+      get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
     };
   }
 }
 
-message GitProjectConfigShowRequest {
+message GitConfigShowRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
-message GitProjectConfigShowResponse {
+message GitConfigShowResponse {
   string branch = 1;
   MarsConfig config = 2;
 }
 
-message GitProjectConfigGlobalConfigRequest {
+message GitConfigGlobalConfigRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message GitProjectConfigGlobalConfigResponse {
+message GitConfigGlobalConfigResponse {
   bool enabled = 1;
   MarsConfig config = 2;
 }
 
-message GitProjectConfigUpdateRequest {
+message GitConfigUpdateRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   MarsConfig config = 2;
 }
 
-message GitProjectConfigUpdateResponse {
+message GitConfigUpdateResponse {
   MarsConfig config = 1;
 }
 
-message GitProjectConfigToggleGlobalStatusRequest {
+message GitConfigToggleGlobalStatusRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   bool enabled = 2;
 }
 
-message GitProjectConfigDefaultChartValuesRequest {
+message GitConfigDefaultChartValuesRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
   string branch = 2;
 }
 
-message GitProjectConfigDefaultChartValuesResponse {
+message GitConfigDefaultChartValuesResponse {
   string value = 1;
 }
 
-message GitProjectConfigToggleGlobalStatusResponse {}
+message GitConfigToggleGlobalStatusResponse {}
 
-service GitProjectConfig {
+service GitConfig {
   // Show 查看项目配置
-  rpc Show(GitProjectConfigShowRequest) returns (GitProjectConfigShowResponse) {
+  rpc Show(GitConfigShowRequest) returns (GitConfigShowResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/mars_config"
+      get: "/api/git/projects/{git_project_id}/mars_config"
     };
   }
 
   // GlobalConfig 查看项目 GlobalConfig 配置
-  rpc GlobalConfig(GitProjectConfigGlobalConfigRequest) returns (GitProjectConfigGlobalConfigResponse) {
+  rpc GlobalConfig(GitConfigGlobalConfigRequest) returns (GitConfigGlobalConfigResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/global_config"
+      get: "/api/git/projects/{git_project_id}/global_config"
     };
   }
 
   // ToggleGlobalStatus 开启/关闭全局配置
-  rpc ToggleGlobalStatus(GitProjectConfigToggleGlobalStatusRequest) returns (GitProjectConfigToggleGlobalStatusResponse) {
+  rpc ToggleGlobalStatus(GitConfigToggleGlobalStatusRequest) returns (GitConfigToggleGlobalStatusResponse) {
     option (google.api.http) = {
-      post: "/api/gitproject/projects/{git_project_id}/toggle_status",
+      post: "/api/git/projects/{git_project_id}/toggle_status",
       body: "*"
     };
   }
 
   // Update 更新全局配置
-  rpc Update(GitProjectConfigUpdateRequest) returns (GitProjectConfigUpdateResponse) {
+  rpc Update(GitConfigUpdateRequest) returns (GitConfigUpdateResponse) {
     option (google.api.http) = {
-      put: "/api/gitproject/projects/{git_project_id}/mars_config",
+      put: "/api/git/projects/{git_project_id}/mars_config",
       body: "*"
     };
   }
 
   // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
-  rpc GetDefaultChartValues(GitProjectConfigDefaultChartValuesRequest) returns (GitProjectConfigDefaultChartValuesResponse) {
+  rpc GetDefaultChartValues(GitConfigDefaultChartValuesRequest) returns (GitConfigDefaultChartValuesResponse) {
     option (google.api.http) = {
-      get: "/api/gitproject/projects/{git_project_id}/default_values",
+      get: "/api/git/projects/{git_project_id}/default_values",
     };
   }
 }

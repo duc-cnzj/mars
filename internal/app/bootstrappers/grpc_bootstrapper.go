@@ -22,7 +22,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars-client/v4/gitproject"
+	"github.com/duc-cnzj/mars-client/v4/git"
 	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/picture"
@@ -127,8 +127,8 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	grpc_prometheus.Register(server)
 
 	cluster.RegisterClusterServer(server, new(services.ClusterSvc))
-	gitproject.RegisterGitProjectServer(server, new(services.GitProjectSvc))
-	gitproject.RegisterGitProjectConfigServer(server, new(services.GitProjectConfigSvc))
+	git.RegisterGitServer(server, new(services.GitSvc))
+	git.RegisterGitConfigServer(server, new(services.GitConfigSvc))
 	namespace.RegisterNamespaceServer(server, new(services.NamespaceSvc))
 	project.RegisterProjectServer(server, new(services.ProjectSvc))
 	picture.RegisterPictureServer(server, new(services.PictureSvc))

@@ -11363,27 +11363,27 @@ export const GitProjectOptionsRequest = $root.GitProjectOptionsRequest = (() => 
     return GitProjectOptionsRequest;
 })();
 
-export const GitProject = $root.GitProject = (() => {
+export const Git = $root.Git = (() => {
 
     /**
-     * Constructs a new GitProject service.
-     * @exports GitProject
-     * @classdesc Represents a GitProject
+     * Constructs a new Git service.
+     * @exports Git
+     * @classdesc Represents a Git
      * @extends $protobuf.rpc.Service
      * @constructor
      * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
      * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
      * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
      */
-    function GitProject(rpcImpl, requestDelimited, responseDelimited) {
+    function Git(rpcImpl, requestDelimited, responseDelimited) {
         $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
     }
 
-    (GitProject.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = GitProject;
+    (Git.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = Git;
 
     /**
-     * Callback as used by {@link GitProject#enableProject}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#enableProject}.
+     * @memberof Git
      * @typedef EnableProjectCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11393,21 +11393,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls EnableProject.
      * @function enableProject
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitEnableProjectRequest} request GitEnableProjectRequest message or plain object
-     * @param {GitProject.EnableProjectCallback} callback Node-style callback called with the error, if any, and GitEnableProjectResponse
+     * @param {Git.EnableProjectCallback} callback Node-style callback called with the error, if any, and GitEnableProjectResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.enableProject = function enableProject(request, callback) {
+    Object.defineProperty(Git.prototype.enableProject = function enableProject(request, callback) {
         return this.rpcCall(enableProject, $root.GitEnableProjectRequest, $root.GitEnableProjectResponse, request, callback);
     }, "name", { value: "EnableProject" });
 
     /**
      * Calls EnableProject.
      * @function enableProject
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitEnableProjectRequest} request GitEnableProjectRequest message or plain object
      * @returns {Promise<GitEnableProjectResponse>} Promise
@@ -11415,8 +11415,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#disableProject}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#disableProject}.
+     * @memberof Git
      * @typedef DisableProjectCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11426,21 +11426,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls DisableProject.
      * @function disableProject
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitDisableProjectRequest} request GitDisableProjectRequest message or plain object
-     * @param {GitProject.DisableProjectCallback} callback Node-style callback called with the error, if any, and GitDisableProjectResponse
+     * @param {Git.DisableProjectCallback} callback Node-style callback called with the error, if any, and GitDisableProjectResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.disableProject = function disableProject(request, callback) {
+    Object.defineProperty(Git.prototype.disableProject = function disableProject(request, callback) {
         return this.rpcCall(disableProject, $root.GitDisableProjectRequest, $root.GitDisableProjectResponse, request, callback);
     }, "name", { value: "DisableProject" });
 
     /**
      * Calls DisableProject.
      * @function disableProject
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitDisableProjectRequest} request GitDisableProjectRequest message or plain object
      * @returns {Promise<GitDisableProjectResponse>} Promise
@@ -11448,8 +11448,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#all}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#all}.
+     * @memberof Git
      * @typedef AllCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11459,21 +11459,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls All.
      * @function all
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitAllProjectsRequest} request GitAllProjectsRequest message or plain object
-     * @param {GitProject.AllCallback} callback Node-style callback called with the error, if any, and GitAllProjectsResponse
+     * @param {Git.AllCallback} callback Node-style callback called with the error, if any, and GitAllProjectsResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.all = function all(request, callback) {
+    Object.defineProperty(Git.prototype.all = function all(request, callback) {
         return this.rpcCall(all, $root.GitAllProjectsRequest, $root.GitAllProjectsResponse, request, callback);
     }, "name", { value: "All" });
 
     /**
      * Calls All.
      * @function all
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitAllProjectsRequest} request GitAllProjectsRequest message or plain object
      * @returns {Promise<GitAllProjectsResponse>} Promise
@@ -11481,8 +11481,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#projectOptions}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#projectOptions}.
+     * @memberof Git
      * @typedef ProjectOptionsCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11492,21 +11492,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls ProjectOptions.
      * @function projectOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitProjectOptionsRequest} request GitProjectOptionsRequest message or plain object
-     * @param {GitProject.ProjectOptionsCallback} callback Node-style callback called with the error, if any, and GitProjectOptionsResponse
+     * @param {Git.ProjectOptionsCallback} callback Node-style callback called with the error, if any, and GitProjectOptionsResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.projectOptions = function projectOptions(request, callback) {
+    Object.defineProperty(Git.prototype.projectOptions = function projectOptions(request, callback) {
         return this.rpcCall(projectOptions, $root.GitProjectOptionsRequest, $root.GitProjectOptionsResponse, request, callback);
     }, "name", { value: "ProjectOptions" });
 
     /**
      * Calls ProjectOptions.
      * @function projectOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitProjectOptionsRequest} request GitProjectOptionsRequest message or plain object
      * @returns {Promise<GitProjectOptionsResponse>} Promise
@@ -11514,8 +11514,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#branchOptions}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#branchOptions}.
+     * @memberof Git
      * @typedef BranchOptionsCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11525,21 +11525,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls BranchOptions.
      * @function branchOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitBranchOptionsRequest} request GitBranchOptionsRequest message or plain object
-     * @param {GitProject.BranchOptionsCallback} callback Node-style callback called with the error, if any, and GitBranchOptionsResponse
+     * @param {Git.BranchOptionsCallback} callback Node-style callback called with the error, if any, and GitBranchOptionsResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.branchOptions = function branchOptions(request, callback) {
+    Object.defineProperty(Git.prototype.branchOptions = function branchOptions(request, callback) {
         return this.rpcCall(branchOptions, $root.GitBranchOptionsRequest, $root.GitBranchOptionsResponse, request, callback);
     }, "name", { value: "BranchOptions" });
 
     /**
      * Calls BranchOptions.
      * @function branchOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitBranchOptionsRequest} request GitBranchOptionsRequest message or plain object
      * @returns {Promise<GitBranchOptionsResponse>} Promise
@@ -11547,8 +11547,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#commitOptions}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#commitOptions}.
+     * @memberof Git
      * @typedef CommitOptionsCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11558,21 +11558,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls CommitOptions.
      * @function commitOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitCommitOptionsRequest} request GitCommitOptionsRequest message or plain object
-     * @param {GitProject.CommitOptionsCallback} callback Node-style callback called with the error, if any, and GitCommitOptionsResponse
+     * @param {Git.CommitOptionsCallback} callback Node-style callback called with the error, if any, and GitCommitOptionsResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.commitOptions = function commitOptions(request, callback) {
+    Object.defineProperty(Git.prototype.commitOptions = function commitOptions(request, callback) {
         return this.rpcCall(commitOptions, $root.GitCommitOptionsRequest, $root.GitCommitOptionsResponse, request, callback);
     }, "name", { value: "CommitOptions" });
 
     /**
      * Calls CommitOptions.
      * @function commitOptions
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitCommitOptionsRequest} request GitCommitOptionsRequest message or plain object
      * @returns {Promise<GitCommitOptionsResponse>} Promise
@@ -11580,8 +11580,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#commit}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#commit}.
+     * @memberof Git
      * @typedef CommitCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11591,21 +11591,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls Commit.
      * @function commit
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitCommitRequest} request GitCommitRequest message or plain object
-     * @param {GitProject.CommitCallback} callback Node-style callback called with the error, if any, and GitCommitResponse
+     * @param {Git.CommitCallback} callback Node-style callback called with the error, if any, and GitCommitResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.commit = function commit(request, callback) {
+    Object.defineProperty(Git.prototype.commit = function commit(request, callback) {
         return this.rpcCall(commit, $root.GitCommitRequest, $root.GitCommitResponse, request, callback);
     }, "name", { value: "Commit" });
 
     /**
      * Calls Commit.
      * @function commit
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitCommitRequest} request GitCommitRequest message or plain object
      * @returns {Promise<GitCommitResponse>} Promise
@@ -11613,8 +11613,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#pipelineInfo}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#pipelineInfo}.
+     * @memberof Git
      * @typedef PipelineInfoCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11624,21 +11624,21 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls PipelineInfo.
      * @function pipelineInfo
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitPipelineInfoRequest} request GitPipelineInfoRequest message or plain object
-     * @param {GitProject.PipelineInfoCallback} callback Node-style callback called with the error, if any, and GitPipelineInfoResponse
+     * @param {Git.PipelineInfoCallback} callback Node-style callback called with the error, if any, and GitPipelineInfoResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.pipelineInfo = function pipelineInfo(request, callback) {
+    Object.defineProperty(Git.prototype.pipelineInfo = function pipelineInfo(request, callback) {
         return this.rpcCall(pipelineInfo, $root.GitPipelineInfoRequest, $root.GitPipelineInfoResponse, request, callback);
     }, "name", { value: "PipelineInfo" });
 
     /**
      * Calls PipelineInfo.
      * @function pipelineInfo
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitPipelineInfoRequest} request GitPipelineInfoRequest message or plain object
      * @returns {Promise<GitPipelineInfoResponse>} Promise
@@ -11646,8 +11646,8 @@ export const GitProject = $root.GitProject = (() => {
      */
 
     /**
-     * Callback as used by {@link GitProject#marsConfigFile}.
-     * @memberof GitProject
+     * Callback as used by {@link Git#marsConfigFile}.
+     * @memberof Git
      * @typedef MarsConfigFileCallback
      * @type {function}
      * @param {Error|null} error Error, if any
@@ -11657,49 +11657,49 @@ export const GitProject = $root.GitProject = (() => {
     /**
      * Calls MarsConfigFile.
      * @function marsConfigFile
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitConfigFileRequest} request GitConfigFileRequest message or plain object
-     * @param {GitProject.MarsConfigFileCallback} callback Node-style callback called with the error, if any, and GitConfigFileResponse
+     * @param {Git.MarsConfigFileCallback} callback Node-style callback called with the error, if any, and GitConfigFileResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProject.prototype.marsConfigFile = function marsConfigFile(request, callback) {
+    Object.defineProperty(Git.prototype.marsConfigFile = function marsConfigFile(request, callback) {
         return this.rpcCall(marsConfigFile, $root.GitConfigFileRequest, $root.GitConfigFileResponse, request, callback);
     }, "name", { value: "MarsConfigFile" });
 
     /**
      * Calls MarsConfigFile.
      * @function marsConfigFile
-     * @memberof GitProject
+     * @memberof Git
      * @instance
      * @param {GitConfigFileRequest} request GitConfigFileRequest message or plain object
      * @returns {Promise<GitConfigFileResponse>} Promise
      * @variation 2
      */
 
-    return GitProject;
+    return Git;
 })();
 
-export const GitProjectConfigShowRequest = $root.GitProjectConfigShowRequest = (() => {
+export const GitConfigShowRequest = $root.GitConfigShowRequest = (() => {
 
     /**
-     * Properties of a GitProjectConfigShowRequest.
-     * @exports IGitProjectConfigShowRequest
-     * @interface IGitProjectConfigShowRequest
-     * @property {number|null} [git_project_id] GitProjectConfigShowRequest git_project_id
-     * @property {string|null} [branch] GitProjectConfigShowRequest branch
+     * Properties of a GitConfigShowRequest.
+     * @exports IGitConfigShowRequest
+     * @interface IGitConfigShowRequest
+     * @property {number|null} [git_project_id] GitConfigShowRequest git_project_id
+     * @property {string|null} [branch] GitConfigShowRequest branch
      */
 
     /**
-     * Constructs a new GitProjectConfigShowRequest.
-     * @exports GitProjectConfigShowRequest
-     * @classdesc Represents a GitProjectConfigShowRequest.
-     * @implements IGitProjectConfigShowRequest
+     * Constructs a new GitConfigShowRequest.
+     * @exports GitConfigShowRequest
+     * @classdesc Represents a GitConfigShowRequest.
+     * @implements IGitConfigShowRequest
      * @constructor
-     * @param {IGitProjectConfigShowRequest=} [properties] Properties to set
+     * @param {IGitConfigShowRequest=} [properties] Properties to set
      */
-    function GitProjectConfigShowRequest(properties) {
+    function GitConfigShowRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11707,31 +11707,31 @@ export const GitProjectConfigShowRequest = $root.GitProjectConfigShowRequest = (
     }
 
     /**
-     * GitProjectConfigShowRequest git_project_id.
+     * GitConfigShowRequest git_project_id.
      * @member {number} git_project_id
-     * @memberof GitProjectConfigShowRequest
+     * @memberof GitConfigShowRequest
      * @instance
      */
-    GitProjectConfigShowRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    GitConfigShowRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * GitProjectConfigShowRequest branch.
+     * GitConfigShowRequest branch.
      * @member {string} branch
-     * @memberof GitProjectConfigShowRequest
+     * @memberof GitConfigShowRequest
      * @instance
      */
-    GitProjectConfigShowRequest.prototype.branch = "";
+    GitConfigShowRequest.prototype.branch = "";
 
     /**
-     * Encodes the specified GitProjectConfigShowRequest message. Does not implicitly {@link GitProjectConfigShowRequest.verify|verify} messages.
+     * Encodes the specified GitConfigShowRequest message. Does not implicitly {@link GitConfigShowRequest.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigShowRequest
+     * @memberof GitConfigShowRequest
      * @static
-     * @param {GitProjectConfigShowRequest} message GitProjectConfigShowRequest message or plain object to encode
+     * @param {GitConfigShowRequest} message GitConfigShowRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigShowRequest.encode = function encode(message, writer) {
+    GitConfigShowRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -11742,20 +11742,20 @@ export const GitProjectConfigShowRequest = $root.GitProjectConfigShowRequest = (
     };
 
     /**
-     * Decodes a GitProjectConfigShowRequest message from the specified reader or buffer.
+     * Decodes a GitConfigShowRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigShowRequest
+     * @memberof GitConfigShowRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigShowRequest} GitProjectConfigShowRequest
+     * @returns {GitConfigShowRequest} GitConfigShowRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigShowRequest.decode = function decode(reader, length) {
+    GitConfigShowRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigShowRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigShowRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -11773,28 +11773,28 @@ export const GitProjectConfigShowRequest = $root.GitProjectConfigShowRequest = (
         return message;
     };
 
-    return GitProjectConfigShowRequest;
+    return GitConfigShowRequest;
 })();
 
-export const GitProjectConfigShowResponse = $root.GitProjectConfigShowResponse = (() => {
+export const GitConfigShowResponse = $root.GitConfigShowResponse = (() => {
 
     /**
-     * Properties of a GitProjectConfigShowResponse.
-     * @exports IGitProjectConfigShowResponse
-     * @interface IGitProjectConfigShowResponse
-     * @property {string|null} [branch] GitProjectConfigShowResponse branch
-     * @property {MarsConfig|null} [config] GitProjectConfigShowResponse config
+     * Properties of a GitConfigShowResponse.
+     * @exports IGitConfigShowResponse
+     * @interface IGitConfigShowResponse
+     * @property {string|null} [branch] GitConfigShowResponse branch
+     * @property {MarsConfig|null} [config] GitConfigShowResponse config
      */
 
     /**
-     * Constructs a new GitProjectConfigShowResponse.
-     * @exports GitProjectConfigShowResponse
-     * @classdesc Represents a GitProjectConfigShowResponse.
-     * @implements IGitProjectConfigShowResponse
+     * Constructs a new GitConfigShowResponse.
+     * @exports GitConfigShowResponse
+     * @classdesc Represents a GitConfigShowResponse.
+     * @implements IGitConfigShowResponse
      * @constructor
-     * @param {IGitProjectConfigShowResponse=} [properties] Properties to set
+     * @param {IGitConfigShowResponse=} [properties] Properties to set
      */
-    function GitProjectConfigShowResponse(properties) {
+    function GitConfigShowResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11802,31 +11802,31 @@ export const GitProjectConfigShowResponse = $root.GitProjectConfigShowResponse =
     }
 
     /**
-     * GitProjectConfigShowResponse branch.
+     * GitConfigShowResponse branch.
      * @member {string} branch
-     * @memberof GitProjectConfigShowResponse
+     * @memberof GitConfigShowResponse
      * @instance
      */
-    GitProjectConfigShowResponse.prototype.branch = "";
+    GitConfigShowResponse.prototype.branch = "";
 
     /**
-     * GitProjectConfigShowResponse config.
+     * GitConfigShowResponse config.
      * @member {MarsConfig|null|undefined} config
-     * @memberof GitProjectConfigShowResponse
+     * @memberof GitConfigShowResponse
      * @instance
      */
-    GitProjectConfigShowResponse.prototype.config = null;
+    GitConfigShowResponse.prototype.config = null;
 
     /**
-     * Encodes the specified GitProjectConfigShowResponse message. Does not implicitly {@link GitProjectConfigShowResponse.verify|verify} messages.
+     * Encodes the specified GitConfigShowResponse message. Does not implicitly {@link GitConfigShowResponse.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigShowResponse
+     * @memberof GitConfigShowResponse
      * @static
-     * @param {GitProjectConfigShowResponse} message GitProjectConfigShowResponse message or plain object to encode
+     * @param {GitConfigShowResponse} message GitConfigShowResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigShowResponse.encode = function encode(message, writer) {
+    GitConfigShowResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
@@ -11837,20 +11837,20 @@ export const GitProjectConfigShowResponse = $root.GitProjectConfigShowResponse =
     };
 
     /**
-     * Decodes a GitProjectConfigShowResponse message from the specified reader or buffer.
+     * Decodes a GitConfigShowResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigShowResponse
+     * @memberof GitConfigShowResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigShowResponse} GitProjectConfigShowResponse
+     * @returns {GitConfigShowResponse} GitConfigShowResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigShowResponse.decode = function decode(reader, length) {
+    GitConfigShowResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigShowResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigShowResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -11868,27 +11868,27 @@ export const GitProjectConfigShowResponse = $root.GitProjectConfigShowResponse =
         return message;
     };
 
-    return GitProjectConfigShowResponse;
+    return GitConfigShowResponse;
 })();
 
-export const GitProjectConfigGlobalConfigRequest = $root.GitProjectConfigGlobalConfigRequest = (() => {
+export const GitConfigGlobalConfigRequest = $root.GitConfigGlobalConfigRequest = (() => {
 
     /**
-     * Properties of a GitProjectConfigGlobalConfigRequest.
-     * @exports IGitProjectConfigGlobalConfigRequest
-     * @interface IGitProjectConfigGlobalConfigRequest
-     * @property {number|null} [git_project_id] GitProjectConfigGlobalConfigRequest git_project_id
+     * Properties of a GitConfigGlobalConfigRequest.
+     * @exports IGitConfigGlobalConfigRequest
+     * @interface IGitConfigGlobalConfigRequest
+     * @property {number|null} [git_project_id] GitConfigGlobalConfigRequest git_project_id
      */
 
     /**
-     * Constructs a new GitProjectConfigGlobalConfigRequest.
-     * @exports GitProjectConfigGlobalConfigRequest
-     * @classdesc Represents a GitProjectConfigGlobalConfigRequest.
-     * @implements IGitProjectConfigGlobalConfigRequest
+     * Constructs a new GitConfigGlobalConfigRequest.
+     * @exports GitConfigGlobalConfigRequest
+     * @classdesc Represents a GitConfigGlobalConfigRequest.
+     * @implements IGitConfigGlobalConfigRequest
      * @constructor
-     * @param {IGitProjectConfigGlobalConfigRequest=} [properties] Properties to set
+     * @param {IGitConfigGlobalConfigRequest=} [properties] Properties to set
      */
-    function GitProjectConfigGlobalConfigRequest(properties) {
+    function GitConfigGlobalConfigRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11896,23 +11896,23 @@ export const GitProjectConfigGlobalConfigRequest = $root.GitProjectConfigGlobalC
     }
 
     /**
-     * GitProjectConfigGlobalConfigRequest git_project_id.
+     * GitConfigGlobalConfigRequest git_project_id.
      * @member {number} git_project_id
-     * @memberof GitProjectConfigGlobalConfigRequest
+     * @memberof GitConfigGlobalConfigRequest
      * @instance
      */
-    GitProjectConfigGlobalConfigRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    GitConfigGlobalConfigRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * Encodes the specified GitProjectConfigGlobalConfigRequest message. Does not implicitly {@link GitProjectConfigGlobalConfigRequest.verify|verify} messages.
+     * Encodes the specified GitConfigGlobalConfigRequest message. Does not implicitly {@link GitConfigGlobalConfigRequest.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigGlobalConfigRequest
+     * @memberof GitConfigGlobalConfigRequest
      * @static
-     * @param {GitProjectConfigGlobalConfigRequest} message GitProjectConfigGlobalConfigRequest message or plain object to encode
+     * @param {GitConfigGlobalConfigRequest} message GitConfigGlobalConfigRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigGlobalConfigRequest.encode = function encode(message, writer) {
+    GitConfigGlobalConfigRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -11921,20 +11921,20 @@ export const GitProjectConfigGlobalConfigRequest = $root.GitProjectConfigGlobalC
     };
 
     /**
-     * Decodes a GitProjectConfigGlobalConfigRequest message from the specified reader or buffer.
+     * Decodes a GitConfigGlobalConfigRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigGlobalConfigRequest
+     * @memberof GitConfigGlobalConfigRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigGlobalConfigRequest} GitProjectConfigGlobalConfigRequest
+     * @returns {GitConfigGlobalConfigRequest} GitConfigGlobalConfigRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigGlobalConfigRequest.decode = function decode(reader, length) {
+    GitConfigGlobalConfigRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigGlobalConfigRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigGlobalConfigRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -11949,28 +11949,28 @@ export const GitProjectConfigGlobalConfigRequest = $root.GitProjectConfigGlobalC
         return message;
     };
 
-    return GitProjectConfigGlobalConfigRequest;
+    return GitConfigGlobalConfigRequest;
 })();
 
-export const GitProjectConfigGlobalConfigResponse = $root.GitProjectConfigGlobalConfigResponse = (() => {
+export const GitConfigGlobalConfigResponse = $root.GitConfigGlobalConfigResponse = (() => {
 
     /**
-     * Properties of a GitProjectConfigGlobalConfigResponse.
-     * @exports IGitProjectConfigGlobalConfigResponse
-     * @interface IGitProjectConfigGlobalConfigResponse
-     * @property {boolean|null} [enabled] GitProjectConfigGlobalConfigResponse enabled
-     * @property {MarsConfig|null} [config] GitProjectConfigGlobalConfigResponse config
+     * Properties of a GitConfigGlobalConfigResponse.
+     * @exports IGitConfigGlobalConfigResponse
+     * @interface IGitConfigGlobalConfigResponse
+     * @property {boolean|null} [enabled] GitConfigGlobalConfigResponse enabled
+     * @property {MarsConfig|null} [config] GitConfigGlobalConfigResponse config
      */
 
     /**
-     * Constructs a new GitProjectConfigGlobalConfigResponse.
-     * @exports GitProjectConfigGlobalConfigResponse
-     * @classdesc Represents a GitProjectConfigGlobalConfigResponse.
-     * @implements IGitProjectConfigGlobalConfigResponse
+     * Constructs a new GitConfigGlobalConfigResponse.
+     * @exports GitConfigGlobalConfigResponse
+     * @classdesc Represents a GitConfigGlobalConfigResponse.
+     * @implements IGitConfigGlobalConfigResponse
      * @constructor
-     * @param {IGitProjectConfigGlobalConfigResponse=} [properties] Properties to set
+     * @param {IGitConfigGlobalConfigResponse=} [properties] Properties to set
      */
-    function GitProjectConfigGlobalConfigResponse(properties) {
+    function GitConfigGlobalConfigResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -11978,31 +11978,31 @@ export const GitProjectConfigGlobalConfigResponse = $root.GitProjectConfigGlobal
     }
 
     /**
-     * GitProjectConfigGlobalConfigResponse enabled.
+     * GitConfigGlobalConfigResponse enabled.
      * @member {boolean} enabled
-     * @memberof GitProjectConfigGlobalConfigResponse
+     * @memberof GitConfigGlobalConfigResponse
      * @instance
      */
-    GitProjectConfigGlobalConfigResponse.prototype.enabled = false;
+    GitConfigGlobalConfigResponse.prototype.enabled = false;
 
     /**
-     * GitProjectConfigGlobalConfigResponse config.
+     * GitConfigGlobalConfigResponse config.
      * @member {MarsConfig|null|undefined} config
-     * @memberof GitProjectConfigGlobalConfigResponse
+     * @memberof GitConfigGlobalConfigResponse
      * @instance
      */
-    GitProjectConfigGlobalConfigResponse.prototype.config = null;
+    GitConfigGlobalConfigResponse.prototype.config = null;
 
     /**
-     * Encodes the specified GitProjectConfigGlobalConfigResponse message. Does not implicitly {@link GitProjectConfigGlobalConfigResponse.verify|verify} messages.
+     * Encodes the specified GitConfigGlobalConfigResponse message. Does not implicitly {@link GitConfigGlobalConfigResponse.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigGlobalConfigResponse
+     * @memberof GitConfigGlobalConfigResponse
      * @static
-     * @param {GitProjectConfigGlobalConfigResponse} message GitProjectConfigGlobalConfigResponse message or plain object to encode
+     * @param {GitConfigGlobalConfigResponse} message GitConfigGlobalConfigResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigGlobalConfigResponse.encode = function encode(message, writer) {
+    GitConfigGlobalConfigResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
@@ -12013,20 +12013,20 @@ export const GitProjectConfigGlobalConfigResponse = $root.GitProjectConfigGlobal
     };
 
     /**
-     * Decodes a GitProjectConfigGlobalConfigResponse message from the specified reader or buffer.
+     * Decodes a GitConfigGlobalConfigResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigGlobalConfigResponse
+     * @memberof GitConfigGlobalConfigResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigGlobalConfigResponse} GitProjectConfigGlobalConfigResponse
+     * @returns {GitConfigGlobalConfigResponse} GitConfigGlobalConfigResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigGlobalConfigResponse.decode = function decode(reader, length) {
+    GitConfigGlobalConfigResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigGlobalConfigResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigGlobalConfigResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12044,28 +12044,28 @@ export const GitProjectConfigGlobalConfigResponse = $root.GitProjectConfigGlobal
         return message;
     };
 
-    return GitProjectConfigGlobalConfigResponse;
+    return GitConfigGlobalConfigResponse;
 })();
 
-export const GitProjectConfigUpdateRequest = $root.GitProjectConfigUpdateRequest = (() => {
+export const GitConfigUpdateRequest = $root.GitConfigUpdateRequest = (() => {
 
     /**
-     * Properties of a GitProjectConfigUpdateRequest.
-     * @exports IGitProjectConfigUpdateRequest
-     * @interface IGitProjectConfigUpdateRequest
-     * @property {number|null} [git_project_id] GitProjectConfigUpdateRequest git_project_id
-     * @property {MarsConfig|null} [config] GitProjectConfigUpdateRequest config
+     * Properties of a GitConfigUpdateRequest.
+     * @exports IGitConfigUpdateRequest
+     * @interface IGitConfigUpdateRequest
+     * @property {number|null} [git_project_id] GitConfigUpdateRequest git_project_id
+     * @property {MarsConfig|null} [config] GitConfigUpdateRequest config
      */
 
     /**
-     * Constructs a new GitProjectConfigUpdateRequest.
-     * @exports GitProjectConfigUpdateRequest
-     * @classdesc Represents a GitProjectConfigUpdateRequest.
-     * @implements IGitProjectConfigUpdateRequest
+     * Constructs a new GitConfigUpdateRequest.
+     * @exports GitConfigUpdateRequest
+     * @classdesc Represents a GitConfigUpdateRequest.
+     * @implements IGitConfigUpdateRequest
      * @constructor
-     * @param {IGitProjectConfigUpdateRequest=} [properties] Properties to set
+     * @param {IGitConfigUpdateRequest=} [properties] Properties to set
      */
-    function GitProjectConfigUpdateRequest(properties) {
+    function GitConfigUpdateRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12073,31 +12073,31 @@ export const GitProjectConfigUpdateRequest = $root.GitProjectConfigUpdateRequest
     }
 
     /**
-     * GitProjectConfigUpdateRequest git_project_id.
+     * GitConfigUpdateRequest git_project_id.
      * @member {number} git_project_id
-     * @memberof GitProjectConfigUpdateRequest
+     * @memberof GitConfigUpdateRequest
      * @instance
      */
-    GitProjectConfigUpdateRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    GitConfigUpdateRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * GitProjectConfigUpdateRequest config.
+     * GitConfigUpdateRequest config.
      * @member {MarsConfig|null|undefined} config
-     * @memberof GitProjectConfigUpdateRequest
+     * @memberof GitConfigUpdateRequest
      * @instance
      */
-    GitProjectConfigUpdateRequest.prototype.config = null;
+    GitConfigUpdateRequest.prototype.config = null;
 
     /**
-     * Encodes the specified GitProjectConfigUpdateRequest message. Does not implicitly {@link GitProjectConfigUpdateRequest.verify|verify} messages.
+     * Encodes the specified GitConfigUpdateRequest message. Does not implicitly {@link GitConfigUpdateRequest.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigUpdateRequest
+     * @memberof GitConfigUpdateRequest
      * @static
-     * @param {GitProjectConfigUpdateRequest} message GitProjectConfigUpdateRequest message or plain object to encode
+     * @param {GitConfigUpdateRequest} message GitConfigUpdateRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigUpdateRequest.encode = function encode(message, writer) {
+    GitConfigUpdateRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -12108,20 +12108,20 @@ export const GitProjectConfigUpdateRequest = $root.GitProjectConfigUpdateRequest
     };
 
     /**
-     * Decodes a GitProjectConfigUpdateRequest message from the specified reader or buffer.
+     * Decodes a GitConfigUpdateRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigUpdateRequest
+     * @memberof GitConfigUpdateRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigUpdateRequest} GitProjectConfigUpdateRequest
+     * @returns {GitConfigUpdateRequest} GitConfigUpdateRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigUpdateRequest.decode = function decode(reader, length) {
+    GitConfigUpdateRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigUpdateRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigUpdateRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12139,27 +12139,27 @@ export const GitProjectConfigUpdateRequest = $root.GitProjectConfigUpdateRequest
         return message;
     };
 
-    return GitProjectConfigUpdateRequest;
+    return GitConfigUpdateRequest;
 })();
 
-export const GitProjectConfigUpdateResponse = $root.GitProjectConfigUpdateResponse = (() => {
+export const GitConfigUpdateResponse = $root.GitConfigUpdateResponse = (() => {
 
     /**
-     * Properties of a GitProjectConfigUpdateResponse.
-     * @exports IGitProjectConfigUpdateResponse
-     * @interface IGitProjectConfigUpdateResponse
-     * @property {MarsConfig|null} [config] GitProjectConfigUpdateResponse config
+     * Properties of a GitConfigUpdateResponse.
+     * @exports IGitConfigUpdateResponse
+     * @interface IGitConfigUpdateResponse
+     * @property {MarsConfig|null} [config] GitConfigUpdateResponse config
      */
 
     /**
-     * Constructs a new GitProjectConfigUpdateResponse.
-     * @exports GitProjectConfigUpdateResponse
-     * @classdesc Represents a GitProjectConfigUpdateResponse.
-     * @implements IGitProjectConfigUpdateResponse
+     * Constructs a new GitConfigUpdateResponse.
+     * @exports GitConfigUpdateResponse
+     * @classdesc Represents a GitConfigUpdateResponse.
+     * @implements IGitConfigUpdateResponse
      * @constructor
-     * @param {IGitProjectConfigUpdateResponse=} [properties] Properties to set
+     * @param {IGitConfigUpdateResponse=} [properties] Properties to set
      */
-    function GitProjectConfigUpdateResponse(properties) {
+    function GitConfigUpdateResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12167,23 +12167,23 @@ export const GitProjectConfigUpdateResponse = $root.GitProjectConfigUpdateRespon
     }
 
     /**
-     * GitProjectConfigUpdateResponse config.
+     * GitConfigUpdateResponse config.
      * @member {MarsConfig|null|undefined} config
-     * @memberof GitProjectConfigUpdateResponse
+     * @memberof GitConfigUpdateResponse
      * @instance
      */
-    GitProjectConfigUpdateResponse.prototype.config = null;
+    GitConfigUpdateResponse.prototype.config = null;
 
     /**
-     * Encodes the specified GitProjectConfigUpdateResponse message. Does not implicitly {@link GitProjectConfigUpdateResponse.verify|verify} messages.
+     * Encodes the specified GitConfigUpdateResponse message. Does not implicitly {@link GitConfigUpdateResponse.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigUpdateResponse
+     * @memberof GitConfigUpdateResponse
      * @static
-     * @param {GitProjectConfigUpdateResponse} message GitProjectConfigUpdateResponse message or plain object to encode
+     * @param {GitConfigUpdateResponse} message GitConfigUpdateResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigUpdateResponse.encode = function encode(message, writer) {
+    GitConfigUpdateResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.config != null && Object.hasOwnProperty.call(message, "config"))
@@ -12192,20 +12192,20 @@ export const GitProjectConfigUpdateResponse = $root.GitProjectConfigUpdateRespon
     };
 
     /**
-     * Decodes a GitProjectConfigUpdateResponse message from the specified reader or buffer.
+     * Decodes a GitConfigUpdateResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigUpdateResponse
+     * @memberof GitConfigUpdateResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigUpdateResponse} GitProjectConfigUpdateResponse
+     * @returns {GitConfigUpdateResponse} GitConfigUpdateResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigUpdateResponse.decode = function decode(reader, length) {
+    GitConfigUpdateResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigUpdateResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigUpdateResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12220,28 +12220,28 @@ export const GitProjectConfigUpdateResponse = $root.GitProjectConfigUpdateRespon
         return message;
     };
 
-    return GitProjectConfigUpdateResponse;
+    return GitConfigUpdateResponse;
 })();
 
-export const GitProjectConfigToggleGlobalStatusRequest = $root.GitProjectConfigToggleGlobalStatusRequest = (() => {
+export const GitConfigToggleGlobalStatusRequest = $root.GitConfigToggleGlobalStatusRequest = (() => {
 
     /**
-     * Properties of a GitProjectConfigToggleGlobalStatusRequest.
-     * @exports IGitProjectConfigToggleGlobalStatusRequest
-     * @interface IGitProjectConfigToggleGlobalStatusRequest
-     * @property {number|null} [git_project_id] GitProjectConfigToggleGlobalStatusRequest git_project_id
-     * @property {boolean|null} [enabled] GitProjectConfigToggleGlobalStatusRequest enabled
+     * Properties of a GitConfigToggleGlobalStatusRequest.
+     * @exports IGitConfigToggleGlobalStatusRequest
+     * @interface IGitConfigToggleGlobalStatusRequest
+     * @property {number|null} [git_project_id] GitConfigToggleGlobalStatusRequest git_project_id
+     * @property {boolean|null} [enabled] GitConfigToggleGlobalStatusRequest enabled
      */
 
     /**
-     * Constructs a new GitProjectConfigToggleGlobalStatusRequest.
-     * @exports GitProjectConfigToggleGlobalStatusRequest
-     * @classdesc Represents a GitProjectConfigToggleGlobalStatusRequest.
-     * @implements IGitProjectConfigToggleGlobalStatusRequest
+     * Constructs a new GitConfigToggleGlobalStatusRequest.
+     * @exports GitConfigToggleGlobalStatusRequest
+     * @classdesc Represents a GitConfigToggleGlobalStatusRequest.
+     * @implements IGitConfigToggleGlobalStatusRequest
      * @constructor
-     * @param {IGitProjectConfigToggleGlobalStatusRequest=} [properties] Properties to set
+     * @param {IGitConfigToggleGlobalStatusRequest=} [properties] Properties to set
      */
-    function GitProjectConfigToggleGlobalStatusRequest(properties) {
+    function GitConfigToggleGlobalStatusRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12249,31 +12249,31 @@ export const GitProjectConfigToggleGlobalStatusRequest = $root.GitProjectConfigT
     }
 
     /**
-     * GitProjectConfigToggleGlobalStatusRequest git_project_id.
+     * GitConfigToggleGlobalStatusRequest git_project_id.
      * @member {number} git_project_id
-     * @memberof GitProjectConfigToggleGlobalStatusRequest
+     * @memberof GitConfigToggleGlobalStatusRequest
      * @instance
      */
-    GitProjectConfigToggleGlobalStatusRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    GitConfigToggleGlobalStatusRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * GitProjectConfigToggleGlobalStatusRequest enabled.
+     * GitConfigToggleGlobalStatusRequest enabled.
      * @member {boolean} enabled
-     * @memberof GitProjectConfigToggleGlobalStatusRequest
+     * @memberof GitConfigToggleGlobalStatusRequest
      * @instance
      */
-    GitProjectConfigToggleGlobalStatusRequest.prototype.enabled = false;
+    GitConfigToggleGlobalStatusRequest.prototype.enabled = false;
 
     /**
-     * Encodes the specified GitProjectConfigToggleGlobalStatusRequest message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusRequest.verify|verify} messages.
+     * Encodes the specified GitConfigToggleGlobalStatusRequest message. Does not implicitly {@link GitConfigToggleGlobalStatusRequest.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigToggleGlobalStatusRequest
+     * @memberof GitConfigToggleGlobalStatusRequest
      * @static
-     * @param {GitProjectConfigToggleGlobalStatusRequest} message GitProjectConfigToggleGlobalStatusRequest message or plain object to encode
+     * @param {GitConfigToggleGlobalStatusRequest} message GitConfigToggleGlobalStatusRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigToggleGlobalStatusRequest.encode = function encode(message, writer) {
+    GitConfigToggleGlobalStatusRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -12284,20 +12284,20 @@ export const GitProjectConfigToggleGlobalStatusRequest = $root.GitProjectConfigT
     };
 
     /**
-     * Decodes a GitProjectConfigToggleGlobalStatusRequest message from the specified reader or buffer.
+     * Decodes a GitConfigToggleGlobalStatusRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigToggleGlobalStatusRequest
+     * @memberof GitConfigToggleGlobalStatusRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigToggleGlobalStatusRequest} GitProjectConfigToggleGlobalStatusRequest
+     * @returns {GitConfigToggleGlobalStatusRequest} GitConfigToggleGlobalStatusRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigToggleGlobalStatusRequest.decode = function decode(reader, length) {
+    GitConfigToggleGlobalStatusRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigToggleGlobalStatusRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigToggleGlobalStatusRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12315,28 +12315,28 @@ export const GitProjectConfigToggleGlobalStatusRequest = $root.GitProjectConfigT
         return message;
     };
 
-    return GitProjectConfigToggleGlobalStatusRequest;
+    return GitConfigToggleGlobalStatusRequest;
 })();
 
-export const GitProjectConfigDefaultChartValuesRequest = $root.GitProjectConfigDefaultChartValuesRequest = (() => {
+export const GitConfigDefaultChartValuesRequest = $root.GitConfigDefaultChartValuesRequest = (() => {
 
     /**
-     * Properties of a GitProjectConfigDefaultChartValuesRequest.
-     * @exports IGitProjectConfigDefaultChartValuesRequest
-     * @interface IGitProjectConfigDefaultChartValuesRequest
-     * @property {number|null} [git_project_id] GitProjectConfigDefaultChartValuesRequest git_project_id
-     * @property {string|null} [branch] GitProjectConfigDefaultChartValuesRequest branch
+     * Properties of a GitConfigDefaultChartValuesRequest.
+     * @exports IGitConfigDefaultChartValuesRequest
+     * @interface IGitConfigDefaultChartValuesRequest
+     * @property {number|null} [git_project_id] GitConfigDefaultChartValuesRequest git_project_id
+     * @property {string|null} [branch] GitConfigDefaultChartValuesRequest branch
      */
 
     /**
-     * Constructs a new GitProjectConfigDefaultChartValuesRequest.
-     * @exports GitProjectConfigDefaultChartValuesRequest
-     * @classdesc Represents a GitProjectConfigDefaultChartValuesRequest.
-     * @implements IGitProjectConfigDefaultChartValuesRequest
+     * Constructs a new GitConfigDefaultChartValuesRequest.
+     * @exports GitConfigDefaultChartValuesRequest
+     * @classdesc Represents a GitConfigDefaultChartValuesRequest.
+     * @implements IGitConfigDefaultChartValuesRequest
      * @constructor
-     * @param {IGitProjectConfigDefaultChartValuesRequest=} [properties] Properties to set
+     * @param {IGitConfigDefaultChartValuesRequest=} [properties] Properties to set
      */
-    function GitProjectConfigDefaultChartValuesRequest(properties) {
+    function GitConfigDefaultChartValuesRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12344,31 +12344,31 @@ export const GitProjectConfigDefaultChartValuesRequest = $root.GitProjectConfigD
     }
 
     /**
-     * GitProjectConfigDefaultChartValuesRequest git_project_id.
+     * GitConfigDefaultChartValuesRequest git_project_id.
      * @member {number} git_project_id
-     * @memberof GitProjectConfigDefaultChartValuesRequest
+     * @memberof GitConfigDefaultChartValuesRequest
      * @instance
      */
-    GitProjectConfigDefaultChartValuesRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    GitConfigDefaultChartValuesRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
-     * GitProjectConfigDefaultChartValuesRequest branch.
+     * GitConfigDefaultChartValuesRequest branch.
      * @member {string} branch
-     * @memberof GitProjectConfigDefaultChartValuesRequest
+     * @memberof GitConfigDefaultChartValuesRequest
      * @instance
      */
-    GitProjectConfigDefaultChartValuesRequest.prototype.branch = "";
+    GitConfigDefaultChartValuesRequest.prototype.branch = "";
 
     /**
-     * Encodes the specified GitProjectConfigDefaultChartValuesRequest message. Does not implicitly {@link GitProjectConfigDefaultChartValuesRequest.verify|verify} messages.
+     * Encodes the specified GitConfigDefaultChartValuesRequest message. Does not implicitly {@link GitConfigDefaultChartValuesRequest.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigDefaultChartValuesRequest
+     * @memberof GitConfigDefaultChartValuesRequest
      * @static
-     * @param {GitProjectConfigDefaultChartValuesRequest} message GitProjectConfigDefaultChartValuesRequest message or plain object to encode
+     * @param {GitConfigDefaultChartValuesRequest} message GitConfigDefaultChartValuesRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigDefaultChartValuesRequest.encode = function encode(message, writer) {
+    GitConfigDefaultChartValuesRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -12379,20 +12379,20 @@ export const GitProjectConfigDefaultChartValuesRequest = $root.GitProjectConfigD
     };
 
     /**
-     * Decodes a GitProjectConfigDefaultChartValuesRequest message from the specified reader or buffer.
+     * Decodes a GitConfigDefaultChartValuesRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigDefaultChartValuesRequest
+     * @memberof GitConfigDefaultChartValuesRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigDefaultChartValuesRequest} GitProjectConfigDefaultChartValuesRequest
+     * @returns {GitConfigDefaultChartValuesRequest} GitConfigDefaultChartValuesRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigDefaultChartValuesRequest.decode = function decode(reader, length) {
+    GitConfigDefaultChartValuesRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigDefaultChartValuesRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigDefaultChartValuesRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12410,27 +12410,27 @@ export const GitProjectConfigDefaultChartValuesRequest = $root.GitProjectConfigD
         return message;
     };
 
-    return GitProjectConfigDefaultChartValuesRequest;
+    return GitConfigDefaultChartValuesRequest;
 })();
 
-export const GitProjectConfigDefaultChartValuesResponse = $root.GitProjectConfigDefaultChartValuesResponse = (() => {
+export const GitConfigDefaultChartValuesResponse = $root.GitConfigDefaultChartValuesResponse = (() => {
 
     /**
-     * Properties of a GitProjectConfigDefaultChartValuesResponse.
-     * @exports IGitProjectConfigDefaultChartValuesResponse
-     * @interface IGitProjectConfigDefaultChartValuesResponse
-     * @property {string|null} [value] GitProjectConfigDefaultChartValuesResponse value
+     * Properties of a GitConfigDefaultChartValuesResponse.
+     * @exports IGitConfigDefaultChartValuesResponse
+     * @interface IGitConfigDefaultChartValuesResponse
+     * @property {string|null} [value] GitConfigDefaultChartValuesResponse value
      */
 
     /**
-     * Constructs a new GitProjectConfigDefaultChartValuesResponse.
-     * @exports GitProjectConfigDefaultChartValuesResponse
-     * @classdesc Represents a GitProjectConfigDefaultChartValuesResponse.
-     * @implements IGitProjectConfigDefaultChartValuesResponse
+     * Constructs a new GitConfigDefaultChartValuesResponse.
+     * @exports GitConfigDefaultChartValuesResponse
+     * @classdesc Represents a GitConfigDefaultChartValuesResponse.
+     * @implements IGitConfigDefaultChartValuesResponse
      * @constructor
-     * @param {IGitProjectConfigDefaultChartValuesResponse=} [properties] Properties to set
+     * @param {IGitConfigDefaultChartValuesResponse=} [properties] Properties to set
      */
-    function GitProjectConfigDefaultChartValuesResponse(properties) {
+    function GitConfigDefaultChartValuesResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12438,23 +12438,23 @@ export const GitProjectConfigDefaultChartValuesResponse = $root.GitProjectConfig
     }
 
     /**
-     * GitProjectConfigDefaultChartValuesResponse value.
+     * GitConfigDefaultChartValuesResponse value.
      * @member {string} value
-     * @memberof GitProjectConfigDefaultChartValuesResponse
+     * @memberof GitConfigDefaultChartValuesResponse
      * @instance
      */
-    GitProjectConfigDefaultChartValuesResponse.prototype.value = "";
+    GitConfigDefaultChartValuesResponse.prototype.value = "";
 
     /**
-     * Encodes the specified GitProjectConfigDefaultChartValuesResponse message. Does not implicitly {@link GitProjectConfigDefaultChartValuesResponse.verify|verify} messages.
+     * Encodes the specified GitConfigDefaultChartValuesResponse message. Does not implicitly {@link GitConfigDefaultChartValuesResponse.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigDefaultChartValuesResponse
+     * @memberof GitConfigDefaultChartValuesResponse
      * @static
-     * @param {GitProjectConfigDefaultChartValuesResponse} message GitProjectConfigDefaultChartValuesResponse message or plain object to encode
+     * @param {GitConfigDefaultChartValuesResponse} message GitConfigDefaultChartValuesResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigDefaultChartValuesResponse.encode = function encode(message, writer) {
+    GitConfigDefaultChartValuesResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.value != null && Object.hasOwnProperty.call(message, "value"))
@@ -12463,20 +12463,20 @@ export const GitProjectConfigDefaultChartValuesResponse = $root.GitProjectConfig
     };
 
     /**
-     * Decodes a GitProjectConfigDefaultChartValuesResponse message from the specified reader or buffer.
+     * Decodes a GitConfigDefaultChartValuesResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigDefaultChartValuesResponse
+     * @memberof GitConfigDefaultChartValuesResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigDefaultChartValuesResponse} GitProjectConfigDefaultChartValuesResponse
+     * @returns {GitConfigDefaultChartValuesResponse} GitConfigDefaultChartValuesResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigDefaultChartValuesResponse.decode = function decode(reader, length) {
+    GitConfigDefaultChartValuesResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigDefaultChartValuesResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigDefaultChartValuesResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12491,26 +12491,26 @@ export const GitProjectConfigDefaultChartValuesResponse = $root.GitProjectConfig
         return message;
     };
 
-    return GitProjectConfigDefaultChartValuesResponse;
+    return GitConfigDefaultChartValuesResponse;
 })();
 
-export const GitProjectConfigToggleGlobalStatusResponse = $root.GitProjectConfigToggleGlobalStatusResponse = (() => {
+export const GitConfigToggleGlobalStatusResponse = $root.GitConfigToggleGlobalStatusResponse = (() => {
 
     /**
-     * Properties of a GitProjectConfigToggleGlobalStatusResponse.
-     * @exports IGitProjectConfigToggleGlobalStatusResponse
-     * @interface IGitProjectConfigToggleGlobalStatusResponse
+     * Properties of a GitConfigToggleGlobalStatusResponse.
+     * @exports IGitConfigToggleGlobalStatusResponse
+     * @interface IGitConfigToggleGlobalStatusResponse
      */
 
     /**
-     * Constructs a new GitProjectConfigToggleGlobalStatusResponse.
-     * @exports GitProjectConfigToggleGlobalStatusResponse
-     * @classdesc Represents a GitProjectConfigToggleGlobalStatusResponse.
-     * @implements IGitProjectConfigToggleGlobalStatusResponse
+     * Constructs a new GitConfigToggleGlobalStatusResponse.
+     * @exports GitConfigToggleGlobalStatusResponse
+     * @classdesc Represents a GitConfigToggleGlobalStatusResponse.
+     * @implements IGitConfigToggleGlobalStatusResponse
      * @constructor
-     * @param {IGitProjectConfigToggleGlobalStatusResponse=} [properties] Properties to set
+     * @param {IGitConfigToggleGlobalStatusResponse=} [properties] Properties to set
      */
-    function GitProjectConfigToggleGlobalStatusResponse(properties) {
+    function GitConfigToggleGlobalStatusResponse(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -12518,35 +12518,35 @@ export const GitProjectConfigToggleGlobalStatusResponse = $root.GitProjectConfig
     }
 
     /**
-     * Encodes the specified GitProjectConfigToggleGlobalStatusResponse message. Does not implicitly {@link GitProjectConfigToggleGlobalStatusResponse.verify|verify} messages.
+     * Encodes the specified GitConfigToggleGlobalStatusResponse message. Does not implicitly {@link GitConfigToggleGlobalStatusResponse.verify|verify} messages.
      * @function encode
-     * @memberof GitProjectConfigToggleGlobalStatusResponse
+     * @memberof GitConfigToggleGlobalStatusResponse
      * @static
-     * @param {GitProjectConfigToggleGlobalStatusResponse} message GitProjectConfigToggleGlobalStatusResponse message or plain object to encode
+     * @param {GitConfigToggleGlobalStatusResponse} message GitConfigToggleGlobalStatusResponse message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    GitProjectConfigToggleGlobalStatusResponse.encode = function encode(message, writer) {
+    GitConfigToggleGlobalStatusResponse.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         return writer;
     };
 
     /**
-     * Decodes a GitProjectConfigToggleGlobalStatusResponse message from the specified reader or buffer.
+     * Decodes a GitConfigToggleGlobalStatusResponse message from the specified reader or buffer.
      * @function decode
-     * @memberof GitProjectConfigToggleGlobalStatusResponse
+     * @memberof GitConfigToggleGlobalStatusResponse
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {GitProjectConfigToggleGlobalStatusResponse} GitProjectConfigToggleGlobalStatusResponse
+     * @returns {GitConfigToggleGlobalStatusResponse} GitConfigToggleGlobalStatusResponse
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    GitProjectConfigToggleGlobalStatusResponse.decode = function decode(reader, length) {
+    GitConfigToggleGlobalStatusResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitProjectConfigToggleGlobalStatusResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GitConfigToggleGlobalStatusResponse();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -12558,193 +12558,193 @@ export const GitProjectConfigToggleGlobalStatusResponse = $root.GitProjectConfig
         return message;
     };
 
-    return GitProjectConfigToggleGlobalStatusResponse;
+    return GitConfigToggleGlobalStatusResponse;
 })();
 
-export const GitProjectConfig = $root.GitProjectConfig = (() => {
+export const GitConfig = $root.GitConfig = (() => {
 
     /**
-     * Constructs a new GitProjectConfig service.
-     * @exports GitProjectConfig
-     * @classdesc Represents a GitProjectConfig
+     * Constructs a new GitConfig service.
+     * @exports GitConfig
+     * @classdesc Represents a GitConfig
      * @extends $protobuf.rpc.Service
      * @constructor
      * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
      * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
      * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
      */
-    function GitProjectConfig(rpcImpl, requestDelimited, responseDelimited) {
+    function GitConfig(rpcImpl, requestDelimited, responseDelimited) {
         $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
     }
 
-    (GitProjectConfig.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = GitProjectConfig;
+    (GitConfig.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = GitConfig;
 
     /**
-     * Callback as used by {@link GitProjectConfig#show}.
-     * @memberof GitProjectConfig
+     * Callback as used by {@link GitConfig#show}.
+     * @memberof GitConfig
      * @typedef ShowCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {GitProjectConfigShowResponse} [response] GitProjectConfigShowResponse
+     * @param {GitConfigShowResponse} [response] GitConfigShowResponse
      */
 
     /**
      * Calls Show.
      * @function show
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigShowRequest} request GitProjectConfigShowRequest message or plain object
-     * @param {GitProjectConfig.ShowCallback} callback Node-style callback called with the error, if any, and GitProjectConfigShowResponse
+     * @param {GitConfigShowRequest} request GitConfigShowRequest message or plain object
+     * @param {GitConfig.ShowCallback} callback Node-style callback called with the error, if any, and GitConfigShowResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProjectConfig.prototype.show = function show(request, callback) {
-        return this.rpcCall(show, $root.GitProjectConfigShowRequest, $root.GitProjectConfigShowResponse, request, callback);
+    Object.defineProperty(GitConfig.prototype.show = function show(request, callback) {
+        return this.rpcCall(show, $root.GitConfigShowRequest, $root.GitConfigShowResponse, request, callback);
     }, "name", { value: "Show" });
 
     /**
      * Calls Show.
      * @function show
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigShowRequest} request GitProjectConfigShowRequest message or plain object
-     * @returns {Promise<GitProjectConfigShowResponse>} Promise
+     * @param {GitConfigShowRequest} request GitConfigShowRequest message or plain object
+     * @returns {Promise<GitConfigShowResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link GitProjectConfig#globalConfig}.
-     * @memberof GitProjectConfig
+     * Callback as used by {@link GitConfig#globalConfig}.
+     * @memberof GitConfig
      * @typedef GlobalConfigCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {GitProjectConfigGlobalConfigResponse} [response] GitProjectConfigGlobalConfigResponse
+     * @param {GitConfigGlobalConfigResponse} [response] GitConfigGlobalConfigResponse
      */
 
     /**
      * Calls GlobalConfig.
      * @function globalConfig
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigGlobalConfigRequest} request GitProjectConfigGlobalConfigRequest message or plain object
-     * @param {GitProjectConfig.GlobalConfigCallback} callback Node-style callback called with the error, if any, and GitProjectConfigGlobalConfigResponse
+     * @param {GitConfigGlobalConfigRequest} request GitConfigGlobalConfigRequest message or plain object
+     * @param {GitConfig.GlobalConfigCallback} callback Node-style callback called with the error, if any, and GitConfigGlobalConfigResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProjectConfig.prototype.globalConfig = function globalConfig(request, callback) {
-        return this.rpcCall(globalConfig, $root.GitProjectConfigGlobalConfigRequest, $root.GitProjectConfigGlobalConfigResponse, request, callback);
+    Object.defineProperty(GitConfig.prototype.globalConfig = function globalConfig(request, callback) {
+        return this.rpcCall(globalConfig, $root.GitConfigGlobalConfigRequest, $root.GitConfigGlobalConfigResponse, request, callback);
     }, "name", { value: "GlobalConfig" });
 
     /**
      * Calls GlobalConfig.
      * @function globalConfig
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigGlobalConfigRequest} request GitProjectConfigGlobalConfigRequest message or plain object
-     * @returns {Promise<GitProjectConfigGlobalConfigResponse>} Promise
+     * @param {GitConfigGlobalConfigRequest} request GitConfigGlobalConfigRequest message or plain object
+     * @returns {Promise<GitConfigGlobalConfigResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link GitProjectConfig#toggleGlobalStatus}.
-     * @memberof GitProjectConfig
+     * Callback as used by {@link GitConfig#toggleGlobalStatus}.
+     * @memberof GitConfig
      * @typedef ToggleGlobalStatusCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {GitProjectConfigToggleGlobalStatusResponse} [response] GitProjectConfigToggleGlobalStatusResponse
+     * @param {GitConfigToggleGlobalStatusResponse} [response] GitConfigToggleGlobalStatusResponse
      */
 
     /**
      * Calls ToggleGlobalStatus.
      * @function toggleGlobalStatus
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigToggleGlobalStatusRequest} request GitProjectConfigToggleGlobalStatusRequest message or plain object
-     * @param {GitProjectConfig.ToggleGlobalStatusCallback} callback Node-style callback called with the error, if any, and GitProjectConfigToggleGlobalStatusResponse
+     * @param {GitConfigToggleGlobalStatusRequest} request GitConfigToggleGlobalStatusRequest message or plain object
+     * @param {GitConfig.ToggleGlobalStatusCallback} callback Node-style callback called with the error, if any, and GitConfigToggleGlobalStatusResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProjectConfig.prototype.toggleGlobalStatus = function toggleGlobalStatus(request, callback) {
-        return this.rpcCall(toggleGlobalStatus, $root.GitProjectConfigToggleGlobalStatusRequest, $root.GitProjectConfigToggleGlobalStatusResponse, request, callback);
+    Object.defineProperty(GitConfig.prototype.toggleGlobalStatus = function toggleGlobalStatus(request, callback) {
+        return this.rpcCall(toggleGlobalStatus, $root.GitConfigToggleGlobalStatusRequest, $root.GitConfigToggleGlobalStatusResponse, request, callback);
     }, "name", { value: "ToggleGlobalStatus" });
 
     /**
      * Calls ToggleGlobalStatus.
      * @function toggleGlobalStatus
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigToggleGlobalStatusRequest} request GitProjectConfigToggleGlobalStatusRequest message or plain object
-     * @returns {Promise<GitProjectConfigToggleGlobalStatusResponse>} Promise
+     * @param {GitConfigToggleGlobalStatusRequest} request GitConfigToggleGlobalStatusRequest message or plain object
+     * @returns {Promise<GitConfigToggleGlobalStatusResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link GitProjectConfig#update}.
-     * @memberof GitProjectConfig
+     * Callback as used by {@link GitConfig#update}.
+     * @memberof GitConfig
      * @typedef UpdateCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {GitProjectConfigUpdateResponse} [response] GitProjectConfigUpdateResponse
+     * @param {GitConfigUpdateResponse} [response] GitConfigUpdateResponse
      */
 
     /**
      * Calls Update.
      * @function update
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigUpdateRequest} request GitProjectConfigUpdateRequest message or plain object
-     * @param {GitProjectConfig.UpdateCallback} callback Node-style callback called with the error, if any, and GitProjectConfigUpdateResponse
+     * @param {GitConfigUpdateRequest} request GitConfigUpdateRequest message or plain object
+     * @param {GitConfig.UpdateCallback} callback Node-style callback called with the error, if any, and GitConfigUpdateResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProjectConfig.prototype.update = function update(request, callback) {
-        return this.rpcCall(update, $root.GitProjectConfigUpdateRequest, $root.GitProjectConfigUpdateResponse, request, callback);
+    Object.defineProperty(GitConfig.prototype.update = function update(request, callback) {
+        return this.rpcCall(update, $root.GitConfigUpdateRequest, $root.GitConfigUpdateResponse, request, callback);
     }, "name", { value: "Update" });
 
     /**
      * Calls Update.
      * @function update
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigUpdateRequest} request GitProjectConfigUpdateRequest message or plain object
-     * @returns {Promise<GitProjectConfigUpdateResponse>} Promise
+     * @param {GitConfigUpdateRequest} request GitConfigUpdateRequest message or plain object
+     * @returns {Promise<GitConfigUpdateResponse>} Promise
      * @variation 2
      */
 
     /**
-     * Callback as used by {@link GitProjectConfig#getDefaultChartValues}.
-     * @memberof GitProjectConfig
+     * Callback as used by {@link GitConfig#getDefaultChartValues}.
+     * @memberof GitConfig
      * @typedef GetDefaultChartValuesCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {GitProjectConfigDefaultChartValuesResponse} [response] GitProjectConfigDefaultChartValuesResponse
+     * @param {GitConfigDefaultChartValuesResponse} [response] GitConfigDefaultChartValuesResponse
      */
 
     /**
      * Calls GetDefaultChartValues.
      * @function getDefaultChartValues
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigDefaultChartValuesRequest} request GitProjectConfigDefaultChartValuesRequest message or plain object
-     * @param {GitProjectConfig.GetDefaultChartValuesCallback} callback Node-style callback called with the error, if any, and GitProjectConfigDefaultChartValuesResponse
+     * @param {GitConfigDefaultChartValuesRequest} request GitConfigDefaultChartValuesRequest message or plain object
+     * @param {GitConfig.GetDefaultChartValuesCallback} callback Node-style callback called with the error, if any, and GitConfigDefaultChartValuesResponse
      * @returns {undefined}
      * @variation 1
      */
-    Object.defineProperty(GitProjectConfig.prototype.getDefaultChartValues = function getDefaultChartValues(request, callback) {
-        return this.rpcCall(getDefaultChartValues, $root.GitProjectConfigDefaultChartValuesRequest, $root.GitProjectConfigDefaultChartValuesResponse, request, callback);
+    Object.defineProperty(GitConfig.prototype.getDefaultChartValues = function getDefaultChartValues(request, callback) {
+        return this.rpcCall(getDefaultChartValues, $root.GitConfigDefaultChartValuesRequest, $root.GitConfigDefaultChartValuesResponse, request, callback);
     }, "name", { value: "GetDefaultChartValues" });
 
     /**
      * Calls GetDefaultChartValues.
      * @function getDefaultChartValues
-     * @memberof GitProjectConfig
+     * @memberof GitConfig
      * @instance
-     * @param {GitProjectConfigDefaultChartValuesRequest} request GitProjectConfigDefaultChartValuesRequest message or plain object
-     * @returns {Promise<GitProjectConfigDefaultChartValuesResponse>} Promise
+     * @param {GitConfigDefaultChartValuesRequest} request GitConfigDefaultChartValuesRequest message or plain object
+     * @returns {Promise<GitConfigDefaultChartValuesResponse>} Promise
      * @variation 2
      */
 
-    return GitProjectConfig;
+    return GitConfig;
 })();
 
 export const MarsConfig = $root.MarsConfig = (() => {
