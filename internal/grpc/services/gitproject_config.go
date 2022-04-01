@@ -104,7 +104,7 @@ func (m *GitProjectConfigSvc) GlobalConfig(ctx context.Context, request *gitproj
 	}, nil
 }
 
-func (m *GitProjectConfigSvc) ToggleGlobalEnabled(ctx context.Context, request *gitproject.GitProjectConfigToggleGlobalStatusRequest) (*gitproject.GitProjectConfigToggleGlobalStatusResponse, error) {
+func (m *GitProjectConfigSvc) ToggleGlobalStatus(ctx context.Context, request *gitproject.GitProjectConfigToggleGlobalStatusRequest) (*gitproject.GitProjectConfigToggleGlobalStatusResponse, error) {
 	var project models.GitProject
 	if err := app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
