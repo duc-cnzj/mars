@@ -24,10 +24,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		git.RegisterGitServer(s, new(GitSvc))
 	})
-	AddEndpointFunc(git.RegisterGitHandlerFromEndpoint)
+	RegisterEndpoint(git.RegisterGitHandlerFromEndpoint)
 }
 
 type GitSvc struct {

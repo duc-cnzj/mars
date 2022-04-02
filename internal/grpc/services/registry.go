@@ -16,13 +16,13 @@ var (
 	registryFuncMu = sync.RWMutex{}
 )
 
-func AddServerFunc(fn registryFunc) {
+func RegisterServer(fn registryFunc) {
 	registryFuncMu.Lock()
 	defer registryFuncMu.Unlock()
 	registryFuncs = append(registryFuncs, fn)
 }
 
-func ServerFuncs() []registryFunc {
+func RegisteredServers() []registryFunc {
 	registryFuncMu.RLock()
 	defer registryFuncMu.RUnlock()
 
@@ -36,13 +36,13 @@ var (
 	endpointFuncMu = sync.RWMutex{}
 )
 
-func AddEndpointFunc(fn endpointFunc) {
+func RegisterEndpoint(fn endpointFunc) {
 	endpointFuncMu.Lock()
 	defer endpointFuncMu.Unlock()
 	endpointFuncs = append(endpointFuncs, fn)
 }
 
-func EndpointFuncs() []endpointFunc {
+func RegisteredEndpoints() []endpointFunc {
 	endpointFuncMu.RLock()
 	defer endpointFuncMu.RUnlock()
 

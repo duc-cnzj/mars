@@ -12,10 +12,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		picture.RegisterPictureServer(s, new(PictureSvc))
 	})
-	AddEndpointFunc(picture.RegisterPictureHandlerFromEndpoint)
+	RegisterEndpoint(picture.RegisterPictureHandlerFromEndpoint)
 }
 
 type PictureSvc struct {

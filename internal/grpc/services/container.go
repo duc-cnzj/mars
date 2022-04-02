@@ -30,10 +30,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		container.RegisterContainerSvcServer(s, new(ContainerSvc))
 	})
-	AddEndpointFunc(container.RegisterContainerSvcHandlerFromEndpoint)
+	RegisterEndpoint(container.RegisterContainerSvcHandlerFromEndpoint)
 }
 
 type ContainerSvc struct {

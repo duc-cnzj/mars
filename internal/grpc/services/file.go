@@ -25,10 +25,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		file.RegisterFileSvcServer(s, new(FileSvc))
 	})
-	AddEndpointFunc(file.RegisterFileSvcHandlerFromEndpoint)
+	RegisterEndpoint(file.RegisterFileSvcHandlerFromEndpoint)
 }
 
 type FileSvc struct {

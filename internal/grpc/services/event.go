@@ -17,10 +17,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		event.RegisterEventServer(s, new(EventSvc))
 	})
-	AddEndpointFunc(event.RegisterEventHandlerFromEndpoint)
+	RegisterEndpoint(event.RegisterEventHandlerFromEndpoint)
 }
 
 type EventSvc struct {

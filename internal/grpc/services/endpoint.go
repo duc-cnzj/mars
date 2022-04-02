@@ -13,10 +13,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		endpoint.RegisterEndpointServer(s, new(EndpointSvc))
 	})
-	AddEndpointFunc(endpoint.RegisterEndpointHandlerFromEndpoint)
+	RegisterEndpoint(endpoint.RegisterEndpointHandlerFromEndpoint)
 }
 
 type EndpointSvc struct {

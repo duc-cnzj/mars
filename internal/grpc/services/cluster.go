@@ -12,10 +12,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		cluster.RegisterClusterServer(s, new(ClusterSvc))
 	})
-	AddEndpointFunc(cluster.RegisterClusterHandlerFromEndpoint)
+	RegisterEndpoint(cluster.RegisterClusterHandlerFromEndpoint)
 }
 
 type ClusterSvc struct {

@@ -113,7 +113,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 	grpc_prometheus.Register(server)
 
-	for _, registryFunc := range services.ServerFuncs() {
+	for _, registryFunc := range services.RegisteredServers() {
 		registryFunc(server, app.App())
 	}
 

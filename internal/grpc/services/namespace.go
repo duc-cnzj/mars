@@ -28,10 +28,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		namespace.RegisterNamespaceServer(s, new(NamespaceSvc))
 	})
-	AddEndpointFunc(namespace.RegisterNamespaceHandlerFromEndpoint)
+	RegisterEndpoint(namespace.RegisterNamespaceHandlerFromEndpoint)
 }
 
 type NamespaceSvc struct {

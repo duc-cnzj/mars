@@ -18,10 +18,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		auth.RegisterAuthServer(s, NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword))
 	})
-	AddEndpointFunc(auth.RegisterAuthHandlerFromEndpoint)
+	RegisterEndpoint(auth.RegisterAuthHandlerFromEndpoint)
 }
 
 type AuthSvc struct {

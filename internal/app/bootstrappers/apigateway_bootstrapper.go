@@ -90,7 +90,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
 	}
 
-	for _, f := range services.EndpointFuncs() {
+	for _, f := range services.RegisteredEndpoints() {
 		if err := f(ctx, gmux, a.endpoint, opts); err != nil {
 			return err
 		}

@@ -21,10 +21,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		metrics.RegisterMetricsServer(s, new(MetricsSvc))
 	})
-	AddEndpointFunc(metrics.RegisterMetricsHandlerFromEndpoint)
+	RegisterEndpoint(metrics.RegisterMetricsHandlerFromEndpoint)
 }
 
 type MetricsSvc struct {

@@ -29,10 +29,10 @@ import (
 )
 
 func init() {
-	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		project.RegisterProjectServer(s, new(ProjectSvc))
 	})
-	AddEndpointFunc(project.RegisterProjectHandlerFromEndpoint)
+	RegisterEndpoint(project.RegisterProjectHandlerFromEndpoint)
 }
 
 type ProjectSvc struct {
