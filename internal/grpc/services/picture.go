@@ -3,10 +3,20 @@ package services
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"github.com/duc-cnzj/mars-client/v4/picture"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		picture.RegisterPictureServer(s, new(PictureSvc))
+	})
+	AddEndpointFunc(picture.RegisterPictureHandlerFromEndpoint)
+}
 
 type PictureSvc struct {
 	picture.UnimplementedPictureServer

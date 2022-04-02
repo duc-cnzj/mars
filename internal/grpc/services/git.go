@@ -8,17 +8,27 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/git"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		git.RegisterGitServer(s, new(GitSvc))
+	})
+	AddEndpointFunc(git.RegisterGitHandlerFromEndpoint)
+}
 
 type GitSvc struct {
 	git.UnimplementedGitServer

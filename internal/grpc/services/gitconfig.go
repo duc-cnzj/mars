@@ -8,6 +8,7 @@ import (
 	gopath "path"
 	"strings"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -16,11 +17,19 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/git"
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		git.RegisterGitConfigServer(s, new(GitConfigSvc))
+	})
+	AddEndpointFunc(git.RegisterGitConfigHandlerFromEndpoint)
+}
 
 type GitConfigSvc struct {
 	git.UnimplementedGitConfigServer

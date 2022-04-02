@@ -3,11 +3,21 @@ package services
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		endpoint.RegisterEndpointServer(s, new(EndpointSvc))
+	})
+	AddEndpointFunc(endpoint.RegisterEndpointHandlerFromEndpoint)
+}
 
 type EndpointSvc struct {
 	endpoint.UnimplementedEndpointServer

@@ -5,18 +5,27 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 
 	"github.com/duc-cnzj/mars-client/v4/metrics"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/dustin/go-humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		metrics.RegisterMetricsServer(s, new(MetricsSvc))
+	})
+	AddEndpointFunc(metrics.RegisterMetricsHandlerFromEndpoint)
+}
 
 type MetricsSvc struct {
 	metrics.UnsafeMetricsServer

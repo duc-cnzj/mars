@@ -12,11 +12,13 @@ import (
 	modelspb "github.com/duc-cnzj/mars-client/v4/model"
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -24,6 +26,13 @@ import (
 	k8sapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		namespace.RegisterNamespaceServer(s, new(NamespaceSvc))
+	})
+	AddEndpointFunc(namespace.RegisterNamespaceHandlerFromEndpoint)
+}
 
 type NamespaceSvc struct {
 	namespace.UnimplementedNamespaceServer

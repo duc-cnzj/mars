@@ -5,23 +5,31 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/duc-cnzj/mars-client/v4/model"
-	"github.com/duc-cnzj/mars/internal/scopes"
-	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gopkg.in/yaml.v2"
+	"gorm.io/gorm"
 
 	eventpb "github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
+	"github.com/duc-cnzj/mars-client/v4/model"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/dustin/go-humanize"
-	"gopkg.in/yaml.v2"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
+	"github.com/duc-cnzj/mars/internal/scopes"
+	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	AddServerFunc(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		file.RegisterFileSvcServer(s, new(FileSvc))
+	})
+	AddEndpointFunc(file.RegisterFileSvcHandlerFromEndpoint)
+}
 
 type FileSvc struct {
 	file.UnimplementedFileSvcServer
