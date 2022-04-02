@@ -3,17 +3,25 @@ package services
 import (
 	"context"
 
-	"gorm.io/gorm"
-
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/event"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		event.RegisterEventServer(s, new(EventSvc))
+	})
+	RegisterEndpoint(event.RegisterEventHandlerFromEndpoint)
+}
 
 type EventSvc struct {
 	event.UnsafeEventServer

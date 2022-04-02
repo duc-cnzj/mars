@@ -3,10 +3,20 @@ package services
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"github.com/duc-cnzj/mars-client/v4/version"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	marsVersion "github.com/duc-cnzj/mars/version"
 )
+
+func init() {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		version.RegisterVersionServer(s, new(VersionSvc))
+	})
+	RegisterEndpoint(version.RegisterVersionHandlerFromEndpoint)
+}
 
 type VersionSvc struct {
 	version.UnsafeVersionServer

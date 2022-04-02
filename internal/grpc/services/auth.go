@@ -5,15 +5,24 @@ import (
 	"sort"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"golang.org/x/oauth2"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
+
+func init() {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		auth.RegisterAuthServer(s, NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword))
+	})
+	RegisterEndpoint(auth.RegisterAuthHandlerFromEndpoint)
+}
 
 type AuthSvc struct {
 	cfg      contracts.OidcConfig

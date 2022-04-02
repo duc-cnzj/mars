@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
@@ -22,10 +23,18 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/container"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		container.RegisterContainerSvcServer(s, new(ContainerSvc))
+	})
+	RegisterEndpoint(container.RegisterContainerSvcHandlerFromEndpoint)
+}
 
 type ContainerSvc struct {
 	container.UnsafeContainerSvcServer

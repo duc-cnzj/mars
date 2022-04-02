@@ -15,19 +15,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/duc-cnzj/mars-client/v4/auth"
-	"github.com/duc-cnzj/mars-client/v4/changelog"
-	"github.com/duc-cnzj/mars-client/v4/cluster"
-	"github.com/duc-cnzj/mars-client/v4/container"
-	"github.com/duc-cnzj/mars-client/v4/endpoint"
-	"github.com/duc-cnzj/mars-client/v4/event"
-	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars-client/v4/git"
-	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
-	"github.com/duc-cnzj/mars-client/v4/namespace"
-	"github.com/duc-cnzj/mars-client/v4/picture"
-	"github.com/duc-cnzj/mars-client/v4/project"
-	"github.com/duc-cnzj/mars-client/v4/version"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -126,20 +113,9 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 	grpc_prometheus.Register(server)
 
-	cluster.RegisterClusterServer(server, new(services.ClusterSvc))
-	git.RegisterGitServer(server, new(services.GitSvc))
-	git.RegisterGitConfigServer(server, new(services.GitConfigSvc))
-	namespace.RegisterNamespaceServer(server, new(services.NamespaceSvc))
-	project.RegisterProjectServer(server, new(services.ProjectSvc))
-	picture.RegisterPictureServer(server, new(services.PictureSvc))
-	container.RegisterContainerSvcServer(server, new(services.ContainerSvc))
-	auth.RegisterAuthServer(server, services.NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword))
-	rpcmetrics.RegisterMetricsServer(server, new(services.MetricsSvc))
-	version.RegisterVersionServer(server, new(services.VersionSvc))
-	changelog.RegisterChangelogServer(server, new(services.ChangelogSvc))
-	event.RegisterEventServer(server, new(services.EventSvc))
-	file.RegisterFileSvcServer(server, new(services.FileSvc))
-	endpoint.RegisterEndpointServer(server, new(services.EndpointSvc))
+	for _, registryFunc := range services.RegisteredServers() {
+		registryFunc(server, app.App())
+	}
 
 	g.server = server
 	go func(server *grpc.Server) {

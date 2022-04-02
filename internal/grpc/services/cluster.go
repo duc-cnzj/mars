@@ -3,10 +3,20 @@ package services
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"github.com/duc-cnzj/mars-client/v4/cluster"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
+
+func init() {
+	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
+		cluster.RegisterClusterServer(s, new(ClusterSvc))
+	})
+	RegisterEndpoint(cluster.RegisterClusterHandlerFromEndpoint)
+}
 
 type ClusterSvc struct {
 	cluster.UnimplementedClusterServer

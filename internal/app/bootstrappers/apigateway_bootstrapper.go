@@ -15,23 +15,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/auth"
-	"github.com/duc-cnzj/mars-client/v4/changelog"
-	"github.com/duc-cnzj/mars-client/v4/cluster"
-	"github.com/duc-cnzj/mars-client/v4/container"
-	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/event"
-	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars-client/v4/git"
-	rpcmetrics "github.com/duc-cnzj/mars-client/v4/metrics"
-	"github.com/duc-cnzj/mars-client/v4/namespace"
-	"github.com/duc-cnzj/mars-client/v4/picture"
-	"github.com/duc-cnzj/mars-client/v4/project"
-	"github.com/duc-cnzj/mars-client/v4/version"
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	e "github.com/duc-cnzj/mars/internal/event/events"
+	"github.com/duc-cnzj/mars/internal/grpc/services"
 	"github.com/duc-cnzj/mars/internal/middlewares"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -100,24 +89,8 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
 	}
-	var serviceList = []func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error){
-		namespace.RegisterNamespaceHandlerFromEndpoint,
-		cluster.RegisterClusterHandlerFromEndpoint,
-		git.RegisterGitHandlerFromEndpoint,
-		git.RegisterGitConfigHandlerFromEndpoint,
-		project.RegisterProjectHandlerFromEndpoint,
-		picture.RegisterPictureHandlerFromEndpoint,
-		auth.RegisterAuthHandlerFromEndpoint,
-		endpoint.RegisterEndpointHandlerFromEndpoint,
-		container.RegisterContainerSvcHandlerFromEndpoint,
-		rpcmetrics.RegisterMetricsHandlerFromEndpoint,
-		version.RegisterVersionHandlerFromEndpoint,
-		changelog.RegisterChangelogHandlerFromEndpoint,
-		event.RegisterEventHandlerFromEndpoint,
-		file.RegisterFileSvcHandlerFromEndpoint,
-	}
 
-	for _, f := range serviceList {
+	for _, f := range services.RegisteredEndpoints() {
 		if err := f(ctx, gmux, a.endpoint, opts); err != nil {
 			return err
 		}
