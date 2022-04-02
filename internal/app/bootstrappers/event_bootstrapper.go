@@ -9,28 +9,10 @@ import (
 
 type EventBootstrapper struct{}
 
-var events map[contracts.Event][]contracts.Listener = map[contracts.Event][]contracts.Listener{
-	mevent.EventNamespaceCreated: {
-		mevent.HandleInjectTlsSecret,
-	},
-	mevent.EventNamespaceDeleted: {
-		mevent.HandleNamespaceDeleted,
-	},
-	mevent.EventProjectDeleted: {
-		mevent.HandleProjectDeleted,
-	},
-	mevent.EventProjectChanged: {
-		mevent.HandleProjectChanged,
-	},
-	mevent.EventAuditLog: {
-		mevent.HandleAuditLog,
-	},
-}
-
 func (e *EventBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	app.SetEventDispatcher(event.NewDispatcher(app))
 
-	for e, listeners := range events {
+	for e, listeners := range mevent.RegisteredEvents() {
 		for _, listener := range listeners {
 			app.EventDispatcher().Listen(e, listener)
 		}
