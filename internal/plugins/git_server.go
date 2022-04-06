@@ -217,7 +217,7 @@ func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (PipelineInte
 }
 
 func (g *gitServerCache) ListCommits(pid string, branch string) ([]CommitInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("CommitOptions:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("ListCommits:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
 		commits, err := g.s.ListCommits(pid, branch)
 		if err != nil {
 			return nil, err
