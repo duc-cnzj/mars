@@ -264,16 +264,23 @@ func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseIn
 func (g *server) AllProjects() ([]plugins.ProjectInterface, error) {
 	var ps []plugins.ProjectInterface
 	page := 1
+	pageSize := 100
 	for page != -1 {
-		projects, err := g.ListProjects(page, 100)
+		projects, err := g.ListProjects(page, pageSize)
 		if err != nil {
 			return nil, err
 		}
-		if projects.HasMore() {
-			page = projects.NextPage()
-		} else {
+		if len(projects.GetItems()) < pageSize {
 			page = -1
+		} else {
+			page++
 		}
+		// gitlab 分页貌似有 bug, 有时能返回分页信息有时不能
+		//if projects.HasMore() {
+		//	page = projects.NextPage()
+		//} else {
+		//	page = -1
+		//}
 		ps = append(ps, projects.GetItems()...)
 	}
 
@@ -335,16 +342,23 @@ func (g *server) ListBranches(pid string, page, pageSize int) (plugins.ListBranc
 func (g *server) AllBranches(pid string) ([]plugins.BranchInterface, error) {
 	var branches []plugins.BranchInterface
 	page := 1
+	pageSize := 100
 	for page != -1 {
-		gitlabBranches, err := g.ListBranches(pid, page, 100)
+		gitlabBranches, err := g.ListBranches(pid, page, pageSize)
 		if err != nil {
 			return nil, err
 		}
-		if gitlabBranches.HasMore() {
-			page = gitlabBranches.NextPage()
-		} else {
+		if len(gitlabBranches.GetItems()) < pageSize {
 			page = -1
+		} else {
+			page++
 		}
+		// gitlab 分页貌似有 bug, 有时能返回分页信息有时不能
+		//if gitlabBranches.HasMore() {
+		//	page = gitlabBranches.NextPage()
+		//} else {
+		//	page = -1
+		//}
 		branches = append(branches, gitlabBranches.GetItems()...)
 	}
 
