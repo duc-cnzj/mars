@@ -116,7 +116,6 @@ func GetGitServer() GitServer {
 
 // gitServerCache
 // 用来缓存一些耗时比较久的请求
-// ListProjects, AllProjects, ListBranches, AllBranches
 type gitServerCache struct {
 	s GitServer
 }
