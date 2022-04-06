@@ -82,6 +82,8 @@ func main()  {
 
 ## TODO
 
+- [ ] redis cache
+- [ ] git server cache
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存

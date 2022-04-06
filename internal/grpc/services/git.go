@@ -88,14 +88,10 @@ func (g *GitSvc) DisableProject(ctx context.Context, request *git.GitDisableProj
 }
 
 func (g *GitSvc) All(ctx context.Context, req *git.GitAllProjectsRequest) (*git.GitAllProjectsResponse, error) {
-	do, err, _ := app.Singleflight().Do("GitServerAll", func() (any, error) {
-		mlog.Debug("sfGitServerAll...")
-		return plugins.GetGitServer().AllProjects()
-	})
+	projects, err := plugins.GetGitServer().AllProjects()
 	if err != nil {
 		return nil, err
 	}
-	var projects = do.([]plugins.ProjectInterface)
 
 	var gps []models.GitProject
 	app.DB().Find(&gps)
@@ -188,83 +184,67 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.GitProjectOpti
 }
 
 func (g *GitSvc) BranchOptions(ctx context.Context, request *git.GitBranchOptionsRequest) (*git.GitBranchOptionsResponse, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("BranchOptions:%v-%v", request.GitProjectId, request.All), 10, func() ([]byte, error) {
-		branches, err := plugins.GetGitServer().AllBranches(request.GitProjectId)
-		if err != nil {
-			return nil, err
-		}
-
-		res := make([]*git.GitOption, 0, len(branches))
-		for _, branch := range branches {
-			res = append(res, &git.GitOption{
-				Value:        branch.GetName(),
-				Label:        branch.GetName(),
-				IsLeaf:       false,
-				Type:         OptionTypeBranch,
-				Branch:       branch.GetName(),
-				GitProjectId: request.GitProjectId,
-			})
-		}
-		if request.All {
-			return proto.Marshal(&git.GitBranchOptionsResponse{Items: res})
-		}
-
-		var defaultBranch string
-		for _, branch := range branches {
-			if branch.IsDefault() {
-				defaultBranch = branch.GetName()
-			}
-		}
-
-		config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
-		if err != nil {
-			return proto.Marshal(&git.GitBranchOptionsResponse{Items: make([]*git.GitOption, 0)})
-		}
-
-		filteredRes := make([]*git.GitOption, 0)
-		for _, op := range res {
-			if utils.BranchPass(config, op.Value) {
-				filteredRes = append(filteredRes, op)
-			}
-		}
-
-		return proto.Marshal(&git.GitBranchOptionsResponse{Items: filteredRes})
-	})
+	branches, err := plugins.GetGitServer().AllBranches(request.GitProjectId)
 	if err != nil {
 		return nil, err
 	}
-	res := &git.GitBranchOptionsResponse{}
-	_ = proto.Unmarshal(remember, res)
-	return res, nil
+
+	res := make([]*git.GitOption, 0, len(branches))
+	for _, branch := range branches {
+		res = append(res, &git.GitOption{
+			Value:        branch.GetName(),
+			Label:        branch.GetName(),
+			IsLeaf:       false,
+			Type:         OptionTypeBranch,
+			Branch:       branch.GetName(),
+			GitProjectId: request.GitProjectId,
+		})
+	}
+	if request.All {
+		return &git.GitBranchOptionsResponse{Items: res}, nil
+	}
+
+	var defaultBranch string
+	for _, branch := range branches {
+		if branch.IsDefault() {
+			defaultBranch = branch.GetName()
+		}
+	}
+
+	config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
+	if err != nil {
+		return &git.GitBranchOptionsResponse{Items: make([]*git.GitOption, 0)}, nil
+	}
+
+	filteredRes := make([]*git.GitOption, 0)
+	for _, op := range res {
+		if utils.BranchPass(config, op.Value) {
+			filteredRes = append(filteredRes, op)
+		}
+	}
+
+	return &git.GitBranchOptionsResponse{Items: filteredRes}, nil
 }
 
 func (g *GitSvc) CommitOptions(ctx context.Context, request *git.GitCommitOptionsRequest) (*git.GitCommitOptionsResponse, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("CommitOptions:%s-%s", request.GitProjectId, request.Branch), 3, func() ([]byte, error) {
-		commits, err := plugins.GetGitServer().ListCommits(request.GitProjectId, request.Branch)
-		if err != nil {
-			return nil, err
-		}
-
-		res := make([]*git.GitOption, 0, len(commits))
-		for _, commit := range commits {
-			res = append(res, &git.GitOption{
-				Value:        commit.GetID(),
-				IsLeaf:       true,
-				Label:        fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
-				Type:         OptionTypeCommit,
-				GitProjectId: request.GitProjectId,
-				Branch:       request.Branch,
-			})
-		}
-
-		return proto.Marshal(&git.GitCommitOptionsResponse{Items: res})
-	})
+	commits, err := plugins.GetGitServer().ListCommits(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err
 	}
-	res := &git.GitCommitOptionsResponse{}
-	_ = proto.Unmarshal(remember, res)
-	return res, nil
+
+	res := make([]*git.GitOption, 0, len(commits))
+	for _, commit := range commits {
+		res = append(res, &git.GitOption{
+			Value:        commit.GetID(),
+			IsLeaf:       true,
+			Label:        fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
+			Type:         OptionTypeCommit,
+			GitProjectId: request.GitProjectId,
+			Branch:       request.Branch,
+		})
+	}
+
+	return &git.GitCommitOptionsResponse{Items: res}, nil
 }
 
 func (g *GitSvc) Commit(ctx context.Context, request *git.GitCommitRequest) (*git.GitCommitResponse, error) {
