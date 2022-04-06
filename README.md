@@ -82,15 +82,15 @@ func main()  {
 
 ## TODO
 
-- [ ] redis cache
-- [ ] git server cache
 - [ ] 国际化
 - [ ] ratelimiter
-- [ ] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [ ] 外部接口调用优化
 - [ ] namespace all -> list
 - [ ] grpc 可配置使用 tls
-- [ ] ~~增加 basic? or CA? auth，参考 k8s 的做法~~
+- ~~[ ] 增加 basic? or CA? auth，参考 k8s 的做法~~
+- ~~[ ] redis cache~~ 不想强依赖 redis
+- [x] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
+- [x] git server cache
 - [x] 所有 gitlab 都改成 git
 - [x] 通过 ci 发布客户端
 - [x] export/import 配置文件

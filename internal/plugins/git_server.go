@@ -118,8 +118,8 @@ var (
 	AllProjectsCacheSeconds       int = 30
 	AllBranchesCacheSeconds       int = 60
 	ListCommitsCacheSeconds       int = 5
-	GetFileContentCacheSeconds    int = 60 * 2
-	GetDirectoryFilesCacheSeconds int = 60 * 2
+	GetFileContentCacheSeconds    int = 60
+	GetDirectoryFilesCacheSeconds int = 60
 )
 
 // gitServerCache
