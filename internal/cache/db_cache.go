@@ -37,9 +37,8 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 			Value:     string(bytes),
 			ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
 		}
-		err = db.Create(&cache).Error
-		if err != nil {
-			return err
+		if err = db.Create(&cache).Error; err != nil {
+			mlog.Error(err)
 		}
 		return nil
 	}); err != nil {
