@@ -114,6 +114,14 @@ func GetGitServer() GitServer {
 	return newGitServerCache(p.(GitServer))
 }
 
+var (
+	AllProjectsCacheSeconds       int = 30
+	AllBranchesCacheSeconds       int = 60
+	ListCommitsCacheSeconds       int = 5
+	GetFileContentCacheSeconds    int = 60 * 2
+	GetDirectoryFilesCacheSeconds int = 60 * 2
+)
+
 // gitServerCache
 // 用来缓存一些耗时比较久的请求
 type gitServerCache struct {
@@ -133,7 +141,7 @@ func (g *gitServerCache) ListProjects(page, pageSize int) (ListProjectResponseIn
 }
 
 func (g *gitServerCache) AllProjects() ([]ProjectInterface, error) {
-	remember, err := app.Cache().Remember("AllProjects", 30, func() ([]byte, error) {
+	remember, err := app.Cache().Remember("AllProjects", AllProjectsCacheSeconds, func() ([]byte, error) {
 		projects, err := g.s.AllProjects()
 		if err != nil {
 			return nil, err
@@ -170,7 +178,7 @@ func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (ListBranc
 }
 
 func (g *gitServerCache) AllBranches(pid string) ([]BranchInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("AllBranches-%v", pid), 60, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("AllBranches-%v", pid), AllBranchesCacheSeconds, func() ([]byte, error) {
 		b, err := g.s.AllBranches(pid)
 		if err != nil {
 			return nil, err
@@ -209,7 +217,7 @@ func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (PipelineInte
 }
 
 func (g *gitServerCache) ListCommits(pid string, branch string) ([]CommitInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("CommitOptions:%s-%s", pid, branch), 5, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("CommitOptions:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
 		commits, err := g.s.ListCommits(pid, branch)
 		if err != nil {
 			return nil, err
@@ -248,7 +256,7 @@ func (g *gitServerCache) ListCommits(pid string, branch string) ([]CommitInterfa
 }
 
 func (g *gitServerCache) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithBranch-%s-%s-%s", pid, branch, filename), 60, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithBranch-%s-%s-%s", pid, branch, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
 		content, err := g.s.GetFileContentWithBranch(pid, branch, filename)
 		if err != nil {
 			return nil, err
@@ -262,7 +270,7 @@ func (g *gitServerCache) GetFileContentWithBranch(pid string, branch string, fil
 }
 
 func (g *gitServerCache) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", pid, sha, filename), 60, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", pid, sha, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
 		content, err := g.s.GetFileContentWithSha(pid, sha, filename)
 		if err != nil {
 			return nil, err
@@ -276,7 +284,7 @@ func (g *gitServerCache) GetFileContentWithSha(pid string, sha string, filename 
 }
 
 func (g *gitServerCache) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithBranch-%s-%s-%s-%v", pid, branch, path, recursive), 10, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithBranch-%s-%s-%s-%v", pid, branch, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
 		withBranch, err := g.s.GetDirectoryFilesWithBranch(pid, branch, path, recursive)
 		if err != nil {
 			return nil, err
@@ -293,7 +301,7 @@ func (g *gitServerCache) GetDirectoryFilesWithBranch(pid string, branch string, 
 }
 
 func (g *gitServerCache) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithSha-%s-%s-%s-%v", pid, sha, path, recursive), 10, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithSha-%s-%s-%s-%v", pid, sha, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
 		withBranch, err := g.s.GetDirectoryFilesWithSha(pid, sha, path, recursive)
 		if err != nil {
 			return nil, err
