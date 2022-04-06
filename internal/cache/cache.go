@@ -25,10 +25,9 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 	}
 
 	do, err, _ := c.sf.Do("CacheRemember:"+key, func() (any, error) {
-		mlog.Debug("CacheRemember:" + key + " Do.....")
 		res, err := c.fc.Get(key)
+		mlog.Debugf("CacheRemember: %s, from cache: %t", key, err == nil)
 		if err == nil {
-			mlog.Debug("from cache")
 			return res, nil
 		}
 		res, err = fn()

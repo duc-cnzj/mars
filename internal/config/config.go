@@ -32,11 +32,12 @@ type DockerAuth struct {
 }
 
 type Config struct {
-	AppPort        string `mapstructure:"app_port"`
-	GrpcPort       string `mapstructure:"grpc_port"`
-	Debug          bool   `mapstructure:"debug"`
-	LogChannel     string `mapstructure:"log_channel"`
-	ProfileEnabled bool   `mapstructure:"profile_enabled"`
+	AppPort         string `mapstructure:"app_port"`
+	GrpcPort        string `mapstructure:"grpc_port"`
+	Debug           bool   `mapstructure:"debug"`
+	LogChannel      string `mapstructure:"log_channel"`
+	ProfileEnabled  bool   `mapstructure:"profile_enabled"`
+	GitServerCached bool   `mapstructure:"git_server_cached"`
 
 	AdminPassword string `mapstructure:"admin_password"`
 	PrivateKey    string `mapstructure:"private_key"`
@@ -103,6 +104,7 @@ func Init(cfgFile string) *Config {
 		log.Fatal(err)
 	}
 
+	viper.SetDefault("git_server_cached", true)
 	viper.SetDefault("domain_manager_plugin", map[string]any{
 		"name": "default_domain_manager",
 		"args": nil,

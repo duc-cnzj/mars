@@ -111,15 +111,19 @@ func GetGitServer() GitServer {
 		})
 	})
 
-	return newGitServerCache(p.(GitServer))
+	if app.Config().GitServerCached {
+		return newGitServerCache(p.(GitServer))
+	}
+
+	return p.(GitServer)
 }
 
 var (
-	AllProjectsCacheSeconds       int = 30
-	AllBranchesCacheSeconds       int = 60
-	ListCommitsCacheSeconds       int = 5
-	GetFileContentCacheSeconds    int = 60
-	GetDirectoryFilesCacheSeconds int = 60
+	ListCommitsCacheSeconds       int = 10
+	AllBranchesCacheSeconds       int = 60 * 2
+	AllProjectsCacheSeconds       int = 60 * 5
+	GetFileContentCacheSeconds    int = 60 * 5
+	GetDirectoryFilesCacheSeconds int = 60 * 5
 )
 
 // gitServerCache
