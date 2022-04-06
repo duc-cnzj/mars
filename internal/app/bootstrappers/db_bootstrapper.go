@@ -23,6 +23,7 @@ var Models = []any{
 	&models.File{},
 	&models.Changelog{},
 	&models.Event{},
+	&models.DBCache{},
 }
 
 type DBBootstrapper struct{}

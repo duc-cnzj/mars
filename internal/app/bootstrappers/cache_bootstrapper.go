@@ -1,21 +1,32 @@
 package bootstrappers
 
 import (
+	"errors"
 	"time"
+
+	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
 	cachein "github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/patrickmn/go-cache"
 )
 
 type CacheBootstrapper struct{}
 
 func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	mlog.Debug("CacheBootstrapper booted!")
-	c := cache.New(5*time.Minute, 10*time.Minute)
-	app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), app.Singleflight()))
+	driver := app.Config().CacheDriver
+	mlog.Infof("CacheBootstrapper booted! driver: %s", driver)
+
+	switch driver {
+	case "db":
+		app.SetCache(cachein.NewDBCache(app))
+	case "memory":
+		c := gocache.New(5*time.Minute, 10*time.Minute)
+		app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), app.Singleflight()))
+	default:
+		return errors.New("unknown cache driver: " + driver)
+	}
 
 	return nil
 }

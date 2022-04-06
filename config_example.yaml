@@ -10,6 +10,9 @@ profile_enabled: true
 # 开启 git 请求缓存，默认开启，因为 git 请求比较慢，需要缓存
 git_server_cached: true
 
+# 'db' or 'memory'
+cache_driver: "memory"
+
 git_server_plugin:
   name: gitlab
   args:
