@@ -61,6 +61,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 			outStream.Close()
 			src.Close()
 		}()
+		defer HandlePanic("CopyFileToPod")
 
 		if _, err := io.Copy(outStream, src); err != nil {
 			mlog.Error(err)

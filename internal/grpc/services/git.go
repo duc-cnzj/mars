@@ -147,6 +147,7 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.GitProjectOpti
 		for _, project := range enabledProjects {
 			go func(project models.GitProject) {
 				defer wg.Done()
+				defer utils.HandlePanic("ProjectOptions")
 				if !project.GlobalEnabled {
 					if _, err := GetProjectMarsConfig(project.GitProjectId, project.DefaultBranch); err != nil {
 						mlog.Debug(err)

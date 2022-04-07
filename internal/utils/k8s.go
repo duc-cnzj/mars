@@ -155,6 +155,7 @@ func CleanEvictedPods(namespace string, selectors string) {
 	for _, item := range list.Items {
 		go func(item v1.Pod) {
 			defer wg.Done()
+			defer HandlePanic("CleanEvictedPods")
 			if item.Status.Reason == "Evicted" {
 				err := app.K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
 				if err != nil {

@@ -555,6 +555,7 @@ func defaultLoaders() []Loader {
 func (j *Jober) LoadConfigs() error {
 	ch := make(chan error)
 	go func() {
+		defer utils.HandlePanic("LoadConfigs")
 		ch <- func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 

@@ -133,6 +133,7 @@ func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.NamespaceDelete
 		for _, project := range ns.Projects {
 			go func(releaseName, namespace string) {
 				defer wg.Done()
+				defer utils.HandlePanic("NamespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
 				if err := utils.UninstallRelease(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)

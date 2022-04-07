@@ -29,6 +29,7 @@ func DownloadFilesToDir(pid any, commit string, files []string, dir string) (str
 	for _, file := range files {
 		go func(file string) {
 			defer wg.Done()
+			defer HandlePanic("DownloadFilesToDir")
 			raw, err := plugins.GetGitServer().GetFileContentWithSha(fmt.Sprintf("%v", pid), commit, file)
 			if err != nil {
 				mlog.Error(err)

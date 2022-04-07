@@ -98,6 +98,7 @@ func (c *ContainerSvc) Exec(request *container.ContainerExecRequest, server cont
 
 	go func() {
 		defer rw.Close()
+		defer utils.HandlePanic("Exec")
 		if err := exec.Stream(remotecommand.StreamOptions{
 			Stdin:             rw,
 			Stdout:            rw,
@@ -289,17 +290,24 @@ func (c *ContainerSvc) StreamContainerLog(request *container.ContainerLogRequest
 		Container: request.Container,
 		TailLines: &limit,
 	})
-	stream, _ := logs.Stream(context.TODO())
+	stream, err := logs.Stream(context.TODO())
+	if err != nil {
+		return err
+	}
 	bf := bufio.NewReader(stream)
 
 	ch := make(chan []byte)
 	go func() {
-		defer mlog.Debug("[Stream]:  read exit!")
+		defer func() {
+			mlog.Debug("[Stream]:  read exit!")
+			close(ch)
+		}()
+		defer utils.HandlePanic("StreamContainerLog")
+
 		for {
 			bytes, err := bf.ReadBytes('\n')
 			if err != nil {
 				mlog.Debugf("[Stream]: %v", err)
-				close(ch)
 				return
 			}
 			ch <- bytes
