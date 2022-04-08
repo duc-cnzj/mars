@@ -259,7 +259,7 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ProjectShowReque
 		CreatedAt:         utils.ToRFC3339DatetimeString(&projectModel.CreatedAt),
 		UpdatedAt:         utils.ToRFC3339DatetimeString(&projectModel.UpdatedAt),
 		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
-		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
+		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.UpdatedAt),
 		ExtraValues:       projectModel.GetExtraValues(),
 		Elements:          marsC.GetElements(),
 		ConfigType:        marsC.GetConfigFileType(),
