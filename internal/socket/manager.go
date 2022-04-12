@@ -311,6 +311,7 @@ type userConfig struct {
 	WebUrl           string                           `yaml:"web_url"`
 	ExtraValues      []*websocket_pb.ProjectExtraItem `yaml:"extra_values"`
 	FinalExtraValues mergeYamlString                  `yaml:"final_extra_values"`
+	EnvValues        vars                             `yaml:"env_values"`
 }
 
 type mergeYamlString []string
@@ -387,19 +388,23 @@ func (j *Jober) Run() error {
 				marshal, _ := json.Marshal(j.extraValues)
 				j.project.FinalExtraValues = string(marshal)
 			}
+			if len(j.vars) > 0 {
+				marshal, _ := json.Marshal(j.vars)
+				j.project.EnvValues = string(marshal)
+			}
 
 			var (
 				p                models.Project
 				oldConf, newConf userConfig
 			)
 			if app.DB().
-				Select("ID", "GitProjectId", "Name", "NamespaceId", "Config", "GitBranch", "GitCommit", "Atomic", "ExtraValues", "FinalExtraValues").
+				Select("ID", "GitProjectId", "Name", "NamespaceId", "Config", "GitBranch", "GitCommit", "Atomic", "ExtraValues", "FinalExtraValues", "EnvValues").
 				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
 				First(&p).Error == nil {
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
 					app.DB().Model(j.project).
-						Select("Config", "GitProjectId", "GitCommit", "GitBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues").
+						Select("Config", "GitProjectId", "GitCommit", "GitBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues", "EnvValues").
 						Updates(&j.project)
 				}
 				var (
@@ -412,6 +417,7 @@ func (j *Jober) Run() error {
 				if len(p.FinalExtraValues) > 0 {
 					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
 				}
+
 				oldConf = userConfig{
 					Config:           p.Config,
 					Branch:           p.GitBranch,
@@ -419,6 +425,7 @@ func (j *Jober) Run() error {
 					Atomic:           p.Atomic,
 					ExtraValues:      ev,
 					FinalExtraValues: fev,
+					EnvValues:        vars(p.GetEnvValues()),
 				}
 				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
 				if err == nil {
@@ -437,6 +444,7 @@ func (j *Jober) Run() error {
 				WebUrl:           j.Commit().GetWebURL(),
 				ExtraValues:      j.input.ExtraValues,
 				FinalExtraValues: mergeYamlString(j.extraValues),
+				EnvValues:        j.vars,
 			}
 			if !j.IsDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
@@ -878,7 +886,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
 	var (
 		pipelineID     int64
-		pipelineBranch string
+		pipelineBranch string = j.project.GitBranch
 		pipelineCommit string = j.Commit().GetShortID()
 	)
 

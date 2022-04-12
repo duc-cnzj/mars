@@ -20,6 +20,10 @@ func NewDBCache(app contracts.ApplicationInterface) *DBCache {
 
 func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
 	do, err, _ := c.app.Singleflight().Do(fmt.Sprintf("cache-remember-%s", key), func() (any, error) {
+		if seconds <= 0 {
+			return fn()
+		}
+
 		var cache models.DBCache
 		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache)
 		if cache.ID > 0 {

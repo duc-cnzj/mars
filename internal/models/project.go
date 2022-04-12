@@ -28,6 +28,7 @@ type Project struct {
 	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
 	NamespaceId      int    `json:"namespace_id"`
 	Atomic           bool   `json:"atomic"`
+	EnvValues        string `json:"env_values" gorm:"type:text;nullable;comment:可用的环境变量值"`
 	ExtraValues      string `json:"extra_values" gorm:"type:text;nullable;comment:用户表单传入的额外值"`
 	FinalExtraValues string `json:"final_extra_values" gorm:"type:text;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`
 
@@ -40,6 +41,11 @@ type Project struct {
 
 func (project *Project) GetExtraValues() (res []*websocket.ProjectExtraItem) {
 	json.Unmarshal([]byte(project.ExtraValues), &res)
+	return res
+}
+
+func (project *Project) GetEnvValues() (res map[string]any) {
+	json.Unmarshal([]byte(project.EnvValues), &res)
 	return res
 }
 

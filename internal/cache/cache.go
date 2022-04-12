@@ -20,11 +20,11 @@ func NewCache(fc Store, sf *singleflight.Group) *Cache {
 }
 
 func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	if seconds <= 0 {
-		return fn()
-	}
-
 	do, err, _ := c.sf.Do("CacheRemember:"+key, func() (any, error) {
+		if seconds <= 0 {
+			return fn()
+		}
+
 		res, err := c.fc.Get(key)
 		mlog.Debugf("CacheRemember: %s, from cache: %t", key, err == nil)
 		if err == nil {
