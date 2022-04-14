@@ -9,7 +9,7 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/event/events"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -82,9 +82,11 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []s
 		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
 		switch a := obj.(type) {
 		case *v1.Deployment:
-			selectors = append(selectors, labels.SelectorFromSet(a.Spec.Selector.MatchLabels).String())
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
 		case *v1.StatefulSet:
-			selectors = append(selectors, labels.SelectorFromSet(a.Spec.Selector.MatchLabels).String())
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
 		}
 	}
 
