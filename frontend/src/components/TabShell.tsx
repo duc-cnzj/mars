@@ -22,10 +22,11 @@ import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
 
 const TabShell: React.FC<{
-  detail: pb.ProjectShowResponse;
+  namespace: string;
+  id: number;
   resizeAt: number;
   updatedAt: any;
-}> = ({ detail, resizeAt, updatedAt }) => {
+}> = ({ namespace, id, resizeAt, updatedAt }) => {
   const [list, setList] = useState<pb.ProjectPod[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
@@ -39,19 +40,19 @@ const TabShell: React.FC<{
   const wsReady = useWsReady();
 
   let sname = useMemo(
-    () => detail.namespace?.name + "|" + value,
-    [detail, value]
+    () => namespace + "|" + value,
+    [namespace, value]
   );
 
   const listContainer = useCallback(
     () =>
       allPodContainers({
-        project_id: detail.id,
+        project_id: id,
       }).then((res) => {
         setList(res.data.items);
         return res;
       }),
-    [detail.id]
+    [id]
   );
 
   const sendMsg = useCallback(
@@ -204,12 +205,12 @@ const TabShell: React.FC<{
     let s = value.split("|");
     let ss = pb.WsHandleExecShellInput.encode({
       type: pb.Type.HandleExecShell,
-      namespace: detail.namespace?.name || "",
+      namespace: namespace,
       pod: s[0],
       container: s[1],
     }).finish();
     sendMsg(ss);
-  }, [value, detail.namespace?.name, sendMsg]);
+  }, [value, namespace, sendMsg]);
 
   useEffect(() => {
     if (value && wsReady) {
@@ -224,7 +225,7 @@ const TabShell: React.FC<{
         if (v === e.target.value) {
           let s = (e.target.value as string).split("|");
           isPodExists({
-            namespace: detail.namespace?.name || "",
+            namespace: namespace,
             pod: s[0],
           }).then((res) => {
             if (res.data.exists) {
@@ -241,7 +242,7 @@ const TabShell: React.FC<{
         return e.target.value;
       });
     },
-    [detail.namespace?.name, initShell, listContainer]
+    [namespace, initShell, listContainer]
   );
 
   const beforeUpload = useCallback((file: any) => {
@@ -273,7 +274,7 @@ const TabShell: React.FC<{
         copyToPod({
           pod: pod,
           container: container,
-          namespace: detail.namespace?.name || "",
+          namespace: namespace,
           file_id: info.file.response.id,
         })
           .then((res) => {
@@ -334,7 +335,7 @@ const TabShell: React.FC<{
             </Button>
           </Upload>
           <PodMetrics
-            namespace={detail.namespace?.name || ""}
+            namespace={namespace}
             pod={value.split("|")[0]}
             timestamp={timestamp}
           />

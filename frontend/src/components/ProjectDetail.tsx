@@ -74,9 +74,7 @@ const ItemDetailModal: React.FC<{
           {item.name}
         </span>
         {item.status === "deployed" ? (
-          <ServiceEndpoint
-            projectId={item.id}
-          />
+          <ServiceEndpoint projectId={item.id} />
         ) : (
           <></>
         )}
@@ -111,11 +109,11 @@ const ItemDetailModal: React.FC<{
           {item.status === "deployed" ? (
             <>
               <TabPane tab="容器日志" key="container-logs">
-                {detail ? (
+                {detail && detail.namespace ? (
                   <TabLog
                     updatedAt={detail.updated_at}
                     id={detail.id}
-                    namespace={detail.namespace?.name || ""}
+                    namespace={detail.namespace.name}
                   />
                 ) : (
                   <Skeleton active />
@@ -124,11 +122,12 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
                 <Suspense fallback={<Skeleton active />}>
                   <ErrorBoundary>
-                    {detail ? (
+                    {detail && detail.namespace ? (
                       <Shell
+                        namespace={detail.namespace.name || ""}
+                        id={detail.id}
                         updatedAt={detail.updated_at}
                         resizeAt={resizeAt}
-                        detail={detail}
                       />
                     ) : (
                       <></>
@@ -139,7 +138,11 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
                   {detail ? (
-                    <TabEdit detail={detail} updatedAt={detail.updated_at} onSuccess={onSuccess} />
+                    <TabEdit
+                      detail={detail}
+                      updatedAt={detail.updated_at}
+                      onSuccess={onSuccess}
+                    />
                   ) : (
                     <></>
                   )}

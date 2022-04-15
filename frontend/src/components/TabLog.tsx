@@ -14,12 +14,10 @@ const ProjectContainerLogs: React.FC<{
   const [list, setList] = useState<pb.ProjectPod[]>();
 
   const listContainer = useCallback(async () => {
-    return allPodContainers({project_id: id }).then(
-      (res) => {
-        setList(res.data.items);
-        return res;
-      }
-    );
+    return allPodContainers({ project_id: id }).then((res) => {
+      setList(res.data.items);
+      return res;
+    });
   }, [id]);
 
   useEffect(() => {
