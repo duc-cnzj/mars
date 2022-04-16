@@ -3371,7 +3371,8 @@ export enum ActionType {
     Delete = 3,
     Upload = 4,
     Download = 5,
-    DryRun = 6
+    DryRun = 6,
+    Shell = 7
 }
 
 /** Represents an EventListRequest. */
@@ -3441,6 +3442,9 @@ export class EventListItem implements IEventListItem {
     /** EventListItem file_id. */
     public file_id: number;
 
+    /** EventListItem commands. */
+    public commands: Command[];
+
     /**
      * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
      * @param message EventListItem message or plain object to encode
@@ -3458,6 +3462,37 @@ export class EventListItem implements IEventListItem {
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
     public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): EventListItem;
+}
+
+/** Represents a Command. */
+export class Command implements ICommand {
+
+    /**
+     * Constructs a new Command.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ICommand);
+
+    /** Command command. */
+    public command: string;
+
+    /**
+     * Encodes the specified Command message. Does not implicitly {@link Command.verify|verify} messages.
+     * @param message Command message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: Command, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a Command message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Command
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Command;
 }
 
 /** Represents an EventListResponse. */

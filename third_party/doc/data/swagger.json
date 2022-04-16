@@ -1593,7 +1593,8 @@
         "Delete",
         "Upload",
         "Download",
-        "DryRun"
+        "DryRun",
+        "Shell"
       ]
     },
     "AuthExchangeRequest": {
@@ -1770,6 +1771,14 @@
           "type": "string"
         },
         "usage_memory_rate": {
+          "type": "string"
+        }
+      }
+    },
+    "Command": {
+      "type": "object",
+      "properties": {
+        "command": {
           "type": "string"
         }
       }
@@ -1984,6 +1993,12 @@
       "properties": {
         "action": {
           "$ref": "#/definitions/ActionType"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Command"
+          }
         },
         "event_at": {
           "type": "string"

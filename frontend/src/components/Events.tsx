@@ -75,6 +75,8 @@ const EventList: React.FC = () => {
   }, []);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
+  const [isCommandsModalVisible, setIsCommandsModalVisible] = useState(false);
+  const [commands, setCommands] = useState<pb.Command[]>([])
 
   const getActionStyle = useCallback((type: pb.ActionType): React.ReactNode => {
     let style = { fontSize: 12, marginLeft: 5 };
@@ -83,6 +85,12 @@ const EventList: React.FC = () => {
         return (
           <Tag color="#1890ff" style={style}>
             创建
+          </Tag>
+        );
+      case pb.ActionType.Shell:
+        return (
+          <Tag color="#1890ff" style={style}>
+            执行命令
           </Tag>
         );
       case pb.ActionType.Update:
@@ -235,7 +243,19 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.file_id > 0 ? (
+                {item.commands.length > 0 && (
+                    <Button
+                        type="dashed"
+                        style={{ marginRight: 5 }}
+                        onClick={() => {
+                          setIsCommandsModalVisible(true);
+                          setCommands(item.commands);
+                        }}
+                    >
+                      查看命令
+                    </Button>
+                )}
+                {item.file_id > 0 &&
                   <>
                     <Button
                       type="dashed"
@@ -266,9 +286,7 @@ const EventList: React.FC = () => {
                       删除文件
                     </Button>
                   </>
-                ) : (
-                  <></>
-                )}
+                }
                 {!!(item.old || item.new) ? (
                   <Button
                     type="dashed"
@@ -314,6 +332,16 @@ const EventList: React.FC = () => {
             newValue={config.new}
           />
         </ErrorBoundary>
+      </Modal>
+      <Modal
+          title="命令列表"
+          visible={isCommandsModalVisible}
+          footer={null}
+          onCancel={() => setIsCommandsModalVisible(false)}
+      >
+        <ol style={{maxHeight: 500, overflowY: "auto"}}>
+          {commands.map((v) => <li className="events__command">{v.command}</li>)}
+        </ol>
       </Modal>
     </Card>
   );

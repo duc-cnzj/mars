@@ -7833,6 +7833,7 @@ export const Endpoint = $root.Endpoint = (() => {
  * @property {number} Upload=4 Upload value
  * @property {number} Download=5 Download value
  * @property {number} DryRun=6 DryRun value
+ * @property {number} Shell=7 Shell value
  */
 export const ActionType = $root.ActionType = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -7843,6 +7844,7 @@ export const ActionType = $root.ActionType = (() => {
     values[valuesById[4] = "Upload"] = 4;
     values[valuesById[5] = "Download"] = 5;
     values[valuesById[6] = "DryRun"] = 6;
+    values[valuesById[7] = "Shell"] = 7;
     return values;
 })();
 
@@ -7955,6 +7957,7 @@ export const EventListItem = $root.EventListItem = (() => {
      * @property {string|null} ["new"] EventListItem new
      * @property {string|null} [event_at] EventListItem event_at
      * @property {number|null} [file_id] EventListItem file_id
+     * @property {Array.<Command>|null} [commands] EventListItem commands
      */
 
     /**
@@ -7966,6 +7969,7 @@ export const EventListItem = $root.EventListItem = (() => {
      * @param {IEventListItem=} [properties] Properties to set
      */
     function EventListItem(properties) {
+        this.commands = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -8037,6 +8041,14 @@ export const EventListItem = $root.EventListItem = (() => {
     EventListItem.prototype.file_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
     /**
+     * EventListItem commands.
+     * @member {Array.<Command>} commands
+     * @memberof EventListItem
+     * @instance
+     */
+    EventListItem.prototype.commands = $util.emptyArray;
+
+    /**
      * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
      * @function encode
      * @memberof EventListItem
@@ -8064,6 +8076,9 @@ export const EventListItem = $root.EventListItem = (() => {
             writer.uint32(/* id 7, wireType 2 =*/58).string(message.event_at);
         if (message.file_id != null && Object.hasOwnProperty.call(message, "file_id"))
             writer.uint32(/* id 8, wireType 0 =*/64).int64(message.file_id);
+        if (message.commands != null && message.commands.length)
+            for (let i = 0; i < message.commands.length; ++i)
+                $root.Command.encode(message.commands[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         return writer;
     };
 
@@ -8109,6 +8124,11 @@ export const EventListItem = $root.EventListItem = (() => {
             case 8:
                 message.file_id = reader.int64();
                 break;
+            case 9:
+                if (!(message.commands && message.commands.length))
+                    message.commands = [];
+                message.commands.push($root.Command.decode(reader, reader.uint32()));
+                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -8118,6 +8138,87 @@ export const EventListItem = $root.EventListItem = (() => {
     };
 
     return EventListItem;
+})();
+
+export const Command = $root.Command = (() => {
+
+    /**
+     * Properties of a Command.
+     * @exports ICommand
+     * @interface ICommand
+     * @property {string|null} [command] Command command
+     */
+
+    /**
+     * Constructs a new Command.
+     * @exports Command
+     * @classdesc Represents a Command.
+     * @implements ICommand
+     * @constructor
+     * @param {ICommand=} [properties] Properties to set
+     */
+    function Command(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Command command.
+     * @member {string} command
+     * @memberof Command
+     * @instance
+     */
+    Command.prototype.command = "";
+
+    /**
+     * Encodes the specified Command message. Does not implicitly {@link Command.verify|verify} messages.
+     * @function encode
+     * @memberof Command
+     * @static
+     * @param {Command} message Command message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Command.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.command != null && Object.hasOwnProperty.call(message, "command"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.command);
+        return writer;
+    };
+
+    /**
+     * Decodes a Command message from the specified reader or buffer.
+     * @function decode
+     * @memberof Command
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {Command} Command
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Command.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Command();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.command = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    return Command;
 })();
 
 export const EventListResponse = $root.EventListResponse = (() => {
