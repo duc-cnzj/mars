@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { arrayOf, bool, func, number, object, shape, string } from 'prop-types';
+import { arrayOf, oneOfType, bool, func, number, object, shape, string } from 'prop-types';
 import LineNumber from '../LineNumber';
 import LineContent from '../LineContent';
 import styles from './index.module.css';
@@ -15,7 +15,10 @@ export default class Line extends Component {
         text: string,
       })
     ).isRequired,
-    number,
+    number: oneOfType([
+      string,
+      number,
+    ]),
     rowHeight: number,
     highlight: bool,
     selectable: bool,

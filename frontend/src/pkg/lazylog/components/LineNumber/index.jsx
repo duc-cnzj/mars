@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { bool, func, number, object } from 'prop-types';
+import {bool, func, string, object, oneOfType, number} from 'prop-types';
 import styles from './index.module.css';
 
 /* eslint-disable jsx-a11y/anchor-has-content, jsx-a11y/anchor-is-valid */
@@ -14,7 +14,10 @@ export default class LineNumber extends Component {
     /**
      * The line number to display in the anchor.
      */
-    number: number.isRequired,
+    number: oneOfType([
+      string,
+      number,
+    ]),
     /**
      * Specify whether this line is highlighted.
      */

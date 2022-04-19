@@ -132,6 +132,9 @@ export default class LazyLog extends Component {
      * during loading.
      */
     onError: func,
+
+    renderErrLineFunc: func,
+
     /**
      * Execute a function when the highlighted range has changed.
      * Is passed a single argument which is an `Immutable.Range`
@@ -415,10 +418,6 @@ export default class LazyLog extends Component {
 
   handleError = err => {
     this.setState({ error: err });
-
-    if (this.props.onError) {
-      this.props.onError(err);
-    }
   };
 
   handleHighlight = e => {
@@ -560,6 +559,7 @@ export default class LazyLog extends Component {
       lineClassName,
       selectableLines,
       highlightLineClassName,
+      renderErrLineFunc,
     } = this.props;
     const { error } = this.state;
 
@@ -624,6 +624,20 @@ export default class LazyLog extends Component {
             },
           ]}
         />
+        {
+          renderErrLineFunc && <Line
+          selectable={selectableLines}
+          key="error-line-5"
+          className={lineClassName}
+          highlightClassName={highlightLineClassName}
+          data={[
+            {
+              foreground: 'red',
+              text: renderErrLineFunc(error),
+            },
+          ]}
+        />
+        }
       </Fragment>
     );
   }

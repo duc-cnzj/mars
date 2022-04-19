@@ -69,6 +69,9 @@ const ProjectContainerLogs: React.FC<{
       >
         {value ? (
           <LazyLog
+            renderErrLineFunc={(e: any) => {
+              return JSON.parse(e.body).error.message
+            }}
             fetchOptions={{ headers: { Authorization: getToken() } }}
             enableSearch
             selectableLines

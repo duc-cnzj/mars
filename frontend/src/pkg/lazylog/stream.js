@@ -1,6 +1,7 @@
 import { List } from 'immutable';
 import mitt from 'mitt';
 import { convertBufferToLines, bufferConcat } from './utils';
+import { decode } from './encoding';
 
 const fetcher = Promise.resolve().then(() =>
   'ReadableStream' in self && 'body' in self.Response.prototype
@@ -62,6 +63,8 @@ export default (url, options) => {
         const error = new Error(response.statusText);
 
         error.status = response.status;
+        const result = await response.body.getReader().read();
+        error.body = decode(bufferConcat(encodedLog, new Uint8Array(result.value)))
         emitter.emit('error', error);
 
         return;
