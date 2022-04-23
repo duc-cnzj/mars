@@ -330,6 +330,7 @@ const EventList: React.FC = () => {
         okText={"确定"}
         cancelText={"取消"}
         onOk={handleOk}
+        footer={null}
         onCancel={handleCancel}
       >
         <ErrorBoundary>
