@@ -3,7 +3,9 @@ package socket
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,6 +34,22 @@ var (
 	writeLine = "[%.6f, \"o\", \"%s\"]\n"
 )
 
+// https://xtermjs.org/docs/api/vtfeatures/#backspace
+var x = regexp.MustCompile(`\\x([0189][0-9a-zA-Z])?`)
+
+func Strip(str string) string {
+	str = strings.ReplaceAll(str, `\0`, `\x00`)
+	str = strings.ReplaceAll(str, `\a`, `\x07`)
+	str = strings.ReplaceAll(str, `\b`, `\x08`)
+	str = strings.ReplaceAll(str, `\t`, `\x09`)
+	str = strings.ReplaceAll(str, `\n`, `\x0A`)
+	str = strings.ReplaceAll(str, `\v`, `\x0B`)
+	str = strings.ReplaceAll(str, `\f`, `\x0C`)
+	str = strings.ReplaceAll(str, `\r`, `\x0D`)
+	str = strings.ReplaceAll(str, `\e`, `\x1B`)
+	return x.ReplaceAllString(str, "\\u00${1}")
+}
+
 func (r *Recorder) Write(data string) (err error) {
 	r.Lock()
 	defer r.Unlock()
@@ -51,7 +69,7 @@ func (r *Recorder) Write(data string) (err error) {
 	})
 	textQuoted := strconv.QuoteToASCII(data)
 	data = textQuoted[1 : len(textQuoted)-1]
-	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Now().Sub(r.startTime).Microseconds())/1000000, data))
+	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Now().Sub(r.startTime).Microseconds())/1000000, Strip(data)))
 	return err
 }
 

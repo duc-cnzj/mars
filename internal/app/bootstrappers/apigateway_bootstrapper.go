@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -183,7 +182,7 @@ func handFile(gmux *runtime.ServeMux) {
 			}
 			file, err := os.ReadFile(f.Path)
 			if err == nil {
-				w.Write([]byte(Strip(string(file))))
+				w.Write(file)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -232,14 +231,6 @@ func download(w http.ResponseWriter, filename string, reader io.Reader) {
 		mlog.Error(err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
-}
-
-// https://xtermjs.org/docs/api/vtfeatures/#backspace
-var ansiRe = regexp.MustCompile(`\\a|\\0|\\e|\\v|\\x`)
-var x = regexp.MustCompile(`\\x([0189][0-9a-zA-Z])?`)
-
-func Strip(str string) string {
-	return ansiRe.ReplaceAllString(x.ReplaceAllString(str, "\\u00${1}"), "")
 }
 
 func authenticated(r *http.Request) (*http.Request, bool) {
