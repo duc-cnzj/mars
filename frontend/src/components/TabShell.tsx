@@ -122,6 +122,7 @@ const TabShell: React.FC<{
           rows: rows,
         }),
       }).finish();
+      console.log(rows,cols)
       ws?.send(s);
     };
   }, []);
@@ -162,6 +163,7 @@ const TabShell: React.FC<{
         bellStyle: "sound",
         cursorBlink: true,
         cols: 106,
+        rows: 26,
       });
       myterm.loadAddon(fitAddon);
       myterm.onResize(onTerminalResize(id, ws));

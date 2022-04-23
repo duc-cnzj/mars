@@ -35,7 +35,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 		count    int64
 	)
 
-	if err := app.DB().Preload("Commands").Preload("File", func(db *gorm.DB) *gorm.DB {
+	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID")
 	}).Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
@@ -47,12 +47,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 		if m.File != nil {
 			fid = int64(m.File.ID)
 		}
-		var commands []*event.Command
-		for _, command := range m.Commands {
-			commands = append(commands, &event.Command{
-				Command: command.Command,
-			})
-		}
 		res = append(res, &event.EventListItem{
 			Id:       int64(m.ID),
 			Action:   event.ActionType(m.Action),
@@ -62,7 +56,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 			New:      m.New,
 			FileId:   fid,
 			EventAt:  utils.ToHumanizeDatetimeString(&m.CreatedAt),
-			Commands: commands,
 		})
 	}
 

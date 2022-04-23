@@ -203,3 +203,20 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 		size: uint64(stat.Size()),
 	}, nil
 }
+
+func (u *Uploader) NewFile(path string) (*os.File, error) {
+	fullpath := u.getPath(path)
+
+	if u.Exists(fullpath) {
+		return nil, fmt.Errorf("file already exist: '%s'", fullpath)
+	}
+
+	dir := filepath.Dir(fullpath)
+	if !u.DirExists(dir) {
+		if err := u.MkDir(dir, true); err != nil {
+			return nil, err
+		}
+	}
+
+	return os.Create(fullpath)
+}
