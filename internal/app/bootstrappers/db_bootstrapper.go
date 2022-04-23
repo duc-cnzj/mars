@@ -24,7 +24,6 @@ var Models = []any{
 	&models.Changelog{},
 	&models.Event{},
 	&models.DBCache{},
-	&models.Command{},
 }
 
 type DBBootstrapper struct{}

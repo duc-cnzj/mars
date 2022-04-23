@@ -1775,14 +1775,6 @@
         }
       }
     },
-    "Command": {
-      "type": "object",
-      "properties": {
-        "command": {
-          "type": "string"
-        }
-      }
-    },
     "ContainerCopyToPodRequest": {
       "type": "object",
       "properties": {
@@ -1994,11 +1986,8 @@
         "action": {
           "$ref": "#/definitions/ActionType"
         },
-        "commands": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Command"
-          }
+        "duration": {
+          "type": "string"
         },
         "event_at": {
           "type": "string"

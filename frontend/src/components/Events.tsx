@@ -8,9 +8,11 @@ import {
   List,
   Tag,
   Button,
+  Popconfirm,
   Modal,
   message,
 } from "antd";
+import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events } from "../api/event";
@@ -21,6 +23,7 @@ import {
   deleteUndocumentedFiles,
 } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { getToken } from "../utils/token";
 
 const defaultPageSize = 15;
 
@@ -75,8 +78,8 @@ const EventList: React.FC = () => {
   }, []);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
-  const [isCommandsModalVisible, setIsCommandsModalVisible] = useState(false);
-  const [commands, setCommands] = useState<pb.Command[]>([])
+  const [shellModalVisible, setShellModalVisible] = useState(false);
+  const [fileID, setFileID] = useState(0);
 
   const getActionStyle = useCallback((type: pb.ActionType): React.ReactNode => {
     let style = { fontSize: 12, marginLeft: 5 };
@@ -243,34 +246,20 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.commands.length > 0 && (
-                    <Button
-                        type="dashed"
-                        style={{ marginRight: 5 }}
-                        onClick={() => {
-                          setIsCommandsModalVisible(true);
-                          setCommands(item.commands);
-                        }}
-                    >
-                      查看命令
-                    </Button>
-                )}
-                {item.file_id > 0 &&
+                {item.file_id > 0 && item.action === pb.ActionType.Shell && (
                   <>
                     <Button
                       type="dashed"
                       style={{ marginRight: 5 }}
                       onClick={() => {
-                        downloadFile(item.file_id);
+                        setShellModalVisible(true);
+                        setFileID(item.file_id);
                       }}
                     >
-                      下载文件
+                      查看操作记录 {item.duration &&<span style={{fontSize: "10px", marginLeft: 5}}>(时长: {item.duration})</span>}
                     </Button>
-                    <Button
-                      type="dashed"
-                      style={{ marginRight: 5 }}
-                      danger
-                      onClick={() => {
+                    <DeleteFile
+                      onDelete={() => {
                         deleteFile({ id: item.file_id })
                           .then((res) => {
                             setData(
@@ -282,11 +271,36 @@ const EventList: React.FC = () => {
                           })
                           .catch((e) => message.error(e.response.data.message));
                       }}
-                    >
-                      删除文件
-                    </Button>
+                    />
                   </>
-                }
+                )}
+                {item.file_id > 0 && item.action === pb.ActionType.Upload && (
+                  <>
+                    <Button
+                      type="dashed"
+                      style={{ marginRight: 5 }}
+                      onClick={() => {
+                        downloadFile(item.file_id);
+                      }}
+                    >
+                      下载文件
+                    </Button>
+                    <DeleteFile
+                      onDelete={() => {
+                        deleteFile({ id: item.file_id })
+                          .then((res) => {
+                            setData(
+                              data.map((v) =>
+                                v.id === item.id ? { ...v, file_id: 0 } : v
+                              )
+                            );
+                            message.success("删除成功");
+                          })
+                          .catch((e) => message.error(e.response.data.message));
+                      }}
+                    />
+                  </>
+                )}
                 {!!(item.old || item.new) ? (
                   <Button
                     type="dashed"
@@ -316,35 +330,72 @@ const EventList: React.FC = () => {
         okText={"确定"}
         cancelText={"取消"}
         onOk={handleOk}
+        footer={null}
         onCancel={handleCancel}
       >
         <ErrorBoundary>
-          <ReactDiffViewer
-            disableWordDiff
-            styles={{
-              line: { fontSize: 12, wordBreak: "break-word" },
-            }}
-            useDarkTheme
-            showDiffOnly
-            splitView={config.old !== ""}
-            renderContent={highlightSyntax}
-            oldValue={config.old}
-            newValue={config.new}
-          />
+          <div style={{ maxHeight: 550, overflowY: "auto" }}>
+            <ReactDiffViewer
+              disableWordDiff
+              styles={{
+                line: { fontSize: 12, wordBreak: "break-word" },
+              }}
+              useDarkTheme
+              showDiffOnly
+              splitView={config.old !== ""}
+              renderContent={highlightSyntax}
+              oldValue={config.old}
+              newValue={config.new}
+            />
+          </div>
         </ErrorBoundary>
       </Modal>
       <Modal
-          title="命令列表"
-          visible={isCommandsModalVisible}
-          footer={null}
-          onCancel={() => setIsCommandsModalVisible(false)}
+        width={"80%"}
+        title="操作记录"
+        destroyOnClose
+        visible={shellModalVisible}
+        footer={null}
+        onCancel={() => {
+          setShellModalVisible(false);
+          setFileID(0);
+        }}
       >
-        <ol style={{maxHeight: 500, overflowY: "auto"}}>
-          {commands.map((v) => <li className="events__command">{v.command}</li>)}
-        </ol>
+        <div style={{ width: "100%" }}>
+          {fileID > 0 && (
+            <AsciinemaPlayer
+              speed={1.5}
+              src={{
+                url: `${process.env.REACT_APP_BASE_URL}/api/raw_file/${fileID}`,
+                fetchOpts: {
+                  method: "GET",
+                  headers: { Authorization: getToken() },
+                },
+              }}
+              rows={40}
+              idleTimeLimit={3}
+              preload={true}
+              theme="monokai"
+            />
+          )}
+        </div>
       </Modal>
     </Card>
   );
 };
 
+const DeleteFile: React.FC<{ onDelete: () => void }> = ({ onDelete }) => {
+  return (
+    <Popconfirm
+      title="你确定要删除该文件吗"
+      onConfirm={onDelete}
+      okText="Yes"
+      cancelText="No"
+    >
+      <Button type="dashed" style={{ marginRight: 5 }} danger>
+        删除
+      </Button>
+    </Popconfirm>
+  );
+};
 export default memo(EventList);

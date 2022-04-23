@@ -30,12 +30,7 @@ message EventListItem {
   string new = 6;
   string event_at = 7;
   int64 file_id = 8;
-
-  repeated Command commands = 9;
-}
-
-message Command {
-  string command = 1;
+  string duration = 9;
 }
 
 message EventListResponse {

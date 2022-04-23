@@ -13,8 +13,9 @@ type Event struct {
 	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 	Message  string `json:"message" gorm:"size:255;not null;default:'';"`
 
-	Old string `json:"old" gorm:"type:text;"`
-	New string `json:"new" gorm:"type:text;"`
+	Old      string `json:"old" gorm:"type:text;"`
+	New      string `json:"new" gorm:"type:text;"`
+	Duration string `json:"duration" gorm:"not null;default:''"`
 
 	FileID *int `json:"file_id" gorm:"nullable;"`
 
@@ -22,6 +23,5 @@ type Event struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 
-	File     *File
-	Commands []*Command
+	File *File
 }

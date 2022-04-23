@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"io"
+	"os"
 )
 
 type FileInfo interface {
@@ -19,5 +20,6 @@ type Uploader interface {
 	AbsolutePath(path string) string
 	Put(path string, content io.Reader) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
+	NewFile(path string) (*os.File, error)
 	RemoveEmptyDir(dir string) error
 }

@@ -69,6 +69,12 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 	}
 	// v3 => v4 end.
 
+	if m.db.Migrator().HasTable("commands") {
+		if err := m.db.Migrator().DropTable("commands"); err != nil {
+			mlog.Warningf("[DropTable 'commands']: err: %v", err)
+		}
+	}
+
 	if err := m.db.AutoMigrate(dst...); err != nil {
 		return err
 	}
