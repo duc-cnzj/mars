@@ -54,8 +54,9 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 			Message:  m.Message,
 			Old:      m.Old,
 			New:      m.New,
-			FileId:   fid,
 			EventAt:  utils.ToHumanizeDatetimeString(&m.CreatedAt),
+			FileId:   fid,
+			Duration: m.Duration,
 		})
 	}
 

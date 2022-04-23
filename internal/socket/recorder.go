@@ -79,7 +79,9 @@ func (r *Recorder) Close() error {
 			Username: r.user.Name,
 			Message:  fmt.Sprintf("user exec container: '%s' namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
+			Duration: utils.HumanDuration(time.Since(r.startTime)),
 		}
+
 		app.DB().Create(&emodal)
 		emptyFile = false
 	}

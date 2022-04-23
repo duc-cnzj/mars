@@ -3442,6 +3442,9 @@ export class EventListItem implements IEventListItem {
     /** EventListItem file_id. */
     public file_id: number;
 
+    /** EventListItem duration. */
+    public duration: string;
+
     /**
      * Encodes the specified EventListItem message. Does not implicitly {@link EventListItem.verify|verify} messages.
      * @param message EventListItem message or plain object to encode

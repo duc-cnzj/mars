@@ -1986,6 +1986,9 @@
         "action": {
           "$ref": "#/definitions/ActionType"
         },
+        "duration": {
+          "type": "string"
+        },
         "event_at": {
           "type": "string"
         },

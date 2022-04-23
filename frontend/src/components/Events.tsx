@@ -256,7 +256,7 @@ const EventList: React.FC = () => {
                         setFileID(item.file_id);
                       }}
                     >
-                      查看操作记录
+                      查看操作记录 {item.duration &&<span style={{fontSize: "10px", marginLeft: 5}}>(时长: {item.duration})</span>}
                     </Button>
                     <DeleteFile
                       onDelete={() => {
@@ -274,7 +274,7 @@ const EventList: React.FC = () => {
                     />
                   </>
                 )}
-                {item.file_id  > 0 && item.action === pb.ActionType.Upload && (
+                {item.file_id > 0 && item.action === pb.ActionType.Upload && (
                   <>
                     <Button
                       type="dashed"
