@@ -256,7 +256,12 @@ const EventList: React.FC = () => {
                         setFileID(item.file_id);
                       }}
                     >
-                      查看操作记录 {item.duration &&<span style={{fontSize: "10px", marginLeft: 5}}>(时长: {item.duration})</span>}
+                      查看操作记录{" "}
+                      {item.duration && (
+                        <span style={{ fontSize: "10px", marginLeft: 5 }}>
+                          (时长: {item.duration})
+                        </span>
+                      )}
                     </Button>
                     <DeleteFile
                       onDelete={() => {
@@ -351,8 +356,8 @@ const EventList: React.FC = () => {
         </ErrorBoundary>
       </Modal>
       <Modal
-        width={"80%"}
-        title="操作记录"
+        width={"65%"}
+        title={null}
         destroyOnClose
         visible={shellModalVisible}
         footer={null}
@@ -372,9 +377,12 @@ const EventList: React.FC = () => {
                   headers: { Authorization: getToken() },
                 },
               }}
-              rows={40}
+              cols={120}
+              rows={36}
               idleTimeLimit={3}
-              preload={true}
+              fit={"width"}
+              terminalLineHeight={1.2}
+              preload
               theme="tango"
             />
           )}
