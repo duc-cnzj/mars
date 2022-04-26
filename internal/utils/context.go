@@ -36,6 +36,8 @@ func (m *CustomErrorContext) Done() <-chan struct{} {
 }
 
 func (m *CustomErrorContext) Err() error {
+	m.Lock()
+	defer m.Unlock()
 	return m.err
 }
 

@@ -10,6 +10,8 @@ import (
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 
 	"gorm.io/gorm"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
@@ -59,7 +61,8 @@ func (project *Project) GetPodSelectors() []string {
 }
 
 func (project *Project) GetAllPods() []v1.Pod {
-	var list []v1.Pod
+	var list []corev1.Pod
+	var newList []corev1.Pod
 	split := strings.Split(project.PodSelectors, "|")
 	if len(split) > 0 {
 		for _, labels := range split {
@@ -75,8 +78,28 @@ func (project *Project) GetAllPods() []v1.Pod {
 		})
 		list = l.Items
 	}
+	var m = make(map[string]*appsv1.ReplicaSet)
+	for _, pod := range list {
+		flag := true
+		for _, reference := range pod.OwnerReferences {
+			if reference.Kind == "ReplicaSet" {
+				var rs *appsv1.ReplicaSet
+				if rs, _ = m[string(reference.UID)]; rs == nil {
+					rs, _ = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
+					m[string(reference.UID)] = rs
+				}
+				if *rs.Spec.Replicas == 0 {
+					flag = false
+					break
+				}
+			}
+		}
+		if flag {
+			newList = append(newList, pod)
+		}
+	}
 
-	return list
+	return newList
 }
 
 func (project *Project) GetAllPodMetrics() []v1beta1.PodMetrics {

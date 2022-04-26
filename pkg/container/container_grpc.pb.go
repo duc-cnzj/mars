@@ -41,12 +41,12 @@ type ContainerSvcClient interface {
 	//	)
 	//	for {
 	//		bts := make([]byte, 1024*1024)
-	//		_, err := bf.Read(bts)
+	//		n, err := bf.Read(bts)
 	//		if err != nil {
 	//			if err == io.EOF {
 	//				cp.Send(&container.ContainerStreamCopyToPodRequest{
 	//					FileName:  filename,
-	//					Data:      bts,
+	//					Data:      bts[0:n],
 	//					Namespace: namespace,
 	//					Pod:       pod,
 	//					Container: containerName,
@@ -61,7 +61,7 @@ type ContainerSvcClient interface {
 	//		}
 	//		 cp.Send(&container.ContainerStreamCopyToPodRequest{
 	//			FileName:  filename,
-	//			Data:      bts,
+	//			Data:      bts[0:n],
 	//			Namespace: namespace,
 	//			Pod:       pod,
 	//			Container: containerName,
@@ -242,12 +242,12 @@ type ContainerSvcServer interface {
 	//	)
 	//	for {
 	//		bts := make([]byte, 1024*1024)
-	//		_, err := bf.Read(bts)
+	//		n, err := bf.Read(bts)
 	//		if err != nil {
 	//			if err == io.EOF {
 	//				cp.Send(&container.ContainerStreamCopyToPodRequest{
 	//					FileName:  filename,
-	//					Data:      bts,
+	//					Data:      bts[0:n],
 	//					Namespace: namespace,
 	//					Pod:       pod,
 	//					Container: containerName,
@@ -262,7 +262,7 @@ type ContainerSvcServer interface {
 	//		}
 	//		 cp.Send(&container.ContainerStreamCopyToPodRequest{
 	//			FileName:  filename,
-	//			Data:      bts,
+	//			Data:      bts[0:n],
 	//			Namespace: namespace,
 	//			Pod:       pod,
 	//			Container: containerName,
