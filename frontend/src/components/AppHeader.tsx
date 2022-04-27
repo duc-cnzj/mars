@@ -42,7 +42,7 @@ const AppHeader: React.FC = () => {
         }}
       >
         <ClusterInfo />
-        {user ? (
+        {user && (
           <Dropdown
             overlay={
               <Menu>
@@ -51,7 +51,7 @@ const AppHeader: React.FC = () => {
                     <ReadOutlined /> 接口文档
                   </a>
                 </Menu.Item>
-                {isAdmin() ? (
+                {isAdmin() && (
                   <>
                     <Menu.Item style={{ fontSize: 12 }} key="1">
                       <a
@@ -76,8 +76,6 @@ const AppHeader: React.FC = () => {
                       </a>
                     </Menu.Item>
                   </>
-                ) : (
-                  <></>
                 )}
                 <Menu.Item style={{ fontSize: 12 }} key="3">
                   <a
@@ -133,8 +131,6 @@ const AppHeader: React.FC = () => {
               <span style={{ fontSize: 12, marginLeft: 5 }}>{user.name}</span>
             </a>
           </Dropdown>
-        ) : (
-          <></>
         )}
       </div>
     </div>

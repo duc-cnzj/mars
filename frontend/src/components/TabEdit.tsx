@@ -215,7 +215,7 @@ const ModalSub: React.FC<{
               marginBottom: 10,
             }}
           >
-            {list[slug]?.output?.length > 0 ? (
+            {list[slug]?.output?.length > 0 && (
               <Button
                 type="dashed"
                 style={{ marginRight: 5 }}
@@ -226,8 +226,6 @@ const ModalSub: React.FC<{
                 }}
                 icon={<ArrowRightOutlined />}
               />
-            ) : (
-              <></>
             )}
 
             <Form.Item

@@ -148,15 +148,12 @@ const GitProjectManager: React.FC = () => {
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
           >
-            {list ? (
+            {list &&
               list.map((item, key) => (
                 <Option value={item.id} key={key}>
                   {item.name}
                 </Option>
-              ))
-            ) : (
-              <></>
-            )}
+              ))}
           </Select>
         </div>
         <Divider />
@@ -171,7 +168,7 @@ const GitProjectManager: React.FC = () => {
               className="git__list-item"
               key={item.id}
               actions={[
-                item.enabled ? (
+                item.enabled && (
                   <Button
                     onClick={() => {
                       setCurrentItem(item);
@@ -180,8 +177,6 @@ const GitProjectManager: React.FC = () => {
                   >
                     查看配置
                   </Button>
-                ) : (
-                  <></>
                 ),
                 <Button
                   danger={item.enabled}
@@ -217,7 +212,7 @@ const GitProjectManager: React.FC = () => {
                       </span>
                       )
                     </div>
-                    {item.global_enabled ? (
+                    {item.global_enabled && (
                       <Tooltip
                         placement="top"
                         title="已使用全局配置"
@@ -230,8 +225,6 @@ const GitProjectManager: React.FC = () => {
                           }}
                         />
                       </Tooltip>
-                    ) : (
-                      <></>
                     )}
                   </div>
                 }
@@ -242,14 +235,12 @@ const GitProjectManager: React.FC = () => {
             </List.Item>
           )}
         />
-        {configVisible && currentItem ? (
+        {configVisible && currentItem && (
           <ConfigModal
             visible={configVisible}
             item={currentItem}
             onCancel={() => setConfigVisible(false)}
           />
-        ) : (
-          <></>
         )}
       </Card>
     </>

@@ -106,7 +106,7 @@ const ItemDetailModal: React.FC<{
           centered
           style={{ height: "100%" }}
         >
-          {item.status === "deployed" ? (
+          {item.status === "deployed" && (
             <>
               <TabPane tab="容器日志" key="container-logs">
                 {detail && detail.namespace ? (
@@ -122,39 +122,33 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
                 <Suspense fallback={<Skeleton active />}>
                   <ErrorBoundary>
-                    {detail && detail.namespace ? (
+                    {detail && detail.namespace && (
                       <Shell
                         namespace={detail.namespace.name || ""}
                         id={detail.id}
                         updatedAt={detail.updated_at}
                         resizeAt={resizeAt}
                       />
-                    ) : (
-                      <></>
                     )}
                   </ErrorBoundary>
                 </Suspense>
               </TabPane>
               <TabPane tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
-                  {detail ? (
+                  {detail && (
                     <TabEdit
                       detail={detail}
                       updatedAt={detail.updated_at}
                       onSuccess={onSuccess}
                     />
-                  ) : (
-                    <></>
                   )}
                 </Suspense>
               </TabPane>
             </>
-          ) : (
-            <></>
           )}
           <TabPane tab="详细信息" key="detail" className="detail-tab">
             <Suspense fallback={<Skeleton active />}>
-              {detail ? (
+              {detail && (
                 <TabInfo
                   detail={detail}
                   onDeleted={() => {
@@ -162,8 +156,6 @@ const ItemDetailModal: React.FC<{
                     setVisible(false);
                   }}
                 />
-              ) : (
-                <></>
               )}
             </Suspense>
           </TabPane>

@@ -37,7 +37,7 @@ const Callback: React.FC = () => {
     }
   }, [code, h, auth, state]);
 
-  return <div>login....</div>;
+  return <div>登录中....</div>;
 };
 
 export default memo(Callback);

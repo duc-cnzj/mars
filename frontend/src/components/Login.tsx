@@ -135,12 +135,10 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {bgInfo?.copyright ? (
+      {bgInfo?.copyright && (
         <div className="login__copyright">
           <div>{bgInfo.copyright}</div>
         </div>
-      ) : (
-        <></>
       )}
     </div>
   );

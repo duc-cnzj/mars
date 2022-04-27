@@ -98,12 +98,7 @@ const CreateProjectModal: React.FC<{
         message.error("连接断开了");
         return;
       }
-      if (
-        data &&
-        data.gitProjectId &&
-        data.gitBranch &&
-        data.gitCommit
-      ) {
+      if (data && data.gitProjectId && data.gitBranch && data.gitCommit) {
         // todo ws connected!
         setEditVisible(false);
         setTimelineVisible(true);
@@ -134,12 +129,7 @@ const CreateProjectModal: React.FC<{
   );
 
   const onRemove = useCallback(() => {
-    if (
-      data &&
-      data.gitProjectId &&
-      data.gitBranch &&
-      data.gitCommit
-    ) {
+    if (data && data.gitProjectId && data.gitBranch && data.gitCommit) {
       let s = pb.CancelInput.encode({
         type: pb.Type.CancelProject,
         namespace_id: namespaceId,
@@ -228,14 +218,12 @@ const CreateProjectModal: React.FC<{
           className="create-project-modal"
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
-          {data?.gitCommit ? (
+          {data?.gitCommit && (
             <PipelineInfo
               projectId={data.gitProjectId}
               branch={data.gitBranch}
               commit={data.gitCommit}
             />
-          ) : (
-            <></>
           )}
           <div
             style={{ height: "100%" }}
@@ -261,7 +249,7 @@ const CreateProjectModal: React.FC<{
                   marginBottom: 10,
                 }}
               >
-                {list[slug]?.output?.length > 0 ? (
+                {list[slug]?.output?.length > 0 && (
                   <Button
                     style={{ marginRight: 5 }}
                     type="dashed"
@@ -272,8 +260,6 @@ const CreateProjectModal: React.FC<{
                     }}
                     icon={<ArrowRightOutlined />}
                   />
-                ) : (
-                  <></>
                 )}
                 <Form.Item
                   name="selectors"

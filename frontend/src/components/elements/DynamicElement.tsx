@@ -1,6 +1,5 @@
 import React, { useState, useEffect, memo } from "react";
 import {
-  Switch,
   Form,
   Input,
   Button,
@@ -85,8 +84,52 @@ const DynamicElement: React.FC<{
                     <Form.Item
                       style={{ width: "100%" }}
                       label="默认值"
+                      dependencies={[
+                        ["elements", field.name, "type"],
+                        ["elements", field.name, "select_values"],
+                      ]}
                       name={[field.name, "default"]}
-                      rules={[{ required: true, message: "默认值必填" }]}
+                      rules={[
+                        { required: true, message: "默认值必填" },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            const fieldType = getFieldValue([
+                              "elements",
+                              field.name,
+                              "type",
+                            ]);
+                            const selectValues = getFieldValue([
+                              "elements",
+                              field.name,
+                              "select_values",
+                            ]);
+                            let flag = false;
+
+                            switch (fieldType) {
+                              case pb.ElementType.ElementTypeSelect:
+                              case pb.ElementType.ElementTypeRadio:
+                                if (Array.isArray(selectValues)) {
+                                  for (const key in selectValues) {
+                                    if (selectValues[key] === value) {
+                                      flag = true;
+                                      break;
+                                    }
+                                  }
+                                }
+                                break;
+                              default:
+                                flag = true;
+                                break;
+                            }
+                            if (flag) {
+                              return Promise.resolve();
+                            }
+                            return Promise.reject(
+                              new Error("default 默认值必须在选择器中")
+                            );
+                          },
+                        }),
+                      ]}
                     >
                       <DefaultValueElement
                         disabled={disabled}
@@ -120,10 +163,8 @@ const DynamicElement: React.FC<{
                       <MySelect disabled={disabled} />
                     </Form.Item>
                   </div>
-                  {!disabled ? (
+                  {!disabled && (
                     <MinusCircleOutlined onClick={() => remove(field.name)} />
-                  ) : (
-                    <></>
                   )}
                 </div>
               </div>
@@ -169,7 +210,26 @@ const DefaultValueElement: React.FC<{
   type: pb.ElementType;
   disabled: boolean;
 }> = ({ type, disabled, value, onChange }) => {
-  switch (type) {
+  const [t, setT] = useState(type);
+  useEffect(() => {
+    if (t !== type) {
+      setT(type);
+      switch (type) {
+        case pb.ElementType.ElementTypeSwitch:
+          onChange?.("false");
+          break;
+        case pb.ElementType.ElementTypeInputNumber:
+          onChange?.("0");
+          break;
+        default:
+          onChange?.(undefined);
+          break;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, t]);
+
+  switch (t) {
     case pb.ElementType.ElementTypeInputNumber:
       return (
         <InputNumber
@@ -181,12 +241,14 @@ const DefaultValueElement: React.FC<{
       );
     case pb.ElementType.ElementTypeSwitch:
       return (
-        <Switch
+        <Select
           disabled={disabled}
-          checked={value}
-          onChange={onChange}
-          defaultChecked={false}
-        />
+          value={value}
+          onChange={(v) => onChange?.(String(v))}
+        >
+          <Select.Option value={"false"}>false</Select.Option>
+          <Select.Option value={"true"}>true</Select.Option>
+        </Select>
       );
     default:
       return (
