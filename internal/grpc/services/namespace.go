@@ -39,7 +39,9 @@ type NamespaceSvc struct {
 
 func (n *NamespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
 	var namespaces []*models.Namespace
-	app.DB().Preload("Projects").Find(&namespaces)
+	app.DB().Preload("Projects", func(db *gorm.DB) *gorm.DB {
+		return db.Select("ID", "Name", "DeployStatus", "NamespaceId")
+	}).Find(&namespaces)
 	var res = &namespace.AllResponse{Items: make([]*types.NamespaceModel, 0, len(namespaces))}
 	for _, ns := range namespaces {
 		res.Items = append(res.Items, ns.ProtoTransform())
