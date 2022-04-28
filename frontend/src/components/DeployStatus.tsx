@@ -6,11 +6,12 @@ import {
   ClockCircleTwoTone,
 } from "@ant-design/icons";
 import { Tooltip } from "antd";
+import pb from '../api/compiled'
 
-const DeployStatus: React.FC<{ status: string }> = ({ status }) => {
+const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
   return (
     <>
-      {status === "unknown" && (
+      {status === pb.types.Deploy.StatusUnknown && (
         <Tooltip
           placement="top"
           overlayStyle={{ fontSize: "10px" }}
@@ -26,7 +27,7 @@ const DeployStatus: React.FC<{ status: string }> = ({ status }) => {
           />
         </Tooltip>
       )}
-      {status === "deployed" && (
+      {status === pb.types.Deploy.StatusDeployed && (
         <CheckCircleTwoTone
           twoToneColor="#52c41a"
           style={{
@@ -37,7 +38,7 @@ const DeployStatus: React.FC<{ status: string }> = ({ status }) => {
         />
       )}
 
-      {status === "pending" && (
+      {status === pb.types.Deploy.StatusDeploying && (
         <Tooltip
           placement="top"
           overlayStyle={{ fontSize: "10px" }}
@@ -54,7 +55,7 @@ const DeployStatus: React.FC<{ status: string }> = ({ status }) => {
         </Tooltip>
       )}
 
-      {status === "failed" && (
+      {status === pb.types.Deploy.StatusFailed && (
         <CloseCircleTwoTone
           twoToneColor="#eb4d4b"
           style={{

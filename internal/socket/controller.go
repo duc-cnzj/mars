@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
@@ -118,7 +120,7 @@ func (*WebsocketManager) TickClusterHealth() {
 					Metadata: &websocket_pb.Metadata{
 						Type: WsClusterInfoSync,
 					},
-					Info: &cluster.ClusterInfoResponse{
+					Info: &cluster.InfoResponse{
 						Status:            info.Status,
 						FreeMemory:        info.FreeMemory,
 						FreeCpu:           info.FreeCpu,
@@ -325,10 +327,10 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 		TerminalMessage: &websocket_pb.TerminalMessage{
 			SessionId: sessionID,
 		},
-		Container: &websocket_pb.Container{
-			Namespace: input.Namespace,
-			Pod:       input.Pod,
-			Container: input.Container,
+		Container: &types.Container{
+			Namespace: input.Container.Namespace,
+			Pod:       input.Container.Pod,
+			Container: input.Container.Container,
 		},
 	})
 }
@@ -353,7 +355,7 @@ func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer utils.HandlePanic("HandleWsCreateProject")
 
-	var input websocket_pb.ProjectInput
+	var input websocket_pb.CreateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
@@ -386,7 +388,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	}
 
 	slug := getSlugName(int64(p.NamespaceId), p.Name)
-	job := NewJober(&websocket_pb.ProjectInput{
+	job := NewJober(&websocket_pb.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),
 		Name:         p.Name,

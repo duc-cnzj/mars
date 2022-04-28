@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
-import { VersionResponse } from "../api/compiled";
+import pb from "../api/compiled";
 import { version as versionApi } from "../api/version";
 import dayjs from "dayjs";
 import { Button } from "antd";
@@ -8,7 +8,7 @@ import { GithubOutlined } from "@ant-design/icons";
 require("dayjs/locale/zh-cn");
 
 const AppFooter: React.FC = () => {
-  const [version, setVersion] = useState<VersionResponse>();
+  const [version, setVersion] = useState<pb.version.Response>();
 
   useEffect(() => {
     versionApi().then((res) => setVersion(res.data));

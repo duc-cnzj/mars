@@ -22,10 +22,10 @@ type ClusterSvc struct {
 	cluster.UnimplementedClusterServer
 }
 
-func (c *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.ClusterInfoRequest) (*cluster.ClusterInfoResponse, error) {
+func (c *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) (*cluster.InfoResponse, error) {
 	info := utils.ClusterInfo()
 
-	return &cluster.ClusterInfoResponse{
+	return &cluster.InfoResponse{
 		Status:            info.Status,
 		FreeMemory:        info.FreeMemory,
 		FreeCpu:           info.FreeCpu,

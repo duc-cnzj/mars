@@ -512,11 +512,34 @@ func (m *WsHandleExecShellInput) validate(all bool) error {
 
 	// no validation rules for Type
 
-	// no validation rules for Namespace
-
-	// no validation rules for Pod
-
-	// no validation rules for Container
+	if all {
+		switch v := interface{}(m.GetContainer()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WsHandleExecShellInputValidationError{
+					field:  "Container",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WsHandleExecShellInputValidationError{
+					field:  "Container",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetContainer()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WsHandleExecShellInputValidationError{
+				field:  "Container",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return WsHandleExecShellInputMultiError(errors)
@@ -703,126 +726,22 @@ var _ interface {
 	ErrorName() string
 } = CancelInputValidationError{}
 
-// Validate checks the field values on ProjectExtraItem with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ProjectExtraItem) Validate() error {
+// Validate checks the field values on CreateProjectInput with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateProjectInput) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ProjectExtraItem with the rules
+// ValidateAll checks the field values on CreateProjectInput with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ProjectExtraItemMultiError, or nil if none found.
-func (m *ProjectExtraItem) ValidateAll() error {
+// CreateProjectInputMultiError, or nil if none found.
+func (m *CreateProjectInput) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ProjectExtraItem) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Path
-
-	// no validation rules for Value
-
-	if len(errors) > 0 {
-		return ProjectExtraItemMultiError(errors)
-	}
-
-	return nil
-}
-
-// ProjectExtraItemMultiError is an error wrapping multiple validation errors
-// returned by ProjectExtraItem.ValidateAll() if the designated constraints
-// aren't met.
-type ProjectExtraItemMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ProjectExtraItemMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ProjectExtraItemMultiError) AllErrors() []error { return m }
-
-// ProjectExtraItemValidationError is the validation error returned by
-// ProjectExtraItem.Validate if the designated constraints aren't met.
-type ProjectExtraItemValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ProjectExtraItemValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ProjectExtraItemValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ProjectExtraItemValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ProjectExtraItemValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ProjectExtraItemValidationError) ErrorName() string { return "ProjectExtraItemValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ProjectExtraItemValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sProjectExtraItem.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ProjectExtraItemValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ProjectExtraItemValidationError{}
-
-// Validate checks the field values on ProjectInput with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ProjectInput) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ProjectInput with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ProjectInputMultiError, or
-// nil if none found.
-func (m *ProjectInput) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ProjectInput) validate(all bool) error {
+func (m *CreateProjectInput) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -852,7 +771,7 @@ func (m *ProjectInput) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProjectInputValidationError{
+					errors = append(errors, CreateProjectInputValidationError{
 						field:  fmt.Sprintf("ExtraValues[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -860,7 +779,7 @@ func (m *ProjectInput) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ProjectInputValidationError{
+					errors = append(errors, CreateProjectInputValidationError{
 						field:  fmt.Sprintf("ExtraValues[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -869,7 +788,7 @@ func (m *ProjectInput) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ProjectInputValidationError{
+				return CreateProjectInputValidationError{
 					field:  fmt.Sprintf("ExtraValues[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -880,18 +799,19 @@ func (m *ProjectInput) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ProjectInputMultiError(errors)
+		return CreateProjectInputMultiError(errors)
 	}
 
 	return nil
 }
 
-// ProjectInputMultiError is an error wrapping multiple validation errors
-// returned by ProjectInput.ValidateAll() if the designated constraints aren't met.
-type ProjectInputMultiError []error
+// CreateProjectInputMultiError is an error wrapping multiple validation errors
+// returned by CreateProjectInput.ValidateAll() if the designated constraints
+// aren't met.
+type CreateProjectInputMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProjectInputMultiError) Error() string {
+func (m CreateProjectInputMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -900,11 +820,11 @@ func (m ProjectInputMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProjectInputMultiError) AllErrors() []error { return m }
+func (m CreateProjectInputMultiError) AllErrors() []error { return m }
 
-// ProjectInputValidationError is the validation error returned by
-// ProjectInput.Validate if the designated constraints aren't met.
-type ProjectInputValidationError struct {
+// CreateProjectInputValidationError is the validation error returned by
+// CreateProjectInput.Validate if the designated constraints aren't met.
+type CreateProjectInputValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -912,22 +832,24 @@ type ProjectInputValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProjectInputValidationError) Field() string { return e.field }
+func (e CreateProjectInputValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProjectInputValidationError) Reason() string { return e.reason }
+func (e CreateProjectInputValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProjectInputValidationError) Cause() error { return e.cause }
+func (e CreateProjectInputValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProjectInputValidationError) Key() bool { return e.key }
+func (e CreateProjectInputValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProjectInputValidationError) ErrorName() string { return "ProjectInputValidationError" }
+func (e CreateProjectInputValidationError) ErrorName() string {
+	return "CreateProjectInputValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e ProjectInputValidationError) Error() string {
+func (e CreateProjectInputValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -939,14 +861,14 @@ func (e ProjectInputValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProjectInput.%s: %s%s",
+		"invalid %sCreateProjectInput.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProjectInputValidationError{}
+var _ error = CreateProjectInputValidationError{}
 
 var _ interface {
 	Field() string
@@ -954,7 +876,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProjectInputValidationError{}
+} = CreateProjectInputValidationError{}
 
 // Validate checks the field values on UpdateProjectInput with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1140,7 +1062,7 @@ func (m *Metadata) validate(all bool) error {
 
 	// no validation rules for To
 
-	// no validation rules for Data
+	// no validation rules for Message
 
 	if len(errors) > 0 {
 		return MetadataMultiError(errors)
@@ -1218,111 +1140,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetadataValidationError{}
-
-// Validate checks the field values on Container with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *Container) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on Container with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ContainerMultiError, or nil
-// if none found.
-func (m *Container) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *Container) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Namespace
-
-	// no validation rules for Pod
-
-	// no validation rules for Container
-
-	if len(errors) > 0 {
-		return ContainerMultiError(errors)
-	}
-
-	return nil
-}
-
-// ContainerMultiError is an error wrapping multiple validation errors returned
-// by Container.ValidateAll() if the designated constraints aren't met.
-type ContainerMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ContainerMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ContainerMultiError) AllErrors() []error { return m }
-
-// ContainerValidationError is the validation error returned by
-// Container.Validate if the designated constraints aren't met.
-type ContainerValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ContainerValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ContainerValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ContainerValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ContainerValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ContainerValidationError) ErrorName() string { return "ContainerValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ContainerValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sContainer.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ContainerValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ContainerValidationError{}
 
 // Validate checks the field values on WsMetadataResponse with the rules
 // defined in the proto definition for this message. If any rules are

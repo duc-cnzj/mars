@@ -6,7 +6,7 @@
   },
   "tags": [
     {
-      "name": "ContainerSvc"
+      "name": "Container"
     }
   ],
   "consumes": [
@@ -19,12 +19,12 @@
     "/api/containers/copy_to_pod": {
       "post": {
         "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
-        "operationId": "ContainerSvc_CopyToPod",
+        "operationId": "Container_CopyToPod",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerCopyToPodResponse"
+              "$ref": "#/definitions/containerCopyToPodResponse"
             }
           },
           "default": {
@@ -40,24 +40,24 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerCopyToPodRequest"
+              "$ref": "#/definitions/containerCopyToPodRequest"
             }
           }
         ],
         "tags": [
-          "ContainerSvc"
+          "Container"
         ]
       }
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
       "get": {
         "summary": "ContainerLog 查看 pod 日志",
-        "operationId": "ContainerSvc_ContainerLog",
+        "operationId": "Container_ContainerLog",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerLogResponse"
+              "$ref": "#/definitions/containerLogResponse"
             }
           },
           "default": {
@@ -88,14 +88,14 @@
           }
         ],
         "tags": [
-          "ContainerSvc"
+          "Container"
         ]
       }
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
       "get": {
         "summary": "StreamContainerLog stream 方式查看 pod 日志",
-        "operationId": "ContainerSvc_StreamContainerLog",
+        "operationId": "Container_StreamContainerLog",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
@@ -103,13 +103,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/ContainerLogResponse"
+                  "$ref": "#/definitions/containerLogResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 }
               },
-              "title": "Stream result of ContainerLogResponse"
+              "title": "Stream result of containerLogResponse"
             }
           },
           "default": {
@@ -140,19 +140,19 @@
           }
         ],
         "tags": [
-          "ContainerSvc"
+          "Container"
         ]
       }
     },
     "/api/containers/pod_exists": {
       "post": {
         "summary": "IsPodExists pod 是否存在",
-        "operationId": "ContainerSvc_IsPodExists",
+        "operationId": "Container_IsPodExists",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodExistsResponse"
+              "$ref": "#/definitions/containerIsPodExistsResponse"
             }
           },
           "default": {
@@ -168,24 +168,24 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodExistsRequest"
+              "$ref": "#/definitions/containerIsPodExistsRequest"
             }
           }
         ],
         "tags": [
-          "ContainerSvc"
+          "Container"
         ]
       }
     },
     "/api/containers/pod_running_status": {
       "post": {
         "summary": "IsPodRunning pod 是否正常在跑",
-        "operationId": "ContainerSvc_IsPodRunning",
+        "operationId": "Container_IsPodRunning",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodRunningResponse"
+              "$ref": "#/definitions/containerIsPodRunningResponse"
             }
           },
           "default": {
@@ -201,18 +201,18 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodRunningRequest"
+              "$ref": "#/definitions/containerIsPodRunningRequest"
             }
           }
         ],
         "tags": [
-          "ContainerSvc"
+          "Container"
         ]
       }
     }
   },
   "definitions": {
-    "ContainerCopyToPodRequest": {
+    "containerCopyToPodRequest": {
       "type": "object",
       "properties": {
         "file_id": {
@@ -230,7 +230,7 @@
         }
       }
     },
-    "ContainerCopyToPodResponse": {
+    "containerCopyToPodResponse": {
       "type": "object",
       "properties": {
         "pod_file_path": {
@@ -244,15 +244,15 @@
         }
       }
     },
-    "ContainerExecResponse": {
+    "containerExecResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "message": {
           "type": "string"
         }
       }
     },
-    "ContainerIsPodExistsRequest": {
+    "containerIsPodExistsRequest": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -263,7 +263,7 @@
         }
       }
     },
-    "ContainerIsPodExistsResponse": {
+    "containerIsPodExistsResponse": {
       "type": "object",
       "properties": {
         "exists": {
@@ -271,7 +271,7 @@
         }
       }
     },
-    "ContainerIsPodRunningRequest": {
+    "containerIsPodRunningRequest": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -282,7 +282,7 @@
         }
       }
     },
-    "ContainerIsPodRunningResponse": {
+    "containerIsPodRunningResponse": {
       "type": "object",
       "properties": {
         "running": {
@@ -293,7 +293,7 @@
         }
       }
     },
-    "ContainerLogResponse": {
+    "containerLogResponse": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -310,7 +310,7 @@
         }
       }
     },
-    "ContainerStreamCopyToPodResponse": {
+    "containerStreamCopyToPodResponse": {
       "type": "object",
       "properties": {
         "size": {

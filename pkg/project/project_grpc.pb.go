@@ -24,17 +24,17 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectClient interface {
 	//  List 获取项目列表
-	List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error)
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
-	Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
+	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
 	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (*ProjectDryRunApplyResponse, error)
+	ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error)
 	// Show 项目详情
-	Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error)
+	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	// Delete 删除项目
-	Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
-	AllContainers(ctx context.Context, in *ProjectAllContainersRequest, opts ...grpc.CallOption) (*ProjectAllContainersResponse, error)
+	AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error)
 }
 
 type projectClient struct {
@@ -45,17 +45,17 @@ func NewProjectClient(cc grpc.ClientConnInterface) ProjectClient {
 	return &projectClient{cc}
 }
 
-func (c *projectClient) List(ctx context.Context, in *ProjectListRequest, opts ...grpc.CallOption) (*ProjectListResponse, error) {
-	out := new(ProjectListResponse)
-	err := c.cc.Invoke(ctx, "/Project/List", in, out, opts...)
+func (c *projectClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
+	out := new(ListResponse)
+	err := c.cc.Invoke(ctx, "/project.Project/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *projectClient) Apply(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[0], "/Project/Apply", opts...)
+func (c *projectClient) Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Project_ServiceDesc.Streams[0], "/project.Project/Apply", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *projectClient) Apply(ctx context.Context, in *ProjectApplyRequest, opts
 }
 
 type Project_ApplyClient interface {
-	Recv() (*ProjectApplyResponse, error)
+	Recv() (*ApplyResponse, error)
 	grpc.ClientStream
 }
 
@@ -78,44 +78,44 @@ type projectApplyClient struct {
 	grpc.ClientStream
 }
 
-func (x *projectApplyClient) Recv() (*ProjectApplyResponse, error) {
-	m := new(ProjectApplyResponse)
+func (x *projectApplyClient) Recv() (*ApplyResponse, error) {
+	m := new(ApplyResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *projectClient) ApplyDryRun(ctx context.Context, in *ProjectApplyRequest, opts ...grpc.CallOption) (*ProjectDryRunApplyResponse, error) {
-	out := new(ProjectDryRunApplyResponse)
-	err := c.cc.Invoke(ctx, "/Project/ApplyDryRun", in, out, opts...)
+func (c *projectClient) ApplyDryRun(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (*DryRunApplyResponse, error) {
+	out := new(DryRunApplyResponse)
+	err := c.cc.Invoke(ctx, "/project.Project/ApplyDryRun", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *projectClient) Show(ctx context.Context, in *ProjectShowRequest, opts ...grpc.CallOption) (*ProjectShowResponse, error) {
-	out := new(ProjectShowResponse)
-	err := c.cc.Invoke(ctx, "/Project/Show", in, out, opts...)
+func (c *projectClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
+	out := new(ShowResponse)
+	err := c.cc.Invoke(ctx, "/project.Project/Show", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *projectClient) Delete(ctx context.Context, in *ProjectDeleteRequest, opts ...grpc.CallOption) (*ProjectDeleteResponse, error) {
-	out := new(ProjectDeleteResponse)
-	err := c.cc.Invoke(ctx, "/Project/Delete", in, out, opts...)
+func (c *projectClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, "/project.Project/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *projectClient) AllContainers(ctx context.Context, in *ProjectAllContainersRequest, opts ...grpc.CallOption) (*ProjectAllContainersResponse, error) {
-	out := new(ProjectAllContainersResponse)
-	err := c.cc.Invoke(ctx, "/Project/AllContainers", in, out, opts...)
+func (c *projectClient) AllContainers(ctx context.Context, in *AllContainersRequest, opts ...grpc.CallOption) (*AllContainersResponse, error) {
+	out := new(AllContainersResponse)
+	err := c.cc.Invoke(ctx, "/project.Project/AllContainers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,17 +127,17 @@ func (c *projectClient) AllContainers(ctx context.Context, in *ProjectAllContain
 // for forward compatibility
 type ProjectServer interface {
 	//  List 获取项目列表
-	List(context.Context, *ProjectListRequest) (*ProjectListResponse, error)
+	List(context.Context, *ListRequest) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
-	Apply(*ProjectApplyRequest, Project_ApplyServer) error
+	Apply(*ApplyRequest, Project_ApplyServer) error
 	// ApplyDryRun 创建/更新项目 '--dry-run' mode
-	ApplyDryRun(context.Context, *ProjectApplyRequest) (*ProjectDryRunApplyResponse, error)
+	ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error)
 	// Show 项目详情
-	Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error)
+	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	// Delete 删除项目
-	Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error)
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// AllContainers 获取项目下的所有 pod
-	AllContainers(context.Context, *ProjectAllContainersRequest) (*ProjectAllContainersResponse, error)
+	AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error)
 	mustEmbedUnimplementedProjectServer()
 }
 
@@ -145,22 +145,22 @@ type ProjectServer interface {
 type UnimplementedProjectServer struct {
 }
 
-func (UnimplementedProjectServer) List(context.Context, *ProjectListRequest) (*ProjectListResponse, error) {
+func (UnimplementedProjectServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedProjectServer) Apply(*ProjectApplyRequest, Project_ApplyServer) error {
+func (UnimplementedProjectServer) Apply(*ApplyRequest, Project_ApplyServer) error {
 	return status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ProjectApplyRequest) (*ProjectDryRunApplyResponse, error) {
+func (UnimplementedProjectServer) ApplyDryRun(context.Context, *ApplyRequest) (*DryRunApplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyDryRun not implemented")
 }
-func (UnimplementedProjectServer) Show(context.Context, *ProjectShowRequest) (*ProjectShowResponse, error) {
+func (UnimplementedProjectServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
 }
-func (UnimplementedProjectServer) Delete(context.Context, *ProjectDeleteRequest) (*ProjectDeleteResponse, error) {
+func (UnimplementedProjectServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedProjectServer) AllContainers(context.Context, *ProjectAllContainersRequest) (*ProjectAllContainersResponse, error) {
+func (UnimplementedProjectServer) AllContainers(context.Context, *AllContainersRequest) (*AllContainersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllContainers not implemented")
 }
 func (UnimplementedProjectServer) mustEmbedUnimplementedProjectServer() {}
@@ -177,7 +177,7 @@ func RegisterProjectServer(s grpc.ServiceRegistrar, srv ProjectServer) {
 }
 
 func _Project_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectListRequest)
+	in := new(ListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -186,16 +186,16 @@ func _Project_List_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/List",
+		FullMethod: "/project.Project/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).List(ctx, req.(*ProjectListRequest))
+		return srv.(ProjectServer).List(ctx, req.(*ListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_Apply_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ProjectApplyRequest)
+	m := new(ApplyRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func _Project_Apply_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type Project_ApplyServer interface {
-	Send(*ProjectApplyResponse) error
+	Send(*ApplyResponse) error
 	grpc.ServerStream
 }
 
@@ -211,12 +211,12 @@ type projectApplyServer struct {
 	grpc.ServerStream
 }
 
-func (x *projectApplyServer) Send(m *ProjectApplyResponse) error {
+func (x *projectApplyServer) Send(m *ApplyResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
 func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectApplyRequest)
+	in := new(ApplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -225,16 +225,16 @@ func _Project_ApplyDryRun_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/ApplyDryRun",
+		FullMethod: "/project.Project/ApplyDryRun",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ProjectApplyRequest))
+		return srv.(ProjectServer).ApplyDryRun(ctx, req.(*ApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectShowRequest)
+	in := new(ShowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -243,16 +243,16 @@ func _Project_Show_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/Show",
+		FullMethod: "/project.Project/Show",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).Show(ctx, req.(*ProjectShowRequest))
+		return srv.(ProjectServer).Show(ctx, req.(*ShowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectDeleteRequest)
+	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -261,16 +261,16 @@ func _Project_Delete_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/Delete",
+		FullMethod: "/project.Project/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).Delete(ctx, req.(*ProjectDeleteRequest))
+		return srv.(ProjectServer).Delete(ctx, req.(*DeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProjectAllContainersRequest)
+	in := new(AllContainersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -279,10 +279,10 @@ func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Project/AllContainers",
+		FullMethod: "/project.Project/AllContainers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServer).AllContainers(ctx, req.(*ProjectAllContainersRequest))
+		return srv.(ProjectServer).AllContainers(ctx, req.(*AllContainersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -291,7 +291,7 @@ func _Project_AllContainers_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Project_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Project",
+	ServiceName: "project.Project",
 	HandlerType: (*ProjectServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

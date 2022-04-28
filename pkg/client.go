@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars-client/v4/gitconfig"
+
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars-client/v4/changelog"
 	"github.com/duc-cnzj/mars-client/v4/cluster"
@@ -39,11 +41,11 @@ type Interface interface {
 	Changelog() changelog.ChangelogClient
 	Event() event.EventClient
 
-	Container() container.ContainerSvcClient
-	File() file.FileSvcClient
+	Container() container.ContainerClient
+	File() file.FileClient
 
 	Git() git.GitClient
-	GitConfig() git.GitConfigClient
+	GitConfig() gitconfig.GitConfigClient
 
 	Namespace() namespace.NamespaceClient
 	Project() project.ProjectClient
@@ -67,16 +69,16 @@ type Client struct {
 	auth      auth.AuthClient
 	changelog changelog.ChangelogClient
 	cluster   cluster.ClusterClient
-	container container.ContainerSvcClient
+	container container.ContainerClient
 	event     event.EventClient
 	git       git.GitClient
-	gitConfig git.GitConfigClient
+	gitConfig gitconfig.GitConfigClient
 	metrics   metrics.MetricsClient
 	namespace namespace.NamespaceClient
 	picture   picture.PictureClient
 	project   project.ProjectClient
 	version   version.VersionClient
-	file      file.FileSvcClient
+	file      file.FileClient
 	endpoint  endpoint.EndpointClient
 }
 
@@ -97,16 +99,16 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.auth = auth.NewAuthClient(dial)
 	c.changelog = changelog.NewChangelogClient(dial)
 	c.cluster = cluster.NewClusterClient(dial)
-	c.container = container.NewContainerSvcClient(dial)
+	c.container = container.NewContainerClient(dial)
 	c.event = event.NewEventClient(dial)
 	c.git = git.NewGitClient(dial)
-	c.gitConfig = git.NewGitConfigClient(dial)
+	c.gitConfig = gitconfig.NewGitConfigClient(dial)
 	c.metrics = metrics.NewMetricsClient(dial)
 	c.namespace = namespace.NewNamespaceClient(dial)
 	c.picture = picture.NewPictureClient(dial)
 	c.project = project.NewProjectClient(dial)
 	c.version = version.NewVersionClient(dial)
-	c.file = file.NewFileSvcClient(dial)
+	c.file = file.NewFileClient(dial)
 	c.endpoint = endpoint.NewEndpointClient(dial)
 
 	if c.password != "" || c.username != "" {
@@ -146,7 +148,7 @@ func (c *Client) Cluster() cluster.ClusterClient {
 	return c.cluster
 }
 
-func (c *Client) Container() container.ContainerSvcClient {
+func (c *Client) Container() container.ContainerClient {
 	return c.container
 }
 
@@ -154,7 +156,7 @@ func (c *Client) Event() event.EventClient {
 	return c.event
 }
 
-func (c *Client) File() file.FileSvcClient {
+func (c *Client) File() file.FileClient {
 	return c.file
 }
 
@@ -162,7 +164,7 @@ func (c *Client) Git() git.GitClient {
 	return c.git
 }
 
-func (c *Client) GitConfig() git.GitConfigClient {
+func (c *Client) GitConfig() gitconfig.GitConfigClient {
 	return c.gitConfig
 }
 
@@ -214,7 +216,7 @@ func (c *Client) buildDialOptions() []grpc.DialOption {
 
 func (c *Client) getToken() error {
 	login, err, _ := c.singleflight.Do("Retry", func() (interface{}, error) {
-		return c.auth.Login(context.TODO(), &auth.AuthLoginRequest{
+		return c.auth.Login(context.TODO(), &auth.LoginRequest{
 			Username: c.username,
 			Password: c.password,
 		})
@@ -223,7 +225,7 @@ func (c *Client) getToken() error {
 		return err
 	}
 
-	c.setToken(login.(*auth.AuthLoginResponse).Token)
+	c.setToken(login.(*auth.LoginResponse).Token)
 	return nil
 }
 

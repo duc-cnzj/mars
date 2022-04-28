@@ -35,128 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ServiceEndpoint with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ServiceEndpoint) Validate() error {
+// Validate checks the field values on InNamespaceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *InNamespaceRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ServiceEndpoint with the rules
+// ValidateAll checks the field values on InNamespaceRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ServiceEndpointMultiError, or nil if none found.
-func (m *ServiceEndpoint) ValidateAll() error {
+// InNamespaceRequestMultiError, or nil if none found.
+func (m *InNamespaceRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ServiceEndpoint) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	// no validation rules for Url
-
-	// no validation rules for PortName
-
-	if len(errors) > 0 {
-		return ServiceEndpointMultiError(errors)
-	}
-
-	return nil
-}
-
-// ServiceEndpointMultiError is an error wrapping multiple validation errors
-// returned by ServiceEndpoint.ValidateAll() if the designated constraints
-// aren't met.
-type ServiceEndpointMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ServiceEndpointMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ServiceEndpointMultiError) AllErrors() []error { return m }
-
-// ServiceEndpointValidationError is the validation error returned by
-// ServiceEndpoint.Validate if the designated constraints aren't met.
-type ServiceEndpointValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ServiceEndpointValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ServiceEndpointValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ServiceEndpointValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ServiceEndpointValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ServiceEndpointValidationError) ErrorName() string { return "ServiceEndpointValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ServiceEndpointValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sServiceEndpoint.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ServiceEndpointValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ServiceEndpointValidationError{}
-
-// Validate checks the field values on EndpointInNamespaceRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EndpointInNamespaceRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EndpointInNamespaceRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// EndpointInNamespaceRequestMultiError, or nil if none found.
-func (m *EndpointInNamespaceRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EndpointInNamespaceRequest) validate(all bool) error {
+func (m *InNamespaceRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -164,7 +58,7 @@ func (m *EndpointInNamespaceRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetNamespaceId() <= 0 {
-		err := EndpointInNamespaceRequestValidationError{
+		err := InNamespaceRequestValidationError{
 			field:  "NamespaceId",
 			reason: "value must be greater than 0",
 		}
@@ -175,19 +69,19 @@ func (m *EndpointInNamespaceRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return EndpointInNamespaceRequestMultiError(errors)
+		return InNamespaceRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// EndpointInNamespaceRequestMultiError is an error wrapping multiple
-// validation errors returned by EndpointInNamespaceRequest.ValidateAll() if
-// the designated constraints aren't met.
-type EndpointInNamespaceRequestMultiError []error
+// InNamespaceRequestMultiError is an error wrapping multiple validation errors
+// returned by InNamespaceRequest.ValidateAll() if the designated constraints
+// aren't met.
+type InNamespaceRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EndpointInNamespaceRequestMultiError) Error() string {
+func (m InNamespaceRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -196,11 +90,11 @@ func (m EndpointInNamespaceRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EndpointInNamespaceRequestMultiError) AllErrors() []error { return m }
+func (m InNamespaceRequestMultiError) AllErrors() []error { return m }
 
-// EndpointInNamespaceRequestValidationError is the validation error returned
-// by EndpointInNamespaceRequest.Validate if the designated constraints aren't met.
-type EndpointInNamespaceRequestValidationError struct {
+// InNamespaceRequestValidationError is the validation error returned by
+// InNamespaceRequest.Validate if the designated constraints aren't met.
+type InNamespaceRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -208,24 +102,24 @@ type EndpointInNamespaceRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e EndpointInNamespaceRequestValidationError) Field() string { return e.field }
+func (e InNamespaceRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EndpointInNamespaceRequestValidationError) Reason() string { return e.reason }
+func (e InNamespaceRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EndpointInNamespaceRequestValidationError) Cause() error { return e.cause }
+func (e InNamespaceRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EndpointInNamespaceRequestValidationError) Key() bool { return e.key }
+func (e InNamespaceRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EndpointInNamespaceRequestValidationError) ErrorName() string {
-	return "EndpointInNamespaceRequestValidationError"
+func (e InNamespaceRequestValidationError) ErrorName() string {
+	return "InNamespaceRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EndpointInNamespaceRequestValidationError) Error() string {
+func (e InNamespaceRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -237,14 +131,14 @@ func (e EndpointInNamespaceRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEndpointInNamespaceRequest.%s: %s%s",
+		"invalid %sInNamespaceRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EndpointInNamespaceRequestValidationError{}
+var _ error = InNamespaceRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -252,24 +146,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EndpointInNamespaceRequestValidationError{}
+} = InNamespaceRequestValidationError{}
 
-// Validate checks the field values on EndpointInNamespaceResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on InNamespaceResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EndpointInNamespaceResponse) Validate() error {
+func (m *InNamespaceResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EndpointInNamespaceResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on InNamespaceResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// EndpointInNamespaceResponseMultiError, or nil if none found.
-func (m *EndpointInNamespaceResponse) ValidateAll() error {
+// InNamespaceResponseMultiError, or nil if none found.
+func (m *InNamespaceResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EndpointInNamespaceResponse) validate(all bool) error {
+func (m *InNamespaceResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -283,7 +177,7 @@ func (m *EndpointInNamespaceResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, EndpointInNamespaceResponseValidationError{
+					errors = append(errors, InNamespaceResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -291,7 +185,7 @@ func (m *EndpointInNamespaceResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, EndpointInNamespaceResponseValidationError{
+					errors = append(errors, InNamespaceResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -300,7 +194,7 @@ func (m *EndpointInNamespaceResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return EndpointInNamespaceResponseValidationError{
+				return InNamespaceResponseValidationError{
 					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -311,19 +205,19 @@ func (m *EndpointInNamespaceResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return EndpointInNamespaceResponseMultiError(errors)
+		return InNamespaceResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// EndpointInNamespaceResponseMultiError is an error wrapping multiple
-// validation errors returned by EndpointInNamespaceResponse.ValidateAll() if
-// the designated constraints aren't met.
-type EndpointInNamespaceResponseMultiError []error
+// InNamespaceResponseMultiError is an error wrapping multiple validation
+// errors returned by InNamespaceResponse.ValidateAll() if the designated
+// constraints aren't met.
+type InNamespaceResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EndpointInNamespaceResponseMultiError) Error() string {
+func (m InNamespaceResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -332,12 +226,11 @@ func (m EndpointInNamespaceResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EndpointInNamespaceResponseMultiError) AllErrors() []error { return m }
+func (m InNamespaceResponseMultiError) AllErrors() []error { return m }
 
-// EndpointInNamespaceResponseValidationError is the validation error returned
-// by EndpointInNamespaceResponse.Validate if the designated constraints
-// aren't met.
-type EndpointInNamespaceResponseValidationError struct {
+// InNamespaceResponseValidationError is the validation error returned by
+// InNamespaceResponse.Validate if the designated constraints aren't met.
+type InNamespaceResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -345,24 +238,24 @@ type EndpointInNamespaceResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e EndpointInNamespaceResponseValidationError) Field() string { return e.field }
+func (e InNamespaceResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EndpointInNamespaceResponseValidationError) Reason() string { return e.reason }
+func (e InNamespaceResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EndpointInNamespaceResponseValidationError) Cause() error { return e.cause }
+func (e InNamespaceResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EndpointInNamespaceResponseValidationError) Key() bool { return e.key }
+func (e InNamespaceResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EndpointInNamespaceResponseValidationError) ErrorName() string {
-	return "EndpointInNamespaceResponseValidationError"
+func (e InNamespaceResponseValidationError) ErrorName() string {
+	return "InNamespaceResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EndpointInNamespaceResponseValidationError) Error() string {
+func (e InNamespaceResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -374,14 +267,14 @@ func (e EndpointInNamespaceResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEndpointInNamespaceResponse.%s: %s%s",
+		"invalid %sInNamespaceResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EndpointInNamespaceResponseValidationError{}
+var _ error = InNamespaceResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -389,24 +282,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EndpointInNamespaceResponseValidationError{}
+} = InNamespaceResponseValidationError{}
 
-// Validate checks the field values on EndpointInProjectRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EndpointInProjectRequest) Validate() error {
+// Validate checks the field values on InProjectRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *InProjectRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EndpointInProjectRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on InProjectRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// EndpointInProjectRequestMultiError, or nil if none found.
-func (m *EndpointInProjectRequest) ValidateAll() error {
+// InProjectRequestMultiError, or nil if none found.
+func (m *InProjectRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EndpointInProjectRequest) validate(all bool) error {
+func (m *InProjectRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -414,7 +307,7 @@ func (m *EndpointInProjectRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetProjectId() <= 0 {
-		err := EndpointInProjectRequestValidationError{
+		err := InProjectRequestValidationError{
 			field:  "ProjectId",
 			reason: "value must be greater than 0",
 		}
@@ -425,19 +318,19 @@ func (m *EndpointInProjectRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return EndpointInProjectRequestMultiError(errors)
+		return InProjectRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// EndpointInProjectRequestMultiError is an error wrapping multiple validation
-// errors returned by EndpointInProjectRequest.ValidateAll() if the designated
-// constraints aren't met.
-type EndpointInProjectRequestMultiError []error
+// InProjectRequestMultiError is an error wrapping multiple validation errors
+// returned by InProjectRequest.ValidateAll() if the designated constraints
+// aren't met.
+type InProjectRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EndpointInProjectRequestMultiError) Error() string {
+func (m InProjectRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -446,11 +339,11 @@ func (m EndpointInProjectRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EndpointInProjectRequestMultiError) AllErrors() []error { return m }
+func (m InProjectRequestMultiError) AllErrors() []error { return m }
 
-// EndpointInProjectRequestValidationError is the validation error returned by
-// EndpointInProjectRequest.Validate if the designated constraints aren't met.
-type EndpointInProjectRequestValidationError struct {
+// InProjectRequestValidationError is the validation error returned by
+// InProjectRequest.Validate if the designated constraints aren't met.
+type InProjectRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -458,24 +351,22 @@ type EndpointInProjectRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e EndpointInProjectRequestValidationError) Field() string { return e.field }
+func (e InProjectRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EndpointInProjectRequestValidationError) Reason() string { return e.reason }
+func (e InProjectRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EndpointInProjectRequestValidationError) Cause() error { return e.cause }
+func (e InProjectRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EndpointInProjectRequestValidationError) Key() bool { return e.key }
+func (e InProjectRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EndpointInProjectRequestValidationError) ErrorName() string {
-	return "EndpointInProjectRequestValidationError"
-}
+func (e InProjectRequestValidationError) ErrorName() string { return "InProjectRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e EndpointInProjectRequestValidationError) Error() string {
+func (e InProjectRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -487,14 +378,14 @@ func (e EndpointInProjectRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEndpointInProjectRequest.%s: %s%s",
+		"invalid %sInProjectRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EndpointInProjectRequestValidationError{}
+var _ error = InProjectRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -502,24 +393,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EndpointInProjectRequestValidationError{}
+} = InProjectRequestValidationError{}
 
-// Validate checks the field values on EndpointInProjectResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EndpointInProjectResponse) Validate() error {
+// Validate checks the field values on InProjectResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *InProjectResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on EndpointInProjectResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on InProjectResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// EndpointInProjectResponseMultiError, or nil if none found.
-func (m *EndpointInProjectResponse) ValidateAll() error {
+// InProjectResponseMultiError, or nil if none found.
+func (m *InProjectResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *EndpointInProjectResponse) validate(all bool) error {
+func (m *InProjectResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -533,7 +424,7 @@ func (m *EndpointInProjectResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, EndpointInProjectResponseValidationError{
+					errors = append(errors, InProjectResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -541,7 +432,7 @@ func (m *EndpointInProjectResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, EndpointInProjectResponseValidationError{
+					errors = append(errors, InProjectResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -550,7 +441,7 @@ func (m *EndpointInProjectResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return EndpointInProjectResponseValidationError{
+				return InProjectResponseValidationError{
 					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -561,19 +452,19 @@ func (m *EndpointInProjectResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return EndpointInProjectResponseMultiError(errors)
+		return InProjectResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// EndpointInProjectResponseMultiError is an error wrapping multiple validation
-// errors returned by EndpointInProjectResponse.ValidateAll() if the
-// designated constraints aren't met.
-type EndpointInProjectResponseMultiError []error
+// InProjectResponseMultiError is an error wrapping multiple validation errors
+// returned by InProjectResponse.ValidateAll() if the designated constraints
+// aren't met.
+type InProjectResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m EndpointInProjectResponseMultiError) Error() string {
+func (m InProjectResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -582,11 +473,11 @@ func (m EndpointInProjectResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m EndpointInProjectResponseMultiError) AllErrors() []error { return m }
+func (m InProjectResponseMultiError) AllErrors() []error { return m }
 
-// EndpointInProjectResponseValidationError is the validation error returned by
-// EndpointInProjectResponse.Validate if the designated constraints aren't met.
-type EndpointInProjectResponseValidationError struct {
+// InProjectResponseValidationError is the validation error returned by
+// InProjectResponse.Validate if the designated constraints aren't met.
+type InProjectResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -594,24 +485,24 @@ type EndpointInProjectResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e EndpointInProjectResponseValidationError) Field() string { return e.field }
+func (e InProjectResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e EndpointInProjectResponseValidationError) Reason() string { return e.reason }
+func (e InProjectResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e EndpointInProjectResponseValidationError) Cause() error { return e.cause }
+func (e InProjectResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e EndpointInProjectResponseValidationError) Key() bool { return e.key }
+func (e InProjectResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e EndpointInProjectResponseValidationError) ErrorName() string {
-	return "EndpointInProjectResponseValidationError"
+func (e InProjectResponseValidationError) ErrorName() string {
+	return "InProjectResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e EndpointInProjectResponseValidationError) Error() string {
+func (e InProjectResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -623,14 +514,14 @@ func (e EndpointInProjectResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sEndpointInProjectResponse.%s: %s%s",
+		"invalid %sInProjectResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = EndpointInProjectResponseValidationError{}
+var _ error = InProjectResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -638,4 +529,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = EndpointInProjectResponseValidationError{}
+} = InProjectResponseValidationError{}

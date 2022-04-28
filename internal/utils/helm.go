@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 
@@ -242,28 +244,30 @@ var (
 	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
-func ReleaseStatus(releaseName, namespace string) (string, error) {
+func ReleaseStatus(namespace, releaseName string) types.Deploy {
 	actionConfig, _, err := getActionConfigAndSettings(namespace, mlog.Debugf)
 	if err != nil {
-		return "", err
+		return types.Deploy_StatusUnknown
 	}
 	statusClient := action.NewStatus(actionConfig)
 	run, err := statusClient.Run(releaseName)
 	if err != nil {
 		mlog.Warning(err)
-		return "", err
+		return types.Deploy_StatusUnknown
 	}
 
 	mlog.Debug(run.Info.Status)
 	switch run.Info.Status {
-	case release.StatusPendingUpgrade, release.StatusPendingRollback, release.StatusPendingInstall:
-		return StatusPending, nil
+	case release.StatusPendingRollback:
+		return types.Deploy_StatusRollback
+	case release.StatusPendingUpgrade, release.StatusPendingInstall:
+		return types.Deploy_StatusDeploying
 	case release.StatusDeployed:
-		return StatusDeployed, nil
+		return types.Deploy_StatusDeployed
 	case release.StatusFailed:
-		return StatusFailed, nil
+		return types.Deploy_StatusFailed
 	default:
-		return StatusUnknown, nil
+		return types.Deploy_StatusUnknown
 	}
 }
 

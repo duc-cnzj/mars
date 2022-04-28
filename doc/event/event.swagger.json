@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EventListResponse"
+              "$ref": "#/definitions/eventListResponse"
             }
           },
           "default": {
@@ -57,55 +57,7 @@
     }
   },
   "definitions": {
-    "ActionType": {
-      "type": "string",
-      "enum": [
-        "Unknown",
-        "Create",
-        "Update",
-        "Delete",
-        "Upload",
-        "Download",
-        "DryRun",
-        "Shell"
-      ],
-      "default": "Unknown"
-    },
-    "EventListItem": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "action": {
-          "$ref": "#/definitions/ActionType"
-        },
-        "username": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "old": {
-          "type": "string"
-        },
-        "new": {
-          "type": "string"
-        },
-        "event_at": {
-          "type": "string"
-        },
-        "file_id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "duration": {
-          "type": "string"
-        }
-      }
-    },
-    "EventListResponse": {
+    "eventListResponse": {
       "type": "object",
       "properties": {
         "page": {
@@ -119,7 +71,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EventListItem"
+            "$ref": "#/definitions/typesEventModel"
           }
         },
         "count": {
@@ -152,6 +104,109 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "typesEventActionType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "Create",
+        "Update",
+        "Delete",
+        "Upload",
+        "Download",
+        "DryRun",
+        "Shell"
+      ],
+      "default": "Unknown"
+    },
+    "typesEventModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "action": {
+          "$ref": "#/definitions/typesEventActionType"
+        },
+        "username": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "old": {
+          "type": "string"
+        },
+        "new": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
+        },
+        "file_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "file": {
+          "$ref": "#/definitions/typesFileModel"
+        },
+        "event_at": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        }
+      }
+    },
+    "typesFileModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "username": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "container": {
+          "type": "string"
+        },
+        "container_Path": {
+          "type": "string"
+        },
+        "humanize_size": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
         }
       }
     }

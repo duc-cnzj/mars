@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ChangelogShowRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ChangelogShowRequest) Validate() error {
+// Validate checks the field values on ShowRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ShowRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ChangelogShowRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ChangelogShowRequestMultiError, or nil if none found.
-func (m *ChangelogShowRequest) ValidateAll() error {
+// ValidateAll checks the field values on ShowRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ShowRequestMultiError, or
+// nil if none found.
+func (m *ShowRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ChangelogShowRequest) validate(all bool) error {
+func (m *ShowRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (m *ChangelogShowRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetProjectId() <= 0 {
-		err := ChangelogShowRequestValidationError{
+		err := ShowRequestValidationError{
 			field:  "ProjectId",
 			reason: "value must be greater than 0",
 		}
@@ -71,19 +71,18 @@ func (m *ChangelogShowRequest) validate(all bool) error {
 	// no validation rules for OnlyChanged
 
 	if len(errors) > 0 {
-		return ChangelogShowRequestMultiError(errors)
+		return ShowRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ChangelogShowRequestMultiError is an error wrapping multiple validation
-// errors returned by ChangelogShowRequest.ValidateAll() if the designated
-// constraints aren't met.
-type ChangelogShowRequestMultiError []error
+// ShowRequestMultiError is an error wrapping multiple validation errors
+// returned by ShowRequest.ValidateAll() if the designated constraints aren't met.
+type ShowRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ChangelogShowRequestMultiError) Error() string {
+func (m ShowRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -92,11 +91,11 @@ func (m ChangelogShowRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ChangelogShowRequestMultiError) AllErrors() []error { return m }
+func (m ShowRequestMultiError) AllErrors() []error { return m }
 
-// ChangelogShowRequestValidationError is the validation error returned by
-// ChangelogShowRequest.Validate if the designated constraints aren't met.
-type ChangelogShowRequestValidationError struct {
+// ShowRequestValidationError is the validation error returned by
+// ShowRequest.Validate if the designated constraints aren't met.
+type ShowRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -104,24 +103,22 @@ type ChangelogShowRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ChangelogShowRequestValidationError) Field() string { return e.field }
+func (e ShowRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ChangelogShowRequestValidationError) Reason() string { return e.reason }
+func (e ShowRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ChangelogShowRequestValidationError) Cause() error { return e.cause }
+func (e ShowRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ChangelogShowRequestValidationError) Key() bool { return e.key }
+func (e ShowRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ChangelogShowRequestValidationError) ErrorName() string {
-	return "ChangelogShowRequestValidationError"
-}
+func (e ShowRequestValidationError) ErrorName() string { return "ShowRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ChangelogShowRequestValidationError) Error() string {
+func (e ShowRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -133,14 +130,14 @@ func (e ChangelogShowRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sChangelogShowRequest.%s: %s%s",
+		"invalid %sShowRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ChangelogShowRequestValidationError{}
+var _ error = ShowRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -148,134 +145,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ChangelogShowRequestValidationError{}
+} = ShowRequestValidationError{}
 
-// Validate checks the field values on ChangelogShowItem with the rules defined
+// Validate checks the field values on ShowResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ShowResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShowResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ChangelogShowItem) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ChangelogShowItem with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ChangelogShowItemMultiError, or nil if none found.
-func (m *ChangelogShowItem) ValidateAll() error {
+// result is a list of violation errors wrapped in ShowResponseMultiError, or
+// nil if none found.
+func (m *ShowResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ChangelogShowItem) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Version
-
-	// no validation rules for Config
-
-	// no validation rules for Date
-
-	// no validation rules for Username
-
-	if len(errors) > 0 {
-		return ChangelogShowItemMultiError(errors)
-	}
-
-	return nil
-}
-
-// ChangelogShowItemMultiError is an error wrapping multiple validation errors
-// returned by ChangelogShowItem.ValidateAll() if the designated constraints
-// aren't met.
-type ChangelogShowItemMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ChangelogShowItemMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ChangelogShowItemMultiError) AllErrors() []error { return m }
-
-// ChangelogShowItemValidationError is the validation error returned by
-// ChangelogShowItem.Validate if the designated constraints aren't met.
-type ChangelogShowItemValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ChangelogShowItemValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ChangelogShowItemValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ChangelogShowItemValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ChangelogShowItemValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ChangelogShowItemValidationError) ErrorName() string {
-	return "ChangelogShowItemValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ChangelogShowItemValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sChangelogShowItem.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ChangelogShowItemValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ChangelogShowItemValidationError{}
-
-// Validate checks the field values on ChangelogShowResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ChangelogShowResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ChangelogShowResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ChangelogShowResponseMultiError, or nil if none found.
-func (m *ChangelogShowResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ChangelogShowResponse) validate(all bool) error {
+func (m *ShowResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -289,7 +176,7 @@ func (m *ChangelogShowResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ChangelogShowResponseValidationError{
+					errors = append(errors, ShowResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -297,7 +184,7 @@ func (m *ChangelogShowResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ChangelogShowResponseValidationError{
+					errors = append(errors, ShowResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -306,7 +193,7 @@ func (m *ChangelogShowResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ChangelogShowResponseValidationError{
+				return ShowResponseValidationError{
 					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -317,19 +204,18 @@ func (m *ChangelogShowResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ChangelogShowResponseMultiError(errors)
+		return ShowResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ChangelogShowResponseMultiError is an error wrapping multiple validation
-// errors returned by ChangelogShowResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ChangelogShowResponseMultiError []error
+// ShowResponseMultiError is an error wrapping multiple validation errors
+// returned by ShowResponse.ValidateAll() if the designated constraints aren't met.
+type ShowResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ChangelogShowResponseMultiError) Error() string {
+func (m ShowResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -338,11 +224,11 @@ func (m ChangelogShowResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ChangelogShowResponseMultiError) AllErrors() []error { return m }
+func (m ShowResponseMultiError) AllErrors() []error { return m }
 
-// ChangelogShowResponseValidationError is the validation error returned by
-// ChangelogShowResponse.Validate if the designated constraints aren't met.
-type ChangelogShowResponseValidationError struct {
+// ShowResponseValidationError is the validation error returned by
+// ShowResponse.Validate if the designated constraints aren't met.
+type ShowResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -350,24 +236,22 @@ type ChangelogShowResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ChangelogShowResponseValidationError) Field() string { return e.field }
+func (e ShowResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ChangelogShowResponseValidationError) Reason() string { return e.reason }
+func (e ShowResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ChangelogShowResponseValidationError) Cause() error { return e.cause }
+func (e ShowResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ChangelogShowResponseValidationError) Key() bool { return e.key }
+func (e ShowResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ChangelogShowResponseValidationError) ErrorName() string {
-	return "ChangelogShowResponseValidationError"
-}
+func (e ShowResponseValidationError) ErrorName() string { return "ShowResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ChangelogShowResponseValidationError) Error() string {
+func (e ShowResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -379,14 +263,14 @@ func (e ChangelogShowResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sChangelogShowResponse.%s: %s%s",
+		"invalid %sShowResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ChangelogShowResponseValidationError{}
+var _ error = ShowResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -394,4 +278,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ChangelogShowResponseValidationError{}
+} = ShowResponseValidationError{}

@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ContainerCopyToPodRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerCopyToPodRequest) Validate() error {
+// Validate checks the field values on CopyToPodRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *CopyToPodRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerCopyToPodRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on CopyToPodRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ContainerCopyToPodRequestMultiError, or nil if none found.
-func (m *ContainerCopyToPodRequest) ValidateAll() error {
+// CopyToPodRequestMultiError, or nil if none found.
+func (m *CopyToPodRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerCopyToPodRequest) validate(all bool) error {
+func (m *CopyToPodRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (m *ContainerCopyToPodRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetFileId() <= 0 {
-		err := ContainerCopyToPodRequestValidationError{
+		err := CopyToPodRequestValidationError{
 			field:  "FileId",
 			reason: "value must be greater than 0",
 		}
@@ -69,7 +69,7 @@ func (m *ContainerCopyToPodRequest) validate(all bool) error {
 	}
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerCopyToPodRequestValidationError{
+		err := CopyToPodRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -80,7 +80,7 @@ func (m *ContainerCopyToPodRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerCopyToPodRequestValidationError{
+		err := CopyToPodRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -91,7 +91,7 @@ func (m *ContainerCopyToPodRequest) validate(all bool) error {
 	}
 
 	if len(m.GetContainer()) < 1 {
-		err := ContainerCopyToPodRequestValidationError{
+		err := CopyToPodRequestValidationError{
 			field:  "Container",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -102,19 +102,19 @@ func (m *ContainerCopyToPodRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ContainerCopyToPodRequestMultiError(errors)
+		return CopyToPodRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerCopyToPodRequestMultiError is an error wrapping multiple validation
-// errors returned by ContainerCopyToPodRequest.ValidateAll() if the
-// designated constraints aren't met.
-type ContainerCopyToPodRequestMultiError []error
+// CopyToPodRequestMultiError is an error wrapping multiple validation errors
+// returned by CopyToPodRequest.ValidateAll() if the designated constraints
+// aren't met.
+type CopyToPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerCopyToPodRequestMultiError) Error() string {
+func (m CopyToPodRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -123,11 +123,11 @@ func (m ContainerCopyToPodRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerCopyToPodRequestMultiError) AllErrors() []error { return m }
+func (m CopyToPodRequestMultiError) AllErrors() []error { return m }
 
-// ContainerCopyToPodRequestValidationError is the validation error returned by
-// ContainerCopyToPodRequest.Validate if the designated constraints aren't met.
-type ContainerCopyToPodRequestValidationError struct {
+// CopyToPodRequestValidationError is the validation error returned by
+// CopyToPodRequest.Validate if the designated constraints aren't met.
+type CopyToPodRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -135,24 +135,22 @@ type ContainerCopyToPodRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerCopyToPodRequestValidationError) Field() string { return e.field }
+func (e CopyToPodRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerCopyToPodRequestValidationError) Reason() string { return e.reason }
+func (e CopyToPodRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerCopyToPodRequestValidationError) Cause() error { return e.cause }
+func (e CopyToPodRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerCopyToPodRequestValidationError) Key() bool { return e.key }
+func (e CopyToPodRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerCopyToPodRequestValidationError) ErrorName() string {
-	return "ContainerCopyToPodRequestValidationError"
-}
+func (e CopyToPodRequestValidationError) ErrorName() string { return "CopyToPodRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ContainerCopyToPodRequestValidationError) Error() string {
+func (e CopyToPodRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -164,14 +162,14 @@ func (e ContainerCopyToPodRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerCopyToPodRequest.%s: %s%s",
+		"invalid %sCopyToPodRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerCopyToPodRequestValidationError{}
+var _ error = CopyToPodRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -179,24 +177,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerCopyToPodRequestValidationError{}
+} = CopyToPodRequestValidationError{}
 
-// Validate checks the field values on ContainerCopyToPodResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerCopyToPodResponse) Validate() error {
+// Validate checks the field values on CopyToPodResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *CopyToPodResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerCopyToPodResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on CopyToPodResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ContainerCopyToPodResponseMultiError, or nil if none found.
-func (m *ContainerCopyToPodResponse) ValidateAll() error {
+// CopyToPodResponseMultiError, or nil if none found.
+func (m *CopyToPodResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerCopyToPodResponse) validate(all bool) error {
+func (m *CopyToPodResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -210,19 +208,19 @@ func (m *ContainerCopyToPodResponse) validate(all bool) error {
 	// no validation rules for FileName
 
 	if len(errors) > 0 {
-		return ContainerCopyToPodResponseMultiError(errors)
+		return CopyToPodResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerCopyToPodResponseMultiError is an error wrapping multiple
-// validation errors returned by ContainerCopyToPodResponse.ValidateAll() if
-// the designated constraints aren't met.
-type ContainerCopyToPodResponseMultiError []error
+// CopyToPodResponseMultiError is an error wrapping multiple validation errors
+// returned by CopyToPodResponse.ValidateAll() if the designated constraints
+// aren't met.
+type CopyToPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerCopyToPodResponseMultiError) Error() string {
+func (m CopyToPodResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -231,11 +229,11 @@ func (m ContainerCopyToPodResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerCopyToPodResponseMultiError) AllErrors() []error { return m }
+func (m CopyToPodResponseMultiError) AllErrors() []error { return m }
 
-// ContainerCopyToPodResponseValidationError is the validation error returned
-// by ContainerCopyToPodResponse.Validate if the designated constraints aren't met.
-type ContainerCopyToPodResponseValidationError struct {
+// CopyToPodResponseValidationError is the validation error returned by
+// CopyToPodResponse.Validate if the designated constraints aren't met.
+type CopyToPodResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -243,24 +241,24 @@ type ContainerCopyToPodResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerCopyToPodResponseValidationError) Field() string { return e.field }
+func (e CopyToPodResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerCopyToPodResponseValidationError) Reason() string { return e.reason }
+func (e CopyToPodResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerCopyToPodResponseValidationError) Cause() error { return e.cause }
+func (e CopyToPodResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerCopyToPodResponseValidationError) Key() bool { return e.key }
+func (e CopyToPodResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerCopyToPodResponseValidationError) ErrorName() string {
-	return "ContainerCopyToPodResponseValidationError"
+func (e CopyToPodResponseValidationError) ErrorName() string {
+	return "CopyToPodResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerCopyToPodResponseValidationError) Error() string {
+func (e CopyToPodResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -272,14 +270,14 @@ func (e ContainerCopyToPodResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerCopyToPodResponse.%s: %s%s",
+		"invalid %sCopyToPodResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerCopyToPodResponseValidationError{}
+var _ error = CopyToPodResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -287,24 +285,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerCopyToPodResponseValidationError{}
+} = CopyToPodResponseValidationError{}
 
-// Validate checks the field values on ContainerExecRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerExecRequest) Validate() error {
+// Validate checks the field values on ExecRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExecRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerExecRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ContainerExecRequestMultiError, or nil if none found.
-func (m *ContainerExecRequest) ValidateAll() error {
+// ValidateAll checks the field values on ExecRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExecRequestMultiError, or
+// nil if none found.
+func (m *ExecRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerExecRequest) validate(all bool) error {
+func (m *ExecRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -312,7 +310,7 @@ func (m *ContainerExecRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerExecRequestValidationError{
+		err := ExecRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -323,7 +321,7 @@ func (m *ContainerExecRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerExecRequestValidationError{
+		err := ExecRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -336,7 +334,7 @@ func (m *ContainerExecRequest) validate(all bool) error {
 	// no validation rules for Container
 
 	if len(m.GetCommand()) < 1 {
-		err := ContainerExecRequestValidationError{
+		err := ExecRequestValidationError{
 			field:  "Command",
 			reason: "value must contain at least 1 item(s)",
 		}
@@ -350,7 +348,7 @@ func (m *ContainerExecRequest) validate(all bool) error {
 		_, _ = idx, item
 
 		if len(item) < 1 {
-			err := ContainerExecRequestValidationError{
+			err := ExecRequestValidationError{
 				field:  fmt.Sprintf("Command[%v]", idx),
 				reason: "value length must be at least 1 bytes",
 			}
@@ -363,19 +361,18 @@ func (m *ContainerExecRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ContainerExecRequestMultiError(errors)
+		return ExecRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerExecRequestMultiError is an error wrapping multiple validation
-// errors returned by ContainerExecRequest.ValidateAll() if the designated
-// constraints aren't met.
-type ContainerExecRequestMultiError []error
+// ExecRequestMultiError is an error wrapping multiple validation errors
+// returned by ExecRequest.ValidateAll() if the designated constraints aren't met.
+type ExecRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerExecRequestMultiError) Error() string {
+func (m ExecRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -384,11 +381,11 @@ func (m ContainerExecRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerExecRequestMultiError) AllErrors() []error { return m }
+func (m ExecRequestMultiError) AllErrors() []error { return m }
 
-// ContainerExecRequestValidationError is the validation error returned by
-// ContainerExecRequest.Validate if the designated constraints aren't met.
-type ContainerExecRequestValidationError struct {
+// ExecRequestValidationError is the validation error returned by
+// ExecRequest.Validate if the designated constraints aren't met.
+type ExecRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -396,24 +393,22 @@ type ContainerExecRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerExecRequestValidationError) Field() string { return e.field }
+func (e ExecRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerExecRequestValidationError) Reason() string { return e.reason }
+func (e ExecRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerExecRequestValidationError) Cause() error { return e.cause }
+func (e ExecRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerExecRequestValidationError) Key() bool { return e.key }
+func (e ExecRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerExecRequestValidationError) ErrorName() string {
-	return "ContainerExecRequestValidationError"
-}
+func (e ExecRequestValidationError) ErrorName() string { return "ExecRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ContainerExecRequestValidationError) Error() string {
+func (e ExecRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -425,14 +420,14 @@ func (e ContainerExecRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerExecRequest.%s: %s%s",
+		"invalid %sExecRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerExecRequestValidationError{}
+var _ error = ExecRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -440,46 +435,45 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerExecRequestValidationError{}
+} = ExecRequestValidationError{}
 
-// Validate checks the field values on ContainerExecResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerExecResponse) Validate() error {
+// Validate checks the field values on ExecResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExecResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerExecResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ContainerExecResponseMultiError, or nil if none found.
-func (m *ContainerExecResponse) ValidateAll() error {
+// ValidateAll checks the field values on ExecResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExecResponseMultiError, or
+// nil if none found.
+func (m *ExecResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerExecResponse) validate(all bool) error {
+func (m *ExecResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	// no validation rules for Data
+	// no validation rules for Message
 
 	if len(errors) > 0 {
-		return ContainerExecResponseMultiError(errors)
+		return ExecResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerExecResponseMultiError is an error wrapping multiple validation
-// errors returned by ContainerExecResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ContainerExecResponseMultiError []error
+// ExecResponseMultiError is an error wrapping multiple validation errors
+// returned by ExecResponse.ValidateAll() if the designated constraints aren't met.
+type ExecResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerExecResponseMultiError) Error() string {
+func (m ExecResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -488,11 +482,11 @@ func (m ContainerExecResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerExecResponseMultiError) AllErrors() []error { return m }
+func (m ExecResponseMultiError) AllErrors() []error { return m }
 
-// ContainerExecResponseValidationError is the validation error returned by
-// ContainerExecResponse.Validate if the designated constraints aren't met.
-type ContainerExecResponseValidationError struct {
+// ExecResponseValidationError is the validation error returned by
+// ExecResponse.Validate if the designated constraints aren't met.
+type ExecResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -500,24 +494,22 @@ type ContainerExecResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerExecResponseValidationError) Field() string { return e.field }
+func (e ExecResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerExecResponseValidationError) Reason() string { return e.reason }
+func (e ExecResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerExecResponseValidationError) Cause() error { return e.cause }
+func (e ExecResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerExecResponseValidationError) Key() bool { return e.key }
+func (e ExecResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerExecResponseValidationError) ErrorName() string {
-	return "ContainerExecResponseValidationError"
-}
+func (e ExecResponseValidationError) ErrorName() string { return "ExecResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ContainerExecResponseValidationError) Error() string {
+func (e ExecResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -529,14 +521,14 @@ func (e ContainerExecResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerExecResponse.%s: %s%s",
+		"invalid %sExecResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerExecResponseValidationError{}
+var _ error = ExecResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -544,24 +536,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerExecResponseValidationError{}
+} = ExecResponseValidationError{}
 
-// Validate checks the field values on ContainerStreamCopyToPodRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on StreamCopyToPodRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerStreamCopyToPodRequest) Validate() error {
+func (m *StreamCopyToPodRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerStreamCopyToPodRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ContainerStreamCopyToPodRequestMultiError, or nil if none found.
-func (m *ContainerStreamCopyToPodRequest) ValidateAll() error {
+// ValidateAll checks the field values on StreamCopyToPodRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StreamCopyToPodRequestMultiError, or nil if none found.
+func (m *StreamCopyToPodRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerStreamCopyToPodRequest) validate(all bool) error {
+func (m *StreamCopyToPodRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -569,7 +561,7 @@ func (m *ContainerStreamCopyToPodRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetFileName()) < 1 {
-		err := ContainerStreamCopyToPodRequestValidationError{
+		err := StreamCopyToPodRequestValidationError{
 			field:  "FileName",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -582,7 +574,7 @@ func (m *ContainerStreamCopyToPodRequest) validate(all bool) error {
 	// no validation rules for Data
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerStreamCopyToPodRequestValidationError{
+		err := StreamCopyToPodRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -593,7 +585,7 @@ func (m *ContainerStreamCopyToPodRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerStreamCopyToPodRequestValidationError{
+		err := StreamCopyToPodRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -606,19 +598,19 @@ func (m *ContainerStreamCopyToPodRequest) validate(all bool) error {
 	// no validation rules for Container
 
 	if len(errors) > 0 {
-		return ContainerStreamCopyToPodRequestMultiError(errors)
+		return StreamCopyToPodRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerStreamCopyToPodRequestMultiError is an error wrapping multiple
-// validation errors returned by ContainerStreamCopyToPodRequest.ValidateAll()
-// if the designated constraints aren't met.
-type ContainerStreamCopyToPodRequestMultiError []error
+// StreamCopyToPodRequestMultiError is an error wrapping multiple validation
+// errors returned by StreamCopyToPodRequest.ValidateAll() if the designated
+// constraints aren't met.
+type StreamCopyToPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerStreamCopyToPodRequestMultiError) Error() string {
+func (m StreamCopyToPodRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -627,12 +619,11 @@ func (m ContainerStreamCopyToPodRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerStreamCopyToPodRequestMultiError) AllErrors() []error { return m }
+func (m StreamCopyToPodRequestMultiError) AllErrors() []error { return m }
 
-// ContainerStreamCopyToPodRequestValidationError is the validation error
-// returned by ContainerStreamCopyToPodRequest.Validate if the designated
-// constraints aren't met.
-type ContainerStreamCopyToPodRequestValidationError struct {
+// StreamCopyToPodRequestValidationError is the validation error returned by
+// StreamCopyToPodRequest.Validate if the designated constraints aren't met.
+type StreamCopyToPodRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -640,24 +631,24 @@ type ContainerStreamCopyToPodRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerStreamCopyToPodRequestValidationError) Field() string { return e.field }
+func (e StreamCopyToPodRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerStreamCopyToPodRequestValidationError) Reason() string { return e.reason }
+func (e StreamCopyToPodRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerStreamCopyToPodRequestValidationError) Cause() error { return e.cause }
+func (e StreamCopyToPodRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerStreamCopyToPodRequestValidationError) Key() bool { return e.key }
+func (e StreamCopyToPodRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerStreamCopyToPodRequestValidationError) ErrorName() string {
-	return "ContainerStreamCopyToPodRequestValidationError"
+func (e StreamCopyToPodRequestValidationError) ErrorName() string {
+	return "StreamCopyToPodRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerStreamCopyToPodRequestValidationError) Error() string {
+func (e StreamCopyToPodRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -669,14 +660,14 @@ func (e ContainerStreamCopyToPodRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerStreamCopyToPodRequest.%s: %s%s",
+		"invalid %sStreamCopyToPodRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerStreamCopyToPodRequestValidationError{}
+var _ error = StreamCopyToPodRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -684,25 +675,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerStreamCopyToPodRequestValidationError{}
+} = StreamCopyToPodRequestValidationError{}
 
-// Validate checks the field values on ContainerStreamCopyToPodResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *ContainerStreamCopyToPodResponse) Validate() error {
+// Validate checks the field values on StreamCopyToPodResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *StreamCopyToPodResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerStreamCopyToPodResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ContainerStreamCopyToPodResponseMultiError, or nil if none found.
-func (m *ContainerStreamCopyToPodResponse) ValidateAll() error {
+// ValidateAll checks the field values on StreamCopyToPodResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StreamCopyToPodResponseMultiError, or nil if none found.
+func (m *StreamCopyToPodResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerStreamCopyToPodResponse) validate(all bool) error {
+func (m *StreamCopyToPodResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -724,20 +714,19 @@ func (m *ContainerStreamCopyToPodResponse) validate(all bool) error {
 	// no validation rules for Filename
 
 	if len(errors) > 0 {
-		return ContainerStreamCopyToPodResponseMultiError(errors)
+		return StreamCopyToPodResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerStreamCopyToPodResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// ContainerStreamCopyToPodResponse.ValidateAll() if the designated
+// StreamCopyToPodResponseMultiError is an error wrapping multiple validation
+// errors returned by StreamCopyToPodResponse.ValidateAll() if the designated
 // constraints aren't met.
-type ContainerStreamCopyToPodResponseMultiError []error
+type StreamCopyToPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerStreamCopyToPodResponseMultiError) Error() string {
+func (m StreamCopyToPodResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -746,12 +735,11 @@ func (m ContainerStreamCopyToPodResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerStreamCopyToPodResponseMultiError) AllErrors() []error { return m }
+func (m StreamCopyToPodResponseMultiError) AllErrors() []error { return m }
 
-// ContainerStreamCopyToPodResponseValidationError is the validation error
-// returned by ContainerStreamCopyToPodResponse.Validate if the designated
-// constraints aren't met.
-type ContainerStreamCopyToPodResponseValidationError struct {
+// StreamCopyToPodResponseValidationError is the validation error returned by
+// StreamCopyToPodResponse.Validate if the designated constraints aren't met.
+type StreamCopyToPodResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -759,24 +747,24 @@ type ContainerStreamCopyToPodResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerStreamCopyToPodResponseValidationError) Field() string { return e.field }
+func (e StreamCopyToPodResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerStreamCopyToPodResponseValidationError) Reason() string { return e.reason }
+func (e StreamCopyToPodResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerStreamCopyToPodResponseValidationError) Cause() error { return e.cause }
+func (e StreamCopyToPodResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerStreamCopyToPodResponseValidationError) Key() bool { return e.key }
+func (e StreamCopyToPodResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerStreamCopyToPodResponseValidationError) ErrorName() string {
-	return "ContainerStreamCopyToPodResponseValidationError"
+func (e StreamCopyToPodResponseValidationError) ErrorName() string {
+	return "StreamCopyToPodResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerStreamCopyToPodResponseValidationError) Error() string {
+func (e StreamCopyToPodResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -788,14 +776,14 @@ func (e ContainerStreamCopyToPodResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerStreamCopyToPodResponse.%s: %s%s",
+		"invalid %sStreamCopyToPodResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerStreamCopyToPodResponseValidationError{}
+var _ error = StreamCopyToPodResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -803,24 +791,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerStreamCopyToPodResponseValidationError{}
+} = StreamCopyToPodResponseValidationError{}
 
-// Validate checks the field values on ContainerIsPodRunningRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on IsPodRunningRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerIsPodRunningRequest) Validate() error {
+func (m *IsPodRunningRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerIsPodRunningRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on IsPodRunningRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ContainerIsPodRunningRequestMultiError, or nil if none found.
-func (m *ContainerIsPodRunningRequest) ValidateAll() error {
+// IsPodRunningRequestMultiError, or nil if none found.
+func (m *IsPodRunningRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerIsPodRunningRequest) validate(all bool) error {
+func (m *IsPodRunningRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -828,7 +816,7 @@ func (m *ContainerIsPodRunningRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerIsPodRunningRequestValidationError{
+		err := IsPodRunningRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -839,7 +827,7 @@ func (m *ContainerIsPodRunningRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerIsPodRunningRequestValidationError{
+		err := IsPodRunningRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -850,19 +838,19 @@ func (m *ContainerIsPodRunningRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ContainerIsPodRunningRequestMultiError(errors)
+		return IsPodRunningRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerIsPodRunningRequestMultiError is an error wrapping multiple
-// validation errors returned by ContainerIsPodRunningRequest.ValidateAll() if
-// the designated constraints aren't met.
-type ContainerIsPodRunningRequestMultiError []error
+// IsPodRunningRequestMultiError is an error wrapping multiple validation
+// errors returned by IsPodRunningRequest.ValidateAll() if the designated
+// constraints aren't met.
+type IsPodRunningRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerIsPodRunningRequestMultiError) Error() string {
+func (m IsPodRunningRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -871,12 +859,11 @@ func (m ContainerIsPodRunningRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerIsPodRunningRequestMultiError) AllErrors() []error { return m }
+func (m IsPodRunningRequestMultiError) AllErrors() []error { return m }
 
-// ContainerIsPodRunningRequestValidationError is the validation error returned
-// by ContainerIsPodRunningRequest.Validate if the designated constraints
-// aren't met.
-type ContainerIsPodRunningRequestValidationError struct {
+// IsPodRunningRequestValidationError is the validation error returned by
+// IsPodRunningRequest.Validate if the designated constraints aren't met.
+type IsPodRunningRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -884,24 +871,24 @@ type ContainerIsPodRunningRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerIsPodRunningRequestValidationError) Field() string { return e.field }
+func (e IsPodRunningRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerIsPodRunningRequestValidationError) Reason() string { return e.reason }
+func (e IsPodRunningRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerIsPodRunningRequestValidationError) Cause() error { return e.cause }
+func (e IsPodRunningRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerIsPodRunningRequestValidationError) Key() bool { return e.key }
+func (e IsPodRunningRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerIsPodRunningRequestValidationError) ErrorName() string {
-	return "ContainerIsPodRunningRequestValidationError"
+func (e IsPodRunningRequestValidationError) ErrorName() string {
+	return "IsPodRunningRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerIsPodRunningRequestValidationError) Error() string {
+func (e IsPodRunningRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -913,14 +900,14 @@ func (e ContainerIsPodRunningRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerIsPodRunningRequest.%s: %s%s",
+		"invalid %sIsPodRunningRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerIsPodRunningRequestValidationError{}
+var _ error = IsPodRunningRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -928,24 +915,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerIsPodRunningRequestValidationError{}
+} = IsPodRunningRequestValidationError{}
 
-// Validate checks the field values on ContainerIsPodRunningResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on IsPodRunningResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerIsPodRunningResponse) Validate() error {
+func (m *IsPodRunningResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerIsPodRunningResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// ContainerIsPodRunningResponseMultiError, or nil if none found.
-func (m *ContainerIsPodRunningResponse) ValidateAll() error {
+// ValidateAll checks the field values on IsPodRunningResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IsPodRunningResponseMultiError, or nil if none found.
+func (m *IsPodRunningResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerIsPodRunningResponse) validate(all bool) error {
+func (m *IsPodRunningResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -957,19 +944,19 @@ func (m *ContainerIsPodRunningResponse) validate(all bool) error {
 	// no validation rules for Reason
 
 	if len(errors) > 0 {
-		return ContainerIsPodRunningResponseMultiError(errors)
+		return IsPodRunningResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerIsPodRunningResponseMultiError is an error wrapping multiple
-// validation errors returned by ContainerIsPodRunningResponse.ValidateAll()
-// if the designated constraints aren't met.
-type ContainerIsPodRunningResponseMultiError []error
+// IsPodRunningResponseMultiError is an error wrapping multiple validation
+// errors returned by IsPodRunningResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IsPodRunningResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerIsPodRunningResponseMultiError) Error() string {
+func (m IsPodRunningResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -978,12 +965,11 @@ func (m ContainerIsPodRunningResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerIsPodRunningResponseMultiError) AllErrors() []error { return m }
+func (m IsPodRunningResponseMultiError) AllErrors() []error { return m }
 
-// ContainerIsPodRunningResponseValidationError is the validation error
-// returned by ContainerIsPodRunningResponse.Validate if the designated
-// constraints aren't met.
-type ContainerIsPodRunningResponseValidationError struct {
+// IsPodRunningResponseValidationError is the validation error returned by
+// IsPodRunningResponse.Validate if the designated constraints aren't met.
+type IsPodRunningResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -991,24 +977,24 @@ type ContainerIsPodRunningResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerIsPodRunningResponseValidationError) Field() string { return e.field }
+func (e IsPodRunningResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerIsPodRunningResponseValidationError) Reason() string { return e.reason }
+func (e IsPodRunningResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerIsPodRunningResponseValidationError) Cause() error { return e.cause }
+func (e IsPodRunningResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerIsPodRunningResponseValidationError) Key() bool { return e.key }
+func (e IsPodRunningResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerIsPodRunningResponseValidationError) ErrorName() string {
-	return "ContainerIsPodRunningResponseValidationError"
+func (e IsPodRunningResponseValidationError) ErrorName() string {
+	return "IsPodRunningResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerIsPodRunningResponseValidationError) Error() string {
+func (e IsPodRunningResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1020,14 +1006,14 @@ func (e ContainerIsPodRunningResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerIsPodRunningResponse.%s: %s%s",
+		"invalid %sIsPodRunningResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerIsPodRunningResponseValidationError{}
+var _ error = IsPodRunningResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1035,24 +1021,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerIsPodRunningResponseValidationError{}
+} = IsPodRunningResponseValidationError{}
 
-// Validate checks the field values on ContainerIsPodExistsRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on IsPodExistsRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerIsPodExistsRequest) Validate() error {
+func (m *IsPodExistsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerIsPodExistsRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on IsPodExistsRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ContainerIsPodExistsRequestMultiError, or nil if none found.
-func (m *ContainerIsPodExistsRequest) ValidateAll() error {
+// IsPodExistsRequestMultiError, or nil if none found.
+func (m *IsPodExistsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerIsPodExistsRequest) validate(all bool) error {
+func (m *IsPodExistsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1060,7 +1046,7 @@ func (m *ContainerIsPodExistsRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerIsPodExistsRequestValidationError{
+		err := IsPodExistsRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1071,7 +1057,7 @@ func (m *ContainerIsPodExistsRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerIsPodExistsRequestValidationError{
+		err := IsPodExistsRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1082,19 +1068,19 @@ func (m *ContainerIsPodExistsRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ContainerIsPodExistsRequestMultiError(errors)
+		return IsPodExistsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerIsPodExistsRequestMultiError is an error wrapping multiple
-// validation errors returned by ContainerIsPodExistsRequest.ValidateAll() if
-// the designated constraints aren't met.
-type ContainerIsPodExistsRequestMultiError []error
+// IsPodExistsRequestMultiError is an error wrapping multiple validation errors
+// returned by IsPodExistsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type IsPodExistsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerIsPodExistsRequestMultiError) Error() string {
+func (m IsPodExistsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1103,12 +1089,11 @@ func (m ContainerIsPodExistsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerIsPodExistsRequestMultiError) AllErrors() []error { return m }
+func (m IsPodExistsRequestMultiError) AllErrors() []error { return m }
 
-// ContainerIsPodExistsRequestValidationError is the validation error returned
-// by ContainerIsPodExistsRequest.Validate if the designated constraints
-// aren't met.
-type ContainerIsPodExistsRequestValidationError struct {
+// IsPodExistsRequestValidationError is the validation error returned by
+// IsPodExistsRequest.Validate if the designated constraints aren't met.
+type IsPodExistsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1116,24 +1101,24 @@ type ContainerIsPodExistsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerIsPodExistsRequestValidationError) Field() string { return e.field }
+func (e IsPodExistsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerIsPodExistsRequestValidationError) Reason() string { return e.reason }
+func (e IsPodExistsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerIsPodExistsRequestValidationError) Cause() error { return e.cause }
+func (e IsPodExistsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerIsPodExistsRequestValidationError) Key() bool { return e.key }
+func (e IsPodExistsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerIsPodExistsRequestValidationError) ErrorName() string {
-	return "ContainerIsPodExistsRequestValidationError"
+func (e IsPodExistsRequestValidationError) ErrorName() string {
+	return "IsPodExistsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerIsPodExistsRequestValidationError) Error() string {
+func (e IsPodExistsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1145,14 +1130,14 @@ func (e ContainerIsPodExistsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerIsPodExistsRequest.%s: %s%s",
+		"invalid %sIsPodExistsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerIsPodExistsRequestValidationError{}
+var _ error = IsPodExistsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1160,24 +1145,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerIsPodExistsRequestValidationError{}
+} = IsPodExistsRequestValidationError{}
 
-// Validate checks the field values on ContainerIsPodExistsResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on IsPodExistsResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerIsPodExistsResponse) Validate() error {
+func (m *IsPodExistsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerIsPodExistsResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on IsPodExistsResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ContainerIsPodExistsResponseMultiError, or nil if none found.
-func (m *ContainerIsPodExistsResponse) ValidateAll() error {
+// IsPodExistsResponseMultiError, or nil if none found.
+func (m *IsPodExistsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerIsPodExistsResponse) validate(all bool) error {
+func (m *IsPodExistsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1187,19 +1172,19 @@ func (m *ContainerIsPodExistsResponse) validate(all bool) error {
 	// no validation rules for Exists
 
 	if len(errors) > 0 {
-		return ContainerIsPodExistsResponseMultiError(errors)
+		return IsPodExistsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerIsPodExistsResponseMultiError is an error wrapping multiple
-// validation errors returned by ContainerIsPodExistsResponse.ValidateAll() if
-// the designated constraints aren't met.
-type ContainerIsPodExistsResponseMultiError []error
+// IsPodExistsResponseMultiError is an error wrapping multiple validation
+// errors returned by IsPodExistsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IsPodExistsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerIsPodExistsResponseMultiError) Error() string {
+func (m IsPodExistsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1208,12 +1193,11 @@ func (m ContainerIsPodExistsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerIsPodExistsResponseMultiError) AllErrors() []error { return m }
+func (m IsPodExistsResponseMultiError) AllErrors() []error { return m }
 
-// ContainerIsPodExistsResponseValidationError is the validation error returned
-// by ContainerIsPodExistsResponse.Validate if the designated constraints
-// aren't met.
-type ContainerIsPodExistsResponseValidationError struct {
+// IsPodExistsResponseValidationError is the validation error returned by
+// IsPodExistsResponse.Validate if the designated constraints aren't met.
+type IsPodExistsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1221,24 +1205,24 @@ type ContainerIsPodExistsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerIsPodExistsResponseValidationError) Field() string { return e.field }
+func (e IsPodExistsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerIsPodExistsResponseValidationError) Reason() string { return e.reason }
+func (e IsPodExistsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerIsPodExistsResponseValidationError) Cause() error { return e.cause }
+func (e IsPodExistsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerIsPodExistsResponseValidationError) Key() bool { return e.key }
+func (e IsPodExistsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerIsPodExistsResponseValidationError) ErrorName() string {
-	return "ContainerIsPodExistsResponseValidationError"
+func (e IsPodExistsResponseValidationError) ErrorName() string {
+	return "IsPodExistsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ContainerIsPodExistsResponseValidationError) Error() string {
+func (e IsPodExistsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1250,14 +1234,14 @@ func (e ContainerIsPodExistsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerIsPodExistsResponse.%s: %s%s",
+		"invalid %sIsPodExistsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerIsPodExistsResponseValidationError{}
+var _ error = IsPodExistsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1265,24 +1249,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerIsPodExistsResponseValidationError{}
+} = IsPodExistsResponseValidationError{}
 
-// Validate checks the field values on ContainerLogRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerLogRequest) Validate() error {
+// Validate checks the field values on LogRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *LogRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerLogRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ContainerLogRequestMultiError, or nil if none found.
-func (m *ContainerLogRequest) ValidateAll() error {
+// ValidateAll checks the field values on LogRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in LogRequestMultiError, or
+// nil if none found.
+func (m *LogRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerLogRequest) validate(all bool) error {
+func (m *LogRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1290,7 +1274,7 @@ func (m *ContainerLogRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetNamespace()) < 1 {
-		err := ContainerLogRequestValidationError{
+		err := LogRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1301,7 +1285,7 @@ func (m *ContainerLogRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := ContainerLogRequestValidationError{
+		err := LogRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1312,7 +1296,7 @@ func (m *ContainerLogRequest) validate(all bool) error {
 	}
 
 	if len(m.GetContainer()) < 1 {
-		err := ContainerLogRequestValidationError{
+		err := LogRequestValidationError{
 			field:  "Container",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1323,19 +1307,18 @@ func (m *ContainerLogRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ContainerLogRequestMultiError(errors)
+		return LogRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerLogRequestMultiError is an error wrapping multiple validation
-// errors returned by ContainerLogRequest.ValidateAll() if the designated
-// constraints aren't met.
-type ContainerLogRequestMultiError []error
+// LogRequestMultiError is an error wrapping multiple validation errors
+// returned by LogRequest.ValidateAll() if the designated constraints aren't met.
+type LogRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerLogRequestMultiError) Error() string {
+func (m LogRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1344,11 +1327,11 @@ func (m ContainerLogRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerLogRequestMultiError) AllErrors() []error { return m }
+func (m LogRequestMultiError) AllErrors() []error { return m }
 
-// ContainerLogRequestValidationError is the validation error returned by
-// ContainerLogRequest.Validate if the designated constraints aren't met.
-type ContainerLogRequestValidationError struct {
+// LogRequestValidationError is the validation error returned by
+// LogRequest.Validate if the designated constraints aren't met.
+type LogRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1356,24 +1339,22 @@ type ContainerLogRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerLogRequestValidationError) Field() string { return e.field }
+func (e LogRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerLogRequestValidationError) Reason() string { return e.reason }
+func (e LogRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerLogRequestValidationError) Cause() error { return e.cause }
+func (e LogRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerLogRequestValidationError) Key() bool { return e.key }
+func (e LogRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerLogRequestValidationError) ErrorName() string {
-	return "ContainerLogRequestValidationError"
-}
+func (e LogRequestValidationError) ErrorName() string { return "LogRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ContainerLogRequestValidationError) Error() string {
+func (e LogRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1385,14 +1366,14 @@ func (e ContainerLogRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerLogRequest.%s: %s%s",
+		"invalid %sLogRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerLogRequestValidationError{}
+var _ error = LogRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1400,24 +1381,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerLogRequestValidationError{}
+} = LogRequestValidationError{}
 
-// Validate checks the field values on ContainerLogResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ContainerLogResponse) Validate() error {
+// Validate checks the field values on LogResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *LogResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ContainerLogResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ContainerLogResponseMultiError, or nil if none found.
-func (m *ContainerLogResponse) ValidateAll() error {
+// ValidateAll checks the field values on LogResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in LogResponseMultiError, or
+// nil if none found.
+func (m *LogResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ContainerLogResponse) validate(all bool) error {
+func (m *LogResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1433,19 +1414,18 @@ func (m *ContainerLogResponse) validate(all bool) error {
 	// no validation rules for Log
 
 	if len(errors) > 0 {
-		return ContainerLogResponseMultiError(errors)
+		return LogResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ContainerLogResponseMultiError is an error wrapping multiple validation
-// errors returned by ContainerLogResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ContainerLogResponseMultiError []error
+// LogResponseMultiError is an error wrapping multiple validation errors
+// returned by LogResponse.ValidateAll() if the designated constraints aren't met.
+type LogResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ContainerLogResponseMultiError) Error() string {
+func (m LogResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1454,11 +1434,11 @@ func (m ContainerLogResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ContainerLogResponseMultiError) AllErrors() []error { return m }
+func (m LogResponseMultiError) AllErrors() []error { return m }
 
-// ContainerLogResponseValidationError is the validation error returned by
-// ContainerLogResponse.Validate if the designated constraints aren't met.
-type ContainerLogResponseValidationError struct {
+// LogResponseValidationError is the validation error returned by
+// LogResponse.Validate if the designated constraints aren't met.
+type LogResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1466,24 +1446,22 @@ type ContainerLogResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ContainerLogResponseValidationError) Field() string { return e.field }
+func (e LogResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ContainerLogResponseValidationError) Reason() string { return e.reason }
+func (e LogResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ContainerLogResponseValidationError) Cause() error { return e.cause }
+func (e LogResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ContainerLogResponseValidationError) Key() bool { return e.key }
+func (e LogResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ContainerLogResponseValidationError) ErrorName() string {
-	return "ContainerLogResponseValidationError"
-}
+func (e LogResponseValidationError) ErrorName() string { return "LogResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ContainerLogResponseValidationError) Error() string {
+func (e LogResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1495,14 +1473,14 @@ func (e ContainerLogResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sContainerLogResponse.%s: %s%s",
+		"invalid %sLogResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ContainerLogResponseValidationError{}
+var _ error = LogResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1510,4 +1488,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ContainerLogResponseValidationError{}
+} = LogResponseValidationError{}

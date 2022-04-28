@@ -9,7 +9,7 @@ const ServiceEndpoint: React.FC<{
   namespaceId?: number;
   projectId?: number;
 }> = ({ namespaceId, projectId }) => {
-  const [endpoints, setEndpoints] = useState<pb.ServiceEndpoint[]>();
+  const [endpoints, setEndpoints] = useState<pb.types.ServiceEndpoint[]>();
 
   return (
     <Popover

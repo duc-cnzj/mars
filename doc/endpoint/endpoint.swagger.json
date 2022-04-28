@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EndpointInNamespaceResponse"
+              "$ref": "#/definitions/endpointInNamespaceResponse"
             }
           },
           "default": {
@@ -56,7 +56,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EndpointInProjectResponse"
+              "$ref": "#/definitions/endpointInProjectResponse"
             }
           },
           "default": {
@@ -82,39 +82,25 @@
     }
   },
   "definitions": {
-    "EndpointInNamespaceResponse": {
+    "endpointInNamespaceResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ServiceEndpoint"
+            "$ref": "#/definitions/typesServiceEndpoint"
           }
         }
       }
     },
-    "EndpointInProjectResponse": {
+    "endpointInProjectResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ServiceEndpoint"
+            "$ref": "#/definitions/typesServiceEndpoint"
           }
-        }
-      }
-    },
-    "ServiceEndpoint": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "port_name": {
-          "type": "string"
         }
       }
     },
@@ -142,6 +128,20 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "typesServiceEndpoint": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
         }
       }
     }

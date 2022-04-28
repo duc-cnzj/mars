@@ -27,7 +27,7 @@ const TabShell: React.FC<{
   resizeAt: number;
   updatedAt: any;
 }> = ({ namespace, id, resizeAt, updatedAt }) => {
-  const [list, setList] = useState<pb.ProjectPod[]>([]);
+  const [list, setList] = useState<pb.types.Container[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
@@ -39,10 +39,7 @@ const TabShell: React.FC<{
   const ws = useWs();
   const wsReady = useWsReady();
 
-  let sname = useMemo(
-    () => namespace + "|" + value,
-    [namespace, value]
-  );
+  let sname = useMemo(() => namespace + "|" + value, [namespace, value]);
 
   const listContainer = useCallback(
     () =>
@@ -68,8 +65,8 @@ const TabShell: React.FC<{
 
   const onTerminalSendString = useCallback((id: string, ws: WebSocket) => {
     return (str: string) => {
-      let s = pb.TerminalMessageInput.encode({
-        type: pb.Type.HandleExecShellMsg,
+      let s = pb.websocket.TerminalMessageInput.encode({
+        type: pb.websocket.Type.HandleExecShellMsg,
         message: {
           session_id: id,
           op: "stdin",
@@ -95,7 +92,7 @@ const TabShell: React.FC<{
   );
 
   const handleConnectionMessage = useCallback(
-    (frame: pb.TerminalMessage, term: Terminal) => {
+    (frame: pb.websocket.TerminalMessage, term: Terminal) => {
       if (!term) {
         return;
       }
@@ -113,9 +110,9 @@ const TabShell: React.FC<{
 
   const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
     return ({ cols, rows }: { cols: number; rows: number }) => {
-      let s = pb.TerminalMessageInput.encode({
-        type: pb.Type.HandleExecShellMsg,
-        message: new pb.TerminalMessage({
+      let s = pb.websocket.TerminalMessageInput.encode({
+        type: pb.websocket.Type.HandleExecShellMsg,
+        message: new pb.websocket.TerminalMessage({
           session_id: id,
           op: "resize",
           cols: cols,
@@ -129,9 +126,9 @@ const TabShell: React.FC<{
   const handleCloseShell = useCallback(
     (id: string) => {
       if (id) {
-        let s = pb.TerminalMessageInput.encode({
-          type: pb.Type.HandleCloseShell,
-          message: new pb.TerminalMessage({ session_id: id }),
+        let s = pb.websocket.TerminalMessageInput.encode({
+          type: pb.websocket.Type.HandleCloseShell,
+          message: new pb.websocket.TerminalMessage({ session_id: id }),
         }).finish();
         sendMsg(s);
       }
@@ -150,7 +147,7 @@ const TabShell: React.FC<{
   useEffect(() => {
     listContainer().then((res) => {
       let first = res.data.items[0];
-      setValue(first.pod_name + "|" + first.container_name);
+      setValue(first.pod + "|" + first.container);
     });
   }, [updatedAt, listContainer]);
 
@@ -201,11 +198,13 @@ const TabShell: React.FC<{
 
   const initShell = useCallback(() => {
     let s = value.split("|");
-    let ss = pb.WsHandleExecShellInput.encode({
-      type: pb.Type.HandleExecShell,
-      namespace: namespace,
-      pod: s[0],
-      container: s[1],
+    let ss = pb.websocket.WsHandleExecShellInput.encode({
+      type: pb.websocket.Type.HandleExecShell,
+      container: {
+        namespace: namespace,
+        pod: s[0],
+        container: s[1],
+      },
     }).finish();
     sendMsg(ss);
   }, [value, namespace, sendMsg]);
@@ -232,7 +231,7 @@ const TabShell: React.FC<{
               // message.error(`容器列表有更新，请重试！`);
               listContainer().then((res) => {
                 let first = res.data.items[0];
-                setValue(first.pod_name + "|" + first.container_name);
+                setValue(first.pod + "|" + first.container);
               });
             }
           });
@@ -308,12 +307,12 @@ const TabShell: React.FC<{
         {list.map((item) => (
           <Radio
             onClick={reconnect}
-            key={item.pod_name + "|" + item.container_name}
-            value={item.pod_name + "|" + item.container_name}
+            key={item.pod + "|" + item.container}
+            value={item.pod + "|" + item.container}
           >
-            {item.container_name}
+            {item.container}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
-              {item.pod_name}
+              {item.pod}
             </Tag>
           </Radio>
         ))}

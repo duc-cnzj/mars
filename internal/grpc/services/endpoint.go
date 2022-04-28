@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -23,13 +24,13 @@ type EndpointSvc struct {
 	endpoint.UnimplementedEndpointServer
 }
 
-func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.EndpointInNamespaceRequest) (*endpoint.EndpointInNamespaceResponse, error) {
+func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects").Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
 	}
 
-	var res = []*endpoint.ServiceEndpoint{}
+	var res = []*types.ServiceEndpoint{}
 	nodePortMapping := utils.GetNodePortMappingByNamespace(ns.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(ns.Name)
 	for _, hosts := range ingMapping {
@@ -40,19 +41,19 @@ func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.Endpoin
 		res = append(res, hosts...)
 	}
 
-	return &endpoint.EndpointInNamespaceResponse{Items: res}, nil
+	return &endpoint.InNamespaceResponse{Items: res}, nil
 }
 
-func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.EndpointInProjectRequest) (*endpoint.EndpointInProjectResponse, error) {
+func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.InProjectRequest) (*endpoint.InProjectResponse, error) {
 	var p models.Project
 	if err := app.DB().Where("`id` = ?", request.ProjectId).First(&p).Error; err != nil {
 		return nil, err
 	}
-	sd, err := e.InNamespace(ctx, &endpoint.EndpointInNamespaceRequest{NamespaceId: int64(p.NamespaceId)})
+	sd, err := e.InNamespace(ctx, &endpoint.InNamespaceRequest{NamespaceId: int64(p.NamespaceId)})
 	if err != nil {
 		return nil, err
 	}
-	var res = []*endpoint.ServiceEndpoint{}
+	var res = []*types.ServiceEndpoint{}
 
 	for _, re := range sd.Items {
 		if re.Name == p.Name {
@@ -60,5 +61,5 @@ func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.EndpointI
 		}
 	}
 
-	return &endpoint.EndpointInProjectResponse{Items: res}, nil
+	return &endpoint.InProjectResponse{Items: res}, nil
 }

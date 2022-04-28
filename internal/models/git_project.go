@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
@@ -28,9 +31,9 @@ type GitProject struct {
 }
 
 func (g GitProject) PrettyYaml() string {
-	cfg := mars.MarsConfig{}
+	cfg := mars.Config{}
 	json.Unmarshal([]byte(g.GlobalConfig), &cfg)
-	clone := proto.Clone(&cfg).(*mars.MarsConfig)
+	clone := proto.Clone(&cfg).(*mars.Config)
 	var v map[string]any
 	yaml.Unmarshal([]byte(cfg.ValuesYaml), &v)
 	var data = struct {
@@ -59,12 +62,27 @@ func (g GitProject) PrettyYaml() string {
 	return bf.String()
 }
 
-func (g *GitProject) GlobalMarsConfig() *mars.MarsConfig {
+func (g *GitProject) GlobalMarsConfig() *mars.Config {
 	if g.GlobalConfig == "" {
-		return &mars.MarsConfig{}
+		return &mars.Config{}
 	}
 
-	var c = &mars.MarsConfig{}
+	var c = &mars.Config{}
 	json.Unmarshal([]byte(g.GlobalConfig), c)
 	return c
+}
+
+func (g *GitProject) ProtoTransform() *types.GitProjectModel {
+	return &types.GitProjectModel{
+		Id:            int64(g.ID),
+		DefaultBranch: g.DefaultBranch,
+		Name:          g.Name,
+		GitProjectId:  int64(g.GitProjectId),
+		Enabled:       g.Enabled,
+		GlobalEnabled: g.GlobalEnabled,
+		GlobalConfig:  g.GlobalConfig,
+		CreatedAt:     date.ToRFC3339DatetimeString(&g.CreatedAt),
+		UpdatedAt:     date.ToRFC3339DatetimeString(&g.UpdatedAt),
+		DeletedAt:     date.ToRFC3339DatetimeString(&g.DeletedAt.Time),
+	}
 }

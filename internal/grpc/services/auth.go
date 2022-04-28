@@ -57,7 +57,7 @@ func verify(cfg oauth2.Config, provider *oidc.Provider, code string) (*oidc.IDTo
 	return idtoken, nil
 }
 
-func (a *AuthSvc) Login(ctx context.Context, request *auth.AuthLoginRequest) (*auth.AuthLoginResponse, error) {
+func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
 	if request.Username == "admin" && request.Password == a.adminPwd {
 		data, err := a.authsvc.Sign(contracts.UserInfo{
 			LogoutUrl: "",
@@ -71,7 +71,7 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.AuthLoginRequest) (*a
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, err.Error())
 		}
-		return &auth.AuthLoginResponse{
+		return &auth.LoginResponse{
 			Token:     data.Token,
 			ExpiresIn: data.ExpiredIn,
 		}, nil
@@ -80,13 +80,13 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.AuthLoginRequest) (*a
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *AuthSvc) Info(ctx context.Context, req *auth.AuthInfoRequest) (*auth.AuthInfoResponse, error) {
+func (a *AuthSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoResponse, error) {
 	incomingContext, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		tokenSlice := incomingContext.Get("Authorization")
 		if len(tokenSlice) == 1 {
 			if c, b := a.authsvc.VerifyToken(tokenSlice[0]); b {
-				return &auth.AuthInfoResponse{
+				return &auth.InfoResponse{
 					Id:        c.GetID(),
 					Avatar:    c.Picture,
 					Name:      c.Name,
@@ -101,12 +101,12 @@ func (a *AuthSvc) Info(ctx context.Context, req *auth.AuthInfoRequest) (*auth.Au
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *AuthSvc) Settings(ctx context.Context, request *auth.AuthSettingsRequest) (*auth.AuthSettingsResponse, error) {
-	var items = make([]*auth.AuthSettingsResponse_OidcSetting, 0, len(a.cfg))
+func (a *AuthSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (*auth.SettingsResponse, error) {
+	var items = make([]*auth.SettingsResponse_OidcSetting, 0, len(a.cfg))
 	for name, setting := range a.cfg {
 		state := utils.RandomString(32)
 
-		items = append(items, &auth.AuthSettingsResponse_OidcSetting{
+		items = append(items, &auth.SettingsResponse_OidcSetting{
 			Enabled:            true,
 			Name:               name,
 			Url:                setting.Config.AuthCodeURL(state),
@@ -119,10 +119,10 @@ func (a *AuthSvc) Settings(ctx context.Context, request *auth.AuthSettingsReques
 		return items[i].Name < items[j].Name
 	})
 
-	return &auth.AuthSettingsResponse{Items: items}, nil
+	return &auth.SettingsResponse{Items: items}, nil
 }
 
-func (a *AuthSvc) Exchange(ctx context.Context, request *auth.AuthExchangeRequest) (*auth.AuthExchangeResponse, error) {
+func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
 	var (
 		idtoken  *oidc.IDToken
 		err      error
@@ -153,7 +153,7 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.AuthExchangeReques
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &auth.AuthExchangeResponse{
+	return &auth.ExchangeResponse{
 		Token:     data.Token,
 		ExpiresIn: data.ExpiredIn,
 	}, nil

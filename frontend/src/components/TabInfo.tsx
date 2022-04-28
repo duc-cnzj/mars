@@ -7,6 +7,7 @@ import {
   ExclamationCircleOutlined,
   SettingOutlined,
   FireOutlined,
+  FieldNumberOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
 import pb from "../api/compiled";
@@ -19,9 +20,26 @@ SyntaxHighlighter.registerLanguage("yaml", yaml);
 const { confirm } = Modal;
 
 const DetailTab: React.FC<{
-  detail?: pb.ProjectShowResponse;
+  detail: pb.types.ProjectModel;
+  cpu: string;
+  git_commit_web_url: string;
+  git_commit_title: string;
+  git_commit_author: string;
+  git_commit_date: string;
+  memory: string;
+  urls: pb.types.ServiceEndpoint[];
   onDeleted: () => void;
-}> = ({ detail, onDeleted }) => {
+}> = ({
+  detail,
+  onDeleted,
+  cpu,
+  memory,
+  urls,
+  git_commit_web_url,
+  git_commit_title,
+  git_commit_author,
+  git_commit_date,
+}) => {
   const [loading, setLoading] = useState<boolean>(false);
 
   return detail ? (
@@ -32,27 +50,16 @@ const DetailTab: React.FC<{
           alignItems: "center",
         }}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+        <FieldNumberOutlined
           style={{
-            width: 20,
-            height: 20,
+            display: "flex",
+            alignItems: "center",
+            height: 30,
             marginRight: 4,
+            fontSize: 20,
           }}
-        >
-          <path d="M13 7H7v6h6V7z" />
-          <path
-            fillRule="evenodd"
-            d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <p>
-          cpu: <span className="detail-data">{detail.cpu}</span>
-        </p>
+        />
+        {detail.id}
       </div>
       <div
         style={{
@@ -79,7 +86,36 @@ const DetailTab: React.FC<{
           />
         </svg>
         <p>
-          memory: <span className="detail-data">{detail.memory}</span>
+          cpu: <span className="detail-data">{cpu}</span>
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          style={{
+            width: 20,
+            height: 20,
+            marginRight: 4,
+          }}
+        >
+          <path d="M13 7H7v6h6V7z" />
+          <path
+            fillRule="evenodd"
+            d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <p>
+          memory: <span className="detail-data">{memory}</span>
         </p>
       </div>
 
@@ -120,7 +156,7 @@ const DetailTab: React.FC<{
           <p>地址:</p>
         </div>
         <ul style={{ listStyle: "none", padding: "0 0 0 1.5em", margin: 0 }}>
-          {detail.urls.map((item, index) => (
+          {urls.map((item, index) => (
             <li key={index}>
               {index + 1}.
               <a href={item.url} target="_blank" className="detail-data">
@@ -169,10 +205,10 @@ const DetailTab: React.FC<{
         <p>
           提交:
           <span className="detail-data">
-            <a href={detail.git_commit_web_url} target="_blank">
-              {detail.git_commit_title}
+            <a href={git_commit_web_url} target="_blank">
+              {git_commit_title}
             </a>
-            by {detail.git_commit_author} 于 {detail.git_commit_date}
+            by {git_commit_author} 于 {git_commit_date}
           </span>
         </p>
       </div>

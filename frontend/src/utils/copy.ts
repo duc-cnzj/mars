@@ -1,6 +1,6 @@
 import { message } from "antd";
 
-export function copy(text: string, msg?: string) {
+export function copy(text: any, msg?: string) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text);
   } else {

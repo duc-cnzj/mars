@@ -3,6 +3,11 @@ package models
 import (
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/dustin/go-humanize"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -35,4 +40,21 @@ func (f *File) DeleteFile() {
 		mlog.Errorf("[File]: delete file err: '%s'", err.Error())
 	}
 	mlog.Debugf("[File]: deleted '%s' ", f.Path)
+}
+
+func (f *File) ProtoTransform() *types.FileModel {
+	return &types.FileModel{
+		Id:             int64(f.ID),
+		Path:           f.Path,
+		Size:           int64(f.Size),
+		Username:       f.Username,
+		Namespace:      f.Namespace,
+		Pod:            f.Pod,
+		Container:      f.Container,
+		Container_Path: f.ContainerPath,
+		HumanizeSize:   humanize.Bytes(f.Size),
+		CreatedAt:      date.ToRFC3339DatetimeString(&f.CreatedAt),
+		UpdatedAt:      date.ToRFC3339DatetimeString(&f.UpdatedAt),
+		DeletedAt:      date.ToRFC3339DatetimeString(&f.DeletedAt.Time),
+	}
 }

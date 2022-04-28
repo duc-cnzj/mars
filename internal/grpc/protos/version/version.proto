@@ -1,13 +1,15 @@
 syntax = "proto3";
 
+package version;
+
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/version;version";
 
-message VersionRequest{}
+message Request{}
 
-message VersionResponse {
+message Response {
   string version = 1;
   string build_date = 2;
   string git_branch = 3;
@@ -23,7 +25,7 @@ message VersionResponse {
 
 service Version {
   // Version 获取当前版本信息
-  rpc Version(VersionRequest) returns (VersionResponse) {
+  rpc Version(Request) returns (Response) {
     option (google.api.http) = {
       get: "/api/version"
     };

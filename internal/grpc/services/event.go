@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
-	"github.com/duc-cnzj/mars/internal/utils"
 )
 
 func init() {
@@ -27,7 +28,7 @@ type EventSvc struct {
 	event.UnsafeEventServer
 }
 
-func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*event.EventListResponse, error) {
+func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -41,26 +42,12 @@ func (e *EventSvc) List(ctx context.Context, request *event.EventListRequest) (*
 		return nil, err
 	}
 	app.DB().Model(&models.Event{}).Count(&count)
-	res := make([]*event.EventListItem, 0, len(events))
+	res := make([]*types.EventModel, 0, len(events))
 	for _, m := range events {
-		var fid int64
-		if m.File != nil {
-			fid = int64(m.File.ID)
-		}
-		res = append(res, &event.EventListItem{
-			Id:       int64(m.ID),
-			Action:   event.ActionType(m.Action),
-			Username: m.Username,
-			Message:  m.Message,
-			Old:      m.Old,
-			New:      m.New,
-			EventAt:  utils.ToHumanizeDatetimeString(&m.CreatedAt),
-			FileId:   fid,
-			Duration: m.Duration,
-		})
+		res = append(res, m.ProtoTransform())
 	}
 
-	return &event.EventListResponse{
+	return &event.ListResponse{
 		Page:     int64(page),
 		PageSize: int64(pageSize),
 		Items:    res,

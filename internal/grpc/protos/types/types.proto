@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package types;
+
+option go_package = "github.com/duc-cnzj/mars-client/v4/types;types";
+
+enum EventActionType {
+  Unknown = 0;
+  Create = 1;
+  Update = 2;
+  Delete = 3;
+  Upload = 4;
+  Download = 5;
+  DryRun = 6;
+  Shell = 7;
+}
+
+
+message Pod {
+  string namespace = 1;
+  string pod = 2;
+}
+
+message Container {
+  string namespace = 1;
+  string pod = 2;
+  string container = 3;
+}
+
+message ExtraValue {
+  string path = 1;
+  string value = 2;
+}
+
+message ServiceEndpoint {
+  string name = 1;
+  string url = 2;
+  string port_name = 3;
+}
+
+message ChangelogModel {
+  int64 id = 1;
+  int64 version = 2;
+  string username = 3;
+  string manifest = 4;
+  string config = 5;
+  bool config_changed = 6;
+  int64 project_id = 7;
+  int64 git_project_id = 8;
+
+  ProjectModel project = 9;
+  GitProjectModel git_project = 10;
+  string date = 11;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}
+
+message EventModel {
+  int64 id = 1;
+  EventActionType action = 2;
+  string username = 3;
+  string message = 4;
+  string old = 5;
+  string new = 6;
+  string duration = 7;
+  int64 file_id = 8;
+
+  FileModel file = 9;
+  string event_at = 10;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}
+
+message FileModel {
+  int64 id = 1;
+  string path = 2;
+  int64 size = 3;
+  string username = 4;
+  string namespace = 5;
+  string pod = 6;
+  string container = 7;
+  string container_Path = 8;
+
+  string humanize_size = 9;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}
+
+message GitProjectModel {
+  int64 id = 1;
+  string default_branch = 2;
+  string name = 3;
+  int64 git_project_id = 4;
+  bool enabled = 5;
+  bool global_enabled = 6;
+  string global_config = 7;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}
+
+message ImagePullSecret {
+  string name = 1;
+}
+
+message NamespaceModel {
+  int64 id = 1;
+  string name = 2;
+  repeated ImagePullSecret ImagePullSecrets = 3;
+
+  repeated ProjectModel projects = 4;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}
+
+enum Deploy {
+  StatusUnknown = 0;
+  StatusDeploying = 1;
+  StatusDeployed = 2;
+  StatusRollback = 3;
+  StatusFailed = 4;
+}
+
+message ProjectModel {
+  int64 id = 1;
+  string name = 2;
+  int64 git_project_id = 3;
+  string git_branch = 4;
+  string git_commit = 5;
+  string config = 6;
+  string override_values = 7;
+  string docker_image = 8;
+  string pod_selectors = 9;
+  int64 namespace_id = 10;
+  bool atomic = 11;
+  string env_values = 12;
+  repeated ExtraValue extra_values = 13;
+  string final_extra_values = 14;
+  Deploy deploy_status = 15;
+  string humanize_created_at = 16;
+  string humanize_updated_at = 17;
+
+  string config_type = 18;
+  string git_commit_web_url = 19;
+  string git_commit_title = 20;
+  string git_commit_author = 21;
+  string git_commit_date = 22;
+
+  NamespaceModel namespace = 50;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}

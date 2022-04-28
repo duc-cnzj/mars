@@ -1,18 +1,20 @@
 syntax = "proto3";
 
+package cluster;
+
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/cluster;cluster";
 
-enum ClusterStatus {
+enum Status {
   StatusUnknown = 0;
   StatusBad = 1;
   StatusNotGood = 2;
   StatusHealth = 3;
 }
 
-message ClusterInfoResponse {
+message InfoResponse {
   string status = 1;
   string free_memory = 2;
   string free_cpu = 3;
@@ -26,11 +28,11 @@ message ClusterInfoResponse {
   string request_cpu_rate = 11;
 }
 
-message ClusterInfoRequest {}
+message InfoRequest {}
 
 service Cluster {
   // ClusterInfo 查看集群信息
-  rpc ClusterInfo(ClusterInfoRequest) returns (ClusterInfoResponse) {
+  rpc ClusterInfo(InfoRequest) returns (InfoResponse) {
     option (google.api.http) = {
       get: "/api/cluster_info"
     };

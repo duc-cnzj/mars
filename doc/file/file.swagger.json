@@ -6,7 +6,7 @@
   },
   "tags": [
     {
-      "name": "FileSvc"
+      "name": "File"
     }
   ],
   "consumes": [
@@ -19,12 +19,12 @@
     "/api/files": {
       "get": {
         "summary": "文件列表",
-        "operationId": "FileSvc_List",
+        "operationId": "File_List",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/FileListResponse"
+              "$ref": "#/definitions/fileListResponse"
             }
           },
           "default": {
@@ -57,19 +57,19 @@
           }
         ],
         "tags": [
-          "FileSvc"
+          "File"
         ]
       }
     },
     "/api/files/delete_undocumented_files": {
       "delete": {
         "summary": "DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有",
-        "operationId": "FileSvc_DeleteUndocumentedFiles",
+        "operationId": "File_DeleteUndocumentedFiles",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DeleteUndocumentedFilesResponse"
+              "$ref": "#/definitions/fileDeleteUndocumentedFilesResponse"
             }
           },
           "default": {
@@ -80,19 +80,19 @@
           }
         },
         "tags": [
-          "FileSvc"
+          "File"
         ]
       }
     },
     "/api/files/disk_info": {
       "get": {
         "summary": "DiskInfo 查看上传文件目录大小",
-        "operationId": "FileSvc_DiskInfo",
+        "operationId": "File_DiskInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DiskInfoResponse"
+              "$ref": "#/definitions/fileDiskInfoResponse"
             }
           },
           "default": {
@@ -103,19 +103,19 @@
           }
         },
         "tags": [
-          "FileSvc"
+          "File"
         ]
       }
     },
     "/api/files/{id}": {
       "delete": {
         "summary": "删除文件",
-        "operationId": "FileSvc_Delete",
+        "operationId": "File_Delete",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/FileDeleteResponse"
+              "$ref": "#/definitions/fileDeleteResponse"
             }
           },
           "default": {
@@ -135,24 +135,32 @@
           }
         ],
         "tags": [
-          "FileSvc"
+          "File"
         ]
       }
     }
   },
   "definitions": {
-    "DeleteUndocumentedFilesResponse": {
+    "fileDeleteResponse": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "$ref": "#/definitions/typesFileModel"
+        }
+      }
+    },
+    "fileDeleteUndocumentedFilesResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/File"
+            "$ref": "#/definitions/typesFileModel"
           }
         }
       }
     },
-    "DiskInfoResponse": {
+    "fileDiskInfoResponse": {
       "type": "object",
       "properties": {
         "usage": {
@@ -164,33 +172,7 @@
         }
       }
     },
-    "File": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string"
-        },
-        "humanize_size": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "format": "int64"
-        },
-        "upload_by": {
-          "type": "string"
-        }
-      }
-    },
-    "FileDeleteResponse": {
-      "type": "object",
-      "properties": {
-        "file": {
-          "$ref": "#/definitions/File"
-        }
-      }
-    },
-    "FileListResponse": {
+    "fileListResponse": {
       "type": "object",
       "properties": {
         "page": {
@@ -204,55 +186,12 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/FileModel"
+            "$ref": "#/definitions/typesFileModel"
           }
         },
         "count": {
           "type": "string",
           "format": "int64"
-        }
-      }
-    },
-    "FileModel": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "path": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "username": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "pod": {
-          "type": "string"
-        },
-        "container": {
-          "type": "string"
-        },
-        "container_path": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "type": "string"
-        },
-        "is_deleted": {
-          "type": "boolean"
         }
       }
     },
@@ -280,6 +219,49 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "typesFileModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "username": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "container": {
+          "type": "string"
+        },
+        "container_Path": {
+          "type": "string"
+        },
+        "humanize_size": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
         }
       }
     }

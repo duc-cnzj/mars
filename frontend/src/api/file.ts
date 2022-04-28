@@ -1,16 +1,16 @@
 import ajax from "./ajax";
 import pb from "./compiled";
 
-export function deleteFile({ id }: pb.FileDeleteRequest) {
-  return ajax.delete<pb.FileDeleteResponse>(`/api/files/${id}`);
+export function deleteFile({ id }: pb.file.DeleteRequest) {
+  return ajax.delete<pb.file.DeleteResponse>(`/api/files/${id}`);
 }
 
 export function diskInfo() {
-  return ajax.get<pb.DiskInfoResponse>(`/api/files/disk_info`);
+  return ajax.get<pb.file.DiskInfoResponse>(`/api/files/disk_info`);
 }
 
 export function deleteUndocumentedFiles() {
-  return ajax.delete<pb.DeleteUndocumentedFilesResponse>(`/api/files/delete_undocumented_files`);
+  return ajax.delete<pb.file.DeleteUndocumentedFilesResponse>(`/api/files/delete_undocumented_files`);
 }
 
 export function downloadFile(id: number) {

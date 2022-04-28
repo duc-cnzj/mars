@@ -40,12 +40,13 @@ interface WatchData {
 }
 
 const ModalSub: React.FC<{
-  detail: pb.ProjectShowResponse;
+  namespaceId: number;
+  detail: pb.types.ProjectModel;
   onSuccess: () => void;
+  elements: pb.mars.Element[];
   updatedAt: any;
-}> = ({ detail, onSuccess, updatedAt }) => {
+}> = ({ detail, onSuccess, updatedAt, namespaceId, elements }) => {
   let id = detail.id;
-  let namespaceId = detail.namespace?.id;
   const ws = useWs();
   const wsReady = useWsReady();
   const [form] = Form.useForm();
@@ -115,8 +116,8 @@ const ModalSub: React.FC<{
       setEditVisible(false);
       setTimelineVisible(true);
 
-      let s = pb.UpdateProjectInput.encode({
-        type: pb.Type.UpdateProject,
+      let s = pb.websocket.UpdateProjectInput.encode({
+        type: pb.websocket.Type.UpdateProject,
 
         extra_values: values.extra_values,
         project_id: Number(id),
@@ -139,8 +140,8 @@ const ModalSub: React.FC<{
       return;
     }
     if (data.gitProjectId && data.gitBranch && data.gitCommit) {
-      let s = pb.CancelInput.encode({
-        type: pb.Type.CancelProject,
+      let s = pb.websocket.CancelInput.encode({
+        type: pb.websocket.Type.CancelProject,
         namespace_id: Number(namespaceId),
         name: data.projectName,
       }).finish();
@@ -295,7 +296,7 @@ const ModalSub: React.FC<{
           >
             <Form.Item name="extra_values" noStyle>
               <Elements
-                elements={orderBy(detail.elements, ["type"], ["asc"])}
+                elements={orderBy(elements, ["type"], ["asc"])}
                 style={{
                   inputNumber: { fontSize: 10, width: "100%" },
                   input: { fontSize: 10 },

@@ -41,7 +41,7 @@ import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 
 SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
-interface Config extends pb.MarsConfig {}
+interface Config extends pb.mars.Config {}
 
 const { Option } = Select;
 
@@ -67,7 +67,7 @@ const initDefaultValues = "# 没找到对应的 values.yaml";
 
 const ConfigModal: React.FC<{
   visible: boolean;
-  item: pb.GitProjectItem;
+  item: pb.git.ProjectItem;
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
   const [watch, setWatch] = useAsyncState<WatchData>({

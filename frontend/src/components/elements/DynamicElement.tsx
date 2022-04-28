@@ -58,25 +58,25 @@ const DynamicElement: React.FC<{
                         }}
                       >
                         <Select.Option
-                          value={pb.ElementType.ElementTypeUnknown}
+                          value={pb.mars.ElementType.ElementTypeUnknown}
                         >
                           未设置
                         </Select.Option>
-                        <Select.Option value={pb.ElementType.ElementTypeInput}>
+                        <Select.Option value={pb.mars.ElementType.ElementTypeInput}>
                           Input
                         </Select.Option>
                         <Select.Option
-                          value={pb.ElementType.ElementTypeInputNumber}
+                          value={pb.mars.ElementType.ElementTypeInputNumber}
                         >
                           InputNumber
                         </Select.Option>
-                        <Select.Option value={pb.ElementType.ElementTypeRadio}>
+                        <Select.Option value={pb.mars.ElementType.ElementTypeRadio}>
                           Radio
                         </Select.Option>
-                        <Select.Option value={pb.ElementType.ElementTypeSelect}>
+                        <Select.Option value={pb.mars.ElementType.ElementTypeSelect}>
                           Select
                         </Select.Option>
-                        <Select.Option value={pb.ElementType.ElementTypeSwitch}>
+                        <Select.Option value={pb.mars.ElementType.ElementTypeSwitch}>
                           Switch
                         </Select.Option>
                       </Select>
@@ -106,8 +106,8 @@ const DynamicElement: React.FC<{
                             let flag = false;
 
                             switch (fieldType) {
-                              case pb.ElementType.ElementTypeSelect:
-                              case pb.ElementType.ElementTypeRadio:
+                              case pb.mars.ElementType.ElementTypeSelect:
+                              case pb.mars.ElementType.ElementTypeRadio:
                                 if (Array.isArray(selectValues)) {
                                   for (const key in selectValues) {
                                     if (selectValues[key] === value) {
@@ -152,8 +152,8 @@ const DynamicElement: React.FC<{
                         !(
                           type[field.key] &&
                           (type[field.key] ===
-                            pb.ElementType.ElementTypeSelect ||
-                            type[field.key] === pb.ElementType.ElementTypeRadio)
+                            pb.mars.ElementType.ElementTypeSelect ||
+                            type[field.key] === pb.mars.ElementType.ElementTypeRadio)
                         )
                       }
                       style={{ width: "100%" }}
@@ -207,30 +207,33 @@ const MySelect: React.FC<
 const DefaultValueElement: React.FC<{
   value?: any;
   onChange?: (v: any) => void;
-  type: pb.ElementType;
+  type: pb.mars.ElementType;
   disabled: boolean;
 }> = ({ type, disabled, value, onChange }) => {
   const [t, setT] = useState(type);
   useEffect(() => {
+    setT(type);
     if (t !== type) {
-      setT(type);
       switch (type) {
-        case pb.ElementType.ElementTypeSwitch:
-          onChange?.("false");
+        case pb.mars.ElementType.ElementTypeSwitch:
+          if (value !== "false" || value !== "true") {
+            onChange?.("false");
+          }
           break;
-        case pb.ElementType.ElementTypeInputNumber:
-          onChange?.("0");
+        case pb.mars.ElementType.ElementTypeInputNumber:
+          if (isNaN(Number(value))) {
+            onChange?.("0");
+          }
           break;
         default:
-          onChange?.(undefined);
           break;
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, t]);
+  }, [type, t, value]);
 
   switch (t) {
-    case pb.ElementType.ElementTypeInputNumber:
+    case pb.mars.ElementType.ElementTypeInputNumber:
       return (
         <InputNumber
           disabled={disabled}
@@ -239,7 +242,7 @@ const DefaultValueElement: React.FC<{
           placeholder="默认值"
         />
       );
-    case pb.ElementType.ElementTypeSwitch:
+    case pb.mars.ElementType.ElementTypeSwitch:
       return (
         <Select
           disabled={disabled}

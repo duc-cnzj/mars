@@ -1,7 +1,7 @@
 package events
 
 import (
-	eventpb "github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -11,7 +11,7 @@ const EventAuditLog contracts.Event = "audit_log"
 
 type EventAuditLogData struct {
 	Username        string
-	Action          eventpb.ActionType
+	Action          types.EventActionType
 	Msg, OldS, NewS string
 	FileId          int
 }
@@ -38,7 +38,7 @@ func HandleAuditLog(data any, e contracts.Event) error {
 	return nil
 }
 
-func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS YamlPrettier) {
+func AuditLog(username string, action types.EventActionType, msg string, oldS, newS YamlPrettier) {
 	if oldS == nil {
 		oldS = &emptyYamlPrettier{}
 	}
@@ -57,7 +57,7 @@ func AuditLog(username string, action eventpb.ActionType, msg string, oldS, newS
 func FileAuditLog(username string, msg string, fileId int) {
 	app.Event().Dispatch(EventAuditLog, EventAuditLogData{
 		Username: username,
-		Action:   eventpb.ActionType_Upload,
+		Action:   types.EventActionType_Upload,
 		Msg:      msg,
 		FileId:   fileId,
 	})

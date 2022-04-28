@@ -36,7 +36,7 @@ var (
 )
 
 func request_Changelog_Show_0(ctx context.Context, marshaler runtime.Marshaler, client ChangelogClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ChangelogShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -69,7 +69,7 @@ func request_Changelog_Show_0(ctx context.Context, marshaler runtime.Marshaler, 
 }
 
 func local_request_Changelog_Show_0(ctx context.Context, marshaler runtime.Marshaler, server ChangelogServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ChangelogShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -114,7 +114,7 @@ func RegisterChangelogHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Changelog/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}/changelogs"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/changelog.Changelog/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}/changelogs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -177,7 +177,7 @@ func RegisterChangelogHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Changelog/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}/changelogs"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/changelog.Changelog/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}/changelogs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

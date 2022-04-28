@@ -1,20 +1,22 @@
 syntax = "proto3";
 
+package git;
+
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/git;git";
 
-message GitEnableProjectRequest {
+message EnableProjectRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
 }
 
-message GitDisableProjectRequest {
+message DisableProjectRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
 }
 
-message GitProjectItem {
+message ProjectItem {
   int64 id = 1;
   string name = 2;
   string path = 3;
@@ -25,11 +27,11 @@ message GitProjectItem {
   bool global_enabled = 8;
 }
 
-message GitAllProjectsResponse {
-  repeated GitProjectItem items = 1;
+message AllProjectsResponse {
+  repeated ProjectItem items = 1;
 }
 
-message GitOption {
+message Option {
   string value = 1;
   string label = 2;
   string type = 3;
@@ -39,35 +41,35 @@ message GitOption {
   string branch = 6;
 }
 
-message GitProjectOptionsResponse {
-  repeated GitOption items = 1;
+message ProjectOptionsResponse {
+  repeated Option items = 1;
 }
 
-message GitBranchOptionsRequest {
+message BranchOptionsRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   bool all = 2;
 }
 
-message GitBranchOptionsResponse {
-  repeated GitOption items = 1;
+message BranchOptionsResponse {
+  repeated Option items = 1;
 }
 
-message GitCommitOptionsRequest {
+message CommitOptionsRequest {
   string git_project_id = 1;
   string branch = 2;
 }
 
-message GitCommitOptionsResponse {
-  repeated GitOption items = 1;
+message CommitOptionsResponse {
+  repeated Option items = 1;
 }
 
-message GitCommitRequest {
+message CommitRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
   string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
 
-message GitCommitResponse {
+message CommitResponse {
   string id = 1;
   string short_id = 2;
   string git_project_id = 3;
@@ -86,36 +88,36 @@ message GitCommitResponse {
   string created_at = 14;
 }
 
-message GitPipelineInfoRequest {
+message PipelineInfoRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
   string commit = 3 [(validate.rules).string.min_bytes = 1];
 }
 
-message GitPipelineInfoResponse {
+message PipelineInfoResponse {
   string status = 1;
   string web_url = 2;
 }
 
-message GitConfigFileRequest {
+message ConfigFileRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
 }
 
-message GitConfigFileResponse {
+message ConfigFileResponse {
   string data = 1;
   string type = 2;
-  repeated Element elements = 3;
+  repeated mars.Element elements = 3;
 }
 
-message GitEnableProjectResponse {}
-message GitDisableProjectResponse {}
-message GitAllProjectsRequest {}
-message GitProjectOptionsRequest {}
+message EnableProjectResponse {}
+message DisableProjectResponse {}
+message AllProjectsRequest {}
+message ProjectOptionsRequest {}
 
 service Git {
   // EnableProject 开启项目，开启后可以在项目列表看到
-  rpc EnableProject(GitEnableProjectRequest) returns (GitEnableProjectResponse) {
+  rpc EnableProject(EnableProjectRequest) returns (EnableProjectResponse) {
     option (google.api.http) = {
       post: "/api/git/projects/enable",
       body: "*"
@@ -123,7 +125,7 @@ service Git {
   }
 
   // DisableProject 关闭项目
-  rpc DisableProject(GitDisableProjectRequest) returns (GitDisableProjectResponse) {
+  rpc DisableProject(DisableProjectRequest) returns (DisableProjectResponse) {
     option (google.api.http) = {
       post: "/api/git/projects/disable",
       body: "*"
@@ -131,134 +133,51 @@ service Git {
   }
 
   // All 获取所有的 git 项目
-  rpc All(GitAllProjectsRequest) returns (GitAllProjectsResponse) {
+  rpc All(AllProjectsRequest) returns (AllProjectsResponse) {
     option (google.api.http) = {
       get: "/api/git/projects",
     };
   }
 
   // ProjectOptions 获取项目信息， 用在级联列表
-  rpc ProjectOptions(GitProjectOptionsRequest) returns (GitProjectOptionsResponse) {
+  rpc ProjectOptions(ProjectOptionsRequest) returns (ProjectOptionsResponse) {
     option (google.api.http) = {
       get: "/api/git/project_options",
     };
   }
 
   // BranchOptions 获取分支信息， 用在级联列表
-  rpc BranchOptions(GitBranchOptionsRequest) returns (GitBranchOptionsResponse) {
+  rpc BranchOptions(BranchOptionsRequest) returns (BranchOptionsResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branch_options",
     };
   }
 
   // CommitOptions 获取commit信息， 用在级联列表
-  rpc CommitOptions(GitCommitOptionsRequest) returns (GitCommitOptionsResponse) {
+  rpc CommitOptions(CommitOptionsRequest) returns (CommitOptionsResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commit_options",
     };
   }
 
   // Commit 获取 commit 详情
-  rpc Commit(GitCommitRequest) returns (GitCommitResponse) {
+  rpc Commit(CommitRequest) returns (CommitResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}",
     };
   }
 
   // PipelineInfo 获取 pipeline 详情
-  rpc PipelineInfo(GitPipelineInfoRequest) returns (GitPipelineInfoResponse) {
+  rpc PipelineInfo(PipelineInfoRequest) returns (PipelineInfoResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info",
     };
   }
 
   // MarsConfigFile 获取项目 mars 配置详情
-  rpc MarsConfigFile(GitConfigFileRequest) returns (GitConfigFileResponse) {
+  rpc MarsConfigFile(ConfigFileRequest) returns (ConfigFileResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
-    };
-  }
-}
-
-message GitConfigShowRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
-}
-
-message GitConfigShowResponse {
-  string branch = 1;
-  MarsConfig config = 2;
-}
-
-message GitConfigGlobalConfigRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-}
-
-message GitConfigGlobalConfigResponse {
-  bool enabled = 1;
-  MarsConfig config = 2;
-}
-
-message GitConfigUpdateRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  MarsConfig config = 2;
-}
-
-message GitConfigUpdateResponse {
-  MarsConfig config = 1;
-}
-
-message GitConfigToggleGlobalStatusRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  bool enabled = 2;
-}
-
-message GitConfigDefaultChartValuesRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
-}
-
-message GitConfigDefaultChartValuesResponse {
-  string value = 1;
-}
-
-message GitConfigToggleGlobalStatusResponse {}
-
-service GitConfig {
-  // Show 查看项目配置
-  rpc Show(GitConfigShowRequest) returns (GitConfigShowResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/mars_config"
-    };
-  }
-
-  // GlobalConfig 查看项目 GlobalConfig 配置
-  rpc GlobalConfig(GitConfigGlobalConfigRequest) returns (GitConfigGlobalConfigResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/global_config"
-    };
-  }
-
-  // ToggleGlobalStatus 开启/关闭全局配置
-  rpc ToggleGlobalStatus(GitConfigToggleGlobalStatusRequest) returns (GitConfigToggleGlobalStatusResponse) {
-    option (google.api.http) = {
-      post: "/api/git/projects/{git_project_id}/toggle_status",
-      body: "*"
-    };
-  }
-
-  // Update 更新全局配置
-  rpc Update(GitConfigUpdateRequest) returns (GitConfigUpdateResponse) {
-    option (google.api.http) = {
-      put: "/api/git/projects/{git_project_id}/mars_config",
-      body: "*"
-    };
-  }
-
-  // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
-  rpc GetDefaultChartValues(GitConfigDefaultChartValuesRequest) returns (GitConfigDefaultChartValuesResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/default_values",
     };
   }
 }

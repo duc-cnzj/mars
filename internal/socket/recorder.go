@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -74,11 +76,11 @@ func (r *Recorder) Close() error {
 		}
 		app.DB().Create(file)
 		var emodal = models.Event{
-			Action:   uint8(event.ActionType_Shell),
+			Action:   uint8(types.EventActionType_Shell),
 			Username: r.user.Name,
 			Message:  fmt.Sprintf("user exec container: '%s' namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
-			Duration: utils.HumanDuration(time.Since(r.startTime)),
+			Duration: date.HumanDuration(time.Since(r.startTime)),
 		}
 
 		app.DB().Create(&emodal)

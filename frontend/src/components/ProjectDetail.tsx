@@ -24,14 +24,14 @@ const Shell = lazy(() => import("./TabShell"));
 const { TabPane } = Tabs;
 
 const ItemDetailModal: React.FC<{
-  item: pb.NamespaceSimpleProject;
+  item: pb.types.ProjectModel;
   namespace: string;
   namespaceId: number;
 }> = ({ item, namespace, namespaceId }) => {
   const dispatch = useDispatch();
   const [visible, setVisible] = useState(false);
   const onOk = useCallback(() => setVisible(true), []);
-  const [detail, setDetail] = useState<pb.ProjectShowResponse | undefined>();
+  const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();
   const [resizeAt, setResizeAt] = useState<number>(0);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ const ItemDetailModal: React.FC<{
   }, [item.id, visible, namespaceId]);
 
   const onSuccess = useCallback(() => {
-    detailProject(item.id || 0).then((res) => {
+    item.id && detailProject(item.id).then((res) => {
       setDetail(res.data);
     });
   }, [item.id]);
@@ -61,7 +61,7 @@ const ItemDetailModal: React.FC<{
         className="project-detail__show-button"
         type="dashed"
       >
-        <DeployStatus status={item.status || ""} />
+        <DeployStatus status={item.deploy_status} />
         <span
           title={item.name || ""}
           style={{
@@ -73,10 +73,8 @@ const ItemDetailModal: React.FC<{
         >
           {item.name}
         </span>
-        {item.status === "deployed" ? (
+        {item.deploy_status === pb.types.Deploy.StatusDeployed && (
           <ServiceEndpoint projectId={item.id} />
-        ) : (
-          <></>
         )}
       </Button>
       <DraggableModal
@@ -106,14 +104,14 @@ const ItemDetailModal: React.FC<{
           centered
           style={{ height: "100%" }}
         >
-          {item.status === "deployed" && (
+          {item.deploy_status === pb.types.Deploy.StatusDeployed && (
             <>
               <TabPane tab="容器日志" key="container-logs">
-                {detail && detail.namespace ? (
+                {detail?.project && detail.project.namespace ? (
                   <TabLog
-                    updatedAt={detail.updated_at}
-                    id={detail.id}
-                    namespace={detail.namespace.name}
+                    updatedAt={detail.project.updated_at}
+                    id={detail.project.id}
+                    namespace={detail.project.namespace.name}
                   />
                 ) : (
                   <Skeleton active />
@@ -122,11 +120,11 @@ const ItemDetailModal: React.FC<{
               <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
                 <Suspense fallback={<Skeleton active />}>
                   <ErrorBoundary>
-                    {detail && detail.namespace && (
+                    {detail?.project && detail.project.namespace && (
                       <Shell
-                        namespace={detail.namespace.name || ""}
-                        id={detail.id}
-                        updatedAt={detail.updated_at}
+                        namespace={detail.project.namespace.name}
+                        id={detail.project.id}
+                        updatedAt={detail.project.updated_at}
                         resizeAt={resizeAt}
                       />
                     )}
@@ -135,10 +133,12 @@ const ItemDetailModal: React.FC<{
               </TabPane>
               <TabPane tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
-                  {detail && (
+                  {detail?.project && detail.project.namespace && (
                     <TabEdit
-                      detail={detail}
-                      updatedAt={detail.updated_at}
+                      elements={detail.elements}
+                      namespaceId={detail.project.namespace.id}
+                      detail={detail.project}
+                      updatedAt={detail.project.updated_at}
                       onSuccess={onSuccess}
                     />
                   )}
@@ -148,9 +148,16 @@ const ItemDetailModal: React.FC<{
           )}
           <TabPane tab="详细信息" key="detail" className="detail-tab">
             <Suspense fallback={<Skeleton active />}>
-              {detail && (
+              {detail?.project && (
                 <TabInfo
-                  detail={detail}
+                  detail={detail.project}
+                  cpu={detail.cpu}
+                  memory={detail.memory}
+                  git_commit_web_url={detail.project.git_commit_web_url}
+                  git_commit_title={detail.project.git_commit_title}
+                  git_commit_author={detail.project.git_commit_author}
+                  git_commit_date={detail.project.git_commit_date}
+                  urls={detail.urls}
                   onDeleted={() => {
                     dispatch(setNamespaceReload(true));
                     setVisible(false);

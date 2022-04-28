@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -91,7 +93,7 @@ func (t *MyPtyHandler) Close(reason string) {
 			Op:        OpStdout,
 			Data:      reason,
 		},
-		Container: &websocket_pb.Container{
+		Container: &types.Container{
 			Namespace: t.Container.Namespace,
 			Pod:       t.Container.Pod,
 			Container: t.Container.Container,
@@ -164,7 +166,7 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 				Data:      string(p),
 				SessionId: t.id,
 			},
-			Container: &websocket_pb.Container{
+			Container: &types.Container{
 				Namespace: t.Container.Namespace,
 				Pod:       t.Container.Pod,
 				Container: t.Container.Container,
@@ -203,7 +205,7 @@ func (t *MyPtyHandler) Toast(p string) error {
 			Data:      p,
 			SessionId: t.id,
 		},
-		Container: &websocket_pb.Container{
+		Container: &types.Container{
 			Container: t.Container.Container,
 			Namespace: t.Container.Namespace,
 			Pod:       t.Container.Pod,
@@ -398,7 +400,7 @@ type TerminalResponse struct {
 }
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
-	if running, reason := utils.IsPodRunning(input.Namespace, input.Pod); !running {
+	if running, reason := utils.IsPodRunning(input.Container.Namespace, input.Container.Pod); !running {
 		return "", errors.New(reason)
 	}
 
@@ -407,9 +409,9 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		return "", err
 	}
 	var c = Container{
-		Namespace: input.Namespace,
-		Pod:       input.Pod,
-		Container: input.Container,
+		Namespace: input.Container.Namespace,
+		Pod:       input.Container.Pod,
+		Container: input.Container.Container,
 	}
 
 	pty := &MyPtyHandler{
@@ -428,9 +430,9 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 	conn.terminalSessions.Set(sessionID, pty)
 
 	go WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
-		Namespace: input.Namespace,
-		Pod:       input.Pod,
-		Container: input.Container,
+		Namespace: input.Container.Namespace,
+		Pod:       input.Container.Pod,
+		Container: input.Container.Container,
 	}, "", sessionID)
 
 	return sessionID, nil

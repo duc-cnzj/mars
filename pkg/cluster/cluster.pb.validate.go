@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on ClusterInfoResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ClusterInfoResponse) Validate() error {
+// Validate checks the field values on InfoResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InfoResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ClusterInfoResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ClusterInfoResponseMultiError, or nil if none found.
-func (m *ClusterInfoResponse) ValidateAll() error {
+// ValidateAll checks the field values on InfoResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InfoResponseMultiError, or
+// nil if none found.
+func (m *InfoResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ClusterInfoResponse) validate(all bool) error {
+func (m *InfoResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -80,19 +80,18 @@ func (m *ClusterInfoResponse) validate(all bool) error {
 	// no validation rules for RequestCpuRate
 
 	if len(errors) > 0 {
-		return ClusterInfoResponseMultiError(errors)
+		return InfoResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ClusterInfoResponseMultiError is an error wrapping multiple validation
-// errors returned by ClusterInfoResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ClusterInfoResponseMultiError []error
+// InfoResponseMultiError is an error wrapping multiple validation errors
+// returned by InfoResponse.ValidateAll() if the designated constraints aren't met.
+type InfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ClusterInfoResponseMultiError) Error() string {
+func (m InfoResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -101,11 +100,11 @@ func (m ClusterInfoResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ClusterInfoResponseMultiError) AllErrors() []error { return m }
+func (m InfoResponseMultiError) AllErrors() []error { return m }
 
-// ClusterInfoResponseValidationError is the validation error returned by
-// ClusterInfoResponse.Validate if the designated constraints aren't met.
-type ClusterInfoResponseValidationError struct {
+// InfoResponseValidationError is the validation error returned by
+// InfoResponse.Validate if the designated constraints aren't met.
+type InfoResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -113,24 +112,22 @@ type ClusterInfoResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ClusterInfoResponseValidationError) Field() string { return e.field }
+func (e InfoResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ClusterInfoResponseValidationError) Reason() string { return e.reason }
+func (e InfoResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ClusterInfoResponseValidationError) Cause() error { return e.cause }
+func (e InfoResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ClusterInfoResponseValidationError) Key() bool { return e.key }
+func (e InfoResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ClusterInfoResponseValidationError) ErrorName() string {
-	return "ClusterInfoResponseValidationError"
-}
+func (e InfoResponseValidationError) ErrorName() string { return "InfoResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ClusterInfoResponseValidationError) Error() string {
+func (e InfoResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -142,14 +139,14 @@ func (e ClusterInfoResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sClusterInfoResponse.%s: %s%s",
+		"invalid %sInfoResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ClusterInfoResponseValidationError{}
+var _ error = InfoResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -157,24 +154,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ClusterInfoResponseValidationError{}
+} = InfoResponseValidationError{}
 
-// Validate checks the field values on ClusterInfoRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ClusterInfoRequest) Validate() error {
+// Validate checks the field values on InfoRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InfoRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ClusterInfoRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ClusterInfoRequestMultiError, or nil if none found.
-func (m *ClusterInfoRequest) ValidateAll() error {
+// ValidateAll checks the field values on InfoRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InfoRequestMultiError, or
+// nil if none found.
+func (m *InfoRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ClusterInfoRequest) validate(all bool) error {
+func (m *InfoRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -182,19 +179,18 @@ func (m *ClusterInfoRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return ClusterInfoRequestMultiError(errors)
+		return InfoRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ClusterInfoRequestMultiError is an error wrapping multiple validation errors
-// returned by ClusterInfoRequest.ValidateAll() if the designated constraints
-// aren't met.
-type ClusterInfoRequestMultiError []error
+// InfoRequestMultiError is an error wrapping multiple validation errors
+// returned by InfoRequest.ValidateAll() if the designated constraints aren't met.
+type InfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ClusterInfoRequestMultiError) Error() string {
+func (m InfoRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -203,11 +199,11 @@ func (m ClusterInfoRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ClusterInfoRequestMultiError) AllErrors() []error { return m }
+func (m InfoRequestMultiError) AllErrors() []error { return m }
 
-// ClusterInfoRequestValidationError is the validation error returned by
-// ClusterInfoRequest.Validate if the designated constraints aren't met.
-type ClusterInfoRequestValidationError struct {
+// InfoRequestValidationError is the validation error returned by
+// InfoRequest.Validate if the designated constraints aren't met.
+type InfoRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -215,24 +211,22 @@ type ClusterInfoRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ClusterInfoRequestValidationError) Field() string { return e.field }
+func (e InfoRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ClusterInfoRequestValidationError) Reason() string { return e.reason }
+func (e InfoRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ClusterInfoRequestValidationError) Cause() error { return e.cause }
+func (e InfoRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ClusterInfoRequestValidationError) Key() bool { return e.key }
+func (e InfoRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ClusterInfoRequestValidationError) ErrorName() string {
-	return "ClusterInfoRequestValidationError"
-}
+func (e InfoRequestValidationError) ErrorName() string { return "InfoRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ClusterInfoRequestValidationError) Error() string {
+func (e InfoRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -244,14 +238,14 @@ func (e ClusterInfoRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sClusterInfoRequest.%s: %s%s",
+		"invalid %sInfoRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ClusterInfoRequestValidationError{}
+var _ error = InfoRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -259,4 +253,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ClusterInfoRequestValidationError{}
+} = InfoRequestValidationError{}

@@ -16,7 +16,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gosimple/slug"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
@@ -27,8 +26,8 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -130,7 +129,7 @@ type Jober struct {
 	dryRun    bool
 	manifests []string
 
-	input    *websocket_pb.ProjectInput
+	input    *websocket_pb.CreateProjectInput
 	wsType   websocket_pb.Type
 	slugName string
 
@@ -151,9 +150,10 @@ type Jober struct {
 	stopCtx   context.Context
 	stopFn    func(error)
 
-	isNew   bool
-	config  *mars.MarsConfig
-	project *models.Project
+	isNew       bool
+	config      *mars.Config
+	project     *models.Project
+	prevProject *models.Project
 
 	percenter Percentable
 	messager  DeployMsger
@@ -173,7 +173,7 @@ func WithDryRun() Option {
 }
 
 func NewJober(
-	input *websocket_pb.ProjectInput,
+	input *websocket_pb.CreateProjectInput,
 	user contracts.UserInfo,
 	slugName string,
 	messager DeployMsger,
@@ -240,6 +240,9 @@ func (j *Jober) Project() *models.Project {
 func (j *Jober) Stop(err error) {
 	mlog.Debugf("stop deploy job, because '%v'", err)
 	j.stopFn(err)
+	if j.project.DeployStatus == uint8(types.Deploy_StatusDeploying) && !j.IsDryRun() {
+		app.DB().Model(j.project).UpdateColumn("DeployStatus", uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name)))
+	}
 }
 
 func (j *Jober) IsStopped() bool {
@@ -304,14 +307,14 @@ func (j *Jober) AddDestroyFunc(fn func()) {
 }
 
 type userConfig struct {
-	Config           string                           `yaml:"config"`
-	Branch           string                           `yaml:"branch"`
-	Commit           string                           `yaml:"commit"`
-	Atomic           bool                             `yaml:"atomic"`
-	WebUrl           string                           `yaml:"web_url"`
-	ExtraValues      []*websocket_pb.ProjectExtraItem `yaml:"extra_values"`
-	FinalExtraValues mergeYamlString                  `yaml:"final_extra_values"`
-	EnvValues        vars                             `yaml:"env_values"`
+	Config           string              `yaml:"config"`
+	Branch           string              `yaml:"branch"`
+	Commit           string              `yaml:"commit"`
+	Atomic           bool                `yaml:"atomic"`
+	WebUrl           string              `yaml:"web_url"`
+	ExtraValues      []*types.ExtraValue `yaml:"extra_values"`
+	FinalExtraValues mergeYamlString     `yaml:"final_extra_values"`
+	EnvValues        vars                `yaml:"env_values"`
 }
 
 type mergeYamlString []string
@@ -334,25 +337,44 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 	return bf.String(), nil
 }
 
-type sortableProjectExtraItem []*websocket_pb.ProjectExtraItem
+type sortableExtraItem []*types.ExtraValue
 
-func (s sortableProjectExtraItem) Len() int {
+func (s sortableExtraItem) Len() int {
 	return len(s)
 }
 
-func (s sortableProjectExtraItem) Less(i, j int) bool {
+func (s sortableExtraItem) Less(i, j int) bool {
 	return s[i].Path < s[j].Path
 }
 
-func (s sortableProjectExtraItem) Swap(i, j int) {
+func (s sortableExtraItem) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
 func (u userConfig) PrettyYaml() string {
 	bf := bytes.Buffer{}
-	sort.Sort(sortableProjectExtraItem(u.ExtraValues))
+	sort.Sort(sortableExtraItem(u.ExtraValues))
 	yaml.NewEncoder(&bf).Encode(&u)
 	return bf.String()
+}
+
+var fields = []any{"Config",
+	"GitProjectId",
+	"GitCommit",
+	"GitBranch",
+	"DockerImage",
+	"PodSelectors",
+	"OverrideValues",
+	"Atomic",
+	"ExtraValues",
+	"FinalExtraValues",
+	"EnvValues",
+	"DeployStatus",
+	"GitCommitTitle",
+	"GitCommitWebUrl",
+	"GitCommitAuthor",
+	"GitCommitDate",
+	"ConfigType",
 }
 
 func (j *Jober) Run() error {
@@ -370,9 +392,15 @@ func (j *Jober) Run() error {
 				Msg:  err.Error(),
 				Type: MessageError,
 			}
+			j.project.DeployStatus = uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+
+			if !j.IsDryRun() {
+				app.DB().Model(&j.project).UpdateColumn("DeployStatus", j.project.DeployStatus)
+			}
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
+			j.project.DeployStatus = uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
 			j.manifests = utils.Filter[string](strings.Split(result.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 })
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
@@ -380,6 +408,12 @@ func (j *Jober) Run() error {
 				Commit:   j.vars.MustGetString("Commit"),
 				Branch:   j.vars.MustGetString("Branch"),
 			}, result.Manifest)
+			j.project.GitCommitTitle = j.Commit().GetTitle()
+			j.project.GitCommitWebUrl = j.Commit().GetWebURL()
+			j.project.GitCommitAuthor = j.Commit().GetAuthorName()
+			j.project.GitCommitDate = *j.Commit().GetCommittedDate()
+			j.project.ConfigType = j.config.GetConfigFileType()
+
 			if len(j.input.ExtraValues) > 0 {
 				marshal, _ := json.Marshal(j.input.ExtraValues)
 				j.project.ExtraValues = string(marshal)
@@ -394,21 +428,17 @@ func (j *Jober) Run() error {
 			}
 
 			var (
-				p                models.Project
+				p                *models.Project
 				oldConf, newConf userConfig
 			)
-			if app.DB().
-				Select("ID", "GitProjectId", "Name", "NamespaceId", "Config", "GitBranch", "GitCommit", "Atomic", "ExtraValues", "FinalExtraValues", "EnvValues").
-				Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).
-				First(&p).Error == nil {
+			if j.prevProject != nil && j.prevProject.ID > 0 {
+				p = j.prevProject
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
-					app.DB().Model(j.project).
-						Select("Config", "GitProjectId", "GitCommit", "GitBranch", "DockerImage", "PodSelectors", "OverrideValues", "Atomic", "ExtraValues", "FinalExtraValues", "EnvValues").
-						Updates(&j.project)
+					app.DB().Model(j.project).Select("", fields...).Updates(&j.project)
 				}
 				var (
-					ev  []*websocket_pb.ProjectExtraItem
+					ev  []*types.ExtraValue
 					fev mergeYamlString
 				)
 				if len(p.ExtraValues) > 0 {
@@ -433,7 +463,7 @@ func (j *Jober) Run() error {
 				}
 			} else {
 				if !j.IsDryRun() {
-					app.DB().Create(&j.project)
+					app.DB().Select("", fields...).Updates(&j.project)
 				}
 			}
 			newConf = userConfig{
@@ -454,12 +484,12 @@ func (j *Jober) Run() error {
 					Username: j.User().Name,
 				})
 			}
-			var act event.ActionType = event.ActionType_Create
+			var act types.EventActionType = types.EventActionType_Create
 			if !j.IsNew() {
-				act = event.ActionType_Update
+				act = types.EventActionType_Update
 			}
 			if j.IsDryRun() {
-				act = event.ActionType_DryRun
+				act = types.EventActionType_DryRun
 			}
 			AuditLogWithChange(j.User().Name, act,
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
@@ -512,7 +542,7 @@ func (j *Jober) Validate() error {
 	}
 
 	j.project = &models.Project{
-		Name:         slug.Make(j.input.Name),
+		Name:         j.input.Name,
 		GitProjectId: int(j.input.GitProjectId),
 		GitBranch:    j.input.GitBranch,
 		GitCommit:    j.input.GitCommit,
@@ -527,17 +557,23 @@ func (j *Jober) Validate() error {
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
 		if !j.IsDryRun() {
+			j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
 			app.DB().Create(&j.project)
 		}
 		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
+	} else {
+		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
+			return errors.New("有别人也在操作这个项目，等等哦~")
+		}
+
+		if !j.IsDryRun() {
+			app.DB().Model(&p).UpdateColumn("DeployStatus", uint8(types.Deploy_StatusDeploying))
+		}
+		j.project.ID = p.ID
+		j.prevProject = &p
 	}
 	j.imagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
-
-	status, _ := utils.ReleaseStatus(j.project.Name, j.project.Namespace.Name)
-	if status == utils.StatusPending {
-		return errors.New("有别人也在操作这个项目，等等哦~")
-	}
 
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
 	if err != nil {

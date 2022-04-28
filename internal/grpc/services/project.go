@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/duc-cnzj/mars-client/v4/endpoint"
-	"github.com/duc-cnzj/mars-client/v4/event"
-	"github.com/duc-cnzj/mars-client/v4/model"
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
 	"github.com/duc-cnzj/mars-client/v4/project"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -39,7 +39,7 @@ type ProjectSvc struct {
 	project.UnimplementedProjectServer
 }
 
-func (p *ProjectSvc) List(ctx context.Context, request *project.ProjectListRequest) (*project.ProjectListResponse, error) {
+func (p *ProjectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -50,37 +50,12 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ProjectListReque
 		return nil, err
 	}
 	app.DB().Model(&models.Project{}).Count(&count)
-	res := make([]*model.ProjectModel, 0, len(projects))
+	res := make([]*types.ProjectModel, 0, len(projects))
 	for _, p := range projects {
-		var ns *model.NamespaceModel
-		if p.Namespace.ID != 0 {
-			ns = &model.NamespaceModel{
-				Id:               int64(p.Namespace.ID),
-				Name:             p.Namespace.Name,
-				ImagePullSecrets: p.Namespace.ImagePullSecretsArray(),
-				CreatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
-				UpdatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
-			}
-		}
-		res = append(res, &model.ProjectModel{
-			Id:             int64(p.ID),
-			Name:           p.Name,
-			GitProjectId:   int64(p.GitProjectId),
-			GitBranch:      p.GitBranch,
-			GitCommit:      p.GitCommit,
-			Config:         p.Config,
-			OverrideValues: p.OverrideValues,
-			DockerImage:    p.DockerImage,
-			PodSelectors:   p.PodSelectors,
-			NamespaceId:    int64(p.NamespaceId),
-			Atomic:         p.Atomic,
-			CreatedAt:      utils.ToRFC3339DatetimeString(&p.CreatedAt),
-			UpdatedAt:      utils.ToRFC3339DatetimeString(&p.UpdatedAt),
-			Namespace:      ns,
-		})
+		res = append(res, p.ProtoTransform())
 	}
 
-	return &project.ProjectListResponse{
+	return &project.ListResponse{
 		Page:     request.Page,
 		PageSize: request.PageSize,
 		Count:    count,
@@ -88,7 +63,7 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ProjectListReque
 	}, nil
 }
 
-func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ProjectApplyRequest) (*project.ProjectDryRunApplyResponse, error) {
+func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
 	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
 	errMsger := newErrorMessager()
@@ -97,7 +72,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ProjectAppl
 	}
 	mlog.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
-	job := socket.NewJober(&websocket.ProjectInput{
+	job := socket.NewJober(&websocket.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -124,19 +99,20 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ProjectAppl
 		return nil, errMsger
 	}
 
-	return &project.ProjectDryRunApplyResponse{Results: job.Manifests()}, nil
+	return &project.DryRunApplyResponse{Results: job.Manifests()}, nil
 }
 
-func (p *ProjectSvc) Apply(input *project.ProjectApplyRequest, server project.Project_ApplyServer) error {
+func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
 	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
 	if input.WebsocketSync {
 		pubsub = plugins.GetWsSender().New("", "")
 	}
 	t := websocket.Type_ApplyProject
 	msger := &messager{
-		slugName: utils.GetSlugName(input.NamespaceId, input.Name),
-		t:        t,
-		server:   server,
+		slugName:    utils.GetSlugName(input.NamespaceId, input.Name),
+		t:           t,
+		server:      server,
+		sendPercent: input.SendPercent,
 	}
 	if err := p.completeInput(input, msger); err != nil {
 		return err
@@ -144,7 +120,7 @@ func (p *ProjectSvc) Apply(input *project.ProjectApplyRequest, server project.Pr
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{}, 1)
 
-	job := socket.NewJober(&websocket.ProjectInput{
+	job := socket.NewJober(&websocket.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -170,7 +146,7 @@ func (p *ProjectSvc) Apply(input *project.ProjectApplyRequest, server project.Pr
 	return nil
 }
 
-func (p *ProjectSvc) completeInput(input *project.ProjectApplyRequest, msger socket.Msger) error {
+func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger socket.Msger) error {
 	if input.GitCommit == "" {
 		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
 		if len(commits) < 1 {
@@ -187,7 +163,7 @@ func (p *ProjectSvc) completeInput(input *project.ProjectApplyRequest, msger soc
 	return nil
 }
 
-func (p *ProjectSvc) Delete(ctx context.Context, request *project.ProjectDeleteRequest) (*project.ProjectDeleteResponse, error) {
+func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
@@ -198,13 +174,13 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.ProjectDeleteR
 	app.DB().Delete(&projectModel)
 	app.Event().Dispatch(events.EventProjectDeleted, map[string]any{"data": &projectModel})
 
-	AuditLog(MustGetUser(ctx).Name, event.ActionType_Delete,
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete,
 		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name))
 
-	return &project.ProjectDeleteResponse{}, nil
+	return &project.DeleteResponse{}, nil
 }
 
-func (p *ProjectSvc) Show(ctx context.Context, request *project.ProjectShowRequest) (*project.ProjectShowResponse, error) {
+func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -214,16 +190,11 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ProjectShowReque
 	}
 	marsC, _ := GetProjectMarsConfig(projectModel.GitProjectId, projectModel.GitBranch)
 	cpu, memory := utils.GetCpuAndMemory(projectModel.GetAllPodMetrics())
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", projectModel.GitProjectId), projectModel.GitCommit)
-	if err != nil {
-		mlog.Error(err)
-		return nil, err
-	}
 
 	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModel.Namespace.Name)
 	ingMapping := utils.GetIngressMappingByNamespace(projectModel.Namespace.Name)
 
-	var urls = make([]*endpoint.ServiceEndpoint, 0)
+	var urls = make([]*types.ServiceEndpoint, 0)
 	for key, values := range ingMapping {
 		if projectModel.Name == key {
 			urls = append(urls, values...)
@@ -235,38 +206,16 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ProjectShowReque
 		}
 	}
 
-	return &project.ProjectShowResponse{
-		Id:              int64(projectModel.ID),
-		Name:            projectModel.Name,
-		GitProjectId:    int64(projectModel.GitProjectId),
-		GitBranch:       projectModel.GitBranch,
-		GitCommit:       projectModel.GitCommit,
-		Config:          projectModel.Config,
-		DockerImage:     projectModel.DockerImage,
-		Atomic:          projectModel.Atomic,
-		GitCommitWebUrl: commit.GetWebURL(),
-		GitCommitTitle:  commit.GetTitle(),
-		GitCommitAuthor: commit.GetAuthorName(),
-		GitCommitDate:   utils.ToHumanizeDatetimeString(commit.GetCreatedAt()),
-		Urls:            urls,
-		Namespace: &project.ProjectShowResponse_Namespace{
-			Id:   int64(projectModel.NamespaceId),
-			Name: projectModel.Namespace.Name,
-		},
-		Cpu:               cpu,
-		Memory:            memory,
-		OverrideValues:    projectModel.OverrideValues,
-		CreatedAt:         utils.ToRFC3339DatetimeString(&projectModel.CreatedAt),
-		UpdatedAt:         utils.ToRFC3339DatetimeString(&projectModel.UpdatedAt),
-		HumanizeCreatedAt: utils.ToHumanizeDatetimeString(&projectModel.CreatedAt),
-		HumanizeUpdatedAt: utils.ToHumanizeDatetimeString(&projectModel.UpdatedAt),
-		ExtraValues:       projectModel.GetExtraValues(),
-		Elements:          marsC.GetElements(),
-		ConfigType:        marsC.GetConfigFileType(),
+	return &project.ShowResponse{
+		Project:  projectModel.ProtoTransform(),
+		Urls:     urls,
+		Cpu:      cpu,
+		Memory:   memory,
+		Elements: marsC.Elements,
 	}, nil
 }
 
-func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.ProjectAllContainersRequest) (*project.ProjectAllContainersResponse, error) {
+func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
@@ -274,20 +223,20 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.Project
 
 	var list = projectModel.GetAllPods()
 
-	var containerList []*project.ProjectPod
+	var containerList []*types.Container
 	for _, item := range list {
 		for _, c := range item.Spec.Containers {
 			containerList = append(containerList,
-				&project.ProjectPod{
-					Namespace:     projectModel.Namespace.Name,
-					PodName:       item.Name,
-					ContainerName: c.Name,
+				&types.Container{
+					Namespace: projectModel.Namespace.Name,
+					Pod:       item.Name,
+					Container: c.Name,
 				},
 			)
 		}
 	}
 
-	return &project.ProjectAllContainersResponse{Items: containerList}, nil
+	return &project.AllContainersResponse{Items: containerList}, nil
 }
 
 type errorMessager struct {
@@ -351,89 +300,104 @@ type messager struct {
 	isStopped bool
 	stoperr   error
 
+	sendPercent bool
+
 	slugName string
 	t        websocket.Type
 	server   project.Project_ApplyServer
 }
 
 func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string, p *models.Project) {
-	var ns model.NamespaceModel
+	var ns types.NamespaceModel
 	if p.Namespace.ID != 0 {
-		ns = model.NamespaceModel{
+		ns = types.NamespaceModel{
 			Id:               int64(p.Namespace.ID),
 			Name:             p.Namespace.Name,
-			ImagePullSecrets: p.Namespace.ImagePullSecretsArray(),
-			CreatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
-			UpdatedAt:        utils.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
+			ImagePullSecrets: p.Namespace.GetImagePullSecrets(),
+			CreatedAt:        date.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
+			UpdatedAt:        date.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
 		}
 	}
-	m.send(&project.ProjectApplyResponse{
+	m.send(&project.ApplyResponse{
 		Metadata: &websocket.Metadata{
-			Slug:   m.slugName,
-			Type:   m.t,
-			Result: resultType,
-			End:    true,
-			Data:   s,
+			Slug:    m.slugName,
+			Type:    m.t,
+			Result:  resultType,
+			End:     true,
+			Message: s,
 		},
-		Project: &model.ProjectModel{
-			Id:             int64(p.ID),
-			Name:           p.Name,
-			GitProjectId:   int64(p.GitProjectId),
-			GitBranch:      p.GitBranch,
-			GitCommit:      p.GitCommit,
-			Config:         p.Config,
-			OverrideValues: p.OverrideValues,
-			DockerImage:    p.DockerImage,
-			PodSelectors:   p.PodSelectors,
-			NamespaceId:    int64(p.NamespaceId),
-			Atomic:         p.Atomic,
-			CreatedAt:      utils.ToRFC3339DatetimeString(&p.CreatedAt),
-			UpdatedAt:      utils.ToRFC3339DatetimeString(&p.UpdatedAt),
-			ExtraValues:    p.ExtraValues,
-			Namespace:      &ns,
+		Project: &types.ProjectModel{
+			Id:               int64(p.ID),
+			Name:             p.Name,
+			GitProjectId:     int64(p.GitProjectId),
+			GitBranch:        p.GitBranch,
+			GitCommit:        p.GitCommit,
+			Config:           p.Config,
+			OverrideValues:   p.OverrideValues,
+			DockerImage:      p.DockerImage,
+			PodSelectors:     p.PodSelectors,
+			NamespaceId:      int64(p.NamespaceId),
+			Atomic:           p.Atomic,
+			EnvValues:        p.ExtraValues,
+			ExtraValues:      p.GetExtraValues(),
+			FinalExtraValues: p.FinalExtraValues,
+			DeployStatus:     types.Deploy(p.DeployStatus),
+			Namespace:        &ns,
+			CreatedAt:        date.ToRFC3339DatetimeString(&p.CreatedAt),
+			UpdatedAt:        date.ToRFC3339DatetimeString(&p.UpdatedAt),
+			DeletedAt:        date.ToRFC3339DatetimeString(&p.DeletedAt.Time),
 		},
 	})
 }
 
 func (m *messager) SendEndError(err error) {
-	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
-		Slug:   m.slugName,
-		Type:   m.t,
-		Result: websocket.ResultType_Error,
-		End:    true,
-		Data:   err.Error(),
+	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
+		Slug:    m.slugName,
+		Type:    m.t,
+		Result:  websocket.ResultType_Error,
+		End:     true,
+		Message: err.Error(),
 	}})
 }
 
 func (m *messager) SendError(err error) {
-	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
-		Slug:   m.slugName,
-		Type:   m.t,
-		Result: websocket.ResultType_Error,
-		End:    false,
-		Data:   err.Error(),
+	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
+		Slug:    m.slugName,
+		Type:    m.t,
+		Result:  websocket.ResultType_Error,
+		End:     false,
+		Message: err.Error(),
 	}})
 }
 
 func (m *messager) SendProcessPercent(s string) {
-	// 不需要
+	if m.sendPercent {
+		res := &websocket.Metadata{
+			Slug:    m.slugName,
+			Type:    websocket.Type_ProcessPercent,
+			Result:  websocket.ResultType_Success,
+			End:     false,
+			Message: s,
+		}
+		m.send(&project.ApplyResponse{Metadata: res})
+	}
 }
 
 func (m *messager) SendMsg(s string) {
-	m.send(&project.ProjectApplyResponse{Metadata: &websocket.Metadata{
-		Slug:   m.slugName,
-		Type:   m.t,
-		Result: websocket.ResultType_Success,
-		End:    false,
-		Data:   s,
+	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
+		Slug:    m.slugName,
+		Type:    m.t,
+		Result:  websocket.ResultType_Success,
+		End:     false,
+		Message: s,
 	}})
 }
 
 func (m *messager) SendProtoMsg(message plugins.WebsocketMessage) {
-	m.send(&project.ProjectApplyResponse{Metadata: message.GetMetadata()})
+	m.send(&project.ApplyResponse{Metadata: message.GetMetadata()})
 }
 
-func (m *messager) send(res *project.ProjectApplyResponse) {
+func (m *messager) send(res *project.ApplyResponse) {
 	if m.IsStopped() {
 		return
 	}

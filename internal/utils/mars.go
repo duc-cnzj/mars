@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func BranchPass(mars *mars.MarsConfig, name string) bool {
+func BranchPass(mars *mars.Config, name string) bool {
 	if len(mars.Branches) < 1 {
 		return true
 	}
@@ -38,8 +38,8 @@ func BranchPass(mars *mars.MarsConfig, name string) bool {
 	return false
 }
 
-func GetProjectMarsConfig(projectId any, branch string) (*mars.MarsConfig, error) {
-	var marsC mars.MarsConfig
+func GetProjectMarsConfig(projectId any, branch string) (*mars.Config, error) {
+	var marsC mars.Config
 
 	var gp models.GitProject
 	pid := fmt.Sprintf("%v", projectId)
@@ -68,7 +68,7 @@ func GetProjectMarsConfig(projectId any, branch string) (*mars.MarsConfig, error
 	return &marsC, nil
 }
 
-func ParseInputConfig(mars *mars.MarsConfig, input string) (string, error) {
+func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 	var (
 		err      error
 		yamlData []byte
@@ -97,13 +97,13 @@ func ParseInputConfig(mars *mars.MarsConfig, input string) (string, error) {
 }
 
 // IsRemoteConfigFile 如果是这个格式意味着是远程项目, "pid|branch|filename"
-func IsRemoteConfigFile(mars *mars.MarsConfig) bool {
+func IsRemoteConfigFile(mars *mars.Config) bool {
 	split := strings.Split(mars.ConfigFile, "|")
 
 	return len(split) == 3 && intPid(split[0])
 }
 
-func IsRemoteChart(mars *mars.MarsConfig) bool {
+func IsRemoteChart(mars *mars.Config) bool {
 	split := strings.Split(mars.LocalChartPath, "|")
 	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
 
