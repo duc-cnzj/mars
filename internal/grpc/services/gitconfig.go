@@ -8,16 +8,14 @@ import (
 	gopath "path"
 	"strings"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars-client/v4/gitconfig"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
+	"github.com/duc-cnzj/mars-client/v4/gitconfig"
 	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"

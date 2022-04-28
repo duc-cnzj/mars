@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -26,15 +25,8 @@ import (
 )
 
 const (
-	TAB                 = "\u0009"
 	ETX                 = "\u0003"
 	END_OF_TRANSMISSION = "\u0004"
-	ESC                 = "\u001B"
-
-	Up    = "\u2191"
-	Down  = "\u2193"
-	Left  = "\u2190"
-	Right = "\u2192"
 )
 
 const (

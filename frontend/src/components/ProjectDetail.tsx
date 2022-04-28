@@ -63,7 +63,7 @@ const ItemDetailModal: React.FC<{
       >
         <DeployStatus status={item.deploy_status} />
         <span
-          title={item.name || ""}
+          title={item.name}
           style={{
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/event/events"
 )

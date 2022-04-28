@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils/date"
-
-	"github.com/duc-cnzj/mars-client/v4/types"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type GitProject struct {

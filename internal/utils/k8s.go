@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 
