@@ -38,10 +38,10 @@ type Project struct {
 
 	ConfigType string `json:"config_type" gorm:"size:255;nullable;"`
 
-	GitCommitWebUrl string    `json:"git_commit_web_url" gorm:"size:255;nullable;"`
-	GitCommitTitle  string    `json:"git_commit_title" gorm:"size:255;nullable;"`
-	GitCommitAuthor string    `json:"git_commit_author" gorm:"size:255;nullable;"`
-	GitCommitDate   time.Time `json:"git_commit_date"`
+	GitCommitWebUrl string     `json:"git_commit_web_url" gorm:"size:255;nullable;"`
+	GitCommitTitle  string     `json:"git_commit_title" gorm:"size:255;nullable;"`
+	GitCommitAuthor string     `json:"git_commit_author" gorm:"size:255;nullable;"`
+	GitCommitDate   *time.Time `json:"git_commit_date"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -156,7 +156,7 @@ func (project *Project) ProtoTransform() *types.ProjectModel {
 		GitCommitWebUrl:   project.GitCommitWebUrl,
 		GitCommitTitle:    project.GitCommitTitle,
 		GitCommitAuthor:   project.GitCommitAuthor,
-		GitCommitDate:     date.ToHumanizeDatetimeString(&project.GitCommitDate),
+		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
 		Namespace:         project.Namespace.ProtoTransform(),
 		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),

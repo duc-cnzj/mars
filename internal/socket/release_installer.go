@@ -13,7 +13,7 @@ import (
 
 type ReleaseInstaller interface {
 	Chart() *chart.Chart
-	Run(stopCtx context.Context, messageCh chan MessageItem, percenter Percentable) (*release.Release, error)
+	Run(stopCtx context.Context, messageCh *SafeWriteMessageCh, percenter Percentable) (*release.Release, error)
 
 	Logs() []string
 }
@@ -29,7 +29,7 @@ type releaseInstaller struct {
 	atomic         bool
 	valueOpts      *values.Options
 	logs           *timeOrderedSetString
-	messageCh      chan MessageItem
+	messageCh      *SafeWriteMessageCh
 }
 
 func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, atomic bool, timeoutSeconds int64, dryRun bool) ReleaseInstaller {
@@ -49,7 +49,7 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 	return r.chart
 }
 
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh chan MessageItem, percenter Percentable) (*release.Release, error) {
+func (r *releaseInstaller) Run(stopCtx context.Context, messageCh *SafeWriteMessageCh, percenter Percentable) (*release.Release, error) {
 	defer utils.HandlePanic("releaseInstaller: Run")
 
 	r.messageCh = messageCh
@@ -76,13 +76,10 @@ func (r *releaseInstaller) logger() func(format string, v ...any) {
 
 		if !r.logs.has(msg) {
 			r.logs.add(msg)
-			select {
-			case r.messageCh <- MessageItem{
+			r.messageCh.Send(MessageItem{
 				Msg:  msg,
 				Type: MessageText,
-			}:
-			default:
-			}
+			})
 		}
 	}
 }

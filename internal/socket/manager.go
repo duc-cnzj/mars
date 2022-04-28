@@ -85,6 +85,31 @@ type MessageItem struct {
 	Type MessageType
 }
 
+type SafeWriteMessageCh struct {
+	sync.Mutex
+	closed bool
+	ch     chan MessageItem
+}
+
+func (s *SafeWriteMessageCh) Closed() {
+	s.Lock()
+	defer s.Unlock()
+	s.closed = true
+	close(s.ch)
+}
+func (s *SafeWriteMessageCh) Chan() <-chan MessageItem {
+	return s.ch
+}
+func (s *SafeWriteMessageCh) Send(m MessageItem) {
+	s.Lock()
+	defer s.Unlock()
+	if s.closed {
+		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
+		return
+	}
+	s.ch <- m
+}
+
 type vars map[string]any
 
 func (v vars) MustGetString(key string) string {
@@ -126,7 +151,25 @@ type Job interface {
 	Percenter() Percentable
 }
 
+type DeployStatus struct {
+	sync.RWMutex
+	status types.Deploy
+}
+
+func (ds *DeployStatus) SetStatus(s types.Deploy) {
+	ds.Lock()
+	defer ds.Unlock()
+	ds.status = s
+}
+func (ds *DeployStatus) Status() types.Deploy {
+	ds.RLock()
+	defer ds.RUnlock()
+	return ds.status
+}
+
 type Jober struct {
+	deployStatus *DeployStatus
+
 	dryRun    bool
 	manifests []string
 
@@ -147,7 +190,7 @@ type Jober struct {
 	installer         ReleaseInstaller
 	commit            plugins.CommitInterface
 
-	messageCh chan MessageItem
+	messageCh *SafeWriteMessageCh
 	stopCtx   context.Context
 	stopFn    func(error)
 
@@ -183,6 +226,7 @@ func NewJober(
 	opts ...Option,
 ) Job {
 	jb := &Jober{
+		deployStatus:   &DeployStatus{},
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -192,7 +236,7 @@ func NewJober(
 		input:          input,
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
-		messageCh:      make(chan MessageItem),
+		messageCh:      &SafeWriteMessageCh{ch: make(chan MessageItem, 100)},
 		percenter:      newProcessPercent(messager),
 	}
 	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
@@ -241,8 +285,9 @@ func (j *Jober) Project() *models.Project {
 func (j *Jober) Stop(err error) {
 	mlog.Debugf("stop deploy job, because '%v'", err)
 	j.stopFn(err)
-	if j.project.DeployStatus == uint8(types.Deploy_StatusDeploying) && !j.IsDryRun() {
-		app.DB().Model(j.project).UpdateColumn("DeployStatus", uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name)))
+	if j.deployStatus.Status() == types.Deploy_StatusDeploying && !j.IsDryRun() {
+		j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+		app.DB().Model(j.project).UpdateColumn("DeployStatus", j.deployStatus.Status())
 	}
 }
 
@@ -273,11 +318,12 @@ func (j *Jober) CallDestroyFuncs() {
 
 func (j *Jober) HandleMessage() {
 	defer mlog.Debug("HandleMessage exit")
+	ch := j.messageCh.Chan()
 	for {
 		select {
 		case <-app.App().Done():
 			return
-		case s, ok := <-j.messageCh:
+		case s, ok := <-ch:
 			if !ok {
 				return
 			}
@@ -382,26 +428,28 @@ func (j *Jober) Run() error {
 	go j.HandleMessage()
 
 	return func() error {
-		defer close(j.messageCh)
+		defer j.messageCh.Closed()
 		var (
 			result *release.Release
 			err    error
 		)
 
 		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter()); err != nil {
-			j.messageCh <- MessageItem{
-				Msg:  err.Error(),
-				Type: MessageError,
-			}
-			j.project.DeployStatus = uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			j.project.DeployStatus = uint8(j.deployStatus.Status())
 
 			if !j.IsDryRun() {
-				app.DB().Model(&j.project).UpdateColumn("DeployStatus", j.project.DeployStatus)
+				app.DB().Model(&j.project).UpdateColumn("DeployStatus", j.deployStatus.Status())
 			}
+			j.messageCh.Send(MessageItem{
+				Msg:  err.Error(),
+				Type: MessageError,
+			})
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
-			j.project.DeployStatus = uint8(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			j.project.DeployStatus = uint8(j.deployStatus.Status())
 			j.manifests = utils.Filter[string](strings.Split(result.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 })
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
@@ -412,7 +460,7 @@ func (j *Jober) Run() error {
 			j.project.GitCommitTitle = j.Commit().GetTitle()
 			j.project.GitCommitWebUrl = j.Commit().GetWebURL()
 			j.project.GitCommitAuthor = j.Commit().GetAuthorName()
-			j.project.GitCommitDate = *j.Commit().GetCommittedDate()
+			j.project.GitCommitDate = j.Commit().GetCommittedDate()
 			j.project.ConfigType = j.config.GetConfigFileType()
 
 			if len(j.input.ExtraValues) > 0 {
@@ -464,7 +512,7 @@ func (j *Jober) Run() error {
 				}
 			} else {
 				if !j.IsDryRun() {
-					app.DB().Select("", fields...).Updates(&j.project)
+					app.DB().Model(&j.project).Select("", fields...).Updates(&j.project)
 				}
 			}
 			newConf = userConfig{
@@ -496,10 +544,10 @@ func (j *Jober) Run() error {
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
 				oldConf, newConf)
 			j.Percenter().To(100)
-			j.messageCh <- MessageItem{
+			j.messageCh.Send(MessageItem{
 				Msg:  "部署成功",
 				Type: MessageSuccess,
-			}
+			})
 		}
 		return err
 	}()
@@ -558,7 +606,8 @@ func (j *Jober) Validate() error {
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
 		if !j.IsDryRun() {
-			j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
+			j.deployStatus.SetStatus(types.Deploy_StatusDeploying)
+			j.project.DeployStatus = uint8(j.deployStatus.Status())
 			app.DB().Create(&j.project)
 		}
 		j.Messager().SendMsg("[Check]: 新建项目")
@@ -567,9 +616,9 @@ func (j *Jober) Validate() error {
 		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
 			return errors.New("有别人也在操作这个项目，等等哦~")
 		}
-
+		j.deployStatus.SetStatus(types.Deploy_StatusDeploying)
 		if !j.IsDryRun() {
-			app.DB().Model(&p).UpdateColumn("DeployStatus", uint8(types.Deploy_StatusDeploying))
+			app.DB().Model(&p).UpdateColumn("DeployStatus", j.deployStatus.Status())
 		}
 		j.project.ID = p.ID
 		j.prevProject = &p
