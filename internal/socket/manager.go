@@ -16,6 +16,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/gosimple/slug"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
@@ -542,7 +543,7 @@ func (j *Jober) Validate() error {
 	}
 
 	j.project = &models.Project{
-		Name:         j.input.Name,
+		Name:         slug.Make(j.input.Name),
 		GitProjectId: int(j.input.GitProjectId),
 		GitBranch:    j.input.GitBranch,
 		GitCommit:    j.input.GitCommit,
