@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var ErrCancel = errors.New("收到取消信号，开始停止部署！！！")
+var ErrCancel = errors.New("已回滚到上个版本！")
 
 type CancelSignaler interface {
 	Remove(id string)

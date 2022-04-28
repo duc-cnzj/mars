@@ -192,6 +192,7 @@ type Jober struct {
 
 	messageCh *SafeWriteMessageCh
 	stopCtx   context.Context
+	stopOnce  sync.Once
 	stopFn    func(error)
 
 	isNew       bool
@@ -283,12 +284,15 @@ func (j *Jober) Project() *models.Project {
 // TODO 这里有一个问题，如果上一次成功的部署(deployed) 不是 atomic, 而且 pod 起不来，
 //   这一次部署是atomic, 那么回滚的时候会失败
 func (j *Jober) Stop(err error) {
-	mlog.Debugf("stop deploy job, because '%v'", err)
-	j.stopFn(err)
-	if j.deployStatus.Status() == types.Deploy_StatusDeploying && !j.IsDryRun() {
-		j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
-		app.DB().Model(j.project).UpdateColumn("DeployStatus", j.deployStatus.Status())
-	}
+	j.stopOnce.Do(func() {
+		mlog.Debugf("stop deploy job, because '%v'", err)
+		j.messager.SendMsg("收到取消信号, 开始停止部署~")
+		j.stopFn(err)
+		if j.deployStatus.Status() == types.Deploy_StatusDeploying && !j.IsDryRun() {
+			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", j.deployStatus.Status())
+		}
+	})
 }
 
 func (j *Jober) IsStopped() bool {
@@ -439,7 +443,7 @@ func (j *Jober) Run() error {
 			j.project.DeployStatus = uint8(j.deployStatus.Status())
 
 			if !j.IsDryRun() {
-				app.DB().Model(&j.project).UpdateColumn("DeployStatus", j.deployStatus.Status())
+				app.DB().Model(&models.Project{ID: j.project.ID}).UpdateColumn("DeployStatus", j.deployStatus.Status())
 			}
 			j.messageCh.Send(MessageItem{
 				Msg:  err.Error(),
