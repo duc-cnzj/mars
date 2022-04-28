@@ -43,7 +43,7 @@ func (g *GitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRe
 
 	var gp models.GitProject
 	if app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&gp).Error == nil {
-		app.DB().Model(&gp).Updates(map[string]any{
+		app.DB().Model(&models.GitProject{ID: gp.ID}).Updates(map[string]any{
 			"enabled":        true,
 			"default_branch": project.GetDefaultBranch(),
 			"name":           project.GetName(),
@@ -69,7 +69,7 @@ func (g *GitSvc) DisableProject(ctx context.Context, request *git.DisableProject
 	project, _ := plugins.GetGitServer().GetProject(request.GitProjectId)
 	var gp models.GitProject
 	if app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&gp).Error == nil {
-		app.DB().Model(&gp).Updates(map[string]any{
+		app.DB().Model(&models.GitProject{ID: gp.ID}).Updates(map[string]any{
 			"enabled":        false,
 			"default_branch": project.GetDefaultBranch(),
 			"name":           project.GetName(),

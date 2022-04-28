@@ -288,10 +288,6 @@ func (j *Jober) Stop(err error) {
 		mlog.Debugf("stop deploy job, because '%v'", err)
 		j.messager.SendMsg("收到取消信号, 开始停止部署~")
 		j.stopFn(err)
-		if j.deployStatus.Status() == types.Deploy_StatusDeploying && !j.IsDryRun() {
-			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
-			app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", j.deployStatus.Status())
-		}
 	})
 }
 
@@ -443,7 +439,7 @@ func (j *Jober) Run() error {
 			j.project.DeployStatus = uint8(j.deployStatus.Status())
 
 			if !j.IsDryRun() {
-				app.DB().Model(&models.Project{ID: j.project.ID}).UpdateColumn("DeployStatus", j.deployStatus.Status())
+				app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", j.deployStatus.Status())
 			}
 			j.messageCh.Send(MessageItem{
 				Msg:  err.Error(),
@@ -488,7 +484,7 @@ func (j *Jober) Run() error {
 				p = j.prevProject
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
-					app.DB().Model(j.project).Select("", fields...).Updates(&j.project)
+					app.DB().Model(&models.Project{ID: j.project.ID}).Select("", fields...).Updates(&j.project)
 				}
 				var (
 					ev  []*types.ExtraValue
@@ -516,7 +512,7 @@ func (j *Jober) Run() error {
 				}
 			} else {
 				if !j.IsDryRun() {
-					app.DB().Model(&j.project).Select("", fields...).Updates(&j.project)
+					app.DB().Model(&models.Project{ID: j.project.ID}).Select("", fields...).Updates(&j.project)
 				}
 			}
 			newConf = userConfig{
@@ -622,7 +618,7 @@ func (j *Jober) Validate() error {
 		}
 		j.deployStatus.SetStatus(types.Deploy_StatusDeploying)
 		if !j.IsDryRun() {
-			app.DB().Model(&p).UpdateColumn("DeployStatus", j.deployStatus.Status())
+			app.DB().Model(&models.Project{ID: p.ID}).UpdateColumn("DeployStatus", j.deployStatus.Status())
 		}
 		j.project.ID = p.ID
 		j.prevProject = &p
@@ -1067,7 +1063,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 		return err
 	}
 	fileData := bf.String()
-	mlog.Debug("fileData", fileData)
+	//mlog.Debug("fileData", fileData)
 	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile([]byte(fileData))
 	if err != nil {
 		return err

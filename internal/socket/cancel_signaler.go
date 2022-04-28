@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var ErrCancel = errors.New("已回滚到上个版本！")
+var ErrCancel = errors.New("rollback")
 
 type CancelSignaler interface {
 	Remove(id string)
