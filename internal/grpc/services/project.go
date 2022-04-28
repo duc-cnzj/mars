@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/duc-cnzj/mars/internal/utils/date"
-
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
@@ -21,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
