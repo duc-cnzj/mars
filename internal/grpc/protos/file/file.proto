@@ -1,30 +1,25 @@
 syntax = "proto3";
 
+package file;
+
 import "google/api/annotations.proto";
 import "validate/validate.proto";
-import "model/model.proto";
+import "types/types.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/file;file";
 
-message FileDeleteRequest {
+message DeleteRequest {
   int64 id = 1 [(validate.rules).int64.gte = 1];
 }
 
-message FileDeleteResponse {
-  File file = 1;
+message DeleteResponse {
+  types.FileModel file = 1;
 }
 
 message DeleteUndocumentedFilesRequest {}
 
-message File {
-  string path = 1;
-  string humanize_size = 2;
-  int64 size = 3;
-  string upload_by = 4;
-}
-
 message DeleteUndocumentedFilesResponse {
-  repeated File items = 1;
+  repeated types.FileModel items = 1;
 }
 
 message DiskInfoRequest {}
@@ -34,29 +29,29 @@ message DiskInfoResponse {
   string humanize_usage = 2;
 }
 
-message FileListRequest {
+message ListRequest {
   int64 page = 1 [(validate.rules).int64.gte = 1];
   int64 page_size = 2 [(validate.rules).int64.gte = 1];
   bool without_deleted = 3;
 }
 
-message FileListResponse{
+message ListResponse{
   int64 page = 1;
   int64 page_size = 2;
-  repeated FileModel items = 3;
+  repeated types.FileModel items = 3;
   int64 count = 4;
 }
 
-service FileSvc {
+service File {
   //  文件列表
-  rpc List(FileListRequest) returns (FileListResponse) {
+  rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
       get: "/api/files",
     };
   }
 
   //  删除文件
-  rpc Delete(FileDeleteRequest) returns (FileDeleteResponse) {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
     option (google.api.http) = {
       delete: "/api/files/{id}",
     };

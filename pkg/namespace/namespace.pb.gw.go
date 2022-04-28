@@ -32,7 +32,7 @@ var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
 func request_Namespace_All_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceAllRequest
+	var protoReq AllRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.All(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -41,7 +41,7 @@ func request_Namespace_All_0(ctx context.Context, marshaler runtime.Marshaler, c
 }
 
 func local_request_Namespace_All_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceAllRequest
+	var protoReq AllRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.All(ctx, &protoReq)
@@ -50,7 +50,7 @@ func local_request_Namespace_All_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func request_Namespace_Create_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceCreateRequest
+	var protoReq CreateRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -67,7 +67,7 @@ func request_Namespace_Create_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func local_request_Namespace_Create_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceCreateRequest
+	var protoReq CreateRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -84,7 +84,7 @@ func local_request_Namespace_Create_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func request_Namespace_Show_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -110,7 +110,7 @@ func request_Namespace_Show_0(ctx context.Context, marshaler runtime.Marshaler, 
 }
 
 func local_request_Namespace_Show_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -136,7 +136,7 @@ func local_request_Namespace_Show_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceDeleteRequest
+	var protoReq DeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -162,7 +162,7 @@ func request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func local_request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceDeleteRequest
+	var protoReq DeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -192,7 +192,7 @@ var (
 )
 
 func request_Namespace_IsExists_0(ctx context.Context, marshaler runtime.Marshaler, client NamespaceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceIsExistsRequest
+	var protoReq IsExistsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -208,7 +208,7 @@ func request_Namespace_IsExists_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Namespace_IsExists_0(ctx context.Context, marshaler runtime.Marshaler, server NamespaceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NamespaceIsExistsRequest
+	var protoReq IsExistsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -236,7 +236,7 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Namespace/All", runtime.WithHTTPPathPattern("/api/namespaces"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/All", runtime.WithHTTPPathPattern("/api/namespaces"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -260,7 +260,7 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Namespace/Create", runtime.WithHTTPPathPattern("/api/namespaces"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/Create", runtime.WithHTTPPathPattern("/api/namespaces"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -284,7 +284,7 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Namespace/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -308,7 +308,7 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Namespace/Delete", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/Delete", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -332,7 +332,7 @@ func RegisterNamespaceHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Namespace/IsExists", runtime.WithHTTPPathPattern("/api/namespaces/exists"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/namespace.Namespace/IsExists", runtime.WithHTTPPathPattern("/api/namespaces/exists"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -395,7 +395,7 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Namespace/All", runtime.WithHTTPPathPattern("/api/namespaces"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/All", runtime.WithHTTPPathPattern("/api/namespaces"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -416,7 +416,7 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Namespace/Create", runtime.WithHTTPPathPattern("/api/namespaces"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/Create", runtime.WithHTTPPathPattern("/api/namespaces"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -437,7 +437,7 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Namespace/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/Show", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -458,7 +458,7 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Namespace/Delete", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/Delete", runtime.WithHTTPPathPattern("/api/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -479,7 +479,7 @@ func RegisterNamespaceHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Namespace/IsExists", runtime.WithHTTPPathPattern("/api/namespaces/exists"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/namespace.Namespace/IsExists", runtime.WithHTTPPathPattern("/api/namespaces/exists"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

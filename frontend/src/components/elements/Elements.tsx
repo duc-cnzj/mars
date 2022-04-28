@@ -38,23 +38,23 @@ const initStyle = {
 };
 
 const Elements: React.FC<{
-  value?: pb.ProjectExtraItem[];
-  onChange?: (value: pb.ProjectExtraItem[]) => void;
-  elements: pb.Element[];
+  value?: pb.types.ExtraValue[];
+  onChange?: (value: pb.types.ExtraValue[]) => void;
+  elements: pb.mars.Element[];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
   let initValues = useMemo(() => {
     return elements
-      ? elements.map((item): pb.ProjectExtraItem => {
+      ? elements.map((item): pb.types.ExtraValue => {
           let itemValue: any = item.default;
           if (!!value) {
             for (let i = 0; i < value.length; i++) {
               if (value[i].path === item.path) {
                 itemValue = value[i].value;
-                if (item.type === pb.ElementType.ElementTypeSwitch) {
+                if (item.type === pb.mars.ElementType.ElementTypeSwitch) {
                   itemValue = isTrue(itemValue);
                 }
-                if (item.type === pb.ElementType.ElementTypeInputNumber) {
+                if (item.type === pb.mars.ElementType.ElementTypeInputNumber) {
                   itemValue = Number(itemValue);
                 }
                 break;
@@ -68,8 +68,8 @@ const Elements: React.FC<{
 
   const getElement = useCallback(
     (
-      item: pb.ProjectExtraItem,
-      ele: pb.Element[],
+      item: pb.types.ExtraValue,
+      ele: pb.mars.Element[],
       index: number
     ): React.ReactNode => {
       for (let i = 0; i < ele.length; i++) {
@@ -107,12 +107,12 @@ const Elements: React.FC<{
 const Element: React.FC<{
   value: any;
   onChange: (v: any) => void;
-  element: pb.Element;
+  element: pb.mars.Element;
   style: st;
 }> = ({ element, style, value: v, onChange }) => {
   const [value, setValue] = useState(v);
   switch (element.type) {
-    case pb.ElementType.ElementTypeInput:
+    case pb.mars.ElementType.ElementTypeInput:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -129,7 +129,7 @@ const Element: React.FC<{
           />
         </Form.Item>
       );
-    case pb.ElementType.ElementTypeInputNumber:
+    case pb.mars.ElementType.ElementTypeInputNumber:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -146,7 +146,7 @@ const Element: React.FC<{
           />
         </Form.Item>
       );
-    case pb.ElementType.ElementTypeRadio:
+    case pb.mars.ElementType.ElementTypeRadio:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -169,7 +169,7 @@ const Element: React.FC<{
           </Radio.Group>
         </Form.Item>
       );
-    case pb.ElementType.ElementTypeSelect:
+    case pb.mars.ElementType.ElementTypeSelect:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -192,7 +192,7 @@ const Element: React.FC<{
           </Select>
         </Form.Item>
       );
-    case pb.ElementType.ElementTypeSwitch:
+    case pb.mars.ElementType.ElementTypeSwitch:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}

@@ -21,7 +21,7 @@ import { getToken } from "../utils/token";
 
 const { Option } = Select;
 const GitProjectManager: React.FC = () => {
-  const [list, setList] = useState<pb.GitProjectItem[]>([]);
+  const [list, setList] = useState<pb.git.ProjectItem[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
 
@@ -39,7 +39,7 @@ const GitProjectManager: React.FC = () => {
     });
   }, [fetchList, setInitLoading]);
 
-  const toggleStatus = async (item: pb.GitProjectItem) => {
+  const toggleStatus = async (item: pb.git.ProjectItem) => {
     setLoadingList((l) => ({ ...l, [item.id]: true }));
     try {
       if (item.enabled) {
@@ -59,9 +59,9 @@ const GitProjectManager: React.FC = () => {
     });
   };
 
-  const [currentItem, setCurrentItem] = useState<pb.GitProjectItem>();
+  const [currentItem, setCurrentItem] = useState<pb.git.ProjectItem>();
   const [configVisible, setConfigVisible] = useState(false);
-  const [selected, setSelected] = useState<pb.GitProjectItem>();
+  const [selected, setSelected] = useState<pb.git.ProjectItem>();
 
   const onChange = useCallback(
     (v: any) => {
@@ -163,7 +163,7 @@ const GitProjectManager: React.FC = () => {
           dataSource={list.filter((item) =>
             selected ? item.id === selected.id : true
           )}
-          renderItem={(item: pb.GitProjectItem) => (
+          renderItem={(item: pb.git.ProjectItem) => (
             <List.Item
               className="git__list-item"
               key={item.id}

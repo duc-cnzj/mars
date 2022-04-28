@@ -13,14 +13,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/git"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 func init() {
@@ -34,7 +35,7 @@ type GitSvc struct {
 	git.UnimplementedGitServer
 }
 
-func (g *GitSvc) EnableProject(ctx context.Context, request *git.GitEnableProjectRequest) (*git.GitEnableProjectResponse, error) {
+func (g *GitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRequest) (*git.EnableProjectResponse, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -56,12 +57,12 @@ func (g *GitSvc) EnableProject(ctx context.Context, request *git.GitEnableProjec
 			Enabled:       true,
 		})
 	}
-	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("启用项目: %s", project.GetName()))
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Create, fmt.Sprintf("启用项目: %s", project.GetName()))
 
-	return &git.GitEnableProjectResponse{}, nil
+	return &git.EnableProjectResponse{}, nil
 }
 
-func (g *GitSvc) DisableProject(ctx context.Context, request *git.GitDisableProjectRequest) (*git.GitDisableProjectResponse, error) {
+func (g *GitSvc) DisableProject(ctx context.Context, request *git.DisableProjectRequest) (*git.DisableProjectResponse, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -82,12 +83,12 @@ func (g *GitSvc) DisableProject(ctx context.Context, request *git.GitDisableProj
 			Enabled:       false,
 		})
 	}
-	AuditLog(MustGetUser(ctx).Name, event.ActionType_Create, fmt.Sprintf("关闭项目: %s", project.GetName()))
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Create, fmt.Sprintf("关闭项目: %s", project.GetName()))
 
-	return &git.GitDisableProjectResponse{}, nil
+	return &git.DisableProjectResponse{}, nil
 }
 
-func (g *GitSvc) All(ctx context.Context, req *git.GitAllProjectsRequest) (*git.GitAllProjectsResponse, error) {
+func (g *GitSvc) All(ctx context.Context, req *git.AllProjectsRequest) (*git.AllProjectsResponse, error) {
 	projects, err := plugins.GetGitServer().AllProjects()
 	if err != nil {
 		return nil, err
@@ -101,7 +102,7 @@ func (g *GitSvc) All(ctx context.Context, req *git.GitAllProjectsRequest) (*git.
 		m[gp.GitProjectId] = gp
 	}
 
-	var infos = make([]*git.GitProjectItem, 0)
+	var infos = make([]*git.ProjectItem, 0)
 
 	for _, project := range projects {
 		var enabled, GlobalEnabled bool
@@ -109,7 +110,7 @@ func (g *GitSvc) All(ctx context.Context, req *git.GitAllProjectsRequest) (*git.
 			enabled = gitProject.Enabled
 			GlobalEnabled = gitProject.GlobalEnabled
 		}
-		infos = append(infos, &git.GitProjectItem{
+		infos = append(infos, &git.ProjectItem{
 			Id:            project.GetID(),
 			Name:          project.GetName(),
 			Path:          project.GetPath(),
@@ -125,7 +126,7 @@ func (g *GitSvc) All(ctx context.Context, req *git.GitAllProjectsRequest) (*git.
 		return infos[i].Id > infos[j].Id
 	})
 
-	return &git.GitAllProjectsResponse{Items: infos}, nil
+	return &git.AllProjectsResponse{Items: infos}, nil
 }
 
 const (
@@ -134,11 +135,11 @@ const (
 	OptionTypeCommit  string = "commit"
 )
 
-func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.GitProjectOptionsRequest) (*git.GitProjectOptionsResponse, error) {
+func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
 	remember, err := app.Cache().Remember("ProjectOptions", 30, func() ([]byte, error) {
 		var (
 			enabledProjects []models.GitProject
-			ch              = make(chan *git.GitOption)
+			ch              = make(chan *git.Option)
 			wg              = sync.WaitGroup{}
 		)
 
@@ -154,7 +155,7 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.GitProjectOpti
 						return
 					}
 				}
-				ch <- &git.GitOption{
+				ch <- &git.Option{
 					Value:        fmt.Sprintf("%d", project.GitProjectId),
 					Label:        project.Name,
 					IsLeaf:       false,
@@ -168,31 +169,31 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.GitProjectOpti
 			close(ch)
 		}()
 
-		res := make([]*git.GitOption, 0)
+		res := make([]*git.Option, 0)
 
 		for options := range ch {
 			res = append(res, options)
 		}
 
-		return proto.Marshal(&git.GitProjectOptionsResponse{Items: res})
+		return proto.Marshal(&git.ProjectOptionsResponse{Items: res})
 	})
 	if err != nil {
 		return nil, err
 	}
-	var res = &git.GitProjectOptionsResponse{}
+	var res = &git.ProjectOptionsResponse{}
 	_ = proto.Unmarshal(remember, res)
 	return res, nil
 }
 
-func (g *GitSvc) BranchOptions(ctx context.Context, request *git.GitBranchOptionsRequest) (*git.GitBranchOptionsResponse, error) {
+func (g *GitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
 	branches, err := plugins.GetGitServer().AllBranches(request.GitProjectId)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]*git.GitOption, 0, len(branches))
+	res := make([]*git.Option, 0, len(branches))
 	for _, branch := range branches {
-		res = append(res, &git.GitOption{
+		res = append(res, &git.Option{
 			Value:        branch.GetName(),
 			Label:        branch.GetName(),
 			IsLeaf:       false,
@@ -202,7 +203,7 @@ func (g *GitSvc) BranchOptions(ctx context.Context, request *git.GitBranchOption
 		})
 	}
 	if request.All {
-		return &git.GitBranchOptionsResponse{Items: res}, nil
+		return &git.BranchOptionsResponse{Items: res}, nil
 	}
 
 	var defaultBranch string
@@ -214,51 +215,51 @@ func (g *GitSvc) BranchOptions(ctx context.Context, request *git.GitBranchOption
 
 	config, err := GetProjectMarsConfig(request.GitProjectId, defaultBranch)
 	if err != nil {
-		return &git.GitBranchOptionsResponse{Items: make([]*git.GitOption, 0)}, nil
+		return &git.BranchOptionsResponse{Items: make([]*git.Option, 0)}, nil
 	}
 
-	filteredRes := make([]*git.GitOption, 0)
+	filteredRes := make([]*git.Option, 0)
 	for _, op := range res {
 		if utils.BranchPass(config, op.Value) {
 			filteredRes = append(filteredRes, op)
 		}
 	}
 
-	return &git.GitBranchOptionsResponse{Items: filteredRes}, nil
+	return &git.BranchOptionsResponse{Items: filteredRes}, nil
 }
 
-func (g *GitSvc) CommitOptions(ctx context.Context, request *git.GitCommitOptionsRequest) (*git.GitCommitOptionsResponse, error) {
+func (g *GitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {
 	commits, err := plugins.GetGitServer().ListCommits(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]*git.GitOption, 0, len(commits))
+	res := make([]*git.Option, 0, len(commits))
 	for _, commit := range commits {
-		res = append(res, &git.GitOption{
+		res = append(res, &git.Option{
 			Value:        commit.GetID(),
 			IsLeaf:       true,
-			Label:        fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
+			Label:        fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
 			Type:         OptionTypeCommit,
 			GitProjectId: request.GitProjectId,
 			Branch:       request.Branch,
 		})
 	}
 
-	return &git.GitCommitOptionsResponse{Items: res}, nil
+	return &git.CommitOptionsResponse{Items: res}, nil
 }
 
-func (g *GitSvc) Commit(ctx context.Context, request *git.GitCommitRequest) (*git.GitCommitResponse, error) {
+func (g *GitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.CommitResponse, error) {
 	remember, err := app.Cache().Remember(fmt.Sprintf("Commit:%s-%s", request.GitProjectId, request.Commit), 60*60, func() ([]byte, error) {
 		commit, err := plugins.GetGitServer().GetCommit(request.GitProjectId, request.Commit)
 		if err != nil {
 			return nil, err
 		}
-		res := &git.GitCommitResponse{
+		res := &git.CommitResponse{
 			Id:             commit.GetID(),
 			ShortId:        commit.GetShortID(),
 			GitProjectId:   request.GitProjectId,
-			Label:          fmt.Sprintf("[%s]: %s", utils.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
+			Label:          fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
 			Title:          commit.GetTitle(),
 			Branch:         request.Branch,
 			AuthorName:     commit.GetAuthorName(),
@@ -267,32 +268,32 @@ func (g *GitSvc) Commit(ctx context.Context, request *git.GitCommitRequest) (*gi
 			CommitterEmail: commit.GetCommitterEmail(),
 			WebUrl:         commit.GetWebURL(),
 			Message:        commit.GetMessage(),
-			CommittedDate:  utils.ToRFC3339DatetimeString(commit.GetCommittedDate()),
-			CreatedAt:      utils.ToRFC3339DatetimeString(commit.GetCreatedAt()),
+			CommittedDate:  date.ToRFC3339DatetimeString(commit.GetCommittedDate()),
+			CreatedAt:      date.ToRFC3339DatetimeString(commit.GetCreatedAt()),
 		}
 		return proto.Marshal(res)
 	})
 	if err != nil {
 		return nil, err
 	}
-	msg := &git.GitCommitResponse{}
+	msg := &git.CommitResponse{}
 	_ = proto.Unmarshal(remember, msg)
 	return msg, nil
 }
 
-func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.GitPipelineInfoRequest) (*git.GitPipelineInfoResponse, error) {
+func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
 	pipeline, err := plugins.GetGitServer().GetCommitPipeline(request.GitProjectId, request.Commit)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &git.GitPipelineInfoResponse{
+	return &git.PipelineInfoResponse{
 		Status: pipeline.GetStatus(),
 		WebUrl: pipeline.GetWebURL(),
 	}, nil
 }
 
-func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.GitConfigFileRequest) (*git.GitConfigFileResponse, error) {
+func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.ConfigFileRequest) (*git.ConfigFileResponse, error) {
 	marsC, err := GetProjectMarsConfig(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err
@@ -304,7 +305,7 @@ func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.GitConfigFileR
 		if marsC.ConfigFileType == "" {
 			ct = "yaml"
 		}
-		return &git.GitConfigFileResponse{
+		return &git.ConfigFileResponse{
 			Data:     marsC.ConfigFileValues,
 			Type:     ct,
 			Elements: marsC.Elements,
@@ -332,14 +333,14 @@ func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.GitConfigFileR
 	content, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, filename)
 	if err != nil {
 		mlog.Debug(err)
-		return &git.GitConfigFileResponse{
+		return &git.ConfigFileResponse{
 			Data:     marsC.ConfigFileValues,
 			Type:     marsC.ConfigFileType,
 			Elements: marsC.Elements,
 		}, nil
 	}
 
-	return &git.GitConfigFileResponse{
+	return &git.ConfigFileResponse{
 		Data:     content,
 		Type:     marsC.ConfigFileType,
 		Elements: marsC.Elements,

@@ -36,7 +36,7 @@ var (
 )
 
 func request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, client EventClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EventListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -52,7 +52,7 @@ func request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, clie
 }
 
 func local_request_Event_List_0(ctx context.Context, marshaler runtime.Marshaler, server EventServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EventListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -80,7 +80,7 @@ func RegisterEventHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Event/List", runtime.WithHTTPPathPattern("/api/events"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/event.Event/List", runtime.WithHTTPPathPattern("/api/events"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -143,7 +143,7 @@ func RegisterEventHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Event/List", runtime.WithHTTPPathPattern("/api/events"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/event.Event/List", runtime.WithHTTPPathPattern("/api/events"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

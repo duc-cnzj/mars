@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ChangelogShowResponse"
+              "$ref": "#/definitions/changelogShowResponse"
             }
           },
           "default": {
@@ -56,31 +56,13 @@
     }
   },
   "definitions": {
-    "ChangelogShowItem": {
-      "type": "object",
-      "properties": {
-        "version": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "config": {
-          "type": "string"
-        },
-        "date": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        }
-      }
-    },
-    "ChangelogShowResponse": {
+    "changelogShowResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ChangelogShowItem"
+            "$ref": "#/definitions/typesChangelogModel"
           }
         }
       }
@@ -109,6 +91,245 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "typesChangelogModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
+        },
+        "username": {
+          "type": "string"
+        },
+        "manifest": {
+          "type": "string"
+        },
+        "config": {
+          "type": "string"
+        },
+        "config_changed": {
+          "type": "boolean"
+        },
+        "project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "project": {
+          "$ref": "#/definitions/typesProjectModel"
+        },
+        "git_project": {
+          "$ref": "#/definitions/typesGitProjectModel"
+        },
+        "date": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        }
+      }
+    },
+    "typesDeploy": {
+      "type": "string",
+      "enum": [
+        "StatusUnknown",
+        "StatusDeploying",
+        "StatusDeployed",
+        "StatusFailed"
+      ],
+      "default": "StatusUnknown"
+    },
+    "typesExtraValue": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "typesGitProjectModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "default_branch": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "global_enabled": {
+          "type": "boolean"
+        },
+        "global_config": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        }
+      }
+    },
+    "typesImagePullSecret": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "typesNamespaceModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ImagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesImagePullSecret"
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesProjectModel"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        }
+      }
+    },
+    "typesProjectModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "git_branch": {
+          "type": "string"
+        },
+        "git_commit": {
+          "type": "string"
+        },
+        "config": {
+          "type": "string"
+        },
+        "override_values": {
+          "type": "string"
+        },
+        "docker_image": {
+          "type": "string"
+        },
+        "pod_selectors": {
+          "type": "string"
+        },
+        "namespace_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "atomic": {
+          "type": "boolean"
+        },
+        "env_values": {
+          "type": "string"
+        },
+        "extra_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesExtraValue"
+          }
+        },
+        "final_extra_values": {
+          "type": "string"
+        },
+        "deploy_status": {
+          "$ref": "#/definitions/typesDeploy"
+        },
+        "humanize_created_at": {
+          "type": "string"
+        },
+        "humanize_updated_at": {
+          "type": "string"
+        },
+        "config_type": {
+          "type": "string"
+        },
+        "git_commit_web_url": {
+          "type": "string"
+        },
+        "git_commit_title": {
+          "type": "string"
+        },
+        "git_commit_author": {
+          "type": "string"
+        },
+        "git_commit_date": {
+          "type": "string"
+        },
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
         }
       }
     }

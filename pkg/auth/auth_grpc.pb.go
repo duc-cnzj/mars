@@ -24,13 +24,13 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
 	//  Login 登录接口
-	Login(ctx context.Context, in *AuthLoginRequest, opts ...grpc.CallOption) (*AuthLoginResponse, error)
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	//  Info 获取当前登录的用户信息
-	Info(ctx context.Context, in *AuthInfoRequest, opts ...grpc.CallOption) (*AuthInfoResponse, error)
+	Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
 	//  Settings 获取 sso 配置以及跳转 url
-	Settings(ctx context.Context, in *AuthSettingsRequest, opts ...grpc.CallOption) (*AuthSettingsResponse, error)
+	Settings(ctx context.Context, in *SettingsRequest, opts ...grpc.CallOption) (*SettingsResponse, error)
 	// Exchange sso code 换取 token
-	Exchange(ctx context.Context, in *AuthExchangeRequest, opts ...grpc.CallOption) (*AuthExchangeResponse, error)
+	Exchange(ctx context.Context, in *ExchangeRequest, opts ...grpc.CallOption) (*ExchangeResponse, error)
 }
 
 type authClient struct {
@@ -41,36 +41,36 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 	return &authClient{cc}
 }
 
-func (c *authClient) Login(ctx context.Context, in *AuthLoginRequest, opts ...grpc.CallOption) (*AuthLoginResponse, error) {
-	out := new(AuthLoginResponse)
-	err := c.cc.Invoke(ctx, "/Auth/Login", in, out, opts...)
+func (c *authClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Login", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *authClient) Info(ctx context.Context, in *AuthInfoRequest, opts ...grpc.CallOption) (*AuthInfoResponse, error) {
-	out := new(AuthInfoResponse)
-	err := c.cc.Invoke(ctx, "/Auth/Info", in, out, opts...)
+func (c *authClient) Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error) {
+	out := new(InfoResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Info", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *authClient) Settings(ctx context.Context, in *AuthSettingsRequest, opts ...grpc.CallOption) (*AuthSettingsResponse, error) {
-	out := new(AuthSettingsResponse)
-	err := c.cc.Invoke(ctx, "/Auth/Settings", in, out, opts...)
+func (c *authClient) Settings(ctx context.Context, in *SettingsRequest, opts ...grpc.CallOption) (*SettingsResponse, error) {
+	out := new(SettingsResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Settings", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *authClient) Exchange(ctx context.Context, in *AuthExchangeRequest, opts ...grpc.CallOption) (*AuthExchangeResponse, error) {
-	out := new(AuthExchangeResponse)
-	err := c.cc.Invoke(ctx, "/Auth/Exchange", in, out, opts...)
+func (c *authClient) Exchange(ctx context.Context, in *ExchangeRequest, opts ...grpc.CallOption) (*ExchangeResponse, error) {
+	out := new(ExchangeResponse)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Exchange", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +82,13 @@ func (c *authClient) Exchange(ctx context.Context, in *AuthExchangeRequest, opts
 // for forward compatibility
 type AuthServer interface {
 	//  Login 登录接口
-	Login(context.Context, *AuthLoginRequest) (*AuthLoginResponse, error)
+	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	//  Info 获取当前登录的用户信息
-	Info(context.Context, *AuthInfoRequest) (*AuthInfoResponse, error)
+	Info(context.Context, *InfoRequest) (*InfoResponse, error)
 	//  Settings 获取 sso 配置以及跳转 url
-	Settings(context.Context, *AuthSettingsRequest) (*AuthSettingsResponse, error)
+	Settings(context.Context, *SettingsRequest) (*SettingsResponse, error)
 	// Exchange sso code 换取 token
-	Exchange(context.Context, *AuthExchangeRequest) (*AuthExchangeResponse, error)
+	Exchange(context.Context, *ExchangeRequest) (*ExchangeResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -96,16 +96,16 @@ type AuthServer interface {
 type UnimplementedAuthServer struct {
 }
 
-func (UnimplementedAuthServer) Login(context.Context, *AuthLoginRequest) (*AuthLoginResponse, error) {
+func (UnimplementedAuthServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServer) Info(context.Context, *AuthInfoRequest) (*AuthInfoResponse, error) {
+func (UnimplementedAuthServer) Info(context.Context, *InfoRequest) (*InfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
 }
-func (UnimplementedAuthServer) Settings(context.Context, *AuthSettingsRequest) (*AuthSettingsResponse, error) {
+func (UnimplementedAuthServer) Settings(context.Context, *SettingsRequest) (*SettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Settings not implemented")
 }
-func (UnimplementedAuthServer) Exchange(context.Context, *AuthExchangeRequest) (*AuthExchangeResponse, error) {
+func (UnimplementedAuthServer) Exchange(context.Context, *ExchangeRequest) (*ExchangeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exchange not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
@@ -122,7 +122,7 @@ func RegisterAuthServer(s grpc.ServiceRegistrar, srv AuthServer) {
 }
 
 func _Auth_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthLoginRequest)
+	in := new(LoginRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -131,16 +131,16 @@ func _Auth_Login_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Auth/Login",
+		FullMethod: "/auth.Auth/Login",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).Login(ctx, req.(*AuthLoginRequest))
+		return srv.(AuthServer).Login(ctx, req.(*LoginRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Auth_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthInfoRequest)
+	in := new(InfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -149,16 +149,16 @@ func _Auth_Info_Handler(srv interface{}, ctx context.Context, dec func(interface
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Auth/Info",
+		FullMethod: "/auth.Auth/Info",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).Info(ctx, req.(*AuthInfoRequest))
+		return srv.(AuthServer).Info(ctx, req.(*InfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Auth_Settings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthSettingsRequest)
+	in := new(SettingsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -167,16 +167,16 @@ func _Auth_Settings_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Auth/Settings",
+		FullMethod: "/auth.Auth/Settings",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).Settings(ctx, req.(*AuthSettingsRequest))
+		return srv.(AuthServer).Settings(ctx, req.(*SettingsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Auth_Exchange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthExchangeRequest)
+	in := new(ExchangeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -185,10 +185,10 @@ func _Auth_Exchange_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Auth/Exchange",
+		FullMethod: "/auth.Auth/Exchange",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).Exchange(ctx, req.(*AuthExchangeRequest))
+		return srv.(AuthServer).Exchange(ctx, req.(*ExchangeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -197,7 +197,7 @@ func _Auth_Exchange_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Auth_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Auth",
+	ServiceName: "auth.Auth",
 	HandlerType: (*AuthServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

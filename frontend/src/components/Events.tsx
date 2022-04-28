@@ -29,13 +29,13 @@ const defaultPageSize = 15;
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [diskInfo, setDiskInfo] = useState<pb.DiskInfoResponse>();
+  const [diskInfo, setDiskInfo] = useState<pb.file.DiskInfoResponse>();
   const [paginate, setPaginate] = useState<{
     page: number;
     page_size: number;
     count: number;
   }>({ page: 0, page_size: defaultPageSize, count: 0 });
-  const [data, setData] = useState<pb.EventListItem[]>([]);
+  const [data, setData] = useState<pb.types.EventModel[]>([]);
 
   useEffect(() => {
     diskInfoApi().then(({ data }) => setDiskInfo(data));
@@ -81,46 +81,46 @@ const EventList: React.FC = () => {
   const [shellModalVisible, setShellModalVisible] = useState(false);
   const [fileID, setFileID] = useState(0);
 
-  const getActionStyle = useCallback((type: pb.ActionType): React.ReactNode => {
+  const getActionStyle = useCallback((type: pb.types.EventActionType): React.ReactNode => {
     let style = { fontSize: 12, marginLeft: 5 };
     switch (type) {
-      case pb.ActionType.Create:
+      case pb.types.EventActionType.Create:
         return (
           <Tag color="#1890ff" style={style}>
             创建
           </Tag>
         );
-      case pb.ActionType.Shell:
+      case pb.types.EventActionType.Shell:
         return (
           <Tag color="#1890ff" style={style}>
             执行命令
           </Tag>
         );
-      case pb.ActionType.Update:
+      case pb.types.EventActionType.Update:
         return (
           <Tag color="#52c41a" style={style}>
             更新
           </Tag>
         );
-      case pb.ActionType.Delete:
+      case pb.types.EventActionType.Delete:
         return (
           <Tag color="#f5222d" style={style}>
             删除
           </Tag>
         );
-      case pb.ActionType.Upload:
+      case pb.types.EventActionType.Upload:
         return (
           <Tag color="#fcd34d" style={style}>
             上传文件
           </Tag>
         );
-      case pb.ActionType.Download:
+      case pb.types.EventActionType.Download:
         return (
           <Tag color="#2dd4bf" style={style}>
             下载文件
           </Tag>
         );
-      case pb.ActionType.DryRun:
+      case pb.types.EventActionType.DryRun:
         return (
           <Tag color="#818cf8" style={style}>
             试运行
@@ -227,7 +227,7 @@ const EventList: React.FC = () => {
         >
           <List
             dataSource={data}
-            renderItem={(item: pb.EventListItem) => (
+            renderItem={(item: pb.types.EventModel) => (
               <List.Item key={item.id} className="events__list-item">
                 <List.Item.Meta
                   title={
@@ -246,7 +246,7 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.file_id > 0 && item.action === pb.ActionType.Shell && (
+                {item.file_id > 0 && item.action === pb.types.EventActionType.Shell && (
                   <>
                     <Button
                       type="dashed"
@@ -279,7 +279,7 @@ const EventList: React.FC = () => {
                     />
                   </>
                 )}
-                {item.file_id > 0 && item.action === pb.ActionType.Upload && (
+                {item.file_id > 0 && item.action === pb.types.EventActionType.Upload && (
                   <>
                     <Button
                       type="dashed"

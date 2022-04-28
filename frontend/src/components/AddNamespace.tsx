@@ -23,7 +23,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
 
     createNamespace(namespace)
       .then(({ data }) => {
-        data && onCreated({ id: data.id, name: data.name });
+        data.namespace && onCreated({ id: data.namespace.id, name: data.namespace.name });
         message.success("名称空间创建成功");
         setIsVisible(false);
         setNamespace("");

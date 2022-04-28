@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceAllResponse"
+              "$ref": "#/definitions/namespaceAllResponse"
             }
           },
           "default": {
@@ -45,7 +45,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceCreateResponse"
+              "$ref": "#/definitions/namespaceCreateResponse"
             }
           },
           "default": {
@@ -61,7 +61,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NamespaceCreateRequest"
+              "$ref": "#/definitions/namespaceCreateRequest"
             }
           }
         ],
@@ -78,7 +78,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceIsExistsResponse"
+              "$ref": "#/definitions/namespaceIsExistsResponse"
             }
           },
           "default": {
@@ -109,7 +109,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceShowResponse"
+              "$ref": "#/definitions/namespaceShowResponse"
             }
           },
           "default": {
@@ -139,7 +139,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceDeleteResponse"
+              "$ref": "#/definitions/namespaceDeleteResponse"
             }
           },
           "default": {
@@ -165,53 +165,44 @@
     }
   },
   "definitions": {
-    "NamespaceAllResponse": {
+    "namespaceAllResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NamespaceItem"
+            "$ref": "#/definitions/typesNamespaceModel"
           }
         }
       }
     },
-    "NamespaceCreateRequest": {
+    "namespaceCreateRequest": {
       "type": "object",
       "properties": {
         "namespace": {
           "type": "string"
+        },
+        "ignore_if_exists": {
+          "type": "boolean",
+          "title": "已存在则忽略，不会报错"
         }
       }
     },
-    "NamespaceCreateResponse": {
+    "namespaceCreateResponse": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
         },
-        "name": {
-          "type": "string"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
+        "exists": {
+          "type": "boolean"
         }
       }
     },
-    "NamespaceDeleteResponse": {
+    "namespaceDeleteResponse": {
       "type": "object"
     },
-    "NamespaceIsExistsResponse": {
+    "namespaceIsExistsResponse": {
       "type": "object",
       "properties": {
         "exists": {
@@ -223,7 +214,71 @@
         }
       }
     },
-    "NamespaceItem": {
+    "namespaceShowResponse": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "typesDeploy": {
+      "type": "string",
+      "enum": [
+        "StatusUnknown",
+        "StatusDeploying",
+        "StatusDeployed",
+        "StatusFailed"
+      ],
+      "default": "StatusUnknown"
+    },
+    "typesExtraValue": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "typesImagePullSecret": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "typesNamespaceModel": {
       "type": "object",
       "properties": {
         "id": {
@@ -232,6 +287,18 @@
         },
         "name": {
           "type": "string"
+        },
+        "ImagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesImagePullSecret"
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesProjectModel"
+          }
         },
         "created_at": {
           "type": "string"
@@ -239,90 +306,12 @@
         "updated_at": {
           "type": "string"
         },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceSimpleProject"
-          }
-        }
-      }
-    },
-    "NamespaceModel": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProjectModel"
-          }
-        }
-      }
-    },
-    "NamespaceShowResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProjectModel"
-          }
-        }
-      }
-    },
-    "NamespaceSimpleProject": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "status": {
+        "deleted_at": {
           "type": "string"
         }
       }
     },
-    "ProjectModel": {
+    "typesProjectModel": {
       "type": "object",
       "properties": {
         "id": {
@@ -361,44 +350,53 @@
         "atomic": {
           "type": "boolean"
         },
+        "env_values": {
+          "type": "string"
+        },
+        "extra_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesExtraValue"
+          }
+        },
+        "final_extra_values": {
+          "type": "string"
+        },
+        "deploy_status": {
+          "$ref": "#/definitions/typesDeploy"
+        },
+        "humanize_created_at": {
+          "type": "string"
+        },
+        "humanize_updated_at": {
+          "type": "string"
+        },
+        "config_type": {
+          "type": "string"
+        },
+        "git_commit_web_url": {
+          "type": "string"
+        },
+        "git_commit_title": {
+          "type": "string"
+        },
+        "git_commit_author": {
+          "type": "string"
+        },
+        "git_commit_date": {
+          "type": "string"
+        },
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
+        },
         "created_at": {
           "type": "string"
         },
         "updated_at": {
           "type": "string"
         },
-        "extra_values": {
+        "deleted_at": {
           "type": "string"
-        },
-        "namespace": {
-          "$ref": "#/definitions/NamespaceModel"
-        }
-      }
-    },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": {}
-    },
-    "rpcStatus": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protobufAny"
-          }
         }
       }
     }

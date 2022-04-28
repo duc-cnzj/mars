@@ -41,7 +41,7 @@ var now = func() string {
 	return time.Now().Format("15:04:05")
 }
 
-func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.MetricsTopPodRequest) (*metrics.MetricsTopPodResponse, error) {
+func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest) (*metrics.TopPodResponse, error) {
 	podMetrics, err := app.K8sMetrics().MetricsV1beta1().PodMetricses(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
 	if err != nil {
 		running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
@@ -54,7 +54,7 @@ func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.MetricsTopPodR
 	return m.metrics(podMetrics), nil
 }
 
-func (m *MetricsSvc) StreamTopPod(request *metrics.MetricsTopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
+func (m *MetricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
 	ticker := time.NewTicker(tickDuration)
 	defer ticker.Stop()
 	defer mlog.Debug("ProjectByID exit")
@@ -93,20 +93,20 @@ func (m *MetricsSvc) StreamTopPod(request *metrics.MetricsTopPodRequest, server 
 	}
 }
 
-func (m *MetricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.MetricsCpuMemoryInProjectRequest) (*metrics.MetricsCpuMemoryInProjectResponse, error) {
+func (m *MetricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.CpuMemoryInProjectRequest) (*metrics.CpuMemoryInProjectResponse, error) {
 	var p models.Project
 	if err := app.DB().Where("`id` = ?", request.ProjectId).First(&p).Error; err != nil {
 		return nil, err
 	}
 	cpu, memory := utils.GetCpuAndMemory(p.GetAllPodMetrics())
 
-	return &metrics.MetricsCpuMemoryInProjectResponse{
+	return &metrics.CpuMemoryInProjectResponse{
 		Cpu:    cpu,
 		Memory: memory,
 	}, nil
 }
 
-func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.MetricsCpuMemoryInNamespaceRequest) (*metrics.MetricsCpuMemoryInNamespaceResponse, error) {
+func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.CpuMemoryInNamespaceRequest) (*metrics.CpuMemoryInNamespaceResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects").Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
@@ -114,13 +114,13 @@ func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.
 
 	cpu, memory := utils.GetCpuAndMemoryInNamespace(ns.Name)
 
-	return &metrics.MetricsCpuMemoryInNamespaceResponse{
+	return &metrics.CpuMemoryInNamespaceResponse{
 		Cpu:    cpu,
 		Memory: memory,
 	}, nil
 }
 
-func (m *MetricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.MetricsTopPodResponse {
+func (m *MetricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.TopPodResponse {
 	cpu, memory := utils.GetCpuAndMemoryQuantity(*podMetrics)
 	cpuM := cpu.MilliValue()
 	var HumanizeCpu string = fmt.Sprintf("%v m", float64(cpu.MilliValue()))
@@ -129,7 +129,7 @@ func (m *MetricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.MetricsTop
 	}
 	asInt64, _ := memory.AsInt64()
 
-	return &metrics.MetricsTopPodResponse{
+	return &metrics.TopPodResponse{
 		Cpu:            float64(cpu.MilliValue()),
 		Memory:         float64(memory.ScaledValue(3)),
 		HumanizeCpu:    HumanizeCpu,

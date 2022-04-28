@@ -67,7 +67,7 @@ export const setShellSessionId = (id: string, sessionID: string) => ({
     sessionID: sessionID,
   },
 });
-export const setShellLog = (id: string, log: pb.TerminalMessage) => ({
+export const setShellLog = (id: string, log: pb.websocket.TerminalMessage) => ({
   type: SET_SHELL_LOG,
   data: {
     id: id,
@@ -75,7 +75,7 @@ export const setShellLog = (id: string, log: pb.TerminalMessage) => ({
   },
 });
 
-export const setClusterInfo = (info: pb.ClusterInfoResponse) => ({
+export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
@@ -84,35 +84,35 @@ const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
   dispatch(setNamespaceReload(true));
 }, 500);
 
-export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
+export const handleEvents = (id: string, data: pb.websocket.Metadata, input: any) => {
   return function (dispatch: Dispatch) {
     switch (data.type.valueOf()) {
-      case pb.Type.SetUid:
-        setUid(data.data);
+      case pb.websocket.Type.SetUid:
+        setUid(data.message);
         break;
-      case pb.Type.ClusterInfoSync:
-        let info = pb.WsHandleClusterResponse.decode(input);
+      case pb.websocket.Type.ClusterInfoSync:
+        let info = pb.websocket.WsHandleClusterResponse.decode(input);
         info.info && dispatch(setClusterInfo(info.info));
         break;
-      case pb.Type.ReloadProjects:
+      case pb.websocket.Type.ReloadProjects:
         debounceLoadNamespace(dispatch);
         break;
-      case pb.Type.UpdateProject:
-        dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
+      case pb.websocket.Type.UpdateProject:
+        dispatch(appendCreateProjectLog(id, data.message ? data.message : ""));
 
         if (data.end) {
           switch (data.result) {
-            case pb.ResultType.Deployed:
+            case pb.websocket.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeployUpdateSuccess));
               message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
-            case pb.ResultType.DeployedCanceled:
+            case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
               message.warn("部署已取消");
               break;
-            case pb.ResultType.DeployedFailed:
+            case pb.websocket.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(appendCreateProjectLog(id, "部署失败"));
@@ -122,22 +122,22 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
           dispatch(setCreateProjectLoading(id, false));
         }
         break;
-      case pb.Type.CreateProject:
-        dispatch(appendCreateProjectLog(id, data.data ? data.data : ""));
+      case pb.websocket.Type.CreateProject:
+        dispatch(appendCreateProjectLog(id, data.message ? data.message : ""));
 
         if (data.end) {
           switch (data.result) {
-            case pb.ResultType.Deployed:
+            case pb.websocket.ResultType.Deployed:
               dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
               message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;
-            case pb.ResultType.DeployedCanceled:
+            case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
               dispatch(appendCreateProjectLog(id, "部署已取消"));
               message.warn("部署已取消");
               break;
-            case pb.ResultType.DeployedFailed:
+            case pb.websocket.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
               dispatch(appendCreateProjectLog(id, "部署失败"));
@@ -148,15 +148,15 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
           debounceLoadNamespace(dispatch);
         }
         break;
-      case pb.Type.ProcessPercent:
-        dispatch(setProcessPercent(id, Number(data.data)));
+      case pb.websocket.Type.ProcessPercent:
+        dispatch(setProcessPercent(id, Number(data.message)));
         break;
-      case pb.Type.HandleExecShell:
-        if (data.result === pb.ResultType.Error) {
-          message.error(data.data);
+      case pb.websocket.Type.HandleExecShell:
+        if (data.result === pb.websocket.ResultType.Error) {
+          message.error(data.message);
           break;
         }
-        let res = pb.WsHandleShellResponse.decode(input);
+        let res = pb.websocket.WsHandleShellResponse.decode(input);
 
         res.container &&
           res.terminal_message &&
@@ -167,8 +167,8 @@ export const handleEvents = (id: string, data: pb.Metadata, input: any) => {
             )
           );
         break;
-      case pb.Type.HandleExecShellMsg:
-        let logRes = pb.WsHandleShellResponse.decode(input);
+      case pb.websocket.Type.HandleExecShellMsg:
+        let logRes = pb.websocket.WsHandleShellResponse.decode(input);
         logRes.container &&
           logRes.terminal_message &&
           dispatch(

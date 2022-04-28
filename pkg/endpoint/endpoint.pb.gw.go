@@ -32,7 +32,7 @@ var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
 func request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime.Marshaler, client EndpointClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EndpointInNamespaceRequest
+	var protoReq InNamespaceRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -58,7 +58,7 @@ func request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func local_request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime.Marshaler, server EndpointServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EndpointInNamespaceRequest
+	var protoReq InNamespaceRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -84,7 +84,7 @@ func local_request_Endpoint_InNamespace_0(ctx context.Context, marshaler runtime
 }
 
 func request_Endpoint_InProject_0(ctx context.Context, marshaler runtime.Marshaler, client EndpointClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EndpointInProjectRequest
+	var protoReq InProjectRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -110,7 +110,7 @@ func request_Endpoint_InProject_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Endpoint_InProject_0(ctx context.Context, marshaler runtime.Marshaler, server EndpointServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EndpointInProjectRequest
+	var protoReq InProjectRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -148,7 +148,7 @@ func RegisterEndpointHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Endpoint/InNamespace", runtime.WithHTTPPathPattern("/api/endpoints/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/endpoint.Endpoint/InNamespace", runtime.WithHTTPPathPattern("/api/endpoints/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -172,7 +172,7 @@ func RegisterEndpointHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Endpoint/InProject", runtime.WithHTTPPathPattern("/api/endpoints/projects/{project_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/endpoint.Endpoint/InProject", runtime.WithHTTPPathPattern("/api/endpoints/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -235,7 +235,7 @@ func RegisterEndpointHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Endpoint/InNamespace", runtime.WithHTTPPathPattern("/api/endpoints/namespaces/{namespace_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/endpoint.Endpoint/InNamespace", runtime.WithHTTPPathPattern("/api/endpoints/namespaces/{namespace_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -256,7 +256,7 @@ func RegisterEndpointHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Endpoint/InProject", runtime.WithHTTPPathPattern("/api/endpoints/projects/{project_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/endpoint.Endpoint/InProject", runtime.WithHTTPPathPattern("/api/endpoints/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

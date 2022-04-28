@@ -37,7 +37,7 @@ func NewPictureClient(cc grpc.ClientConnInterface) PictureClient {
 
 func (c *pictureClient) Background(ctx context.Context, in *BackgroundRequest, opts ...grpc.CallOption) (*BackgroundResponse, error) {
 	out := new(BackgroundResponse)
-	err := c.cc.Invoke(ctx, "/Picture/Background", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/picture.Picture/Background", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func _Picture_Background_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Picture/Background",
+		FullMethod: "/picture.Picture/Background",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PictureServer).Background(ctx, req.(*BackgroundRequest))
@@ -95,7 +95,7 @@ func _Picture_Background_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Picture_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Picture",
+	ServiceName: "picture.Picture",
 	HandlerType: (*PictureServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

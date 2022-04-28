@@ -31,31 +31,31 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		container.RegisterContainerSvcServer(s, new(ContainerSvc))
+		container.RegisterContainerServer(s, new(Container))
 	})
-	RegisterEndpoint(container.RegisterContainerSvcHandlerFromEndpoint)
+	RegisterEndpoint(container.RegisterContainerHandlerFromEndpoint)
 }
 
-type ContainerSvc struct {
-	container.UnsafeContainerSvcServer
+type Container struct {
+	container.UnsafeContainerServer
 }
 
-func (c *ContainerSvc) IsPodRunning(_ context.Context, request *container.ContainerIsPodRunningRequest) (*container.ContainerIsPodRunningResponse, error) {
+func (c *Container) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
 	running, reason := utils.IsPodRunning(request.GetNamespace(), request.GetPod())
 
-	return &container.ContainerIsPodRunningResponse{Running: running, Reason: reason}, nil
+	return &container.IsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
-func (c *ContainerSvc) IsPodExists(_ context.Context, request *container.ContainerIsPodExistsRequest) (*container.ContainerIsPodExistsResponse, error) {
+func (c *Container) IsPodExists(_ context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
 	_, err := app.K8sClientSet().CoreV1().Pods(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
-		return &container.ContainerIsPodExistsResponse{Exists: false}, nil
+		return &container.IsPodExistsResponse{Exists: false}, nil
 	}
 
-	return &container.ContainerIsPodExistsResponse{Exists: true}, nil
+	return &container.IsPodExistsResponse{Exists: true}, nil
 }
 
-func (c *ContainerSvc) Exec(request *container.ContainerExecRequest, server container.ContainerSvc_ExecServer) error {
+func (c *Container) Exec(request *container.ExecRequest, server container.Container_ExecServer) error {
 	running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
 	if !running {
 		return errors.New(reason)
@@ -117,8 +117,8 @@ func (c *ContainerSvc) Exec(request *container.ContainerExecRequest, server cont
 			if !ok {
 				return nil
 			}
-			if err := server.Send(&container.ContainerExecResponse{
-				Data: msg,
+			if err := server.Send(&container.ExecResponse{
+				Message: msg,
 			}); err != nil {
 				return err
 			}
@@ -128,7 +128,7 @@ func (c *ContainerSvc) Exec(request *container.ContainerExecRequest, server cont
 	}
 }
 
-func (c *ContainerSvc) CopyToPod(ctx context.Context, request *container.ContainerCopyToPodRequest) (*container.ContainerCopyToPodResponse, error) {
+func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
 		return nil, status.Error(codes.NotFound, reason)
 	}
@@ -158,14 +158,14 @@ func (c *ContainerSvc) CopyToPod(ctx context.Context, request *container.Contain
 			humanize.Bytes(file.Size),
 		), file.ID)
 
-	return &container.ContainerCopyToPodResponse{
+	return &container.CopyToPodResponse{
 		PodFilePath: res.TargetDir,
 		Output:      res.ErrOut,
 		FileName:    res.FileName,
 	}, err
 }
 
-func (c *ContainerSvc) StreamCopyToPod(server container.ContainerSvc_StreamCopyToPodServer) error {
+func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
 	var (
 		fpath         string
 		namespace     string
@@ -186,7 +186,7 @@ func (c *ContainerSvc) StreamCopyToPod(server container.ContainerSvc_StreamCopyT
 
 				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
 				app.DB().Create(&file)
-				res, err := c.CopyToPod(server.Context(), &container.ContainerCopyToPodRequest{
+				res, err := c.CopyToPod(server.Context(), &container.CopyToPodRequest{
 					FileId:    int64(file.ID),
 					Namespace: namespace,
 					Pod:       pod,
@@ -195,7 +195,7 @@ func (c *ContainerSvc) StreamCopyToPod(server container.ContainerSvc_StreamCopyT
 				if err != nil {
 					return err
 				}
-				return server.SendAndClose(&container.ContainerStreamCopyToPodResponse{
+				return server.SendAndClose(&container.StreamCopyToPodResponse{
 					Size:        stat.Size(),
 					PodFilePath: res.PodFilePath,
 					Output:      res.Output,
@@ -255,7 +255,7 @@ func (c *ContainerSvc) StreamCopyToPod(server container.ContainerSvc_StreamCopyT
 	}
 }
 
-func (c *ContainerSvc) ContainerLog(ctx context.Context, request *container.ContainerLogRequest) (*container.ContainerLogResponse, error) {
+func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
 		return nil, status.Errorf(codes.NotFound, reason)
 	}
@@ -271,7 +271,7 @@ func (c *ContainerSvc) ContainerLog(ctx context.Context, request *container.Cont
 		return nil, err
 	}
 
-	return &container.ContainerLogResponse{
+	return &container.LogResponse{
 		Namespace:     request.Namespace,
 		PodName:       request.Pod,
 		ContainerName: request.Container,
@@ -279,7 +279,7 @@ func (c *ContainerSvc) ContainerLog(ctx context.Context, request *container.Cont
 	}, nil
 }
 
-func (c *ContainerSvc) StreamContainerLog(request *container.ContainerLogRequest, server container.ContainerSvc_StreamContainerLogServer) error {
+func (c *Container) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
 		return status.Errorf(codes.NotFound, reason)
 	}
@@ -331,7 +331,7 @@ func (c *ContainerSvc) StreamContainerLog(request *container.ContainerLogRequest
 				return errors.New("[Stream]: channel close")
 			}
 
-			if err := server.Send(&container.ContainerLogResponse{
+			if err := server.Send(&container.LogResponse{
 				Namespace:     request.Namespace,
 				PodName:       request.Pod,
 				ContainerName: request.Container,

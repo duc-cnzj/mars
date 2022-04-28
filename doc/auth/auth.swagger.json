@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthExchangeResponse"
+              "$ref": "#/definitions/authExchangeResponse"
             }
           },
           "default": {
@@ -40,7 +40,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/AuthExchangeRequest"
+              "$ref": "#/definitions/authExchangeRequest"
             }
           }
         ],
@@ -57,7 +57,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthInfoResponse"
+              "$ref": "#/definitions/authInfoResponse"
             }
           },
           "default": {
@@ -80,7 +80,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthLoginResponse"
+              "$ref": "#/definitions/authLoginResponse"
             }
           },
           "default": {
@@ -96,7 +96,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/AuthLoginRequest"
+              "$ref": "#/definitions/authLoginRequest"
             }
           }
         ],
@@ -114,7 +114,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthSettingsResponse"
+              "$ref": "#/definitions/authSettingsResponse"
             }
           },
           "default": {
@@ -131,7 +131,27 @@
     }
   },
   "definitions": {
-    "AuthExchangeRequest": {
+    "SettingsResponseOidcSetting": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "end_session_endpoint": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      }
+    },
+    "authExchangeRequest": {
       "type": "object",
       "properties": {
         "code": {
@@ -139,7 +159,7 @@
         }
       }
     },
-    "AuthExchangeResponse": {
+    "authExchangeResponse": {
       "type": "object",
       "properties": {
         "token": {
@@ -151,7 +171,7 @@
         }
       }
     },
-    "AuthInfoResponse": {
+    "authInfoResponse": {
       "type": "object",
       "properties": {
         "id": {
@@ -177,7 +197,7 @@
         }
       }
     },
-    "AuthLoginRequest": {
+    "authLoginRequest": {
       "type": "object",
       "properties": {
         "username": {
@@ -188,7 +208,7 @@
         }
       }
     },
-    "AuthLoginResponse": {
+    "authLoginResponse": {
       "type": "object",
       "properties": {
         "token": {
@@ -200,34 +220,14 @@
         }
       }
     },
-    "AuthSettingsResponse": {
+    "authSettingsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/AuthSettingsResponseOidcSetting"
+            "$ref": "#/definitions/SettingsResponseOidcSetting"
           }
-        }
-      }
-    },
-    "AuthSettingsResponseOidcSetting": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "name": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "end_session_endpoint": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string"
         }
       }
     },

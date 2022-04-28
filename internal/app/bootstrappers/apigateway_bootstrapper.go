@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/event"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -27,8 +27,8 @@ import (
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/third_party/doc/data"
-
 	swagger_ui "github.com/duc-cnzj/mars/third_party/doc/swagger-ui"
+
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -206,7 +206,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 
 	user := r.Context().Value(authCtx{}).(*contracts.UserInfo)
 	e.AuditLog(user.Name,
-		event.ActionType_Download,
+		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
 	open, err := os.Open(fil.Path)
@@ -326,7 +326,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 		}
 		marshal, _ := json.MarshalIndent(&data, "", "\t")
 		e.AuditLog(user.Name,
-			event.ActionType_Download,
+			types.EventActionType_Download,
 			"下载配置文件", nil, &e.StringYamlPrettier{Str: string(marshal)})
 		download(w, "mars-config.json", bytes.NewReader(marshal))
 	})
@@ -358,7 +358,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 			return
 		}
 		e.AuditLog(user.Name,
-			event.ActionType_Upload,
+			types.EventActionType_Upload,
 			"导入配置文件", nil, &e.StringYamlPrettier{Str: string(all)})
 		var data []ExportProject
 		err = json.Unmarshal(all, &data)

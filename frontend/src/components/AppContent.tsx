@@ -15,7 +15,7 @@ const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [namespaceItems, setNamespaceItems] = useAsyncState<pb.NamespaceItem[]>([]);
+  const [namespaceItems, setNamespaceItems] = useAsyncState<pb.types.NamespaceModel[]>([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     allNamespaces()
@@ -55,7 +55,7 @@ const AppContent: React.FC = () => {
           <Empty description={false} imageStyle={{ height: 300 }} />
         ) : (
           <Row gutter={[16, 16]}>
-            {namespaceItems.map((item: pb.NamespaceItem) => (
+            {namespaceItems.map((item: pb.types.NamespaceModel) => (
               <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
                 <ItemCard
                   loading={loading}

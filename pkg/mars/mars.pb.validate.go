@@ -35,22 +35,21 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on MarsConfig with the rules defined in the
+// Validate checks the field values on Config with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *MarsConfig) Validate() error {
+func (m *Config) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MarsConfig with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in MarsConfigMultiError, or
-// nil if none found.
-func (m *MarsConfig) ValidateAll() error {
+// ValidateAll checks the field values on Config with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ConfigMultiError, or nil if none found.
+func (m *Config) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MarsConfig) validate(all bool) error {
+func (m *Config) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -78,7 +77,7 @@ func (m *MarsConfig) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MarsConfigValidationError{
+					errors = append(errors, ConfigValidationError{
 						field:  fmt.Sprintf("Elements[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -86,7 +85,7 @@ func (m *MarsConfig) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MarsConfigValidationError{
+					errors = append(errors, ConfigValidationError{
 						field:  fmt.Sprintf("Elements[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -95,7 +94,7 @@ func (m *MarsConfig) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MarsConfigValidationError{
+				return ConfigValidationError{
 					field:  fmt.Sprintf("Elements[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -106,18 +105,18 @@ func (m *MarsConfig) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MarsConfigMultiError(errors)
+		return ConfigMultiError(errors)
 	}
 
 	return nil
 }
 
-// MarsConfigMultiError is an error wrapping multiple validation errors
-// returned by MarsConfig.ValidateAll() if the designated constraints aren't met.
-type MarsConfigMultiError []error
+// ConfigMultiError is an error wrapping multiple validation errors returned by
+// Config.ValidateAll() if the designated constraints aren't met.
+type ConfigMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MarsConfigMultiError) Error() string {
+func (m ConfigMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -126,11 +125,11 @@ func (m MarsConfigMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MarsConfigMultiError) AllErrors() []error { return m }
+func (m ConfigMultiError) AllErrors() []error { return m }
 
-// MarsConfigValidationError is the validation error returned by
-// MarsConfig.Validate if the designated constraints aren't met.
-type MarsConfigValidationError struct {
+// ConfigValidationError is the validation error returned by Config.Validate if
+// the designated constraints aren't met.
+type ConfigValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -138,22 +137,22 @@ type MarsConfigValidationError struct {
 }
 
 // Field function returns field value.
-func (e MarsConfigValidationError) Field() string { return e.field }
+func (e ConfigValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MarsConfigValidationError) Reason() string { return e.reason }
+func (e ConfigValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MarsConfigValidationError) Cause() error { return e.cause }
+func (e ConfigValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MarsConfigValidationError) Key() bool { return e.key }
+func (e ConfigValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MarsConfigValidationError) ErrorName() string { return "MarsConfigValidationError" }
+func (e ConfigValidationError) ErrorName() string { return "ConfigValidationError" }
 
 // Error satisfies the builtin error interface
-func (e MarsConfigValidationError) Error() string {
+func (e ConfigValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -165,14 +164,14 @@ func (e MarsConfigValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMarsConfig.%s: %s%s",
+		"invalid %sConfig.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MarsConfigValidationError{}
+var _ error = ConfigValidationError{}
 
 var _ interface {
 	Field() string
@@ -180,7 +179,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MarsConfigValidationError{}
+} = ConfigValidationError{}
 
 // Validate checks the field values on Element with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

@@ -3,6 +3,9 @@ package models
 import (
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"gorm.io/gorm"
 )
 
@@ -24,4 +27,26 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 
 	File *File
+}
+
+func (e *Event) ProtoTransform() *types.EventModel {
+	var f *types.FileModel
+	if e.File != nil {
+		f = e.File.ProtoTransform()
+	}
+	return &types.EventModel{
+		Id:        int64(e.ID),
+		Action:    types.EventActionType(e.Action),
+		Username:  e.Username,
+		Message:   e.Message,
+		Old:       e.Old,
+		New:       e.New,
+		Duration:  e.Duration,
+		FileId:    int64(*e.FileID),
+		File:      f,
+		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
+		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),
+		UpdatedAt: date.ToRFC3339DatetimeString(&e.UpdatedAt),
+		DeletedAt: date.ToRFC3339DatetimeString(&e.DeletedAt.Time),
+	}
 }

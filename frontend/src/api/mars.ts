@@ -1,9 +1,9 @@
 import ajax from "./ajax";
 import pb from "./compiled";
 
-export async function marsConfig({ git_project_id, branch }: pb.GitConfigShowRequest) {
+export async function marsConfig({ git_project_id, branch }: pb.gitconfig.ShowRequest) {
   return ajax
-    .get<pb.GitConfigShowResponse>(
+    .get<pb.gitconfig.ShowResponse>(
       `/api/git/projects/${git_project_id}/mars_config?branch=${branch || ""}`
     )
 }
@@ -11,14 +11,14 @@ export async function marsConfig({ git_project_id, branch }: pb.GitConfigShowReq
 export async function toggleGlobalEnabled({
   git_project_id,
   enabled,
-}: pb.GitConfigToggleGlobalStatusRequest) {
-  return ajax.post<pb.GitConfigToggleGlobalStatusResponse>(`/api/git/projects/${git_project_id}/toggle_status`, {
+}: pb.gitconfig.ToggleGlobalStatusRequest) {
+  return ajax.post<pb.gitconfig.ToggleGlobalStatusResponse>(`/api/git/projects/${git_project_id}/toggle_status`, {
     enabled,
   });
 }
 
-export async function globalConfig({ git_project_id }: pb.GitConfigGlobalConfigRequest) {
-  return ajax.get<pb.GitConfigGlobalConfigResponse>(
+export async function globalConfig({ git_project_id }: pb.gitconfig.GlobalConfigRequest) {
+  return ajax.get<pb.gitconfig.GlobalConfigResponse>(
     `/api/git/projects/${git_project_id}/global_config`
   );
 }
@@ -26,8 +26,8 @@ export async function globalConfig({ git_project_id }: pb.GitConfigGlobalConfigR
 export async function updateGlobalConfig({
   git_project_id,
   config,
-}: pb.GitConfigUpdateRequest) {
-  return ajax.put<pb.GitConfigUpdateResponse>(
+}: pb.gitconfig.UpdateRequest) {
+  return ajax.put<pb.gitconfig.UpdateResponse>(
     `/api/git/projects/${git_project_id}/mars_config`,
     { config: config }
   );
@@ -36,8 +36,8 @@ export async function updateGlobalConfig({
 export async function getDefaultValues({
   git_project_id,
   branch,
-}: pb.GitConfigDefaultChartValuesRequest) {
-  return ajax.get<pb.GitConfigDefaultChartValuesResponse>(
+}: pb.gitconfig.DefaultChartValuesRequest) {
+  return ajax.get<pb.gitconfig.DefaultChartValuesResponse>(
     `/api/git/projects/${git_project_id}/default_values?branch=${branch}`
   );
 }

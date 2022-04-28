@@ -24,9 +24,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EndpointClient interface {
 	// InNamespace 名称空间下所有的 endpoints
-	InNamespace(ctx context.Context, in *EndpointInNamespaceRequest, opts ...grpc.CallOption) (*EndpointInNamespaceResponse, error)
+	InNamespace(ctx context.Context, in *InNamespaceRequest, opts ...grpc.CallOption) (*InNamespaceResponse, error)
 	// InProject 项目下所有的 endpoints
-	InProject(ctx context.Context, in *EndpointInProjectRequest, opts ...grpc.CallOption) (*EndpointInProjectResponse, error)
+	InProject(ctx context.Context, in *InProjectRequest, opts ...grpc.CallOption) (*InProjectResponse, error)
 }
 
 type endpointClient struct {
@@ -37,18 +37,18 @@ func NewEndpointClient(cc grpc.ClientConnInterface) EndpointClient {
 	return &endpointClient{cc}
 }
 
-func (c *endpointClient) InNamespace(ctx context.Context, in *EndpointInNamespaceRequest, opts ...grpc.CallOption) (*EndpointInNamespaceResponse, error) {
-	out := new(EndpointInNamespaceResponse)
-	err := c.cc.Invoke(ctx, "/Endpoint/InNamespace", in, out, opts...)
+func (c *endpointClient) InNamespace(ctx context.Context, in *InNamespaceRequest, opts ...grpc.CallOption) (*InNamespaceResponse, error) {
+	out := new(InNamespaceResponse)
+	err := c.cc.Invoke(ctx, "/endpoint.Endpoint/InNamespace", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *endpointClient) InProject(ctx context.Context, in *EndpointInProjectRequest, opts ...grpc.CallOption) (*EndpointInProjectResponse, error) {
-	out := new(EndpointInProjectResponse)
-	err := c.cc.Invoke(ctx, "/Endpoint/InProject", in, out, opts...)
+func (c *endpointClient) InProject(ctx context.Context, in *InProjectRequest, opts ...grpc.CallOption) (*InProjectResponse, error) {
+	out := new(InProjectResponse)
+	err := c.cc.Invoke(ctx, "/endpoint.Endpoint/InProject", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +60,9 @@ func (c *endpointClient) InProject(ctx context.Context, in *EndpointInProjectReq
 // for forward compatibility
 type EndpointServer interface {
 	// InNamespace 名称空间下所有的 endpoints
-	InNamespace(context.Context, *EndpointInNamespaceRequest) (*EndpointInNamespaceResponse, error)
+	InNamespace(context.Context, *InNamespaceRequest) (*InNamespaceResponse, error)
 	// InProject 项目下所有的 endpoints
-	InProject(context.Context, *EndpointInProjectRequest) (*EndpointInProjectResponse, error)
+	InProject(context.Context, *InProjectRequest) (*InProjectResponse, error)
 	mustEmbedUnimplementedEndpointServer()
 }
 
@@ -70,10 +70,10 @@ type EndpointServer interface {
 type UnimplementedEndpointServer struct {
 }
 
-func (UnimplementedEndpointServer) InNamespace(context.Context, *EndpointInNamespaceRequest) (*EndpointInNamespaceResponse, error) {
+func (UnimplementedEndpointServer) InNamespace(context.Context, *InNamespaceRequest) (*InNamespaceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InNamespace not implemented")
 }
-func (UnimplementedEndpointServer) InProject(context.Context, *EndpointInProjectRequest) (*EndpointInProjectResponse, error) {
+func (UnimplementedEndpointServer) InProject(context.Context, *InProjectRequest) (*InProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InProject not implemented")
 }
 func (UnimplementedEndpointServer) mustEmbedUnimplementedEndpointServer() {}
@@ -90,7 +90,7 @@ func RegisterEndpointServer(s grpc.ServiceRegistrar, srv EndpointServer) {
 }
 
 func _Endpoint_InNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EndpointInNamespaceRequest)
+	in := new(InNamespaceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -99,16 +99,16 @@ func _Endpoint_InNamespace_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Endpoint/InNamespace",
+		FullMethod: "/endpoint.Endpoint/InNamespace",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EndpointServer).InNamespace(ctx, req.(*EndpointInNamespaceRequest))
+		return srv.(EndpointServer).InNamespace(ctx, req.(*InNamespaceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Endpoint_InProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EndpointInProjectRequest)
+	in := new(InProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -117,10 +117,10 @@ func _Endpoint_InProject_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Endpoint/InProject",
+		FullMethod: "/endpoint.Endpoint/InProject",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EndpointServer).InProject(ctx, req.(*EndpointInProjectRequest))
+		return srv.(EndpointServer).InProject(ctx, req.(*InProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -129,7 +129,7 @@ func _Endpoint_InProject_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Endpoint_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Endpoint",
+	ServiceName: "endpoint.Endpoint",
 	HandlerType: (*EndpointServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

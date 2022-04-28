@@ -16,8 +16,8 @@ import { settings as settingsApi } from "../api/auth";
 import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
 
 const Login: React.FC = () => {
-  const [bgInfo, setBgInfo] = useState<pb.BackgroundResponse>();
-  const [settings, setSettings] = useState<pb.AuthSettingsResponse>();
+  const [bgInfo, setBgInfo] = useState<pb.picture.BackgroundResponse>();
+  const [settings, setSettings] = useState<pb.auth.SettingsResponse>();
   const [random, setRandom] = useState(isRandomBg());
 
   useEffect(() => {

@@ -1,79 +1,51 @@
 syntax = "proto3";
 
+package project;
+
 import "google/api/annotations.proto";
 import "websocket/websocket.proto";
-import "model/model.proto";
-import "endpoint/endpoint.proto";
 import "validate/validate.proto";
+import "types/types.proto";
 import "mars/mars.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/project;project";
 
-message ProjectDeleteRequest {
+message DeleteRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message ProjectShowRequest {
+message ShowRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message ProjectShowResponse {
-  int64 id = 1;
-  string name = 2;
-  int64 git_project_id = 3;
-  string git_branch = 4;
-  string git_commit = 5;
-  string config = 6;
-  string docker_image = 7;
-  bool atomic = 8;
-  string git_commit_web_url = 9;
-  string git_commit_title = 10;
-  string git_commit_author = 11;
-  string git_commit_date = 12;
+message ShowResponse {
+  types.ProjectModel project = 1;
 
-  repeated ServiceEndpoint urls = 13;
-  message Namespace {
-    int64 id = 1;
-    string name = 2;
-  }
-  Namespace namespace = 14;
+  repeated types.ServiceEndpoint urls = 13;
   string cpu = 15;
   string memory = 16;
-  string override_values = 17;
-  string created_at = 18;
-  string updated_at = 19;
-  string humanize_created_at = 20;
-  string humanize_updated_at = 21;
-  repeated ProjectExtraItem extra_values = 22;
-  repeated Element elements = 23;
-  string config_type = 24;
+  repeated mars.Element elements = 23;
 }
 
-message ProjectAllContainersRequest {
+message AllContainersRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message ProjectPod {
-  string namespace = 1;
-  string pod_name = 2;
-  string container_name = 3;
+message AllContainersResponse {
+  repeated types.Container items = 1;
 }
 
-message ProjectAllContainersResponse {
-  repeated ProjectPod items = 1;
+message ApplyResponse {
+  websocket.Metadata metadata = 1;
+  types.ProjectModel project = 2;
 }
 
-message ProjectApplyResponse {
-  Metadata metadata = 1;
-  ProjectModel project = 2;
-}
-
-message ProjectDryRunApplyResponse {
+message DryRunApplyResponse {
   repeated string results = 1;
 }
 
-// ProjectApplyRequest same as ProjectInput
-message ProjectApplyRequest {
+// ApplyRequest same as ProjectInput
+message ApplyRequest {
   int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
   // name 不传就使用 git 默认的 name
   string name = 2;
@@ -84,55 +56,57 @@ message ProjectApplyRequest {
   string config = 6;
   bool atomic = 7;
   bool websocket_sync = 8;
-  repeated ProjectExtraItem extra_values = 9;
+  // 发送百分比
+  bool send_percent = 11;
+  repeated types.ExtraValue extra_values = 9;
   // 部署超时时间
   int64 install_timeout_seconds = 10 [(validate.rules).int64.gte = 0];
 }
 
-message ProjectDeleteResponse {}
+message DeleteResponse {}
 
-message ProjectListRequest {
+message ListRequest {
   int64 page = 1 [(validate.rules).int64.gt = 0];
   int64 page_size = 2 [(validate.rules).int64.gt = 0];
 }
 
-message ProjectListResponse {
+message ListResponse {
   int64 page = 1;
   int64 page_size = 2;
   int64 count = 3;
-  repeated ProjectModel items = 4;
+  repeated types.ProjectModel items = 4;
 }
 
 service Project {
   //  List 获取项目列表
-  rpc List(ProjectListRequest) returns (ProjectListResponse) {
+  rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
       get: "/api/projects"
     };
   }
 
   // Apply grpc 创建/更新项目
-  rpc Apply(ProjectApplyRequest) returns (stream ProjectApplyResponse);
+  rpc Apply(ApplyRequest) returns (stream ApplyResponse);
 
   // ApplyDryRun 创建/更新项目 '--dry-run' mode
-  rpc ApplyDryRun(ProjectApplyRequest) returns (ProjectDryRunApplyResponse);
+  rpc ApplyDryRun(ApplyRequest) returns (DryRunApplyResponse);
 
   // Show 项目详情
-  rpc Show(ProjectShowRequest) returns (ProjectShowResponse) {
+  rpc Show(ShowRequest) returns (ShowResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}"
     };
   }
 
   // Delete 删除项目
-  rpc Delete(ProjectDeleteRequest) returns (ProjectDeleteResponse) {
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
     option (google.api.http) = {
       delete: "/api/projects/{project_id}"
     };
   }
 
   // AllContainers 获取项目下的所有 pod
-  rpc AllContainers(ProjectAllContainersRequest) returns (ProjectAllContainersResponse) {
+  rpc AllContainers(AllContainersRequest) returns (AllContainersResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}/containers"
     };

@@ -123,3 +123,11 @@ func main()  {
 - ~~分离 ResponseMetadata 中的 Data~~
 - ~~断开连接使用图标的方式~~
 - ~~配置可启动之后再添加~~
+
+## v4.3 changes
+
+- [x] proto 大改动
+- [x] grpc 接口 present/参数+
+- [x] 更多接口
+- [x] ui 显示 project id
+- [x] ui 显示 namespace id

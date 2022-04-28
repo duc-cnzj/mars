@@ -1,6 +1,6 @@
-import { ClusterInfoResponse } from './../../api/compiled.d';
+import pb from './../../api/compiled.d';
 import { SET_CLUSTER_INFO } from "../actionTypes";
-const initialState: ClusterInfoResponse = {
+const initialState: pb.cluster.InfoResponse = {
   status: "",
   free_memory: "",
   free_cpu: "",
@@ -14,12 +14,12 @@ const initialState: ClusterInfoResponse = {
   request_cpu_rate: "",
 };
 
-export const selectClusterInfo = (state: { cluster: ClusterInfoResponse }) =>
+export const selectClusterInfo = (state: { cluster: pb.cluster.InfoResponse }) =>
   state.cluster;
 
 export default function cluster(
   state = initialState,
-  action: { type: string; info?: ClusterInfoResponse }
+  action: { type: string; info?: pb.cluster.InfoResponse }
 ) {
   switch (action.type) {
     case SET_CLUSTER_INFO:

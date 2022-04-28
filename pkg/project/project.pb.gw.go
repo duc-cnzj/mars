@@ -36,7 +36,7 @@ var (
 )
 
 func request_Project_List_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -52,7 +52,7 @@ func request_Project_List_0(ctx context.Context, marshaler runtime.Marshaler, cl
 }
 
 func local_request_Project_List_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -68,7 +68,7 @@ func local_request_Project_List_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func request_Project_Apply_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (Project_ApplyClient, runtime.ServerMetadata, error) {
-	var protoReq ProjectApplyRequest
+	var protoReq ApplyRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -93,7 +93,7 @@ func request_Project_Apply_0(ctx context.Context, marshaler runtime.Marshaler, c
 }
 
 func request_Project_ApplyDryRun_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectApplyRequest
+	var protoReq ApplyRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -110,7 +110,7 @@ func request_Project_ApplyDryRun_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func local_request_Project_ApplyDryRun_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectApplyRequest
+	var protoReq ApplyRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -127,7 +127,7 @@ func local_request_Project_ApplyDryRun_0(ctx context.Context, marshaler runtime.
 }
 
 func request_Project_Show_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -153,7 +153,7 @@ func request_Project_Show_0(ctx context.Context, marshaler runtime.Marshaler, cl
 }
 
 func local_request_Project_Show_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectShowRequest
+	var protoReq ShowRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -179,7 +179,7 @@ func local_request_Project_Show_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectDeleteRequest
+	var protoReq DeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -205,7 +205,7 @@ func request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, 
 }
 
 func local_request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectDeleteRequest
+	var protoReq DeleteRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -231,7 +231,7 @@ func local_request_Project_Delete_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func request_Project_AllContainers_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectAllContainersRequest
+	var protoReq AllContainersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -257,7 +257,7 @@ func request_Project_AllContainers_0(ctx context.Context, marshaler runtime.Mars
 }
 
 func local_request_Project_AllContainers_0(ctx context.Context, marshaler runtime.Marshaler, server ProjectServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProjectAllContainersRequest
+	var protoReq AllContainersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -295,7 +295,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/List", runtime.WithHTTPPathPattern("/api/projects"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/project.Project/List", runtime.WithHTTPPathPattern("/api/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -326,7 +326,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/ApplyDryRun", runtime.WithHTTPPathPattern("/Project/ApplyDryRun"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/project.Project/ApplyDryRun", runtime.WithHTTPPathPattern("/project.Project/ApplyDryRun"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -350,7 +350,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/project.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -374,7 +374,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/project.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -398,7 +398,7 @@ func RegisterProjectHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Project/AllContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/project.Project/AllContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -461,7 +461,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/List", runtime.WithHTTPPathPattern("/api/projects"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/List", runtime.WithHTTPPathPattern("/api/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -482,7 +482,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/Apply", runtime.WithHTTPPathPattern("/Project/Apply"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/Apply", runtime.WithHTTPPathPattern("/project.Project/Apply"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -503,7 +503,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/ApplyDryRun", runtime.WithHTTPPathPattern("/Project/ApplyDryRun"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/ApplyDryRun", runtime.WithHTTPPathPattern("/project.Project/ApplyDryRun"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -524,7 +524,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/Show", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -545,7 +545,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/Delete", runtime.WithHTTPPathPattern("/api/projects/{project_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -566,7 +566,7 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Project/AllContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/project.Project/AllContainers", runtime.WithHTTPPathPattern("/api/projects/{project_id}/containers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -588,9 +588,9 @@ func RegisterProjectHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 var (
 	pattern_Project_List_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "projects"}, ""))
 
-	pattern_Project_Apply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Project", "Apply"}, ""))
+	pattern_Project_Apply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"project.Project", "Apply"}, ""))
 
-	pattern_Project_ApplyDryRun_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"Project", "ApplyDryRun"}, ""))
+	pattern_Project_ApplyDryRun_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"project.Project", "ApplyDryRun"}, ""))
 
 	pattern_Project_Show_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "projects", "project_id"}, ""))
 

@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VersionClient interface {
 	// Version 获取当前版本信息
-	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
+	Version(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
 type versionClient struct {
@@ -35,9 +35,9 @@ func NewVersionClient(cc grpc.ClientConnInterface) VersionClient {
 	return &versionClient{cc}
 }
 
-func (c *versionClient) Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
-	out := new(VersionResponse)
-	err := c.cc.Invoke(ctx, "/Version/Version", in, out, opts...)
+func (c *versionClient) Version(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/version.Version/Version", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *versionClient) Version(ctx context.Context, in *VersionRequest, opts ..
 // for forward compatibility
 type VersionServer interface {
 	// Version 获取当前版本信息
-	Version(context.Context, *VersionRequest) (*VersionResponse, error)
+	Version(context.Context, *Request) (*Response, error)
 	mustEmbedUnimplementedVersionServer()
 }
 
@@ -57,7 +57,7 @@ type VersionServer interface {
 type UnimplementedVersionServer struct {
 }
 
-func (UnimplementedVersionServer) Version(context.Context, *VersionRequest) (*VersionResponse, error) {
+func (UnimplementedVersionServer) Version(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
 }
 func (UnimplementedVersionServer) mustEmbedUnimplementedVersionServer() {}
@@ -74,7 +74,7 @@ func RegisterVersionServer(s grpc.ServiceRegistrar, srv VersionServer) {
 }
 
 func _Version_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VersionRequest)
+	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func _Version_Version_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Version/Version",
+		FullMethod: "/version.Version/Version",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VersionServer).Version(ctx, req.(*VersionRequest))
+		return srv.(VersionServer).Version(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -95,7 +95,7 @@ func _Version_Version_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Version_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Version",
+	ServiceName: "version.Version",
 	HandlerType: (*VersionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -32,7 +32,7 @@ var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
 func request_Cluster_ClusterInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ClusterClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ClusterInfoRequest
+	var protoReq InfoRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.ClusterInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -41,7 +41,7 @@ func request_Cluster_ClusterInfo_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func local_request_Cluster_ClusterInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ClusterServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ClusterInfoRequest
+	var protoReq InfoRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.ClusterInfo(ctx, &protoReq)
@@ -62,7 +62,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/cluster.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -125,7 +125,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/cluster.Cluster/ClusterInfo", runtime.WithHTTPPathPattern("/api/cluster_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

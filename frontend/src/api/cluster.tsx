@@ -2,5 +2,5 @@ import ajax from "./ajax";
 import pb from "./compiled"
 
 export async function clusterInfo() {
-  return ajax.get<pb.ClusterInfoResponse>(`/api/cluster_info`);
+  return ajax.get<pb.cluster.InfoResponse>(`/api/cluster_info`);
 }

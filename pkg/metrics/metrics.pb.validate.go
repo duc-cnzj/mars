@@ -35,22 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on MetricsTopPodRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsTopPodRequest) Validate() error {
+// Validate checks the field values on TopPodRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *TopPodRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsTopPodRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// MetricsTopPodRequestMultiError, or nil if none found.
-func (m *MetricsTopPodRequest) ValidateAll() error {
+// ValidateAll checks the field values on TopPodRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in TopPodRequestMultiError, or
+// nil if none found.
+func (m *TopPodRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsTopPodRequest) validate(all bool) error {
+func (m *TopPodRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (m *MetricsTopPodRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetNamespace()) < 1 {
-		err := MetricsTopPodRequestValidationError{
+		err := TopPodRequestValidationError{
 			field:  "Namespace",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -69,7 +69,7 @@ func (m *MetricsTopPodRequest) validate(all bool) error {
 	}
 
 	if len(m.GetPod()) < 1 {
-		err := MetricsTopPodRequestValidationError{
+		err := TopPodRequestValidationError{
 			field:  "Pod",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -80,19 +80,19 @@ func (m *MetricsTopPodRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsTopPodRequestMultiError(errors)
+		return TopPodRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsTopPodRequestMultiError is an error wrapping multiple validation
-// errors returned by MetricsTopPodRequest.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsTopPodRequestMultiError []error
+// TopPodRequestMultiError is an error wrapping multiple validation errors
+// returned by TopPodRequest.ValidateAll() if the designated constraints
+// aren't met.
+type TopPodRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsTopPodRequestMultiError) Error() string {
+func (m TopPodRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -101,11 +101,11 @@ func (m MetricsTopPodRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsTopPodRequestMultiError) AllErrors() []error { return m }
+func (m TopPodRequestMultiError) AllErrors() []error { return m }
 
-// MetricsTopPodRequestValidationError is the validation error returned by
-// MetricsTopPodRequest.Validate if the designated constraints aren't met.
-type MetricsTopPodRequestValidationError struct {
+// TopPodRequestValidationError is the validation error returned by
+// TopPodRequest.Validate if the designated constraints aren't met.
+type TopPodRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -113,24 +113,22 @@ type MetricsTopPodRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsTopPodRequestValidationError) Field() string { return e.field }
+func (e TopPodRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsTopPodRequestValidationError) Reason() string { return e.reason }
+func (e TopPodRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsTopPodRequestValidationError) Cause() error { return e.cause }
+func (e TopPodRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsTopPodRequestValidationError) Key() bool { return e.key }
+func (e TopPodRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsTopPodRequestValidationError) ErrorName() string {
-	return "MetricsTopPodRequestValidationError"
-}
+func (e TopPodRequestValidationError) ErrorName() string { return "TopPodRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e MetricsTopPodRequestValidationError) Error() string {
+func (e TopPodRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -142,14 +140,14 @@ func (e MetricsTopPodRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsTopPodRequest.%s: %s%s",
+		"invalid %sTopPodRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsTopPodRequestValidationError{}
+var _ error = TopPodRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -157,24 +155,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsTopPodRequestValidationError{}
+} = TopPodRequestValidationError{}
 
-// Validate checks the field values on MetricsTopPodResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsTopPodResponse) Validate() error {
+// Validate checks the field values on TopPodResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *TopPodResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsTopPodResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// MetricsTopPodResponseMultiError, or nil if none found.
-func (m *MetricsTopPodResponse) ValidateAll() error {
+// ValidateAll checks the field values on TopPodResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in TopPodResponseMultiError,
+// or nil if none found.
+func (m *TopPodResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsTopPodResponse) validate(all bool) error {
+func (m *TopPodResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -194,19 +192,19 @@ func (m *MetricsTopPodResponse) validate(all bool) error {
 	// no validation rules for Length
 
 	if len(errors) > 0 {
-		return MetricsTopPodResponseMultiError(errors)
+		return TopPodResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsTopPodResponseMultiError is an error wrapping multiple validation
-// errors returned by MetricsTopPodResponse.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsTopPodResponseMultiError []error
+// TopPodResponseMultiError is an error wrapping multiple validation errors
+// returned by TopPodResponse.ValidateAll() if the designated constraints
+// aren't met.
+type TopPodResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsTopPodResponseMultiError) Error() string {
+func (m TopPodResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -215,11 +213,11 @@ func (m MetricsTopPodResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsTopPodResponseMultiError) AllErrors() []error { return m }
+func (m TopPodResponseMultiError) AllErrors() []error { return m }
 
-// MetricsTopPodResponseValidationError is the validation error returned by
-// MetricsTopPodResponse.Validate if the designated constraints aren't met.
-type MetricsTopPodResponseValidationError struct {
+// TopPodResponseValidationError is the validation error returned by
+// TopPodResponse.Validate if the designated constraints aren't met.
+type TopPodResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -227,24 +225,22 @@ type MetricsTopPodResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsTopPodResponseValidationError) Field() string { return e.field }
+func (e TopPodResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsTopPodResponseValidationError) Reason() string { return e.reason }
+func (e TopPodResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsTopPodResponseValidationError) Cause() error { return e.cause }
+func (e TopPodResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsTopPodResponseValidationError) Key() bool { return e.key }
+func (e TopPodResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsTopPodResponseValidationError) ErrorName() string {
-	return "MetricsTopPodResponseValidationError"
-}
+func (e TopPodResponseValidationError) ErrorName() string { return "TopPodResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e MetricsTopPodResponseValidationError) Error() string {
+func (e TopPodResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -256,14 +252,14 @@ func (e MetricsTopPodResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsTopPodResponse.%s: %s%s",
+		"invalid %sTopPodResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsTopPodResponseValidationError{}
+var _ error = TopPodResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -271,25 +267,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsTopPodResponseValidationError{}
+} = TopPodResponseValidationError{}
 
-// Validate checks the field values on MetricsCpuMemoryInNamespaceRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsCpuMemoryInNamespaceRequest) Validate() error {
+// Validate checks the field values on CpuMemoryInNamespaceRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CpuMemoryInNamespaceRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsCpuMemoryInNamespaceRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsCpuMemoryInNamespaceRequestMultiError, or nil if none found.
-func (m *MetricsCpuMemoryInNamespaceRequest) ValidateAll() error {
+// ValidateAll checks the field values on CpuMemoryInNamespaceRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CpuMemoryInNamespaceRequestMultiError, or nil if none found.
+func (m *CpuMemoryInNamespaceRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsCpuMemoryInNamespaceRequest) validate(all bool) error {
+func (m *CpuMemoryInNamespaceRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -297,7 +292,7 @@ func (m *MetricsCpuMemoryInNamespaceRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetNamespaceId() <= 0 {
-		err := MetricsCpuMemoryInNamespaceRequestValidationError{
+		err := CpuMemoryInNamespaceRequestValidationError{
 			field:  "NamespaceId",
 			reason: "value must be greater than 0",
 		}
@@ -308,20 +303,19 @@ func (m *MetricsCpuMemoryInNamespaceRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsCpuMemoryInNamespaceRequestMultiError(errors)
+		return CpuMemoryInNamespaceRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsCpuMemoryInNamespaceRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsCpuMemoryInNamespaceRequest.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInNamespaceRequestMultiError []error
+// CpuMemoryInNamespaceRequestMultiError is an error wrapping multiple
+// validation errors returned by CpuMemoryInNamespaceRequest.ValidateAll() if
+// the designated constraints aren't met.
+type CpuMemoryInNamespaceRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsCpuMemoryInNamespaceRequestMultiError) Error() string {
+func (m CpuMemoryInNamespaceRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -330,12 +324,12 @@ func (m MetricsCpuMemoryInNamespaceRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsCpuMemoryInNamespaceRequestMultiError) AllErrors() []error { return m }
+func (m CpuMemoryInNamespaceRequestMultiError) AllErrors() []error { return m }
 
-// MetricsCpuMemoryInNamespaceRequestValidationError is the validation error
-// returned by MetricsCpuMemoryInNamespaceRequest.Validate if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInNamespaceRequestValidationError struct {
+// CpuMemoryInNamespaceRequestValidationError is the validation error returned
+// by CpuMemoryInNamespaceRequest.Validate if the designated constraints
+// aren't met.
+type CpuMemoryInNamespaceRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -343,24 +337,24 @@ type MetricsCpuMemoryInNamespaceRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) Field() string { return e.field }
+func (e CpuMemoryInNamespaceRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) Reason() string { return e.reason }
+func (e CpuMemoryInNamespaceRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) Cause() error { return e.cause }
+func (e CpuMemoryInNamespaceRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) Key() bool { return e.key }
+func (e CpuMemoryInNamespaceRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) ErrorName() string {
-	return "MetricsCpuMemoryInNamespaceRequestValidationError"
+func (e CpuMemoryInNamespaceRequestValidationError) ErrorName() string {
+	return "CpuMemoryInNamespaceRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsCpuMemoryInNamespaceRequestValidationError) Error() string {
+func (e CpuMemoryInNamespaceRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -372,14 +366,14 @@ func (e MetricsCpuMemoryInNamespaceRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsCpuMemoryInNamespaceRequest.%s: %s%s",
+		"invalid %sCpuMemoryInNamespaceRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsCpuMemoryInNamespaceRequestValidationError{}
+var _ error = CpuMemoryInNamespaceRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -387,25 +381,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsCpuMemoryInNamespaceRequestValidationError{}
+} = CpuMemoryInNamespaceRequestValidationError{}
 
-// Validate checks the field values on MetricsCpuMemoryInNamespaceResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsCpuMemoryInNamespaceResponse) Validate() error {
+// Validate checks the field values on CpuMemoryInNamespaceResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CpuMemoryInNamespaceResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsCpuMemoryInNamespaceResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsCpuMemoryInNamespaceResponseMultiError, or nil if none found.
-func (m *MetricsCpuMemoryInNamespaceResponse) ValidateAll() error {
+// ValidateAll checks the field values on CpuMemoryInNamespaceResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CpuMemoryInNamespaceResponseMultiError, or nil if none found.
+func (m *CpuMemoryInNamespaceResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsCpuMemoryInNamespaceResponse) validate(all bool) error {
+func (m *CpuMemoryInNamespaceResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -417,20 +410,19 @@ func (m *MetricsCpuMemoryInNamespaceResponse) validate(all bool) error {
 	// no validation rules for Memory
 
 	if len(errors) > 0 {
-		return MetricsCpuMemoryInNamespaceResponseMultiError(errors)
+		return CpuMemoryInNamespaceResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsCpuMemoryInNamespaceResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsCpuMemoryInNamespaceResponse.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInNamespaceResponseMultiError []error
+// CpuMemoryInNamespaceResponseMultiError is an error wrapping multiple
+// validation errors returned by CpuMemoryInNamespaceResponse.ValidateAll() if
+// the designated constraints aren't met.
+type CpuMemoryInNamespaceResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsCpuMemoryInNamespaceResponseMultiError) Error() string {
+func (m CpuMemoryInNamespaceResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -439,12 +431,12 @@ func (m MetricsCpuMemoryInNamespaceResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsCpuMemoryInNamespaceResponseMultiError) AllErrors() []error { return m }
+func (m CpuMemoryInNamespaceResponseMultiError) AllErrors() []error { return m }
 
-// MetricsCpuMemoryInNamespaceResponseValidationError is the validation error
-// returned by MetricsCpuMemoryInNamespaceResponse.Validate if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInNamespaceResponseValidationError struct {
+// CpuMemoryInNamespaceResponseValidationError is the validation error returned
+// by CpuMemoryInNamespaceResponse.Validate if the designated constraints
+// aren't met.
+type CpuMemoryInNamespaceResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -452,24 +444,24 @@ type MetricsCpuMemoryInNamespaceResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) Field() string { return e.field }
+func (e CpuMemoryInNamespaceResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) Reason() string { return e.reason }
+func (e CpuMemoryInNamespaceResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) Cause() error { return e.cause }
+func (e CpuMemoryInNamespaceResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) Key() bool { return e.key }
+func (e CpuMemoryInNamespaceResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) ErrorName() string {
-	return "MetricsCpuMemoryInNamespaceResponseValidationError"
+func (e CpuMemoryInNamespaceResponseValidationError) ErrorName() string {
+	return "CpuMemoryInNamespaceResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsCpuMemoryInNamespaceResponseValidationError) Error() string {
+func (e CpuMemoryInNamespaceResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -481,14 +473,14 @@ func (e MetricsCpuMemoryInNamespaceResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsCpuMemoryInNamespaceResponse.%s: %s%s",
+		"invalid %sCpuMemoryInNamespaceResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsCpuMemoryInNamespaceResponseValidationError{}
+var _ error = CpuMemoryInNamespaceResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -496,25 +488,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsCpuMemoryInNamespaceResponseValidationError{}
+} = CpuMemoryInNamespaceResponseValidationError{}
 
-// Validate checks the field values on MetricsCpuMemoryInProjectRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsCpuMemoryInProjectRequest) Validate() error {
+// Validate checks the field values on CpuMemoryInProjectRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CpuMemoryInProjectRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsCpuMemoryInProjectRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// MetricsCpuMemoryInProjectRequestMultiError, or nil if none found.
-func (m *MetricsCpuMemoryInProjectRequest) ValidateAll() error {
+// ValidateAll checks the field values on CpuMemoryInProjectRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CpuMemoryInProjectRequestMultiError, or nil if none found.
+func (m *CpuMemoryInProjectRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsCpuMemoryInProjectRequest) validate(all bool) error {
+func (m *CpuMemoryInProjectRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -522,7 +513,7 @@ func (m *MetricsCpuMemoryInProjectRequest) validate(all bool) error {
 	var errors []error
 
 	if m.GetProjectId() <= 0 {
-		err := MetricsCpuMemoryInProjectRequestValidationError{
+		err := CpuMemoryInProjectRequestValidationError{
 			field:  "ProjectId",
 			reason: "value must be greater than 0",
 		}
@@ -533,20 +524,19 @@ func (m *MetricsCpuMemoryInProjectRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsCpuMemoryInProjectRequestMultiError(errors)
+		return CpuMemoryInProjectRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsCpuMemoryInProjectRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsCpuMemoryInProjectRequest.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInProjectRequestMultiError []error
+// CpuMemoryInProjectRequestMultiError is an error wrapping multiple validation
+// errors returned by CpuMemoryInProjectRequest.ValidateAll() if the
+// designated constraints aren't met.
+type CpuMemoryInProjectRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsCpuMemoryInProjectRequestMultiError) Error() string {
+func (m CpuMemoryInProjectRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -555,12 +545,11 @@ func (m MetricsCpuMemoryInProjectRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsCpuMemoryInProjectRequestMultiError) AllErrors() []error { return m }
+func (m CpuMemoryInProjectRequestMultiError) AllErrors() []error { return m }
 
-// MetricsCpuMemoryInProjectRequestValidationError is the validation error
-// returned by MetricsCpuMemoryInProjectRequest.Validate if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInProjectRequestValidationError struct {
+// CpuMemoryInProjectRequestValidationError is the validation error returned by
+// CpuMemoryInProjectRequest.Validate if the designated constraints aren't met.
+type CpuMemoryInProjectRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -568,24 +557,24 @@ type MetricsCpuMemoryInProjectRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsCpuMemoryInProjectRequestValidationError) Field() string { return e.field }
+func (e CpuMemoryInProjectRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsCpuMemoryInProjectRequestValidationError) Reason() string { return e.reason }
+func (e CpuMemoryInProjectRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsCpuMemoryInProjectRequestValidationError) Cause() error { return e.cause }
+func (e CpuMemoryInProjectRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsCpuMemoryInProjectRequestValidationError) Key() bool { return e.key }
+func (e CpuMemoryInProjectRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsCpuMemoryInProjectRequestValidationError) ErrorName() string {
-	return "MetricsCpuMemoryInProjectRequestValidationError"
+func (e CpuMemoryInProjectRequestValidationError) ErrorName() string {
+	return "CpuMemoryInProjectRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsCpuMemoryInProjectRequestValidationError) Error() string {
+func (e CpuMemoryInProjectRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -597,14 +586,14 @@ func (e MetricsCpuMemoryInProjectRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsCpuMemoryInProjectRequest.%s: %s%s",
+		"invalid %sCpuMemoryInProjectRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsCpuMemoryInProjectRequestValidationError{}
+var _ error = CpuMemoryInProjectRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -612,25 +601,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsCpuMemoryInProjectRequestValidationError{}
+} = CpuMemoryInProjectRequestValidationError{}
 
-// Validate checks the field values on MetricsCpuMemoryInProjectResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsCpuMemoryInProjectResponse) Validate() error {
+// Validate checks the field values on CpuMemoryInProjectResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CpuMemoryInProjectResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsCpuMemoryInProjectResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsCpuMemoryInProjectResponseMultiError, or nil if none found.
-func (m *MetricsCpuMemoryInProjectResponse) ValidateAll() error {
+// ValidateAll checks the field values on CpuMemoryInProjectResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CpuMemoryInProjectResponseMultiError, or nil if none found.
+func (m *CpuMemoryInProjectResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsCpuMemoryInProjectResponse) validate(all bool) error {
+func (m *CpuMemoryInProjectResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -642,20 +630,19 @@ func (m *MetricsCpuMemoryInProjectResponse) validate(all bool) error {
 	// no validation rules for Memory
 
 	if len(errors) > 0 {
-		return MetricsCpuMemoryInProjectResponseMultiError(errors)
+		return CpuMemoryInProjectResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsCpuMemoryInProjectResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsCpuMemoryInProjectResponse.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInProjectResponseMultiError []error
+// CpuMemoryInProjectResponseMultiError is an error wrapping multiple
+// validation errors returned by CpuMemoryInProjectResponse.ValidateAll() if
+// the designated constraints aren't met.
+type CpuMemoryInProjectResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsCpuMemoryInProjectResponseMultiError) Error() string {
+func (m CpuMemoryInProjectResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -664,12 +651,11 @@ func (m MetricsCpuMemoryInProjectResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsCpuMemoryInProjectResponseMultiError) AllErrors() []error { return m }
+func (m CpuMemoryInProjectResponseMultiError) AllErrors() []error { return m }
 
-// MetricsCpuMemoryInProjectResponseValidationError is the validation error
-// returned by MetricsCpuMemoryInProjectResponse.Validate if the designated
-// constraints aren't met.
-type MetricsCpuMemoryInProjectResponseValidationError struct {
+// CpuMemoryInProjectResponseValidationError is the validation error returned
+// by CpuMemoryInProjectResponse.Validate if the designated constraints aren't met.
+type CpuMemoryInProjectResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -677,24 +663,24 @@ type MetricsCpuMemoryInProjectResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsCpuMemoryInProjectResponseValidationError) Field() string { return e.field }
+func (e CpuMemoryInProjectResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsCpuMemoryInProjectResponseValidationError) Reason() string { return e.reason }
+func (e CpuMemoryInProjectResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsCpuMemoryInProjectResponseValidationError) Cause() error { return e.cause }
+func (e CpuMemoryInProjectResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsCpuMemoryInProjectResponseValidationError) Key() bool { return e.key }
+func (e CpuMemoryInProjectResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsCpuMemoryInProjectResponseValidationError) ErrorName() string {
-	return "MetricsCpuMemoryInProjectResponseValidationError"
+func (e CpuMemoryInProjectResponseValidationError) ErrorName() string {
+	return "CpuMemoryInProjectResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsCpuMemoryInProjectResponseValidationError) Error() string {
+func (e CpuMemoryInProjectResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -706,14 +692,14 @@ func (e MetricsCpuMemoryInProjectResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsCpuMemoryInProjectResponse.%s: %s%s",
+		"invalid %sCpuMemoryInProjectResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsCpuMemoryInProjectResponseValidationError{}
+var _ error = CpuMemoryInProjectResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -721,4 +707,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsCpuMemoryInProjectResponseValidationError{}
+} = CpuMemoryInProjectResponseValidationError{}

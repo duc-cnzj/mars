@@ -1,10 +1,12 @@
 syntax = "proto3";
 
+package mars;
+
 import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/mars";
 
-message MarsConfig {
+message Config {
   // config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
   string config_file = 1;
   // config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个

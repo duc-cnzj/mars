@@ -58,13 +58,13 @@ func (ms *messager) IsStopped() bool {
 func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: result,
-			End:    true,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   msg,
+			Slug:    ms.slugName,
+			Type:    ms.wsType,
+			Result:  result,
+			End:     true,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: msg,
 		},
 	}
 	ms.send(res)
@@ -73,13 +73,13 @@ func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg strin
 func (ms *messager) SendEndError(err error) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultError,
-			End:    true,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   err.Error(),
+			Slug:    ms.slugName,
+			Type:    ms.wsType,
+			Result:  ResultError,
+			End:     true,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: err.Error(),
 		},
 	}
 	ms.send(res)
@@ -88,13 +88,13 @@ func (ms *messager) SendEndError(err error) {
 func (ms *messager) SendError(err error) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultError,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   err.Error(),
+			Slug:    ms.slugName,
+			Type:    ms.wsType,
+			Result:  ResultError,
+			End:     false,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: err.Error(),
 		},
 	}
 	ms.send(res)
@@ -103,13 +103,13 @@ func (ms *messager) SendError(err error) {
 func (ms *messager) SendProcessPercent(percent string) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   WsProcessPercent,
-			Result: ResultSuccess,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   percent,
+			Slug:    ms.slugName,
+			Type:    WsProcessPercent,
+			Result:  ResultSuccess,
+			End:     false,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: percent,
 		},
 	}
 	ms.send(res)
@@ -118,13 +118,13 @@ func (ms *messager) SendProcessPercent(percent string) {
 func (ms *messager) SendMsg(msg string) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
-			Slug:   ms.slugName,
-			Type:   ms.wsType,
-			Result: ResultSuccess,
-			End:    false,
-			Uid:    ms.conn.uid,
-			Id:     ms.conn.id,
-			Data:   msg,
+			Slug:    ms.slugName,
+			Type:    ms.wsType,
+			Result:  ResultSuccess,
+			End:     false,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: msg,
 		},
 	}
 	ms.send(res)

@@ -22,10 +22,10 @@ type VersionSvc struct {
 	version.UnsafeVersionServer
 }
 
-func (*VersionSvc) Version(ctx context.Context, request *version.VersionRequest) (*version.VersionResponse, error) {
+func (*VersionSvc) Version(ctx context.Context, request *version.Request) (*version.Response, error) {
 	vv := marsVersion.GetVersion()
 
-	return &version.VersionResponse{
+	return &version.Response{
 		Version:        vv.Version,
 		BuildDate:      vv.BuildDate,
 		GitBranch:      vv.GitBranch,

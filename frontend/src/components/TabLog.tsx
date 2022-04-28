@@ -11,7 +11,7 @@ const ProjectContainerLogs: React.FC<{
   namespace: string;
 }> = ({ id, namespace, updatedAt }) => {
   const [value, setValue] = useState<string>();
-  const [list, setList] = useState<pb.ProjectPod[]>();
+  const [list, setList] = useState<pb.types.Container[]>();
 
   const listContainer = useCallback(async () => {
     return allPodContainers({ project_id: id }).then((res) => {
@@ -24,7 +24,7 @@ const ProjectContainerLogs: React.FC<{
     listContainer().then((res) => {
       if (res.data.items.length > 0) {
         let first = res.data.items[0];
-        setValue(first.pod_name + "|" + first.container_name);
+        setValue(first.pod + "|" + first.container);
       }
     });
   }, [setList, id, namespace, updatedAt, listContainer]);
@@ -48,12 +48,12 @@ const ProjectContainerLogs: React.FC<{
         {list?.map((item) => (
           <Radio
             onClick={reloadLog}
-            key={item.pod_name + "|" + item.container_name}
-            value={item.pod_name + "|" + item.container_name}
+            key={item.pod + "|" + item.container}
+            value={item.pod + "|" + item.container}
           >
-            {item.container_name}
+            {item.container}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
-              {item.pod_name}
+              {item.pod}
             </Tag>
           </Radio>
         ))}
@@ -100,7 +100,7 @@ const ProjectContainerLogs: React.FC<{
                 listContainer().then((res) => {
                   if (res.data.items.length > 0) {
                     let first = res.data.items[0];
-                    setValue(first.pod_name + "|" + first.container_name);
+                    setValue(first.pod + "|" + first.container);
                   }
                 });
               }

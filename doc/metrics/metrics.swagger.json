@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsCpuMemoryInNamespaceResponse"
+              "$ref": "#/definitions/metricsCpuMemoryInNamespaceResponse"
             }
           },
           "default": {
@@ -56,7 +56,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsTopPodResponse"
+              "$ref": "#/definitions/metricsTopPodResponse"
             }
           },
           "default": {
@@ -96,13 +96,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/MetricsTopPodResponse"
+                  "$ref": "#/definitions/metricsTopPodResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 }
               },
-              "title": "Stream result of MetricsTopPodResponse"
+              "title": "Stream result of metricsTopPodResponse"
             }
           },
           "default": {
@@ -139,7 +139,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsCpuMemoryInProjectResponse"
+              "$ref": "#/definitions/metricsCpuMemoryInProjectResponse"
             }
           },
           "default": {
@@ -165,7 +165,7 @@
     }
   },
   "definitions": {
-    "MetricsCpuMemoryInNamespaceResponse": {
+    "metricsCpuMemoryInNamespaceResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -176,7 +176,7 @@
         }
       }
     },
-    "MetricsCpuMemoryInProjectResponse": {
+    "metricsCpuMemoryInProjectResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -187,7 +187,7 @@
         }
       }
     },
-    "MetricsTopPodResponse": {
+    "metricsTopPodResponse": {
       "type": "object",
       "properties": {
         "cpu": {

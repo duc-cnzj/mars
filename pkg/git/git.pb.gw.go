@@ -32,7 +32,7 @@ var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
 func request_Git_EnableProject_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitEnableProjectRequest
+	var protoReq EnableProjectRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -49,7 +49,7 @@ func request_Git_EnableProject_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 func local_request_Git_EnableProject_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitEnableProjectRequest
+	var protoReq EnableProjectRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -66,7 +66,7 @@ func local_request_Git_EnableProject_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func request_Git_DisableProject_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitDisableProjectRequest
+	var protoReq DisableProjectRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -83,7 +83,7 @@ func request_Git_DisableProject_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Git_DisableProject_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitDisableProjectRequest
+	var protoReq DisableProjectRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -100,7 +100,7 @@ func local_request_Git_DisableProject_0(ctx context.Context, marshaler runtime.M
 }
 
 func request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitAllProjectsRequest
+	var protoReq AllProjectsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.All(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -109,7 +109,7 @@ func request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, client 
 }
 
 func local_request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitAllProjectsRequest
+	var protoReq AllProjectsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.All(ctx, &protoReq)
@@ -118,7 +118,7 @@ func local_request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, s
 }
 
 func request_Git_ProjectOptions_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitProjectOptionsRequest
+	var protoReq ProjectOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.ProjectOptions(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -127,7 +127,7 @@ func request_Git_ProjectOptions_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Git_ProjectOptions_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitProjectOptionsRequest
+	var protoReq ProjectOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.ProjectOptions(ctx, &protoReq)
@@ -140,7 +140,7 @@ var (
 )
 
 func request_Git_BranchOptions_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitBranchOptionsRequest
+	var protoReq BranchOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -173,7 +173,7 @@ func request_Git_BranchOptions_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 func local_request_Git_BranchOptions_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitBranchOptionsRequest
+	var protoReq BranchOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -206,7 +206,7 @@ func local_request_Git_BranchOptions_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func request_Git_CommitOptions_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitCommitOptionsRequest
+	var protoReq CommitOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -242,7 +242,7 @@ func request_Git_CommitOptions_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 func local_request_Git_CommitOptions_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitCommitOptionsRequest
+	var protoReq CommitOptionsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -278,7 +278,7 @@ func local_request_Git_CommitOptions_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func request_Git_Commit_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitCommitRequest
+	var protoReq CommitRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -324,7 +324,7 @@ func request_Git_Commit_0(ctx context.Context, marshaler runtime.Marshaler, clie
 }
 
 func local_request_Git_Commit_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitCommitRequest
+	var protoReq CommitRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -370,7 +370,7 @@ func local_request_Git_Commit_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitPipelineInfoRequest
+	var protoReq PipelineInfoRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -416,7 +416,7 @@ func request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func local_request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitPipelineInfoRequest
+	var protoReq PipelineInfoRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -462,7 +462,7 @@ func local_request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigFileRequest
+	var protoReq ConfigFileRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -498,7 +498,7 @@ func request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigFileRequest
+	var protoReq ConfigFileRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -533,334 +533,6 @@ func local_request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.M
 
 }
 
-var (
-	filter_GitConfig_Show_0 = &utilities.DoubleArray{Encoding: map[string]int{"git_project_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
-func request_GitConfig_Show_0(ctx context.Context, marshaler runtime.Marshaler, client GitConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigShowRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_GitConfig_Show_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.Show(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_GitConfig_Show_0(ctx context.Context, marshaler runtime.Marshaler, server GitConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigShowRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_GitConfig_Show_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.Show(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_GitConfig_GlobalConfig_0(ctx context.Context, marshaler runtime.Marshaler, client GitConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigGlobalConfigRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := client.GlobalConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_GitConfig_GlobalConfig_0(ctx context.Context, marshaler runtime.Marshaler, server GitConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigGlobalConfigRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := server.GlobalConfig(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_GitConfig_ToggleGlobalStatus_0(ctx context.Context, marshaler runtime.Marshaler, client GitConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigToggleGlobalStatusRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := client.ToggleGlobalStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_GitConfig_ToggleGlobalStatus_0(ctx context.Context, marshaler runtime.Marshaler, server GitConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigToggleGlobalStatusRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := server.ToggleGlobalStatus(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_GitConfig_Update_0(ctx context.Context, marshaler runtime.Marshaler, client GitConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigUpdateRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := client.Update(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_GitConfig_Update_0(ctx context.Context, marshaler runtime.Marshaler, server GitConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigUpdateRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	msg, err := server.Update(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-var (
-	filter_GitConfig_GetDefaultChartValues_0 = &utilities.DoubleArray{Encoding: map[string]int{"git_project_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
-func request_GitConfig_GetDefaultChartValues_0(ctx context.Context, marshaler runtime.Marshaler, client GitConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigDefaultChartValuesRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_GitConfig_GetDefaultChartValues_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.GetDefaultChartValues(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_GitConfig_GetDefaultChartValues_0(ctx context.Context, marshaler runtime.Marshaler, server GitConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GitConfigDefaultChartValuesRequest
-	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["git_project_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "git_project_id")
-	}
-
-	protoReq.GitProjectId, err = runtime.Int64(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "git_project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_GitConfig_GetDefaultChartValues_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.GetDefaultChartValues(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
 // RegisterGitHandlerServer registers the http handlers for service Git to "mux".
 // UnaryRPC     :call GitServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -874,7 +546,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/EnableProject", runtime.WithHTTPPathPattern("/api/git/projects/enable"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/EnableProject", runtime.WithHTTPPathPattern("/api/git/projects/enable"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -898,7 +570,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/DisableProject", runtime.WithHTTPPathPattern("/api/git/projects/disable"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/DisableProject", runtime.WithHTTPPathPattern("/api/git/projects/disable"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -922,7 +594,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/All", runtime.WithHTTPPathPattern("/api/git/projects"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/All", runtime.WithHTTPPathPattern("/api/git/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -946,7 +618,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/ProjectOptions", runtime.WithHTTPPathPattern("/api/git/project_options"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/ProjectOptions", runtime.WithHTTPPathPattern("/api/git/project_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -970,7 +642,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/BranchOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branch_options"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/BranchOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branch_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -994,7 +666,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/CommitOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commit_options"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/CommitOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commit_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1018,7 +690,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/Commit", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/Commit", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1042,7 +714,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/PipelineInfo", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/PipelineInfo", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1066,7 +738,7 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/git.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1080,135 +752,6 @@ func RegisterGitHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		}
 
 		forward_Git_MarsConfigFile_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	return nil
-}
-
-// RegisterGitConfigHandlerServer registers the http handlers for service GitConfig to "mux".
-// UnaryRPC     :call GitConfigServer directly.
-// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterGitConfigHandlerFromEndpoint instead.
-func RegisterGitConfigHandlerServer(ctx context.Context, mux *runtime.ServeMux, server GitConfigServer) error {
-
-	mux.Handle("GET", pattern_GitConfig_Show_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.GitConfig/Show", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/mars_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_GitConfig_Show_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_Show_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_GitConfig_GlobalConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.GitConfig/GlobalConfig", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/global_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_GitConfig_GlobalConfig_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_GlobalConfig_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("POST", pattern_GitConfig_ToggleGlobalStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.GitConfig/ToggleGlobalStatus", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/toggle_status"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_GitConfig_ToggleGlobalStatus_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_ToggleGlobalStatus_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("PUT", pattern_GitConfig_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.GitConfig/Update", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/mars_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_GitConfig_Update_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_GitConfig_GetDefaultChartValues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/.GitConfig/GetDefaultChartValues", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/default_values"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_GitConfig_GetDefaultChartValues_0(ctx, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_GetDefaultChartValues_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1258,7 +801,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/EnableProject", runtime.WithHTTPPathPattern("/api/git/projects/enable"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/EnableProject", runtime.WithHTTPPathPattern("/api/git/projects/enable"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1279,7 +822,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/DisableProject", runtime.WithHTTPPathPattern("/api/git/projects/disable"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/DisableProject", runtime.WithHTTPPathPattern("/api/git/projects/disable"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1300,7 +843,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/All", runtime.WithHTTPPathPattern("/api/git/projects"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/All", runtime.WithHTTPPathPattern("/api/git/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1321,7 +864,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/ProjectOptions", runtime.WithHTTPPathPattern("/api/git/project_options"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/ProjectOptions", runtime.WithHTTPPathPattern("/api/git/project_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1342,7 +885,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/BranchOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branch_options"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/BranchOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branch_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1363,7 +906,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/CommitOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commit_options"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/CommitOptions", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commit_options"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1384,7 +927,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/Commit", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/Commit", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1405,7 +948,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/PipelineInfo", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/PipelineInfo", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1426,7 +969,7 @@ func RegisterGitHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/git.Git/MarsConfigFile", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/branches/{branch}/config_file"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1483,174 +1026,4 @@ var (
 	forward_Git_PipelineInfo_0 = runtime.ForwardResponseMessage
 
 	forward_Git_MarsConfigFile_0 = runtime.ForwardResponseMessage
-)
-
-// RegisterGitConfigHandlerFromEndpoint is same as RegisterGitConfigHandler but
-// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterGitConfigHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-			return
-		}
-		go func() {
-			<-ctx.Done()
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
-			}
-		}()
-	}()
-
-	return RegisterGitConfigHandler(ctx, mux, conn)
-}
-
-// RegisterGitConfigHandler registers the http handlers for service GitConfig to "mux".
-// The handlers forward requests to the grpc endpoint over "conn".
-func RegisterGitConfigHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterGitConfigHandlerClient(ctx, mux, NewGitConfigClient(conn))
-}
-
-// RegisterGitConfigHandlerClient registers the http handlers for service GitConfig
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "GitConfigClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "GitConfigClient"
-// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "GitConfigClient" to call the correct interceptors.
-func RegisterGitConfigHandlerClient(ctx context.Context, mux *runtime.ServeMux, client GitConfigClient) error {
-
-	mux.Handle("GET", pattern_GitConfig_Show_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.GitConfig/Show", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/mars_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_GitConfig_Show_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_Show_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_GitConfig_GlobalConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.GitConfig/GlobalConfig", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/global_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_GitConfig_GlobalConfig_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_GlobalConfig_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("POST", pattern_GitConfig_ToggleGlobalStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.GitConfig/ToggleGlobalStatus", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/toggle_status"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_GitConfig_ToggleGlobalStatus_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_ToggleGlobalStatus_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("PUT", pattern_GitConfig_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.GitConfig/Update", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/mars_config"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_GitConfig_Update_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_GitConfig_GetDefaultChartValues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/.GitConfig/GetDefaultChartValues", runtime.WithHTTPPathPattern("/api/git/projects/{git_project_id}/default_values"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_GitConfig_GetDefaultChartValues_0(ctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_GitConfig_GetDefaultChartValues_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	return nil
-}
-
-var (
-	pattern_GitConfig_Show_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "git", "projects", "git_project_id", "mars_config"}, ""))
-
-	pattern_GitConfig_GlobalConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "git", "projects", "git_project_id", "global_config"}, ""))
-
-	pattern_GitConfig_ToggleGlobalStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "git", "projects", "git_project_id", "toggle_status"}, ""))
-
-	pattern_GitConfig_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "git", "projects", "git_project_id", "mars_config"}, ""))
-
-	pattern_GitConfig_GetDefaultChartValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "git", "projects", "git_project_id", "default_values"}, ""))
-)
-
-var (
-	forward_GitConfig_Show_0 = runtime.ForwardResponseMessage
-
-	forward_GitConfig_GlobalConfig_0 = runtime.ForwardResponseMessage
-
-	forward_GitConfig_ToggleGlobalStatus_0 = runtime.ForwardResponseMessage
-
-	forward_GitConfig_Update_0 = runtime.ForwardResponseMessage
-
-	forward_GitConfig_GetDefaultChartValues_0 = runtime.ForwardResponseMessage
 )

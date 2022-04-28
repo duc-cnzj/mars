@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
 	// List 用户操作事件列表
-	List(ctx context.Context, in *EventListRequest, opts ...grpc.CallOption) (*EventListResponse, error)
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 }
 
 type eventClient struct {
@@ -35,9 +35,9 @@ func NewEventClient(cc grpc.ClientConnInterface) EventClient {
 	return &eventClient{cc}
 }
 
-func (c *eventClient) List(ctx context.Context, in *EventListRequest, opts ...grpc.CallOption) (*EventListResponse, error) {
-	out := new(EventListResponse)
-	err := c.cc.Invoke(ctx, "/Event/List", in, out, opts...)
+func (c *eventClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
+	out := new(ListResponse)
+	err := c.cc.Invoke(ctx, "/event.Event/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *eventClient) List(ctx context.Context, in *EventListRequest, opts ...gr
 // for forward compatibility
 type EventServer interface {
 	// List 用户操作事件列表
-	List(context.Context, *EventListRequest) (*EventListResponse, error)
+	List(context.Context, *ListRequest) (*ListResponse, error)
 	mustEmbedUnimplementedEventServer()
 }
 
@@ -57,7 +57,7 @@ type EventServer interface {
 type UnimplementedEventServer struct {
 }
 
-func (UnimplementedEventServer) List(context.Context, *EventListRequest) (*EventListResponse, error) {
+func (UnimplementedEventServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
@@ -74,7 +74,7 @@ func RegisterEventServer(s grpc.ServiceRegistrar, srv EventServer) {
 }
 
 func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EventListRequest)
+	in := new(ListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Event/List",
+		FullMethod: "/event.Event/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServer).List(ctx, req.(*EventListRequest))
+		return srv.(EventServer).List(ctx, req.(*ListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -95,7 +95,7 @@ func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interfac
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Event_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Event",
+	ServiceName: "event.Event",
 	HandlerType: (*EventServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

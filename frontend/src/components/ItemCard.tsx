@@ -16,9 +16,10 @@ import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
 import pb from "../api/compiled";
+import { copy } from "../utils/copy";
 
 const Item: React.FC<{
-  item: pb.NamespaceItem;
+  item: pb.types.NamespaceModel;
   onNamespaceDeleted: () => void;
   loading: boolean;
 }> = ({ item, onNamespaceDeleted, loading }) => {
@@ -31,9 +32,15 @@ const Item: React.FC<{
       title={
         <div className="title">
           <div className="title-left">
-            <div className="title-namespace">
-              项目空间: <span>{item.name}</span>
-            </div>
+            <Tooltip title={<span style={{fontSize: 10}}>id: {item.id}</span>}>
+              <div
+                className="title-namespace"
+                onClick={() => copy(item.id, "已复制 id")}
+              >
+                项目空间:{" "}
+                <span className="title-namespace__name">{item.name}</span>
+              </div>
+            </Tooltip>
             <div className="title-cpu-memory">
               <Tooltip
                 onVisibleChange={(visible) => {

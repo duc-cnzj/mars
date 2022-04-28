@@ -24,7 +24,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/AuthExchangeRequest"
+              "$ref": "#/definitions/authExchangeRequest"
             }
           }
         ],
@@ -32,7 +32,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthExchangeResponse"
+              "$ref": "#/definitions/authExchangeResponse"
             }
           },
           "default": {
@@ -55,7 +55,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthInfoResponse"
+              "$ref": "#/definitions/authInfoResponse"
             }
           },
           "default": {
@@ -81,7 +81,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/AuthLoginRequest"
+              "$ref": "#/definitions/authLoginRequest"
             }
           }
         ],
@@ -89,7 +89,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthLoginResponse"
+              "$ref": "#/definitions/authLoginResponse"
             }
           },
           "default": {
@@ -112,7 +112,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/AuthSettingsResponse"
+              "$ref": "#/definitions/authSettingsResponse"
             }
           },
           "default": {
@@ -136,13 +136,13 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ClusterInfoResponse"
+              "$ref": "#/definitions/clusterInfoResponse"
             }
           },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           }
         }
@@ -151,17 +151,17 @@
     "/api/containers/copy_to_pod": {
       "post": {
         "tags": [
-          "ContainerSvc"
+          "Container"
         ],
         "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
-        "operationId": "ContainerSvc_CopyToPod",
+        "operationId": "Container_CopyToPod",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerCopyToPodRequest"
+              "$ref": "#/definitions/containerCopyToPodRequest"
             }
           }
         ],
@@ -169,7 +169,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerCopyToPodResponse"
+              "$ref": "#/definitions/containerCopyToPodResponse"
             }
           },
           "default": {
@@ -184,10 +184,10 @@
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
       "get": {
         "tags": [
-          "ContainerSvc"
+          "Container"
         ],
         "summary": "ContainerLog 查看 pod 日志",
-        "operationId": "ContainerSvc_ContainerLog",
+        "operationId": "Container_ContainerLog",
         "parameters": [
           {
             "type": "string",
@@ -212,7 +212,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerLogResponse"
+              "$ref": "#/definitions/containerLogResponse"
             }
           },
           "default": {
@@ -227,10 +227,10 @@
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
       "get": {
         "tags": [
-          "ContainerSvc"
+          "Container"
         ],
         "summary": "StreamContainerLog stream 方式查看 pod 日志",
-        "operationId": "ContainerSvc_StreamContainerLog",
+        "operationId": "Container_StreamContainerLog",
         "parameters": [
           {
             "type": "string",
@@ -256,13 +256,13 @@
             "description": "A successful response.(streaming responses)",
             "schema": {
               "type": "object",
-              "title": "Stream result of ContainerLogResponse",
+              "title": "Stream result of containerLogResponse",
               "properties": {
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 },
                 "result": {
-                  "$ref": "#/definitions/ContainerLogResponse"
+                  "$ref": "#/definitions/containerLogResponse"
                 }
               }
             }
@@ -279,17 +279,17 @@
     "/api/containers/pod_exists": {
       "post": {
         "tags": [
-          "ContainerSvc"
+          "Container"
         ],
         "summary": "IsPodExists pod 是否存在",
-        "operationId": "ContainerSvc_IsPodExists",
+        "operationId": "Container_IsPodExists",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodExistsRequest"
+              "$ref": "#/definitions/containerIsPodExistsRequest"
             }
           }
         ],
@@ -297,7 +297,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodExistsResponse"
+              "$ref": "#/definitions/containerIsPodExistsResponse"
             }
           },
           "default": {
@@ -312,17 +312,17 @@
     "/api/containers/pod_running_status": {
       "post": {
         "tags": [
-          "ContainerSvc"
+          "Container"
         ],
         "summary": "IsPodRunning pod 是否正常在跑",
-        "operationId": "ContainerSvc_IsPodRunning",
+        "operationId": "Container_IsPodRunning",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodRunningRequest"
+              "$ref": "#/definitions/containerIsPodRunningRequest"
             }
           }
         ],
@@ -330,7 +330,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ContainerIsPodRunningResponse"
+              "$ref": "#/definitions/containerIsPodRunningResponse"
             }
           },
           "default": {
@@ -362,7 +362,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EndpointInNamespaceResponse"
+              "$ref": "#/definitions/endpointInNamespaceResponse"
             }
           },
           "default": {
@@ -394,7 +394,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EndpointInProjectResponse"
+              "$ref": "#/definitions/endpointInProjectResponse"
             }
           },
           "default": {
@@ -431,7 +431,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/EventListResponse"
+              "$ref": "#/definitions/eventListResponse"
             }
           },
           "default": {
@@ -446,10 +446,10 @@
     "/api/files": {
       "get": {
         "tags": [
-          "FileSvc"
+          "File"
         ],
         "summary": "文件列表",
-        "operationId": "FileSvc_List",
+        "operationId": "File_List",
         "parameters": [
           {
             "type": "string",
@@ -473,7 +473,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/FileListResponse"
+              "$ref": "#/definitions/fileListResponse"
             }
           },
           "default": {
@@ -488,15 +488,15 @@
     "/api/files/delete_undocumented_files": {
       "delete": {
         "tags": [
-          "FileSvc"
+          "File"
         ],
         "summary": "DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有",
-        "operationId": "FileSvc_DeleteUndocumentedFiles",
+        "operationId": "File_DeleteUndocumentedFiles",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DeleteUndocumentedFilesResponse"
+              "$ref": "#/definitions/fileDeleteUndocumentedFilesResponse"
             }
           },
           "default": {
@@ -511,15 +511,15 @@
     "/api/files/disk_info": {
       "get": {
         "tags": [
-          "FileSvc"
+          "File"
         ],
         "summary": "DiskInfo 查看上传文件目录大小",
-        "operationId": "FileSvc_DiskInfo",
+        "operationId": "File_DiskInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/DiskInfoResponse"
+              "$ref": "#/definitions/fileDiskInfoResponse"
             }
           },
           "default": {
@@ -534,10 +534,10 @@
     "/api/files/{id}": {
       "delete": {
         "tags": [
-          "FileSvc"
+          "File"
         ],
         "summary": "删除文件",
-        "operationId": "FileSvc_Delete",
+        "operationId": "File_Delete",
         "parameters": [
           {
             "type": "string",
@@ -551,7 +551,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/FileDeleteResponse"
+              "$ref": "#/definitions/fileDeleteResponse"
             }
           },
           "default": {
@@ -574,7 +574,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitProjectOptionsResponse"
+              "$ref": "#/definitions/gitProjectOptionsResponse"
             }
           },
           "default": {
@@ -597,7 +597,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitAllProjectsResponse"
+              "$ref": "#/definitions/gitAllProjectsResponse"
             }
           },
           "default": {
@@ -622,7 +622,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/GitDisableProjectRequest"
+              "$ref": "#/definitions/gitDisableProjectRequest"
             }
           }
         ],
@@ -630,7 +630,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitDisableProjectResponse"
+              "$ref": "#/definitions/gitDisableProjectResponse"
             }
           },
           "default": {
@@ -655,7 +655,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/GitEnableProjectRequest"
+              "$ref": "#/definitions/gitEnableProjectRequest"
             }
           }
         ],
@@ -663,7 +663,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitEnableProjectResponse"
+              "$ref": "#/definitions/gitEnableProjectResponse"
             }
           },
           "default": {
@@ -699,7 +699,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitBranchOptionsResponse"
+              "$ref": "#/definitions/gitBranchOptionsResponse"
             }
           },
           "default": {
@@ -736,7 +736,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitCommitOptionsResponse"
+              "$ref": "#/definitions/gitCommitOptionsResponse"
             }
           },
           "default": {
@@ -779,7 +779,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitCommitResponse"
+              "$ref": "#/definitions/gitCommitResponse"
             }
           },
           "default": {
@@ -822,7 +822,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitPipelineInfoResponse"
+              "$ref": "#/definitions/gitPipelineInfoResponse"
             }
           },
           "default": {
@@ -859,7 +859,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigFileResponse"
+              "$ref": "#/definitions/gitConfigFileResponse"
             }
           },
           "default": {
@@ -896,7 +896,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigDefaultChartValuesResponse"
+              "$ref": "#/definitions/gitconfigDefaultChartValuesResponse"
             }
           },
           "default": {
@@ -928,7 +928,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigGlobalConfigResponse"
+              "$ref": "#/definitions/gitconfigGlobalConfigResponse"
             }
           },
           "default": {
@@ -965,7 +965,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigShowResponse"
+              "$ref": "#/definitions/gitconfigShowResponse"
             }
           },
           "default": {
@@ -998,7 +998,7 @@
               "type": "object",
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/MarsConfig"
+                  "$ref": "#/definitions/marsConfig"
                 }
               }
             }
@@ -1008,7 +1008,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigUpdateResponse"
+              "$ref": "#/definitions/gitconfigUpdateResponse"
             }
           },
           "default": {
@@ -1053,7 +1053,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/GitConfigToggleGlobalStatusResponse"
+              "$ref": "#/definitions/gitconfigToggleGlobalStatusResponse"
             }
           },
           "default": {
@@ -1085,7 +1085,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsCpuMemoryInNamespaceResponse"
+              "$ref": "#/definitions/metricsCpuMemoryInNamespaceResponse"
             }
           },
           "default": {
@@ -1122,7 +1122,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsTopPodResponse"
+              "$ref": "#/definitions/metricsTopPodResponse"
             }
           },
           "default": {
@@ -1160,13 +1160,13 @@
             "description": "A successful response.(streaming responses)",
             "schema": {
               "type": "object",
-              "title": "Stream result of MetricsTopPodResponse",
+              "title": "Stream result of metricsTopPodResponse",
               "properties": {
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 },
                 "result": {
-                  "$ref": "#/definitions/MetricsTopPodResponse"
+                  "$ref": "#/definitions/metricsTopPodResponse"
                 }
               }
             }
@@ -1200,7 +1200,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/MetricsCpuMemoryInProjectResponse"
+              "$ref": "#/definitions/metricsCpuMemoryInProjectResponse"
             }
           },
           "default": {
@@ -1223,7 +1223,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceAllResponse"
+              "$ref": "#/definitions/namespaceAllResponse"
             }
           },
           "default": {
@@ -1246,7 +1246,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/NamespaceCreateRequest"
+              "$ref": "#/definitions/namespaceCreateRequest"
             }
           }
         ],
@@ -1254,7 +1254,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceCreateResponse"
+              "$ref": "#/definitions/namespaceCreateResponse"
             }
           },
           "default": {
@@ -1284,7 +1284,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceIsExistsResponse"
+              "$ref": "#/definitions/namespaceIsExistsResponse"
             }
           },
           "default": {
@@ -1316,7 +1316,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceShowResponse"
+              "$ref": "#/definitions/namespaceShowResponse"
             }
           },
           "default": {
@@ -1346,7 +1346,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/NamespaceDeleteResponse"
+              "$ref": "#/definitions/namespaceDeleteResponse"
             }
           },
           "default": {
@@ -1377,7 +1377,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/BackgroundResponse"
+              "$ref": "#/definitions/pictureBackgroundResponse"
             }
           },
           "default": {
@@ -1414,13 +1414,13 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectListResponse"
+              "$ref": "#/definitions/projectListResponse"
             }
           },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           }
         }
@@ -1446,13 +1446,13 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectShowResponse"
+              "$ref": "#/definitions/projectShowResponse"
             }
           },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           }
         }
@@ -1476,13 +1476,13 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectDeleteResponse"
+              "$ref": "#/definitions/projectDeleteResponse"
             }
           },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           }
         }
@@ -1513,7 +1513,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ChangelogShowResponse"
+              "$ref": "#/definitions/changelogShowResponse"
             }
           },
           "default": {
@@ -1545,13 +1545,13 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ProjectAllContainersResponse"
+              "$ref": "#/definitions/projectAllContainersResponse"
             }
           },
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/rpcStatus"
+              "$ref": "#/definitions/googlerpcStatus"
             }
           }
         }
@@ -1569,7 +1569,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/VersionResponse"
+              "$ref": "#/definitions/versionResponse"
             }
           },
           "default": {
@@ -1583,21 +1583,27 @@
     }
   },
   "definitions": {
-    "ActionType": {
-      "type": "string",
-      "default": "Unknown",
-      "enum": [
-        "Unknown",
-        "Create",
-        "Update",
-        "Delete",
-        "Upload",
-        "Download",
-        "DryRun",
-        "Shell"
-      ]
+    "SettingsResponseOidcSetting": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "end_session_endpoint": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
     },
-    "AuthExchangeRequest": {
+    "authExchangeRequest": {
       "type": "object",
       "properties": {
         "code": {
@@ -1605,7 +1611,7 @@
         }
       }
     },
-    "AuthExchangeResponse": {
+    "authExchangeResponse": {
       "type": "object",
       "properties": {
         "expires_in": {
@@ -1617,7 +1623,7 @@
         }
       }
     },
-    "AuthInfoResponse": {
+    "authInfoResponse": {
       "type": "object",
       "properties": {
         "avatar": {
@@ -1643,7 +1649,7 @@
         }
       }
     },
-    "AuthLoginRequest": {
+    "authLoginRequest": {
       "type": "object",
       "properties": {
         "password": {
@@ -1654,7 +1660,7 @@
         }
       }
     },
-    "AuthLoginResponse": {
+    "authLoginResponse": {
       "type": "object",
       "properties": {
         "expires_in": {
@@ -1666,78 +1672,29 @@
         }
       }
     },
-    "AuthSettingsResponse": {
+    "authSettingsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/AuthSettingsResponseOidcSetting"
+            "$ref": "#/definitions/SettingsResponseOidcSetting"
           }
         }
       }
     },
-    "AuthSettingsResponseOidcSetting": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "end_session_endpoint": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "BackgroundResponse": {
-      "type": "object",
-      "properties": {
-        "copyright": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "ChangelogShowItem": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "type": "string"
-        },
-        "date": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        },
-        "version": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "ChangelogShowResponse": {
+    "changelogShowResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ChangelogShowItem"
+            "$ref": "#/definitions/typesChangelogModel"
           }
         }
       }
     },
-    "ClusterInfoResponse": {
+    "clusterInfoResponse": {
       "type": "object",
       "properties": {
         "free_cpu": {
@@ -1775,7 +1732,7 @@
         }
       }
     },
-    "ContainerCopyToPodRequest": {
+    "containerCopyToPodRequest": {
       "type": "object",
       "properties": {
         "container": {
@@ -1793,7 +1750,7 @@
         }
       }
     },
-    "ContainerCopyToPodResponse": {
+    "containerCopyToPodResponse": {
       "type": "object",
       "properties": {
         "file_name": {
@@ -1807,15 +1764,15 @@
         }
       }
     },
-    "ContainerExecResponse": {
+    "containerExecResponse": {
       "type": "object",
       "properties": {
-        "data": {
+        "message": {
           "type": "string"
         }
       }
     },
-    "ContainerIsPodExistsRequest": {
+    "containerIsPodExistsRequest": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -1826,7 +1783,7 @@
         }
       }
     },
-    "ContainerIsPodExistsResponse": {
+    "containerIsPodExistsResponse": {
       "type": "object",
       "properties": {
         "exists": {
@@ -1834,7 +1791,7 @@
         }
       }
     },
-    "ContainerIsPodRunningRequest": {
+    "containerIsPodRunningRequest": {
       "type": "object",
       "properties": {
         "namespace": {
@@ -1845,7 +1802,7 @@
         }
       }
     },
-    "ContainerIsPodRunningResponse": {
+    "containerIsPodRunningResponse": {
       "type": "object",
       "properties": {
         "reason": {
@@ -1856,7 +1813,7 @@
         }
       }
     },
-    "ContainerLogResponse": {
+    "containerLogResponse": {
       "type": "object",
       "properties": {
         "container_name": {
@@ -1873,7 +1830,7 @@
         }
       }
     },
-    "ContainerStreamCopyToPodResponse": {
+    "containerStreamCopyToPodResponse": {
       "type": "object",
       "properties": {
         "container": {
@@ -1900,18 +1857,71 @@
         }
       }
     },
-    "DeleteUndocumentedFilesResponse": {
+    "endpointInNamespaceResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/File"
+            "$ref": "#/definitions/typesServiceEndpoint"
           }
         }
       }
     },
-    "DiskInfoResponse": {
+    "endpointInProjectResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesServiceEndpoint"
+          }
+        }
+      }
+    },
+    "eventListResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesEventModel"
+          }
+        },
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "fileDeleteResponse": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "$ref": "#/definitions/typesFileModel"
+        }
+      }
+    },
+    "fileDeleteUndocumentedFilesResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesFileModel"
+          }
+        }
+      }
+    },
+    "fileDiskInfoResponse": {
       "type": "object",
       "properties": {
         "humanize_usage": {
@@ -1923,98 +1933,7 @@
         }
       }
     },
-    "Element": {
-      "type": "object",
-      "properties": {
-        "default": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "select_values": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "type": {
-          "$ref": "#/definitions/ElementType"
-        }
-      }
-    },
-    "ElementType": {
-      "type": "string",
-      "default": "ElementTypeUnknown",
-      "enum": [
-        "ElementTypeUnknown",
-        "ElementTypeInput",
-        "ElementTypeInputNumber",
-        "ElementTypeSelect",
-        "ElementTypeRadio",
-        "ElementTypeSwitch"
-      ]
-    },
-    "EndpointInNamespaceResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ServiceEndpoint"
-          }
-        }
-      }
-    },
-    "EndpointInProjectResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ServiceEndpoint"
-          }
-        }
-      }
-    },
-    "EventListItem": {
-      "type": "object",
-      "properties": {
-        "action": {
-          "$ref": "#/definitions/ActionType"
-        },
-        "duration": {
-          "type": "string"
-        },
-        "event_at": {
-          "type": "string"
-        },
-        "file_id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "message": {
-          "type": "string"
-        },
-        "new": {
-          "type": "string"
-        },
-        "old": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        }
-      }
-    },
-    "EventListResponse": {
+    "fileListResponse": {
       "type": "object",
       "properties": {
         "count": {
@@ -2024,7 +1943,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EventListItem"
+            "$ref": "#/definitions/typesFileModel"
           }
         },
         "page": {
@@ -2037,132 +1956,40 @@
         }
       }
     },
-    "File": {
-      "type": "object",
-      "properties": {
-        "humanize_size": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "format": "int64"
-        },
-        "upload_by": {
-          "type": "string"
-        }
-      }
-    },
-    "FileDeleteResponse": {
-      "type": "object",
-      "properties": {
-        "file": {
-          "$ref": "#/definitions/File"
-        }
-      }
-    },
-    "FileListResponse": {
-      "type": "object",
-      "properties": {
-        "count": {
-          "type": "string",
-          "format": "int64"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/FileModel"
-          }
-        },
-        "page": {
-          "type": "string",
-          "format": "int64"
-        },
-        "page_size": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "FileModel": {
-      "type": "object",
-      "properties": {
-        "container": {
-          "type": "string"
-        },
-        "container_path": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "is_deleted": {
-          "type": "boolean"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "pod": {
-          "type": "string"
-        },
-        "size": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        }
-      }
-    },
-    "GitAllProjectsResponse": {
+    "gitAllProjectsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GitProjectItem"
+            "$ref": "#/definitions/gitProjectItem"
           }
         }
       }
     },
-    "GitBranchOptionsResponse": {
+    "gitBranchOptionsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GitOption"
+            "$ref": "#/definitions/gitOption"
           }
         }
       }
     },
-    "GitCommitOptionsResponse": {
+    "gitCommitOptionsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GitOption"
+            "$ref": "#/definitions/gitOption"
           }
         }
       }
     },
-    "GitCommitResponse": {
+    "gitCommitResponse": {
       "type": "object",
       "properties": {
         "author_email": {
@@ -2209,15 +2036,7 @@
         }
       }
     },
-    "GitConfigDefaultChartValuesResponse": {
-      "type": "object",
-      "properties": {
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "GitConfigFileResponse": {
+    "gitConfigFileResponse": {
       "type": "object",
       "properties": {
         "data": {
@@ -2226,7 +2045,7 @@
         "elements": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Element"
+            "$ref": "#/definitions/marsElement"
           }
         },
         "type": {
@@ -2234,40 +2053,7 @@
         }
       }
     },
-    "GitConfigGlobalConfigResponse": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        },
-        "enabled": {
-          "type": "boolean"
-        }
-      }
-    },
-    "GitConfigShowResponse": {
-      "type": "object",
-      "properties": {
-        "branch": {
-          "type": "string"
-        },
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
-    "GitConfigToggleGlobalStatusResponse": {
-      "type": "object"
-    },
-    "GitConfigUpdateResponse": {
-      "type": "object",
-      "properties": {
-        "config": {
-          "$ref": "#/definitions/MarsConfig"
-        }
-      }
-    },
-    "GitDisableProjectRequest": {
+    "gitDisableProjectRequest": {
       "type": "object",
       "properties": {
         "git_project_id": {
@@ -2275,10 +2061,10 @@
         }
       }
     },
-    "GitDisableProjectResponse": {
+    "gitDisableProjectResponse": {
       "type": "object"
     },
-    "GitEnableProjectRequest": {
+    "gitEnableProjectRequest": {
       "type": "object",
       "properties": {
         "git_project_id": {
@@ -2286,10 +2072,10 @@
         }
       }
     },
-    "GitEnableProjectResponse": {
+    "gitEnableProjectResponse": {
       "type": "object"
     },
-    "GitOption": {
+    "gitOption": {
       "type": "object",
       "properties": {
         "branch": {
@@ -2313,7 +2099,7 @@
         }
       }
     },
-    "GitPipelineInfoResponse": {
+    "gitPipelineInfoResponse": {
       "type": "object",
       "properties": {
         "status": {
@@ -2324,7 +2110,7 @@
         }
       }
     },
-    "GitProjectItem": {
+    "gitProjectItem": {
       "type": "object",
       "properties": {
         "avatar_url": {
@@ -2354,18 +2140,77 @@
         }
       }
     },
-    "GitProjectOptionsResponse": {
+    "gitProjectOptionsResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GitOption"
+            "$ref": "#/definitions/gitOption"
           }
         }
       }
     },
-    "MarsConfig": {
+    "gitconfigDefaultChartValuesResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "gitconfigGlobalConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/marsConfig"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "gitconfigShowResponse": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/marsConfig"
+        }
+      }
+    },
+    "gitconfigToggleGlobalStatusResponse": {
+      "type": "object"
+    },
+    "gitconfigUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/marsConfig"
+        }
+      }
+    },
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "marsConfig": {
       "type": "object",
       "properties": {
         "branches": {
@@ -2394,7 +2239,7 @@
           "type": "array",
           "title": "elements 自定义字段",
           "items": {
-            "$ref": "#/definitions/Element"
+            "$ref": "#/definitions/marsElement"
           }
         },
         "is_simple_env": {
@@ -2410,36 +2255,42 @@
         }
       }
     },
-    "Metadata": {
+    "marsElement": {
       "type": "object",
       "properties": {
-        "data": {
+        "default": {
           "type": "string"
         },
-        "end": {
-          "type": "boolean"
-        },
-        "id": {
+        "description": {
           "type": "string"
         },
-        "result": {
-          "$ref": "#/definitions/ResultType"
-        },
-        "slug": {
+        "path": {
           "type": "string"
         },
-        "to": {
-          "$ref": "#/definitions/To"
+        "select_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "type": {
-          "$ref": "#/definitions/Type"
-        },
-        "uid": {
-          "type": "string"
+          "$ref": "#/definitions/marsElementType"
         }
       }
     },
-    "MetricsCpuMemoryInNamespaceResponse": {
+    "marsElementType": {
+      "type": "string",
+      "default": "ElementTypeUnknown",
+      "enum": [
+        "ElementTypeUnknown",
+        "ElementTypeInput",
+        "ElementTypeInputNumber",
+        "ElementTypeSelect",
+        "ElementTypeRadio",
+        "ElementTypeSwitch"
+      ]
+    },
+    "metricsCpuMemoryInNamespaceResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -2450,7 +2301,7 @@
         }
       }
     },
-    "MetricsCpuMemoryInProjectResponse": {
+    "metricsCpuMemoryInProjectResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -2461,7 +2312,7 @@
         }
       }
     },
-    "MetricsTopPodResponse": {
+    "metricsTopPodResponse": {
       "type": "object",
       "properties": {
         "cpu": {
@@ -2487,53 +2338,44 @@
         }
       }
     },
-    "NamespaceAllResponse": {
+    "namespaceAllResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/NamespaceItem"
+            "$ref": "#/definitions/typesNamespaceModel"
           }
         }
       }
     },
-    "NamespaceCreateRequest": {
+    "namespaceCreateRequest": {
       "type": "object",
       "properties": {
+        "ignore_if_exists": {
+          "type": "boolean",
+          "title": "已存在则忽略，不会报错"
+        },
         "namespace": {
           "type": "string"
         }
       }
     },
-    "NamespaceCreateResponse": {
+    "namespaceCreateResponse": {
       "type": "object",
       "properties": {
-        "created_at": {
-          "type": "string"
+        "exists": {
+          "type": "boolean"
         },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
         }
       }
     },
-    "NamespaceDeleteResponse": {
+    "namespaceDeleteResponse": {
       "type": "object"
     },
-    "NamespaceIsExistsResponse": {
+    "namespaceIsExistsResponse": {
       "type": "object",
       "properties": {
         "exists": {
@@ -2545,131 +2387,51 @@
         }
       }
     },
-    "NamespaceItem": {
+    "namespaceShowResponse": {
       "type": "object",
       "properties": {
-        "created_at": {
+        "namespace": {
+          "$ref": "#/definitions/typesNamespaceModel"
+        }
+      }
+    },
+    "pictureBackgroundResponse": {
+      "type": "object",
+      "properties": {
+        "copyright": {
           "type": "string"
         },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/NamespaceSimpleProject"
-          }
-        },
-        "updated_at": {
+        "url": {
           "type": "string"
         }
       }
     },
-    "NamespaceModel": {
-      "type": "object",
-      "properties": {
-        "created_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "type": "string"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProjectModel"
-          }
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceShowResponse": {
-      "type": "object",
-      "properties": {
-        "created_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "image_pull_secrets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "type": "string"
-        },
-        "projects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProjectModel"
-          }
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      }
-    },
-    "NamespaceSimpleProject": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
-    },
-    "ProjectAllContainersResponse": {
+    "projectAllContainersResponse": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ProjectPod"
+            "$ref": "#/definitions/typesContainer"
           }
         }
       }
     },
-    "ProjectApplyResponse": {
+    "projectApplyResponse": {
       "type": "object",
       "properties": {
         "metadata": {
-          "$ref": "#/definitions/Metadata"
+          "$ref": "#/definitions/websocketMetadata"
         },
         "project": {
-          "$ref": "#/definitions/ProjectModel"
+          "$ref": "#/definitions/typesProjectModel"
         }
       }
     },
-    "ProjectDeleteResponse": {
+    "projectDeleteResponse": {
       "type": "object"
     },
-    "ProjectDryRunApplyResponse": {
+    "projectDryRunApplyResponse": {
       "type": "object",
       "properties": {
         "results": {
@@ -2680,18 +2442,7 @@
         }
       }
     },
-    "ProjectExtraItem": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "ProjectListResponse": {
+    "projectListResponse": {
       "type": "object",
       "properties": {
         "count": {
@@ -2701,7 +2452,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ProjectModel"
+            "$ref": "#/definitions/typesProjectModel"
           }
         },
         "page": {
@@ -2714,29 +2465,79 @@
         }
       }
     },
-    "ProjectModel": {
+    "projectShowResponse": {
       "type": "object",
       "properties": {
-        "atomic": {
-          "type": "boolean"
+        "cpu": {
+          "type": "string"
         },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/marsElement"
+          }
+        },
+        "memory": {
+          "type": "string"
+        },
+        "project": {
+          "$ref": "#/definitions/typesProjectModel"
+        },
+        "urls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesServiceEndpoint"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "typesChangelogModel": {
+      "type": "object",
+      "properties": {
         "config": {
           "type": "string"
+        },
+        "config_changed": {
+          "type": "boolean"
         },
         "created_at": {
           "type": "string"
         },
-        "docker_image": {
+        "date": {
           "type": "string"
         },
-        "extra_values": {
+        "deleted_at": {
           "type": "string"
         },
-        "git_branch": {
-          "type": "string"
-        },
-        "git_commit": {
-          "type": "string"
+        "git_project": {
+          "$ref": "#/definitions/typesGitProjectModel"
         },
         "git_project_id": {
           "type": "string",
@@ -2746,20 +2547,196 @@
           "type": "string",
           "format": "int64"
         },
-        "name": {
+        "manifest": {
           "type": "string"
         },
-        "namespace": {
-          "$ref": "#/definitions/NamespaceModel"
+        "project": {
+          "$ref": "#/definitions/typesProjectModel"
         },
-        "namespace_id": {
+        "project_id": {
           "type": "string",
           "format": "int64"
         },
-        "override_values": {
+        "updated_at": {
           "type": "string"
         },
-        "pod_selectors": {
+        "username": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "typesContainer": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
+    "typesDeploy": {
+      "type": "string",
+      "default": "StatusUnknown",
+      "enum": [
+        "StatusUnknown",
+        "StatusDeploying",
+        "StatusDeployed",
+        "StatusFailed"
+      ]
+    },
+    "typesEventActionType": {
+      "type": "string",
+      "default": "Unknown",
+      "enum": [
+        "Unknown",
+        "Create",
+        "Update",
+        "Delete",
+        "Upload",
+        "Download",
+        "DryRun",
+        "Shell"
+      ]
+    },
+    "typesEventModel": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/typesEventActionType"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
+        },
+        "event_at": {
+          "type": "string"
+        },
+        "file": {
+          "$ref": "#/definitions/typesFileModel"
+        },
+        "file_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "message": {
+          "type": "string"
+        },
+        "new": {
+          "type": "string"
+        },
+        "old": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "typesExtraValue": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "typesFileModel": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "container_Path": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "humanize_size": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "typesGitProjectModel": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "default_branch": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "global_config": {
+          "type": "string"
+        },
+        "global_enabled": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
           "type": "string"
         },
         "updated_at": {
@@ -2767,21 +2744,48 @@
         }
       }
     },
-    "ProjectPod": {
+    "typesImagePullSecret": {
       "type": "object",
       "properties": {
-        "container_name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "pod_name": {
+        "name": {
           "type": "string"
         }
       }
     },
-    "ProjectShowResponse": {
+    "typesNamespaceModel": {
+      "type": "object",
+      "properties": {
+        "ImagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesImagePullSecret"
+          }
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesProjectModel"
+          }
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
+    "typesProjectModel": {
       "type": "object",
       "properties": {
         "atomic": {
@@ -2793,26 +2797,29 @@
         "config_type": {
           "type": "string"
         },
-        "cpu": {
-          "type": "string"
-        },
         "created_at": {
           "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
+        "deploy_status": {
+          "$ref": "#/definitions/typesDeploy"
         },
         "docker_image": {
           "type": "string"
         },
-        "elements": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Element"
-          }
+        "env_values": {
+          "type": "string"
         },
         "extra_values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ProjectExtraItem"
+            "$ref": "#/definitions/typesExtraValue"
           }
+        },
+        "final_extra_values": {
+          "type": "string"
         },
         "git_branch": {
           "type": "string"
@@ -2846,54 +2853,28 @@
           "type": "string",
           "format": "int64"
         },
-        "memory": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         },
         "namespace": {
-          "$ref": "#/definitions/ProjectShowResponseNamespace"
+          "$ref": "#/definitions/typesNamespaceModel"
+        },
+        "namespace_id": {
+          "type": "string",
+          "format": "int64"
         },
         "override_values": {
           "type": "string"
         },
+        "pod_selectors": {
+          "type": "string"
+        },
         "updated_at": {
           "type": "string"
-        },
-        "urls": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ServiceEndpoint"
-          }
         }
       }
     },
-    "ProjectShowResponseNamespace": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "ResultType": {
-      "type": "string",
-      "default": "ResultUnknown",
-      "enum": [
-        "ResultUnknown",
-        "Error",
-        "Success",
-        "Deployed",
-        "DeployedFailed",
-        "DeployedCanceled"
-      ]
-    },
-    "ServiceEndpoint": {
+    "typesServiceEndpoint": {
       "type": "object",
       "properties": {
         "name": {
@@ -2907,36 +2888,7 @@
         }
       }
     },
-    "To": {
-      "type": "string",
-      "default": "ToSelf",
-      "enum": [
-        "ToSelf",
-        "ToAll",
-        "ToOthers"
-      ]
-    },
-    "Type": {
-      "type": "string",
-      "default": "TypeUnknown",
-      "enum": [
-        "TypeUnknown",
-        "SetUid",
-        "ReloadProjects",
-        "CancelProject",
-        "CreateProject",
-        "UpdateProject",
-        "ProcessPercent",
-        "ClusterInfoSync",
-        "InternalError",
-        "ApplyProject",
-        "HandleExecShell",
-        "HandleExecShellMsg",
-        "HandleCloseShell",
-        "HandleAuthorize"
-      ]
-    },
-    "VersionResponse": {
+    "versionResponse": {
       "type": "object",
       "properties": {
         "build_date": {
@@ -2974,32 +2926,76 @@
         }
       }
     },
-    "protobufAny": {
+    "websocketMetadata": {
       "type": "object",
+      "title": "Response",
       "properties": {
-        "@type": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "rpcStatus": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "format": "int32"
+        "end": {
+          "type": "boolean"
         },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protobufAny"
-          }
+        "id": {
+          "type": "string"
         },
         "message": {
           "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/websocketResultType"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/definitions/websocketTo"
+        },
+        "type": {
+          "$ref": "#/definitions/websocketType"
+        },
+        "uid": {
+          "type": "string"
         }
       }
+    },
+    "websocketResultType": {
+      "type": "string",
+      "default": "ResultUnknown",
+      "enum": [
+        "ResultUnknown",
+        "Error",
+        "Success",
+        "Deployed",
+        "DeployedFailed",
+        "DeployedCanceled"
+      ]
+    },
+    "websocketTo": {
+      "type": "string",
+      "default": "ToSelf",
+      "enum": [
+        "ToSelf",
+        "ToAll",
+        "ToOthers"
+      ]
+    },
+    "websocketType": {
+      "type": "string",
+      "default": "TypeUnknown",
+      "enum": [
+        "TypeUnknown",
+        "SetUid",
+        "ReloadProjects",
+        "CancelProject",
+        "CreateProject",
+        "UpdateProject",
+        "ProcessPercent",
+        "ClusterInfoSync",
+        "InternalError",
+        "ApplyProject",
+        "HandleExecShell",
+        "HandleExecShellMsg",
+        "HandleCloseShell",
+        "HandleAuthorize"
+      ]
     }
   },
   "securityDefinitions": {
@@ -3026,7 +3022,7 @@
       "name": "Cluster"
     },
     {
-      "name": "ContainerSvc"
+      "name": "Container"
     },
     {
       "name": "Endpoint"
@@ -3035,7 +3031,7 @@
       "name": "Event"
     },
     {
-      "name": "FileSvc"
+      "name": "File"
     },
     {
       "name": "Git"

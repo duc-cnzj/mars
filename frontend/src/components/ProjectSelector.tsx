@@ -22,7 +22,7 @@ const ProjectSelector: React.FC<{
     gitCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate }) => {
-  const [options, setOptions] = useAsyncState<pb.GitOption[]>([]);
+  const [options, setOptions] = useAsyncState<pb.git.Option[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
 
@@ -123,13 +123,13 @@ const ProjectSelector: React.FC<{
         if (o && o.children) {
           // @ts-ignore
           let b = o.children.find(
-            (item: pb.GitOption) => item.value === gbranch
+            (item: pb.git.Option) => item.value === gbranch
           );
           setValue([o.label, b ? b.label : ""]);
           if (gcommit) {
             if (b && b.children) {
               let c = b.children.find(
-                (item: pb.GitOption) => item.value === gcommit
+                (item: pb.git.Option) => item.value === gcommit
               );
               setValue([o.label, b.label, c ? c.label : ""]);
               onCh?.({

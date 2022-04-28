@@ -60,7 +60,7 @@ const CreateProjectModal: React.FC<{
     gitBranch: string;
     gitCommit: string;
   }>();
-  const [elements, setElements] = useState<pb.Element[]>();
+  const [elements, setElements] = useState<pb.mars.Element[]>();
 
   let slug = useMemo(
     () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
@@ -102,8 +102,8 @@ const CreateProjectModal: React.FC<{
         // todo ws connected!
         setEditVisible(false);
         setTimelineVisible(true);
-        let s = pb.ProjectInput.encode({
-          type: pb.Type.CreateProject,
+        let s = pb.websocket.CreateProjectInput.encode({
+          type: pb.websocket.Type.CreateProject,
           namespace_id: Number(namespaceId),
           name: data.projectName,
           git_project_id: Number(data.gitProjectId),
@@ -130,8 +130,8 @@ const CreateProjectModal: React.FC<{
 
   const onRemove = useCallback(() => {
     if (data && data.gitProjectId && data.gitBranch && data.gitCommit) {
-      let s = pb.CancelInput.encode({
-        type: pb.Type.CancelProject,
+      let s = pb.websocket.CancelInput.encode({
+        type: pb.websocket.Type.CancelProject,
         namespace_id: namespaceId,
         name: data.projectName,
       }).finish();

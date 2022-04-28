@@ -3,6 +3,9 @@ package models
 import (
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/utils/date"
+
 	"gorm.io/gorm"
 )
 
@@ -24,4 +27,23 @@ type Changelog struct {
 
 	Project    Project
 	GitProject GitProject
+}
+
+func (c *Changelog) ProtoTransform() *types.ChangelogModel {
+	return &types.ChangelogModel{
+		Id:            int64(c.ID),
+		Version:       int64(c.Version),
+		Username:      c.Username,
+		Manifest:      c.Manifest,
+		Config:        c.Config,
+		ConfigChanged: c.ConfigChanged,
+		ProjectId:     int64(c.ProjectID),
+		GitProjectId:  int64(c.GitProjectID),
+		Project:       c.Project.ProtoTransform(),
+		GitProject:    c.GitProject.ProtoTransform(),
+		Date:          date.ToHumanizeDatetimeString(&c.CreatedAt),
+		CreatedAt:     date.ToRFC3339DatetimeString(&c.CreatedAt),
+		UpdatedAt:     date.ToRFC3339DatetimeString(&c.UpdatedAt),
+		DeletedAt:     date.ToRFC3339DatetimeString(&c.DeletedAt.Time),
+	}
 }

@@ -24,23 +24,23 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GitClient interface {
 	// EnableProject 开启项目，开启后可以在项目列表看到
-	EnableProject(ctx context.Context, in *GitEnableProjectRequest, opts ...grpc.CallOption) (*GitEnableProjectResponse, error)
+	EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error)
 	// DisableProject 关闭项目
-	DisableProject(ctx context.Context, in *GitDisableProjectRequest, opts ...grpc.CallOption) (*GitDisableProjectResponse, error)
+	DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error)
 	// All 获取所有的 git 项目
-	All(ctx context.Context, in *GitAllProjectsRequest, opts ...grpc.CallOption) (*GitAllProjectsResponse, error)
+	All(ctx context.Context, in *AllProjectsRequest, opts ...grpc.CallOption) (*AllProjectsResponse, error)
 	// ProjectOptions 获取项目信息， 用在级联列表
-	ProjectOptions(ctx context.Context, in *GitProjectOptionsRequest, opts ...grpc.CallOption) (*GitProjectOptionsResponse, error)
+	ProjectOptions(ctx context.Context, in *ProjectOptionsRequest, opts ...grpc.CallOption) (*ProjectOptionsResponse, error)
 	// BranchOptions 获取分支信息， 用在级联列表
-	BranchOptions(ctx context.Context, in *GitBranchOptionsRequest, opts ...grpc.CallOption) (*GitBranchOptionsResponse, error)
+	BranchOptions(ctx context.Context, in *BranchOptionsRequest, opts ...grpc.CallOption) (*BranchOptionsResponse, error)
 	// CommitOptions 获取commit信息， 用在级联列表
-	CommitOptions(ctx context.Context, in *GitCommitOptionsRequest, opts ...grpc.CallOption) (*GitCommitOptionsResponse, error)
+	CommitOptions(ctx context.Context, in *CommitOptionsRequest, opts ...grpc.CallOption) (*CommitOptionsResponse, error)
 	// Commit 获取 commit 详情
-	Commit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
+	Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
 	// PipelineInfo 获取 pipeline 详情
-	PipelineInfo(ctx context.Context, in *GitPipelineInfoRequest, opts ...grpc.CallOption) (*GitPipelineInfoResponse, error)
+	PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
 	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(ctx context.Context, in *GitConfigFileRequest, opts ...grpc.CallOption) (*GitConfigFileResponse, error)
+	MarsConfigFile(ctx context.Context, in *ConfigFileRequest, opts ...grpc.CallOption) (*ConfigFileResponse, error)
 }
 
 type gitClient struct {
@@ -51,81 +51,81 @@ func NewGitClient(cc grpc.ClientConnInterface) GitClient {
 	return &gitClient{cc}
 }
 
-func (c *gitClient) EnableProject(ctx context.Context, in *GitEnableProjectRequest, opts ...grpc.CallOption) (*GitEnableProjectResponse, error) {
-	out := new(GitEnableProjectResponse)
-	err := c.cc.Invoke(ctx, "/Git/EnableProject", in, out, opts...)
+func (c *gitClient) EnableProject(ctx context.Context, in *EnableProjectRequest, opts ...grpc.CallOption) (*EnableProjectResponse, error) {
+	out := new(EnableProjectResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/EnableProject", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) DisableProject(ctx context.Context, in *GitDisableProjectRequest, opts ...grpc.CallOption) (*GitDisableProjectResponse, error) {
-	out := new(GitDisableProjectResponse)
-	err := c.cc.Invoke(ctx, "/Git/DisableProject", in, out, opts...)
+func (c *gitClient) DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error) {
+	out := new(DisableProjectResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/DisableProject", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) All(ctx context.Context, in *GitAllProjectsRequest, opts ...grpc.CallOption) (*GitAllProjectsResponse, error) {
-	out := new(GitAllProjectsResponse)
-	err := c.cc.Invoke(ctx, "/Git/All", in, out, opts...)
+func (c *gitClient) All(ctx context.Context, in *AllProjectsRequest, opts ...grpc.CallOption) (*AllProjectsResponse, error) {
+	out := new(AllProjectsResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/All", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) ProjectOptions(ctx context.Context, in *GitProjectOptionsRequest, opts ...grpc.CallOption) (*GitProjectOptionsResponse, error) {
-	out := new(GitProjectOptionsResponse)
-	err := c.cc.Invoke(ctx, "/Git/ProjectOptions", in, out, opts...)
+func (c *gitClient) ProjectOptions(ctx context.Context, in *ProjectOptionsRequest, opts ...grpc.CallOption) (*ProjectOptionsResponse, error) {
+	out := new(ProjectOptionsResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/ProjectOptions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) BranchOptions(ctx context.Context, in *GitBranchOptionsRequest, opts ...grpc.CallOption) (*GitBranchOptionsResponse, error) {
-	out := new(GitBranchOptionsResponse)
-	err := c.cc.Invoke(ctx, "/Git/BranchOptions", in, out, opts...)
+func (c *gitClient) BranchOptions(ctx context.Context, in *BranchOptionsRequest, opts ...grpc.CallOption) (*BranchOptionsResponse, error) {
+	out := new(BranchOptionsResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/BranchOptions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) CommitOptions(ctx context.Context, in *GitCommitOptionsRequest, opts ...grpc.CallOption) (*GitCommitOptionsResponse, error) {
-	out := new(GitCommitOptionsResponse)
-	err := c.cc.Invoke(ctx, "/Git/CommitOptions", in, out, opts...)
+func (c *gitClient) CommitOptions(ctx context.Context, in *CommitOptionsRequest, opts ...grpc.CallOption) (*CommitOptionsResponse, error) {
+	out := new(CommitOptionsResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/CommitOptions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) Commit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error) {
-	out := new(GitCommitResponse)
-	err := c.cc.Invoke(ctx, "/Git/Commit", in, out, opts...)
+func (c *gitClient) Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error) {
+	out := new(CommitResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/Commit", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) PipelineInfo(ctx context.Context, in *GitPipelineInfoRequest, opts ...grpc.CallOption) (*GitPipelineInfoResponse, error) {
-	out := new(GitPipelineInfoResponse)
-	err := c.cc.Invoke(ctx, "/Git/PipelineInfo", in, out, opts...)
+func (c *gitClient) PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error) {
+	out := new(PipelineInfoResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/PipelineInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *gitClient) MarsConfigFile(ctx context.Context, in *GitConfigFileRequest, opts ...grpc.CallOption) (*GitConfigFileResponse, error) {
-	out := new(GitConfigFileResponse)
-	err := c.cc.Invoke(ctx, "/Git/MarsConfigFile", in, out, opts...)
+func (c *gitClient) MarsConfigFile(ctx context.Context, in *ConfigFileRequest, opts ...grpc.CallOption) (*ConfigFileResponse, error) {
+	out := new(ConfigFileResponse)
+	err := c.cc.Invoke(ctx, "/git.Git/MarsConfigFile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,23 +137,23 @@ func (c *gitClient) MarsConfigFile(ctx context.Context, in *GitConfigFileRequest
 // for forward compatibility
 type GitServer interface {
 	// EnableProject 开启项目，开启后可以在项目列表看到
-	EnableProject(context.Context, *GitEnableProjectRequest) (*GitEnableProjectResponse, error)
+	EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error)
 	// DisableProject 关闭项目
-	DisableProject(context.Context, *GitDisableProjectRequest) (*GitDisableProjectResponse, error)
+	DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error)
 	// All 获取所有的 git 项目
-	All(context.Context, *GitAllProjectsRequest) (*GitAllProjectsResponse, error)
+	All(context.Context, *AllProjectsRequest) (*AllProjectsResponse, error)
 	// ProjectOptions 获取项目信息， 用在级联列表
-	ProjectOptions(context.Context, *GitProjectOptionsRequest) (*GitProjectOptionsResponse, error)
+	ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error)
 	// BranchOptions 获取分支信息， 用在级联列表
-	BranchOptions(context.Context, *GitBranchOptionsRequest) (*GitBranchOptionsResponse, error)
+	BranchOptions(context.Context, *BranchOptionsRequest) (*BranchOptionsResponse, error)
 	// CommitOptions 获取commit信息， 用在级联列表
-	CommitOptions(context.Context, *GitCommitOptionsRequest) (*GitCommitOptionsResponse, error)
+	CommitOptions(context.Context, *CommitOptionsRequest) (*CommitOptionsResponse, error)
 	// Commit 获取 commit 详情
-	Commit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
+	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
 	// PipelineInfo 获取 pipeline 详情
-	PipelineInfo(context.Context, *GitPipelineInfoRequest) (*GitPipelineInfoResponse, error)
+	PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error)
 	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(context.Context, *GitConfigFileRequest) (*GitConfigFileResponse, error)
+	MarsConfigFile(context.Context, *ConfigFileRequest) (*ConfigFileResponse, error)
 	mustEmbedUnimplementedGitServer()
 }
 
@@ -161,31 +161,31 @@ type GitServer interface {
 type UnimplementedGitServer struct {
 }
 
-func (UnimplementedGitServer) EnableProject(context.Context, *GitEnableProjectRequest) (*GitEnableProjectResponse, error) {
+func (UnimplementedGitServer) EnableProject(context.Context, *EnableProjectRequest) (*EnableProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EnableProject not implemented")
 }
-func (UnimplementedGitServer) DisableProject(context.Context, *GitDisableProjectRequest) (*GitDisableProjectResponse, error) {
+func (UnimplementedGitServer) DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DisableProject not implemented")
 }
-func (UnimplementedGitServer) All(context.Context, *GitAllProjectsRequest) (*GitAllProjectsResponse, error) {
+func (UnimplementedGitServer) All(context.Context, *AllProjectsRequest) (*AllProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
 }
-func (UnimplementedGitServer) ProjectOptions(context.Context, *GitProjectOptionsRequest) (*GitProjectOptionsResponse, error) {
+func (UnimplementedGitServer) ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProjectOptions not implemented")
 }
-func (UnimplementedGitServer) BranchOptions(context.Context, *GitBranchOptionsRequest) (*GitBranchOptionsResponse, error) {
+func (UnimplementedGitServer) BranchOptions(context.Context, *BranchOptionsRequest) (*BranchOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BranchOptions not implemented")
 }
-func (UnimplementedGitServer) CommitOptions(context.Context, *GitCommitOptionsRequest) (*GitCommitOptionsResponse, error) {
+func (UnimplementedGitServer) CommitOptions(context.Context, *CommitOptionsRequest) (*CommitOptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CommitOptions not implemented")
 }
-func (UnimplementedGitServer) Commit(context.Context, *GitCommitRequest) (*GitCommitResponse, error) {
+func (UnimplementedGitServer) Commit(context.Context, *CommitRequest) (*CommitResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Commit not implemented")
 }
-func (UnimplementedGitServer) PipelineInfo(context.Context, *GitPipelineInfoRequest) (*GitPipelineInfoResponse, error) {
+func (UnimplementedGitServer) PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PipelineInfo not implemented")
 }
-func (UnimplementedGitServer) MarsConfigFile(context.Context, *GitConfigFileRequest) (*GitConfigFileResponse, error) {
+func (UnimplementedGitServer) MarsConfigFile(context.Context, *ConfigFileRequest) (*ConfigFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarsConfigFile not implemented")
 }
 func (UnimplementedGitServer) mustEmbedUnimplementedGitServer() {}
@@ -202,7 +202,7 @@ func RegisterGitServer(s grpc.ServiceRegistrar, srv GitServer) {
 }
 
 func _Git_EnableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitEnableProjectRequest)
+	in := new(EnableProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -211,16 +211,16 @@ func _Git_EnableProject_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/EnableProject",
+		FullMethod: "/git.Git/EnableProject",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).EnableProject(ctx, req.(*GitEnableProjectRequest))
+		return srv.(GitServer).EnableProject(ctx, req.(*EnableProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_DisableProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitDisableProjectRequest)
+	in := new(DisableProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -229,16 +229,16 @@ func _Git_DisableProject_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/DisableProject",
+		FullMethod: "/git.Git/DisableProject",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).DisableProject(ctx, req.(*GitDisableProjectRequest))
+		return srv.(GitServer).DisableProject(ctx, req.(*DisableProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitAllProjectsRequest)
+	in := new(AllProjectsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -247,16 +247,16 @@ func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/All",
+		FullMethod: "/git.Git/All",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).All(ctx, req.(*GitAllProjectsRequest))
+		return srv.(GitServer).All(ctx, req.(*AllProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_ProjectOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitProjectOptionsRequest)
+	in := new(ProjectOptionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -265,16 +265,16 @@ func _Git_ProjectOptions_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/ProjectOptions",
+		FullMethod: "/git.Git/ProjectOptions",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).ProjectOptions(ctx, req.(*GitProjectOptionsRequest))
+		return srv.(GitServer).ProjectOptions(ctx, req.(*ProjectOptionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_BranchOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitBranchOptionsRequest)
+	in := new(BranchOptionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -283,16 +283,16 @@ func _Git_BranchOptions_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/BranchOptions",
+		FullMethod: "/git.Git/BranchOptions",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).BranchOptions(ctx, req.(*GitBranchOptionsRequest))
+		return srv.(GitServer).BranchOptions(ctx, req.(*BranchOptionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_CommitOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitCommitOptionsRequest)
+	in := new(CommitOptionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -301,16 +301,16 @@ func _Git_CommitOptions_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/CommitOptions",
+		FullMethod: "/git.Git/CommitOptions",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).CommitOptions(ctx, req.(*GitCommitOptionsRequest))
+		return srv.(GitServer).CommitOptions(ctx, req.(*CommitOptionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitCommitRequest)
+	in := new(CommitRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -319,16 +319,16 @@ func _Git_Commit_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/Commit",
+		FullMethod: "/git.Git/Commit",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).Commit(ctx, req.(*GitCommitRequest))
+		return srv.(GitServer).Commit(ctx, req.(*CommitRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_PipelineInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitPipelineInfoRequest)
+	in := new(PipelineInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -337,16 +337,16 @@ func _Git_PipelineInfo_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/PipelineInfo",
+		FullMethod: "/git.Git/PipelineInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).PipelineInfo(ctx, req.(*GitPipelineInfoRequest))
+		return srv.(GitServer).PipelineInfo(ctx, req.(*PipelineInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigFileRequest)
+	in := new(ConfigFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -355,10 +355,10 @@ func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Git/MarsConfigFile",
+		FullMethod: "/git.Git/MarsConfigFile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).MarsConfigFile(ctx, req.(*GitConfigFileRequest))
+		return srv.(GitServer).MarsConfigFile(ctx, req.(*ConfigFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -367,7 +367,7 @@ func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Git_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Git",
+	ServiceName: "git.Git",
 	HandlerType: (*GitServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -405,246 +405,6 @@ var Git_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MarsConfigFile",
 			Handler:    _Git_MarsConfigFile_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "git/git.proto",
-}
-
-// GitConfigClient is the client API for GitConfig service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GitConfigClient interface {
-	// Show 查看项目配置
-	Show(ctx context.Context, in *GitConfigShowRequest, opts ...grpc.CallOption) (*GitConfigShowResponse, error)
-	// GlobalConfig 查看项目 GlobalConfig 配置
-	GlobalConfig(ctx context.Context, in *GitConfigGlobalConfigRequest, opts ...grpc.CallOption) (*GitConfigGlobalConfigResponse, error)
-	// ToggleGlobalStatus 开启/关闭全局配置
-	ToggleGlobalStatus(ctx context.Context, in *GitConfigToggleGlobalStatusRequest, opts ...grpc.CallOption) (*GitConfigToggleGlobalStatusResponse, error)
-	// Update 更新全局配置
-	Update(ctx context.Context, in *GitConfigUpdateRequest, opts ...grpc.CallOption) (*GitConfigUpdateResponse, error)
-	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
-	GetDefaultChartValues(ctx context.Context, in *GitConfigDefaultChartValuesRequest, opts ...grpc.CallOption) (*GitConfigDefaultChartValuesResponse, error)
-}
-
-type gitConfigClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewGitConfigClient(cc grpc.ClientConnInterface) GitConfigClient {
-	return &gitConfigClient{cc}
-}
-
-func (c *gitConfigClient) Show(ctx context.Context, in *GitConfigShowRequest, opts ...grpc.CallOption) (*GitConfigShowResponse, error) {
-	out := new(GitConfigShowResponse)
-	err := c.cc.Invoke(ctx, "/GitConfig/Show", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitConfigClient) GlobalConfig(ctx context.Context, in *GitConfigGlobalConfigRequest, opts ...grpc.CallOption) (*GitConfigGlobalConfigResponse, error) {
-	out := new(GitConfigGlobalConfigResponse)
-	err := c.cc.Invoke(ctx, "/GitConfig/GlobalConfig", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitConfigClient) ToggleGlobalStatus(ctx context.Context, in *GitConfigToggleGlobalStatusRequest, opts ...grpc.CallOption) (*GitConfigToggleGlobalStatusResponse, error) {
-	out := new(GitConfigToggleGlobalStatusResponse)
-	err := c.cc.Invoke(ctx, "/GitConfig/ToggleGlobalStatus", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitConfigClient) Update(ctx context.Context, in *GitConfigUpdateRequest, opts ...grpc.CallOption) (*GitConfigUpdateResponse, error) {
-	out := new(GitConfigUpdateResponse)
-	err := c.cc.Invoke(ctx, "/GitConfig/Update", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gitConfigClient) GetDefaultChartValues(ctx context.Context, in *GitConfigDefaultChartValuesRequest, opts ...grpc.CallOption) (*GitConfigDefaultChartValuesResponse, error) {
-	out := new(GitConfigDefaultChartValuesResponse)
-	err := c.cc.Invoke(ctx, "/GitConfig/GetDefaultChartValues", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GitConfigServer is the server API for GitConfig service.
-// All implementations must embed UnimplementedGitConfigServer
-// for forward compatibility
-type GitConfigServer interface {
-	// Show 查看项目配置
-	Show(context.Context, *GitConfigShowRequest) (*GitConfigShowResponse, error)
-	// GlobalConfig 查看项目 GlobalConfig 配置
-	GlobalConfig(context.Context, *GitConfigGlobalConfigRequest) (*GitConfigGlobalConfigResponse, error)
-	// ToggleGlobalStatus 开启/关闭全局配置
-	ToggleGlobalStatus(context.Context, *GitConfigToggleGlobalStatusRequest) (*GitConfigToggleGlobalStatusResponse, error)
-	// Update 更新全局配置
-	Update(context.Context, *GitConfigUpdateRequest) (*GitConfigUpdateResponse, error)
-	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
-	GetDefaultChartValues(context.Context, *GitConfigDefaultChartValuesRequest) (*GitConfigDefaultChartValuesResponse, error)
-	mustEmbedUnimplementedGitConfigServer()
-}
-
-// UnimplementedGitConfigServer must be embedded to have forward compatible implementations.
-type UnimplementedGitConfigServer struct {
-}
-
-func (UnimplementedGitConfigServer) Show(context.Context, *GitConfigShowRequest) (*GitConfigShowResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
-}
-func (UnimplementedGitConfigServer) GlobalConfig(context.Context, *GitConfigGlobalConfigRequest) (*GitConfigGlobalConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GlobalConfig not implemented")
-}
-func (UnimplementedGitConfigServer) ToggleGlobalStatus(context.Context, *GitConfigToggleGlobalStatusRequest) (*GitConfigToggleGlobalStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ToggleGlobalStatus not implemented")
-}
-func (UnimplementedGitConfigServer) Update(context.Context, *GitConfigUpdateRequest) (*GitConfigUpdateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
-}
-func (UnimplementedGitConfigServer) GetDefaultChartValues(context.Context, *GitConfigDefaultChartValuesRequest) (*GitConfigDefaultChartValuesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDefaultChartValues not implemented")
-}
-func (UnimplementedGitConfigServer) mustEmbedUnimplementedGitConfigServer() {}
-
-// UnsafeGitConfigServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GitConfigServer will
-// result in compilation errors.
-type UnsafeGitConfigServer interface {
-	mustEmbedUnimplementedGitConfigServer()
-}
-
-func RegisterGitConfigServer(s grpc.ServiceRegistrar, srv GitConfigServer) {
-	s.RegisterService(&GitConfig_ServiceDesc, srv)
-}
-
-func _GitConfig_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigShowRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitConfigServer).Show(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/GitConfig/Show",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitConfigServer).Show(ctx, req.(*GitConfigShowRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GitConfig_GlobalConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigGlobalConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitConfigServer).GlobalConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/GitConfig/GlobalConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitConfigServer).GlobalConfig(ctx, req.(*GitConfigGlobalConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GitConfig_ToggleGlobalStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigToggleGlobalStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitConfigServer).ToggleGlobalStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/GitConfig/ToggleGlobalStatus",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitConfigServer).ToggleGlobalStatus(ctx, req.(*GitConfigToggleGlobalStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GitConfig_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigUpdateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitConfigServer).Update(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/GitConfig/Update",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitConfigServer).Update(ctx, req.(*GitConfigUpdateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GitConfig_GetDefaultChartValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GitConfigDefaultChartValuesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GitConfigServer).GetDefaultChartValues(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/GitConfig/GetDefaultChartValues",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitConfigServer).GetDefaultChartValues(ctx, req.(*GitConfigDefaultChartValuesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// GitConfig_ServiceDesc is the grpc.ServiceDesc for GitConfig service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var GitConfig_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "GitConfig",
-	HandlerType: (*GitConfigServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Show",
-			Handler:    _GitConfig_Show_Handler,
-		},
-		{
-			MethodName: "GlobalConfig",
-			Handler:    _GitConfig_GlobalConfig_Handler,
-		},
-		{
-			MethodName: "ToggleGlobalStatus",
-			Handler:    _GitConfig_ToggleGlobalStatus_Handler,
-		},
-		{
-			MethodName: "Update",
-			Handler:    _GitConfig_Update_Handler,
-		},
-		{
-			MethodName: "GetDefaultChartValues",
-			Handler:    _GitConfig_GetDefaultChartValues_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

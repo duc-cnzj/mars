@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChangelogClient interface {
 	//  Show 查看项目修改的版本差异
-	Show(ctx context.Context, in *ChangelogShowRequest, opts ...grpc.CallOption) (*ChangelogShowResponse, error)
+	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 }
 
 type changelogClient struct {
@@ -35,9 +35,9 @@ func NewChangelogClient(cc grpc.ClientConnInterface) ChangelogClient {
 	return &changelogClient{cc}
 }
 
-func (c *changelogClient) Show(ctx context.Context, in *ChangelogShowRequest, opts ...grpc.CallOption) (*ChangelogShowResponse, error) {
-	out := new(ChangelogShowResponse)
-	err := c.cc.Invoke(ctx, "/Changelog/Show", in, out, opts...)
+func (c *changelogClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
+	out := new(ShowResponse)
+	err := c.cc.Invoke(ctx, "/changelog.Changelog/Show", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *changelogClient) Show(ctx context.Context, in *ChangelogShowRequest, op
 // for forward compatibility
 type ChangelogServer interface {
 	//  Show 查看项目修改的版本差异
-	Show(context.Context, *ChangelogShowRequest) (*ChangelogShowResponse, error)
+	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	mustEmbedUnimplementedChangelogServer()
 }
 
@@ -57,7 +57,7 @@ type ChangelogServer interface {
 type UnimplementedChangelogServer struct {
 }
 
-func (UnimplementedChangelogServer) Show(context.Context, *ChangelogShowRequest) (*ChangelogShowResponse, error) {
+func (UnimplementedChangelogServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
 }
 func (UnimplementedChangelogServer) mustEmbedUnimplementedChangelogServer() {}
@@ -74,7 +74,7 @@ func RegisterChangelogServer(s grpc.ServiceRegistrar, srv ChangelogServer) {
 }
 
 func _Changelog_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChangelogShowRequest)
+	in := new(ShowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func _Changelog_Show_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Changelog/Show",
+		FullMethod: "/changelog.Changelog/Show",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChangelogServer).Show(ctx, req.(*ChangelogShowRequest))
+		return srv.(ChangelogServer).Show(ctx, req.(*ShowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -95,7 +95,7 @@ func _Changelog_Show_Handler(srv interface{}, ctx context.Context, dec func(inte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Changelog_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Changelog",
+	ServiceName: "changelog.Changelog",
 	HandlerType: (*ChangelogServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
