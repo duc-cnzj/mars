@@ -258,9 +258,7 @@ func ReleaseStatus(namespace, releaseName string) types.Deploy {
 
 	mlog.Debug(run.Info.Status)
 	switch run.Info.Status {
-	case release.StatusPendingRollback:
-		return types.Deploy_StatusRollback
-	case release.StatusPendingUpgrade, release.StatusPendingInstall:
+	case release.StatusPendingUpgrade, release.StatusPendingInstall, release.StatusPendingRollback:
 		return types.Deploy_StatusDeploying
 	case release.StatusDeployed:
 		return types.Deploy_StatusDeployed

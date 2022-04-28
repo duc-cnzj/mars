@@ -8460,8 +8460,7 @@ export namespace types {
         StatusUnknown = 0,
         StatusDeploying = 1,
         StatusDeployed = 2,
-        StatusRollback = 3,
-        StatusFailed = 4
+        StatusFailed = 3
     }
 
     /** Properties of a ProjectModel. */

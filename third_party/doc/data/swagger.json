@@ -2590,7 +2590,6 @@
         "StatusUnknown",
         "StatusDeploying",
         "StatusDeployed",
-        "StatusRollback",
         "StatusFailed"
       ]
     },

@@ -17968,16 +17968,14 @@ export const types = $root.types = (() => {
      * @property {number} StatusUnknown=0 StatusUnknown value
      * @property {number} StatusDeploying=1 StatusDeploying value
      * @property {number} StatusDeployed=2 StatusDeployed value
-     * @property {number} StatusRollback=3 StatusRollback value
-     * @property {number} StatusFailed=4 StatusFailed value
+     * @property {number} StatusFailed=3 StatusFailed value
      */
     types.Deploy = (function() {
         const valuesById = {}, values = Object.create(valuesById);
         values[valuesById[0] = "StatusUnknown"] = 0;
         values[valuesById[1] = "StatusDeploying"] = 1;
         values[valuesById[2] = "StatusDeployed"] = 2;
-        values[valuesById[3] = "StatusRollback"] = 3;
-        values[valuesById[4] = "StatusFailed"] = 4;
+        values[valuesById[3] = "StatusFailed"] = 3;
         return values;
     })();
 

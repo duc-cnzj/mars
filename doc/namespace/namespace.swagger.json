@@ -255,7 +255,6 @@
         "StatusUnknown",
         "StatusDeploying",
         "StatusDeployed",
-        "StatusRollback",
         "StatusFailed"
       ],
       "default": "StatusUnknown"
