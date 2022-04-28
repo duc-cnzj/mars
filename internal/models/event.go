@@ -34,6 +34,10 @@ func (e *Event) ProtoTransform() *types.EventModel {
 	if e.File != nil {
 		f = e.File.ProtoTransform()
 	}
+	var fID int64
+	if e.FileID != nil {
+		fID = int64(*e.FileID)
+	}
 	return &types.EventModel{
 		Id:        int64(e.ID),
 		Action:    types.EventActionType(e.Action),
@@ -42,7 +46,7 @@ func (e *Event) ProtoTransform() *types.EventModel {
 		Old:       e.Old,
 		New:       e.New,
 		Duration:  e.Duration,
-		FileId:    int64(*e.FileID),
+		FileId:    fID,
 		File:      f,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
 		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),
