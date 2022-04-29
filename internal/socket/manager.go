@@ -92,6 +92,7 @@ type SafeWriteMessageCh struct {
 }
 
 func (s *SafeWriteMessageCh) Closed() {
+	mlog.Debug("SafeWriteMessageCh closed")
 	s.Lock()
 	defer s.Unlock()
 	s.closed = true
@@ -123,6 +124,10 @@ func (v vars) MustGetString(key string) string {
 }
 
 type Job interface {
+	Done() <-chan struct{}
+	Finish()
+	Prune()
+
 	Stop(error)
 	IsStopped() bool
 	GetStoppedErrorIfHas() error
@@ -141,7 +146,6 @@ type Job interface {
 	Validate() error
 	LoadConfigs() error
 	HandleMessage()
-	Prune()
 	AddDestroyFunc(fn func())
 	CallDestroyFuncs()
 
@@ -151,24 +155,8 @@ type Job interface {
 	Percenter() Percentable
 }
 
-type DeployStatus struct {
-	sync.RWMutex
-	status types.Deploy
-}
-
-func (ds *DeployStatus) SetStatus(s types.Deploy) {
-	ds.Lock()
-	defer ds.Unlock()
-	ds.status = s
-}
-func (ds *DeployStatus) Status() types.Deploy {
-	ds.RLock()
-	defer ds.RUnlock()
-	return ds.status
-}
-
 type Jober struct {
-	deployStatus *DeployStatus
+	done chan struct{}
 
 	dryRun    bool
 	manifests []string
@@ -227,7 +215,7 @@ func NewJober(
 	opts ...Option,
 ) Job {
 	jb := &Jober{
-		deployStatus:   &DeployStatus{},
+		done:           make(chan struct{}),
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -280,9 +268,22 @@ func (j *Jober) Project() *models.Project {
 	return j.project
 }
 
-// Stop 取消部署
-// TODO 这里有一个问题，如果上一次成功的部署(deployed) 不是 atomic, 而且 pod 起不来，
-//   这一次部署是atomic, 那么回滚的时候会失败
+func (j *Jober) Done() <-chan struct{} {
+	return j.done
+}
+
+func (j *Jober) Finish() {
+	mlog.Debug("finished")
+	close(j.done)
+}
+
+func (j *Jober) Prune() {
+	if j.IsNew() && !j.IsDryRun() {
+		mlog.Debug("清理项目")
+		app.DB().Delete(&j.project)
+	}
+}
+
 func (j *Jober) Stop(err error) {
 	j.stopOnce.Do(func() {
 		mlog.Debugf("stop deploy job, because '%v'", err)
@@ -301,26 +302,13 @@ func (j *Jober) IsStopped() bool {
 	return false
 }
 
-func (j *Jober) Prune() {
-	if j.IsNew() {
-		mlog.Debug("清理项目")
-		app.DB().Delete(&j.project)
-	}
-}
-
-func (j *Jober) CallDestroyFuncs() {
-	j.destroyFuncLock.RLock()
-	defer j.destroyFuncLock.RUnlock()
-	for _, destroyFunc := range j.destroyFuncs {
-		destroyFunc()
-	}
-}
-
 func (j *Jober) HandleMessage() {
 	defer mlog.Debug("HandleMessage exit")
 	ch := j.messageCh.Chan()
 	for {
 		select {
+		case <-j.Done():
+			return
 		case <-app.App().Done():
 			return
 		case s, ok := <-ch:
@@ -344,6 +332,14 @@ func (j *Jober) HandleMessage() {
 				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.Project())
 			}
 		}
+	}
+}
+
+func (j *Jober) CallDestroyFuncs() {
+	j.destroyFuncLock.RLock()
+	defer j.destroyFuncLock.RUnlock()
+	for _, destroyFunc := range j.destroyFuncs {
+		destroyFunc()
 	}
 }
 
@@ -434,13 +430,7 @@ func (j *Jober) Run() error {
 			err    error
 		)
 
-		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter()); err != nil {
-			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
-			j.project.DeployStatus = uint8(j.deployStatus.Status())
-
-			if !j.IsDryRun() {
-				app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", j.deployStatus.Status())
-			}
+		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew()); err != nil {
 			j.messageCh.Send(MessageItem{
 				Msg:  err.Error(),
 				Type: MessageError,
@@ -448,8 +438,6 @@ func (j *Jober) Run() error {
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
-			j.deployStatus.SetStatus(utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
-			j.project.DeployStatus = uint8(j.deployStatus.Status())
 			j.manifests = utils.Filter[string](strings.Split(result.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 })
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
@@ -606,8 +594,7 @@ func (j *Jober) Validate() error {
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
 		if !j.IsDryRun() {
-			j.deployStatus.SetStatus(types.Deploy_StatusDeploying)
-			j.project.DeployStatus = uint8(j.deployStatus.Status())
+			j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
 			app.DB().Create(&j.project)
 		}
 		j.Messager().SendMsg("[Check]: 新建项目")
@@ -616,13 +603,18 @@ func (j *Jober) Validate() error {
 		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
 			return errors.New("有别人也在操作这个项目，等等哦~")
 		}
-		j.deployStatus.SetStatus(types.Deploy_StatusDeploying)
 		if !j.IsDryRun() {
-			app.DB().Model(&models.Project{ID: p.ID}).UpdateColumn("DeployStatus", j.deployStatus.Status())
+			app.DB().Model(&models.Project{ID: p.ID}).Update("DeployStatus", types.Deploy_StatusDeploying)
 		}
 		j.project.ID = p.ID
 		j.prevProject = &p
 	}
+	j.AddDestroyFunc(func() {
+		mlog.Debug("update DeployStatus in DestroyFunc")
+		if !j.IsDryRun() {
+			app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+		}
+	})
 	j.imagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
 
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)

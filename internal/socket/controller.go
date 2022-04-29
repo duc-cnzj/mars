@@ -414,6 +414,7 @@ func InstallProject(job Job) {
 		if err != nil && !job.IsDryRun() {
 			job.Prune()
 		}
+		job.Finish()
 	}()
 
 	if err = job.Validate(); err != nil {

@@ -68,18 +68,21 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	}), nil
 }
 
-// UpgradeOrInstall TODO
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), atomic bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
+// UpgradeOrInstall
+// 不会自动回滚
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
 	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
 	if err != nil {
 		return nil, err
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
+	client.Atomic = false
+	client.Wait = wait
 	client.DryRun = dryRun
 	client.DisableOpenAPIValidation = true
 
-	if atomic && !dryRun {
+	if wait && !dryRun {
 		stopch := make(chan struct{}, 1)
 		inf := informers.NewSharedInformerFactoryWithOptions(
 			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
@@ -107,8 +110,6 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		inf.Start(stopch)
 		defer close(stopch)
 
-		client.Atomic = true
-		client.Wait = true
 		if timeoutSeconds != 0 {
 			client.Timeout = time.Duration(timeoutSeconds) * time.Second
 		} else if app.Config().InstallTimeout != 0 {
@@ -389,4 +390,18 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 
 func GetSlugName(namespaceId int64, name string) string {
 	return Md5(fmt.Sprintf("%d-%s", namespaceId, name))
+}
+
+func Rollback(releaseName, namespace string, wait bool, log action.DebugLog, dryRun bool) error {
+	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+	if err != nil {
+		return err
+	}
+	client := action.NewRollback(actionConfig)
+	client.Wait = wait
+	client.DryRun = dryRun
+	client.DisableHooks = true
+	client.WaitForJobs = wait
+
+	return client.Run(releaseName)
 }
