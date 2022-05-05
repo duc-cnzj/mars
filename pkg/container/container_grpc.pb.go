@@ -44,7 +44,7 @@ type ContainerClient interface {
 	//		n, err := bf.Read(bts)
 	//		if err != nil {
 	//			if err == io.EOF {
-	//				cp.Send(&container.ContainerStreamCopyToPodRequest{
+	//				cp.Send(&container.StreamCopyToPodRequest{
 	//					FileName:  filename,
 	//					Data:      bts[0:n],
 	//					Namespace: namespace,
@@ -59,7 +59,7 @@ type ContainerClient interface {
 	//			}
 	//			return
 	//		}
-	//		 cp.Send(&container.ContainerStreamCopyToPodRequest{
+	//		 cp.Send(&container.StreamCopyToPodRequest{
 	//			FileName:  filename,
 	//			Data:      bts[0:n],
 	//			Namespace: namespace,
@@ -245,7 +245,7 @@ type ContainerServer interface {
 	//		n, err := bf.Read(bts)
 	//		if err != nil {
 	//			if err == io.EOF {
-	//				cp.Send(&container.ContainerStreamCopyToPodRequest{
+	//				cp.Send(&container.StreamCopyToPodRequest{
 	//					FileName:  filename,
 	//					Data:      bts[0:n],
 	//					Namespace: namespace,
@@ -260,7 +260,7 @@ type ContainerServer interface {
 	//			}
 	//			return
 	//		}
-	//		 cp.Send(&container.ContainerStreamCopyToPodRequest{
+	//		 cp.Send(&container.StreamCopyToPodRequest{
 	//			FileName:  filename,
 	//			Data:      bts[0:n],
 	//			Namespace: namespace,

@@ -116,7 +116,7 @@ service Container {
   //		n, err := bf.Read(bts)
   //		if err != nil {
   //			if err == io.EOF {
-  //				cp.Send(&container.ContainerStreamCopyToPodRequest{
+  //				cp.Send(&container.StreamCopyToPodRequest{
   //					FileName:  filename,
   //					Data:      bts[0:n],
   //					Namespace: namespace,
@@ -131,7 +131,7 @@ service Container {
   //			}
   //			return
   //		}
-  //		 cp.Send(&container.ContainerStreamCopyToPodRequest{
+  //		 cp.Send(&container.StreamCopyToPodRequest{
   //			FileName:  filename,
   //			Data:      bts[0:n],
   //			Namespace: namespace,

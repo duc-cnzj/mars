@@ -2,13 +2,13 @@ package services
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -97,16 +97,16 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 		return err
 	}
 	var exitCode atomic.Value
-	rw := newExecReaderWriter(1024 * 1024)
-	defer rw.Close()
+	writer := newExecWriter()
+	defer writer.Close()
 
 	go func() {
-		defer rw.Close()
+		defer writer.Close()
 		defer utils.HandlePanic("Exec")
 		err := exec.Stream(remotecommand.StreamOptions{
 			Stdin:             nil,
-			Stdout:            rw,
-			Stderr:            rw,
+			Stdout:            writer,
+			Stderr:            writer,
 			Tty:               false,
 			TerminalSizeQueue: nil,
 		})
@@ -129,7 +129,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 
 	for {
 		select {
-		case msg, ok := <-rw.ch:
+		case msg, ok := <-writer.ch:
 			if !ok {
 				ec := exitCode.Load()
 				if ec != nil {
@@ -368,58 +368,57 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 	}
 }
 
-type execReaderWriter struct {
-	reader   io.Reader
-	closedCh chan struct{}
-	ch       chan string
+type closeable struct {
+	sync.RWMutex
+	closed bool
 }
 
-func (rw *execReaderWriter) IsClosed() bool {
-	select {
-	case _, ok := <-rw.closedCh:
-		if !ok {
-			return true
-		}
-	default:
-	}
-	return false
+func (c *closeable) IsClosed() bool {
+	c.RLock()
+	defer c.RUnlock()
+	return c.closed
 }
 
-func (rw *execReaderWriter) Close() error {
+func (c *closeable) Close() {
+	c.Lock()
+	defer c.Unlock()
+	c.closed = true
+}
+
+type execWriter struct {
+	reader io.Reader
+	state  *closeable
+	ch     chan string
+}
+
+func (rw *execWriter) IsClosed() bool {
+	return rw.state.IsClosed()
+}
+
+func (rw *execWriter) Close() error {
 	if rw.IsClosed() {
 		return nil
 	}
+	rw.state.Close()
 	close(rw.ch)
-	close(rw.closedCh)
 
 	return nil
 }
 
-func newExecReaderWriter(size int) *execReaderWriter {
-	return &execReaderWriter{
-		reader:   bytes.NewReader(make([]byte, size)),
-		closedCh: make(chan struct{}, 1),
-		ch:       make(chan string, 100),
+func newExecWriter() *execWriter {
+	return &execWriter{
+		state: &closeable{},
+		ch:    make(chan string, 100),
 	}
 }
 
-func (rw *execReaderWriter) Read(p []byte) (int, error) {
-	select {
-	case <-rw.closedCh:
+func (rw *execWriter) Write(p []byte) (int, error) {
+	if rw.state.IsClosed() {
+		mlog.Warning("execWriter close")
 		return 0, errors.New("closed")
-	default:
 	}
+	rw.ch <- string(p)
 	return len(p), nil
-}
-
-func (rw *execReaderWriter) Write(p []byte) (int, error) {
-	select {
-	case <-rw.closedCh:
-		mlog.Warning("close")
-		return 0, errors.New("closed")
-	case rw.ch <- string(p):
-		return len(p), nil
-	}
 }
 
 const DefaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
