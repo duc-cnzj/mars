@@ -1764,9 +1764,24 @@
         }
       }
     },
+    "containerExecError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "format": "int64"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
     "containerExecResponse": {
       "type": "object",
       "properties": {
+        "error": {
+          "$ref": "#/definitions/containerExecError"
+        },
         "message": {
           "type": "string"
         }

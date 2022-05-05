@@ -2695,11 +2695,58 @@ export namespace container {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.ExecRequest;
     }
 
+    /** Properties of an ExecError. */
+    interface IExecError {
+
+        /** ExecError code */
+        code?: (number|null);
+
+        /** ExecError message */
+        message?: (string|null);
+    }
+
+    /** Represents an ExecError. */
+    class ExecError implements IExecError {
+
+        /**
+         * Constructs a new ExecError.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: container.IExecError);
+
+        /** ExecError code. */
+        public code: number;
+
+        /** ExecError message. */
+        public message: string;
+
+        /**
+         * Encodes the specified ExecError message. Does not implicitly {@link container.ExecError.verify|verify} messages.
+         * @param message ExecError message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: container.ExecError, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes an ExecError message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ExecError
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.ExecError;
+    }
+
     /** Properties of an ExecResponse. */
     interface IExecResponse {
 
         /** ExecResponse message */
         message?: (string|null);
+
+        /** ExecResponse error */
+        error?: (container.ExecError|null);
     }
 
     /** Represents an ExecResponse. */
@@ -2713,6 +2760,9 @@ export namespace container {
 
         /** ExecResponse message. */
         public message: string;
+
+        /** ExecResponse error. */
+        public error?: (container.ExecError|null);
 
         /**
          * Encodes the specified ExecResponse message. Does not implicitly {@link container.ExecResponse.verify|verify} messages.

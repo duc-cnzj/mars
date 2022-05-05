@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -20,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
+	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -55,6 +57,11 @@ func (c *Container) IsPodExists(_ context.Context, request *container.IsPodExist
 	return &container.IsPodExistsResponse{Exists: true}, nil
 }
 
+type exitCodeStatus struct {
+	message string
+	code    int
+}
+
 func (c *Container) Exec(request *container.ExecRequest, server container.Container_ExecServer) error {
 	running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
 	if !running {
@@ -63,15 +70,12 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 
 	if request.Container == "" {
 		pod, _ := app.K8sClientSet().CoreV1().Pods(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
-		for _, co := range pod.Spec.Containers {
-			request.Container = co.Name
-			mlog.Debug("使用第一个容器: ", co.Name)
-			break
-		}
+		request.Container = FindDefaultContainer(pod)
+		mlog.Debug("使用默认的容器: ", request.Container)
 	}
 
 	peo := &v1.PodExecOptions{
-		Stdin:     true,
+		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
@@ -92,22 +96,34 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 	if err != nil {
 		return err
 	}
-
+	var exitCode atomic.Value
 	rw := newExecReaderWriter(1024 * 1024)
 	defer rw.Close()
 
 	go func() {
 		defer rw.Close()
 		defer utils.HandlePanic("Exec")
-		if err := exec.Stream(remotecommand.StreamOptions{
-			Stdin:             rw,
+		err := exec.Stream(remotecommand.StreamOptions{
+			Stdin:             nil,
 			Stdout:            rw,
 			Stderr:            rw,
 			Tty:               false,
 			TerminalSizeQueue: nil,
-		}); err != nil {
-			mlog.Error(err)
-			return
+		})
+		if err != nil {
+			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
+				mlog.Debugf("[Container]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
+				exitCode.Store(&exitCodeStatus{
+					message: exitError.Error(),
+					code:    exitError.ExitStatus(),
+				})
+			} else {
+				mlog.Error(err)
+				exitCode.Store(&exitCodeStatus{
+					message: err.Error(),
+					code:    1,
+				})
+			}
 		}
 	}()
 
@@ -115,6 +131,16 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 		select {
 		case msg, ok := <-rw.ch:
 			if !ok {
+				ec := exitCode.Load()
+				if ec != nil {
+					ecs := ec.(*exitCodeStatus)
+					server.Send(&container.ExecResponse{
+						Error: &container.ExecError{
+							Code:    int64(ecs.code),
+							Message: ecs.message,
+						},
+					})
+				}
 				return nil
 			}
 			if err := server.Send(&container.ExecResponse{
@@ -219,11 +245,9 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 				if err != nil {
 					return err
 				}
-				for _, co := range pod.Spec.Containers {
-					recv.Container = co.Name
-					mlog.Debug("使用第一个容器: ", co.Name)
-					break
-				}
+
+				recv.Container = FindDefaultContainer(pod)
+				mlog.Debug("使用默认的容器: ", recv.Container)
 			}
 			containerName = recv.Container
 			running, reason := utils.IsPodRunning(recv.Namespace, recv.Pod)
@@ -396,4 +420,18 @@ func (rw *execReaderWriter) Write(p []byte) (int, error) {
 	case rw.ch <- string(p):
 		return len(p), nil
 	}
+}
+
+const DefaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
+
+func FindDefaultContainer(pod *v1.Pod) string {
+	if name := pod.Annotations[DefaultContainerAnnotationName]; len(name) > 0 {
+		return name
+	}
+
+	for _, co := range pod.Spec.Containers {
+		return co.Name
+	}
+
+	return ""
 }

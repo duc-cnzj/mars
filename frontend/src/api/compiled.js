@@ -5983,6 +5983,101 @@ export const container = $root.container = (() => {
         return ExecRequest;
     })();
 
+    container.ExecError = (function() {
+
+        /**
+         * Properties of an ExecError.
+         * @memberof container
+         * @interface IExecError
+         * @property {number|null} [code] ExecError code
+         * @property {string|null} [message] ExecError message
+         */
+
+        /**
+         * Constructs a new ExecError.
+         * @memberof container
+         * @classdesc Represents an ExecError.
+         * @implements IExecError
+         * @constructor
+         * @param {container.IExecError=} [properties] Properties to set
+         */
+        function ExecError(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ExecError code.
+         * @member {number} code
+         * @memberof container.ExecError
+         * @instance
+         */
+        ExecError.prototype.code = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * ExecError message.
+         * @member {string} message
+         * @memberof container.ExecError
+         * @instance
+         */
+        ExecError.prototype.message = "";
+
+        /**
+         * Encodes the specified ExecError message. Does not implicitly {@link container.ExecError.verify|verify} messages.
+         * @function encode
+         * @memberof container.ExecError
+         * @static
+         * @param {container.ExecError} message ExecError message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ExecError.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.code != null && Object.hasOwnProperty.call(message, "code"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.code);
+            if (message.message != null && Object.hasOwnProperty.call(message, "message"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.message);
+            return writer;
+        };
+
+        /**
+         * Decodes an ExecError message from the specified reader or buffer.
+         * @function decode
+         * @memberof container.ExecError
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {container.ExecError} ExecError
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ExecError.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.container.ExecError();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.code = reader.int64();
+                    break;
+                case 2:
+                    message.message = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return ExecError;
+    })();
+
     container.ExecResponse = (function() {
 
         /**
@@ -5990,6 +6085,7 @@ export const container = $root.container = (() => {
          * @memberof container
          * @interface IExecResponse
          * @property {string|null} [message] ExecResponse message
+         * @property {container.ExecError|null} [error] ExecResponse error
          */
 
         /**
@@ -6016,6 +6112,14 @@ export const container = $root.container = (() => {
         ExecResponse.prototype.message = "";
 
         /**
+         * ExecResponse error.
+         * @member {container.ExecError|null|undefined} error
+         * @memberof container.ExecResponse
+         * @instance
+         */
+        ExecResponse.prototype.error = null;
+
+        /**
          * Encodes the specified ExecResponse message. Does not implicitly {@link container.ExecResponse.verify|verify} messages.
          * @function encode
          * @memberof container.ExecResponse
@@ -6029,6 +6133,8 @@ export const container = $root.container = (() => {
                 writer = $Writer.create();
             if (message.message != null && Object.hasOwnProperty.call(message, "message"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.message);
+            if (message.error != null && Object.hasOwnProperty.call(message, "error"))
+                $root.container.ExecError.encode(message.error, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
             return writer;
         };
 
@@ -6052,6 +6158,9 @@ export const container = $root.container = (() => {
                 switch (tag >>> 3) {
                 case 1:
                     message.message = reader.string();
+                    break;
+                case 2:
+                    message.error = $root.container.ExecError.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);

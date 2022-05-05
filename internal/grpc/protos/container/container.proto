@@ -27,8 +27,14 @@ message ExecRequest {
   repeated string command = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}];
 }
 
+message ExecError {
+  int64 code = 1;
+  string message = 2;
+}
+
 message ExecResponse {
   string message = 1;
+  ExecError error = 2;
 }
 
 message StreamCopyToPodRequest {

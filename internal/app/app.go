@@ -225,7 +225,7 @@ func (app *Application) AddServer(server contracts.Server) {
 func (app *Application) Run() context.Context {
 	sig := make(chan os.Signal, 2)
 	ch, cancel := context.WithCancel(context.TODO())
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 
 	go func() {
 		s1 := <-sig
