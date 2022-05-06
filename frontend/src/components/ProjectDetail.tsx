@@ -104,7 +104,7 @@ const ItemDetailModal: React.FC<{
           centered
           style={{ height: "100%" }}
         >
-          {item.deploy_status === pb.types.Deploy.StatusDeployed && (
+          {(item.deploy_status === pb.types.Deploy.StatusDeployed || item.deploy_status === pb.types.Deploy.StatusDeploying) && (
             <>
               <TabPane tab="容器日志" key="container-logs">
                 {detail?.project && detail.project.namespace ? (
