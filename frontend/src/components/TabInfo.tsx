@@ -159,10 +159,17 @@ const DetailTab: React.FC<{
           {urls.map((item, index) => (
             <li key={index}>
               {index + 1}.
-              <a href={item.url} target="_blank" className="detail-data">
-                {item.url}
-                {item.port_name ? `(${item.port_name})` : ""}
-              </a>
+              {item.url.startsWith("http") ? (
+                <a href={item.url} target="_blank" className="detail-data">
+                  {item.url}
+                  {item.port_name ? `(${item.port_name})` : ""}
+                </a>
+              ) : (
+                <span>
+                  {item.url}
+                  {item.port_name ? `(${item.port_name})` : ""}
+                </span>
+              )}
             </li>
           ))}
         </ul>
