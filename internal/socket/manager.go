@@ -140,6 +140,7 @@ type Job interface {
 	User() contracts.UserInfo
 	IsNew() bool
 	Project() *models.Project
+	Namespace() *models.Namespace
 	Commit() plugins.CommitInterface
 
 	ID() string
@@ -185,6 +186,7 @@ type Jober struct {
 
 	isNew       bool
 	config      *mars.Config
+	ns          *models.Namespace
 	project     *models.Project
 	prevProject *models.Project
 
@@ -266,6 +268,10 @@ func (j *Jober) User() contracts.UserInfo {
 
 func (j *Jober) Project() *models.Project {
 	return j.project
+}
+
+func (j *Jober) Namespace() *models.Namespace {
+	return j.ns
 }
 
 func (j *Jober) Done() <-chan struct{} {
@@ -401,23 +407,26 @@ func (u userConfig) PrettyYaml() string {
 	return bf.String()
 }
 
-var fields = []any{"Config",
-	"GitProjectId",
-	"GitCommit",
-	"GitBranch",
-	"DockerImage",
-	"PodSelectors",
-	"OverrideValues",
-	"Atomic",
-	"ExtraValues",
-	"FinalExtraValues",
-	"EnvValues",
-	"DeployStatus",
-	"GitCommitTitle",
-	"GitCommitWebUrl",
-	"GitCommitAuthor",
-	"GitCommitDate",
-	"ConfigType",
+func toUpdatesMap(p *models.Project) map[string]any {
+	return map[string]any{
+		"config":             p.Config,
+		"git_project_id":     p.GitProjectId,
+		"git_commit":         p.GitCommit,
+		"git_branch":         p.GitBranch,
+		"docker_image":       p.DockerImage,
+		"pod_selectors":      p.PodSelectors,
+		"override_values":    p.OverrideValues,
+		"atomic":             p.Atomic,
+		"extra_values":       p.ExtraValues,
+		"final_extra_values": p.FinalExtraValues,
+		"env_values":         p.EnvValues,
+		"deploy_status":      p.DeployStatus,
+		"git_commit_title":   p.GitCommitTitle,
+		"git_commit_web_url": p.GitCommitWebUrl,
+		"git_commit_author":  p.GitCommitAuthor,
+		"git_commit_date":    p.GitCommitDate,
+		"config_type":        p.ConfigType,
+	}
 }
 
 func (j *Jober) Run() error {
@@ -472,7 +481,7 @@ func (j *Jober) Run() error {
 				p = j.prevProject
 				j.project.ID = p.ID
 				if !j.IsDryRun() {
-					app.DB().Model(&models.Project{ID: j.project.ID}).Select("", fields...).Updates(&j.project)
+					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
 				}
 				var (
 					ev  []*types.ExtraValue
@@ -500,7 +509,7 @@ func (j *Jober) Run() error {
 				}
 			} else {
 				if !j.IsDryRun() {
-					app.DB().Model(&models.Project{ID: j.project.ID}).Select("", fields...).Updates(&j.project)
+					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
 				}
 			}
 			newConf = userConfig{
@@ -529,7 +538,7 @@ func (j *Jober) Run() error {
 				act = types.EventActionType_DryRun
 			}
 			AuditLogWithChange(j.User().Name, act,
-				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Project().Namespace.Name, j.Project().Name),
+				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
 				oldConf, newConf)
 			j.Percenter().To(100)
 			j.messageCh.Send(MessageItem{
@@ -577,7 +586,7 @@ func (j *Jober) Validate() error {
 	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
 		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
 	}
-
+	j.ns = &ns
 	j.project = &models.Project{
 		Name:         slug.Make(j.input.Name),
 		GitProjectId: int(j.input.GitProjectId),
@@ -585,7 +594,6 @@ func (j *Jober) Validate() error {
 		GitCommit:    j.input.GitCommit,
 		Config:       j.input.Config,
 		NamespaceId:  ns.ID,
-		Namespace:    ns,
 		Atomic:       j.input.Atomic,
 	}
 
@@ -604,7 +612,7 @@ func (j *Jober) Validate() error {
 			return errors.New("有别人也在操作这个项目，等等哦~")
 		}
 		if !j.IsDryRun() {
-			app.DB().Model(&models.Project{ID: p.ID}).Update("DeployStatus", types.Deploy_StatusDeploying)
+			app.DB().Model(&p).Update("deploy_status", types.Deploy_StatusDeploying)
 		}
 		j.project.ID = p.ID
 		j.prevProject = &p
@@ -612,10 +620,10 @@ func (j *Jober) Validate() error {
 	j.AddDestroyFunc(func() {
 		mlog.Debug("update DeployStatus in DestroyFunc")
 		if !j.IsDryRun() {
-			app.DB().Model(&models.Project{ID: j.project.ID}).Update("DeployStatus", utils.ReleaseStatus(j.project.Namespace.Name, j.project.Name))
+			app.DB().Model(&j.project).Update("deploy_status", utils.ReleaseStatus(j.Namespace().Name, j.project.Name))
 		}
 	})
-	j.imagePullSecrets = j.project.Namespace.ImagePullSecretsArray()
+	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
 
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
 	if err != nil {
@@ -957,7 +965,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	//Host1...Host10
 	sub := getPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	for i := 1; i <= 10; i++ {
-		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.project.Namespace.Name, i, sub)
+		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub)
 		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = plugins.GetDomainManager().GetCertSecretName(j.project.Name, i)
 	}
 
@@ -1072,6 +1080,6 @@ func (r *ReleaseInstallerLoader) Load(j *Jober) error {
 	const loaderName = "ReleaseInstallerLoader"
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.project.Name, j.project.Namespace.Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
+	j.installer = newReleaseInstaller(j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
 }

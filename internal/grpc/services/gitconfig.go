@@ -125,7 +125,7 @@ func (m *GitConfigSvc) ToggleGlobalStatus(ctx context.Context, request *gitconfi
 		}
 		return &gitconfig.ToggleGlobalStatusResponse{}, nil
 	}
-	app.DB().Model(&models.GitProject{ID: project.ID}).Update("global_enabled", request.Enabled)
+	app.DB().Model(&project).Update("global_enabled", request.Enabled)
 	AuditLogWithChange(MustGetUser(ctx).Name, types.EventActionType_Update, fmt.Sprintf("打开/关闭 %s 的全局配置: %t", project.Name, request.Enabled), nil, nil)
 
 	return &gitconfig.ToggleGlobalStatusResponse{}, nil
@@ -147,7 +147,7 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 
 	var oldConf models.GitProject = project
 
-	app.DB().Model(&models.GitProject{ID: project.ID}).Update("global_config", string(marshal))
+	app.DB().Model(&project).Update("global_config", string(marshal))
 
 	AuditLogWithChange(MustGetUser(ctx).Name, types.EventActionType_Update,
 		fmt.Sprintf("更新项目 %s (id: %d) 全局配置", project.Name, project.ID), oldConf, project)

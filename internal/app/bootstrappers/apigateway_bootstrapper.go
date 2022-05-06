@@ -378,13 +378,13 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 					GlobalConfig:  item.GlobalConfig,
 				})
 			} else {
-				app.DB().Model(&models.GitProject{ID: p.ID}).Select("DefaultBranch", "Name", "GitProjectId", "Enabled", "GlobalEnabled", "GlobalConfig").Updates(&models.GitProject{
-					DefaultBranch: item.DefaultBranch,
-					Name:          item.Name,
-					GitProjectId:  item.GitProjectId,
-					Enabled:       item.Enabled,
-					GlobalEnabled: item.GlobalEnabled,
-					GlobalConfig:  item.GlobalConfig,
+				app.DB().Model(&p).Updates(map[string]any{
+					"default_branch": item.DefaultBranch,
+					"name":           item.Name,
+					"git_project_id": item.GitProjectId,
+					"enabled":        item.Enabled,
+					"global_enabled": item.GlobalEnabled,
+					"global_config":  item.GlobalConfig,
 				})
 			}
 		}
