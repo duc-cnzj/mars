@@ -425,6 +425,22 @@
             "format": "int64",
             "name": "page_size",
             "in": "query"
+          },
+          {
+            "enum": [
+              "Unknown",
+              "Create",
+              "Update",
+              "Delete",
+              "Upload",
+              "Download",
+              "DryRun",
+              "Shell"
+            ],
+            "type": "string",
+            "default": "Unknown",
+            "name": "action_type",
+            "in": "query"
           }
         ],
         "responses": {

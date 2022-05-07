@@ -7,7 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useSelector } from "react-redux";
-import { allPodContainers, isPodExists } from "../api/project";
+import { allPodContainers, isPodRunning } from "../api/project";
 import { message, Radio, Tag, Upload, Button } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
@@ -102,7 +102,10 @@ const TabShell: React.FC<{
 
       if (frame.op === "toast") {
         message.error(frame.data);
-        listContainer();
+        listContainer().then((res) => {
+          let first = res.data.items[0];
+          setValue(first.pod + "|" + first.container);
+        });
       }
     },
     [listContainer]
@@ -221,14 +224,14 @@ const TabShell: React.FC<{
       setValue((v) => {
         if (v === e.target.value) {
           let s = (e.target.value as string).split("|");
-          isPodExists({
+          isPodRunning({
             namespace: namespace,
             pod: s[0],
           }).then((res) => {
-            if (res.data.exists) {
+            if (res.data.running) {
               initShell();
             } else {
-              // message.error(`容器列表有更新，请重试！`);
+              // message.error(res.data.reason);
               listContainer().then((res) => {
                 let first = res.data.items[0];
                 setValue(first.pod + "|" + first.container);

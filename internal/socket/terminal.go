@@ -3,7 +3,6 @@ package socket
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -392,10 +391,6 @@ type TerminalResponse struct {
 }
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
-	if running, reason := utils.IsPodRunning(input.Container.Namespace, input.Container.Pod); !running {
-		return "", errors.New(reason)
-	}
-
 	sessionID, err := GenMyPtyHandlerId()
 	if err != nil {
 		return "", err

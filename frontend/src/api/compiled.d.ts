@@ -3582,6 +3582,9 @@ export namespace event {
 
         /** ListRequest page_size */
         page_size?: (number|null);
+
+        /** ListRequest action_type */
+        action_type?: (types.EventActionType|null);
     }
 
     /** Represents a ListRequest. */
@@ -3598,6 +3601,9 @@ export namespace event {
 
         /** ListRequest page_size. */
         public page_size: number;
+
+        /** ListRequest action_type. */
+        public action_type: types.EventActionType;
 
         /**
          * Encodes the specified ListRequest message. Does not implicitly {@link event.ListRequest.verify|verify} messages.

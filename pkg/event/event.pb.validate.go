@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	types "github.com/duc-cnzj/mars-client/v4/types"
 )
 
 // ensure the imports are used
@@ -33,6 +35,8 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = types.EventActionType(0)
 )
 
 // Validate checks the field values on ListRequest with the rules defined in
@@ -78,6 +82,8 @@ func (m *ListRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for ActionType
 
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)

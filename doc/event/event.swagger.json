@@ -48,6 +48,23 @@
             "required": false,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "action_type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "Unknown",
+              "Create",
+              "Update",
+              "Delete",
+              "Upload",
+              "Download",
+              "DryRun",
+              "Shell"
+            ],
+            "default": "Unknown"
           }
         ],
         "tags": [

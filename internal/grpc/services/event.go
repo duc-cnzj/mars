@@ -35,12 +35,19 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		count    int64
 	)
 
+	queryScope := func(db *gorm.DB) *gorm.DB {
+		if request.ActionType != types.EventActionType_Unknown {
+			db = db.Where("`action` = ?", request.GetActionType())
+		}
+		return db
+	}
+
 	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID")
-	}).Scopes(scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
+	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
 	}
-	app.DB().Model(&models.Event{}).Count(&count)
+	app.DB().Model(&models.Event{}).Scopes(queryScope).Count(&count)
 	res := make([]*types.EventModel, 0, len(events))
 	for _, m := range events {
 		res = append(res, m.ProtoTransform())

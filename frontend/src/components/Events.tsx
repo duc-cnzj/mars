@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useRef } from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
 import {
   Card,
   Skeleton,
   Divider,
+  Select,
   List,
   Tag,
   Button,
@@ -26,6 +27,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { getToken } from "../utils/token";
 
 const defaultPageSize = 15;
+const { Option } = Select;
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -36,6 +38,9 @@ const EventList: React.FC = () => {
     count: number;
   }>({ page: 0, page_size: defaultPageSize, count: 0 });
   const [data, setData] = useState<pb.types.EventModel[]>([]);
+  const [queries, setQueries] = useState<{
+    action_type: pb.types.EventActionType;
+  }>({ action_type: pb.types.EventActionType.Unknown });
 
   useEffect(() => {
     diskInfoApi().then(({ data }) => setDiskInfo(data));
@@ -46,7 +51,11 @@ const EventList: React.FC = () => {
       return;
     }
     setLoading(true);
-    events({ page: paginate.page + 1, page_size: paginate.page_size })
+    events({
+      page: paginate.page + 1,
+      page_size: paginate.page_size,
+      action_type: queries.action_type,
+    })
       .then(({ data: res }) => {
         setData((data) => [...data, ...res.items]);
         setPaginate({
@@ -62,10 +71,19 @@ const EventList: React.FC = () => {
       });
   };
 
+  const scrollDiv = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    events({ page: 1, page_size: defaultPageSize })
+    if (scrollDiv.current) {
+      scrollDiv.current.scrollTo(0, 0);
+    }
+    events({
+      page: 1,
+      page_size: defaultPageSize,
+      action_type: queries.action_type,
+    })
       .then(({ data: res }) => {
-        setData((data) => [...data, ...res.items]);
+        setData(res.items);
         setPaginate({
           page: Number(res.page),
           page_size: Number(res.page_size),
@@ -75,65 +93,68 @@ const EventList: React.FC = () => {
       .catch((e) => {
         message.error(e.response.data.message);
       });
-  }, []);
+  }, [queries]);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
   const [shellModalVisible, setShellModalVisible] = useState(false);
   const [fileID, setFileID] = useState(0);
 
-  const getActionStyle = useCallback((type: pb.types.EventActionType): React.ReactNode => {
-    let style = { fontSize: 12, marginLeft: 5 };
-    switch (type) {
-      case pb.types.EventActionType.Create:
-        return (
-          <Tag color="#1890ff" style={style}>
-            创建
-          </Tag>
-        );
-      case pb.types.EventActionType.Shell:
-        return (
-          <Tag color="#1890ff" style={style}>
-            执行命令
-          </Tag>
-        );
-      case pb.types.EventActionType.Update:
-        return (
-          <Tag color="#52c41a" style={style}>
-            更新
-          </Tag>
-        );
-      case pb.types.EventActionType.Delete:
-        return (
-          <Tag color="#f5222d" style={style}>
-            删除
-          </Tag>
-        );
-      case pb.types.EventActionType.Upload:
-        return (
-          <Tag color="#fcd34d" style={style}>
-            上传文件
-          </Tag>
-        );
-      case pb.types.EventActionType.Download:
-        return (
-          <Tag color="#2dd4bf" style={style}>
-            下载文件
-          </Tag>
-        );
-      case pb.types.EventActionType.DryRun:
-        return (
-          <Tag color="#818cf8" style={style}>
-            试运行
-          </Tag>
-        );
-      default:
-        return (
-          <Tag color="#f1c40f" style={style}>
-            俺也不知道这是啥操作
-          </Tag>
-        );
-    }
-  }, []);
+  const getActionStyle = useCallback(
+    (type: pb.types.EventActionType): React.ReactNode => {
+      let style = { fontSize: 12, marginLeft: 5 };
+      switch (type) {
+        case pb.types.EventActionType.Create:
+          return (
+            <Tag color="#1890ff" style={style}>
+              创建
+            </Tag>
+          );
+        case pb.types.EventActionType.Shell:
+          return (
+            <Tag color="#1890ff" style={style}>
+              执行命令
+            </Tag>
+          );
+        case pb.types.EventActionType.Update:
+          return (
+            <Tag color="#52c41a" style={style}>
+              更新
+            </Tag>
+          );
+        case pb.types.EventActionType.Delete:
+          return (
+            <Tag color="#f5222d" style={style}>
+              删除
+            </Tag>
+          );
+        case pb.types.EventActionType.Upload:
+          return (
+            <Tag color="#fcd34d" style={style}>
+              上传文件
+            </Tag>
+          );
+        case pb.types.EventActionType.Download:
+          return (
+            <Tag color="#2dd4bf" style={style}>
+              下载文件
+            </Tag>
+          );
+        case pb.types.EventActionType.DryRun:
+          return (
+            <Tag color="#818cf8" style={style}>
+              试运行
+            </Tag>
+          );
+        default:
+          return (
+            <Tag color="#f1c40f" style={style}>
+              俺也不知道这是啥操作
+            </Tag>
+          );
+      }
+    },
+    []
+  );
 
   const highlightSyntax = useCallback(
     (str: string) => (
@@ -191,7 +212,28 @@ const EventList: React.FC = () => {
             alignItems: "center",
           }}
         >
-          <div>事件日志: {paginate.count} 条</div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div>事件日志: {paginate.count} 条</div>
+            <Select
+              defaultValue={pb.types.EventActionType.Unknown}
+              size="small"
+              style={{ width: 120, marginLeft: 10 }}
+              onChange={(v) => {
+                setQueries({ action_type: v });
+              }}
+            >
+              <Option value={pb.types.EventActionType.Unknown}>全部</Option>
+              <Option value={pb.types.EventActionType.Create}>创建</Option>
+              <Option value={pb.types.EventActionType.Delete}>删除</Option>
+              <Option value={pb.types.EventActionType.Download}>
+                下载文件
+              </Option>
+              <Option value={pb.types.EventActionType.DryRun}>试运行</Option>
+              <Option value={pb.types.EventActionType.Shell}>执行命令</Option>
+              <Option value={pb.types.EventActionType.Update}>更新</Option>
+              <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
+            </Select>
+          </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>
             文件占用:{" "}
             <Button
@@ -216,7 +258,11 @@ const EventList: React.FC = () => {
         marginBottom: 30,
       }}
     >
-      <div id="scrollableDiv" style={{ height: "100%", overflowY: "auto" }}>
+      <div
+        id="scrollableDiv"
+        ref={scrollDiv}
+        style={{ height: "100%", overflowY: "auto" }}
+      >
         <InfiniteScroll
           dataLength={data.length}
           next={loadMoreData}
@@ -246,66 +292,72 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.file_id > 0 && item.action === pb.types.EventActionType.Shell && (
-                  <>
-                    <Button
-                      type="dashed"
-                      style={{ marginRight: 5 }}
-                      onClick={() => {
-                        setShellModalVisible(true);
-                        setFileID(item.file_id);
-                      }}
-                    >
-                      查看操作记录{" "}
-                      {item.duration && (
-                        <span style={{ fontSize: "10px", marginLeft: 5 }}>
-                          (时长: {item.duration})
-                        </span>
-                      )}
-                    </Button>
-                    <DeleteFile
-                      onDelete={() => {
-                        deleteFile({ id: item.file_id })
-                          .then((res) => {
-                            setData(
-                              data.map((v) =>
-                                v.id === item.id ? { ...v, file_id: 0 } : v
-                              )
+                {item.file_id > 0 &&
+                  item.action === pb.types.EventActionType.Shell && (
+                    <>
+                      <Button
+                        type="dashed"
+                        style={{ marginRight: 5 }}
+                        onClick={() => {
+                          setShellModalVisible(true);
+                          setFileID(item.file_id);
+                        }}
+                      >
+                        查看操作记录{" "}
+                        {item.duration && (
+                          <span style={{ fontSize: "10px", marginLeft: 5 }}>
+                            (时长: {item.duration})
+                          </span>
+                        )}
+                      </Button>
+                      <DeleteFile
+                        onDelete={() => {
+                          deleteFile({ id: item.file_id })
+                            .then((res) => {
+                              setData(
+                                data.map((v) =>
+                                  v.id === item.id ? { ...v, file_id: 0 } : v
+                                )
+                              );
+                              message.success("删除成功");
+                            })
+                            .catch((e) =>
+                              message.error(e.response.data.message)
                             );
-                            message.success("删除成功");
-                          })
-                          .catch((e) => message.error(e.response.data.message));
-                      }}
-                    />
-                  </>
-                )}
-                {item.file_id > 0 && item.action === pb.types.EventActionType.Upload && (
-                  <>
-                    <Button
-                      type="dashed"
-                      style={{ marginRight: 5 }}
-                      onClick={() => {
-                        downloadFile(item.file_id);
-                      }}
-                    >
-                      下载文件
-                    </Button>
-                    <DeleteFile
-                      onDelete={() => {
-                        deleteFile({ id: item.file_id })
-                          .then((res) => {
-                            setData(
-                              data.map((v) =>
-                                v.id === item.id ? { ...v, file_id: 0 } : v
-                              )
+                        }}
+                      />
+                    </>
+                  )}
+                {item.file_id > 0 &&
+                  item.action === pb.types.EventActionType.Upload && (
+                    <>
+                      <Button
+                        type="dashed"
+                        style={{ marginRight: 5 }}
+                        onClick={() => {
+                          downloadFile(item.file_id);
+                        }}
+                      >
+                        下载文件
+                      </Button>
+                      <DeleteFile
+                        onDelete={() => {
+                          deleteFile({ id: item.file_id })
+                            .then((res) => {
+                              setData(
+                                data.map((v) =>
+                                  v.id === item.id ? { ...v, file_id: 0 } : v
+                                )
+                              );
+                              message.success("删除成功");
+                            })
+                            .catch((e) =>
+                              message.error(e.response.data.message)
                             );
-                            message.success("删除成功");
-                          })
-                          .catch((e) => message.error(e.response.data.message));
-                      }}
-                    />
-                  </>
-                )}
+                        }}
+                      />
+                    </>
+                  )}
                 {!!(item.old || item.new) ? (
                   <Button
                     type="dashed"

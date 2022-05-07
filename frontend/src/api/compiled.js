@@ -7776,6 +7776,7 @@ export const event = $root.event = (() => {
          * @interface IListRequest
          * @property {number|null} [page] ListRequest page
          * @property {number|null} [page_size] ListRequest page_size
+         * @property {types.EventActionType|null} [action_type] ListRequest action_type
          */
 
         /**
@@ -7810,6 +7811,14 @@ export const event = $root.event = (() => {
         ListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
         /**
+         * ListRequest action_type.
+         * @member {types.EventActionType} action_type
+         * @memberof event.ListRequest
+         * @instance
+         */
+        ListRequest.prototype.action_type = 0;
+
+        /**
          * Encodes the specified ListRequest message. Does not implicitly {@link event.ListRequest.verify|verify} messages.
          * @function encode
          * @memberof event.ListRequest
@@ -7825,6 +7834,8 @@ export const event = $root.event = (() => {
                 writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
             if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
                 writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+            if (message.action_type != null && Object.hasOwnProperty.call(message, "action_type"))
+                writer.uint32(/* id 3, wireType 0 =*/24).int32(message.action_type);
             return writer;
         };
 
@@ -7851,6 +7862,9 @@ export const event = $root.event = (() => {
                     break;
                 case 2:
                     message.page_size = reader.int64();
+                    break;
+                case 3:
+                    message.action_type = reader.int32();
                     break;
                 default:
                     reader.skipType(tag & 7);

@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState, useCallback } from "react";
 import { allPodContainers } from "../api/project";
-import { Radio, Skeleton, Button, Tag } from "antd";
+import { Radio, Skeleton, Button, Tag, message } from "antd";
 import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
@@ -31,11 +31,14 @@ const ProjectContainerLogs: React.FC<{
 
   const [timestamp, setTimestamp] = useState(new Date().getTime());
 
-  const getUrl = () => {
-    let [pod, container] = (value as string).split("|");
+  const getUrl = useCallback(() => {
+    if (value) {
+      let [pod, container] = (value as string).split("|");
 
-    return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
-  };
+      return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
+    }
+    return "";
+  }, [value, namespace, timestamp]);
 
   const reloadLog = useCallback((e: any) => {
     setValue(e.target.value);
@@ -67,10 +70,10 @@ const ProjectContainerLogs: React.FC<{
           height: "100%",
         }}
       >
-        {value ? (
+        <Skeleton active loading={!value}>
           <LazyLog
             renderErrLineFunc={(e: any) => {
-              return JSON.parse(e.body).error.message
+              return JSON.parse(e.body).error.message;
             }}
             fetchOptions={{ headers: { Authorization: getToken() } }}
             enableSearch
@@ -97,6 +100,7 @@ const ProjectContainerLogs: React.FC<{
             stream
             onError={(e: any) => {
               if (e.status === 404) {
+                message.error(JSON.parse(e.body).error.message);
                 listContainer().then((res) => {
                   if (res.data.items.length > 0) {
                     let first = res.data.items[0];
@@ -108,9 +112,7 @@ const ProjectContainerLogs: React.FC<{
             follow={true}
             url={getUrl()}
           />
-        ) : (
-          <Skeleton active />
-        )}
+        </Skeleton>
       </div>
     </div>
   );
