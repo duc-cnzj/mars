@@ -1,20 +1,14 @@
 package instance
 
 import (
-	"sync"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
 )
 
-var (
-	app  contracts.ApplicationInterface
-	once sync.Once
-)
+var app contracts.ApplicationInterface
 
+// SetInstance 不要再启动之后调用这个，not safe
 func SetInstance(instance contracts.ApplicationInterface) {
-	once.Do(func() {
-		app = instance
-	})
+	app = instance
 }
 
 func App() contracts.ApplicationInterface {

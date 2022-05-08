@@ -87,12 +87,12 @@ func (a *AuthSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoRe
 		if len(tokenSlice) == 1 {
 			if c, b := a.authsvc.VerifyToken(tokenSlice[0]); b {
 				return &auth.InfoResponse{
-					Id:        c.GetID(),
-					Avatar:    c.Picture,
-					Name:      c.Name,
-					Email:     c.Email,
-					LogoutUrl: c.LogoutUrl,
-					Roles:     c.Roles,
+					Id:        c.UserInfo.GetID(),
+					Avatar:    c.UserInfo.Picture,
+					Name:      c.UserInfo.Name,
+					Email:     c.UserInfo.Email,
+					LogoutUrl: c.UserInfo.LogoutUrl,
+					Roles:     c.UserInfo.Roles,
 				}, nil
 			}
 		}

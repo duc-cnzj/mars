@@ -81,6 +81,8 @@ type ListBranchResponseInterface interface {
 }
 
 type GitServer interface {
+	contracts.PluginInterface
+
 	GetProject(pid string) (ProjectInterface, error)
 	ListProjects(page, pageSize int) (ListProjectResponseInterface, error)
 	AllProjects() ([]ProjectInterface, error)
@@ -130,6 +132,18 @@ var (
 // 用来缓存一些耗时比较久的请求
 type gitServerCache struct {
 	s GitServer
+}
+
+func (g *gitServerCache) Name() string {
+	return ""
+}
+
+func (g *gitServerCache) Initialize(args map[string]any) error {
+	return nil
+}
+
+func (g *gitServerCache) Destroy() error {
+	return nil
 }
 
 func newGitServerCache(s GitServer) *gitServerCache {

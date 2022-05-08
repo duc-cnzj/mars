@@ -40,6 +40,7 @@ func (a *Auth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 		StandardClaims: &jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(contracts.Expired).Unix(),
 			Issuer:    "mars",
+			Subject:   info.Sub,
 		},
 		UserInfo: info,
 	})

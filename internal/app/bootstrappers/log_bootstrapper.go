@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 )

@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/database"
+	"github.com/duc-cnzj/mars/internal/event"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 )
@@ -30,6 +31,7 @@ const (
 var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var DefaultBootstrappers = []contracts.Bootstrapper{
+	&bootstrappers.EventBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.AuthBootstrapper{},
 	&bootstrappers.UploadBootstrapper{},
@@ -152,10 +154,17 @@ func (app *Application) SetEventDispatcher(dispatcher contracts.DispatcherInterf
 	app.dispatcher = dispatcher
 }
 
-func NewApplication(config *config.Config, opts ...contracts.Option) contracts.ApplicationInterface {
+type Option func(*Application)
+
+func WithBootstrappers(bootstrappers ...contracts.Bootstrapper) Option {
+	return func(app *Application) {
+		app.bootstrappers = bootstrappers
+	}
+}
+
+func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	var mustBooted = []contracts.Bootstrapper{
 		&bootstrappers.LogBootstrapper{},
-		&bootstrappers.EventBootstrapper{},
 	}
 
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
@@ -171,6 +180,7 @@ func NewApplication(config *config.Config, opts ...contracts.Option) contracts.A
 		cache:         &cache.NoCache{},
 	}
 
+	app.dispatcher = event.NewDispatcher(app)
 	app.dbManager = database.NewManager(app)
 
 	for _, opt := range opts {

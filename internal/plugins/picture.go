@@ -16,6 +16,8 @@ type Picture struct {
 }
 
 type PictureInterface interface {
+	contracts.PluginInterface
+
 	Get(ctx context.Context, random bool) (*Picture, error)
 }
 

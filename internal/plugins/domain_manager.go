@@ -1,5 +1,7 @@
 package plugins
 
+//go:generate mockgen -destination ../mock/mock_domain_manager.go -package mock github.com/duc-cnzj/mars/internal/plugins DomainManager
+
 import (
 	"sync"
 
@@ -10,6 +12,8 @@ import (
 var domainManagerOnce = sync.Once{}
 
 type DomainManager interface {
+	contracts.PluginInterface
+
 	// GetDomainByIndex domainSuffix: test.com, project: mars, namespace: default index: 0,1,2..., preOccupiedLen: 预占用的长度
 	GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string
 
