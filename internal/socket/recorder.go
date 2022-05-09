@@ -11,7 +11,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils/date"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
@@ -23,7 +22,6 @@ type Recorder struct {
 	f         *os.File
 	shell     string
 	startTime time.Time
-	user      contracts.UserInfo
 
 	t    *MyPtyHandler
 	once sync.Once
@@ -69,7 +67,7 @@ func (r *Recorder) Close() error {
 		file := &models.File{
 			Path:      r.filepath,
 			Size:      uint64(stat.Size()),
-			Username:  r.user.Name,
+			Username:  r.t.conn.GetUser().Name,
 			Namespace: r.container.Namespace,
 			Pod:       r.container.Pod,
 			Container: r.container.Container,
@@ -77,7 +75,7 @@ func (r *Recorder) Close() error {
 		app.DB().Create(file)
 		var emodal = models.Event{
 			Action:   uint8(types.EventActionType_Shell),
-			Username: r.user.Name,
+			Username: r.t.conn.GetUser().Name,
 			Message:  fmt.Sprintf("user exec container: '%s' namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
 			Duration: date.HumanDuration(time.Since(r.startTime)),

@@ -409,7 +409,6 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		doneChan:  make(chan struct{}, 1),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 		recorder: &Recorder{
-			user:      conn.GetUser(),
 			container: c,
 		},
 	}
