@@ -41,7 +41,7 @@ func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valu
 		releaseName:    releaseName,
 		wait:           wait,
 		namespace:      namespace,
-		logs:           NewTimeOrderedSetString(),
+		logs:           NewTimeOrderedSetString(time.Now),
 		timeoutSeconds: timeoutSeconds,
 	}
 }

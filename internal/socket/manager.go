@@ -964,6 +964,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 
 	//Host1...Host10
 	sub := getPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
+	mlog.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
 		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub)
 		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = plugins.GetDomainManager().GetCertSecretName(j.project.Name, i)

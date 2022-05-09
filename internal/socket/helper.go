@@ -93,14 +93,16 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []s
 	return selectors
 }
 
-var hostMatch = regexp.MustCompile(`.*?=(.*?){{\s*.Host\d\s*}}`)
+var hostMatch = regexp.MustCompile(`\s+([\w-_]*)<\s*.Host\d+\s*>`)
 
 func getPreOccupiedLenByValuesYaml(values string) int {
 	var sub = 0
 	if len(values) > 0 {
 		submatch := hostMatch.FindAllStringSubmatch(values, -1)
-		if len(submatch) == 1 && len(submatch[0]) >= 1 {
-			sub = max(sub, len(submatch[0][1]))
+		for _, i := range submatch {
+			if len(i) == 2 {
+				sub = max(sub, len(i[1]))
+			}
 		}
 	}
 	return sub
@@ -142,12 +144,13 @@ func (o orderedItemList) List() (res []string) {
 }
 
 type timeOrderedSetString struct {
-	mu    sync.RWMutex
-	items map[string]time.Time
+	mu      sync.RWMutex
+	items   map[string]time.Time
+	nowFunc func() time.Time
 }
 
-func NewTimeOrderedSetString() *timeOrderedSetString {
-	return &timeOrderedSetString{items: make(map[string]time.Time)}
+func NewTimeOrderedSetString(nowFunc func() time.Time) *timeOrderedSetString {
+	return &timeOrderedSetString{items: make(map[string]time.Time), nowFunc: nowFunc}
 }
 
 func (o *timeOrderedSetString) add(s string) {
@@ -156,7 +159,7 @@ func (o *timeOrderedSetString) add(s string) {
 	if _, ok := o.items[s]; ok {
 		return
 	}
-	o.items[s] = time.Now()
+	o.items[s] = o.nowFunc()
 }
 
 func (o *timeOrderedSetString) has(s string) bool {

@@ -72,7 +72,10 @@ func (project *Project) GetPodSelectors() []string {
 func (project *Project) GetAllPods() []v1.Pod {
 	var list []corev1.Pod
 	var newList []corev1.Pod
-	split := strings.Split(project.PodSelectors, "|")
+	var split []string
+	if len(project.PodSelectors) > 0 {
+		split = strings.Split(project.PodSelectors, "|")
+	}
 	if len(split) == 0 {
 		return nil
 	}
@@ -111,7 +114,10 @@ func (project *Project) GetAllPodMetrics() []v1beta1.PodMetrics {
 	app.DB().Preload("Namespace").First(&project)
 	metricses := app.K8sMetrics().MetricsV1beta1().PodMetricses(project.Namespace.Name)
 	var list []v1beta1.PodMetrics
-	split := strings.Split(project.PodSelectors, "|")
+	var split []string
+	if len(project.PodSelectors) > 0 {
+		split = strings.Split(project.PodSelectors, "|")
+	}
 	if len(split) == 0 {
 		return nil
 	}
