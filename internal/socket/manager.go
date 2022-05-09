@@ -228,7 +228,7 @@ func NewJober(
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
 		messageCh:      &SafeWriteMessageCh{ch: make(chan MessageItem, 100)},
-		percenter:      newProcessPercent(messager),
+		percenter:      newProcessPercent(messager, &realSleeper{}),
 	}
 	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
 	for _, opt := range opts {

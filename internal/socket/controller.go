@@ -7,13 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/duc-cnzj/mars-client/v4/cluster"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"

@@ -15,12 +15,24 @@ type Percentable interface {
 type processPercent struct {
 	ProcessPercentMsger
 
+	s           Sleeper
 	percentLock sync.RWMutex
 	percent     int64
 }
 
-func newProcessPercent(sender ProcessPercentMsger) Percentable {
+type Sleeper interface {
+	Sleep(time.Duration)
+}
+
+type realSleeper struct{}
+
+func (r *realSleeper) Sleep(duration time.Duration) {
+	time.Sleep(duration)
+}
+
+func newProcessPercent(sender ProcessPercentMsger, s Sleeper) Percentable {
 	return &processPercent{
+		s:                   s,
 		percent:             0,
 		ProcessPercentMsger: sender,
 	}
@@ -49,7 +61,7 @@ func (pp *processPercent) To(percent int64) {
 
 	sleepTime := 100 * time.Millisecond
 	for pp.percent < percent {
-		time.Sleep(sleepTime)
+		pp.s.Sleep(sleepTime)
 		pp.percent++
 		if sleepTime > 50*time.Millisecond {
 			sleepTime = sleepTime / 2

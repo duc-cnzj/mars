@@ -24,7 +24,7 @@ type DeployMsger interface {
 	ProcessPercentMsger
 
 	Stop(error)
-	SendDeployedResult(websocket_pb.ResultType, string, *models.Project)
+	SendDeployedResult(t websocket_pb.ResultType, msg string, p *models.Project)
 }
 
 type messager struct {
