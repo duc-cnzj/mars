@@ -73,19 +73,15 @@ func (project *Project) GetAllPods() []v1.Pod {
 	var list []corev1.Pod
 	var newList []corev1.Pod
 	split := strings.Split(project.PodSelectors, "|")
-	if len(split) > 0 {
-		for _, labels := range split {
-			l, _ := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), metav1.ListOptions{
-				LabelSelector: labels,
-			})
-
-			list = append(list, l.Items...)
-		}
-	} else {
+	if len(split) == 0 {
+		return nil
+	}
+	for _, labels := range split {
 		l, _ := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/instance=" + project.Name,
+			LabelSelector: labels,
 		})
-		list = l.Items
+
+		list = append(list, l.Items...)
 	}
 	var m = make(map[string]*appsv1.ReplicaSet)
 	for _, pod := range list {
@@ -116,19 +112,15 @@ func (project *Project) GetAllPodMetrics() []v1beta1.PodMetrics {
 	metricses := app.K8sMetrics().MetricsV1beta1().PodMetricses(project.Namespace.Name)
 	var list []v1beta1.PodMetrics
 	split := strings.Split(project.PodSelectors, "|")
-	if len(split) > 0 {
-		for _, labels := range split {
-			l, _ := metricses.List(context.Background(), metav1.ListOptions{
-				LabelSelector: labels,
-			})
-
-			list = append(list, l.Items...)
-		}
-	} else {
+	if len(split) == 0 {
+		return nil
+	}
+	for _, labels := range split {
 		l, _ := metricses.List(context.Background(), metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/instance=" + project.Name,
+			LabelSelector: labels,
 		})
-		list = l.Items
+
+		list = append(list, l.Items...)
 	}
 
 	return list
