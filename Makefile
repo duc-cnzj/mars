@@ -17,11 +17,12 @@ build_tools:
 		google.golang.org/grpc/cmd/protoc-gen-go-grpc \
 		google.golang.org/protobuf/cmd/protoc-gen-go \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
-		golang.org/x/tools/cmd/goimports
+		golang.org/x/tools/cmd/goimports \
+		github.com/golang/mock/mockgen
 
 .PHONY: gen
 gen:
-	cd hack && ./gen_proto.sh && cd .. && make fmt
+	cd hack && ./gen_proto.sh && cd .. && go generate ./... && make fmt
 
 .PHONY: lint
 lint:

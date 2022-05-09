@@ -1,5 +1,7 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/internal/contracts ApplicationInterface
+
 import (
 	"context"
 
@@ -41,8 +43,6 @@ type OidcConfigItem struct {
 	EndSessionEndpoint string
 }
 type OidcConfig map[string]OidcConfigItem
-
-type Option func(ApplicationInterface)
 
 type ApplicationInterface interface {
 	IsDebug() bool

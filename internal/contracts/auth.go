@@ -11,7 +11,7 @@ const Expired = 8 * time.Hour
 
 type JwtClaims struct {
 	*jwt.StandardClaims
-	UserInfo
+	UserInfo UserInfo `json:"user_info"`
 }
 
 type UserInfo struct {

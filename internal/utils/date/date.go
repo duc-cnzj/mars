@@ -8,6 +8,8 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+var nowFunc = time.Now
+
 var magnitudes = []humanize.RelTimeMagnitude{
 	{D: time.Second, Format: "现在", DivBy: time.Second},
 	{D: 2 * time.Second, Format: "1 秒%s", DivBy: 1},
@@ -32,12 +34,12 @@ func ToHumanizeDatetimeString(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	return humanize.CustomRelTime(*t, time.Now(), "以前", "从现在起", magnitudes)
+	return humanize.CustomRelTime(*t, nowFunc(), "以前", "以后", magnitudes)
 }
 
 func ToRFC3339DatetimeString(t *time.Time) string {
 	if t == nil {
-		return ""
+		t = &time.Time{}
 	}
 	return t.Format(time.RFC3339)
 }

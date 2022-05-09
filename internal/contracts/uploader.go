@@ -1,5 +1,7 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_uploader.go -package mock github.com/duc-cnzj/mars/internal/contracts Uploader
+
 import (
 	"io"
 	"os"

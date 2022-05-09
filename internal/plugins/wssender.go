@@ -1,5 +1,8 @@
 package plugins
 
+//go:generate mockgen -destination ../mock/mock_wssender.go -package mock github.com/duc-cnzj/mars/internal/plugins WsSender
+//go:generate mockgen -destination ../mock/mock_wssender_pubsub.go -package mock github.com/duc-cnzj/mars/internal/plugins PubSub
+
 import (
 	"encoding/json"
 	"sync"
@@ -55,6 +58,8 @@ type WebsocketMessage interface {
 var _ WebsocketMessage = (*WsMetadataResponse)(nil)
 
 type WsSender interface {
+	contracts.PluginInterface
+
 	New(uid, id string) PubSub
 }
 
