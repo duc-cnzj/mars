@@ -20,8 +20,9 @@ func TestAuth_Sign(t *testing.T) {
 		LogoutUrl: "xxx",
 		Roles:     []string{"admin"},
 		OpenIDClaims: contracts.OpenIDClaims{
-			Sub:  "1",
-			Name: "duc",
+			Sub:   "1",
+			Email: "admin@mars.com",
+			Name:  "duc",
 		},
 	})
 	assert.Nil(t, err)
@@ -29,7 +30,7 @@ func TestAuth_Sign(t *testing.T) {
 	assert.True(t, b)
 	assert.Equal(t, "mars", token.StandardClaims.Issuer)
 	assert.Equal(t, "duc", token.UserInfo.Name)
-	assert.Equal(t, "1", token.StandardClaims.Subject)
+	assert.Equal(t, "admin@mars.com", token.StandardClaims.Subject)
 	assert.Equal(t, []string{"admin"}, token.UserInfo.Roles)
 	assert.Equal(t, "xxx", token.UserInfo.LogoutUrl)
 }

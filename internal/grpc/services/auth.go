@@ -87,7 +87,7 @@ func (a *AuthSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoRe
 		if len(tokenSlice) == 1 {
 			if c, b := a.authsvc.VerifyToken(tokenSlice[0]); b {
 				return &auth.InfoResponse{
-					Id:        c.UserInfo.GetID(),
+					Id:        c.StandardClaims.Subject,
 					Avatar:    c.UserInfo.Picture,
 					Name:      c.UserInfo.Name,
 					Email:     c.UserInfo.Email,
