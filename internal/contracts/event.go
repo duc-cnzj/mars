@@ -1,5 +1,7 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_event.go -package mock github.com/duc-cnzj/mars/internal/contracts DispatcherInterface
+
 type Listener func(any, Event) error
 
 type Event string

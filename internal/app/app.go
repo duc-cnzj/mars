@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
@@ -196,13 +195,13 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	}
 
 	if app.IsDebug() {
-		printConfig()
+		printConfig(app)
 	}
 
 	return app
 }
 
-func printConfig() {
+func printConfig(app contracts.ApplicationInterface) {
 	mlog.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
 }
 

@@ -1,5 +1,7 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_auth.go -package mock github.com/duc-cnzj/mars/internal/contracts AuthInterface
+
 import (
 	"context"
 	"time"
@@ -8,6 +10,15 @@ import (
 )
 
 const Expired = 8 * time.Hour
+
+type AuthInterface interface {
+	VerifyToken(string) (*JwtClaims, bool)
+	Sign(UserInfo) (*SignData, error)
+}
+
+type AuthorizeInterface interface {
+	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
+}
 
 type JwtClaims struct {
 	*jwt.StandardClaims
@@ -60,13 +71,4 @@ type OpenIDClaims struct {
 type SignData struct {
 	Token     string
 	ExpiredIn int64
-}
-
-type AuthInterface interface {
-	VerifyToken(string) (*JwtClaims, bool)
-	Sign(UserInfo) (*SignData, error)
-}
-
-type AuthorizeInterface interface {
-	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
 }

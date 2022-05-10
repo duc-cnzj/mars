@@ -15,11 +15,12 @@ import (
 type CacheBootstrapper struct{}
 
 func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	if app.Config().DBDriver == "sqlite" && app.Config().CacheDriver == "db" {
-		app.Config().CacheDriver = "memory"
+	cfg := app.Config()
+	if cfg.DBDriver == "sqlite" && cfg.CacheDriver == "db" {
+		cfg.CacheDriver = "memory"
 		mlog.Warning(`使用 DBDriver 为 "sqlite" 时，CacheDriver 只能使用 "memory"!`)
 	}
-	driver := app.Config().CacheDriver
+	driver := cfg.CacheDriver
 	mlog.Infof("CacheBootstrapper booted! driver: %s", driver)
 
 	switch driver {

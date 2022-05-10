@@ -1,6 +1,7 @@
 package contracts
 
 //go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/internal/contracts ApplicationInterface
+//go:generate mockgen -destination ../mock/mock_metrics.go -package mock github.com/duc-cnzj/mars/internal/contracts Metrics
 
 import (
 	"context"

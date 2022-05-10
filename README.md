@@ -2,6 +2,8 @@
 <p align="center">专为devops而生，30秒内部署一个应用。</p>
 <br><br>
 
+[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml)
+
 [查看文档](https://youngduc.gitbook.io/mars/)
 
 ## 💡 简介

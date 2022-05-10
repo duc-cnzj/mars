@@ -1,5 +1,7 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_log.go -package mock github.com/duc-cnzj/mars/internal/contracts LoggerInterface
+
 type LoggerInterface interface {
 	Debug(v ...any)
 	Debugf(format string, v ...any)
