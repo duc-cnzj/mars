@@ -12,7 +12,8 @@ const serviceName = "mars"
 type TracingBootstrapper struct{}
 
 func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	if app.Config().JaegerAgentHostPort == "" {
+	c := app.Config()
+	if c.JaegerAgentHostPort == "" {
 		return nil
 	}
 	var (
@@ -30,9 +31,9 @@ func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 		},
 		Reporter: &config.ReporterConfig{
 			LogSpans:           true,
-			LocalAgentHostPort: app.Config().JaegerAgentHostPort,
-			User:               app.Config().JaegerUser,
-			Password:           app.Config().JaegerPassword,
+			LocalAgentHostPort: c.JaegerAgentHostPort,
+			User:               c.JaegerUser,
+			Password:           c.JaegerPassword,
 		},
 	}
 	// Initialize tracer with a logger and a metrics factory

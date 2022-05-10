@@ -73,3 +73,53 @@ func TestCacheBootstrapper_Bootstrap(t *testing.T) {
 	}).Times(1)
 	assert.Error(t, (&CacheBootstrapper{}).Bootstrap(app))
 }
+
+func TestMetricsBootstrapper_Bootstrap(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	app := mock.NewMockApplicationInterface(controller)
+	app.EXPECT().SetMetrics(gomock.Any()).Times(1)
+	app.EXPECT().AddServer(gomock.Any()).Times(1)
+	(&MetricsBootstrapper{}).Bootstrap(app)
+}
+
+func TestOidcBootstrapper_Bootstrap(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	app := mock.NewMockApplicationInterface(controller)
+	app.EXPECT().Config().Times(1).Return(&config.Config{})
+	app.EXPECT().SetOidc(gomock.Any()).Times(1)
+	(&OidcBootstrapper{}).Bootstrap(app)
+}
+
+func TestPluginsBootstrapper_Bootstrap(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	app := mock.NewMockApplicationInterface(controller)
+	app.EXPECT().SetPlugins(gomock.Any()).Times(1)
+	(&PluginsBootstrapper{}).Bootstrap(app)
+}
+func TestGrpcBootstrapper_Bootstrap(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	app := mock.NewMockApplicationInterface(controller)
+	app.EXPECT().AddServer(gomock.Any()).Times(1)
+	app.EXPECT().Config().Times(1).Return(&config.Config{})
+	(&GrpcBootstrapper{}).Bootstrap(app)
+}
+
+func TestPprofBootstrapper_Bootstrap(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+	app := mock.NewMockApplicationInterface(controller)
+	app.EXPECT().AddServer(gomock.Any()).Times(0)
+	app.EXPECT().Config().Times(1).Return(&config.Config{
+		ProfileEnabled: false,
+	})
+	(&PprofBootstrapper{}).Bootstrap(app)
+	app.EXPECT().AddServer(gomock.Any()).Times(1)
+	app.EXPECT().Config().Times(1).Return(&config.Config{
+		ProfileEnabled: true,
+	})
+	(&PprofBootstrapper{}).Bootstrap(app)
+}

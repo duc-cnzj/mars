@@ -12,20 +12,21 @@ import (
 type UploadBootstrapper struct{}
 
 func (*UploadBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	if app.Config().UploadDir != "" {
-		if info, err := os.Stat(app.Config().UploadDir); err != nil {
+	cfg := app.Config()
+	if cfg.UploadDir != "" {
+		if info, err := os.Stat(cfg.UploadDir); err != nil {
 			if os.IsNotExist(err) {
-				mlog.Infof("[UploadBootstrapper]: create upload dir %s", app.Config().UploadDir)
-				if err := os.MkdirAll(app.Config().UploadDir, 0755); err != nil {
+				mlog.Infof("[UploadBootstrapper]: create upload dir %s", cfg.UploadDir)
+				if err := os.MkdirAll(cfg.UploadDir, 0755); err != nil {
 					return err
 				}
 			}
 		} else if !info.IsDir() {
-			return fmt.Errorf("upload_dir %s not dir", app.Config().UploadDir)
+			return fmt.Errorf("upload_dir %s not dir", cfg.UploadDir)
 		}
 	}
 
-	up, err := uploader.NewUploader(app.Config().UploadDir, "")
+	up, err := uploader.NewUploader(cfg.UploadDir, "")
 	if err != nil {
 		return err
 	}

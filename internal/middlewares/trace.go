@@ -14,7 +14,7 @@ var grpcGatewayTag = opentracing.Tag{Key: string(ext.Component), Value: "grpc-ga
 func TracingWrapper(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.String()
-		if !TracingIgnoreFn(context.TODO(), url) {
+		if !TracingIgnoreFn(context.TODO(), r.URL.Path) {
 			parentSpanContext, err := opentracing.GlobalTracer().Extract(
 				opentracing.HTTPHeaders,
 				opentracing.HTTPHeadersCarrier(r.Header))
@@ -34,5 +34,23 @@ func TracingWrapper(h http.Handler) http.Handler {
 }
 
 func TracingIgnoreFn(ctx context.Context, fullMethodName string) bool {
-	return !strings.HasPrefix(fullMethodName, "/api")
+	if fullMethodName == "/ws" {
+		return true
+	}
+
+	if !strings.HasPrefix(fullMethodName, "/api") {
+		return true
+	}
+
+	// /api/metrics/namespace/{namespace}/pods/{pod}/stream
+	if strings.HasPrefix(fullMethodName, "/api/metrics/namespace/") && strings.HasSuffix(fullMethodName, "/stream") {
+		return true
+	}
+
+	// /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs
+	if strings.HasPrefix(fullMethodName, "/api/containers/namespaces/") && strings.HasSuffix(fullMethodName, "/stream_logs") {
+		return true
+	}
+
+	return false
 }
