@@ -88,8 +88,8 @@ func TestCertManager_GetClusterIssuer(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info(gomock.Any()).AnyTimes()
-	cm.Initialize(map[string]any{"cluster_issuer": "issuer"})
+	l.EXPECT().Info(gomock.Any()).Times(1)
+	cm.Initialize(map[string]any{"cluster_issuer": "issuer", "wildcard_domain": "*.test.local"})
 	assert.Equal(t, "issuer", cm.GetClusterIssuer())
 }
 
@@ -99,7 +99,7 @@ func TestCertManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info(gomock.Any()).AnyTimes()
+	l.EXPECT().Info(gomock.Any()).Times(1)
 	cm.Initialize(map[string]any{"cluster_issuer": "issuer", "ns_prefix": "pre", "wildcard_domain": "*.mars.test"})
 	assert.Equal(t, "issuer", cm.clusterIssuer)
 	assert.Equal(t, "mars.test", cm.domainSuffix)

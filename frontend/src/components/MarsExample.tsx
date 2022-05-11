@@ -30,6 +30,7 @@ is_simple_env: false
 branches:
   - dev
   - master
+  - devops-*
 elements:
   - path: replicaCount
     type: 1

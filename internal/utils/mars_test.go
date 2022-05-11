@@ -34,6 +34,9 @@ func TestBranchPass(t *testing.T) {
 	cfg = &mars.Config{}
 	assert.True(t, BranchPass(cfg, "dev-aaa"))
 	assert.True(t, BranchPass(cfg, "ccc"))
+	cfg = &mars.Config{Branches: []string{"*-dev"}}
+	assert.True(t, BranchPass(cfg, "a-dev"))
+	assert.True(t, BranchPass(cfg, "b-dev"))
 }
 
 func TestGetProjectMarsConfig(t *testing.T) {

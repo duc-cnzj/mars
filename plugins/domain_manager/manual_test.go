@@ -69,7 +69,7 @@ func TestManualDomainManager_Destroy(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Destroy...")
+	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Destroy...").Times(1)
 	mm := &ManualDomainManager{}
 	mm.Destroy()
 }
@@ -80,7 +80,7 @@ func TestManualDomainManager_GetCertSecretName(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	mm := &ManualDomainManager{}
-	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -96,7 +96,7 @@ func TestManualDomainManager_GetCerts(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -115,7 +115,7 @@ func TestManualDomainManager_GetClusterIssuer(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -131,7 +131,7 @@ func TestManualDomainManager_GetDomain(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -157,7 +157,7 @@ func TestManualDomainManager_GetDomainByIndex(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -183,7 +183,7 @@ func TestManualDomainManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Initialize...").Times(1)
 	mm := &ManualDomainManager{}
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",

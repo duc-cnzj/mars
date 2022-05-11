@@ -14,7 +14,7 @@ func TestDefaultDomainManager_Destroy(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Destroy...")
+	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Destroy...").Times(1)
 	(&DefaultDomainManager{}).Destroy()
 }
 
@@ -67,7 +67,7 @@ func TestDefaultDomainManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
-	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Initialize...")
+	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Initialize...").Times(1)
 	(&DefaultDomainManager{}).Initialize(map[string]any{})
 }
 
