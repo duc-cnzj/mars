@@ -7,9 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHumanDuration(t *testing.T) {
-}
-
 func TestToHumanizeDatetimeString(t *testing.T) {
 	nowFunc = func() time.Time {
 		return time.Time{}
@@ -49,4 +46,29 @@ func TestToHumanizeDatetimeString(t *testing.T) {
 func TestToRFC3339DatetimeString(t *testing.T) {
 	_, err := time.Parse(time.RFC3339, ToRFC3339DatetimeString(&time.Time{}))
 	assert.Nil(t, err)
+}
+
+func TestHumanDuration(t *testing.T) {
+	tests := []struct {
+		d    time.Duration
+		want string
+	}{
+		{d: time.Second, want: "1s"},
+		{d: 70 * time.Second, want: "70s"},
+		{d: 190 * time.Second, want: "3m10s"},
+		{d: 70 * time.Minute, want: "70m"},
+		{d: 47 * time.Hour, want: "47h"},
+		{d: 49 * time.Hour, want: "2d1h"},
+		{d: (8*24 + 2) * time.Hour, want: "8d"},
+		{d: (367 * 24) * time.Hour, want: "367d"},
+		{d: (365*2*24 + 25) * time.Hour, want: "2y1d"},
+		{d: (365*8*24 + 2) * time.Hour, want: "8y"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.d.String(), func(t *testing.T) {
+			if got := HumanDuration(tt.d); got != tt.want {
+				t.Errorf("HumanDuration() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

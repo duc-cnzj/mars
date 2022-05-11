@@ -25,7 +25,8 @@ func BranchPass(mars *mars.Config, name string) bool {
 			return true
 		}
 
-		if strings.Contains(branch, ".*?") {
+		if strings.Contains(branch, "*") {
+			branch = strings.ReplaceAll(branch, "*", ".*")
 			compile, err := regexp.Compile(branch)
 			if err != nil {
 				continue

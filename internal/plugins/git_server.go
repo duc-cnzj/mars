@@ -1,5 +1,7 @@
 package plugins
 
+//go:generate mockgen -destination ../mock/mock_git_server.go -package mock github.com/duc-cnzj/mars/internal/plugins GitServer
+
 import (
 	"encoding/json"
 	"fmt"
