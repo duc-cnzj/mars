@@ -1,7 +1,13 @@
 package domain_manager
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -51,4 +57,56 @@ func Test_Substr(t *testing.T) {
 	assert.Panics(t, func() {
 		sd3.SubStr()
 	})
+}
+
+func TestCertManager_Destroy(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	l.EXPECT().Info("[Plugin]: " + (&CertManager{}).Name() + " plugin Destroy...")
+	(&CertManager{}).Destroy()
+}
+
+func TestCertManager_GetCertSecretName(t *testing.T) {
+	assert.Equal(t,
+		fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", "", 1))),
+		(&CertManager{}).GetCertSecretName("", 1),
+	)
+}
+
+func TestCertManager_GetCerts(t *testing.T) {
+	name, key, crt := (&CertManager{}).GetCerts()
+	assert.Empty(t, name)
+	assert.Empty(t, key)
+	assert.Empty(t, crt)
+}
+
+func TestCertManager_GetClusterIssuer(t *testing.T) {
+	cm := &CertManager{}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	l.EXPECT().Info(gomock.Any()).AnyTimes()
+	cm.Initialize(map[string]any{"cluster_issuer": "issuer"})
+	assert.Equal(t, "issuer", cm.GetClusterIssuer())
+}
+
+func TestCertManager_Initialize(t *testing.T) {
+	cm := &CertManager{}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	l.EXPECT().Info(gomock.Any()).AnyTimes()
+	cm.Initialize(map[string]any{"cluster_issuer": "issuer", "ns_prefix": "pre", "wildcard_domain": "*.mars.test"})
+	assert.Equal(t, "issuer", cm.clusterIssuer)
+	assert.Equal(t, "mars.test", cm.domainSuffix)
+	assert.Equal(t, "*.mars.test", cm.wildcardDomain)
+	assert.Equal(t, "pre", cm.nsPrefix)
+}
+
+func TestCertManager_Name(t *testing.T) {
+	assert.Equal(t, name, (&CertManager{}).Name())
 }
