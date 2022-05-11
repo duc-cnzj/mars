@@ -33,8 +33,7 @@ func TestChangelogSvc_Show(t *testing.T) {
 		ProjectId:   1,
 		OnlyChanged: false,
 	})
-	t.Log(err)
-	t.Log(show.Items)
+	assert.Nil(t, err)
 	assert.Len(t, show.Items, 5)
 	assert.Equal(t, "duc6", show.Items[0].Username)
 	assert.Equal(t, "config6", show.Items[0].Config)
@@ -46,6 +45,11 @@ func TestChangelogSvc_Show(t *testing.T) {
 	assert.Equal(t, int64(4), show.Items[2].Version)
 	assert.Equal(t, int64(3), show.Items[3].Version)
 	assert.Equal(t, int64(2), show.Items[4].Version)
+	show, _ = c.Show(context.TODO(), &changelog.ShowRequest{
+		ProjectId:   1,
+		OnlyChanged: true,
+	})
+	assert.Len(t, show.Items, 4)
 }
 
 func seedChangelog(db *gorm.DB) {

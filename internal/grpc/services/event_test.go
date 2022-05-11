@@ -45,10 +45,10 @@ func TestEventSvc_List(t *testing.T) {
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	db.AutoMigrate(&models.Event{}, &models.File{})
 	e := new(EventSvc)
-	seedEvents(db)
+	f := seedEvents(db)
 	list, _ := e.List(context.TODO(), &event.ListRequest{Page: 1, PageSize: 1})
 	assert.Len(t, list.Items, 1)
-	assert.Equal(t, int64(2), list.Count)
+	assert.Equal(t, int64(3), list.Count)
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:       1,
 		PageSize:   2,
@@ -56,9 +56,26 @@ func TestEventSvc_List(t *testing.T) {
 	})
 	assert.Len(t, list.Items, 1)
 	assert.Equal(t, int64(1), list.Count)
+	list, _ = e.List(context.TODO(), &event.ListRequest{
+		Page:       1,
+		PageSize:   2,
+		ActionType: types.EventActionType_Delete,
+	})
+	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
+	assert.Equal(t, int64(f.ID), list.Items[0].File.Id)
 }
 
-func seedEvents(db *gorm.DB) {
+func seedEvents(db *gorm.DB) *models.File {
+	f := &models.File{
+		Path:          "a.txt",
+		Size:          100,
+		Username:      "duc",
+		Namespace:     "ns",
+		Pod:           "pod",
+		Container:     "c",
+		ContainerPath: "/cpath",
+	}
+	db.Create(f)
 	var testData = []models.Event{
 		{
 			Action:   uint8(types.EventActionType_Shell),
@@ -76,8 +93,18 @@ func seedEvents(db *gorm.DB) {
 			New:      "new1",
 			Duration: "101s",
 		},
+		{
+			Action:   uint8(types.EventActionType_Delete),
+			Username: "duc1",
+			Message:  "message1",
+			Old:      "old1",
+			New:      "new1",
+			Duration: "101s",
+			FileID:   &f.ID,
+		},
 	}
 	for _, datum := range testData {
 		db.Create(&datum)
 	}
+	return f
 }

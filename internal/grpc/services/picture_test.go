@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/picture"
@@ -33,7 +34,13 @@ func (t *testPicturePlugin) Destroy() error {
 	return nil
 }
 
+type errCtx struct{}
+
 func (t *testPicturePlugin) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
+	v := ctx.Value(&errCtx{})
+	if v != nil {
+		return nil, errors.New("err ctx")
+	}
 	if random {
 		return &plugins.Picture{
 			Url:       "https://test.com/random.png",
@@ -66,4 +73,6 @@ func TestPictureSvc_Background(t *testing.T) {
 	background, _ = p.Background(context.TODO(), &picture.BackgroundRequest{Random: true})
 	assert.Equal(t, "@duc-random", background.Copyright)
 	assert.Equal(t, "https://test.com/random.png", background.Url)
+	_, err = p.Background(context.WithValue(context.TODO(), &errCtx{}, "err"), &picture.BackgroundRequest{Random: true})
+	assert.NotNil(t, err)
 }
