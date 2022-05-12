@@ -1,6 +1,7 @@
 package event
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -49,10 +50,19 @@ func TestDispatcher_HasListeners(t *testing.T) {
 
 func TestDispatcher_Listen(t *testing.T) {
 	d := NewDispatcher(nil)
+	called := 0
 	d.Listen("evt", func(a any, event contracts.Event) error {
+		called++
 		return nil
 	})
 	assert.NotNil(t, d.listeners["evt"])
+	d.Listen("evt", func(a any, event contracts.Event) error {
+		called++
+		return errors.New("err called")
+	})
+	err := d.Dispatch("evt", "")
+	assert.Equal(t, 2, called)
+	assert.Equal(t, "err called", err.Error())
 }
 
 func TestNewDispatcher(t *testing.T) {

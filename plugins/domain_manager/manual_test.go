@@ -3,6 +3,8 @@ package domain_manager
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
@@ -69,6 +71,7 @@ func TestManualDomainManager_Destroy(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Destroy...").Times(1)
 	mm := &ManualDomainManager{}
 	mm.Destroy()
@@ -79,6 +82,7 @@ func TestManualDomainManager_GetCertSecretName(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	mm := &ManualDomainManager{}
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
@@ -96,6 +100,7 @@ func TestManualDomainManager_GetCerts(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
@@ -115,6 +120,7 @@ func TestManualDomainManager_GetClusterIssuer(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
@@ -131,6 +137,7 @@ func TestManualDomainManager_GetDomain(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
@@ -157,6 +164,7 @@ func TestManualDomainManager_GetDomainByIndex(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
@@ -183,6 +191,7 @@ func TestManualDomainManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Initialize...").Times(1)
 	mm := &ManualDomainManager{}
 	mm.Initialize(map[string]any{

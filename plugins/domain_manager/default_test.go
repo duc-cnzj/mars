@@ -3,6 +3,8 @@ package domain_manager
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
@@ -14,6 +16,7 @@ func TestDefaultDomainManager_Destroy(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Destroy...").Times(1)
 	(&DefaultDomainManager{}).Destroy()
 }
@@ -67,6 +70,7 @@ func TestDefaultDomainManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Initialize...").Times(1)
 	(&DefaultDomainManager{}).Initialize(map[string]any{})
 }

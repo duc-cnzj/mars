@@ -67,6 +67,7 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 type Endpoint = types.ServiceEndpoint
 
 func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
+	cfg := app.Config()
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
 	var m = map[string][]*Endpoint{}
 
@@ -86,33 +87,31 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
 	}
 
 	for _, item := range list.Items {
-		if item.Spec.Type == v1.ServiceTypeNodePort {
+		if projectName, ok := item.ObjectMeta.Labels["app.kubernetes.io/instance"]; ok && item.Spec.Type == v1.ServiceTypeNodePort {
 			for _, port := range item.Spec.Ports {
-				if projectName, ok := item.Spec.Selector["app.kubernetes.io/instance"]; ok {
-					data := m[projectName]
+				data := m[projectName]
 
-					switch {
-					case strings.Contains(port.Name, "rpc"):
-						fallthrough
-					case strings.Contains(port.Name, "tcp"):
-						m[projectName] = append(data, &Endpoint{
-							Name:     projectName,
-							PortName: port.Name,
-							Url:      fmt.Sprintf("%s://%s:%d", port.Name, app.Config().ExternalIp, port.NodePort),
-						})
-					case isHttp(port.Name):
-						m[projectName] = append(data, &Endpoint{
-							Name:     projectName,
-							PortName: port.Name,
-							Url:      fmt.Sprintf("http://%s:%d", app.Config().ExternalIp, port.NodePort),
-						})
-					default:
-						m[projectName] = append(data, &Endpoint{
-							Name:     projectName,
-							PortName: port.Name,
-							Url:      fmt.Sprintf("%s:%d", app.Config().ExternalIp, port.NodePort),
-						})
-					}
+				switch {
+				case strings.Contains(port.Name, "rpc"):
+					fallthrough
+				case strings.Contains(port.Name, "tcp"):
+					m[projectName] = append(data, &Endpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      fmt.Sprintf("%s://%s:%d", port.Name, cfg.ExternalIp, port.NodePort),
+					})
+				case isHttp(port.Name):
+					m[projectName] = append(data, &Endpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      fmt.Sprintf("http://%s:%d", cfg.ExternalIp, port.NodePort),
+					})
+				default:
+					m[projectName] = append(data, &Endpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      fmt.Sprintf("%s:%d", cfg.ExternalIp, port.NodePort),
+					})
 				}
 			}
 		}
@@ -125,14 +124,25 @@ func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
 
 	list, _ := app.K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
 	for _, item := range list.Items {
-		for _, tls := range item.Spec.TLS {
-			if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
-				data := m[projectName]
-				var hosts []*Endpoint
-				for _, host := range tls.Hosts {
-					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("https://%s", host)})
+		if len(item.Spec.TLS) > 0 {
+			for _, tls := range item.Spec.TLS {
+				if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
+					data := m[projectName]
+					var hosts []*Endpoint
+					for _, host := range tls.Hosts {
+						hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("https://%s", host)})
+					}
+					m[projectName] = append(data, hosts...)
 				}
-				m[projectName] = append(data, hosts...)
+			}
+		} else {
+			for _, rules := range item.Spec.Rules {
+				if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
+					data := m[projectName]
+					var hosts []*Endpoint
+					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("http://%s", rules.Host)})
+					m[projectName] = append(data, hosts...)
+				}
 			}
 		}
 	}
@@ -178,7 +188,7 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 	}
 
 	if podInfo.Status.Phase == v1.PodFailed && podInfo.Status.Reason == "Evicted" {
-		go CleanEvictedPods(namespace, labels.Everything().String())
+		CleanEvictedPods(namespace, labels.Everything().String())
 		return false, fmt.Sprintf("delete po %s when evicted in namespace %s!", podName, namespace)
 	}
 

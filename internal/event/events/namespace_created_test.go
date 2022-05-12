@@ -4,6 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/duc-cnzj/mars/internal/mlog"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -23,15 +27,15 @@ func TestHandleInjectTlsSecret(t *testing.T) {
 	instance.SetInstance(app)
 	manager := mock.NewMockDomainManager(ctrl)
 	manager.EXPECT().Initialize(gomock.Any()).Times(1)
-	manager.EXPECT().GetCerts().Return("name", "key", "crt")
-	app.EXPECT().GetPluginByName("test_domain_plugin_driver").Return(manager)
+	manager.EXPECT().GetCerts().AnyTimes().Return("name", "key", "crt")
+	app.EXPECT().GetPluginByName("test_domain_plugin_driver").AnyTimes().Return(manager)
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any())
-	app.EXPECT().Config().Return(&config.Config{DomainManagerPlugin: config.Plugin{
+	app.EXPECT().Config().AnyTimes().Return(&config.Config{DomainManagerPlugin: config.Plugin{
 		Name: "test_domain_plugin_driver",
 		Args: nil,
 	}})
 	k8sClient := fake.NewSimpleClientset()
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client: k8sClient,
 	})
 	HandleInjectTlsSecret(NamespaceCreatedData{
@@ -48,4 +52,17 @@ func TestHandleInjectTlsSecret(t *testing.T) {
 	assert.Equal(t, "crt", list.Items[0].StringData["tls.crt"])
 	assert.Equal(t, "key", list.Items[0].StringData["tls.key"])
 	assert.Equal(t, "name", list.Items[0].Name)
+	// 再次 create 会报错，测试 err 部分
+	l := mock.NewMockLoggerInterface(ctrl)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+	l.EXPECT().Error(gomock.Any()).Times(1)
+	HandleInjectTlsSecret(NamespaceCreatedData{
+		NsModel: nil,
+		NsK8sObj: &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test",
+			},
+		},
+	}, EventNamespaceCreated)
 }

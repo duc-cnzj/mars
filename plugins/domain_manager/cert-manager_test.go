@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -64,6 +66,7 @@ func TestCertManager_Destroy(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info("[Plugin]: " + (&CertManager{}).Name() + " plugin Destroy...")
 	(&CertManager{}).Destroy()
 }
@@ -88,6 +91,7 @@ func TestCertManager_GetClusterIssuer(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info(gomock.Any()).Times(1)
 	cm.Initialize(map[string]any{"cluster_issuer": "issuer", "wildcard_domain": "*.test.local"})
 	assert.Equal(t, "issuer", cm.GetClusterIssuer())
@@ -99,6 +103,7 @@ func TestCertManager_Initialize(t *testing.T) {
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Info(gomock.Any()).Times(1)
 	cm.Initialize(map[string]any{"cluster_issuer": "issuer", "ns_prefix": "pre", "wildcard_domain": "*.mars.test"})
 	assert.Equal(t, "issuer", cm.clusterIssuer)
