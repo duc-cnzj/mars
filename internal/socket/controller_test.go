@@ -77,6 +77,54 @@ func TestHandleWsCancel(t *testing.T) {
 }
 
 func TestHandleWsCreateProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	cs := mock.NewMockCancelSignaler(m)
+	sm := mock.NewMockSessionMapper(m)
+	ps := mock.NewMockPubSub(m)
+	c := &WsConn{
+		id:  "id",
+		uid: "uid",
+		NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			return job
+		},
+		cancelSignaler:   cs,
+		terminalSessions: sm,
+		pubSub:           ps,
+	}
+
+	msg := mock.NewMockDeployMsger(m)
+
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsCreateProject(c, websocket.Type_UpdateProject, []byte("1:"))
+
+	job.EXPECT().Messager().Return(msg).AnyTimes()
+	job.EXPECT().Validate().Return(nil).Times(1)
+	job.EXPECT().LoadConfigs().Return(nil).Times(1)
+	job.EXPECT().Run().Return(nil).Times(1)
+	pubsub := mock.NewMockPubSub(m)
+	job.EXPECT().PubSub().Return(pubsub).Times(1)
+	job.EXPECT().CallDestroyFuncs().Times(1)
+	job.EXPECT().Finish().Times(1)
+	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
+	job.EXPECT().ID().Return("1").AnyTimes()
+	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
+	cs.EXPECT().Remove("1").Times(1)
+
+	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
+		Type:         websocket.Type_CreateProject,
+		NamespaceId:  0,
+		Name:         "",
+		GitProjectId: 0,
+		GitBranch:    "",
+		GitCommit:    "",
+		Config:       "",
+		Atomic:       false,
+		ExtraValues:  nil,
+	})
+
+	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
 }
 
 func TestHandleWsHandleCloseShell(t *testing.T) {
@@ -108,8 +156,10 @@ func TestHandleWsHandleExecShellMsg(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	sm := mock.NewMockSessionMapper(m)
+	ps := mock.NewMockPubSub(m)
 	conn := &WsConn{
 		terminalSessions: sm,
+		pubSub:           ps,
 	}
 	message := &websocket.TerminalMessage{
 		Data:      "data",
@@ -121,6 +171,8 @@ func TestHandleWsHandleExecShellMsg(t *testing.T) {
 	})
 	clone := proto.Clone(message)
 	sm.EXPECT().Send(clone).Times(1)
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, []byte("1:"))
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, marshal)
 }
 
@@ -130,6 +182,7 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	job := mock.NewMockJob(m)
 	cs := mock.NewMockCancelSignaler(m)
 	sm := mock.NewMockSessionMapper(m)
+	ps := mock.NewMockPubSub(m)
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
@@ -138,7 +191,11 @@ func TestHandleWsUpdateProject(t *testing.T) {
 		},
 		cancelSignaler:   cs,
 		terminalSessions: sm,
+		pubSub:           ps,
 	}
+
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsUpdateProject(c, websocket.Type_UpdateProject, []byte("1:"))
 
 	msg := mock.NewMockDeployMsger(m)
 	job.EXPECT().Messager().Return(msg).AnyTimes()
@@ -180,6 +237,22 @@ func TestHandleWsUpdateProject(t *testing.T) {
 		ExtraValues: nil,
 	})
 
+	marshalNotFound, _ := proto.Marshal(&websocket.UpdateProjectInput{
+		Type:        websocket.Type_UpdateProject,
+		ProjectId:   99999,
+		GitBranch:   "",
+		GitCommit:   "",
+		Config:      "",
+		Atomic:      false,
+		ExtraValues: nil,
+	})
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshalNotFound)
+
+	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
+
+	cs.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.New(""))
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
 }
 
