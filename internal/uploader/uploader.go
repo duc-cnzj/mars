@@ -204,7 +204,7 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 	}, nil
 }
 
-func (u *Uploader) NewFile(path string) (*os.File, error) {
+func (u *Uploader) NewFile(path string) (contracts.File, error) {
 	fullpath := u.getPath(path)
 
 	if u.Exists(fullpath) {

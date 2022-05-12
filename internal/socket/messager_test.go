@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
@@ -11,7 +13,7 @@ import (
 )
 
 func TestNewMessageSender(t *testing.T) {
-	assert.Implements(t, (*DeployMsger)(nil), NewMessageSender(&WsConn{}, "aa", websocket.Type_ProcessPercent))
+	assert.Implements(t, (*contracts.DeployMsger)(nil), NewMessageSender(&WsConn{}, "aa", websocket.Type_ProcessPercent))
 }
 
 func Test_messager_IsStopped(t *testing.T) {

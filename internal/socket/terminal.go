@@ -4,11 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
@@ -41,13 +42,6 @@ type Container struct {
 	Container string `json:"container"`
 }
 
-// PtyHandler is what remotecommand expects from a pty
-type PtyHandler interface {
-	io.Reader
-	io.Writer
-	remotecommand.TerminalSizeQueue
-}
-
 type MyPtyHandler struct {
 	Container
 	recorder *Recorder
@@ -60,6 +54,18 @@ type MyPtyHandler struct {
 
 	closeLock sync.Mutex
 	isClosed  bool
+}
+
+func (t *MyPtyHandler) SetShell(shell string) {
+	t.recorder.shell = shell
+}
+
+func (t *MyPtyHandler) TerminalMessageChan() chan *websocket_pb.TerminalMessage {
+	return t.shellCh
+}
+
+func (t *MyPtyHandler) Recorder() RecorderInterface {
+	return t.recorder
 }
 
 func (t *MyPtyHandler) Close(reason string) {
@@ -205,20 +211,12 @@ func (t *MyPtyHandler) Toast(p string) error {
 	return nil
 }
 
-type SessionMapper interface {
-	Send(message *websocket_pb.TerminalMessage)
-	Get(sessionId string) (*MyPtyHandler, bool)
-	Set(sessionId string, session *MyPtyHandler)
-	CloseAll()
-	Close(sessionId string, status uint32, reason string)
-}
-
 // SessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
 type SessionMap struct {
 	conn *WsConn
 
 	sessLock sync.RWMutex
-	Sessions map[string]*MyPtyHandler
+	Sessions map[string]contracts.PtyHandler
 }
 
 func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
@@ -226,15 +224,15 @@ func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
 	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionId]; ok {
 		select {
-		case h.shellCh <- m:
+		case h.TerminalMessageChan() <- m:
 		default:
-			mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionId, len(h.shellCh))
+			mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionId, len(h.TerminalMessageChan()))
 		}
 	}
 }
 
 // Get return a given terminalSession by sessionId
-func (sm *SessionMap) Get(sessionId string) (*MyPtyHandler, bool) {
+func (sm *SessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	h, ok := sm.Sessions[sessionId]
@@ -242,7 +240,7 @@ func (sm *SessionMap) Get(sessionId string) (*MyPtyHandler, bool) {
 }
 
 // Set store a MyPtyHandler to SessionMap
-func (sm *SessionMap) Set(sessionId string, session *MyPtyHandler) {
+func (sm *SessionMap) Set(sessionId string, session contracts.PtyHandler) {
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	sm.Sessions[sessionId] = session
@@ -256,7 +254,7 @@ func (sm *SessionMap) CloseAll() {
 	for _, s := range sm.Sessions {
 		s.Close("websocket conn closed")
 	}
-	sm.Sessions = map[string]*MyPtyHandler{}
+	sm.Sessions = map[string]contracts.PtyHandler{}
 }
 
 // Close shuts down the SockJS connection and sends the status code and reason to the client
@@ -274,7 +272,7 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 
 // startProcess is called by handleAttach
 // Executed cmd in the Container specified in request and connects it up with the ptyHandler (a session)
-func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, cmd []string, ptyHandler PtyHandler) error {
+func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, cmd []string, ptyHandler contracts.PtyHandler) error {
 	namespace := container.Namespace
 	podName := container.Pod
 	containerName := container.Container
@@ -360,14 +358,14 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	session, _ := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
-		session.recorder.shell = shell
+		session.SetShell(shell)
 		err = startProcess(k8sClient, cfg, container, cmd, session)
 	} else {
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
 		for _, testShell := range validShells {
 			cmd := []string{testShell}
-			session.recorder.shell = testShell
+			session.SetShell(testShell)
 			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {
 				break
 			}

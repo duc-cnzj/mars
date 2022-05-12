@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"helm.sh/helm/v3/pkg/chart"
@@ -12,28 +14,21 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
-type ReleaseInstaller interface {
-	Chart() *chart.Chart
-	Run(stopCtx context.Context, messageCh *SafeWriteMessageCh, percenter Percentable, isNew bool) (*release.Release, error)
-
-	Logs() []string
-}
-
 type releaseInstaller struct {
 	dryRun         bool
 	chart          *chart.Chart
 	timeoutSeconds int64
 	releaseName    string
 	namespace      string
-	percenter      Percentable
+	percenter      contracts.Percentable
 	startTime      time.Time
 	wait           bool
 	valueOpts      *values.Options
 	logs           *timeOrderedSetString
-	messageCh      *SafeWriteMessageCh
+	messageCh      contracts.SafeWriteMessageChInterface
 }
 
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) ReleaseInstaller {
+func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) contracts.ReleaseInstaller {
 	return &releaseInstaller{
 		dryRun:         dryRun,
 		chart:          chart,
@@ -50,7 +45,7 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 	return r.chart
 }
 
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh *SafeWriteMessageCh, percenter Percentable, isNew bool) (*release.Release, error) {
+func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool) (*release.Release, error) {
 	defer utils.HandlePanic("releaseInstaller: Run")
 	defer mlog.Debug("releaseInstaller exit")
 
@@ -96,9 +91,9 @@ func (r *releaseInstaller) logger() func(format string, v ...any) {
 
 		if !r.logs.has(msg) {
 			r.logs.add(msg)
-			r.messageCh.Send(MessageItem{
+			r.messageCh.Send(contracts.MessageItem{
 				Msg:  msg,
-				Type: MessageText,
+				Type: contracts.MessageText,
 			})
 		}
 	}

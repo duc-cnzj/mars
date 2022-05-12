@@ -7,7 +7,7 @@ package mock
 import (
 	reflect "reflect"
 
-	plugins "github.com/duc-cnzj/mars/internal/plugins"
+	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -77,10 +77,10 @@ func (mr *MockWsSenderMockRecorder) Name() *gomock.Call {
 }
 
 // New mocks base method.
-func (m *MockWsSender) New(arg0, arg1 string) plugins.PubSub {
+func (m *MockWsSender) New(arg0, arg1 string) contracts.PubSub {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "New", arg0, arg1)
-	ret0, _ := ret[0].(plugins.PubSub)
+	ret0, _ := ret[0].(contracts.PubSub)
 	return ret0
 }
 

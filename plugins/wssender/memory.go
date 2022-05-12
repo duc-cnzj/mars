@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -73,7 +75,7 @@ func (ms *memorySender) Destroy() error {
 	return nil
 }
 
-func (ms *memorySender) New(uid, id string) plugins.PubSub {
+func (ms *memorySender) New(uid, id string) contracts.PubSub {
 	ms.Add(uid, id)
 	return &memoryPubSub{uid: uid, id: id, manager: ms}
 }
@@ -98,7 +100,7 @@ func (p *memoryPubSub) ID() string {
 	return p.id
 }
 
-func (p *memoryPubSub) ToSelf(wsResponse plugins.WebsocketMessage) error {
+func (p *memoryPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)
@@ -110,7 +112,7 @@ func (p *memoryPubSub) ToSelf(wsResponse plugins.WebsocketMessage) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToAll(wsResponse plugins.WebsocketMessage) error {
+func (p *memoryPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)
@@ -123,7 +125,7 @@ func (p *memoryPubSub) ToAll(wsResponse plugins.WebsocketMessage) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToOthers(wsResponse plugins.WebsocketMessage) error {
+func (p *memoryPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	marshal, _ := proto.Marshal(wsResponse)

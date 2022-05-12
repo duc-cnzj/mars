@@ -6,7 +6,6 @@ package mock
 
 import (
 	io "io"
-	os "os"
 	reflect "reflect"
 
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
@@ -151,10 +150,10 @@ func (mr *MockUploaderMockRecorder) MkDir(arg0, arg1 any) *gomock.Call {
 }
 
 // NewFile mocks base method.
-func (m *MockUploader) NewFile(arg0 string) (*os.File, error) {
+func (m *MockUploader) NewFile(arg0 string) (contracts.File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewFile", arg0)
-	ret0, _ := ret[0].(*os.File)
+	ret0, _ := ret[0].(contracts.File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

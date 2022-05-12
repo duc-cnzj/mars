@@ -1,7 +1,6 @@
 package plugins
 
 //go:generate mockgen -destination ../mock/mock_wssender.go -package mock github.com/duc-cnzj/mars/internal/plugins WsSender
-//go:generate mockgen -destination ../mock/mock_wssender_pubsub.go -package mock github.com/duc-cnzj/mars/internal/plugins PubSub
 
 import (
 	"encoding/json"
@@ -50,28 +49,12 @@ func ProtoToMessage(m proto.Message, to websocket_pb.To, id string) Message {
 
 type WsMetadataResponse = websocket_pb.WsMetadataResponse
 
-type WebsocketMessage interface {
-	proto.Message
-	GetMetadata() *websocket_pb.Metadata
-}
-
-var _ WebsocketMessage = (*WsMetadataResponse)(nil)
+var _ contracts.WebsocketMessage = (*WsMetadataResponse)(nil)
 
 type WsSender interface {
 	contracts.PluginInterface
 
-	New(uid, id string) PubSub
-}
-
-type PubSub interface {
-	Info() any
-	Uid() string
-	ID() string
-	ToSelf(WebsocketMessage) error
-	ToAll(WebsocketMessage) error
-	ToOthers(WebsocketMessage) error
-	Subscribe() <-chan []byte
-	Close() error
+	New(uid, id string) contracts.PubSub
 }
 
 func GetWsSender() WsSender {
@@ -103,15 +86,15 @@ func (e *EmptyPubSub) ID() string {
 	return ""
 }
 
-func (e *EmptyPubSub) ToSelf(message WebsocketMessage) error {
+func (e *EmptyPubSub) ToSelf(message contracts.WebsocketMessage) error {
 	return nil
 }
 
-func (e *EmptyPubSub) ToAll(message WebsocketMessage) error {
+func (e *EmptyPubSub) ToAll(message contracts.WebsocketMessage) error {
 	return nil
 }
 
-func (e *EmptyPubSub) ToOthers(message WebsocketMessage) error {
+func (e *EmptyPubSub) ToOthers(message contracts.WebsocketMessage) error {
 	return nil
 }
 

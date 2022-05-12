@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +15,7 @@ func (f *fakeSleeper) Sleep(duration time.Duration) {
 }
 
 func Test_newProcessPercent(t *testing.T) {
-	assert.Implements(t, (*Percentable)(nil), newProcessPercent(nil, &fakeSleeper{}))
+	assert.Implements(t, (*contracts.Percentable)(nil), newProcessPercent(nil, &fakeSleeper{}))
 }
 
 type ppm struct {

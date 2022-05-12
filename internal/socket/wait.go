@@ -4,7 +4,14 @@ import (
 	"sync"
 )
 
-var Wait = NewWaitSocketExit()
+var Wait WaitSocketExitInterface = NewWaitSocketExit()
+
+type WaitSocketExitInterface interface {
+	Inc()
+	Dec()
+	Wait()
+	Count() int
+}
 
 type WaitSocketExit struct {
 	count int

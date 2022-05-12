@@ -19,8 +19,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/scopes"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/date"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,7 +61,7 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 }
 
 func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
-	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
+	var pubsub contracts.PubSub = &plugins.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
 	errMsger := newErrorMessager()
 	if err := p.completeInput(input, errMsger); err != nil {
@@ -102,7 +100,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 }
 
 func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
-	var pubsub plugins.PubSub = &plugins.EmptyPubSub{}
+	var pubsub contracts.PubSub = &plugins.EmptyPubSub{}
 	if input.WebsocketSync {
 		pubsub = plugins.GetWsSender().New("", "")
 	}
@@ -145,7 +143,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	return nil
 }
 
-func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger socket.Msger) error {
+func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger contracts.Msger) error {
 	if input.GitCommit == "" {
 		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
 		if len(commits) < 1 {
@@ -281,7 +279,7 @@ func (e *errorMessager) SendMsg(s string) {
 	mlog.Debug(s)
 }
 
-func (e *errorMessager) SendProtoMsg(message plugins.WebsocketMessage) {
+func (e *errorMessager) SendProtoMsg(message contracts.WebsocketMessage) {
 }
 
 func (e *errorMessager) SendProcessPercent(s string) {
@@ -291,7 +289,7 @@ func (e *errorMessager) Stop(err error) {
 	e.addError(err)
 }
 
-func (e *errorMessager) SendDeployedResult(resultType websocket.ResultType, s string, m *models.Project) {
+func (e *errorMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
 type messager struct {
@@ -306,17 +304,7 @@ type messager struct {
 	server   project.Project_ApplyServer
 }
 
-func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string, p *models.Project) {
-	var ns types.NamespaceModel
-	if p.Namespace.ID != 0 {
-		ns = types.NamespaceModel{
-			Id:               int64(p.Namespace.ID),
-			Name:             p.Namespace.Name,
-			ImagePullSecrets: p.Namespace.GetImagePullSecrets(),
-			CreatedAt:        date.ToRFC3339DatetimeString(&p.Namespace.CreatedAt),
-			UpdatedAt:        date.ToRFC3339DatetimeString(&p.Namespace.UpdatedAt),
-		}
-	}
+func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 	m.send(&project.ApplyResponse{
 		Metadata: &websocket.Metadata{
 			Slug:    m.slugName,
@@ -325,27 +313,7 @@ func (m *messager) SendDeployedResult(resultType websocket.ResultType, s string,
 			End:     true,
 			Message: s,
 		},
-		Project: &types.ProjectModel{
-			Id:               int64(p.ID),
-			Name:             p.Name,
-			GitProjectId:     int64(p.GitProjectId),
-			GitBranch:        p.GitBranch,
-			GitCommit:        p.GitCommit,
-			Config:           p.Config,
-			OverrideValues:   p.OverrideValues,
-			DockerImage:      p.DockerImage,
-			PodSelectors:     p.PodSelectors,
-			NamespaceId:      int64(p.NamespaceId),
-			Atomic:           p.Atomic,
-			EnvValues:        p.ExtraValues,
-			ExtraValues:      p.GetExtraValues(),
-			FinalExtraValues: p.FinalExtraValues,
-			DeployStatus:     types.Deploy(p.DeployStatus),
-			Namespace:        &ns,
-			CreatedAt:        date.ToRFC3339DatetimeString(&p.CreatedAt),
-			UpdatedAt:        date.ToRFC3339DatetimeString(&p.UpdatedAt),
-			DeletedAt:        date.ToRFC3339DatetimeString(&p.DeletedAt.Time),
-		},
+		Project: p,
 	})
 }
 
@@ -392,7 +360,7 @@ func (m *messager) SendMsg(s string) {
 	}})
 }
 
-func (m *messager) SendProtoMsg(message plugins.WebsocketMessage) {
+func (m *messager) SendProtoMsg(message contracts.WebsocketMessage) {
 	m.send(&project.ApplyResponse{Metadata: message.GetMetadata()})
 }
 

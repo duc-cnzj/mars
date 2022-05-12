@@ -3,6 +3,8 @@ package wssender
 import (
 	"errors"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
@@ -59,7 +61,7 @@ func (n *NsqSender) Destroy() error {
 	return nil
 }
 
-func (n *NsqSender) New(uid, id string) plugins.PubSub {
+func (n *NsqSender) New(uid, id string) contracts.PubSub {
 	return &nsq{id: id, uid: uid, cfg: n.cfg, producer: n.producer, addr: n.addr, lookupdAddr: n.lookupdAddr}
 }
 
@@ -84,15 +86,15 @@ func (n *nsq) ID() string {
 	return n.id
 }
 
-func (n *nsq) ToSelf(response plugins.WebsocketMessage) error {
+func (n *nsq) ToSelf(response contracts.WebsocketMessage) error {
 	return n.producer.Publish(n.ephemeralID(), plugins.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
 }
 
-func (n *nsq) ToAll(response plugins.WebsocketMessage) error {
+func (n *nsq) ToAll(response contracts.WebsocketMessage) error {
 	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
 }
 
-func (n *nsq) ToOthers(response plugins.WebsocketMessage) error {
+func (n *nsq) ToOthers(response contracts.WebsocketMessage) error {
 	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
 }
 

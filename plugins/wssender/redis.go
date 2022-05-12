@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -56,7 +58,7 @@ func (p *redisSender) Destroy() error {
 	return nil
 }
 
-func (p *redisSender) New(uid, id string) plugins.PubSub {
+func (p *redisSender) New(uid, id string) contracts.PubSub {
 	return &rdsPubSub{uid: uid, id: id, rds: p.rds, ch: make(chan []byte, messageChSize), close: make(chan struct{})}
 }
 
@@ -85,17 +87,17 @@ func (p *rdsPubSub) ID() string {
 	return p.id
 }
 
-func (p *rdsPubSub) ToSelf(wsResponse plugins.WebsocketMessage) error {
+func (p *rdsPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), p.id, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToAll(wsResponse plugins.WebsocketMessage) error {
+func (p *rdsPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
 	return nil
 }
 
-func (p *rdsPubSub) ToOthers(wsResponse plugins.WebsocketMessage) error {
+func (p *rdsPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
 	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
 	return nil
 }

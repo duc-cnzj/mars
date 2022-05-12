@@ -3,9 +3,10 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/utils/date"
@@ -15,11 +16,16 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils"
 )
 
+type RecorderInterface interface {
+	Write(data string) (err error)
+	Close() error
+}
+
 type Recorder struct {
 	sync.RWMutex
 	filepath  string
 	container Container
-	f         *os.File
+	f         contracts.File
 	shell     string
 	startTime time.Time
 
@@ -36,7 +42,7 @@ func (r *Recorder) Write(data string) (err error) {
 	r.Lock()
 	defer r.Unlock()
 	r.once.Do(func() {
-		var file *os.File
+		var file contracts.File
 		file, err = app.Uploader().Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
 			r.t.conn.GetUser().Name,
 			time.Now().Format("2006-01-02"),

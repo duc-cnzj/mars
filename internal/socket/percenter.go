@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 )
 
-type Percentable interface {
-	Current() int64
-	Add()
-	To(percent int64)
-}
-
 type processPercent struct {
-	ProcessPercentMsger
+	contracts.ProcessPercentMsger
 
 	s           Sleeper
 	percentLock sync.RWMutex
@@ -30,7 +26,7 @@ func (r *realSleeper) Sleep(duration time.Duration) {
 	time.Sleep(duration)
 }
 
-func newProcessPercent(sender ProcessPercentMsger, s Sleeper) Percentable {
+func newProcessPercent(sender contracts.ProcessPercentMsger, s Sleeper) contracts.Percentable {
 	return &processPercent{
 		s:                   s,
 		percent:             0,

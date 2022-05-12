@@ -37,13 +37,15 @@ var handlers map[websocket_pb.Type]HandleRequestFunc = map[websocket_pb.Type]Han
 type WsConn struct {
 	id   string
 	uid  string
-	conn *websocket.Conn
+	conn contracts.WebsocketConn
+
+	NewJobFunc NewJobFunc
 
 	userMu           sync.RWMutex
 	user             contracts.UserInfo
-	pubSub           plugins.PubSub
-	cancelSignaler   CancelSignaler
-	terminalSessions SessionMapper
+	pubSub           contracts.PubSub
+	cancelSignaler   contracts.CancelSignaler
+	terminalSessions contracts.SessionMapper
 }
 
 func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn {
@@ -59,10 +61,11 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 		pubSub:         ps,
 		id:             id,
 		uid:            uid,
+		NewJobFunc:     NewJober,
 		conn:           c,
 		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
 	}
-	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]*MyPtyHandler), conn: wsconn}
+	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]contracts.PtyHandler), conn: wsconn}
 	app.Metrics().IncWebsocketConn()
 	Wait.Inc()
 
@@ -94,7 +97,7 @@ func (c *WsConn) GetUser() contracts.UserInfo {
 
 func (c *WsConn) GetShellChannel(sessionID string) (chan *websocket_pb.TerminalMessage, error) {
 	if handler, ok := c.terminalSessions.Get(sessionID); ok {
-		return handler.shellCh, nil
+		return handler.TerminalMessageChan(), nil
 	}
 
 	return nil, fmt.Errorf("%v not found channel", sessionID)
@@ -387,7 +390,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	}
 
 	slug := getSlugName(int64(p.NamespaceId), p.Name)
-	job := NewJober(&websocket_pb.CreateProjectInput{
+	job := c.NewJobFunc(&websocket_pb.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),
 		Name:         p.Name,
@@ -406,7 +409,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	InstallProject(job)
 }
 
-func InstallProject(job Job) {
+func InstallProject(job contracts.Job) {
 	var err error
 	defer func() {
 		job.CallDestroyFuncs()
@@ -423,7 +426,7 @@ func InstallProject(job Job) {
 
 	if err = job.LoadConfigs(); err != nil {
 		if err := job.GetStoppedErrorIfHas(); err != nil {
-			job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, err.Error(), job.Project())
+			job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, err.Error(), job.ProjectModel())
 			job.Messager().Stop(err)
 			return
 		}

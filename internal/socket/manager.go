@@ -71,24 +71,10 @@ const (
 
 type WsResponse = websocket_pb.WsMetadataResponse
 
-type MessageType uint8
-
-const (
-	_ MessageType = iota
-	MessageSuccess
-	MessageError
-	MessageText
-)
-
-type MessageItem struct {
-	Msg  string
-	Type MessageType
-}
-
 type SafeWriteMessageCh struct {
 	sync.Mutex
 	closed bool
-	ch     chan MessageItem
+	ch     chan contracts.MessageItem
 }
 
 func (s *SafeWriteMessageCh) Closed() {
@@ -98,10 +84,10 @@ func (s *SafeWriteMessageCh) Closed() {
 	s.closed = true
 	close(s.ch)
 }
-func (s *SafeWriteMessageCh) Chan() <-chan MessageItem {
+func (s *SafeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 	return s.ch
 }
-func (s *SafeWriteMessageCh) Send(m MessageItem) {
+func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
 	s.Lock()
 	defer s.Unlock()
 	if s.closed {
@@ -121,39 +107,6 @@ func (v vars) MustGetString(key string) string {
 	}
 
 	return ""
-}
-
-type Job interface {
-	Done() <-chan struct{}
-	Finish()
-	Prune()
-
-	Stop(error)
-	IsStopped() bool
-	GetStoppedErrorIfHas() error
-
-	Run() error
-	Logs() []string
-	IsDryRun() bool
-	Manifests() []string
-
-	User() contracts.UserInfo
-	IsNew() bool
-	Project() *models.Project
-	Namespace() *models.Namespace
-	Commit() plugins.CommitInterface
-
-	ID() string
-	Validate() error
-	LoadConfigs() error
-	HandleMessage()
-	AddDestroyFunc(fn func())
-	CallDestroyFuncs()
-
-	ReleaseInstaller() ReleaseInstaller
-	Messager() DeployMsger
-	PubSub() plugins.PubSub
-	Percenter() Percentable
 }
 
 type Jober struct {
@@ -176,10 +129,10 @@ type Jober struct {
 	valuesYaml        string
 	chart             *chart.Chart
 	valuesOptions     *values.Options
-	installer         ReleaseInstaller
-	commit            plugins.CommitInterface
+	installer         contracts.ReleaseInstaller
+	commit            contracts.CommitInterface
 
-	messageCh *SafeWriteMessageCh
+	messageCh contracts.SafeWriteMessageChInterface
 	stopCtx   context.Context
 	stopOnce  sync.Once
 	stopFn    func(error)
@@ -190,10 +143,10 @@ type Jober struct {
 	project     *models.Project
 	prevProject *models.Project
 
-	percenter Percentable
-	messager  DeployMsger
+	percenter contracts.Percentable
+	messager  contracts.DeployMsger
 
-	pubsub plugins.PubSub
+	pubsub contracts.PubSub
 
 	user           contracts.UserInfo
 	timeoutSeconds int64
@@ -207,15 +160,25 @@ func WithDryRun() Option {
 	}
 }
 
+type NewJobFunc func(
+	input *websocket_pb.CreateProjectInput,
+	user contracts.UserInfo,
+	slugName string,
+	messager contracts.DeployMsger,
+	pubsub contracts.PubSub,
+	timeoutSeconds int64,
+	opts ...Option,
+) contracts.Job
+
 func NewJober(
 	input *websocket_pb.CreateProjectInput,
 	user contracts.UserInfo,
 	slugName string,
-	messager DeployMsger,
-	pubsub plugins.PubSub,
+	messager contracts.DeployMsger,
+	pubsub contracts.PubSub,
 	timeoutSeconds int64,
 	opts ...Option,
-) Job {
+) contracts.Job {
 	jb := &Jober{
 		done:           make(chan struct{}),
 		user:           user,
@@ -227,7 +190,7 @@ func NewJober(
 		input:          input,
 		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
-		messageCh:      &SafeWriteMessageCh{ch: make(chan MessageItem, 100)},
+		messageCh:      &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
 		percenter:      newProcessPercent(messager, &realSleeper{}),
 	}
 	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
@@ -258,7 +221,7 @@ func (j *Jober) IsDryRun() bool {
 	return j.dryRun
 }
 
-func (j *Jober) Commit() plugins.CommitInterface {
+func (j *Jober) Commit() contracts.CommitInterface {
 	return j.commit
 }
 
@@ -266,6 +229,12 @@ func (j *Jober) User() contracts.UserInfo {
 	return j.user
 }
 
+func (j *Jober) ProjectModel() *types.ProjectModel {
+	if j.project == nil {
+		return nil
+	}
+	return j.project.ProtoTransform()
+}
 func (j *Jober) Project() *models.Project {
 	return j.project
 }
@@ -322,20 +291,20 @@ func (j *Jober) HandleMessage() {
 				return
 			}
 			switch s.Type {
-			case MessageText:
+			case contracts.MessageText:
 				j.Messager().SendMsg(s.Msg)
-			case MessageError:
+			case contracts.MessageError:
 				if j.IsNew() && !j.IsDryRun() {
 					app.DB().Delete(&j.project)
 				}
 				select {
 				case <-j.stopCtx.Done():
-					j.Messager().SendDeployedResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.Project())
+					j.Messager().SendDeployedResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
 				default:
-					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.Project())
+					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
 				}
-			case MessageSuccess:
-				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.Project())
+			case contracts.MessageSuccess:
+				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
 			}
 		}
 	}
@@ -440,9 +409,9 @@ func (j *Jober) Run() error {
 		)
 
 		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew()); err != nil {
-			j.messageCh.Send(MessageItem{
+			j.messageCh.Send(contracts.MessageItem{
 				Msg:  err.Error(),
-				Type: MessageError,
+				Type: contracts.MessageError,
 			})
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
@@ -541,9 +510,9 @@ func (j *Jober) Run() error {
 				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
 				oldConf, newConf)
 			j.Percenter().To(100)
-			j.messageCh.Send(MessageItem{
+			j.messageCh.Send(contracts.MessageItem{
 				Msg:  "部署成功",
-				Type: MessageSuccess,
+				Type: contracts.MessageSuccess,
 			})
 		}
 		return err
@@ -557,19 +526,19 @@ func (j *Jober) GetStoppedErrorIfHas() error {
 	return nil
 }
 
-func (j *Jober) ReleaseInstaller() ReleaseInstaller {
+func (j *Jober) ReleaseInstaller() contracts.ReleaseInstaller {
 	return j.installer
 }
 
-func (j *Jober) Messager() DeployMsger {
+func (j *Jober) Messager() contracts.DeployMsger {
 	return j.messager
 }
 
-func (j *Jober) PubSub() plugins.PubSub {
+func (j *Jober) PubSub() contracts.PubSub {
 	return j.pubsub
 }
 
-func (j *Jober) Percenter() Percentable {
+func (j *Jober) Percenter() contracts.Percentable {
 	return j.percenter
 }
 

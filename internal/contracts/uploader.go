@@ -1,11 +1,19 @@
 package contracts
 
 //go:generate mockgen -destination ../mock/mock_uploader.go -package mock github.com/duc-cnzj/mars/internal/contracts Uploader
+//go:generate mockgen -destination ../mock/mock_uploader_file.go -package mock github.com/duc-cnzj/mars/internal/contracts File
 
 import (
 	"io"
 	"os"
 )
+
+type File interface {
+	io.ReadWriteCloser
+	io.StringWriter
+	Name() string
+	Stat() (os.FileInfo, error)
+}
 
 type FileInfo interface {
 	Path() string
@@ -22,6 +30,6 @@ type Uploader interface {
 	AbsolutePath(path string) string
 	Put(path string, content io.Reader) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
-	NewFile(path string) (*os.File, error)
+	NewFile(path string) (File, error)
 	RemoveEmptyDir(dir string) error
 }

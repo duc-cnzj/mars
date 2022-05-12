@@ -229,7 +229,7 @@ type stateGitServer struct {
 	GitServer
 }
 
-func (s *stateGitServer) GetCommit(pid string, sha string) (CommitInterface, error) {
+func (s *stateGitServer) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
 	s.calledMap["GetCommit"] = true
 	return nil, nil
 }
@@ -240,7 +240,7 @@ func Test_gitServerCache_GetCommit(t *testing.T) {
 	assert.True(t, s.calledMap["GetCommit"])
 }
 
-func (s *stateGitServer) GetCommitPipeline(pid string, sha string) (PipelineInterface, error) {
+func (s *stateGitServer) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
 	s.calledMap["GetCommitPipeline"] = true
 	return nil, nil
 }
@@ -295,7 +295,7 @@ func Test_gitServerCache_GetFileContentWithSha(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", "", "", ""), c.key)
 }
 
-func (s *stateGitServer) GetProject(pid string) (ProjectInterface, error) {
+func (s *stateGitServer) GetProject(pid string) (contracts.ProjectInterface, error) {
 	s.calledMap["GetProject"] = true
 	return nil, nil
 }
@@ -319,7 +319,7 @@ func Test_gitServerCache_ListBranches(t *testing.T) {
 	(&gitServerCache{s: s}).ListBranches("1", 1, 2)
 	assert.True(t, s.calledMap["ListBranches"])
 }
-func (s *stateGitServer) ListCommits(pid string, branch string) ([]CommitInterface, error) {
+func (s *stateGitServer) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {
 	s.calledMap["ListCommits"] = true
 	return nil, nil
 }

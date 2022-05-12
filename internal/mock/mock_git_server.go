@@ -7,6 +7,7 @@ package mock
 import (
 	reflect "reflect"
 
+	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	plugins "github.com/duc-cnzj/mars/internal/plugins"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,10 +36,10 @@ func (m *MockGitServer) EXPECT() *MockGitServerMockRecorder {
 }
 
 // AllBranches mocks base method.
-func (m *MockGitServer) AllBranches(arg0 string) ([]plugins.BranchInterface, error) {
+func (m *MockGitServer) AllBranches(arg0 string) ([]contracts.BranchInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AllBranches", arg0)
-	ret0, _ := ret[0].([]plugins.BranchInterface)
+	ret0, _ := ret[0].([]contracts.BranchInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,10 +51,10 @@ func (mr *MockGitServerMockRecorder) AllBranches(arg0 any) *gomock.Call {
 }
 
 // AllProjects mocks base method.
-func (m *MockGitServer) AllProjects() ([]plugins.ProjectInterface, error) {
+func (m *MockGitServer) AllProjects() ([]contracts.ProjectInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AllProjects")
-	ret0, _ := ret[0].([]plugins.ProjectInterface)
+	ret0, _ := ret[0].([]contracts.ProjectInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -79,10 +80,10 @@ func (mr *MockGitServerMockRecorder) Destroy() *gomock.Call {
 }
 
 // GetCommit mocks base method.
-func (m *MockGitServer) GetCommit(arg0, arg1 string) (plugins.CommitInterface, error) {
+func (m *MockGitServer) GetCommit(arg0, arg1 string) (contracts.CommitInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCommit", arg0, arg1)
-	ret0, _ := ret[0].(plugins.CommitInterface)
+	ret0, _ := ret[0].(contracts.CommitInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -94,10 +95,10 @@ func (mr *MockGitServerMockRecorder) GetCommit(arg0, arg1 any) *gomock.Call {
 }
 
 // GetCommitPipeline mocks base method.
-func (m *MockGitServer) GetCommitPipeline(arg0, arg1 string) (plugins.PipelineInterface, error) {
+func (m *MockGitServer) GetCommitPipeline(arg0, arg1 string) (contracts.PipelineInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCommitPipeline", arg0, arg1)
-	ret0, _ := ret[0].(plugins.PipelineInterface)
+	ret0, _ := ret[0].(contracts.PipelineInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -169,10 +170,10 @@ func (mr *MockGitServerMockRecorder) GetFileContentWithSha(arg0, arg1, arg2 any)
 }
 
 // GetProject mocks base method.
-func (m *MockGitServer) GetProject(arg0 string) (plugins.ProjectInterface, error) {
+func (m *MockGitServer) GetProject(arg0 string) (contracts.ProjectInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProject", arg0)
-	ret0, _ := ret[0].(plugins.ProjectInterface)
+	ret0, _ := ret[0].(contracts.ProjectInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -213,10 +214,10 @@ func (mr *MockGitServerMockRecorder) ListBranches(arg0, arg1, arg2 any) *gomock.
 }
 
 // ListCommits mocks base method.
-func (m *MockGitServer) ListCommits(arg0, arg1 string) ([]plugins.CommitInterface, error) {
+func (m *MockGitServer) ListCommits(arg0, arg1 string) ([]contracts.CommitInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListCommits", arg0, arg1)
-	ret0, _ := ret[0].([]plugins.CommitInterface)
+	ret0, _ := ret[0].([]contracts.CommitInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -7,14 +7,6 @@ import (
 
 var ErrCancel = errors.New("rollback")
 
-type CancelSignaler interface {
-	Remove(id string)
-	Has(id string) bool
-	Cancel(id string)
-	Add(id string, fn func(error)) error
-	CancelAll()
-}
-
 type CancelSignals struct {
 	cs map[string]func(error)
 	sync.RWMutex

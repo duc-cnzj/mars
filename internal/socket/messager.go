@@ -3,29 +3,12 @@ package socket
 import (
 	"sync"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/plugins"
 )
-
-type Msger interface {
-	SendEndError(error)
-	SendError(error)
-	SendMsg(string)
-	SendProtoMsg(plugins.WebsocketMessage)
-}
-
-type ProcessPercentMsger interface {
-	SendProcessPercent(string)
-}
-
-type DeployMsger interface {
-	Msger
-	ProcessPercentMsger
-
-	Stop(error)
-	SendDeployedResult(t websocket_pb.ResultType, msg string, p *models.Project)
-}
 
 type messager struct {
 	mu        sync.RWMutex
@@ -37,7 +20,7 @@ type messager struct {
 	wsType   websocket_pb.Type
 }
 
-func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) DeployMsger {
+func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) contracts.DeployMsger {
 	return &messager{conn: conn, slugName: slugName, wsType: wsType}
 }
 
@@ -55,7 +38,7 @@ func (ms *messager) IsStopped() bool {
 	return ms.isStopped
 }
 
-func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, project *models.Project) {
+func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, p *types.ProjectModel) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:    ms.slugName,
@@ -130,11 +113,11 @@ func (ms *messager) SendMsg(msg string) {
 	ms.send(res)
 }
 
-func (ms *messager) SendProtoMsg(msg plugins.WebsocketMessage) {
+func (ms *messager) SendProtoMsg(msg contracts.WebsocketMessage) {
 	ms.send(msg)
 }
 
-func (ms *messager) send(res plugins.WebsocketMessage) {
+func (ms *messager) send(res contracts.WebsocketMessage) {
 	if ms.IsStopped() {
 		return
 	}

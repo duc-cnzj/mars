@@ -55,7 +55,7 @@ build_web:
 
 .PHONY: test
 test:
-	go test $(shell go list ./... | grep -v "github.com/duc-cnzj/mars/third_party/" | grep -v "github.com/duc-cnzj/mars/internal/mock") -race -count=1 -cover
+	go test ./... -race -count=1 -cover
 
 .PHONY: build_linux_amd64
 build_linux_amd64:

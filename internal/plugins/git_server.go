@@ -14,57 +14,6 @@ import (
 
 var gitServerOnce = sync.Once{}
 
-type Status = string
-
-const (
-	StatusUnknown Status = "unknown"
-	StatusSuccess Status = "success"
-	StatusFailed  Status = "failed"
-	StatusRunning Status = "running"
-)
-
-type ProjectInterface interface {
-	GetID() int64
-	GetName() string
-	GetDefaultBranch() string
-	GetPath() string
-	GetWebURL() string
-	GetAvatarURL() string
-	GetDescription() string
-}
-
-type BranchInterface interface {
-	GetName() string
-	IsDefault() bool
-	GetWebURL() string
-}
-
-type PipelineInterface interface {
-	GetID() int64
-	GetProjectID() int64
-	GetStatus() Status
-	GetRef() string
-	GetSHA() string
-	GetWebURL() string
-	GetUpdatedAt() *time.Time
-	GetCreatedAt() *time.Time
-}
-
-type CommitInterface interface {
-	GetID() string
-	GetShortID() string
-	GetTitle() string
-	GetCommittedDate() *time.Time
-	GetAuthorName() string
-	GetAuthorEmail() string
-	GetCommitterName() string
-	GetCommitterEmail() string
-	GetCreatedAt() *time.Time
-	GetMessage() string
-	GetProjectID() int64
-	GetWebURL() string
-}
-
 type paginate interface {
 	Page() int
 	PageSize() int
@@ -74,27 +23,27 @@ type paginate interface {
 
 type ListProjectResponseInterface interface {
 	paginate
-	GetItems() []ProjectInterface
+	GetItems() []contracts.ProjectInterface
 }
 
 type ListBranchResponseInterface interface {
 	paginate
-	GetItems() []BranchInterface
+	GetItems() []contracts.BranchInterface
 }
 
 type GitServer interface {
 	contracts.PluginInterface
 
-	GetProject(pid string) (ProjectInterface, error)
+	GetProject(pid string) (contracts.ProjectInterface, error)
 	ListProjects(page, pageSize int) (ListProjectResponseInterface, error)
-	AllProjects() ([]ProjectInterface, error)
+	AllProjects() ([]contracts.ProjectInterface, error)
 
 	ListBranches(pid string, page, pageSize int) (ListBranchResponseInterface, error)
-	AllBranches(pid string) ([]BranchInterface, error)
+	AllBranches(pid string) ([]contracts.BranchInterface, error)
 
-	GetCommit(pid string, sha string) (CommitInterface, error)
-	GetCommitPipeline(pid string, sha string) (PipelineInterface, error)
-	ListCommits(pid string, branch string) ([]CommitInterface, error)
+	GetCommit(pid string, sha string) (contracts.CommitInterface, error)
+	GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error)
+	ListCommits(pid string, branch string) ([]contracts.CommitInterface, error)
 
 	GetFileContentWithBranch(pid string, branch string, filename string) (string, error)
 	GetFileContentWithSha(pid string, sha string, filename string) (string, error)
@@ -152,7 +101,7 @@ func newGitServerCache(s GitServer) *gitServerCache {
 	return &gitServerCache{s: s}
 }
 
-func (g *gitServerCache) GetProject(pid string) (ProjectInterface, error) {
+func (g *gitServerCache) GetProject(pid string) (contracts.ProjectInterface, error) {
 	return g.s.GetProject(pid)
 }
 
@@ -160,13 +109,13 @@ func (g *gitServerCache) ListProjects(page, pageSize int) (ListProjectResponseIn
 	return g.s.ListProjects(page, pageSize)
 }
 
-func (g *gitServerCache) AllProjects() ([]ProjectInterface, error) {
+func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
 	remember, err := app.Cache().Remember("AllProjects", AllProjectsCacheSeconds, func() ([]byte, error) {
 		projects, err := g.s.AllProjects()
 		if err != nil {
 			return nil, err
 		}
-		var all = make([]ProjectInterface, 0, len(projects))
+		var all = make([]contracts.ProjectInterface, 0, len(projects))
 		for _, projectInterface := range projects {
 			all = append(all, &project{
 				ID:            projectInterface.GetID(),
@@ -186,7 +135,7 @@ func (g *gitServerCache) AllProjects() ([]ProjectInterface, error) {
 	}
 	var res []*project
 	json.Unmarshal(remember, &res)
-	var all = make([]ProjectInterface, 0, len(res))
+	var all = make([]contracts.ProjectInterface, 0, len(res))
 	for _, re := range res {
 		all = append(all, re)
 	}
@@ -197,13 +146,13 @@ func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (ListBranc
 	return g.s.ListBranches(pid, page, pageSize)
 }
 
-func (g *gitServerCache) AllBranches(pid string) ([]BranchInterface, error) {
+func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
 	remember, err := app.Cache().Remember(fmt.Sprintf("AllBranches-%v", pid), AllBranchesCacheSeconds, func() ([]byte, error) {
 		b, err := g.s.AllBranches(pid)
 		if err != nil {
 			return nil, err
 		}
-		var all = make([]BranchInterface, 0, len(b))
+		var all = make([]contracts.BranchInterface, 0, len(b))
 		for _, branchInterface := range b {
 			all = append(all, &branch{
 				Name:    branchInterface.GetName(),
@@ -221,28 +170,28 @@ func (g *gitServerCache) AllBranches(pid string) ([]BranchInterface, error) {
 	var res []*branch
 	json.Unmarshal(remember, &res)
 	// Why? 为什么我不能直接返回 res，奇怪的 go 语法
-	var all = make([]BranchInterface, 0, len(res))
+	var all = make([]contracts.BranchInterface, 0, len(res))
 	for _, b := range res {
 		all = append(all, b)
 	}
 	return all, nil
 }
 
-func (g *gitServerCache) GetCommit(pid string, sha string) (CommitInterface, error) {
+func (g *gitServerCache) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
 	return g.s.GetCommit(pid, sha)
 }
 
-func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (PipelineInterface, error) {
+func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
 	return g.s.GetCommitPipeline(pid, sha)
 }
 
-func (g *gitServerCache) ListCommits(pid string, branch string) ([]CommitInterface, error) {
+func (g *gitServerCache) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {
 	remember, err := app.Cache().Remember(fmt.Sprintf("ListCommits:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
 		commits, err := g.s.ListCommits(pid, branch)
 		if err != nil {
 			return nil, err
 		}
-		var result = make([]CommitInterface, 0, len(commits))
+		var result = make([]contracts.CommitInterface, 0, len(commits))
 		for _, commitInterface := range commits {
 			result = append(result, &commit{
 				ID:             commitInterface.GetID(),
@@ -267,7 +216,7 @@ func (g *gitServerCache) ListCommits(pid string, branch string) ([]CommitInterfa
 	}
 	var res []*commit
 	json.Unmarshal(remember, &res)
-	var lists = make([]CommitInterface, 0, len(res))
+	var lists = make([]contracts.CommitInterface, 0, len(res))
 
 	for _, re := range res {
 		lists = append(lists, re)
