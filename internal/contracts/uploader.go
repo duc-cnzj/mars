@@ -2,6 +2,7 @@ package contracts
 
 //go:generate mockgen -destination ../mock/mock_uploader.go -package mock github.com/duc-cnzj/mars/internal/contracts Uploader
 //go:generate mockgen -destination ../mock/mock_uploader_file.go -package mock github.com/duc-cnzj/mars/internal/contracts File
+//go:generate mockgen -destination ../mock/mock_uploader_fileinfo.go -package mock github.com/duc-cnzj/mars/internal/contracts FileInfo
 
 import (
 	"io"

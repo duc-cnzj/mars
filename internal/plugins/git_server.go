@@ -77,6 +77,8 @@ var (
 	AllProjectsCacheSeconds       int = 60 * 5
 	GetFileContentCacheSeconds    int = 0
 	GetDirectoryFilesCacheSeconds int = 0
+
+	GetCommitCacheSeconds int = 60 * 60
 )
 
 // gitServerCache
@@ -178,7 +180,34 @@ func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, e
 }
 
 func (g *gitServerCache) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
-	return g.s.GetCommit(pid, sha)
+	remember, err := app.Cache().Remember(fmt.Sprintf("GetCommit:%s-%s", pid, sha), GetCommitCacheSeconds, func() ([]byte, error) {
+		c, err := g.s.GetCommit(pid, sha)
+		if err != nil {
+			return nil, err
+		}
+		result := &commit{
+			ID:             c.GetID(),
+			ShortID:        c.GetShortID(),
+			Title:          c.GetTitle(),
+			CommittedDate:  c.GetCommittedDate(),
+			AuthorName:     c.GetAuthorName(),
+			AuthorEmail:    c.GetAuthorEmail(),
+			CommitterName:  c.GetCommitterName(),
+			CommitterEmail: c.GetCommitterEmail(),
+			CreatedAt:      c.GetCreatedAt(),
+			Message:        c.GetMessage(),
+			ProjectID:      c.GetProjectID(),
+			WebURL:         c.GetWebURL(),
+		}
+		marshal, _ := json.Marshal(result)
+		return marshal, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	msg := &commit{}
+	_ = json.Unmarshal(remember, msg)
+	return msg, nil
 }
 
 func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {

@@ -26,7 +26,7 @@ type EndpointSvc struct {
 
 func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
 	var ns models.Namespace
-	if err := app.DB().Preload("Projects").Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
+	if err := app.DB().Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
 	}
 

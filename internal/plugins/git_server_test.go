@@ -236,8 +236,13 @@ func (s *stateGitServer) GetCommit(pid string, sha string) (contracts.CommitInte
 
 func Test_gitServerCache_GetCommit(t *testing.T) {
 	s := &stateGitServer{calledMap: map[string]bool{}}
+	c := &cache{}
+	ma := &mockApp{cache: c}
+	instance.SetInstance(ma)
 	(&gitServerCache{s: s}).GetCommit("", "")
-	assert.True(t, s.calledMap["GetCommit"])
+	assert.True(t, c.called)
+	assert.Equal(t, GetCommitCacheSeconds, c.seconds)
+	assert.Equal(t, fmt.Sprintf("GetCommit:%s-%s", "", ""), c.key)
 }
 
 func (s *stateGitServer) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {

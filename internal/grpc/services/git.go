@@ -250,35 +250,26 @@ func (g *GitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRe
 }
 
 func (g *GitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.CommitResponse, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("Commit:%s-%s", request.GitProjectId, request.Commit), 60*60, func() ([]byte, error) {
-		commit, err := plugins.GetGitServer().GetCommit(request.GitProjectId, request.Commit)
-		if err != nil {
-			return nil, err
-		}
-		res := &git.CommitResponse{
-			Id:             commit.GetID(),
-			ShortId:        commit.GetShortID(),
-			GitProjectId:   request.GitProjectId,
-			Label:          fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
-			Title:          commit.GetTitle(),
-			Branch:         request.Branch,
-			AuthorName:     commit.GetAuthorName(),
-			AuthorEmail:    commit.GetAuthorEmail(),
-			CommitterName:  commit.GetCommitterName(),
-			CommitterEmail: commit.GetCommitterEmail(),
-			WebUrl:         commit.GetWebURL(),
-			Message:        commit.GetMessage(),
-			CommittedDate:  date.ToRFC3339DatetimeString(commit.GetCommittedDate()),
-			CreatedAt:      date.ToRFC3339DatetimeString(commit.GetCreatedAt()),
-		}
-		return proto.Marshal(res)
-	})
+	commit, err := plugins.GetGitServer().GetCommit(request.GitProjectId, request.Commit)
 	if err != nil {
 		return nil, err
 	}
-	msg := &git.CommitResponse{}
-	_ = proto.Unmarshal(remember, msg)
-	return msg, nil
+	return &git.CommitResponse{
+		Id:             commit.GetID(),
+		ShortId:        commit.GetShortID(),
+		GitProjectId:   request.GitProjectId,
+		Label:          fmt.Sprintf("[%s]: %s", date.ToHumanizeDatetimeString(commit.GetCommittedDate()), commit.GetTitle()),
+		Title:          commit.GetTitle(),
+		Branch:         request.Branch,
+		AuthorName:     commit.GetAuthorName(),
+		AuthorEmail:    commit.GetAuthorEmail(),
+		CommitterName:  commit.GetCommitterName(),
+		CommitterEmail: commit.GetCommitterEmail(),
+		WebUrl:         commit.GetWebURL(),
+		Message:        commit.GetMessage(),
+		CommittedDate:  date.ToRFC3339DatetimeString(commit.GetCommittedDate()),
+		CreatedAt:      date.ToRFC3339DatetimeString(commit.GetCreatedAt()),
+	}, nil
 }
 
 func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {

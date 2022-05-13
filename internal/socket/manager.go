@@ -235,6 +235,7 @@ func (j *Jober) ProjectModel() *types.ProjectModel {
 	}
 	return j.project.ProtoTransform()
 }
+
 func (j *Jober) Project() *models.Project {
 	return j.project
 }

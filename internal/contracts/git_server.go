@@ -1,5 +1,6 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_git_server_pipeline.go -package mock github.com/duc-cnzj/mars/internal/contracts PipelineInterface
 import "time"
 
 type Status = string
