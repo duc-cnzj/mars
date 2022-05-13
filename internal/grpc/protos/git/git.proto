@@ -27,7 +27,7 @@ message ProjectItem {
   bool global_enabled = 8;
 }
 
-message AllProjectsResponse {
+message AllResponse {
   repeated ProjectItem items = 1;
 }
 
@@ -99,12 +99,12 @@ message PipelineInfoResponse {
   string web_url = 2;
 }
 
-message ConfigFileRequest {
+message MarsConfigFileRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
   string branch = 2 [(validate.rules).string.min_bytes = 1];
 }
 
-message ConfigFileResponse {
+message MarsConfigFileResponse {
   string data = 1;
   string type = 2;
   repeated mars.Element elements = 3;
@@ -112,7 +112,7 @@ message ConfigFileResponse {
 
 message EnableProjectResponse {}
 message DisableProjectResponse {}
-message AllProjectsRequest {}
+message AllRequest {}
 message ProjectOptionsRequest {}
 
 service Git {
@@ -133,7 +133,7 @@ service Git {
   }
 
   // All 获取所有的 git 项目
-  rpc All(AllProjectsRequest) returns (AllProjectsResponse) {
+  rpc All(AllRequest) returns (AllResponse) {
     option (google.api.http) = {
       get: "/api/git/projects",
     };
@@ -175,7 +175,7 @@ service Git {
   }
 
   // MarsConfigFile 获取项目 mars 配置详情
-  rpc MarsConfigFile(ConfigFileRequest) returns (ConfigFileResponse) {
+  rpc MarsConfigFile(MarsConfigFileRequest) returns (MarsConfigFileResponse) {
     option (google.api.http) = {
       get: "/api/git/projects/{git_project_id}/branches/{branch}/config_file",
     };

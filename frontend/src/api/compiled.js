@@ -9288,24 +9288,24 @@ export const git = $root.git = (() => {
         return ProjectItem;
     })();
 
-    git.AllProjectsResponse = (function() {
+    git.AllResponse = (function() {
 
         /**
-         * Properties of an AllProjectsResponse.
+         * Properties of an AllResponse.
          * @memberof git
-         * @interface IAllProjectsResponse
-         * @property {Array.<git.ProjectItem>|null} [items] AllProjectsResponse items
+         * @interface IAllResponse
+         * @property {Array.<git.ProjectItem>|null} [items] AllResponse items
          */
 
         /**
-         * Constructs a new AllProjectsResponse.
+         * Constructs a new AllResponse.
          * @memberof git
-         * @classdesc Represents an AllProjectsResponse.
-         * @implements IAllProjectsResponse
+         * @classdesc Represents an AllResponse.
+         * @implements IAllResponse
          * @constructor
-         * @param {git.IAllProjectsResponse=} [properties] Properties to set
+         * @param {git.IAllResponse=} [properties] Properties to set
          */
-        function AllProjectsResponse(properties) {
+        function AllResponse(properties) {
             this.items = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -9314,23 +9314,23 @@ export const git = $root.git = (() => {
         }
 
         /**
-         * AllProjectsResponse items.
+         * AllResponse items.
          * @member {Array.<git.ProjectItem>} items
-         * @memberof git.AllProjectsResponse
+         * @memberof git.AllResponse
          * @instance
          */
-        AllProjectsResponse.prototype.items = $util.emptyArray;
+        AllResponse.prototype.items = $util.emptyArray;
 
         /**
-         * Encodes the specified AllProjectsResponse message. Does not implicitly {@link git.AllProjectsResponse.verify|verify} messages.
+         * Encodes the specified AllResponse message. Does not implicitly {@link git.AllResponse.verify|verify} messages.
          * @function encode
-         * @memberof git.AllProjectsResponse
+         * @memberof git.AllResponse
          * @static
-         * @param {git.AllProjectsResponse} message AllProjectsResponse message or plain object to encode
+         * @param {git.AllResponse} message AllResponse message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        AllProjectsResponse.encode = function encode(message, writer) {
+        AllResponse.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
             if (message.items != null && message.items.length)
@@ -9340,20 +9340,20 @@ export const git = $root.git = (() => {
         };
 
         /**
-         * Decodes an AllProjectsResponse message from the specified reader or buffer.
+         * Decodes an AllResponse message from the specified reader or buffer.
          * @function decode
-         * @memberof git.AllProjectsResponse
+         * @memberof git.AllResponse
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {git.AllProjectsResponse} AllProjectsResponse
+         * @returns {git.AllResponse} AllResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        AllProjectsResponse.decode = function decode(reader, length) {
+        AllResponse.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.AllProjectsResponse();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.AllResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -9370,7 +9370,7 @@ export const git = $root.git = (() => {
             return message;
         };
 
-        return AllProjectsResponse;
+        return AllResponse;
     })();
 
     git.Option = (function() {
@@ -10545,25 +10545,25 @@ export const git = $root.git = (() => {
         return PipelineInfoResponse;
     })();
 
-    git.ConfigFileRequest = (function() {
+    git.MarsConfigFileRequest = (function() {
 
         /**
-         * Properties of a ConfigFileRequest.
+         * Properties of a MarsConfigFileRequest.
          * @memberof git
-         * @interface IConfigFileRequest
-         * @property {string|null} [git_project_id] ConfigFileRequest git_project_id
-         * @property {string|null} [branch] ConfigFileRequest branch
+         * @interface IMarsConfigFileRequest
+         * @property {string|null} [git_project_id] MarsConfigFileRequest git_project_id
+         * @property {string|null} [branch] MarsConfigFileRequest branch
          */
 
         /**
-         * Constructs a new ConfigFileRequest.
+         * Constructs a new MarsConfigFileRequest.
          * @memberof git
-         * @classdesc Represents a ConfigFileRequest.
-         * @implements IConfigFileRequest
+         * @classdesc Represents a MarsConfigFileRequest.
+         * @implements IMarsConfigFileRequest
          * @constructor
-         * @param {git.IConfigFileRequest=} [properties] Properties to set
+         * @param {git.IMarsConfigFileRequest=} [properties] Properties to set
          */
-        function ConfigFileRequest(properties) {
+        function MarsConfigFileRequest(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -10571,31 +10571,31 @@ export const git = $root.git = (() => {
         }
 
         /**
-         * ConfigFileRequest git_project_id.
+         * MarsConfigFileRequest git_project_id.
          * @member {string} git_project_id
-         * @memberof git.ConfigFileRequest
+         * @memberof git.MarsConfigFileRequest
          * @instance
          */
-        ConfigFileRequest.prototype.git_project_id = "";
+        MarsConfigFileRequest.prototype.git_project_id = "";
 
         /**
-         * ConfigFileRequest branch.
+         * MarsConfigFileRequest branch.
          * @member {string} branch
-         * @memberof git.ConfigFileRequest
+         * @memberof git.MarsConfigFileRequest
          * @instance
          */
-        ConfigFileRequest.prototype.branch = "";
+        MarsConfigFileRequest.prototype.branch = "";
 
         /**
-         * Encodes the specified ConfigFileRequest message. Does not implicitly {@link git.ConfigFileRequest.verify|verify} messages.
+         * Encodes the specified MarsConfigFileRequest message. Does not implicitly {@link git.MarsConfigFileRequest.verify|verify} messages.
          * @function encode
-         * @memberof git.ConfigFileRequest
+         * @memberof git.MarsConfigFileRequest
          * @static
-         * @param {git.ConfigFileRequest} message ConfigFileRequest message or plain object to encode
+         * @param {git.MarsConfigFileRequest} message MarsConfigFileRequest message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ConfigFileRequest.encode = function encode(message, writer) {
+        MarsConfigFileRequest.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
             if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
@@ -10606,20 +10606,20 @@ export const git = $root.git = (() => {
         };
 
         /**
-         * Decodes a ConfigFileRequest message from the specified reader or buffer.
+         * Decodes a MarsConfigFileRequest message from the specified reader or buffer.
          * @function decode
-         * @memberof git.ConfigFileRequest
+         * @memberof git.MarsConfigFileRequest
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {git.ConfigFileRequest} ConfigFileRequest
+         * @returns {git.MarsConfigFileRequest} MarsConfigFileRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ConfigFileRequest.decode = function decode(reader, length) {
+        MarsConfigFileRequest.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.ConfigFileRequest();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.MarsConfigFileRequest();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -10637,29 +10637,29 @@ export const git = $root.git = (() => {
             return message;
         };
 
-        return ConfigFileRequest;
+        return MarsConfigFileRequest;
     })();
 
-    git.ConfigFileResponse = (function() {
+    git.MarsConfigFileResponse = (function() {
 
         /**
-         * Properties of a ConfigFileResponse.
+         * Properties of a MarsConfigFileResponse.
          * @memberof git
-         * @interface IConfigFileResponse
-         * @property {string|null} [data] ConfigFileResponse data
-         * @property {string|null} [type] ConfigFileResponse type
-         * @property {Array.<mars.Element>|null} [elements] ConfigFileResponse elements
+         * @interface IMarsConfigFileResponse
+         * @property {string|null} [data] MarsConfigFileResponse data
+         * @property {string|null} [type] MarsConfigFileResponse type
+         * @property {Array.<mars.Element>|null} [elements] MarsConfigFileResponse elements
          */
 
         /**
-         * Constructs a new ConfigFileResponse.
+         * Constructs a new MarsConfigFileResponse.
          * @memberof git
-         * @classdesc Represents a ConfigFileResponse.
-         * @implements IConfigFileResponse
+         * @classdesc Represents a MarsConfigFileResponse.
+         * @implements IMarsConfigFileResponse
          * @constructor
-         * @param {git.IConfigFileResponse=} [properties] Properties to set
+         * @param {git.IMarsConfigFileResponse=} [properties] Properties to set
          */
-        function ConfigFileResponse(properties) {
+        function MarsConfigFileResponse(properties) {
             this.elements = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -10668,39 +10668,39 @@ export const git = $root.git = (() => {
         }
 
         /**
-         * ConfigFileResponse data.
+         * MarsConfigFileResponse data.
          * @member {string} data
-         * @memberof git.ConfigFileResponse
+         * @memberof git.MarsConfigFileResponse
          * @instance
          */
-        ConfigFileResponse.prototype.data = "";
+        MarsConfigFileResponse.prototype.data = "";
 
         /**
-         * ConfigFileResponse type.
+         * MarsConfigFileResponse type.
          * @member {string} type
-         * @memberof git.ConfigFileResponse
+         * @memberof git.MarsConfigFileResponse
          * @instance
          */
-        ConfigFileResponse.prototype.type = "";
+        MarsConfigFileResponse.prototype.type = "";
 
         /**
-         * ConfigFileResponse elements.
+         * MarsConfigFileResponse elements.
          * @member {Array.<mars.Element>} elements
-         * @memberof git.ConfigFileResponse
+         * @memberof git.MarsConfigFileResponse
          * @instance
          */
-        ConfigFileResponse.prototype.elements = $util.emptyArray;
+        MarsConfigFileResponse.prototype.elements = $util.emptyArray;
 
         /**
-         * Encodes the specified ConfigFileResponse message. Does not implicitly {@link git.ConfigFileResponse.verify|verify} messages.
+         * Encodes the specified MarsConfigFileResponse message. Does not implicitly {@link git.MarsConfigFileResponse.verify|verify} messages.
          * @function encode
-         * @memberof git.ConfigFileResponse
+         * @memberof git.MarsConfigFileResponse
          * @static
-         * @param {git.ConfigFileResponse} message ConfigFileResponse message or plain object to encode
+         * @param {git.MarsConfigFileResponse} message MarsConfigFileResponse message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ConfigFileResponse.encode = function encode(message, writer) {
+        MarsConfigFileResponse.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
             if (message.data != null && Object.hasOwnProperty.call(message, "data"))
@@ -10714,20 +10714,20 @@ export const git = $root.git = (() => {
         };
 
         /**
-         * Decodes a ConfigFileResponse message from the specified reader or buffer.
+         * Decodes a MarsConfigFileResponse message from the specified reader or buffer.
          * @function decode
-         * @memberof git.ConfigFileResponse
+         * @memberof git.MarsConfigFileResponse
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {git.ConfigFileResponse} ConfigFileResponse
+         * @returns {git.MarsConfigFileResponse} MarsConfigFileResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ConfigFileResponse.decode = function decode(reader, length) {
+        MarsConfigFileResponse.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.ConfigFileResponse();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.MarsConfigFileResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -10750,7 +10750,7 @@ export const git = $root.git = (() => {
             return message;
         };
 
-        return ConfigFileResponse;
+        return MarsConfigFileResponse;
     })();
 
     git.EnableProjectResponse = (function() {
@@ -10887,23 +10887,23 @@ export const git = $root.git = (() => {
         return DisableProjectResponse;
     })();
 
-    git.AllProjectsRequest = (function() {
+    git.AllRequest = (function() {
 
         /**
-         * Properties of an AllProjectsRequest.
+         * Properties of an AllRequest.
          * @memberof git
-         * @interface IAllProjectsRequest
+         * @interface IAllRequest
          */
 
         /**
-         * Constructs a new AllProjectsRequest.
+         * Constructs a new AllRequest.
          * @memberof git
-         * @classdesc Represents an AllProjectsRequest.
-         * @implements IAllProjectsRequest
+         * @classdesc Represents an AllRequest.
+         * @implements IAllRequest
          * @constructor
-         * @param {git.IAllProjectsRequest=} [properties] Properties to set
+         * @param {git.IAllRequest=} [properties] Properties to set
          */
-        function AllProjectsRequest(properties) {
+        function AllRequest(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -10911,35 +10911,35 @@ export const git = $root.git = (() => {
         }
 
         /**
-         * Encodes the specified AllProjectsRequest message. Does not implicitly {@link git.AllProjectsRequest.verify|verify} messages.
+         * Encodes the specified AllRequest message. Does not implicitly {@link git.AllRequest.verify|verify} messages.
          * @function encode
-         * @memberof git.AllProjectsRequest
+         * @memberof git.AllRequest
          * @static
-         * @param {git.AllProjectsRequest} message AllProjectsRequest message or plain object to encode
+         * @param {git.AllRequest} message AllRequest message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        AllProjectsRequest.encode = function encode(message, writer) {
+        AllRequest.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
             return writer;
         };
 
         /**
-         * Decodes an AllProjectsRequest message from the specified reader or buffer.
+         * Decodes an AllRequest message from the specified reader or buffer.
          * @function decode
-         * @memberof git.AllProjectsRequest
+         * @memberof git.AllRequest
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {git.AllProjectsRequest} AllProjectsRequest
+         * @returns {git.AllRequest} AllRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        AllProjectsRequest.decode = function decode(reader, length) {
+        AllRequest.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.AllProjectsRequest();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.git.AllRequest();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -10951,7 +10951,7 @@ export const git = $root.git = (() => {
             return message;
         };
 
-        return AllProjectsRequest;
+        return AllRequest;
     })();
 
     git.ProjectOptionsRequest = (function() {
@@ -11111,7 +11111,7 @@ export const git = $root.git = (() => {
          * @typedef AllCallback
          * @type {function}
          * @param {Error|null} error Error, if any
-         * @param {git.AllProjectsResponse} [response] AllProjectsResponse
+         * @param {git.AllResponse} [response] AllResponse
          */
 
         /**
@@ -11119,13 +11119,13 @@ export const git = $root.git = (() => {
          * @function all
          * @memberof git.Git
          * @instance
-         * @param {git.AllProjectsRequest} request AllProjectsRequest message or plain object
-         * @param {git.Git.AllCallback} callback Node-style callback called with the error, if any, and AllProjectsResponse
+         * @param {git.AllRequest} request AllRequest message or plain object
+         * @param {git.Git.AllCallback} callback Node-style callback called with the error, if any, and AllResponse
          * @returns {undefined}
          * @variation 1
          */
         Object.defineProperty(Git.prototype.all = function all(request, callback) {
-            return this.rpcCall(all, $root.git.AllProjectsRequest, $root.git.AllProjectsResponse, request, callback);
+            return this.rpcCall(all, $root.git.AllRequest, $root.git.AllResponse, request, callback);
         }, "name", { value: "All" });
 
         /**
@@ -11133,8 +11133,8 @@ export const git = $root.git = (() => {
          * @function all
          * @memberof git.Git
          * @instance
-         * @param {git.AllProjectsRequest} request AllProjectsRequest message or plain object
-         * @returns {Promise<git.AllProjectsResponse>} Promise
+         * @param {git.AllRequest} request AllRequest message or plain object
+         * @returns {Promise<git.AllResponse>} Promise
          * @variation 2
          */
 
@@ -11309,7 +11309,7 @@ export const git = $root.git = (() => {
          * @typedef MarsConfigFileCallback
          * @type {function}
          * @param {Error|null} error Error, if any
-         * @param {git.ConfigFileResponse} [response] ConfigFileResponse
+         * @param {git.MarsConfigFileResponse} [response] MarsConfigFileResponse
          */
 
         /**
@@ -11317,13 +11317,13 @@ export const git = $root.git = (() => {
          * @function marsConfigFile
          * @memberof git.Git
          * @instance
-         * @param {git.ConfigFileRequest} request ConfigFileRequest message or plain object
-         * @param {git.Git.MarsConfigFileCallback} callback Node-style callback called with the error, if any, and ConfigFileResponse
+         * @param {git.MarsConfigFileRequest} request MarsConfigFileRequest message or plain object
+         * @param {git.Git.MarsConfigFileCallback} callback Node-style callback called with the error, if any, and MarsConfigFileResponse
          * @returns {undefined}
          * @variation 1
          */
         Object.defineProperty(Git.prototype.marsConfigFile = function marsConfigFile(request, callback) {
-            return this.rpcCall(marsConfigFile, $root.git.ConfigFileRequest, $root.git.ConfigFileResponse, request, callback);
+            return this.rpcCall(marsConfigFile, $root.git.MarsConfigFileRequest, $root.git.MarsConfigFileResponse, request, callback);
         }, "name", { value: "MarsConfigFile" });
 
         /**
@@ -11331,8 +11331,8 @@ export const git = $root.git = (() => {
          * @function marsConfigFile
          * @memberof git.Git
          * @instance
-         * @param {git.ConfigFileRequest} request ConfigFileRequest message or plain object
-         * @returns {Promise<git.ConfigFileResponse>} Promise
+         * @param {git.MarsConfigFileRequest} request MarsConfigFileRequest message or plain object
+         * @returns {Promise<git.MarsConfigFileResponse>} Promise
          * @variation 2
          */
 

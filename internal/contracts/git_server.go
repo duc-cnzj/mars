@@ -3,6 +3,7 @@ package contracts
 //go:generate mockgen -destination ../mock/mock_git_server_pipeline.go -package mock github.com/duc-cnzj/mars/internal/contracts PipelineInterface
 //go:generate mockgen -destination ../mock/mock_git_server_commit.go -package mock github.com/duc-cnzj/mars/internal/contracts CommitInterface
 //go:generate mockgen -destination ../mock/mock_git_server_project.go -package mock github.com/duc-cnzj/mars/internal/contracts ProjectInterface
+//go:generate mockgen -destination ../mock/mock_git_server_branch.go -package mock github.com/duc-cnzj/mars/internal/contracts BranchInterface
 
 import "time"
 

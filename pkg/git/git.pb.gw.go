@@ -100,7 +100,7 @@ func local_request_Git_DisableProject_0(ctx context.Context, marshaler runtime.M
 }
 
 func request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllProjectsRequest
+	var protoReq AllRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := client.All(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -109,7 +109,7 @@ func request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, client 
 }
 
 func local_request_Git_All_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllProjectsRequest
+	var protoReq AllRequest
 	var metadata runtime.ServerMetadata
 
 	msg, err := server.All(ctx, &protoReq)
@@ -462,7 +462,7 @@ func local_request_Git_PipelineInfo_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, client GitClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ConfigFileRequest
+	var protoReq MarsConfigFileRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -498,7 +498,7 @@ func request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_Git_MarsConfigFile_0(ctx context.Context, marshaler runtime.Marshaler, server GitServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ConfigFileRequest
+	var protoReq MarsConfigFileRequest
 	var metadata runtime.ServerMetadata
 
 	var (

@@ -28,7 +28,7 @@ type GitClient interface {
 	// DisableProject 关闭项目
 	DisableProject(ctx context.Context, in *DisableProjectRequest, opts ...grpc.CallOption) (*DisableProjectResponse, error)
 	// All 获取所有的 git 项目
-	All(ctx context.Context, in *AllProjectsRequest, opts ...grpc.CallOption) (*AllProjectsResponse, error)
+	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
 	// ProjectOptions 获取项目信息， 用在级联列表
 	ProjectOptions(ctx context.Context, in *ProjectOptionsRequest, opts ...grpc.CallOption) (*ProjectOptionsResponse, error)
 	// BranchOptions 获取分支信息， 用在级联列表
@@ -40,7 +40,7 @@ type GitClient interface {
 	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(ctx context.Context, in *PipelineInfoRequest, opts ...grpc.CallOption) (*PipelineInfoResponse, error)
 	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(ctx context.Context, in *ConfigFileRequest, opts ...grpc.CallOption) (*ConfigFileResponse, error)
+	MarsConfigFile(ctx context.Context, in *MarsConfigFileRequest, opts ...grpc.CallOption) (*MarsConfigFileResponse, error)
 }
 
 type gitClient struct {
@@ -69,8 +69,8 @@ func (c *gitClient) DisableProject(ctx context.Context, in *DisableProjectReques
 	return out, nil
 }
 
-func (c *gitClient) All(ctx context.Context, in *AllProjectsRequest, opts ...grpc.CallOption) (*AllProjectsResponse, error) {
-	out := new(AllProjectsResponse)
+func (c *gitClient) All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error) {
+	out := new(AllResponse)
 	err := c.cc.Invoke(ctx, "/git.Git/All", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -123,8 +123,8 @@ func (c *gitClient) PipelineInfo(ctx context.Context, in *PipelineInfoRequest, o
 	return out, nil
 }
 
-func (c *gitClient) MarsConfigFile(ctx context.Context, in *ConfigFileRequest, opts ...grpc.CallOption) (*ConfigFileResponse, error) {
-	out := new(ConfigFileResponse)
+func (c *gitClient) MarsConfigFile(ctx context.Context, in *MarsConfigFileRequest, opts ...grpc.CallOption) (*MarsConfigFileResponse, error) {
+	out := new(MarsConfigFileResponse)
 	err := c.cc.Invoke(ctx, "/git.Git/MarsConfigFile", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ type GitServer interface {
 	// DisableProject 关闭项目
 	DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error)
 	// All 获取所有的 git 项目
-	All(context.Context, *AllProjectsRequest) (*AllProjectsResponse, error)
+	All(context.Context, *AllRequest) (*AllResponse, error)
 	// ProjectOptions 获取项目信息， 用在级联列表
 	ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error)
 	// BranchOptions 获取分支信息， 用在级联列表
@@ -153,7 +153,7 @@ type GitServer interface {
 	// PipelineInfo 获取 pipeline 详情
 	PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error)
 	// MarsConfigFile 获取项目 mars 配置详情
-	MarsConfigFile(context.Context, *ConfigFileRequest) (*ConfigFileResponse, error)
+	MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error)
 	mustEmbedUnimplementedGitServer()
 }
 
@@ -167,7 +167,7 @@ func (UnimplementedGitServer) EnableProject(context.Context, *EnableProjectReque
 func (UnimplementedGitServer) DisableProject(context.Context, *DisableProjectRequest) (*DisableProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DisableProject not implemented")
 }
-func (UnimplementedGitServer) All(context.Context, *AllProjectsRequest) (*AllProjectsResponse, error) {
+func (UnimplementedGitServer) All(context.Context, *AllRequest) (*AllResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
 }
 func (UnimplementedGitServer) ProjectOptions(context.Context, *ProjectOptionsRequest) (*ProjectOptionsResponse, error) {
@@ -185,7 +185,7 @@ func (UnimplementedGitServer) Commit(context.Context, *CommitRequest) (*CommitRe
 func (UnimplementedGitServer) PipelineInfo(context.Context, *PipelineInfoRequest) (*PipelineInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PipelineInfo not implemented")
 }
-func (UnimplementedGitServer) MarsConfigFile(context.Context, *ConfigFileRequest) (*ConfigFileResponse, error) {
+func (UnimplementedGitServer) MarsConfigFile(context.Context, *MarsConfigFileRequest) (*MarsConfigFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarsConfigFile not implemented")
 }
 func (UnimplementedGitServer) mustEmbedUnimplementedGitServer() {}
@@ -238,7 +238,7 @@ func _Git_DisableProject_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllProjectsRequest)
+	in := new(AllRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func _Git_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}
 		FullMethod: "/git.Git/All",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).All(ctx, req.(*AllProjectsRequest))
+		return srv.(GitServer).All(ctx, req.(*AllRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -346,7 +346,7 @@ func _Git_PipelineInfo_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConfigFileRequest)
+	in := new(MarsConfigFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func _Git_MarsConfigFile_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/git.Git/MarsConfigFile",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GitServer).MarsConfigFile(ctx, req.(*ConfigFileRequest))
+		return srv.(GitServer).MarsConfigFile(ctx, req.(*MarsConfigFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

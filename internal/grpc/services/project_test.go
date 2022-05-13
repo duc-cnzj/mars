@@ -290,14 +290,19 @@ func TestProjectSvc_Apply(t *testing.T) {
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
 	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
-
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	ws := mockWsServer(m, app)
+	ps := mock.NewMockPubSub(m)
+	ws.EXPECT().New("", "").Return(ps)
 	req := &project.ApplyRequest{
-		NamespaceId:  1,
-		Name:         "aaa",
-		GitProjectId: 100,
-		GitBranch:    "dev",
-		GitCommit:    "xxx",
-		Config:       "cfg",
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
 	}
 	job.EXPECT().Stop(gomock.Any()).Times(0)
 	ma := &mockApplyServer{}
@@ -380,6 +385,24 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	defer m.Finish()
 	job := mock.NewMockJob(m)
 	msg := mock.NewMockDeployMsger(m)
+	req := &project.ApplyRequest{
+		NamespaceId:  1,
+		Name:         "aaa",
+		GitProjectId: 100,
+		GitBranch:    "dev",
+		Config:       "cfg",
+	}
+
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	gits := mockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
+	_, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		return job
+	}}).ApplyDryRun(adminCtx(), req)
+	assert.Error(t, err)
+	req.GitCommit = "xxx"
+
 	job.EXPECT().Messager().Return(msg).AnyTimes()
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
@@ -390,15 +413,6 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	job.EXPECT().Finish().Times(1)
 	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	job.EXPECT().Manifests().Return([]string{"Manifests"}).Times(1)
-
-	req := &project.ApplyRequest{
-		NamespaceId:  1,
-		Name:         "aaa",
-		GitProjectId: 100,
-		GitBranch:    "dev",
-		GitCommit:    "xxx",
-		Config:       "cfg",
-	}
 
 	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job

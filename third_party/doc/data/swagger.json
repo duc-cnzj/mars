@@ -613,7 +613,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/gitAllProjectsResponse"
+              "$ref": "#/definitions/gitAllResponse"
             }
           },
           "default": {
@@ -875,7 +875,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/gitConfigFileResponse"
+              "$ref": "#/definitions/gitMarsConfigFileResponse"
             }
           },
           "default": {
@@ -1987,7 +1987,7 @@
         }
       }
     },
-    "gitAllProjectsResponse": {
+    "gitAllResponse": {
       "type": "object",
       "properties": {
         "items": {
@@ -2067,23 +2067,6 @@
         }
       }
     },
-    "gitConfigFileResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string"
-        },
-        "elements": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/marsElement"
-          }
-        },
-        "type": {
-          "type": "string"
-        }
-      }
-    },
     "gitDisableProjectRequest": {
       "type": "object",
       "properties": {
@@ -2105,6 +2088,23 @@
     },
     "gitEnableProjectResponse": {
       "type": "object"
+    },
+    "gitMarsConfigFileResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/marsElement"
+          }
+        },
+        "type": {
+          "type": "string"
+        }
+      }
     },
     "gitOption": {
       "type": "object",

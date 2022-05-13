@@ -376,22 +376,22 @@ var _ interface {
 	ErrorName() string
 } = ProjectItemValidationError{}
 
-// Validate checks the field values on AllProjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AllProjectsResponse) Validate() error {
+// Validate checks the field values on AllResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AllResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AllProjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AllProjectsResponseMultiError, or nil if none found.
-func (m *AllProjectsResponse) ValidateAll() error {
+// ValidateAll checks the field values on AllResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AllResponseMultiError, or
+// nil if none found.
+func (m *AllResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AllProjectsResponse) validate(all bool) error {
+func (m *AllResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -405,7 +405,7 @@ func (m *AllProjectsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, AllProjectsResponseValidationError{
+					errors = append(errors, AllResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -413,7 +413,7 @@ func (m *AllProjectsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, AllProjectsResponseValidationError{
+					errors = append(errors, AllResponseValidationError{
 						field:  fmt.Sprintf("Items[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -422,7 +422,7 @@ func (m *AllProjectsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return AllProjectsResponseValidationError{
+				return AllResponseValidationError{
 					field:  fmt.Sprintf("Items[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -433,19 +433,18 @@ func (m *AllProjectsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return AllProjectsResponseMultiError(errors)
+		return AllResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// AllProjectsResponseMultiError is an error wrapping multiple validation
-// errors returned by AllProjectsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type AllProjectsResponseMultiError []error
+// AllResponseMultiError is an error wrapping multiple validation errors
+// returned by AllResponse.ValidateAll() if the designated constraints aren't met.
+type AllResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AllProjectsResponseMultiError) Error() string {
+func (m AllResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -454,11 +453,11 @@ func (m AllProjectsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AllProjectsResponseMultiError) AllErrors() []error { return m }
+func (m AllResponseMultiError) AllErrors() []error { return m }
 
-// AllProjectsResponseValidationError is the validation error returned by
-// AllProjectsResponse.Validate if the designated constraints aren't met.
-type AllProjectsResponseValidationError struct {
+// AllResponseValidationError is the validation error returned by
+// AllResponse.Validate if the designated constraints aren't met.
+type AllResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -466,24 +465,22 @@ type AllProjectsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e AllProjectsResponseValidationError) Field() string { return e.field }
+func (e AllResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AllProjectsResponseValidationError) Reason() string { return e.reason }
+func (e AllResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AllProjectsResponseValidationError) Cause() error { return e.cause }
+func (e AllResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AllProjectsResponseValidationError) Key() bool { return e.key }
+func (e AllResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AllProjectsResponseValidationError) ErrorName() string {
-	return "AllProjectsResponseValidationError"
-}
+func (e AllResponseValidationError) ErrorName() string { return "AllResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e AllProjectsResponseValidationError) Error() string {
+func (e AllResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -495,14 +492,14 @@ func (e AllProjectsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAllProjectsResponse.%s: %s%s",
+		"invalid %sAllResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AllProjectsResponseValidationError{}
+var _ error = AllResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -510,7 +507,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AllProjectsResponseValidationError{}
+} = AllResponseValidationError{}
 
 // Validate checks the field values on Option with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -1753,22 +1750,22 @@ var _ interface {
 	ErrorName() string
 } = PipelineInfoResponseValidationError{}
 
-// Validate checks the field values on ConfigFileRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ConfigFileRequest) Validate() error {
+// Validate checks the field values on MarsConfigFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MarsConfigFileRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ConfigFileRequest with the rules
+// ValidateAll checks the field values on MarsConfigFileRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ConfigFileRequestMultiError, or nil if none found.
-func (m *ConfigFileRequest) ValidateAll() error {
+// MarsConfigFileRequestMultiError, or nil if none found.
+func (m *MarsConfigFileRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ConfigFileRequest) validate(all bool) error {
+func (m *MarsConfigFileRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1776,7 +1773,7 @@ func (m *ConfigFileRequest) validate(all bool) error {
 	var errors []error
 
 	if len(m.GetGitProjectId()) < 1 {
-		err := ConfigFileRequestValidationError{
+		err := MarsConfigFileRequestValidationError{
 			field:  "GitProjectId",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1787,7 +1784,7 @@ func (m *ConfigFileRequest) validate(all bool) error {
 	}
 
 	if len(m.GetBranch()) < 1 {
-		err := ConfigFileRequestValidationError{
+		err := MarsConfigFileRequestValidationError{
 			field:  "Branch",
 			reason: "value length must be at least 1 bytes",
 		}
@@ -1798,19 +1795,19 @@ func (m *ConfigFileRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ConfigFileRequestMultiError(errors)
+		return MarsConfigFileRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ConfigFileRequestMultiError is an error wrapping multiple validation errors
-// returned by ConfigFileRequest.ValidateAll() if the designated constraints
-// aren't met.
-type ConfigFileRequestMultiError []error
+// MarsConfigFileRequestMultiError is an error wrapping multiple validation
+// errors returned by MarsConfigFileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MarsConfigFileRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ConfigFileRequestMultiError) Error() string {
+func (m MarsConfigFileRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1819,11 +1816,11 @@ func (m ConfigFileRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ConfigFileRequestMultiError) AllErrors() []error { return m }
+func (m MarsConfigFileRequestMultiError) AllErrors() []error { return m }
 
-// ConfigFileRequestValidationError is the validation error returned by
-// ConfigFileRequest.Validate if the designated constraints aren't met.
-type ConfigFileRequestValidationError struct {
+// MarsConfigFileRequestValidationError is the validation error returned by
+// MarsConfigFileRequest.Validate if the designated constraints aren't met.
+type MarsConfigFileRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1831,24 +1828,24 @@ type ConfigFileRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ConfigFileRequestValidationError) Field() string { return e.field }
+func (e MarsConfigFileRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ConfigFileRequestValidationError) Reason() string { return e.reason }
+func (e MarsConfigFileRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ConfigFileRequestValidationError) Cause() error { return e.cause }
+func (e MarsConfigFileRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ConfigFileRequestValidationError) Key() bool { return e.key }
+func (e MarsConfigFileRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ConfigFileRequestValidationError) ErrorName() string {
-	return "ConfigFileRequestValidationError"
+func (e MarsConfigFileRequestValidationError) ErrorName() string {
+	return "MarsConfigFileRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ConfigFileRequestValidationError) Error() string {
+func (e MarsConfigFileRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1860,14 +1857,14 @@ func (e ConfigFileRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConfigFileRequest.%s: %s%s",
+		"invalid %sMarsConfigFileRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ConfigFileRequestValidationError{}
+var _ error = MarsConfigFileRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1875,24 +1872,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ConfigFileRequestValidationError{}
+} = MarsConfigFileRequestValidationError{}
 
-// Validate checks the field values on ConfigFileResponse with the rules
+// Validate checks the field values on MarsConfigFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ConfigFileResponse) Validate() error {
+func (m *MarsConfigFileResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ConfigFileResponse with the rules
+// ValidateAll checks the field values on MarsConfigFileResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ConfigFileResponseMultiError, or nil if none found.
-func (m *ConfigFileResponse) ValidateAll() error {
+// MarsConfigFileResponseMultiError, or nil if none found.
+func (m *MarsConfigFileResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ConfigFileResponse) validate(all bool) error {
+func (m *MarsConfigFileResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1910,7 +1907,7 @@ func (m *ConfigFileResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ConfigFileResponseValidationError{
+					errors = append(errors, MarsConfigFileResponseValidationError{
 						field:  fmt.Sprintf("Elements[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1918,7 +1915,7 @@ func (m *ConfigFileResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ConfigFileResponseValidationError{
+					errors = append(errors, MarsConfigFileResponseValidationError{
 						field:  fmt.Sprintf("Elements[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1927,7 +1924,7 @@ func (m *ConfigFileResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ConfigFileResponseValidationError{
+				return MarsConfigFileResponseValidationError{
 					field:  fmt.Sprintf("Elements[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1938,19 +1935,19 @@ func (m *ConfigFileResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ConfigFileResponseMultiError(errors)
+		return MarsConfigFileResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ConfigFileResponseMultiError is an error wrapping multiple validation errors
-// returned by ConfigFileResponse.ValidateAll() if the designated constraints
-// aren't met.
-type ConfigFileResponseMultiError []error
+// MarsConfigFileResponseMultiError is an error wrapping multiple validation
+// errors returned by MarsConfigFileResponse.ValidateAll() if the designated
+// constraints aren't met.
+type MarsConfigFileResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ConfigFileResponseMultiError) Error() string {
+func (m MarsConfigFileResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1959,11 +1956,11 @@ func (m ConfigFileResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ConfigFileResponseMultiError) AllErrors() []error { return m }
+func (m MarsConfigFileResponseMultiError) AllErrors() []error { return m }
 
-// ConfigFileResponseValidationError is the validation error returned by
-// ConfigFileResponse.Validate if the designated constraints aren't met.
-type ConfigFileResponseValidationError struct {
+// MarsConfigFileResponseValidationError is the validation error returned by
+// MarsConfigFileResponse.Validate if the designated constraints aren't met.
+type MarsConfigFileResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1971,24 +1968,24 @@ type ConfigFileResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ConfigFileResponseValidationError) Field() string { return e.field }
+func (e MarsConfigFileResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ConfigFileResponseValidationError) Reason() string { return e.reason }
+func (e MarsConfigFileResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ConfigFileResponseValidationError) Cause() error { return e.cause }
+func (e MarsConfigFileResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ConfigFileResponseValidationError) Key() bool { return e.key }
+func (e MarsConfigFileResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ConfigFileResponseValidationError) ErrorName() string {
-	return "ConfigFileResponseValidationError"
+func (e MarsConfigFileResponseValidationError) ErrorName() string {
+	return "MarsConfigFileResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ConfigFileResponseValidationError) Error() string {
+func (e MarsConfigFileResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2000,14 +1997,14 @@ func (e ConfigFileResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConfigFileResponse.%s: %s%s",
+		"invalid %sMarsConfigFileResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ConfigFileResponseValidationError{}
+var _ error = MarsConfigFileResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2015,7 +2012,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ConfigFileResponseValidationError{}
+} = MarsConfigFileResponseValidationError{}
 
 // Validate checks the field values on EnableProjectResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2221,22 +2218,22 @@ var _ interface {
 	ErrorName() string
 } = DisableProjectResponseValidationError{}
 
-// Validate checks the field values on AllProjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AllProjectsRequest) Validate() error {
+// Validate checks the field values on AllRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AllRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AllProjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AllProjectsRequestMultiError, or nil if none found.
-func (m *AllProjectsRequest) ValidateAll() error {
+// ValidateAll checks the field values on AllRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AllRequestMultiError, or
+// nil if none found.
+func (m *AllRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AllProjectsRequest) validate(all bool) error {
+func (m *AllRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2244,19 +2241,18 @@ func (m *AllProjectsRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return AllProjectsRequestMultiError(errors)
+		return AllRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// AllProjectsRequestMultiError is an error wrapping multiple validation errors
-// returned by AllProjectsRequest.ValidateAll() if the designated constraints
-// aren't met.
-type AllProjectsRequestMultiError []error
+// AllRequestMultiError is an error wrapping multiple validation errors
+// returned by AllRequest.ValidateAll() if the designated constraints aren't met.
+type AllRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AllProjectsRequestMultiError) Error() string {
+func (m AllRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2265,11 +2261,11 @@ func (m AllProjectsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AllProjectsRequestMultiError) AllErrors() []error { return m }
+func (m AllRequestMultiError) AllErrors() []error { return m }
 
-// AllProjectsRequestValidationError is the validation error returned by
-// AllProjectsRequest.Validate if the designated constraints aren't met.
-type AllProjectsRequestValidationError struct {
+// AllRequestValidationError is the validation error returned by
+// AllRequest.Validate if the designated constraints aren't met.
+type AllRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2277,24 +2273,22 @@ type AllProjectsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e AllProjectsRequestValidationError) Field() string { return e.field }
+func (e AllRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AllProjectsRequestValidationError) Reason() string { return e.reason }
+func (e AllRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AllProjectsRequestValidationError) Cause() error { return e.cause }
+func (e AllRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AllProjectsRequestValidationError) Key() bool { return e.key }
+func (e AllRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AllProjectsRequestValidationError) ErrorName() string {
-	return "AllProjectsRequestValidationError"
-}
+func (e AllRequestValidationError) ErrorName() string { return "AllRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e AllProjectsRequestValidationError) Error() string {
+func (e AllRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2306,14 +2300,14 @@ func (e AllProjectsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAllProjectsRequest.%s: %s%s",
+		"invalid %sAllRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AllProjectsRequestValidationError{}
+var _ error = AllRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -2321,7 +2315,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AllProjectsRequestValidationError{}
+} = AllRequestValidationError{}
 
 // Validate checks the field values on ProjectOptionsRequest with the rules
 // defined in the proto definition for this message. If any rules are

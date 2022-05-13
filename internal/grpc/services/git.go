@@ -57,7 +57,7 @@ func (g *GitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRe
 			Enabled:       true,
 		})
 	}
-	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Create, fmt.Sprintf("启用项目: %s", project.GetName()))
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Update, fmt.Sprintf("启用项目: %s", project.GetName()))
 
 	return &git.EnableProjectResponse{}, nil
 }
@@ -83,12 +83,12 @@ func (g *GitSvc) DisableProject(ctx context.Context, request *git.DisableProject
 			Enabled:       false,
 		})
 	}
-	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Create, fmt.Sprintf("关闭项目: %s", project.GetName()))
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Update, fmt.Sprintf("关闭项目: %s", project.GetName()))
 
 	return &git.DisableProjectResponse{}, nil
 }
 
-func (g *GitSvc) All(ctx context.Context, req *git.AllProjectsRequest) (*git.AllProjectsResponse, error) {
+func (g *GitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse, error) {
 	projects, err := plugins.GetGitServer().AllProjects()
 	if err != nil {
 		return nil, err
@@ -123,10 +123,10 @@ func (g *GitSvc) All(ctx context.Context, req *git.AllProjectsRequest) (*git.All
 	}
 
 	sort.Slice(infos, func(i, j int) bool {
-		return infos[i].Id > infos[j].Id
+		return infos[i].Id < infos[j].Id
 	})
 
-	return &git.AllProjectsResponse{Items: infos}, nil
+	return &git.AllResponse{Items: infos}, nil
 }
 
 const (
@@ -193,12 +193,13 @@ func (g *GitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRe
 
 	res := make([]*git.Option, 0, len(branches))
 	for _, branch := range branches {
+		branchName := branch.GetName()
 		res = append(res, &git.Option{
-			Value:        branch.GetName(),
-			Label:        branch.GetName(),
+			Value:        branchName,
+			Label:        branchName,
 			IsLeaf:       false,
 			Type:         OptionTypeBranch,
-			Branch:       branch.GetName(),
+			Branch:       branchName,
 			GitProjectId: request.GitProjectId,
 		})
 	}
@@ -284,7 +285,7 @@ func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 	}, nil
 }
 
-func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.ConfigFileRequest) (*git.ConfigFileResponse, error) {
+func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.MarsConfigFileRequest) (*git.MarsConfigFileResponse, error) {
 	marsC, err := GetProjectMarsConfig(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err
@@ -296,7 +297,7 @@ func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.ConfigFileRequ
 		if marsC.ConfigFileType == "" {
 			ct = "yaml"
 		}
-		return &git.ConfigFileResponse{
+		return &git.MarsConfigFileResponse{
 			Data:     marsC.ConfigFileValues,
 			Type:     ct,
 			Elements: marsC.Elements,
@@ -324,14 +325,14 @@ func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.ConfigFileRequ
 	content, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, filename)
 	if err != nil {
 		mlog.Debug(err)
-		return &git.ConfigFileResponse{
+		return &git.MarsConfigFileResponse{
 			Data:     marsC.ConfigFileValues,
 			Type:     marsC.ConfigFileType,
 			Elements: marsC.Elements,
 		}, nil
 	}
 
-	return &git.ConfigFileResponse{
+	return &git.MarsConfigFileResponse{
 		Data:     content,
 		Type:     marsC.ConfigFileType,
 		Elements: marsC.Elements,

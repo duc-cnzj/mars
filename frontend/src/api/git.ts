@@ -2,7 +2,7 @@ import ajax from "./ajax";
 import pb from "./compiled"
 
 export function allProjects() {
-  return ajax.get<pb.git.AllProjectsResponse>("/api/git/projects");
+  return ajax.get<pb.git.AllResponse>("/api/git/projects");
 }
 
 export function projectOptions() {
@@ -31,8 +31,8 @@ export function pipelineInfo({git_project_id, branch, commit}: pb.git.PipelineIn
   );
 }
 
-export function configFile({git_project_id, branch}: pb.git.ConfigFileRequest) {
-  return ajax.get<pb.git.ConfigFileResponse>(
+export function configFile({git_project_id, branch}: pb.git.MarsConfigFileRequest) {
+  return ajax.get<pb.git.MarsConfigFileResponse>(
     `/api/git/projects/${git_project_id}/branches/${branch}/config_file`
   );
 }

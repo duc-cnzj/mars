@@ -4307,42 +4307,42 @@ export namespace git {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ProjectItem;
     }
 
-    /** Properties of an AllProjectsResponse. */
-    interface IAllProjectsResponse {
+    /** Properties of an AllResponse. */
+    interface IAllResponse {
 
-        /** AllProjectsResponse items */
+        /** AllResponse items */
         items?: (git.ProjectItem[]|null);
     }
 
-    /** Represents an AllProjectsResponse. */
-    class AllProjectsResponse implements IAllProjectsResponse {
+    /** Represents an AllResponse. */
+    class AllResponse implements IAllResponse {
 
         /**
-         * Constructs a new AllProjectsResponse.
+         * Constructs a new AllResponse.
          * @param [properties] Properties to set
          */
-        constructor(properties?: git.IAllProjectsResponse);
+        constructor(properties?: git.IAllResponse);
 
-        /** AllProjectsResponse items. */
+        /** AllResponse items. */
         public items: git.ProjectItem[];
 
         /**
-         * Encodes the specified AllProjectsResponse message. Does not implicitly {@link git.AllProjectsResponse.verify|verify} messages.
-         * @param message AllProjectsResponse message or plain object to encode
+         * Encodes the specified AllResponse message. Does not implicitly {@link git.AllResponse.verify|verify} messages.
+         * @param message AllResponse message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: git.AllProjectsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: git.AllResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes an AllProjectsResponse message from the specified reader or buffer.
+         * Decodes an AllResponse message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns AllProjectsResponse
+         * @returns AllResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllProjectsResponse;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllResponse;
     }
 
     /** Properties of an Option. */
@@ -4875,98 +4875,98 @@ export namespace git {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.PipelineInfoResponse;
     }
 
-    /** Properties of a ConfigFileRequest. */
-    interface IConfigFileRequest {
+    /** Properties of a MarsConfigFileRequest. */
+    interface IMarsConfigFileRequest {
 
-        /** ConfigFileRequest git_project_id */
+        /** MarsConfigFileRequest git_project_id */
         git_project_id?: (string|null);
 
-        /** ConfigFileRequest branch */
+        /** MarsConfigFileRequest branch */
         branch?: (string|null);
     }
 
-    /** Represents a ConfigFileRequest. */
-    class ConfigFileRequest implements IConfigFileRequest {
+    /** Represents a MarsConfigFileRequest. */
+    class MarsConfigFileRequest implements IMarsConfigFileRequest {
 
         /**
-         * Constructs a new ConfigFileRequest.
+         * Constructs a new MarsConfigFileRequest.
          * @param [properties] Properties to set
          */
-        constructor(properties?: git.IConfigFileRequest);
+        constructor(properties?: git.IMarsConfigFileRequest);
 
-        /** ConfigFileRequest git_project_id. */
+        /** MarsConfigFileRequest git_project_id. */
         public git_project_id: string;
 
-        /** ConfigFileRequest branch. */
+        /** MarsConfigFileRequest branch. */
         public branch: string;
 
         /**
-         * Encodes the specified ConfigFileRequest message. Does not implicitly {@link git.ConfigFileRequest.verify|verify} messages.
-         * @param message ConfigFileRequest message or plain object to encode
+         * Encodes the specified MarsConfigFileRequest message. Does not implicitly {@link git.MarsConfigFileRequest.verify|verify} messages.
+         * @param message MarsConfigFileRequest message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: git.ConfigFileRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: git.MarsConfigFileRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes a ConfigFileRequest message from the specified reader or buffer.
+         * Decodes a MarsConfigFileRequest message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns ConfigFileRequest
+         * @returns MarsConfigFileRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ConfigFileRequest;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.MarsConfigFileRequest;
     }
 
-    /** Properties of a ConfigFileResponse. */
-    interface IConfigFileResponse {
+    /** Properties of a MarsConfigFileResponse. */
+    interface IMarsConfigFileResponse {
 
-        /** ConfigFileResponse data */
+        /** MarsConfigFileResponse data */
         data?: (string|null);
 
-        /** ConfigFileResponse type */
+        /** MarsConfigFileResponse type */
         type?: (string|null);
 
-        /** ConfigFileResponse elements */
+        /** MarsConfigFileResponse elements */
         elements?: (mars.Element[]|null);
     }
 
-    /** Represents a ConfigFileResponse. */
-    class ConfigFileResponse implements IConfigFileResponse {
+    /** Represents a MarsConfigFileResponse. */
+    class MarsConfigFileResponse implements IMarsConfigFileResponse {
 
         /**
-         * Constructs a new ConfigFileResponse.
+         * Constructs a new MarsConfigFileResponse.
          * @param [properties] Properties to set
          */
-        constructor(properties?: git.IConfigFileResponse);
+        constructor(properties?: git.IMarsConfigFileResponse);
 
-        /** ConfigFileResponse data. */
+        /** MarsConfigFileResponse data. */
         public data: string;
 
-        /** ConfigFileResponse type. */
+        /** MarsConfigFileResponse type. */
         public type: string;
 
-        /** ConfigFileResponse elements. */
+        /** MarsConfigFileResponse elements. */
         public elements: mars.Element[];
 
         /**
-         * Encodes the specified ConfigFileResponse message. Does not implicitly {@link git.ConfigFileResponse.verify|verify} messages.
-         * @param message ConfigFileResponse message or plain object to encode
+         * Encodes the specified MarsConfigFileResponse message. Does not implicitly {@link git.MarsConfigFileResponse.verify|verify} messages.
+         * @param message MarsConfigFileResponse message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: git.ConfigFileResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: git.MarsConfigFileResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes a ConfigFileResponse message from the specified reader or buffer.
+         * Decodes a MarsConfigFileResponse message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns ConfigFileResponse
+         * @returns MarsConfigFileResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ConfigFileResponse;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.MarsConfigFileResponse;
     }
 
     /** Properties of an EnableProjectResponse. */
@@ -5033,36 +5033,36 @@ export namespace git {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.DisableProjectResponse;
     }
 
-    /** Properties of an AllProjectsRequest. */
-    interface IAllProjectsRequest {
+    /** Properties of an AllRequest. */
+    interface IAllRequest {
     }
 
-    /** Represents an AllProjectsRequest. */
-    class AllProjectsRequest implements IAllProjectsRequest {
+    /** Represents an AllRequest. */
+    class AllRequest implements IAllRequest {
 
         /**
-         * Constructs a new AllProjectsRequest.
+         * Constructs a new AllRequest.
          * @param [properties] Properties to set
          */
-        constructor(properties?: git.IAllProjectsRequest);
+        constructor(properties?: git.IAllRequest);
 
         /**
-         * Encodes the specified AllProjectsRequest message. Does not implicitly {@link git.AllProjectsRequest.verify|verify} messages.
-         * @param message AllProjectsRequest message or plain object to encode
+         * Encodes the specified AllRequest message. Does not implicitly {@link git.AllRequest.verify|verify} messages.
+         * @param message AllRequest message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: git.AllProjectsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: git.AllRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes an AllProjectsRequest message from the specified reader or buffer.
+         * Decodes an AllRequest message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns AllProjectsRequest
+         * @returns AllRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllProjectsRequest;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllRequest;
     }
 
     /** Properties of a ProjectOptionsRequest. */
@@ -5138,17 +5138,17 @@ export namespace git {
 
         /**
          * Calls All.
-         * @param request AllProjectsRequest message or plain object
-         * @param callback Node-style callback called with the error, if any, and AllProjectsResponse
+         * @param request AllRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and AllResponse
          */
-        public all(request: git.AllProjectsRequest, callback: git.Git.AllCallback): void;
+        public all(request: git.AllRequest, callback: git.Git.AllCallback): void;
 
         /**
          * Calls All.
-         * @param request AllProjectsRequest message or plain object
+         * @param request AllRequest message or plain object
          * @returns Promise
          */
-        public all(request: git.AllProjectsRequest): Promise<git.AllProjectsResponse>;
+        public all(request: git.AllRequest): Promise<git.AllResponse>;
 
         /**
          * Calls ProjectOptions.
@@ -5222,17 +5222,17 @@ export namespace git {
 
         /**
          * Calls MarsConfigFile.
-         * @param request ConfigFileRequest message or plain object
-         * @param callback Node-style callback called with the error, if any, and ConfigFileResponse
+         * @param request MarsConfigFileRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and MarsConfigFileResponse
          */
-        public marsConfigFile(request: git.ConfigFileRequest, callback: git.Git.MarsConfigFileCallback): void;
+        public marsConfigFile(request: git.MarsConfigFileRequest, callback: git.Git.MarsConfigFileCallback): void;
 
         /**
          * Calls MarsConfigFile.
-         * @param request ConfigFileRequest message or plain object
+         * @param request MarsConfigFileRequest message or plain object
          * @returns Promise
          */
-        public marsConfigFile(request: git.ConfigFileRequest): Promise<git.ConfigFileResponse>;
+        public marsConfigFile(request: git.MarsConfigFileRequest): Promise<git.MarsConfigFileResponse>;
     }
 
     namespace Git {
@@ -5254,9 +5254,9 @@ export namespace git {
         /**
          * Callback as used by {@link git.Git#all}.
          * @param error Error, if any
-         * @param [response] AllProjectsResponse
+         * @param [response] AllResponse
          */
-        type AllCallback = (error: (Error|null), response?: git.AllProjectsResponse) => void;
+        type AllCallback = (error: (Error|null), response?: git.AllResponse) => void;
 
         /**
          * Callback as used by {@link git.Git#projectOptions}.
@@ -5296,9 +5296,9 @@ export namespace git {
         /**
          * Callback as used by {@link git.Git#marsConfigFile}.
          * @param error Error, if any
-         * @param [response] ConfigFileResponse
+         * @param [response] MarsConfigFileResponse
          */
-        type MarsConfigFileCallback = (error: (Error|null), response?: git.ConfigFileResponse) => void;
+        type MarsConfigFileCallback = (error: (Error|null), response?: git.MarsConfigFileResponse) => void;
     }
 }
 
