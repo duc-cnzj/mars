@@ -27,12 +27,17 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		project.RegisterProjectServer(s, new(ProjectSvc))
+		project.RegisterProjectServer(s, &ProjectSvc{
+			NewJobFunc:           socket.NewJober,
+			UninstallReleaseFunc: utils.UninstallRelease,
+		})
 	})
 	RegisterEndpoint(project.RegisterProjectHandlerFromEndpoint)
 }
 
 type ProjectSvc struct {
+	UninstallReleaseFunc utils.UninstallReleaseFunc
+	NewJobFunc           socket.NewJobFunc
 	project.UnimplementedProjectServer
 }
 
@@ -63,13 +68,13 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
 	var pubsub contracts.PubSub = &plugins.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
-	errMsger := newErrorMessager()
-	if err := p.completeInput(input, errMsger); err != nil {
+	msger := newEmptyMessager()
+	if err := p.completeInput(input, msger); err != nil {
 		return nil, err
 	}
 	mlog.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
-	job := socket.NewJober(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&websocket.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -79,7 +84,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
-	}, *user, "", errMsger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
+	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
 
 	ch := make(chan struct{}, 1)
 	go func() {
@@ -89,11 +94,10 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		case <-ch:
 		}
 	}()
-	socket.InstallProject(job)
+	err := socket.InstallProject(job)
 	ch <- struct{}{}
-
-	if errMsger.HasErrors() {
-		return nil, errMsger
+	if err != nil {
+		return nil, err
 	}
 
 	return &project.DryRunApplyResponse{Results: job.Manifests()}, nil
@@ -117,7 +121,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{}, 1)
 
-	job := socket.NewJober(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&websocket.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -137,10 +141,10 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 			return
 		}
 	}()
-	socket.InstallProject(job)
+	err := socket.InstallProject(job)
 	ch <- struct{}{}
 
-	return nil
+	return err
 }
 
 func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger contracts.Msger) error {
@@ -165,7 +169,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := utils.UninstallRelease(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
+	if err := p.UninstallReleaseFunc(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
@@ -236,60 +240,32 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 	return &project.AllContainersResponse{Items: containerList}, nil
 }
 
-type errorMessager struct {
-	sync.RWMutex
-	errors []error
+type emptyMessager struct {
 }
 
-func newErrorMessager() *errorMessager {
-	return &errorMessager{errors: make([]error, 0)}
+func newEmptyMessager() *emptyMessager {
+	return &emptyMessager{}
 }
 
-func (e *errorMessager) HasErrors() bool {
-	e.RLock()
-	defer e.RUnlock()
-	return len(e.errors) > 0
+func (e *emptyMessager) SendEndError(err error) {
 }
 
-func (e *errorMessager) Error() string {
-	e.RLock()
-	defer e.RUnlock()
-	var line string
-	for _, err := range e.errors {
-		line += err.Error() + "\n"
-	}
-	return line
+func (e *emptyMessager) SendError(err error) {
 }
 
-func (e *errorMessager) addError(err error) {
-	e.Lock()
-	defer e.Unlock()
-	e.errors = append(e.errors, err)
+func (e *emptyMessager) SendMsg(s string) {
 }
 
-func (e *errorMessager) SendEndError(err error) {
-	e.addError(err)
+func (e *emptyMessager) SendProtoMsg(message contracts.WebsocketMessage) {
 }
 
-func (e *errorMessager) SendError(err error) {
-	e.addError(err)
+func (e *emptyMessager) SendProcessPercent(s string) {
 }
 
-func (e *errorMessager) SendMsg(s string) {
-	mlog.Debug(s)
+func (e *emptyMessager) Stop(err error) {
 }
 
-func (e *errorMessager) SendProtoMsg(message contracts.WebsocketMessage) {
-}
-
-func (e *errorMessager) SendProcessPercent(s string) {
-}
-
-func (e *errorMessager) Stop(err error) {
-	e.addError(err)
-}
-
-func (e *errorMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
+func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
 type messager struct {

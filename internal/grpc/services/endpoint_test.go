@@ -31,8 +31,12 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.Namespace{})
 	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
+		NamespaceId: 123,
+	})
+	assert.Error(t, err)
+	db.AutoMigrate(&models.Namespace{})
+	_, err = new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
 	assert.NotNil(t, err)
@@ -124,8 +128,12 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.Namespace{}, &models.Project{})
 	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
+		NamespaceId: 123,
+	})
+	assert.Error(t, err)
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	_, err = new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
 	assert.NotNil(t, err)

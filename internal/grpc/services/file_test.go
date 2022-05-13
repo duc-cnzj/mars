@@ -54,9 +54,12 @@ func TestFile_Delete(t *testing.T) {
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.File{})
 	_, err := new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
 	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, fromError.Code())
+	db.AutoMigrate(&models.File{})
+	_, err = new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
+	fromError, _ = status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
 	f := &models.File{
 		Path:     "/tmp/aa.txt",
@@ -84,6 +87,9 @@ func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	db.AutoMigrate(&models.File{})
+	db.Create(&models.File{
+		Path: "/tmp/path1",
+	})
 	up := mock.NewMockUploader(m)
 
 	finfo1 := mock.NewMockFileInfo(m)
@@ -96,12 +102,11 @@ func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 
 	up.EXPECT().AllDirectoryFiles("/tmp").Return([]contracts.FileInfo{finfo1, finfo2}, nil)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
-	up.EXPECT().Delete("/tmp/path1").Times(1)
 	up.EXPECT().Delete("/tmp/path2").Times(1)
 	up.EXPECT().RemoveEmptyDir("/tmp")
 	assertAuditLogFired(m, app)
 	res, _ := new(File).DeleteUndocumentedFiles(adminCtx(), &file.DeleteUndocumentedFilesRequest{})
-	assert.Len(t, res.Items, 2)
+	assert.Len(t, res.Items, 1)
 }
 
 func TestFile_DiskInfo(t *testing.T) {
@@ -133,6 +138,12 @@ func TestFile_List(t *testing.T) {
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
+	_, err := new(File).List(context.TODO(), &file.ListRequest{
+		Page:           1,
+		PageSize:       15,
+		WithoutDeleted: true,
+	})
+	assert.Error(t, err)
 	db.AutoMigrate(&models.File{})
 	db.Create(&models.File{
 		Path:          "/p",
@@ -187,8 +198,10 @@ func Test_listFiles_PrettyYaml(t *testing.T) {
 `, lf.PrettyYaml())
 }
 
-func assertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) {
+func assertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDispatcherInterface {
 	e := mock.NewMockDispatcherInterface(m)
 	e.EXPECT().Dispatch(events.EventAuditLog, gomock.Any()).Times(1)
-	app.EXPECT().EventDispatcher().Return(e)
+	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
+
+	return e
 }

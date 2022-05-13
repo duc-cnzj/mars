@@ -38,6 +38,8 @@ func TestMetricsSvc_CpuMemoryInNamespace(t *testing.T) {
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	_, err := new(MetricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: 1})
+	assert.Error(t, err)
 	p := &models.Project{
 		Name: "p",
 		Namespace: models.Namespace{
@@ -180,8 +182,9 @@ func TestMetricsSvc_CpuMemoryInProject(t *testing.T) {
 }
 
 type topServerMock struct {
-	ctx    context.Context
-	result []*metrics.TopPodResponse
+	sendError bool
+	ctx       context.Context
+	result    []*metrics.TopPodResponse
 	metrics.Metrics_StreamTopPodServer
 }
 
@@ -191,6 +194,9 @@ func (t *topServerMock) Context() context.Context {
 
 func (t *topServerMock) Send(response *metrics.TopPodResponse) error {
 	t.result = append(t.result, response)
+	if t.sendError {
+		return errors.New("err")
+	}
 	return nil
 }
 
@@ -273,6 +279,192 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 		assert.Equal(t, "4 m", response.HumanizeCpu)
 		assert.Equal(t, "5.0 MB", response.HumanizeMemory)
 	}
+}
+
+func TestMetricsSvc_StreamTopPod2(t *testing.T) {
+	preTickDuration := tickDuration
+	tickDuration = time.Millisecond * 500
+	defer func() {
+		tickDuration = preTickDuration
+	}()
+	preNow := now
+	now = func() string {
+		return "2022-01-01"
+	}
+	defer func() {
+		now = preNow
+	}()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	ch := make(chan struct{})
+	close(ch)
+	app.EXPECT().Done().Return(ch).Times(1)
+	instance.SetInstance(app)
+	fk := fake.NewSimpleClientset(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "pod",
+		},
+		Spec: v1.PodSpec{},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	})
+	mk := &fake2.Clientset{}
+	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &v1beta1.PodMetrics{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod",
+				Namespace: "ns",
+			},
+			Timestamp: metav1.Time{},
+			Window:    metav1.Duration{},
+			Containers: []v1beta1.ContainerMetrics{
+				{
+					Name: "container1",
+					Usage: v1.ResourceList{
+						v1.ResourceCPU:     *resource.NewMilliQuantity(4, resource.DecimalSI),
+						v1.ResourceMemory:  *resource.NewQuantity(5*(1000*1000), resource.DecimalSI),
+						v1.ResourceStorage: *resource.NewQuantity(6*(1000*1000), resource.DecimalSI),
+					},
+				},
+			},
+		}, nil
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:        fk,
+		MetricsClient: mk,
+	}).AnyTimes()
+	ctx, cancel := context.WithCancel(context.TODO())
+	done := make(chan struct{})
+	tsm := &topServerMock{ctx: ctx}
+	go func() {
+		defer close(done)
+		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+			Namespace: "ns",
+			Pod:       "pod",
+		}, tsm)
+		assert.Nil(t, err)
+	}()
+	select {
+	case <-time.After(1200 * time.Millisecond):
+		cancel()
+	}
+	_, ok := <-done
+	assert.False(t, ok)
+	assert.Len(t, tsm.result, 1)
+}
+
+func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
+	preTickDuration := tickDuration
+	tickDuration = time.Millisecond * 500
+	defer func() {
+		tickDuration = preTickDuration
+	}()
+	preNow := now
+	now = func() string {
+		return "2022-01-01"
+	}
+	defer func() {
+		now = preNow
+	}()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	app.EXPECT().Done().Return(nil).Times(0)
+	instance.SetInstance(app)
+	fk := fake.NewSimpleClientset()
+	mk := &fake2.Clientset{}
+	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, errors.New("xxx")
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:        fk,
+		MetricsClient: mk,
+	}).AnyTimes()
+	ctx, cancel := context.WithCancel(context.TODO())
+	done := make(chan struct{})
+	tsm := &topServerMock{ctx: ctx}
+	go func() {
+		defer close(done)
+		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+			Namespace: "ns",
+			Pod:       "pod",
+		}, tsm)
+		assert.Equal(t, "xxx", err.Error())
+	}()
+	select {
+	case <-time.After(1200 * time.Millisecond):
+		cancel()
+	}
+	_, ok := <-done
+	assert.False(t, ok)
+	assert.Len(t, tsm.result, 0)
+}
+
+func TestMetricsSvc_StreamTopPod_Error2(t *testing.T) {
+	preTickDuration := tickDuration
+	tickDuration = time.Millisecond * 500
+	defer func() {
+		tickDuration = preTickDuration
+	}()
+	preNow := now
+	now = func() string {
+		return "2022-01-01"
+	}
+	defer func() {
+		now = preNow
+	}()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	app.EXPECT().Done().Return(nil).Times(0)
+	instance.SetInstance(app)
+	fk := fake.NewSimpleClientset()
+	mk := &fake2.Clientset{}
+	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &v1beta1.PodMetrics{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod",
+				Namespace: "ns",
+			},
+			Timestamp: metav1.Time{},
+			Window:    metav1.Duration{},
+			Containers: []v1beta1.ContainerMetrics{
+				{
+					Name: "container1",
+					Usage: v1.ResourceList{
+						v1.ResourceCPU:     *resource.NewMilliQuantity(4, resource.DecimalSI),
+						v1.ResourceMemory:  *resource.NewQuantity(5*(1000*1000), resource.DecimalSI),
+						v1.ResourceStorage: *resource.NewQuantity(6*(1000*1000), resource.DecimalSI),
+					},
+				},
+			},
+		}, nil
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:        fk,
+		MetricsClient: mk,
+	}).AnyTimes()
+	ctx, cancel := context.WithCancel(context.TODO())
+	done := make(chan struct{})
+	tsm := &topServerMock{ctx: ctx, sendError: true}
+	go func() {
+		defer close(done)
+		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+			Namespace: "ns",
+			Pod:       "pod",
+		}, tsm)
+		assert.Equal(t, "err", err.Error())
+	}()
+	select {
+	case <-time.After(1200 * time.Millisecond):
+		cancel()
+	}
+	_, ok := <-done
+	assert.False(t, ok)
+	assert.Len(t, tsm.result, 1)
 }
 
 func TestMetricsSvc_TopPod(t *testing.T) {

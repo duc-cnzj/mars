@@ -409,8 +409,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	InstallProject(job)
 }
 
-func InstallProject(job contracts.Job) {
-	var err error
+func InstallProject(job contracts.Job) (err error) {
 	defer func() {
 		job.CallDestroyFuncs()
 		if err != nil && !job.IsDryRun() {
@@ -419,15 +418,24 @@ func InstallProject(job contracts.Job) {
 		job.Finish()
 	}()
 
+	handleStopErr := func(e error) {
+		job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), job.ProjectModel())
+		job.Messager().Stop(e)
+		err = e
+	}
+
 	if err = job.Validate(); err != nil {
+		if e := job.GetStoppedErrorIfHas(); e != nil {
+			handleStopErr(e)
+			return
+		}
 		job.Messager().SendEndError(err)
 		return
 	}
 
 	if err = job.LoadConfigs(); err != nil {
-		if err := job.GetStoppedErrorIfHas(); err != nil {
-			job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, err.Error(), job.ProjectModel())
-			job.Messager().Stop(err)
+		if e := job.GetStoppedErrorIfHas(); e != nil {
+			handleStopErr(e)
 			return
 		}
 		job.Messager().SendEndError(err)
@@ -441,4 +449,5 @@ func InstallProject(job contracts.Job) {
 	}
 
 	job.PubSub().ToOthers(res)
+	return
 }
