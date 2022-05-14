@@ -1,13 +1,13 @@
 package socket
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
@@ -305,20 +305,8 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *C
 	})
 }
 
-// GenMyPtyHandlerId generates a random session ID string. The format is not really interesting.
-// This ID is used to identify the session when the client opens the SockJS connection.
-// Not the same as the SockJS session id! We can't use that as that is generated
-// on the client side and we don't have it yet at this point.
-func GenMyPtyHandlerId() (string, error) {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		mlog.Error(err)
-
-		return "", err
-	}
-	id := make([]byte, hex.EncodedLen(len(bytes)))
-	hex.Encode(id, bytes)
-	return string(id), nil
+func GenMyPtyHandlerId() string {
+	return uuid.New().String()
 }
 
 // isValidShell checks if the shell is an allowed one
@@ -388,16 +376,13 @@ type TerminalResponse struct {
 }
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
-	sessionID, err := GenMyPtyHandlerId()
-	if err != nil {
-		return "", err
-	}
 	var c = Container{
 		Namespace: input.Container.Namespace,
 		Pod:       input.Container.Pod,
 		Container: input.Container.Container,
 	}
 
+	sessionID := GenMyPtyHandlerId()
 	pty := &MyPtyHandler{
 		Container: c,
 		id:        sessionID,

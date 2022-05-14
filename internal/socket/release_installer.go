@@ -28,7 +28,7 @@ type releaseInstaller struct {
 	messageCh      contracts.SafeWriteMessageChInterface
 }
 
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) contracts.ReleaseInstaller {
+func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
 	return &releaseInstaller{
 		dryRun:         dryRun,
 		chart:          chart,
