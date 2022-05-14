@@ -2,6 +2,9 @@ package database
 
 import (
 	"testing"
+	"time"
+
+	"gorm.io/driver/sqlite"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/stretchr/testify/assert"
@@ -24,4 +27,83 @@ func TestManager_SetDB(t *testing.T) {
 
 func TestNewManager(t *testing.T) {
 	assert.Implements(t, (*contracts.DBManager)(nil), NewManager(nil))
+}
+
+type Changelog struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Version       uint8  `json:"version" gorm:"not null;default:1;"`
+	Username      string `json:"username" gorm:"size:100;not null;comment:'修改人'"`
+	Manifest      string `json:"manifest" gorm:"type:text;"`
+	Config        string `json:"config" gorm:"type:text;commit:用户提交的配置"`
+	ConfigChanged bool   `json:"config_changed"`
+
+	ProjectID       int `json:"project_id" gorm:"not null;default:0;"`
+	GitlabProjectID int `json:"gitlab_project_id" gorm:"not null;default:0;"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+type GitlabProject struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	DefaultBranch   string `json:"default_branch" gorm:"type:varchar(255);not null;default:'';"`
+	Name            string `json:"name" gorm:"type:varchar(255);not null;default:'';"`
+	GitlabProjectId int    `json:"gitlab_project_id" gorm:"not null;type:integer;"`
+	Enabled         bool   `json:"enabled" gorm:"not null;default:false;"`
+	GlobalEnabled   bool   `json:"global_enabled" gorm:"not null;default:false;"`
+	GlobalConfig    string `json:"global_config" gorm:"type:text"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
+type Project struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Name             string `json:"name" gorm:"size:100;not null;comment:'项目名'"`
+	GitlabProjectId  int    `json:"gitlab_project_id" gorm:"not null;type:integer;"`
+	GitlabBranch     string `json:"gitlab_branch" gorm:"not null;size:255;"`
+	GitlabCommit     string `json:"gitlab_commit" gorm:"not null;size:255;"`
+	Config           string `json:"config"`
+	OverrideValues   string `json:"override_values"`
+	DockerImage      string `json:"docker_image" gorm:"not null;size:255;default:''"`
+	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
+	NamespaceId      int    `json:"namespace_id"`
+	Atomic           bool   `json:"atomic"`
+	ExtraValues      string `json:"extra_values" gorm:"type:text;nullable;comment:'用户表单传入的额外值'"`
+	FinalExtraValues string `json:"final_extra_values" gorm:"type:text;nullable;comment:'用户表单传入的额外值 + 系统默认的额外值'"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+type Commands struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+}
+
+func TestManager_AutoMigrate(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	s, _ := db.DB()
+	defer s.Close()
+
+	ma := &Manager{db: db}
+	db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{})
+	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
+	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
+	assert.True(t, db.Migrator().HasColumn("gitlab_projects", "gitlab_project_id"))
+	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_project_id"))
+	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
+	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
+	assert.True(t, db.Migrator().HasTable("commands"))
+	ma.AutoMigrate()
+	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
+	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
+	assert.False(t, db.Migrator().HasColumn("git_projects", "gitlab_project_id"))
+	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_project_id"))
+	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
+	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
+	assert.False(t, db.Migrator().HasTable("commands"))
 }
