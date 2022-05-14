@@ -425,7 +425,11 @@ const DefaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
 
 func FindDefaultContainer(pod *v1.Pod) string {
 	if name := pod.Annotations[DefaultContainerAnnotationName]; len(name) > 0 {
-		return name
+		for _, co := range pod.Spec.Containers {
+			if name == co.Name {
+				return name
+			}
+		}
 	}
 
 	for _, co := range pod.Spec.Containers {

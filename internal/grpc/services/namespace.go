@@ -28,12 +28,15 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		namespace.RegisterNamespaceServer(s, new(NamespaceSvc))
+		namespace.RegisterNamespaceServer(s, &NamespaceSvc{
+			UninstallReleaseFunc: utils.UninstallRelease,
+		})
 	})
 	RegisterEndpoint(namespace.RegisterNamespaceHandlerFromEndpoint)
 }
 
 type NamespaceSvc struct {
+	UninstallReleaseFunc utils.UninstallReleaseFunc
 	namespace.UnimplementedNamespaceServer
 }
 
@@ -113,7 +116,7 @@ func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 				defer wg.Done()
 				defer utils.HandlePanic("NamespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
-				if err := utils.UninstallRelease(releaseName, namespace, mlog.Debugf); err != nil {
+				if err := n.UninstallReleaseFunc(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)
 					return
 				}
