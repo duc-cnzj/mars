@@ -6,15 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/mlog"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 type DockerConfig map[string]DockerConfigEntry
@@ -150,33 +146,6 @@ func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
 	return m
 }
 
-func CleanEvictedPods(namespace string, selectors string) {
-	mlog.Warningf("[K8s]: delete Evicted pods namespace: %s", namespace)
-	list, err := app.K8sClientSet().CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: selectors,
-		FieldSelector: labels.Set{"status.phase": string(v1.PodFailed)}.String(),
-	})
-	if err != nil {
-		mlog.Error(err)
-		return
-	}
-	wg := &sync.WaitGroup{}
-	wg.Add(len(list.Items))
-	for _, item := range list.Items {
-		go func(item v1.Pod) {
-			defer wg.Done()
-			defer HandlePanic("CleanEvictedPods")
-			if item.Status.Reason == "Evicted" {
-				err := app.K8sClientSet().CoreV1().Pods(namespace).Delete(context.TODO(), item.Name, metav1.DeleteOptions{})
-				if err != nil {
-					mlog.Error(err)
-				}
-			}
-		}(item)
-	}
-	wg.Wait()
-}
-
 func IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
 	podInfo, err := app.K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
@@ -188,8 +157,7 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 	}
 
 	if podInfo.Status.Phase == v1.PodFailed && podInfo.Status.Reason == "Evicted" {
-		CleanEvictedPods(namespace, labels.Everything().String())
-		return false, fmt.Sprintf("delete po %s when evicted in namespace %s!", podName, namespace)
+		return false, fmt.Sprintf("po %s already evicted in namespace %s!", podName, namespace)
 	}
 
 	for _, status := range podInfo.Status.ContainerStatuses {

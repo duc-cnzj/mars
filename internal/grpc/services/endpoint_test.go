@@ -128,8 +128,8 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
-		NamespaceId: 123,
+	_, err := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
+		ProjectId: 11,
 	})
 	assert.Error(t, err)
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})

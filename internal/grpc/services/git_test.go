@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
+
+	"github.com/duc-cnzj/mars/internal/cache"
 
 	"github.com/duc-cnzj/mars/internal/auth"
 	"google.golang.org/grpc/codes"
@@ -54,11 +57,20 @@ func TestGitSvc_All(t *testing.T) {
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	db.AutoMigrate(&models.GitProject{})
+	db.Create(&models.GitProject{
+		GitProjectId:  2,
+		Enabled:       true,
+		GlobalEnabled: true,
+	})
 
 	all, err := new(GitSvc).All(context.TODO(), &git.AllRequest{})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), all.Items[0].Id)
+	assert.Equal(t, false, all.Items[0].Enabled)
+	assert.Equal(t, false, all.Items[0].GlobalEnabled)
 	assert.Equal(t, int64(2), all.Items[1].Id)
+	assert.Equal(t, true, all.Items[1].Enabled)
+	assert.Equal(t, true, all.Items[1].GlobalEnabled)
 }
 
 func TestGitSvc_BranchOptions(t *testing.T) {
@@ -101,6 +113,13 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	})
 	b1.EXPECT().IsDefault().Return(true).Times(1)
 	b2.EXPECT().IsDefault().Return(false).Times(1)
+	gits.EXPECT().AllBranches("10").Return(nil, errors.New("xxx")).Times(1)
+	_, err = new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+		GitProjectId: "10",
+		All:          true,
+	})
+	assert.Equal(t, "xxx", err.Error())
+	assert.Error(t, err)
 	gits.EXPECT().AllBranches("10").Return([]contracts.BranchInterface{b1, b2}, nil)
 	options, _ = new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "10",
@@ -271,6 +290,7 @@ func TestGitSvc_EnableProject(t *testing.T) {
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.PermissionDenied, fromError.Code())
 }
+
 func TestGitSvc_EnableProject2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -306,6 +326,40 @@ func TestGitSvc_EnableProject2(t *testing.T) {
 	assert.True(t, pmodel.Enabled)
 }
 
+func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	manager := mock.NewMockDBManager(m)
+	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	s, _ := db.DB()
+	defer s.Close()
+	manager.EXPECT().DB().Return(db).AnyTimes()
+	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db.AutoMigrate(&models.GitProject{})
+	gits := mockGitServer(m, app)
+	p := mock.NewMockProjectInterface(m)
+	gits.EXPECT().GetProject("123").Return(p, nil)
+
+	p.EXPECT().GetName().Return("n").Times(2)
+	p.EXPECT().GetDefaultBranch().Return("dex")
+
+	assertAuditLogFired(m, app)
+
+	_, err := new(GitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
+		GitProjectId: "123",
+	})
+	assert.Nil(t, err)
+	pp := &models.GitProject{}
+	db.First(pp)
+	assert.Equal(t, "n", pp.Name)
+	assert.Equal(t, "dex", pp.DefaultBranch)
+	assert.Equal(t, 123, pp.GitProjectId)
+	assert.Equal(t, true, pp.Enabled)
+}
+
 func TestGitSvc_MarsConfigFile(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -317,18 +371,13 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db.AutoMigrate(&models.GitProject{})
+
 	marsC := mars.Config{
 		LocalChartPath: "",
 		Branches:       []string{"b1"},
 	}
 	marshal, _ := json.Marshal(&marsC)
-	marsC2 := mars.Config{
-		LocalChartPath: "",
-		Branches:       []string{"b1"},
-		ConfigFile:     "cfg.yaml",
-	}
-	marshal2, _ := json.Marshal(&marsC2)
-	db.AutoMigrate(&models.GitProject{})
 	db.Create(&models.GitProject{
 		DefaultBranch: "dev",
 		Name:          "app",
@@ -337,6 +386,13 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal),
 	})
+	marsC2 := mars.Config{
+		LocalChartPath: "",
+		Branches:       []string{"b1"},
+		ConfigFile:     "cfg.yaml",
+	}
+
+	marshal2, _ := json.Marshal(&marsC2)
 	db.Create(&models.GitProject{
 		DefaultBranch: "dev2",
 		Name:          "app2",
@@ -344,6 +400,20 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 		Enabled:       true,
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal2),
+	})
+	marsC3 := mars.Config{
+		LocalChartPath: "",
+		Branches:       []string{"b1"},
+		ConfigFile:     "1|master|cfg.yaml",
+	}
+	marshal3, _ := json.Marshal(&marsC3)
+	db.Create(&models.GitProject{
+		DefaultBranch: "dev3",
+		Name:          "app3",
+		GitProjectId:  12,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal3),
 	})
 	file, err := new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "10",
@@ -365,6 +435,12 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 		Branch:       "dev",
 	})
 	assert.Equal(t, "aaa", file.Data)
+	gits.EXPECT().GetFileContentWithBranch("1", "master", "cfg.yaml").Return("aaa", nil).Times(1)
+
+	file, _ = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+		GitProjectId: "12",
+		Branch:       "dev",
+	})
 }
 
 func TestGitSvc_PipelineInfo(t *testing.T) {
@@ -384,9 +460,56 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 	})
 	assert.Equal(t, "status", info.Status)
 	assert.Equal(t, "weburl", info.WebUrl)
+	gitS.EXPECT().GetCommitPipeline("1", "xxx").Times(1).Return(nil, errors.New("xxx"))
+	_, err := new(GitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
+		GitProjectId: "1",
+		Branch:       "dev",
+		Commit:       "xxx",
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	assert.Equal(t, "xxx", fromError.Message())
 }
 
 func TestGitSvc_ProjectOptions(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mockApp(m)
+	c := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember("ProjectOptions", 30, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
+	assert.Equal(t, "xxx", err.Error())
+
+	db, f := SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.GitProject{})
+	p1 := &models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "a",
+		GitProjectId:  1,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  "",
+	}
+	db.Create(p1)
+	db.Create(&models.GitProject{
+		DefaultBranch: "dev1",
+		Name:          "b",
+		GitProjectId:  2,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  "",
+	})
+	app.EXPECT().Cache().Return(&cache.NoCache{}).Times(1)
+	res, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
+	assert.Nil(t, err)
+	assert.Len(t, res.Items, 2)
+	assert.Equal(t, "", res.Items[0].Branch)
+	assert.Equal(t, OptionTypeProject, res.Items[0].Type)
+	assert.Equal(t, fmt.Sprintf("%d", p1.ID), res.Items[0].Value)
+	assert.Equal(t, false, res.Items[0].IsLeaf)
+	assert.Equal(t, "1", res.Items[0].GitProjectId)
 }
 
 func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {

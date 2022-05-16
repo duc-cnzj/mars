@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -155,51 +154,10 @@ func TestIsPodRunning(t *testing.T) {
 	assert.Equal(t, "Reason Message", r)
 	running, r = IsPodRunning("duc", "pod4")
 	assert.False(t, running)
-	assert.Equal(t, "delete po pod4 when evicted in namespace duc!", r)
-	_, err := fk.CoreV1().Pods("duc").Get(context.TODO(), "pod4", v1.GetOptions{})
-	assert.True(t, apierrors.IsNotFound(err))
-}
-
-func TestCleanEvictedPods(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	fk := fake.NewSimpleClientset(
-		&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod1",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase:  corev1.PodFailed,
-				Reason: "Evicted",
-			},
-		}, &corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod2",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase:  corev1.PodFailed,
-				Reason: "Evicted",
-			},
-		}, &corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod3",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase: corev1.PodRunning,
-			},
-		})
-	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
-	})
-	CleanEvictedPods("duc", "")
-	list, _ := fk.CoreV1().Pods("duc").List(context.TODO(), v1.ListOptions{})
-	assert.Len(t, list.Items, 1)
-	assert.Equal(t, "pod3", list.Items[0].Name)
+	assert.Equal(t, "po pod4 already evicted in namespace duc!", r)
+	po, err := fk.CoreV1().Pods("duc").Get(context.TODO(), "pod4", v1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, corev1.PodFailed, po.Status.Phase)
 }
 
 func TestGetIngressMappingByNamespace(t *testing.T) {

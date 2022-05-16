@@ -115,7 +115,15 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, res.Exists)
 	assert.Equal(t, "dev-aaa", res.Namespace.Name)
-	clientset := fake.NewSimpleClientset()
+	clientset := fake.NewSimpleClientset(&v12.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "dev-terminating-ns",
+		},
+		Spec: v12.NamespaceSpec{},
+		Status: v12.NamespaceStatus{
+			Phase: v12.NamespaceTerminating,
+		},
+	})
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: clientset}).AnyTimes()
 
 	d := assertAuditLogFired(m, app)
@@ -128,6 +136,13 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	list, _ := clientset.CoreV1().Secrets("dev-bbb").List(context.TODO(), v1.ListOptions{})
 	assert.Len(t, list.Items, 1)
 	assert.Equal(t, "mars-", list.Items[0].GenerateName)
+
+	res, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+		Namespace: "terminating-ns",
+	})
+	s, _ := status.FromError(err)
+	assert.Equal(t, "该名称空间正在删除中", s.Message())
+	assert.Equal(t, codes.AlreadyExists, s.Code())
 }
 
 func TestNamespaceSvc_Delete(t *testing.T) {
@@ -191,8 +206,13 @@ func TestNamespaceSvc_IsExists(t *testing.T) {
 	instance.SetInstance(app)
 	db, closeFn := SetGormDB(m, app)
 	defer closeFn()
-	db.AutoMigrate(&models.Namespace{})
 	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-"}).AnyTimes()
+	_, err := new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+		Name: "dev-not-exists",
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, fromError.Code())
+	db.AutoMigrate(&models.Namespace{})
 
 	db.Create(&models.Namespace{
 		Name: "dev-aaa",
@@ -205,6 +225,11 @@ func TestNamespaceSvc_IsExists(t *testing.T) {
 		Name: "dev-aaa",
 	})
 	assert.True(t, exists.Exists)
+	exists, err = new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+		Name: "dev-not-exists",
+	})
+	assert.False(t, exists.Exists)
+	assert.Nil(t, err)
 }
 
 func TestNamespaceSvc_Show(t *testing.T) {

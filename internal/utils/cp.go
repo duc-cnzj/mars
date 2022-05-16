@@ -25,6 +25,8 @@ type CopyFileToPodResult struct {
 	FileName      string
 }
 
+type CopyFileToPodFunc func(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
+
 func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
 	var (
 		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})

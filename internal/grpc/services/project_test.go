@@ -74,6 +74,10 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 							},
 						},
 					},
+					// FIXME: kubeclient 不能做 fieldSelector 过滤
+					//Status: v1.PodStatus{
+					//	Phase: v1.PodFailed,
+					//},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{

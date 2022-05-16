@@ -2,7 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
 	"github.com/duc-cnzj/mars/internal/app/instance"
@@ -25,7 +31,74 @@ func TestContainer_ContainerLog(t *testing.T) {
 }
 
 func TestContainer_CopyToPod(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mockApp(m)
+	fk := fake.NewSimpleClientset(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "po1",
+			Namespace: "dev",
+		},
+		Spec: v1.PodSpec{},
+		Status: v1.PodStatus{
+			Phase: "Running",
+		},
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
+	db, f := SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.File{})
+	file := &models.File{}
+	db.Create(file)
+	assertAuditLogFired(m, app)
+	res, err := (&Container{
+		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
+			return &utils.CopyFileToPodResult{
+				TargetDir:     "/tmp",
+				ContainerPath: "/tmp/aa.txt",
+				FileName:      "aa.txt",
+			}, nil
+		},
+	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+		FileId:    int64(file.ID),
+		Namespace: "dev",
+		Pod:       "po1",
+		Container: "app",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "/tmp", res.PodFilePath)
+	assert.Equal(t, "aa.txt", res.FileName)
 
+	_, err = (&Container{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+		FileId:    int64(file.ID),
+		Namespace: "xxx",
+		Pod:       "xxx",
+		Container: "xxx",
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	_, err = (&Container{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+		FileId:    1111111,
+		Namespace: "dev",
+		Pod:       "po1",
+		Container: "app",
+	})
+	assert.Error(t, err)
+
+	_, err = (&Container{
+		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
+			return nil, errors.New("xxx")
+		},
+	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+		FileId:    int64(file.ID),
+		Namespace: "dev",
+		Pod:       "po1",
+		Container: "app",
+	})
+	fromError, _ = status.FromError(err)
+
+	assert.Equal(t, "xxx", fromError.Message())
+	assert.Equal(t, codes.Internal, fromError.Code())
 }
 
 func TestContainer_Exec(t *testing.T) {

@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -79,9 +80,11 @@ func (project *Project) GetAllPods() []v1.Pod {
 	if len(split) == 0 {
 		return nil
 	}
+	notEqualSelector := fields.OneTermNotEqualSelector("status.phase", string(v1.PodFailed))
 	for _, labels := range split {
 		l, _ := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels,
+			FieldSelector: notEqualSelector.String(),
 		})
 
 		list = append(list, l.Items...)

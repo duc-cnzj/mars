@@ -33,12 +33,13 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		container.RegisterContainerServer(s, new(Container))
+		container.RegisterContainerServer(s, &Container{CopyFileToPodFunc: utils.CopyFileToPod})
 	})
 	RegisterEndpoint(container.RegisterContainerHandlerFromEndpoint)
 }
 
 type Container struct {
+	CopyFileToPodFunc utils.CopyFileToPodFunc
 	container.UnsafeContainerServer
 }
 
@@ -163,7 +164,7 @@ func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodR
 	if err := app.DB().First(&file, request.FileId).Error; err != nil {
 		return nil, err
 	}
-	res, err := utils.CopyFileToPod(request.Namespace, request.Pod, request.Container, file.Path, "")
+	res, err := c.CopyFileToPodFunc(request.Namespace, request.Pod, request.Container, file.Path, "")
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

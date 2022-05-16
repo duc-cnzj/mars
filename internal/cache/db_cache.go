@@ -25,7 +25,7 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 		}
 
 		var cache models.DBCache
-		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache)
+		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).Order("`id` DESC").First(&cache)
 		if cache.ID > 0 {
 			bs, err := base64.StdEncoding.DecodeString(cache.Value)
 			if err == nil {
