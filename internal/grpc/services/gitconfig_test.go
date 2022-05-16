@@ -205,6 +205,15 @@ func TestGitConfigSvc_Show(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, "abc", show.Branch)
+
+	gits.EXPECT().GetFileContentWithBranch("199", "dev199", ".mars.yaml").Return("", errors.New("xxx"))
+	show, err = new(GitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
+		GitProjectId: 199,
+		Branch:       "dev199",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "dev199", show.Branch)
+	assert.Equal(t, (&mars.Config{}).String(), show.Config.String())
 }
 
 func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {

@@ -492,15 +492,15 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  "",
 	}
-	db.Create(p1)
-	db.Create(&models.GitProject{
+	p2 := &models.GitProject{
 		DefaultBranch: "dev1",
 		Name:          "b",
 		GitProjectId:  2,
 		Enabled:       true,
 		GlobalEnabled: true,
 		GlobalConfig:  "",
-	})
+	}
+	db.CreateInBatches([]*models.GitProject{p1, p2}, 2)
 	app.EXPECT().Cache().Return(&cache.NoCache{}).Times(1)
 	res, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Nil(t, err)

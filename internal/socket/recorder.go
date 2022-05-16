@@ -1,5 +1,7 @@
 package socket
 
+//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/socket RecorderInterface
+
 import (
 	"encoding/json"
 	"fmt"
@@ -19,6 +21,8 @@ import (
 type RecorderInterface interface {
 	Write(data string) (err error)
 	Close() error
+	SetShell(string)
+	GetShell() string
 }
 
 type Recorder struct {
@@ -26,17 +30,31 @@ type Recorder struct {
 	filepath  string
 	container Container
 	f         contracts.File
-	shell     string
 	startTime time.Time
 
 	t    *MyPtyHandler
 	once sync.Once
+
+	shellMu sync.RWMutex
+	shell   string
 }
 
 var (
 	startLine = "{\"version\": 2, \"width\": 204, \"height\": 54, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
+
+func (r *Recorder) GetShell() string {
+	r.shellMu.RLock()
+	defer r.shellMu.RUnlock()
+	return r.shell
+}
+
+func (r *Recorder) SetShell(sh string) {
+	r.shellMu.Lock()
+	defer r.shellMu.Unlock()
+	r.shell = sh
+}
 
 func (r *Recorder) Write(data string) (err error) {
 	r.Lock()

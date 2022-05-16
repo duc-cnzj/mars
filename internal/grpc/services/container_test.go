@@ -225,6 +225,15 @@ func TestFindDefaultContainer(t *testing.T) {
 		},
 	})
 	assert.Equal(t, "app", defaultContainer)
+	defaultContainer = FindDefaultContainer(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "xx",
+			Namespace:   "ns",
+			Annotations: map[string]string{},
+		},
+		Spec: v1.PodSpec{},
+	})
+	assert.Equal(t, "", defaultContainer)
 }
 
 func Test_closeable_IsClosed(t *testing.T) {

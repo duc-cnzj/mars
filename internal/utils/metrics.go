@@ -6,11 +6,10 @@ import (
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-
 	"github.com/dustin/go-humanize"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 func GetCpuAndMemoryInNamespace(namespace string) (string, string) {

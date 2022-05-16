@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -16,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 
+	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -43,7 +42,7 @@ type Container struct {
 
 type MyPtyHandler struct {
 	Container
-	recorder *Recorder
+	recorder RecorderInterface
 	id       string
 	conn     *WsConn
 	sizeChan chan remotecommand.TerminalSize
@@ -56,7 +55,7 @@ type MyPtyHandler struct {
 }
 
 func (t *MyPtyHandler) SetShell(shell string) {
-	t.recorder.shell = shell
+	t.recorder.SetShell(shell)
 }
 
 func (t *MyPtyHandler) TerminalMessageChan() chan *websocket_pb.TerminalMessage {
@@ -121,7 +120,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	}
 	msg, ok := <-t.shellCh
 	if !ok {
-		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("%v channel closed", t.id)
+		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("[Websocket]: %v channel closed", t.id)
 	}
 	switch msg.Op {
 	case OpStdin:
@@ -138,7 +137,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
-		return 0, fmt.Errorf("%v doneChan closed!", t.id)
+		return 0, fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
 	send := true
@@ -383,6 +382,9 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 	}
 
 	sessionID := GenMyPtyHandlerId()
+	r := &Recorder{
+		container: c,
+	}
 	pty := &MyPtyHandler{
 		Container: c,
 		id:        sessionID,
@@ -390,11 +392,9 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		sizeChan:  make(chan remotecommand.TerminalSize, 1),
 		doneChan:  make(chan struct{}, 1),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
-		recorder: &Recorder{
-			container: c,
-		},
+		recorder:  r,
 	}
-	pty.recorder.t = pty
+	r.t = pty
 	conn.terminalSessions.Set(sessionID, pty)
 
 	go WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{

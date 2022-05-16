@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/client-go/tools/remotecommand"
+
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -21,22 +23,148 @@ func TestGenMyPtyHandlerId(t *testing.T) {
 
 func TestHandleExecShell(t *testing.T) {}
 
-func TestMyPtyHandler_Close(t1 *testing.T) {
+func TestMyPtyHandler_Close(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	p := &MyPtyHandler{
+		id:       "duc",
+		conn:     &WsConn{pubSub: ps},
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 2),
+		doneChan: make(chan struct{}),
+	}
+	assert.Len(t, p.shellCh, 0)
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	p.Close("aaaa")
+	assert.Len(t, p.shellCh, 2)
+	a := <-p.shellCh
+	assert.Equal(t, ETX, a.Data)
+	b := <-p.shellCh
+	assert.Equal(t, END_OF_TRANSMISSION, b.Data)
+	_, ok := <-p.shellCh
+	assert.False(t, ok)
+	_, ok = <-p.sizeChan
+	assert.False(t, ok)
+	_, ok = <-p.doneChan
+	assert.False(t, ok)
 }
 
-func TestMyPtyHandler_Next(t1 *testing.T) {}
+func TestMyPtyHandler_Next(t *testing.T) {
+	p := &MyPtyHandler{
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}),
+	}
+	p.sizeChan <- remotecommand.TerminalSize{
+		Width:  10,
+		Height: 20,
+	}
+	next := p.Next()
+	assert.Equal(t, uint16(10), next.Width)
+	assert.Equal(t, uint16(20), next.Height)
 
-func TestMyPtyHandler_Read(t1 *testing.T) {}
+	close(p.sizeChan)
+	assert.Nil(t, p.Next())
 
-func TestMyPtyHandler_Recorder(t1 *testing.T) {}
+	close(p.doneChan)
+	assert.Nil(t, p.Next())
+}
 
-func TestMyPtyHandler_SetShell(t1 *testing.T) {}
+func TestMyPtyHandler_Read(t *testing.T) {
+	p := &MyPtyHandler{
+		id:       "duc",
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan: make(chan struct{}),
+	}
+	b := make([]byte, 1024)
+	p.shellCh <- &websocket_pb.TerminalMessage{
+		Op:   OpStdin,
+		Data: "hello duc",
+	}
+	n, _ := p.Read(b)
+	assert.Equal(t, "hello duc", string(b[0:n]))
+	p.shellCh <- &websocket_pb.TerminalMessage{
+		Op:   OpResize,
+		Rows: 10,
+		Cols: 20,
+	}
+	n, _ = p.Read(b)
+	assert.Equal(t, 0, n)
+	assert.Len(t, p.sizeChan, 1)
+	p.shellCh <- &websocket_pb.TerminalMessage{
+		Op: "xxxx",
+	}
+	n, err := p.Read(b)
+	assert.Greater(t, n, 0)
+	assert.Error(t, err)
+	close(p.shellCh)
+	_, err = p.Read(b)
+	assert.Equal(t, "[Websocket]: duc channel closed", err.Error())
+	close(p.doneChan)
+	n, err = p.Read(b)
+	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())
+	assert.Greater(t, n, 0)
+}
 
-func TestMyPtyHandler_TerminalMessageChan(t1 *testing.T) {}
+func TestMyPtyHandler_Recorder(t *testing.T) {
+	p := &MyPtyHandler{
+		recorder: &Recorder{},
+	}
+	assert.Implements(t, (*RecorderInterface)(nil), p.Recorder())
+}
 
-func TestMyPtyHandler_Toast(t1 *testing.T) {}
+func TestMyPtyHandler_SetShell(t *testing.T) {
+	p := &MyPtyHandler{
+		recorder: &Recorder{},
+	}
+	p.SetShell("xxx")
+	assert.Equal(t, "xxx", p.recorder.GetShell())
+}
 
-func TestMyPtyHandler_Write(t1 *testing.T) {}
+func TestMyPtyHandler_TerminalMessageChan(t *testing.T) {
+	p := &MyPtyHandler{
+		shellCh: make(chan *websocket_pb.TerminalMessage),
+	}
+	assert.Equal(t, p.shellCh, p.TerminalMessageChan())
+}
+
+func TestMyPtyHandler_Toast(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	p := &MyPtyHandler{
+		conn: &WsConn{pubSub: ps},
+		id:   "aaa",
+	}
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	p.Toast("xxx")
+}
+
+func TestMyPtyHandler_Write(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	r := mock.NewMockRecorderInterface(m)
+	p := &MyPtyHandler{
+		id:       "duc",
+		conn:     &WsConn{pubSub: ps},
+		recorder: r,
+		doneChan: make(chan struct{}),
+	}
+	r.EXPECT().Write("aaa").Times(1)
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	n, err := p.Write([]byte("aaa"))
+	assert.Nil(t, err)
+	assert.Equal(t, 3, n)
+	close(p.doneChan)
+	n, err = p.Write([]byte("aaa"))
+	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())
+	assert.Equal(t, 0, n)
+}
 
 func TestSessionMap_Close(t *testing.T) {
 	t.Parallel()
