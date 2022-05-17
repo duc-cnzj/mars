@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars-client/v4/picture"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,18 +37,18 @@ func (t *testPicturePlugin) Destroy() error {
 
 type errCtx struct{}
 
-func (t *testPicturePlugin) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
+func (t *testPicturePlugin) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
 	v := ctx.Value(&errCtx{})
 	if v != nil {
 		return nil, errors.New("err ctx")
 	}
 	if random {
-		return &plugins.Picture{
+		return &contracts.Picture{
 			Url:       "https://test.com/random.png",
 			Copyright: "@duc-random",
 		}, nil
 	}
-	return &plugins.Picture{
+	return &contracts.Picture{
 		Url:       "https://test.com/image.png",
 		Copyright: "@duc",
 	}, nil

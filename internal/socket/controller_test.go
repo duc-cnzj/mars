@@ -125,6 +125,10 @@ func TestHandleWsCreateProject(t *testing.T) {
 	})
 
 	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
+
+	cs.EXPECT().Add("1", gomock.Any()).Return(errors.New("xxx"))
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
 }
 
 func TestHandleWsHandleCloseShell(t *testing.T) {

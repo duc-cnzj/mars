@@ -31,4 +31,11 @@ func TestUploader_Disk(t *testing.T) {
 func TestUploader_root(t *testing.T) {
 	uploader, _ := NewUploader("/", "disk")
 	assert.Equal(t, "/disk", uploader.root())
+
+	assert.Equal(t, "/tmp/xxx", (&Uploader{rootDir: "/tmp/xxx"}).root())
+}
+
+func TestFileInfo(t *testing.T) {
+	assert.Equal(t, uint64(100), (&fileInfo{size: uint64(100)}).Size())
+	assert.Equal(t, "/xxx", (&fileInfo{path: "/xxx"}).Path())
 }

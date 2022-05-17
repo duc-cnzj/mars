@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
@@ -71,7 +73,7 @@ func (b *Bing) Destroy() error {
 	return nil
 }
 
-func (b *Bing) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
+func (b *Bing) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
 	key, n := 0, 8
 	if random {
 		key = rand.Intn(n - 1)
@@ -107,7 +109,7 @@ func (b *Bing) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
 		b.cacheDay = day
 	}
 
-	return &plugins.Picture{
+	return &contracts.Picture{
 		Url:       "https://cn.bing.com/" + strings.TrimLeft(res[key].URL, "/"),
 		Copyright: res[key].Copyright[:strings.Index(res[key].Copyright, "(©")],
 	}, nil

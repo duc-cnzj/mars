@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
@@ -32,8 +34,8 @@ func init() {
 
 type Cartoon struct{}
 
-func (c *Cartoon) Get(ctx context.Context, random bool) (*plugins.Picture, error) {
-	return &plugins.Picture{
+func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
+	return &contracts.Picture{
 		Url:       urls[rand.Intn(len(urls))],
 		Copyright: "",
 	}, nil

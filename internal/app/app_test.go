@@ -239,3 +239,13 @@ func Test_emptyMetrics_DecWebsocketConn(t *testing.T) {
 	em.IncWebsocketConn()
 	assert.True(t, true)
 }
+
+func TestApplication_SetOidc(t *testing.T) {
+	a := NewApplication(&config.Config{})
+	cfg := contracts.OidcConfig{
+		"a": contracts.OidcConfigItem{},
+		"b": contracts.OidcConfigItem{},
+	}
+	a.SetOidc(cfg)
+	assert.Equal(t, cfg, a.Oidc())
+}

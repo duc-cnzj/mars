@@ -1,5 +1,7 @@
 package plugins
 
+//go:generate mockgen -destination ../mock/mock_plugin_picture.go -package mock github.com/duc-cnzj/mars/internal/plugins PictureInterface
+
 import (
 	"context"
 	"sync"
@@ -10,15 +12,10 @@ import (
 
 var pictureOnce = sync.Once{}
 
-type Picture struct {
-	Url       string
-	Copyright string
-}
-
 type PictureInterface interface {
 	contracts.PluginInterface
 
-	Get(ctx context.Context, random bool) (*Picture, error)
+	Get(ctx context.Context, random bool) (*contracts.Picture, error)
 }
 
 func GetPicture() PictureInterface {
