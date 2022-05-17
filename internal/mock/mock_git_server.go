@@ -8,7 +8,6 @@ import (
 	reflect "reflect"
 
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
-	plugins "github.com/duc-cnzj/mars/internal/plugins"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -199,10 +198,10 @@ func (mr *MockGitServerMockRecorder) Initialize(arg0 any) *gomock.Call {
 }
 
 // ListBranches mocks base method.
-func (m *MockGitServer) ListBranches(arg0 string, arg1, arg2 int) (plugins.ListBranchResponseInterface, error) {
+func (m *MockGitServer) ListBranches(arg0 string, arg1, arg2 int) (contracts.ListBranchResponseInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBranches", arg0, arg1, arg2)
-	ret0, _ := ret[0].(plugins.ListBranchResponseInterface)
+	ret0, _ := ret[0].(contracts.ListBranchResponseInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -229,10 +228,10 @@ func (mr *MockGitServerMockRecorder) ListCommits(arg0, arg1 any) *gomock.Call {
 }
 
 // ListProjects mocks base method.
-func (m *MockGitServer) ListProjects(arg0, arg1 int) (plugins.ListProjectResponseInterface, error) {
+func (m *MockGitServer) ListProjects(arg0, arg1 int) (contracts.ListProjectResponseInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListProjects", arg0, arg1)
-	ret0, _ := ret[0].(plugins.ListProjectResponseInterface)
+	ret0, _ := ret[0].(contracts.ListProjectResponseInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

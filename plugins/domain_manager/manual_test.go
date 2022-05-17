@@ -205,6 +205,25 @@ func TestManualDomainManager_Initialize(t *testing.T) {
 	assert.Equal(t, "pfx", mm.nsPrefix)
 	assert.Equal(t, tlsCrt, mm.tlsCrt)
 	assert.Equal(t, tlsKey, mm.tlsKey)
+	//errors.New("tls_crt, tls_key, wildcard_domain required")
+	assert.Error(t, mm.Initialize(map[string]any{
+		"ns_prefix":       "",
+		"tls_crt":         "",
+		"tls_key":         "",
+		"wildcard_domain": "",
+	}))
+	assert.Error(t, mm.Initialize(map[string]any{
+		"ns_prefix":       "xxx",
+		"tls_crt":         "xx",
+		"tls_key":         "xxx",
+		"wildcard_domain": "xxx",
+	}))
+	assert.Error(t, mm.Initialize(map[string]any{
+		"ns_prefix":       "pfx",
+		"tls_crt":         tlsCrt,
+		"tls_key":         tlsKey,
+		"wildcard_domain": "xxx.com",
+	}))
 }
 
 func TestManualDomainManager_Name(t *testing.T) {

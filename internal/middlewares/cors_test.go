@@ -14,7 +14,8 @@ func (m *mockHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 }
 
 type mockResponseWriter struct {
-	h http.Header
+	code int
+	h    http.Header
 }
 
 func (m *mockResponseWriter) Header() http.Header {
@@ -26,6 +27,7 @@ func (m *mockResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 func (m *mockResponseWriter) WriteHeader(statusCode int) {
+	m.code = statusCode
 }
 
 func TestAllowCORS(t *testing.T) {

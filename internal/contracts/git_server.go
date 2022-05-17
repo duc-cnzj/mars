@@ -57,3 +57,20 @@ type CommitInterface interface {
 	GetProjectID() int64
 	GetWebURL() string
 }
+
+type paginate interface {
+	Page() int
+	PageSize() int
+	HasMore() bool
+	NextPage() int
+}
+
+type ListProjectResponseInterface interface {
+	paginate
+	GetItems() []ProjectInterface
+}
+
+type ListBranchResponseInterface interface {
+	paginate
+	GetItems() []BranchInterface
+}

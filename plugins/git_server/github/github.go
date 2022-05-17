@@ -123,7 +123,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
 	list, _, err := g.client.Repositories.List(context.TODO(), g.username, &github.RepositoryListOptions{
 		Sort:        "updated",
 		ListOptions: github.ListOptions{Page: page, PerPage: pageSize},
@@ -215,7 +215,7 @@ func (b *branch) GetWebURL() string {
 	return ""
 }
 
-func (g *server) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 
 	branches, _, err := g.client.Repositories.ListBranches(context.TODO(), g.username, p.GetName(), &github.BranchListOptions{

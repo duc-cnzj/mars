@@ -235,7 +235,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListProjects(page, pageSize int) (plugins.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
 	res, r, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
@@ -315,7 +315,7 @@ func (l *listBranchResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListBranches(pid string, page, pageSize int) (plugins.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
 	var (
 		branches []contracts.BranchInterface
 		next     int

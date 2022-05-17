@@ -14,31 +14,14 @@ import (
 
 var gitServerOnce = sync.Once{}
 
-type paginate interface {
-	Page() int
-	PageSize() int
-	HasMore() bool
-	NextPage() int
-}
-
-type ListProjectResponseInterface interface {
-	paginate
-	GetItems() []contracts.ProjectInterface
-}
-
-type ListBranchResponseInterface interface {
-	paginate
-	GetItems() []contracts.BranchInterface
-}
-
 type GitServer interface {
 	contracts.PluginInterface
 
 	GetProject(pid string) (contracts.ProjectInterface, error)
-	ListProjects(page, pageSize int) (ListProjectResponseInterface, error)
+	ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error)
 	AllProjects() ([]contracts.ProjectInterface, error)
 
-	ListBranches(pid string, page, pageSize int) (ListBranchResponseInterface, error)
+	ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error)
 	AllBranches(pid string) ([]contracts.BranchInterface, error)
 
 	GetCommit(pid string, sha string) (contracts.CommitInterface, error)
@@ -107,7 +90,7 @@ func (g *gitServerCache) GetProject(pid string) (contracts.ProjectInterface, err
 	return g.s.GetProject(pid)
 }
 
-func (g *gitServerCache) ListProjects(page, pageSize int) (ListProjectResponseInterface, error) {
+func (g *gitServerCache) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
 	return g.s.ListProjects(page, pageSize)
 }
 
@@ -144,7 +127,7 @@ func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
 	return all, nil
 }
 
-func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (ListBranchResponseInterface, error) {
+func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
 	return g.s.ListBranches(pid, page, pageSize)
 }
 

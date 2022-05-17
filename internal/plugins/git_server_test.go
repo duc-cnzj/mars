@@ -1,10 +1,17 @@
 package plugins
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
 	"time"
+
+	cache2 "github.com/duc-cnzj/mars/internal/cache"
+	"github.com/duc-cnzj/mars/internal/config"
+
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/golang/mock/gomock"
 
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -201,23 +208,68 @@ func (c *cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 }
 
 func Test_gitServerCache_AllBranches(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).AllBranches("1")
-	assert.True(t, c.called)
-	assert.Equal(t, AllBranchesCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("AllBranches-%v", 1), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("AllBranches-%v", 1), AllBranchesCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).AllBranches("1")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	b1 := mock.NewMockBranchInterface(m)
+	b1.EXPECT().GetWebURL().Return("weburl")
+	b1.EXPECT().GetName().Return("name")
+	b1.EXPECT().IsDefault().Return(false)
+	b2 := mock.NewMockBranchInterface(m)
+	b2.EXPECT().GetWebURL().Return("weburl2")
+	b2.EXPECT().GetName().Return("name2")
+	b2.EXPECT().IsDefault().Return(true)
+	gits.EXPECT().AllBranches("1").Return([]contracts.BranchInterface{b1, b2}, nil)
+	res, err := (&gitServerCache{s: gits}).AllBranches("1")
+	assert.Nil(t, err)
+	assert.Len(t, res, 2)
 }
 
 func Test_gitServerCache_AllProjects(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).AllProjects()
-	assert.True(t, c.called)
-	assert.Equal(t, AllProjectsCacheSeconds, c.seconds)
-	assert.Equal(t, "AllProjects", c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(c)
+	gits := mockGitServer(m, app)
+
+	c.EXPECT().Remember("AllProjects", AllProjectsCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).AllProjects()
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	p1 := mock.NewMockProjectInterface(m)
+	p1.EXPECT()
+	p1.EXPECT().GetID().Return(int64(1))
+	p1.EXPECT().GetName().Return("name")
+	p1.EXPECT().GetDefaultBranch().Return("dev")
+	p1.EXPECT().GetPath().Return("path")
+	p1.EXPECT().GetWebURL().Return("weburl")
+	p1.EXPECT().GetAvatarURL().Return("avatar")
+	p1.EXPECT().GetDescription().Return("desc")
+	p2 := mock.NewMockProjectInterface(m)
+	p2.EXPECT().GetID().Return(int64(2))
+	p2.EXPECT().GetName().Return("name2")
+	p2.EXPECT().GetDefaultBranch().Return("dev2")
+	p2.EXPECT().GetPath().Return("path2")
+	p2.EXPECT().GetWebURL().Return("weburl2")
+	p2.EXPECT().GetAvatarURL().Return("avatar2")
+	p2.EXPECT().GetDescription().Return("desc2")
+	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil)
+	res, err := (&gitServerCache{s: gits}).AllProjects()
+	assert.Nil(t, err)
+	assert.Len(t, res, 2)
 }
 
 func Test_gitServerCache_Destroy(t *testing.T) {
@@ -235,14 +287,40 @@ func (s *stateGitServer) GetCommit(pid string, sha string) (contracts.CommitInte
 }
 
 func Test_gitServerCache_GetCommit(t *testing.T) {
-	s := &stateGitServer{calledMap: map[string]bool{}}
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{s: s}).GetCommit("", "")
-	assert.True(t, c.called)
-	assert.Equal(t, GetCommitCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("GetCommit:%s-%s", "", ""), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("GetCommit:%s-%s", "1", "xxx"), GetCommitCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).GetCommit("1", "xxx")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetCommit("1", "xxx").Return(nil, errors.New("xxx"))
+	_, err = (&gitServerCache{s: gits}).GetCommit("1", "xxx")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetID().Return("xxx")
+	commit.EXPECT().GetShortID().Return("xxx")
+	commit.EXPECT().GetTitle().Return("xxx")
+	commit.EXPECT().GetCommittedDate().Return(nil)
+	commit.EXPECT().GetAuthorName().Return("x")
+	commit.EXPECT().GetAuthorEmail().Return("x")
+	commit.EXPECT().GetCommitterName().Return("x")
+	commit.EXPECT().GetCommitterEmail().Return("x")
+	commit.EXPECT().GetCreatedAt().Return(nil)
+	commit.EXPECT().GetMessage().Return("x")
+	commit.EXPECT().GetProjectID().Return(int64(1))
+	commit.EXPECT().GetWebURL().Return("x")
+	gits.EXPECT().GetCommit("1", "xxx").Return(commit, nil)
+	_, err = (&gitServerCache{s: gits}).GetCommit("1", "xxx")
+	assert.Nil(t, err)
 }
 
 func (s *stateGitServer) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
@@ -260,44 +338,85 @@ func (s *stateGitServer) GetDirectoryFilesWithBranch(pid string, branch string, 
 	return nil, nil
 }
 func Test_gitServerCache_GetDirectoryFilesWithBranch(t *testing.T) {
-	s := &stateGitServer{calledMap: map[string]bool{}}
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{s: s}).GetDirectoryFilesWithBranch("", "", "", false)
-	assert.True(t, c.called)
-	assert.Equal(t, GetDirectoryFilesCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("GetDirectoryFilesWithBranch-%s-%s-%s-%v", "", "", "", false), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(c)
+	gits := mockGitServer(m, app)
+	c.EXPECT().Remember(fmt.Sprintf("GetDirectoryFilesWithBranch-%s-%s-%s-%v", "", "", "", false), GetDirectoryFilesCacheSeconds, gomock.Any()).Times(1).Return(nil, errors.New("xxx"))
+
+	_, err := (&gitServerCache{s: gits}).GetDirectoryFilesWithBranch("", "", "", false)
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetDirectoryFilesWithBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"dev", "master"}, nil)
+	res, err := (&gitServerCache{s: gits}).GetDirectoryFilesWithBranch("", "", "", false)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"dev", "master"}, res)
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetDirectoryFilesWithBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err = (&gitServerCache{s: gits}).GetDirectoryFilesWithBranch("", "", "", false)
+	assert.Equal(t, "xxx", err.Error())
 }
 
 func Test_gitServerCache_GetDirectoryFilesWithSha(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).GetDirectoryFilesWithSha("", "", "", false)
-	assert.True(t, c.called)
-	assert.Equal(t, GetDirectoryFilesCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("GetDirectoryFilesWithSha-%s-%s-%s-%v", "", "", "", false), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("GetDirectoryFilesWithSha-%s-%s-%s-%v", "", "", "", false), GetDirectoryFilesCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).GetDirectoryFilesWithSha("", "", "", false)
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetDirectoryFilesWithSha("", "", "", false).Return([]string{"aa.txt", "bb.txt"}, nil)
+	res, _ := (&gitServerCache{s: gits}).GetDirectoryFilesWithSha("", "", "", false)
+	assert.Len(t, res, 2)
 }
 
 func Test_gitServerCache_GetFileContentWithBranch(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).GetFileContentWithBranch("", "", "")
-	assert.True(t, c.called)
-	assert.Equal(t, GetFileContentCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("GetFileContentWithBranch-%s-%s-%s", "", "", ""), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("GetFileContentWithBranch-%s-%s-%s", "", "", ""), GetFileContentCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).GetFileContentWithBranch("", "", "")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetFileContentWithBranch("", "", "").Return("aaaa", nil)
+	res, _ := (&gitServerCache{s: gits}).GetFileContentWithBranch("", "", "")
+	assert.Equal(t, "aaaa", res)
 }
 
 func Test_gitServerCache_GetFileContentWithSha(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).GetFileContentWithSha("", "", "")
-	assert.True(t, c.called)
-	assert.Equal(t, GetFileContentCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", "", "", ""), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", "", "", ""), GetFileContentCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).GetFileContentWithSha("", "", "")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	gits.EXPECT().GetFileContentWithSha("", "", "").Return("aaaa", nil)
+	res, _ := (&gitServerCache{s: gits}).GetFileContentWithSha("", "", "")
+	assert.Equal(t, "aaaa", res)
 }
 
 func (s *stateGitServer) GetProject(pid string) (contracts.ProjectInterface, error) {
@@ -315,7 +434,7 @@ func Test_gitServerCache_Initialize(t *testing.T) {
 	assert.Nil(t, (&gitServerCache{}).Initialize(nil))
 }
 
-func (s *stateGitServer) ListBranches(pid string, page, pageSize int) (ListBranchResponseInterface, error) {
+func (s *stateGitServer) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
 	s.calledMap["ListBranches"] = true
 	return nil, nil
 }
@@ -329,16 +448,51 @@ func (s *stateGitServer) ListCommits(pid string, branch string) ([]contracts.Com
 	return nil, nil
 }
 func Test_gitServerCache_ListCommits(t *testing.T) {
-	c := &cache{}
-	ma := &mockApp{cache: c}
-	instance.SetInstance(ma)
-	(&gitServerCache{}).ListCommits("", "")
-	assert.True(t, c.called)
-	assert.Equal(t, ListCommitsCacheSeconds, c.seconds)
-	assert.Equal(t, fmt.Sprintf("ListCommits:%s-%s", "", ""), c.key)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	c := mock.NewMockCacheInterface(m)
+	gits := mockGitServer(m, app)
+
+	app.EXPECT().Cache().Return(c)
+	c.EXPECT().Remember(fmt.Sprintf("ListCommits:%s-%s", "1", "dev"), ListCommitsCacheSeconds, gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&gitServerCache{s: gits}).ListCommits("1", "dev")
+	assert.Equal(t, "xxx", err.Error())
+
+	app.EXPECT().Cache().Return(&cache2.NoCache{})
+	c1 := mock.NewMockCommitInterface(m)
+	c1.EXPECT().GetID().Return("xxx")
+	c1.EXPECT().GetShortID().Return("xxx")
+	c1.EXPECT().GetTitle().Return("xxx")
+	c1.EXPECT().GetCommittedDate().Return(nil)
+	c1.EXPECT().GetAuthorName().Return("x")
+	c1.EXPECT().GetAuthorEmail().Return("x")
+	c1.EXPECT().GetCommitterName().Return("x")
+	c1.EXPECT().GetCommitterEmail().Return("x")
+	c1.EXPECT().GetCreatedAt().Return(nil)
+	c1.EXPECT().GetMessage().Return("x")
+	c1.EXPECT().GetProjectID().Return(int64(1))
+	c1.EXPECT().GetWebURL().Return("x")
+	c2 := mock.NewMockCommitInterface(m)
+	c2.EXPECT().GetID().Return("xxx")
+	c2.EXPECT().GetShortID().Return("xxx")
+	c2.EXPECT().GetTitle().Return("xxx")
+	c2.EXPECT().GetCommittedDate().Return(nil)
+	c2.EXPECT().GetAuthorName().Return("x")
+	c2.EXPECT().GetAuthorEmail().Return("x")
+	c2.EXPECT().GetCommitterName().Return("x")
+	c2.EXPECT().GetCommitterEmail().Return("x")
+	c2.EXPECT().GetCreatedAt().Return(nil)
+	c2.EXPECT().GetMessage().Return("x")
+	c2.EXPECT().GetProjectID().Return(int64(1))
+	c2.EXPECT().GetWebURL().Return("x")
+	gits.EXPECT().ListCommits("1", "dev").Return([]contracts.CommitInterface{c1, c2}, nil)
+	_, err = (&gitServerCache{s: gits}).ListCommits("1", "dev")
+	assert.Nil(t, err)
 }
 
-func (s *stateGitServer) ListProjects(page, pageSize int) (ListProjectResponseInterface, error) {
+func (s *stateGitServer) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
 	s.calledMap["ListProjects"] = true
 	return nil, nil
 }
@@ -355,4 +509,17 @@ func Test_gitServerCache_Name(t *testing.T) {
 
 func Test_newGitServerCache(t *testing.T) {
 	assert.Implements(t, (*GitServer)(nil), newGitServerCache(nil))
+}
+
+func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{
+		GitServerPlugin: config.Plugin{
+			Name: "test_git_server",
+		},
+	}).AnyTimes()
+	app.EXPECT().GetPluginByName("test_git_server").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	return gitS
 }

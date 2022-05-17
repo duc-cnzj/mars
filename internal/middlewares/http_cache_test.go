@@ -16,4 +16,11 @@ func TestHttpCache(t *testing.T) {
 	Etag = "xxx"
 	HttpCache(m).ServeHTTP(rw, &http.Request{})
 	assert.Equal(t, "xxx", rw.h["Etag"][0])
+	rw = &mockResponseWriter{h: map[string][]string{}}
+	HttpCache(m).ServeHTTP(rw, &http.Request{
+		Header: map[string][]string{
+			"If-None-Match": {"xxx"},
+		},
+	})
+	assert.Equal(t, 304, rw.code)
 }
