@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/duc-cnzj/mars/internal/cache"
@@ -536,4 +537,44 @@ func mockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *moc
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	ws.EXPECT().Initialize(gomock.All()).AnyTimes()
 	return ws
+}
+
+func TestSortableOption(t *testing.T) {
+	var options = []*git.Option{
+		{
+			Value:        "2",
+			Label:        "2",
+			Type:         "2",
+			IsLeaf:       false,
+			GitProjectId: "2",
+			Branch:       "dev2",
+		},
+		{
+			Value:        "1",
+			Label:        "1",
+			Type:         "1",
+			IsLeaf:       false,
+			GitProjectId: "1",
+			Branch:       "dev1",
+		},
+	}
+	sort.Sort(sortableOption(options))
+	assert.Equal(t, []*git.Option{
+		{
+			Value:        "1",
+			Label:        "1",
+			Type:         "1",
+			IsLeaf:       false,
+			GitProjectId: "1",
+			Branch:       "dev1",
+		},
+		{
+			Value:        "2",
+			Label:        "2",
+			Type:         "2",
+			IsLeaf:       false,
+			GitProjectId: "2",
+			Branch:       "dev2",
+		},
+	}, options)
 }

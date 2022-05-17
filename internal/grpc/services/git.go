@@ -182,7 +182,22 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 	}
 	var res = &git.ProjectOptionsResponse{}
 	_ = proto.Unmarshal(remember, res)
+	sort.Sort(sortableOption(res.Items))
 	return res, nil
+}
+
+type sortableOption []*git.Option
+
+func (s sortableOption) Len() int {
+	return len(s)
+}
+
+func (s sortableOption) Less(i, j int) bool {
+	return s[i].GitProjectId < s[j].GitProjectId
+}
+
+func (s sortableOption) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 func (g *GitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
