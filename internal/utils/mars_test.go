@@ -95,6 +95,9 @@ func TestIsRemoteConfigFile(t *testing.T) {
 }
 
 func TestParseInputConfig(t *testing.T) {
+	inputConfig, err := ParseInputConfig(nil, "")
+	assert.Nil(t, err)
+	assert.Empty(t, inputConfig)
 	v, _ := ParseInputConfig(&mars.Config{
 		IsSimpleEnv: false,
 		ConfigField: "conf->config",

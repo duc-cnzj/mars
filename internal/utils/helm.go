@@ -56,10 +56,11 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	if err != nil {
 		return "", nil, err
 	}
+	path := info.Path()
 
-	return info.Path(), NewCloser(func() error {
-		mlog.Debug("delete file: " + info.Path())
-		if err := app.Uploader().Delete(info.Path()); err != nil {
+	return path, NewCloser(func() error {
+		mlog.Debug("delete file: " + path)
+		if err := app.Uploader().Delete(path); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 			return err
 		}
@@ -302,26 +303,6 @@ func (l ReleaseList) Add(r *release.Release) {
 		Release: r,
 		Status:  fn(r),
 	}
-}
-
-func ListRelease() (ReleaseList, error) {
-	m := make(ReleaseList)
-
-	actionConfig, _, err := getActionConfigAndSettings("", mlog.Debugf)
-	if err != nil {
-		return m, err
-	}
-	statusClient := action.NewList(actionConfig)
-	lists, err := statusClient.Run()
-	if err != nil {
-		mlog.Error(err)
-		return m, err
-	}
-	for _, item := range lists {
-		m.Add(item)
-	}
-	return m, nil
-
 }
 
 func PackageChart(path string, destDir string) (string, error) {
