@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
+	"net/url"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -20,6 +20,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	clientgoexec "k8s.io/client-go/util/exec"
 
@@ -33,12 +34,18 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		container.RegisterContainerServer(s, &Container{CopyFileToPodFunc: utils.CopyFileToPod})
+		container.RegisterContainerServer(s, &Container{
+			CopyFileToPodFunc: utils.CopyFileToPod,
+			Executor:          &DefaultRemoteExecutor{},
+			ExecBuilder:       &DefaultExecBuilder{},
+		})
 	})
 	RegisterEndpoint(container.RegisterContainerHandlerFromEndpoint)
 }
 
 type Container struct {
+	ExecBuilder       ExecRequestBuilder
+	Executor          RemoteExecutor
 	CopyFileToPodFunc utils.CopyFileToPodFunc
 	container.UnsafeContainerServer
 }
@@ -84,33 +91,16 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 		Command:   request.Command,
 	}
 
-	req := app.K8sClient().Client.CoreV1().
-		RESTClient().
-		Post().
-		Namespace(request.Namespace).
-		Resource("pods").
-		SubResource("exec").
-		Name(request.Pod)
-
-	params := req.VersionedParams(peo, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(app.K8sClient().RestConfig, "POST", params.URL())
-	if err != nil {
-		return err
-	}
+	params := c.ExecBuilder.BuildExecRequest(request.Namespace, request.Pod, peo)
 	var exitCode atomic.Value
 	writer := newExecWriter()
 	defer writer.Close()
+	restConfig := app.K8sClient().RestConfig
 
 	go func() {
 		defer writer.Close()
 		defer utils.HandlePanic("Exec")
-		err := exec.Stream(remotecommand.StreamOptions{
-			Stdin:             nil,
-			Stdout:            writer,
-			Stderr:            writer,
-			Tty:               false,
-			TerminalSizeQueue: nil,
-		})
+		err := c.Executor.Execute("POST", params.URL(), restConfig, nil, writer, writer, false, nil)
 		if err != nil {
 			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
 				mlog.Debugf("[Container]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
@@ -150,9 +140,32 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 				return err
 			}
 		case <-server.Context().Done():
+			writer.Close()
 			return server.Context().Err()
 		}
 	}
+}
+
+type ExecUrlBuilder interface {
+	URL() *url.URL
+}
+
+type ExecRequestBuilder interface {
+	BuildExecRequest(namespace, pod string, peo *v1.PodExecOptions) ExecUrlBuilder
+}
+
+type DefaultExecBuilder struct{}
+
+func (*DefaultExecBuilder) BuildExecRequest(namespace, pod string, peo *v1.PodExecOptions) ExecUrlBuilder {
+	req := app.K8sClient().Client.CoreV1().
+		RESTClient().
+		Post().
+		Namespace(namespace).
+		Resource("pods").
+		SubResource("exec").
+		Name(pod)
+
+	return req.VersionedParams(peo, scheme.ParameterCodec)
 }
 
 func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
@@ -199,17 +212,23 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 		pod           string
 		containerName string
 		user          = MustGetUser(server.Context())
-		f             *os.File
+		f             contracts.File
 		disk          = "grpc_upload"
 	)
-	defer f.Close()
+	defer func() {
+		f.Close()
+	}()
+	updisk := app.Uploader().Disk(disk)
 
 	for {
 		recv, err := server.Recv()
 		if err != nil {
+			if f != nil {
+				f.Close()
+			}
+
 			if err == io.EOF && f != nil {
 				stat, _ := f.Stat()
-				f.Close()
 
 				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
 				app.DB().Create(&file)
@@ -233,8 +252,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 				})
 			}
 			if f != nil {
-				f.Close()
-				app.Uploader().Disk(disk).Delete(f.Name())
+				updisk.Delete(f.Name())
 			}
 			return err
 		}
@@ -263,13 +281,13 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 				time.Now().Format("2006-01-02"),
 				fmt.Sprintf("%s-%s", time.Now().Format("15-04-05"), utils.RandomString(20)),
 				filepath.Base(recv.GetFileName()))
-			fpath = app.Uploader().Disk(disk).AbsolutePath(p)
-			err := app.Uploader().Disk(disk).MkDir(filepath.Dir(p), true)
+			fpath = updisk.AbsolutePath(p)
+			err := updisk.MkDir(filepath.Dir(p), true)
 			if err != nil {
 				mlog.Error(err)
 				return err
 			}
-			f, err = os.Create(fpath)
+			f, err = app.Uploader().NewFile(fpath)
 			if err != nil {
 				mlog.Error(err)
 				return err
@@ -353,7 +371,8 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 		case msg, ok := <-ch:
 			if !ok {
 				stream.Close()
-				return errors.New("[Stream]: channel close")
+				mlog.Debug("[Stream]: channel close")
+				return nil
 			}
 
 			if err := server.Send(&container.LogResponse{
@@ -438,4 +457,24 @@ func FindDefaultContainer(pod *v1.Pod) string {
 	}
 
 	return ""
+}
+
+type RemoteExecutor interface {
+	Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
+}
+
+type DefaultRemoteExecutor struct{}
+
+func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
+	if err != nil {
+		return err
+	}
+	return exec.Stream(remotecommand.StreamOptions{
+		Stdin:             stdin,
+		Stdout:            stdout,
+		Stderr:            stderr,
+		Tty:               tty,
+		TerminalSizeQueue: terminalSizeQueue,
+	})
 }

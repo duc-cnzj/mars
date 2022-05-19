@@ -3,7 +3,16 @@ package services
 import (
 	"context"
 	"errors"
+	"io"
+	"io/fs"
+	"net/url"
+	"sync"
 	"testing"
+	"time"
+
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
+	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -21,6 +30,22 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
+type fakeRemoteExecutor struct {
+	funcBeforeReturn func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue)
+	method           string
+	url              *url.URL
+	execErr          error
+}
+
+func (f *fakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	f.method = method
+	f.url = url
+	if f.funcBeforeReturn != nil {
+		f.funcBeforeReturn(method, url, config, stdin, stdout, stderr, tty, terminalSizeQueue)
+	}
+	return f.execErr
+}
+
 func mockApp(m *gomock.Controller) *mock.MockApplicationInterface {
 	app := mock.NewMockApplicationInterface(m)
 	instance.SetInstance(app)
@@ -28,6 +53,46 @@ func mockApp(m *gomock.Controller) *mock.MockApplicationInterface {
 }
 
 func TestContainer_ContainerLog(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	_, err := new(Container).ContainerLog(context.TODO(), &container.LogRequest{
+		Namespace: "naas",
+		Pod:       "poaaa",
+		Container: "app",
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+
+	log, err := new(Container).ContainerLog(context.TODO(), &container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, (&container.LogResponse{
+		Namespace:     "duc",
+		PodName:       "pod1",
+		ContainerName: "app",
+		Log:           "fake logs",
+	}).String(), log.String())
 }
 
 func TestContainer_CopyToPod(t *testing.T) {
@@ -101,7 +166,240 @@ func TestContainer_CopyToPod(t *testing.T) {
 	assert.Equal(t, codes.Internal, fromError.Code())
 }
 
+type execServer struct {
+	send func(res *container.ExecResponse) error
+	ctx  context.Context
+	container.Container_ExecServer
+}
+
+func (e *execServer) Context() context.Context {
+	return e.ctx
+}
+
+func (e *execServer) Send(res *container.ExecResponse) error {
+	return e.send(res)
+}
+
+type fakeExecRequestBuilder struct{}
+
+type fakeExecUrlBuilder struct{}
+
+func (f *fakeExecUrlBuilder) URL() *url.URL {
+	return &url.URL{}
+}
+
+func (f *fakeExecRequestBuilder) BuildExecRequest(namespace, pod string, peo *v1.PodExecOptions) ExecUrlBuilder {
+	return &fakeExecUrlBuilder{}
+}
+
 func TestContainer_Exec(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	err := (&Container{}).Exec(&container.ExecRequest{
+		Namespace: "ducxx",
+		Pod:       "not_exists",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, nil)
+	assert.Equal(t, "pods \"not_exists\" not found", err.Error())
+
+	var mu sync.Mutex
+	var result []*container.ExecResponse
+	err = (&Container{
+		Executor:    &fakeRemoteExecutor{execErr: errors.New("xxx")},
+		ExecBuilder: &fakeExecRequestBuilder{},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, result, 1)
+	assert.Equal(t, (&container.ExecResponse{
+		Error: &container.ExecError{
+			Code:    int64(1),
+			Message: "xxx",
+		},
+	}).String(), result[0].String())
+}
+
+func TestContainer_Exec_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	var mu sync.Mutex
+	var result []*container.ExecResponse
+	err := (&Container{
+		Executor: &fakeRemoteExecutor{execErr: nil, funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
+			stdout.Write([]byte("aaa"))
+		}},
+		ExecBuilder: &fakeExecRequestBuilder{},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, result, 1)
+	assert.Equal(t, (&container.ExecResponse{Message: "aaa"}).String(), result[0].String())
+}
+
+func TestContainer_Exec_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	var result []*container.ExecResponse
+	err := (&Container{
+		Executor: &fakeRemoteExecutor{execErr: &clientgoexec.CodeExitError{
+			Err:  errors.New("aaa"),
+			Code: 100,
+		}},
+		ExecBuilder: &fakeExecRequestBuilder{},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, (&container.ExecResponse{
+		Error: &container.ExecError{
+			Code:    int64(100),
+			Message: "aaa",
+		},
+	}).String(), result[0].String())
+}
+
+func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	var (
+		mu     sync.Mutex
+		result []*container.ExecResponse
+	)
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	err := (&Container{
+		Executor: &fakeRemoteExecutor{
+			funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
+				time.Sleep(1 * time.Second)
+			},
+		},
+		ExecBuilder: &fakeExecRequestBuilder{},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: cancel,
+	})
+	assert.Equal(t, "context canceled", err.Error())
 }
 
 func TestContainer_IsPodExists(t *testing.T) {
@@ -158,12 +456,191 @@ func TestContainer_IsPodRunning(t *testing.T) {
 	assert.Equal(t, true, running.Running)
 }
 
-func TestContainer_StreamContainerLog(t *testing.T) {
+type streamLogServer struct {
+	send func(res *container.LogResponse) error
+	ctx  context.Context
+	container.Container_StreamContainerLogServer
+}
 
+func (e *streamLogServer) Context() context.Context {
+	return e.ctx
+}
+
+func (e *streamLogServer) Send(res *container.LogResponse) error {
+	return e.send(res)
+}
+
+func TestContainer_StreamContainerLog(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	instance.SetInstance(app)
+	app.EXPECT().Done().Return(nil)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	err := new(Container).StreamContainerLog(&container.LogRequest{
+		Namespace: "naas",
+		Pod:       "poaaa",
+		Container: "app",
+	}, nil)
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	var mu sync.Mutex
+	var result []*container.LogResponse
+	err = new(Container).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+}
+
+type streamCopyToPodServer struct {
+	ctx context.Context
+	res *container.StreamCopyToPodResponse
+	container.Container_StreamCopyToPodServer
+	sync.Mutex
+	write      int
+	totalWrite int
+}
+
+func (s *streamCopyToPodServer) SendAndClose(res *container.StreamCopyToPodResponse) error {
+	s.res = res
+	return nil
+}
+
+func (s *streamCopyToPodServer) Recv() (*container.StreamCopyToPodRequest, error) {
+	s.Lock()
+	defer s.Unlock()
+	defer func() {
+		s.write++
+	}()
+	if s.write >= s.totalWrite {
+		return nil, io.EOF
+	}
+	return &container.StreamCopyToPodRequest{
+		FileName:  "a.txt",
+		Data:      []byte("aa"),
+		Namespace: "dev",
+		Pod:       "po1",
+		Container: "app",
+	}, nil
+}
+
+func (s *streamCopyToPodServer) Context() context.Context {
+	return s.ctx
+}
+
+type mockFileInfo struct {
+	size int64
+}
+
+func (m *mockFileInfo) Name() string {
+	return ""
+}
+
+func (m *mockFileInfo) Size() int64 {
+	return m.size
+}
+
+func (m *mockFileInfo) Mode() fs.FileMode {
+	return fs.FileMode(0644)
+}
+
+func (m *mockFileInfo) ModTime() time.Time {
+	return time.Time{}
+}
+
+func (m *mockFileInfo) IsDir() bool {
+	return false
+}
+
+func (m *mockFileInfo) Sys() any {
+	return nil
 }
 
 func TestContainer_StreamCopyToPod(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mockApp(m)
+	fk := fake.NewSimpleClientset(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "po1",
+			Namespace: "dev",
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{Name: "app"},
+			},
+		},
+		Status: v1.PodStatus{
+			Phase: "Running",
+		},
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
 
+	up := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	db, f := SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.File{})
+	file := &models.File{}
+	db.Create(file)
+	assertAuditLogFired(m, app)
+
+	up.EXPECT().Disk(gomock.Any()).Return(up)
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("/tmp/aa.txt")
+	up.EXPECT().MkDir(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+	ff := mock.NewMockFile(m)
+	ff.EXPECT().Name().Return("name")
+	ff.EXPECT().Stat().Return(&mockFileInfo{}, nil)
+	ff.EXPECT().Close().MinTimes(1)
+	ff.EXPECT().Write([]byte("aa")).Times(2)
+
+	up.EXPECT().NewFile(gomock.Any()).Return(ff, nil)
+	up.EXPECT().Delete(gomock.Any()).Times(0)
+
+	s := &streamCopyToPodServer{ctx: adminCtx(), totalWrite: 2}
+	err := (&Container{
+		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
+			return &utils.CopyFileToPodResult{
+				TargetDir:     "/tmp",
+				ContainerPath: "/tmp/aa.txt",
+				FileName:      "aa.txt",
+			}, nil
+		},
+	}).StreamCopyToPod(s)
+	assert.Nil(t, err)
+	assert.Equal(t, (&container.StreamCopyToPodResponse{
+		PodFilePath: "/tmp",
+		Pod:         "po1",
+		Namespace:   "dev",
+		Container:   "app",
+		Filename:    "aa.txt",
+	}).String(), s.res.String())
 }
 
 func TestFindDefaultContainer(t *testing.T) {
