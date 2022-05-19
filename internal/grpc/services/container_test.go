@@ -229,7 +229,6 @@ func TestContainer_Exec(t *testing.T) {
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
-		Container: "app",
 		Command:   []string{"sh", "-c", "ls"},
 	}, &execServer{
 		send: func(res *container.ExecResponse) error {
@@ -545,7 +544,6 @@ func (s *streamCopyToPodServer) Recv() (*container.StreamCopyToPodRequest, error
 		Data:      []byte("aa"),
 		Namespace: "dev",
 		Pod:       "po1",
-		Container: "app",
 	}, nil
 }
 
