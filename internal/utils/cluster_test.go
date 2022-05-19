@@ -238,3 +238,52 @@ func Test_getNodeRequestCpuAndMemory(t *testing.T) {
 	assert.Equal(t, "6", c.String())
 	assert.Equal(t, fmt.Sprintf("%d", 4*(1024*1024*1024)), m.String())
 }
+
+func Test_getStatus(t *testing.T) {
+	var tests = []struct {
+		CpuRate    float64
+		MemoryRate float64
+		Wants      ClusterStatus
+	}{
+		{
+			CpuRate:    60,
+			MemoryRate: 60,
+			Wants:      StatusHealth,
+		},
+		{
+			CpuRate:    61,
+			MemoryRate: 61,
+			Wants:      StatusNotGood,
+		},
+		{
+			CpuRate:    61,
+			MemoryRate: 10,
+			Wants:      StatusNotGood,
+		},
+		{
+			CpuRate:    10,
+			MemoryRate: 60,
+			Wants:      StatusHealth,
+		},
+		{
+			CpuRate:    81,
+			MemoryRate: 81,
+			Wants:      StatusBad,
+		},
+		{
+			CpuRate:    10,
+			MemoryRate: 81,
+			Wants:      StatusBad,
+		},
+		{
+			CpuRate:    81,
+			MemoryRate: 1,
+			Wants:      StatusBad,
+		},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("cpu:%.0f-memory:%.0f-%s", test.CpuRate, test.MemoryRate, test.Wants), func(t *testing.T) {
+			assert.Equal(t, test.Wants, getStatus(test.MemoryRate, test.CpuRate))
+		})
+	}
+}

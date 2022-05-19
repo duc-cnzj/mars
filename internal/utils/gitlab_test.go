@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -46,4 +47,8 @@ func TestDownloadFiles(t *testing.T) {
 	assert.Nil(t, err)
 	up.EXPECT().DeleteDir("/tmp")
 	f()
+
+	up.EXPECT().MkDir(gomock.Any(), gomock.Any()).Return(errors.New("xx"))
+	_, _, err = DownloadFiles("1", "xxx", []string{"/app/a.txt", "/app/b.txt"})
+	assert.Equal(t, "xx", err.Error())
 }

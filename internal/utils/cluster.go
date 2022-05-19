@@ -138,16 +138,8 @@ func ClusterInfo() *InfoResponse {
 	rateRequestMemory := float64(requestMemory.Value()) / float64(totalMemory.Value()) * 100
 	rateRequestCpu := float64(requestCpu.Value()) / float64(totalCpu.Value()) * 100
 
-	var status = StatusHealth
-	if rateRequestMemory > 60 || rateRequestCpu > 60 {
-		status = StatusNotGood
-	}
-	if rateRequestMemory > 80 || rateRequestCpu > 80 {
-		status = StatusBad
-	}
-
 	return &InfoResponse{
-		Status:            status,
+		Status:            getStatus(rateRequestMemory, rateRequestCpu),
 		FreeRequestMemory: humanize.IBytes(uint64(freeRequestMemory.Value())),
 		FreeRequestCpu:    fmt.Sprintf("%.2f core", float64(freeRequestCpu.MilliValue())/1000),
 		FreeMemory:        humanize.IBytes(uint64(freeMemory.Value())),
@@ -159,6 +151,17 @@ func ClusterInfo() *InfoResponse {
 		RequestCpuRate:    fmt.Sprintf("%.1f%%", rateRequestCpu),
 		RequestMemoryRate: fmt.Sprintf("%.1f%%", rateRequestMemory),
 	}
+}
+
+func getStatus(rateRequestMemory float64, rateRequestCpu float64) ClusterStatus {
+	var status = StatusHealth
+	if rateRequestMemory > 60 || rateRequestCpu > 60 {
+		status = StatusNotGood
+	}
+	if rateRequestMemory > 80 || rateRequestCpu > 80 {
+		status = StatusBad
+	}
+	return status
 }
 
 func getNodeRequestCpuAndMemory(noExecuteNodes []v1.Node) (*resource.Quantity, *resource.Quantity) {
