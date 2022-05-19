@@ -3,9 +3,9 @@ package utils
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -51,8 +51,7 @@ func TestGetCpuAndMemory(t *testing.T) {
 func TestGetCpuAndMemoryInNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fm := &fake.Clientset{}
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{MetricsClient: fm})
 	fm.AddReactor("list", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {

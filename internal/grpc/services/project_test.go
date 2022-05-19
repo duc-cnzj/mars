@@ -13,8 +13,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/action"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
@@ -30,26 +28,21 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
+	"github.com/duc-cnzj/mars/internal/testutil"
 )
 
 func TestProjectSvc_AllContainers(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{
 		Namespace:    models.Namespace{Name: "test"},
@@ -111,14 +104,9 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 func TestProjectSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
 	_, err := new(ProjectSvc).Show(adminCtx(), &project.ShowRequest{
 		ProjectId: 990,
@@ -255,14 +243,9 @@ func TestProjectSvc_Show(t *testing.T) {
 func TestProjectSvc_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{Namespace: models.Namespace{Name: "test"}}
@@ -294,8 +277,7 @@ func TestProjectSvc_Apply(t *testing.T) {
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
 	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	ws := mockWsServer(m, app)
 	ps := mock.NewMockPubSub(m)
 	ws.EXPECT().New("", "").Return(ps)
@@ -397,8 +379,7 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 		Config:       "cfg",
 	}
 
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
 	_, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
@@ -453,14 +434,9 @@ func TestProjectSvc_ApplyDryRun_Error(t *testing.T) {
 func TestProjectSvc_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	_, err := new(ProjectSvc).List(context.TODO(), &project.ListRequest{
 		Page:     1,
 		PageSize: 2,
@@ -503,8 +479,7 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	}
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)

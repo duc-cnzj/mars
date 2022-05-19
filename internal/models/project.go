@@ -99,7 +99,7 @@ func (project *Project) GetAllPods() []v1.Pod {
 					rs, _ = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
 					m[string(reference.UID)] = rs
 				}
-				if *rs.Spec.Replicas == 0 {
+				if rs != nil && *rs.Spec.Replicas == 0 {
 					flag = false
 					break
 				}

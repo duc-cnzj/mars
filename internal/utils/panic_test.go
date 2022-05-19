@@ -3,20 +3,19 @@ package utils
 import (
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandlePanic(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().IsDebug().Return(false)
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
@@ -33,8 +32,7 @@ func TestHandlePanic1(t *testing.T) {
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Errorf(gomock.Any(), gomock.Any()).Times(1)
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().IsDebug().Return(true)
 	defer func() {
 		e := recover()

@@ -6,20 +6,18 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestFile_Authorize(t *testing.T) {
@@ -46,14 +44,9 @@ func adminCtx() context.Context {
 func TestFile_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	_, err := new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
@@ -77,14 +70,9 @@ func TestFile_Delete(t *testing.T) {
 func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	db.AutoMigrate(&models.File{})
 	db.Create(&models.File{
@@ -112,8 +100,7 @@ func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 func TestFile_DiskInfo(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
@@ -129,14 +116,9 @@ func TestFile_DiskInfo(t *testing.T) {
 func TestFile_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	_, err := new(File).List(context.TODO(), &file.ListRequest{
 		Page:           1,

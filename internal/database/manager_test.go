@@ -86,6 +86,7 @@ type Commands struct {
 
 func TestManager_AutoMigrate(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db.Exec("PRAGMA foreign_keys = ON", nil)
 	s, _ := db.DB()
 	defer s.Close()
 

@@ -8,15 +8,13 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/gitconfig"
 	"github.com/duc-cnzj/mars-client/v4/mars"
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/golang/mock/gomock"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,14 +36,9 @@ func TestGitConfigSvc_Authorize(t *testing.T) {
 func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	marsC := mars.Config{
 		LocalChartPath: "",
 	}
@@ -106,14 +99,9 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 func TestGitConfigSvc_GlobalConfig(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 	config, err := new(GitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
 		GitProjectId: 11,
@@ -160,14 +148,9 @@ func TestGitConfigSvc_GlobalConfig(t *testing.T) {
 func TestGitConfigSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}
@@ -219,14 +202,9 @@ func TestGitConfigSvc_Show(t *testing.T) {
 func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}
@@ -262,14 +240,9 @@ func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {
 func TestGitConfigSvc_Update(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}
@@ -314,8 +287,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 func Test_getDefaultBranch(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().GetProject(gomock.Any()).Return(nil, errors.New(""))
 	branch, err := getDefaultBranch(1)

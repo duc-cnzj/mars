@@ -7,14 +7,13 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 type mockFileInfo struct {
@@ -69,14 +68,9 @@ func TestRecorder_Close(t *testing.T) {
 	f.EXPECT().Stat().Times(0)
 	r.Close()
 	r.startTime = time.Now()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
 	db.AutoMigrate(&models.File{}, &models.Event{})
 	f.EXPECT().Stat().Times(1).Return(&mockFileInfo{size: 1}, nil)
 	f.EXPECT().Close().Times(1)
@@ -129,8 +123,7 @@ func TestRecorder_Write(t *testing.T) {
 		},
 		once: sync.Once{},
 	}
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
 	up.EXPECT().Disk("shell").Times(1).Return(up)
 	ff := mock.NewMockFile(m)

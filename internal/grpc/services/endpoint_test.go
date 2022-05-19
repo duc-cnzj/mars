@@ -5,15 +5,13 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	corev1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,14 +21,9 @@ import (
 func TestEndpointSvc_InNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
@@ -120,14 +113,9 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 func TestEndpointSvc_InProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	_, err := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: 11,
 	})

@@ -23,7 +23,7 @@ func init() {
 func HandleProjectChanged(data any, e contracts.Event) error {
 	if changedData, ok := data.(*ProjectChangedData); ok {
 		last := &models.Changelog{}
-		app.DB().Select("config", "id", "version", "git_project_id").Where("`git_project_id` = ?", changedData.Project.GitProjectId).Order("`id` desc").First(&last)
+		app.DB().Select("config", "id", "version", "git_project_id", "project_id").Where("`project_id` = ?", changedData.Project.ID).Order("`id` desc").First(&last)
 		gp := models.GitProject{}
 		app.DB().Select("id", "git_project_id").Where("`git_project_id` = ?", changedData.Project.GitProjectId).First(&gp)
 		var (
@@ -36,15 +36,17 @@ func HandleProjectChanged(data any, e contracts.Event) error {
 			}
 			version = last.Version + 1
 		}
-		app.DB().Create(&models.Changelog{
+		if err := app.DB().Create(&models.Changelog{
 			Version:       version,
 			ConfigChanged: configChanged,
 			Username:      changedData.Username,
 			Manifest:      changedData.Manifest,
 			Config:        changedData.Config,
 			ProjectID:     changedData.Project.ID,
-			GitProjectID:  gp.GitProjectId,
-		})
+			GitProjectID:  gp.ID,
+		}).Error; err != nil {
+			return err
+		}
 	}
 	return nil
 }

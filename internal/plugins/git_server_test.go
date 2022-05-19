@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/app/instance"
 	cache2 "github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
-
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
-
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -210,8 +210,7 @@ func (c *cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 func Test_gitServerCache_AllBranches(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 
@@ -238,8 +237,7 @@ func Test_gitServerCache_AllBranches(t *testing.T) {
 func Test_gitServerCache_AllProjects(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(c)
 	gits := mockGitServer(m, app)
@@ -289,8 +287,7 @@ func (s *stateGitServer) GetCommit(pid string, sha string) (contracts.CommitInte
 func Test_gitServerCache_GetCommit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 
@@ -340,8 +337,7 @@ func (s *stateGitServer) GetDirectoryFilesWithBranch(pid string, branch string, 
 func Test_gitServerCache_GetDirectoryFilesWithBranch(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(c)
 	gits := mockGitServer(m, app)
@@ -365,8 +361,7 @@ func Test_gitServerCache_GetDirectoryFilesWithBranch(t *testing.T) {
 func Test_gitServerCache_GetDirectoryFilesWithSha(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 
@@ -384,8 +379,7 @@ func Test_gitServerCache_GetDirectoryFilesWithSha(t *testing.T) {
 func Test_gitServerCache_GetFileContentWithBranch(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 
@@ -403,8 +397,7 @@ func Test_gitServerCache_GetFileContentWithBranch(t *testing.T) {
 func Test_gitServerCache_GetFileContentWithSha(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 
@@ -450,8 +443,7 @@ func (s *stateGitServer) ListCommits(pid string, branch string) ([]contracts.Com
 func Test_gitServerCache_ListCommits(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	gits := mockGitServer(m, app)
 

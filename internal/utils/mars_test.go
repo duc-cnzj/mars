@@ -10,10 +10,10 @@ import (
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestBranchPass(t *testing.T) {
@@ -44,12 +44,8 @@ func TestGetProjectMarsConfig(t *testing.T) {
 	app := mock.NewMockApplicationInterface(ctrl)
 	defer ctrl.Finish()
 	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(ctrl)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
 	db.AutoMigrate(&models.GitProject{})
 	mc := mars.Config{
 		ConfigFile:       "cf",

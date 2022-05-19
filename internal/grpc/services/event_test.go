@@ -11,11 +11,12 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -37,12 +38,8 @@ func TestEventSvc_List(t *testing.T) {
 	app := mock.NewMockApplicationInterface(ctrl)
 	defer ctrl.Finish()
 	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(ctrl)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(ctrl, app)
+	defer c()
 	db.AutoMigrate(&models.Event{}, &models.File{})
 	e := new(EventSvc)
 	f := seedEvents(db)

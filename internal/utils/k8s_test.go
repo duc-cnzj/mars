@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -22,8 +22,7 @@ import (
 func TestAddTlsSecret(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset()
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client: fk,
@@ -53,8 +52,7 @@ func TestAddTlsSecret(t *testing.T) {
 func TestCreateDockerSecret(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset()
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client: fk,
@@ -91,8 +89,7 @@ func TestCreateDockerSecret(t *testing.T) {
 func TestIsPodRunning(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset(
 		&corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
@@ -163,8 +160,7 @@ func TestIsPodRunning(t *testing.T) {
 func TestGetIngressMappingByNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset(
 		&v12.IngressList{
 			Items: []v12.Ingress{
@@ -260,8 +256,7 @@ func TestGetIngressMappingByNamespace(t *testing.T) {
 func TestGetNodePortMappingByNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset(&corev1.ServiceList{
 		Items: []corev1.Service{
 			{

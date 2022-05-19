@@ -5,18 +5,16 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/namespace"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/action"
 	v12 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,14 +25,9 @@ import (
 func TestNamespaceSvc_All(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})
 	db.Create(&models.Namespace{
 		ID:               0,
@@ -71,23 +64,11 @@ func TestNamespaceSvc_All(t *testing.T) {
 	assert.Len(t, all.Items[0].Projects, 2)
 }
 
-func SetGormDB(m *gomock.Controller, app *mock.MockApplicationInterface) (*gorm.DB, func()) {
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	return db, func() {
-		s.Close()
-	}
-}
-
 func TestNamespaceSvc_Create(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	db, closeFn := SetGormDB(m, app)
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	db.AutoMigrate(&models.Namespace{})
 	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-", ImagePullSecrets: []config.DockerAuth{
@@ -148,9 +129,8 @@ func TestNamespaceSvc_Create(t *testing.T) {
 func TestNamespaceSvc_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	db, closeFn := SetGormDB(m, app)
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})
 	ns := &models.Namespace{
@@ -202,9 +182,8 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 func TestNamespaceSvc_IsExists(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	db, closeFn := SetGormDB(m, app)
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-"}).AnyTimes()
 	_, err := new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
@@ -235,9 +214,8 @@ func TestNamespaceSvc_IsExists(t *testing.T) {
 func TestNamespaceSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	db, closeFn := SetGormDB(m, app)
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	_, err := new(NamespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
 		NamespaceId: 678,

@@ -8,32 +8,27 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/cache"
-
+	"github.com/duc-cnzj/mars-client/v4/git"
+	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/cache"
+	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/duc-cnzj/mars-client/v4/mars"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/models"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/duc-cnzj/mars-client/v4/git"
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
 )
 
 func TestGitSvc_All(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	p1 := mock.NewMockProjectInterface(m)
 	p1.EXPECT().GetID().Return(int64(1)).Times(2)
@@ -51,12 +46,8 @@ func TestGitSvc_All(t *testing.T) {
 	p2.EXPECT().GetDescription().Return("desc2")
 	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 	db.Create(&models.GitProject{
 		GitProjectId:  2,
@@ -77,8 +68,7 @@ func TestGitSvc_All(t *testing.T) {
 func TestGitSvc_BranchOptions(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	b1 := mock.NewMockBranchInterface(m)
 	b1.EXPECT().GetName().Return("b1").MinTimes(2)
@@ -92,12 +82,8 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, options.Items, 2)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	marsC := mars.Config{
 		LocalChartPath: "",
 		Branches:       []string{"b1"},
@@ -132,8 +118,7 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 func TestGitSvc_Commit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("")).Times(1)
 	_, err := new(GitSvc).Commit(context.TODO(), &git.CommitRequest{})
@@ -163,8 +148,7 @@ func TestGitSvc_Commit(t *testing.T) {
 func TestGitSvc_CommitOptions(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	m1 := mock.NewMockCommitInterface(m)
 	m1.EXPECT().GetID().Return("xx")
@@ -192,15 +176,10 @@ func TestGitSvc_CommitOptions(t *testing.T) {
 func TestGitSvc_DisableProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 
 	gits := mockGitServer(m, app)
@@ -226,15 +205,10 @@ func TestGitSvc_DisableProject(t *testing.T) {
 func TestGitSvc_DisableProject2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 	pmodel := &models.GitProject{
 		GitProjectId: 123,
@@ -261,15 +235,10 @@ func TestGitSvc_DisableProject2(t *testing.T) {
 func TestGitSvc_EnableProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 
 	gits := mockGitServer(m, app)
@@ -295,15 +264,10 @@ func TestGitSvc_EnableProject(t *testing.T) {
 func TestGitSvc_EnableProject2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 	pmodel := &models.GitProject{
 		GitProjectId: 123,
@@ -330,15 +294,10 @@ func TestGitSvc_EnableProject2(t *testing.T) {
 func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 	gits := mockGitServer(m, app)
 	p := mock.NewMockProjectInterface(m)
@@ -364,14 +323,9 @@ func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
 func TestGitSvc_MarsConfigFile(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
+	app := testutil.MockApp(m)
+	db, c := testutil.SetGormDB(m, app)
+	defer c()
 	db.AutoMigrate(&models.GitProject{})
 
 	marsC := mars.Config{
@@ -475,14 +429,14 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 func TestGitSvc_ProjectOptions(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mockApp(m)
+	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(c)
 	c.EXPECT().Remember("ProjectOptions", 30, gomock.Any()).Return(nil, errors.New("xxx"))
 	_, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Equal(t, "xxx", err.Error())
 
-	db, f := SetGormDB(m, app)
+	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.GitProject{})
 	p1 := &models.GitProject{

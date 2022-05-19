@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -75,8 +75,7 @@ func TestUpgradeOrInstall(t *testing.T) {}
 func TestWriteConfigYamlToTmpFile(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
 	info := mock.NewMockFileInfo(m)
@@ -105,8 +104,7 @@ func Test_runInstall(t *testing.T) {}
 func Test_send(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "po",

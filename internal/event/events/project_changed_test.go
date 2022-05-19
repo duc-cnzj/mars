@@ -6,10 +6,10 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestHandleProjectChanged(t *testing.T) {
@@ -17,20 +17,26 @@ func TestHandleProjectChanged(t *testing.T) {
 	app := mock.NewMockApplicationInterface(ctrl)
 	defer ctrl.Finish()
 	instance.SetInstance(app)
-	manager := mock.NewMockDBManager(ctrl)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.Changelog{}, &models.GitProject{})
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
+	db.AutoMigrate(&models.Changelog{}, &models.GitProject{}, &models.Project{})
+	p := &models.Project{
+		Name:         "app",
+		GitProjectId: 100,
+		Namespace:    models.Namespace{Name: "aaa"},
+	}
+	db.Create(p)
+	gp := &models.GitProject{
+		GitProjectId: 100,
+	}
+	db.Create(gp)
 	db.Create(&models.Changelog{
 		Version:       10,
 		Manifest:      "",
 		Config:        "cfg100",
 		ConfigChanged: false,
-		ProjectID:     0,
-		GitProjectID:  100,
+		ProjectID:     p.ID,
+		GitProjectID:  gp.ID,
 	})
 	db.Create(&models.Changelog{
 		Version:       5,
@@ -38,27 +44,22 @@ func TestHandleProjectChanged(t *testing.T) {
 		Config:        "cfg99",
 		ConfigChanged: false,
 		ProjectID:     0,
-		GitProjectID:  99,
-	})
-	db.Create(&models.GitProject{
-		GitProjectId: 100,
+		GitProjectID:  0,
 	})
 
-	HandleProjectChanged(&ProjectChangedData{
-		Project: &models.Project{
-			ID:           888,
-			GitProjectId: 100,
-		},
+	err := HandleProjectChanged(&ProjectChangedData{
+		Project:  p,
 		Manifest: "Manifest",
 		Config:   "Config",
 		Username: "duc",
 	}, EventProjectChanged)
+	assert.Nil(t, err)
 	clog := models.Changelog{}
 	db.Last(&clog)
-	assert.Equal(t, uint8(11), clog.Version)
+	assert.Equal(t, int(11), int(clog.Version))
 	assert.Equal(t, "duc", clog.Username)
 	assert.Equal(t, "Config", clog.Config)
-	assert.Equal(t, 888, clog.ProjectID)
+	assert.Equal(t, p.ID, clog.ProjectID)
 	assert.Equal(t, true, clog.ConfigChanged)
-	assert.Equal(t, 100, clog.GitProjectID)
+	assert.Equal(t, gp.ID, clog.GitProjectID)
 }

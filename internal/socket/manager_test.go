@@ -8,15 +8,14 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/duc-cnzj/mars/internal/utils"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestChartFileLoader_Load(t *testing.T) {
@@ -190,25 +189,14 @@ func TestJober_ProjectModel(t *testing.T) {
 	assert.NotNil(t, j.ProjectModel())
 }
 
-func SetGormDB(m *gomock.Controller, app *mock.MockApplicationInterface) (*gorm.DB, func()) {
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	s, _ := db.DB()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	return db, func() {
-		s.Close()
-	}
-}
 func TestJober_Prune(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	db, cfn := SetGormDB(m, app)
+	app := testutil.MockApp(m)
+	db, cfn := testutil.SetGormDB(m, app)
 	defer cfn()
-	db.AutoMigrate(&models.Project{})
-	p := &models.Project{Name: "app"}
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "aaa"}}
 	db.Create(p)
 	j := &Jober{
 		isNew:   true,

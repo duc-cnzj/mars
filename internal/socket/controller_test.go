@@ -12,20 +12,19 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/models"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars/internal/config"
-
 	"github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestHandleWsAuthorize(t *testing.T) {
@@ -36,8 +35,7 @@ func TestHandleWsAuthorize(t *testing.T) {
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
 	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().Auth().Return(authSvc).AnyTimes()
 	sign, _ := authSvc.Sign(contracts.UserInfo{
 		OpenIDClaims: contracts.OpenIDClaims{
@@ -216,17 +214,17 @@ func TestHandleWsUpdateProject(t *testing.T) {
 
 	manager := mock.NewMockDBManager(m)
 	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db.Exec("PRAGMA foreign_keys = ON", nil)
 	s, _ := db.DB()
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.Project{})
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 
 	targetProject := &models.Project{
-		Name:        "app",
-		NamespaceId: 100,
+		Name:      "app",
+		Namespace: models.Namespace{Name: "ns"},
 	}
 	db.Create(targetProject)
 	cs.EXPECT().Remove("1").Times(1)
@@ -387,8 +385,7 @@ func (receiver *rw) Write(in []byte) (int, error) {
 func TestWebsocketManager_Info(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{
 		WsSenderPlugin: config.Plugin{
 			Name: "test_ws",
@@ -433,8 +430,7 @@ func (t *testWait) Count() int {
 func TestWebsocketManager_initConn(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{
 		WsSenderPlugin: config.Plugin{
 			Name: "test_ws",
@@ -506,8 +502,7 @@ func TestWsConn_SetUser(t *testing.T) {
 func TestWsConn_Shutdown(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	me := mock.NewMockMetrics(m)
 	me.EXPECT().DecWebsocketConn().Times(1)
 	app.EXPECT().Metrics().Return(me)

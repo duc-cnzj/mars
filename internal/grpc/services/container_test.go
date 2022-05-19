@@ -10,24 +10,23 @@ import (
 	"testing"
 	"time"
 
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/remotecommand"
-	clientgoexec "k8s.io/client-go/util/exec"
-
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/duc-cnzj/mars-client/v4/container"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/internal/utils"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
+	clientgoexec "k8s.io/client-go/util/exec"
 )
 
 type fakeRemoteExecutor struct {
@@ -46,17 +45,10 @@ func (f *fakeRemoteExecutor) Execute(method string, url *url.URL, config *restcl
 	return f.execErr
 }
 
-func mockApp(m *gomock.Controller) *mock.MockApplicationInterface {
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
-	return app
-}
-
 func TestContainer_ContainerLog(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -98,7 +90,7 @@ func TestContainer_ContainerLog(t *testing.T) {
 func TestContainer_CopyToPod(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mockApp(m)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "po1",
@@ -110,7 +102,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 		},
 	})
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
-	db, f := SetGormDB(m, app)
+	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.File{})
 	file := &models.File{}
@@ -195,8 +187,7 @@ func (f *fakeExecRequestBuilder) BuildExecRequest(namespace, pod string, peo *v1
 func TestContainer_Exec(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -254,8 +245,7 @@ func TestContainer_Exec(t *testing.T) {
 func TestContainer_Exec_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -303,8 +293,7 @@ func TestContainer_Exec_Success(t *testing.T) {
 func TestContainer_Exec_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -353,8 +342,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -404,7 +392,7 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 func TestContainer_IsPodExists(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mockApp(m)
+	app := testutil.MockApp(m)
 
 	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(
 		&v1.Pod{
@@ -429,7 +417,7 @@ func TestContainer_IsPodExists(t *testing.T) {
 func TestContainer_IsPodRunning(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mockApp(m)
+	app := testutil.MockApp(m)
 
 	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(
 		&v1.Pod{
@@ -472,8 +460,7 @@ func (e *streamLogServer) Send(res *container.LogResponse) error {
 func TestContainer_StreamContainerLog(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	app.EXPECT().Done().Return(nil)
 
 	fk := fake.NewSimpleClientset(
@@ -582,7 +569,7 @@ func (m *mockFileInfo) Sys() any {
 func TestContainer_StreamCopyToPod(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mockApp(m)
+	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "po1",
@@ -601,7 +588,7 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
-	db, f := SetGormDB(m, app)
+	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.File{})
 	file := &models.File{}

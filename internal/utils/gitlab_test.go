@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,8 +29,7 @@ func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 func TestDownloadFiles(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := mock.NewMockApplicationInterface(m)
-	instance.SetInstance(app)
+	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
 	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
