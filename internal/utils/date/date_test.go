@@ -41,11 +41,15 @@ func TestToHumanizeDatetimeString(t *testing.T) {
 	assert.Equal(t, "2 个月以前", ToHumanizeDatetimeString(&t11))
 	t12 := nowFunc().Add(2 * time.Hour * 24 * 30)
 	assert.Equal(t, "2 个月以后", ToHumanizeDatetimeString(&t12))
+
+	assert.Empty(t, ToHumanizeDatetimeString(nil))
 }
 
 func TestToRFC3339DatetimeString(t *testing.T) {
 	_, err := time.Parse(time.RFC3339, ToRFC3339DatetimeString(&time.Time{}))
 	assert.Nil(t, err)
+	datetimeString := ToRFC3339DatetimeString(nil)
+	assert.Equal(t, (time.Time{}).Format(time.RFC3339), datetimeString)
 }
 
 func TestHumanDuration(t *testing.T) {
