@@ -45,8 +45,8 @@ func TestFile_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	_, err := new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
@@ -71,8 +71,8 @@ func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	db.AutoMigrate(&models.File{})
 	db.Create(&models.File{
@@ -117,8 +117,8 @@ func TestFile_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	_, err := new(File).List(context.TODO(), &file.ListRequest{
 		Page:           1,

@@ -41,8 +41,8 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{
 		Namespace:    models.Namespace{Name: "test"},
@@ -105,8 +105,8 @@ func TestProjectSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
 	_, err := new(ProjectSvc).Show(adminCtx(), &project.ShowRequest{
 		ProjectId: 990,
@@ -244,8 +244,8 @@ func TestProjectSvc_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{Namespace: models.Namespace{Name: "test"}}
@@ -435,8 +435,8 @@ func TestProjectSvc_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	_, err := new(ProjectSvc).List(context.TODO(), &project.ListRequest{
 		Page:     1,
 		PageSize: 2,

@@ -22,8 +22,8 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
@@ -114,8 +114,8 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	_, err := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: 11,
 	})

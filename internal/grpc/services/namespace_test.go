@@ -26,8 +26,8 @@ func TestNamespaceSvc_All(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})
 	db.Create(&models.Namespace{
 		ID:               0,

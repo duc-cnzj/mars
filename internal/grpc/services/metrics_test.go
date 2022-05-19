@@ -30,8 +30,8 @@ func TestMetricsSvc_CpuMemoryInNamespace(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	_, err := new(MetricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: 1})
 	assert.Error(t, err)
@@ -100,8 +100,8 @@ func TestMetricsSvc_CpuMemoryInProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{
 		Name:         "p",

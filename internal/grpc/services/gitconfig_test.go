@@ -37,8 +37,8 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	marsC := mars.Config{
 		LocalChartPath: "",
 	}
@@ -100,8 +100,8 @@ func TestGitConfigSvc_GlobalConfig(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 	config, err := new(GitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
 		GitProjectId: 11,
@@ -149,8 +149,8 @@ func TestGitConfigSvc_Show(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}
@@ -203,8 +203,8 @@ func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}
@@ -241,8 +241,8 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	marsC := mars.Config{
 		LocalChartPath: "aaa",
 	}

@@ -46,8 +46,8 @@ func TestGitSvc_All(t *testing.T) {
 	p2.EXPECT().GetDescription().Return("desc2")
 	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 	db.Create(&models.GitProject{
 		GitProjectId:  2,
@@ -82,8 +82,8 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, options.Items, 2)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	marsC := mars.Config{
 		LocalChartPath: "",
 		Branches:       []string{"b1"},
@@ -178,8 +178,8 @@ func TestGitSvc_DisableProject(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 
 	gits := mockGitServer(m, app)
@@ -207,8 +207,8 @@ func TestGitSvc_DisableProject2(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 	pmodel := &models.GitProject{
 		GitProjectId: 123,
@@ -237,8 +237,8 @@ func TestGitSvc_EnableProject(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 
 	gits := mockGitServer(m, app)
@@ -266,8 +266,8 @@ func TestGitSvc_EnableProject2(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 	pmodel := &models.GitProject{
 		GitProjectId: 123,
@@ -296,8 +296,8 @@ func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 	gits := mockGitServer(m, app)
 	p := mock.NewMockProjectInterface(m)
@@ -324,8 +324,8 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	db, c := testutil.SetGormDB(m, app)
-	defer c()
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
 
 	marsC := mars.Config{
