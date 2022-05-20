@@ -223,10 +223,6 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 	for {
 		recv, err := server.Recv()
 		if err != nil {
-			if f != nil {
-				f.Close()
-			}
-
 			if err == io.EOF && f != nil {
 				stat, _ := f.Stat()
 
@@ -252,6 +248,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 				})
 			}
 			if f != nil {
+				f.Close()
 				updisk.Delete(f.Name())
 			}
 			return err
