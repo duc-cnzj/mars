@@ -8,6 +8,7 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils/date"
 
 	"gorm.io/gorm"
@@ -94,12 +95,19 @@ func (project *Project) GetAllPods() []v1.Pod {
 		flag := true
 		for _, reference := range pod.OwnerReferences {
 			if reference.Kind == "ReplicaSet" {
-				var rs *appsv1.ReplicaSet
-				if rs, _ = m[string(reference.UID)]; rs == nil {
-					rs, _ = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
+				var (
+					rs  *appsv1.ReplicaSet
+					err error
+				)
+				if _, ok := m[string(reference.UID)]; !ok {
+					rs, err = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
+					if err != nil {
+						mlog.Debug(err)
+						continue
+					}
 					m[string(reference.UID)] = rs
 				}
-				if rs != nil && *rs.Spec.Replicas == 0 {
+				if rs.Spec.Replicas != nil && *rs.Spec.Replicas == 0 {
 					flag = false
 					break
 				}
