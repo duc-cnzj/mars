@@ -2,6 +2,7 @@ package socket
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -253,6 +254,11 @@ func read(wsconn *WsConn) error {
 
 		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
+				// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
+				if wsconn.GetUser().Sub == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
+					NewMessageSender(wsconn, "", WsAuthorize).SendEndError(errors.New("认证中，请稍等~"))
+					return
+				}
 				handler(wsconn, wsRequest.Type, message)
 			}
 		}(&wsRequest, message)

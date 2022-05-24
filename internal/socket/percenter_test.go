@@ -52,3 +52,10 @@ func Test_processPercent_To(t *testing.T) {
 	percent.To(100)
 	assert.Equal(t, int64(100), percent.Current())
 }
+
+func TestRealSleeper_Sleep(t *testing.T) {
+	n := time.Now()
+	(&realSleeper{}).Sleep(1 * time.Second)
+	assert.GreaterOrEqual(t, time.Now().Sub(n).Seconds(), float64(1))
+	assert.Less(t, time.Now().Sub(n).Seconds(), 1.1)
+}

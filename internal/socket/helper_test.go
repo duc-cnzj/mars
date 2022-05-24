@@ -267,6 +267,7 @@ func Test_matchDockerImage(t *testing.T) {
 			manifest: `
 image: xxx:v1
 image: xxx:v2
+image: xxx:v1
 `,
 		},
 		{

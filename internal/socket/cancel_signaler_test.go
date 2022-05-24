@@ -16,6 +16,10 @@ func TestCancelSignals_Add(t *testing.T) {
 	})
 	cs.Cancel("a")
 	assert.True(t, called)
+	err := cs.Add("a", func(err error) {
+		called = true
+	})
+	assert.Error(t, err)
 }
 
 func TestCancelSignals_Cancel(t *testing.T) {

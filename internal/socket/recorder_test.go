@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"errors"
 	"io/fs"
 	"sync"
 	"testing"
@@ -134,4 +135,36 @@ func TestRecorder_Write(t *testing.T) {
 	app.EXPECT().Uploader().Return(up)
 	r.Write("aaa")
 	r.Write("bbb")
+}
+
+func TestRecorder_Write_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	f := mock.NewMockFile(m)
+	r := &Recorder{
+		filepath: "/tmp/path",
+		container: Container{
+			Namespace: "ns",
+			Pod:       "po",
+			Container: "c",
+		},
+		f:         f,
+		startTime: time.Time{},
+		t: &MyPtyHandler{
+			conn: &WsConn{user: contracts.UserInfo{
+				OpenIDClaims: contracts.OpenIDClaims{
+					Name: "duc",
+				},
+			}},
+		},
+		once: sync.Once{},
+	}
+	up := mock.NewMockUploader(m)
+	up.EXPECT().Disk("shell").Times(1).Return(up)
+	up.EXPECT().NewFile(gomock.Any()).Times(1).Return(nil, errors.New("xxx"))
+	app := testutil.MockApp(m)
+	app.EXPECT().Uploader().Return(up)
+
+	err := r.Write("bbb")
+	assert.Equal(t, "xxx", err.Error())
 }

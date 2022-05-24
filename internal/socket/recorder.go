@@ -8,14 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/utils/date"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type RecorderInterface interface {
@@ -73,6 +71,9 @@ func (r *Recorder) Write(data string) (err error) {
 		r.startTime = time.Now()
 		r.f.Write([]byte(fmt.Sprintf(startLine, r.startTime.Unix(), r.shell)))
 	})
+	if err != nil {
+		return err
+	}
 	marshal, _ := json.Marshal(data)
 	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Now().Sub(r.startTime).Microseconds())/1000000, string(marshal)))
 	return err

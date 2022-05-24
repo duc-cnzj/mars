@@ -84,7 +84,11 @@ const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
   dispatch(setNamespaceReload(true));
 }, 500);
 
-export const handleEvents = (id: string, data: pb.websocket.Metadata, input: any) => {
+export const handleEvents = (
+  id: string,
+  data: pb.websocket.Metadata,
+  input: any
+) => {
   return function (dispatch: Dispatch) {
     switch (data.type.valueOf()) {
       case pb.websocket.Type.SetUid:
@@ -177,6 +181,11 @@ export const handleEvents = (id: string, data: pb.websocket.Metadata, input: any
               logRes.terminal_message
             )
           );
+        break;
+      case pb.websocket.Type.HandleAuthorize:
+        if (data.result === pb.websocket.ResultType.Error) {
+          message.error(data.message);
+        }
         break;
       default:
         console.log("unknown event: ", data.type);
