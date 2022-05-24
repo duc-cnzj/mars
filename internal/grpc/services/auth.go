@@ -126,15 +126,15 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 		p := a.NewProviderFunc(item.Config, item.Provider)
 		token, err = p.Exchange(context.TODO(), request.Code)
 		if err != nil {
-			mlog.Debug(err)
+			mlog.Error(err)
 			continue
 		}
 		if idtoken, err = p.Verify(context.TODO(), token); err != nil {
-			mlog.Debug(err)
+			mlog.Error(err)
 			continue
 		}
 		if err = idtoken.Claims(&userinfo); err != nil {
-			mlog.Debug(err)
+			mlog.Error(err)
 			continue
 		}
 		parsed = true
