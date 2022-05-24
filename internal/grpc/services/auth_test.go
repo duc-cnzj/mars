@@ -87,6 +87,20 @@ func TestAuthSvc_Login(t *testing.T) {
 	assert.Equal(t, codes.Unauthenticated, fromError.Code())
 }
 
+func TestAuthSvc_Login_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	asvc := mock.NewMockAuthInterface(m)
+	svc := NewAuthSvc(asvc, nil, "admin", nil)
+	asvc.EXPECT().Sign(gomock.Any()).Return(nil, errors.New("xx")).Times(1)
+	_, err := svc.Login(context.TODO(), &auth.LoginRequest{
+		Username: "admin",
+		Password: "admin",
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Unauthenticated, fromError.Code())
+}
+
 func TestNewAuthSvc(t *testing.T) {
 	assert.Implements(t, (*auth.AuthServer)(nil), NewAuthSvc(nil, nil, "", nil))
 }
@@ -120,27 +134,42 @@ func TestAuthSvc_Settings(t *testing.T) {
 }
 
 type mockProvider struct {
-	exerr error
-	veerr error
+	// 为了测试覆盖到所有 err 情况，这里的 err 只能使用一次
+	idtokenErrorOnce  error
+	exchangeErrorOnce error
+	verifyErrorOnce   error
 }
 
 func (m *mockProvider) Exchange(ctx context.Context, code string) (string, error) {
-	if m.exerr != nil {
-		return "", m.exerr
+	defer func() {
+		m.exchangeErrorOnce = nil
+	}()
+	if m.exchangeErrorOnce != nil {
+		return "", m.exchangeErrorOnce
 	}
 	return "", nil
 }
 
 func (m *mockProvider) Verify(ctx context.Context, token string) (IDToken, error) {
-	if m.veerr != nil {
-		return nil, m.veerr
+	defer func() {
+		m.verifyErrorOnce = nil
+	}()
+	if m.verifyErrorOnce != nil {
+		return nil, m.verifyErrorOnce
 	}
-	return &mockIDToken{}, nil
+	return &mockIDToken{
+		err: m.idtokenErrorOnce,
+	}, nil
 }
 
-type mockIDToken struct{}
+type mockIDToken struct {
+	err error
+}
 
 func (m *mockIDToken) Claims(a any) error {
+	if m.err != nil {
+		return m.err
+	}
 	a.(*contracts.UserInfo).Sub = "mock"
 	return nil
 }
@@ -213,10 +242,16 @@ func TestAuthSvc_Exchange_Error1(t *testing.T) {
 			Config:             oauth2.Config{},
 			EndSessionEndpoint: "",
 		},
+		"c": {
+			Provider:           nil,
+			Config:             oauth2.Config{},
+			EndSessionEndpoint: "",
+		},
 	}, "", func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
 		return &mockProvider{
-			exerr: errors.New("ex err"),
-			veerr: errors.New("verify err"),
+			idtokenErrorOnce:  errors.New("xx"),
+			exchangeErrorOnce: errors.New("ex err"),
+			verifyErrorOnce:   errors.New("verify err"),
 		}
 	}).Exchange(context.TODO(), &auth.ExchangeRequest{
 		Code: "xx",

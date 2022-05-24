@@ -134,7 +134,8 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 			continue
 		}
 		if err = idtoken.Claims(&userinfo); err != nil {
-			return nil, err
+			mlog.Debug(err)
+			continue
 		}
 		parsed = true
 		userinfo.LogoutUrl = item.EndSessionEndpoint
