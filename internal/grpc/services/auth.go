@@ -19,42 +19,31 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		auth.RegisterAuthServer(s, NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword))
+		auth.RegisterAuthServer(s, NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword, NewDefaultAuthProvider))
 	})
 	RegisterEndpoint(auth.RegisterAuthHandlerFromEndpoint)
 }
 
 type AuthSvc struct {
-	cfg      contracts.OidcConfig
-	adminPwd string
-	authsvc  contracts.AuthInterface
+	cfg             contracts.OidcConfig
+	adminPwd        string
+	authsvc         contracts.AuthInterface
+	NewProviderFunc func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider
+
 	auth.UnimplementedAuthServer
 }
 
-func NewAuthSvc(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string) *AuthSvc {
-	return &AuthSvc{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd}
+func NewAuthSvc(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string, NewProviderFunc func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider) *AuthSvc {
+	return &AuthSvc{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd, NewProviderFunc: NewProviderFunc}
 }
 
-func verify(cfg oauth2.Config, provider *oidc.Provider, code string) (*oidc.IDToken, error) {
-	var (
-		token *oauth2.Token
-		err   error
-	)
-	if token, err = cfg.Exchange(context.TODO(), code); err != nil {
-		return nil, err
-	}
-	verifier := provider.Verifier(&oidc.Config{ClientID: cfg.ClientID})
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "bad code: "+code)
-	}
+type OidcAuthProvider interface {
+	Exchange(ctx context.Context, code string) (string, error)
+	Verify(ctx context.Context, token string) (IDToken, error)
+}
 
-	idtoken, err := verifier.Verify(context.TODO(), rawIDToken)
-	if err != nil {
-		return nil, err
-	}
-
-	return idtoken, nil
+type IDToken interface {
+	Claims(any) error
 }
 
 func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
@@ -124,17 +113,27 @@ func (a *AuthSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (
 
 func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
 	var (
-		idtoken  *oidc.IDToken
-		err      error
 		userinfo contracts.UserInfo
 		parsed   bool
 	)
 
 	for _, item := range a.cfg {
-		if idtoken, err = verify(item.Config, item.Provider, request.Code); err != nil {
+		var (
+			token   string
+			err     error
+			idtoken IDToken
+		)
+		p := a.NewProviderFunc(item.Config, item.Provider)
+		token, err = p.Exchange(context.TODO(), request.Code)
+		if err != nil {
+			mlog.Debug(err)
 			continue
 		}
-		if err := idtoken.Claims(&userinfo); err != nil {
+		if idtoken, err = p.Verify(context.TODO(), token); err != nil {
+			mlog.Debug(err)
+			continue
+		}
+		if err = idtoken.Claims(&userinfo); err != nil {
 			return nil, err
 		}
 		parsed = true
@@ -162,4 +161,29 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 func (a *AuthSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	mlog.Debug("client is calling method:", fullMethodName)
 	return ctx, nil
+}
+
+type DefaultAuthProvider struct {
+	cfg      oauth2.Config
+	provider *oidc.Provider
+}
+
+func NewDefaultAuthProvider(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
+	return &DefaultAuthProvider{cfg: cfg, provider: provider}
+}
+
+func (d *DefaultAuthProvider) Exchange(ctx context.Context, code string) (string, error) {
+	token, err := d.cfg.Exchange(ctx, code)
+	if err != nil {
+		return "", err
+	}
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		return "", status.Errorf(codes.InvalidArgument, "bad code: "+code)
+	}
+	return rawIDToken, nil
+}
+
+func (d *DefaultAuthProvider) Verify(ctx context.Context, token string) (IDToken, error) {
+	return d.provider.Verifier(&oidc.Config{ClientID: d.cfg.ClientID}).Verify(ctx, token)
 }
