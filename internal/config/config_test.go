@@ -2,6 +2,8 @@ package config
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,4 +38,18 @@ func TestPlugin_GetArgs(t *testing.T) {
 	assert.Equal(t, map[string]any{}, plugin.GetArgs())
 	plugin.Args = map[string]any{"name": "duc", "age": 17}
 	assert.Equal(t, map[string]any{"name": "duc", "age": 17}, plugin.GetArgs())
+}
+
+func TestGetFreePort(t *testing.T) {
+	port, err := GetFreePort()
+	assert.Nil(t, err)
+	assert.Greater(t, port, 0)
+}
+
+var pwd, _ = os.Getwd()
+
+func TestInit(t *testing.T) {
+	cfg := Init(filepath.Join(pwd, "../../config_example.yaml"))
+	assert.Greater(t, cfg.GrpcPort, "0")
+	assert.Equal(t, "devops-", cfg.NsPrefix)
 }
