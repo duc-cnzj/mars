@@ -134,31 +134,30 @@ func TestAuthSvc_Settings(t *testing.T) {
 }
 
 type mockProvider struct {
-	// 为了测试覆盖到所有 err 情况，这里的 err 只能使用一次
-	idtokenErrorOnce  error
-	exchangeErrorOnce error
-	verifyErrorOnce   error
+	idtokenError  error
+	exchangeError error
+	verifyError   error
 }
 
 func (m *mockProvider) Exchange(ctx context.Context, code string) (string, error) {
 	defer func() {
-		m.exchangeErrorOnce = nil
+		m.exchangeError = nil
 	}()
-	if m.exchangeErrorOnce != nil {
-		return "", m.exchangeErrorOnce
+	if m.exchangeError != nil {
+		return "", m.exchangeError
 	}
 	return "", nil
 }
 
 func (m *mockProvider) Verify(ctx context.Context, token string) (IDToken, error) {
 	defer func() {
-		m.verifyErrorOnce = nil
+		m.verifyError = nil
 	}()
-	if m.verifyErrorOnce != nil {
-		return nil, m.verifyErrorOnce
+	if m.verifyError != nil {
+		return nil, m.verifyError
 	}
 	return &mockIDToken{
-		err: m.idtokenErrorOnce,
+		err: m.idtokenError,
 	}, nil
 }
 
@@ -231,31 +230,50 @@ func TestAuthSvc_Exchange_SignError(t *testing.T) {
 func TestAuthSvc_Exchange_Error1(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	_, err := NewAuthSvc(nil, contracts.OidcConfig{
-		"a": {
-			Provider:           nil,
-			Config:             oauth2.Config{},
-			EndSessionEndpoint: "",
-		},
-		"b": {
-			Provider:           nil,
-			Config:             oauth2.Config{},
-			EndSessionEndpoint: "",
-		},
-		"c": {
-			Provider:           nil,
-			Config:             oauth2.Config{},
-			EndSessionEndpoint: "",
-		},
-	}, "", func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
+
+	fn1 := func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
 		return &mockProvider{
-			idtokenErrorOnce:  errors.New("xx"),
-			exchangeErrorOnce: errors.New("ex err"),
-			verifyErrorOnce:   errors.New("verify err"),
+			idtokenError: errors.New("xx"),
 		}
-	}).Exchange(context.TODO(), &auth.ExchangeRequest{
-		Code: "xx",
-	})
-	fromError, _ := status.FromError(err)
-	assert.Equal(t, codes.InvalidArgument, fromError.Code())
+	}
+	fn2 := func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
+		return &mockProvider{
+			exchangeError: errors.New("ex err"),
+		}
+	}
+	fn3 := func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
+		return &mockProvider{
+			verifyError: errors.New("verify err"),
+		}
+	}
+	fnlist := []func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider{
+		fn1, fn2, fn3,
+	}
+	for _, f := range fnlist {
+		_, err := NewAuthSvc(nil, contracts.OidcConfig{
+			"a": {
+				Provider:           nil,
+				Config:             oauth2.Config{},
+				EndSessionEndpoint: "",
+			},
+			"b": {
+				Provider:           nil,
+				Config:             oauth2.Config{},
+				EndSessionEndpoint: "",
+			},
+			"c": {
+				Provider:           nil,
+				Config:             oauth2.Config{},
+				EndSessionEndpoint: "",
+			},
+		}, "", f).Exchange(context.TODO(), &auth.ExchangeRequest{
+			Code: "xx",
+		})
+		fromError, _ := status.FromError(err)
+		assert.Equal(t, codes.InvalidArgument, fromError.Code())
+	}
+}
+
+func TestNewDefaultAuthProvider(t *testing.T) {
+	assert.Implements(t, (*OidcAuthProvider)(nil), NewDefaultAuthProvider(oauth2.Config{}, nil))
 }
