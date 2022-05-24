@@ -328,6 +328,7 @@ func Test_timeOrderedSetString_add(t *testing.T) {
 	o := NewTimeOrderedSetString(fn)
 	o.add("a")
 	o.add("b")
+	o.add("b")
 	s := o.sortedItems()
 	assert.Equal(t, "b", s[0])
 	assert.Equal(t, "a", s[1])
