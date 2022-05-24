@@ -58,14 +58,12 @@ export const ProvideWebsocket: React.FC = ({ children }) => {
     conn.binaryType = "arraybuffer"
     conn.onopen = function (evt) {
       setWs({ ws: conn, ready: true });
-      setTimeout(() => {
-        conn.send(
-          pb.websocket.AuthorizeTokenInput.encode({
-            token: getToken(),
-            type: pb.websocket.Type.HandleAuthorize,
-          }).finish()
-        );
-      }, 5000);
+      conn.send(
+        pb.websocket.AuthorizeTokenInput.encode({
+          token: getToken(),
+          type: pb.websocket.Type.HandleAuthorize,
+        }).finish()
+      );
     };
     conn.onclose = function (evt) {
       setWs({ ws: null, ready: false });
