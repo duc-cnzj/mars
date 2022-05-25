@@ -94,14 +94,44 @@ func TestProject_GetAllPods(t *testing.T) {
 			Replicas: &zero,
 		},
 	}
+	var one int32 = 1
+	rs2 := &appsv1.ReplicaSet{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "bbbb",
+			Namespace: "test",
+			Name:      "rs2",
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &one,
+		},
+	}
 	fk := fake2.NewSimpleClientset(
 		rs,
+		rs2,
 		&v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod1",
 				Namespace: "test",
 				Labels: map[string]string{
 					"a": "a",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "ReplicaSet",
+						Name:       "rs",
+						UID:        "aaaa",
+					},
+				},
+			},
+		},
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod4",
+				Namespace: "test",
+				Labels: map[string]string{
+					"b": "b",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -128,6 +158,14 @@ func TestProject_GetAllPods(t *testing.T) {
 				Namespace: "test",
 				Labels: map[string]string{
 					"b": "b",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "ReplicaSet",
+						Name:       "rs2",
+						UID:        "bbbb",
+					},
 				},
 			},
 		})

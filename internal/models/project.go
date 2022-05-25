@@ -98,8 +98,9 @@ func (project *Project) GetAllPods() []v1.Pod {
 				var (
 					rs  *appsv1.ReplicaSet
 					err error
+					ok  bool
 				)
-				if _, ok := m[string(reference.UID)]; !ok {
+				if rs, ok = m[string(reference.UID)]; !ok {
 					rs, err = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
 					if err != nil {
 						mlog.Debug(err)
