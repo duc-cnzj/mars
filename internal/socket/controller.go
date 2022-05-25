@@ -109,11 +109,15 @@ func NewWebsocketManager() *WebsocketManager {
 	return &WebsocketManager{}
 }
 
+var HealthTickDuration = 15 * time.Second
+
 func (*WebsocketManager) TickClusterHealth() {
+	ticker := time.NewTicker(HealthTickDuration)
+	done := app.App().Done()
+	sub := plugins.GetWsSender().New("", "")
 	go func() {
 		defer utils.HandlePanic("TickClusterHealth")
-		ticker := time.NewTicker(15 * time.Second)
-		sub := plugins.GetWsSender().New("", "")
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
@@ -136,9 +140,8 @@ func (*WebsocketManager) TickClusterHealth() {
 						RequestCpuRate:    info.RequestCpuRate,
 					},
 				})
-			case <-app.App().Done():
+			case <-done:
 				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
-				ticker.Stop()
 				return
 			}
 		}

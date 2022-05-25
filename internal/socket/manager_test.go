@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"sync"
@@ -104,7 +105,164 @@ func TestJober_GetStoppedErrorIfHas(t *testing.T) {
 	assert.Error(t, j.GetStoppedErrorIfHas())
 }
 
-func TestJober_HandleMessage(t *testing.T) {
+func TestJober_HandleMessage_DoneClosed(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil)
+	ch := make(chan contracts.MessageItem, 10)
+	done := make(chan struct{}, 1)
+	msger := mock.NewMockDeployMsger(m)
+	close(done)
+	j := &Jober{
+		done:     done,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	j.HandleMessage()
+}
+
+func TestJober_HandleMessage_AppDoneClosed(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	done := make(chan struct{}, 1)
+	close(done)
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(done)
+	ch := make(chan contracts.MessageItem, 10)
+	msger := mock.NewMockDeployMsger(m)
+	j := &Jober{
+		done:     nil,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	j.HandleMessage()
+}
+
+func TestJober_HandleMessage_TextMessage(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	ch := make(chan contracts.MessageItem, 10)
+	msger := mock.NewMockDeployMsger(m)
+	j := &Jober{
+		done:     nil,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	go func() {
+		ch <- contracts.MessageItem{Msg: "aa", Type: contracts.MessageText}
+		close(ch)
+	}()
+	msger.EXPECT().SendMsg("aa").Times(1)
+	j.HandleMessage()
+}
+
+func TestJober_HandleMessage_ErrorMessage(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	ch := make(chan contracts.MessageItem, 10)
+	msger := mock.NewMockDeployMsger(m)
+	j := &Jober{
+		project:  &models.Project{},
+		stopCtx:  context.TODO(),
+		dryRun:   true,
+		done:     nil,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	go func() {
+		ch <- contracts.MessageItem{Msg: "errors", Type: contracts.MessageError}
+		close(ch)
+	}()
+	msger.EXPECT().SendDeployedResult(ResultDeployFailed, "errors", gomock.Any()).Times(1)
+	j.HandleMessage()
+}
+
+func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	ch := make(chan contracts.MessageItem, 10)
+	msger := mock.NewMockDeployMsger(m)
+	j := &Jober{
+		project:  &models.Project{},
+		stopCtx:  context.TODO(),
+		dryRun:   true,
+		done:     nil,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	go func() {
+		ch <- contracts.MessageItem{Msg: "ok", Type: contracts.MessageSuccess}
+		close(ch)
+	}()
+	msger.EXPECT().SendDeployedResult(ResultDeployed, "ok", gomock.Any()).Times(1)
+	j.HandleMessage()
+}
+
+func TestJober_HandleMessage_UserCanceled(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	ch := make(chan contracts.MessageItem, 10)
+	ctx, cancel := context.WithCancel(context.TODO())
+	cancel()
+	msger := mock.NewMockDeployMsger(m)
+
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{
+		Name:         "aaa",
+		GitProjectId: 100,
+		GitBranch:    "dev",
+		GitCommit:    "xxx",
+		Namespace:    models.Namespace{Name: "dev-aaa"},
+	}
+	db.Create(&p)
+	assert.Greater(t, p.ID, 0)
+	j := &Jober{
+		project:  p,
+		stopCtx:  ctx,
+		dryRun:   false,
+		isNew:    true,
+		done:     nil,
+		messager: msger,
+		messageCh: &SafeWriteMessageCh{
+			closed: false,
+			ch:     ch,
+		},
+	}
+	go func() {
+		ch <- contracts.MessageItem{Msg: "errors", Type: contracts.MessageError}
+		close(ch)
+	}()
+	msger.EXPECT().SendDeployedResult(ResultDeployCanceled, gomock.Any(), gomock.Any()).Times(1)
+	j.HandleMessage()
+	newp := &models.Project{}
+	db.Unscoped().Where("`id` = ?", p.ID).First(newp)
+	assert.True(t, newp.DeletedAt.Valid)
 }
 
 func TestJober_ID(t *testing.T) {

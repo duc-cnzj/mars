@@ -11,6 +11,10 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
+
+	"k8s.io/client-go/kubernetes/fake"
+	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
@@ -151,7 +155,6 @@ func TestHandleWsHandleCloseShell(t *testing.T) {
 }
 
 func TestHandleWsHandleExecShell(t *testing.T) {
-
 }
 
 func TestHandleWsHandleExecShellMsg(t *testing.T) {
@@ -465,6 +468,39 @@ func TestWebsocketManager_initConn(t *testing.T) {
 	assert.Equal(t, 1, Wait.Count())
 }
 
+func TestWebsocketManager_initConn2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{
+		WsSenderPlugin: config.Plugin{
+			Name: "test_ws",
+		},
+	})
+	ps := mock.NewMockPubSub(m)
+
+	ws := mock.NewMockWsSender(m)
+	ws.EXPECT().New(gomock.Any(), gomock.Any()).Return(ps)
+	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
+	app.EXPECT().GetPluginByName("test_ws").Return(ws)
+
+	me := mock.NewMockMetrics(m)
+	app.EXPECT().Metrics().Return(me)
+	me.EXPECT().IncWebsocketConn().Times(1)
+
+	parse, _ := url.Parse("https://mars.local/ws")
+	r := &http.Request{
+		URL: parse,
+	}
+	Wait = &testWait{}
+	defer func() {
+		Wait = NewWaitSocketExit()
+	}()
+	conn := NewWebsocketManager().initConn(r, nil)
+	assert.NotEmpty(t, conn.uid)
+}
+
 func TestWsConn_GetShellChannel(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -526,4 +562,43 @@ func TestWsConn_Shutdown(t *testing.T) {
 	}()
 	c.Shutdown()
 	assert.Equal(t, -1, Wait.Count())
+}
+
+func TestWebsocketManager_TickClusterHealth(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	ch := make(chan struct{})
+	app.EXPECT().Done().Return(ch).Times(1)
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		close(ch)
+	}()
+	pre := HealthTickDuration
+	HealthTickDuration = 1 * time.Second
+	defer func() {
+		HealthTickDuration = pre
+	}()
+
+	app.EXPECT().Config().Return(&config.Config{
+		WsSenderPlugin: config.Plugin{
+			Name: "test_ws",
+		},
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(), MetricsClient: fake2.NewSimpleClientset()}).AnyTimes()
+	ps := mock.NewMockPubSub(m)
+	ps.EXPECT().ToAll(gomock.Any()).Times(1)
+
+	ws := mock.NewMockWsSender(m)
+	ws.EXPECT().New("", "").Return(ps)
+	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
+	app.EXPECT().GetPluginByName("test_ws").Return(ws)
+
+	NewWebsocketManager().TickClusterHealth()
+	time.Sleep(2 * time.Second)
+}
+
+func Test_Upgrader(t *testing.T) {
+	assert.True(t, upgrader.CheckOrigin(nil))
 }
