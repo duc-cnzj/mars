@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/gorm/utils"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/utils"
 )
 
 type GormLoggerAdapter struct {

@@ -271,6 +271,8 @@ func TestMergeValuesLoader_Load(t *testing.T) {
 
 func TestNewJober(t *testing.T) {
 	assert.Implements(t, (*contracts.Job)(nil), NewJober(&websocket_pb.CreateProjectInput{}, contracts.UserInfo{}, "", nil, nil, 10))
+	jober := NewJober(&websocket_pb.CreateProjectInput{}, contracts.UserInfo{}, "", nil, nil, 0, WithDryRun())
+	assert.True(t, jober.IsDryRun())
 }
 
 func TestReleaseInstallerLoader_Load(t *testing.T) {

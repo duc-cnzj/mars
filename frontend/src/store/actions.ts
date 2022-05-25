@@ -186,6 +186,9 @@ export const handleEvents = (
         if (data.result === pb.websocket.ResultType.Error) {
           message.error(data.message);
         }
+        if (data.result === pb.websocket.ResultType.Success) {
+          message.info(data.message);
+        }
         break;
       default:
         console.log("unknown event: ", data.type);

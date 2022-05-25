@@ -8,9 +8,11 @@ import (
 )
 
 type mockHandler struct {
+	serverCalled int
 }
 
 func (m *mockHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	m.serverCalled++
 }
 
 type mockResponseWriter struct {
@@ -37,4 +39,8 @@ func TestAllowCORS(t *testing.T) {
 	assert.Equal(t, "https://mars.com", rw.h["Access-Control-Allow-Origin"][0])
 	assert.Equal(t, "Content-Type,Accept,X-Requested-With,Authorization,Accept-Language", rw.h["Access-Control-Allow-Headers"][0])
 	assert.Equal(t, "GET,HEAD,POST,PUT,PATCH,DELETE", rw.h["Access-Control-Allow-Methods"][0])
+
+	m2 := &mockHandler{}
+	AllowCORS(m2).ServeHTTP(rw, &http.Request{Header: map[string][]string{"Origin": {"https://mars.com"}}, Method: "GET"})
+	assert.Equal(t, 1, m2.serverCalled)
 }
