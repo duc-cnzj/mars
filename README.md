@@ -84,6 +84,7 @@ func main()  {
 
 ## TODO
 
+- [ ] migrate
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] 外部接口调用优化

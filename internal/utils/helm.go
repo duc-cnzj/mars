@@ -179,8 +179,11 @@ func send(obj any, releaseName string, fn func(format string, v ...any)) {
 	event := obj.(*v1.Event)
 	p := event.Regarding
 	get, _ := app.K8sClientSet().CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, v12.GetOptions{ResourceVersion: p.ResourceVersion})
-	if get.Labels["app.kubernetes.io/instance"] == releaseName {
-		fn(event.Note)
+	for _, value := range get.Labels {
+		if value == releaseName {
+			fn(event.Note)
+			break
+		}
 	}
 }
 

@@ -2,7 +2,6 @@ package picture
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -36,7 +35,7 @@ type Cartoon struct{}
 
 var client = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return errors.New("not redirect")
+		return http.ErrUseLastResponse
 	},
 }
 
