@@ -89,7 +89,10 @@ func FilterRuntimeObjectFromManifests[T runtime.Object](manifests []string) Runt
 	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	for _, f := range manifests {
 		obj, _, err := info.Serializer.Decode([]byte(f), nil, nil)
-		mlog.Debug(f, err)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
 		switch obj.(type) {
 		case T:
 			m = append(m, obj)

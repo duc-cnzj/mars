@@ -17,7 +17,6 @@ var (
 	nameCartoon          = "picture_cartoon"
 	urls        []string = []string{
 		"https://api.btstu.cn/sjbz/?lx=dongman",
-		"https://acg.toubiec.cn/random.php",
 		"https://www.dmoe.cc/random.php",
 		"https://api.ixiaowai.cn/api/api.php",
 	}
