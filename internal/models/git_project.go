@@ -22,7 +22,7 @@ type GitProject struct {
 	GitProjectId  int    `json:"git_project_id" gorm:"not null;type:integer;default:0;"`
 	Enabled       bool   `json:"enabled" gorm:"not null;default:false;"`
 	GlobalEnabled bool   `json:"global_enabled" gorm:"not null;default:false;"`
-	GlobalConfig  string `json:"global_config" gorm:"type:text"`
+	GlobalConfig  string `json:"global_config" gorm:"type:longtext"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

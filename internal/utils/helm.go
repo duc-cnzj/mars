@@ -193,7 +193,7 @@ func UninstallRelease(releaseName, namespace string, log action.DebugLog) error 
 	}
 	uninstall := action.NewUninstall(actionConfig)
 	if _, err := uninstall.Run(releaseName); err != nil {
-		mlog.Error(err)
+		mlog.Warning(err)
 		return err
 	}
 	return nil

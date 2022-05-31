@@ -75,6 +75,19 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 		}
 	}
 
+	if m.db.Migrator().HasTable(&models.GitProject{}) {
+		types, _ := m.db.Migrator().ColumnTypes(&models.GitProject{})
+		for _, columnType := range types {
+			if columnType.Name() == "global_config" && columnType.DatabaseTypeName() == "text" {
+				err := m.db.Migrator().AlterColumn(&models.GitProject{}, "GlobalConfig")
+				if err != nil {
+					mlog.Warningf("[%s]: err: %v", "GitProject migrate global_config 'text' to 'longtext' ", err)
+				}
+				break
+			}
+		}
+	}
+
 	if err := m.db.AutoMigrate(dst...); err != nil {
 		return err
 	}

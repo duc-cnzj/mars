@@ -409,10 +409,10 @@ func (g *server) GetFileContentWithBranch(pid string, branch string, filename st
 func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, recursive bool) ([]string, error) {
 	var files []string
 
-	// TODO: 坑, GitlabClient().Repositories.ListTree 带分页！！凸(艹皿艹 )
 	opt := &gitlab.ListTreeOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: 100,
+			Page:    1,
 		},
 		Path:      gitlab.String(path),
 		Recursive: gitlab.Bool(recursive),
@@ -421,11 +421,20 @@ func getDirectoryFiles(g *gitlab.Client, pid any, commit string, path string, re
 		opt.Ref = gitlab.String(commit)
 	}
 
-	tree, _, _ := g.Repositories.ListTree(pid, opt)
-
-	for _, node := range tree {
-		if node.Type == "blob" {
-			files = append(files, node.Path)
+	for opt.Page != -1 {
+		tree, _, err := g.Repositories.ListTree(pid, opt)
+		if err != nil {
+			return nil, err
+		}
+		if len(tree) != opt.PerPage {
+			opt.Page = -1
+		} else {
+			opt.Page++
+		}
+		for _, node := range tree {
+			if node.Type == "blob" {
+				files = append(files, node.Path)
+			}
 		}
 	}
 

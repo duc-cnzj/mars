@@ -45,6 +45,7 @@ type Changelog struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
+
 type GitlabProject struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
@@ -91,7 +92,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	defer s.Close()
 
 	ma := &Manager{db: db}
-	db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{})
+	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}))
 	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.True(t, db.Migrator().HasColumn("gitlab_projects", "gitlab_project_id"))
@@ -99,7 +100,15 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.True(t, db.Migrator().HasTable("commands"))
-	ma.AutoMigrate()
+	types, err := db.Migrator().ColumnTypes(&GitlabProject{})
+	assert.Nil(t, err)
+	for _, columnType := range types {
+		if columnType.Name() == "global_config" {
+			assert.Equal(t, "text", columnType.DatabaseTypeName())
+			break
+		}
+	}
+	assert.Nil(t, ma.AutoMigrate())
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.False(t, db.Migrator().HasColumn("git_projects", "gitlab_project_id"))
@@ -107,4 +116,14 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.False(t, db.Migrator().HasTable("commands"))
+
+	types, err = db.Migrator().ColumnTypes("git_projects")
+	assert.Nil(t, err)
+	for _, columnType := range types {
+		t.Log(columnType.Name(), columnType.DatabaseTypeName())
+		if columnType.Name() == "global_config" {
+			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
+			break
+		}
+	}
 }

@@ -48,7 +48,10 @@ func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, err
 	}
 	bg, _ := app.Cache().Remember(fmt.Sprintf("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
 		weburl := urls[rand.Intn(len(urls))]
-		response, _ := client.Get(weburl)
+		response, err := client.Get(weburl)
+		if err != nil {
+			return nil, err
+		}
 		defer response.Body.Close()
 		mlog.Debugf("[Picture]: request %s", weburl)
 		return []byte(response.Header.Get("Location")), nil
