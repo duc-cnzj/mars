@@ -6547,6 +6547,11 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
+mac-scrollbar@^0.10.1:
+  version "0.10.1"
+  resolved "https://mirrors.huaweicloud.com/repository/npm/mac-scrollbar/-/mac-scrollbar-0.10.1.tgz#ffc0885d750db96add6a2a44a5c918a926fe0a29"
+  integrity sha512-iil2C6lR0C9EJNrTxrqQmWvvG1ziMy1yihC3zNGdhcTItJR3LZ6jE46I58rUi9i8VLiu2hj/NSsL/qsUGRjZtQ==
+
 magic-string@^0.25.0, magic-string@^0.25.7:
   version "0.25.7"
   resolved "https://registry.npm.taobao.org/magic-string/download/magic-string-0.25.7.tgz#3f497d6fd34c669c6798dcb821f2ef31f5445051"
