@@ -104,7 +104,10 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 					types, _ := tx.Migrator().ColumnTypes(&models.GitProject{})
 					for _, columnType := range types {
 						if columnType.Name() == "global_config" && columnType.DatabaseTypeName() == "text" {
-							return tx.Migrator().AlterColumn(&models.GitProject{}, "GlobalConfig")
+							if err := tx.Migrator().AlterColumn(&models.GitProject{}, "GlobalConfig"); err != nil {
+								return err
+							}
+							break
 						}
 					}
 				}
@@ -112,7 +115,10 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 					types, _ := tx.Migrator().ColumnTypes(&models.Changelog{})
 					for _, columnType := range types {
 						if columnType.Name() == "manifest" && columnType.DatabaseTypeName() == "text" {
-							return tx.Migrator().AlterColumn(&models.Changelog{}, "Manifest")
+							if err := tx.Migrator().AlterColumn(&models.Changelog{}, "Manifest"); err != nil {
+								return err
+							}
+							break
 						}
 					}
 				}

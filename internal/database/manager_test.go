@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/duc-cnzj/mars/internal/models"
 	"testing"
 	"time"
 
@@ -110,6 +111,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+
 	assert.Nil(t, ma.AutoMigrate())
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
@@ -128,4 +130,44 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestManager_AutoMigrate2(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db.Exec("PRAGMA foreign_keys = ON", nil)
+	s, _ := db.DB()
+	defer s.Close()
+
+	ma := &Manager{db: db}
+	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Changelog{}, &models.GitProject{}))
+
+	p := &models.Project{
+		Name:      "app",
+		Manifest:  "",
+		Namespace: models.Namespace{Name: "test"},
+	}
+	assert.Nil(t, db.Create(p).Error)
+	assert.Nil(t, db.Create(&models.Changelog{
+		Version:   1,
+		Username:  "abc",
+		Manifest:  "xxx",
+		ProjectID: p.ID,
+		GitProject: models.GitProject{
+			Name: "xx",
+		},
+	}).Error)
+	assert.Nil(t, db.Create(&models.Changelog{
+		Version:   2,
+		Username:  "duc",
+		Manifest:  "yyy",
+		ProjectID: p.ID,
+		GitProject: models.GitProject{
+			Name: "yy",
+		},
+	}).Error)
+
+	assert.Nil(t, ma.AutoMigrate())
+	var pp models.Project
+	db.First(&pp, p.ID)
+	assert.Equal(t, "yyy", pp.Manifest)
 }
