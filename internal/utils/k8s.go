@@ -5,12 +5,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
+
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/models"
 )
 
 type DockerConfig map[string]DockerConfigEntry
@@ -62,8 +70,56 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 
 type Endpoint = types.ServiceEndpoint
 
-func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
+type RuntimeObjectList []runtime.Object
+
+func (l RuntimeObjectList) Has(in runtime.Object) bool {
+	inAccessor, _ := meta.Accessor(in)
+	for _, set := range l {
+		accessor, _ := meta.Accessor(set)
+		if reflect.TypeOf(set) == reflect.TypeOf(in) && accessor.GetName() == inAccessor.GetName() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func FilterRuntimeObjectFromManifests[T runtime.Object](manifests []string) RuntimeObjectList {
+	var m = make(RuntimeObjectList, 0)
+	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	for _, f := range manifests {
+		obj, _, err := info.Serializer.Decode([]byte(f), nil, nil)
+		if err != nil {
+			mlog.Error(err)
+			continue
+		}
+		switch obj.(type) {
+		case T:
+			m = append(m, obj)
+		}
+	}
+
+	return m
+}
+
+type projectObjectMap map[string]RuntimeObjectList
+
+func (m projectObjectMap) GetProject(svc runtime.Object) (string, bool) {
+	for projectName, set := range m {
+		if set.Has(svc) {
+			return projectName, true
+		}
+	}
+	return "", false
+}
+
+func GetNodePortMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
 	cfg := app.Config()
+	var projectMap = make(projectObjectMap)
+	for _, project := range projects {
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](Filter[string](strings.Split(project.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 }))
+	}
+
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
 	var m = map[string][]*Endpoint{}
 
@@ -83,7 +139,7 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
 	}
 
 	for _, item := range list.Items {
-		if projectName, ok := item.ObjectMeta.Labels["app.kubernetes.io/instance"]; ok && item.Spec.Type == v1.ServiceTypeNodePort {
+		if projectName, ok := projectMap.GetProject(&item); ok && item.Spec.Type == v1.ServiceTypeNodePort {
 			for _, port := range item.Spec.Ports {
 				data := m[projectName]
 
@@ -115,14 +171,19 @@ func GetNodePortMappingByNamespace(namespace string) map[string][]*Endpoint {
 	return m
 }
 
-func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
+func GetIngressMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
+	var projectMap = make(projectObjectMap)
+	for _, project := range projects {
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](Filter[string](strings.Split(project.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 }))
+	}
+
 	var m = map[string][]*Endpoint{}
 
 	list, _ := app.K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
 	for _, item := range list.Items {
 		if len(item.Spec.TLS) > 0 {
 			for _, tls := range item.Spec.TLS {
-				if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
+				if projectName, ok := projectMap.GetProject(&item); ok {
 					data := m[projectName]
 					var hosts []*Endpoint
 					for _, host := range tls.Hosts {
@@ -133,7 +194,7 @@ func GetIngressMappingByNamespace(namespace string) map[string][]*Endpoint {
 			}
 		} else {
 			for _, rules := range item.Spec.Rules {
-				if projectName, ok := item.Labels["app.kubernetes.io/instance"]; ok {
+				if projectName, ok := projectMap.GetProject(&item); ok {
 					data := m[projectName]
 					var hosts []*Endpoint
 					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("http://%s", rules.Host)})

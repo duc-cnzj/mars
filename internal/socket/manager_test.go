@@ -541,6 +541,7 @@ func Test_sortableExtraItem(t *testing.T) {
 func Test_toUpdatesMap(t *testing.T) {
 	p := &models.Project{}
 	assert.Equal(t, map[string]any{
+		"manifest":           p.Manifest,
 		"config":             p.Config,
 		"git_project_id":     p.GitProjectId,
 		"git_commit":         p.GitCommit,

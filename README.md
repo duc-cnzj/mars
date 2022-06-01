@@ -90,6 +90,7 @@ func main()  {
 - [ ] namespace all -> list
 - [ ] grpc 可配置使用 tls
 - ~~[ ] 增加 basic? or CA? auth，参考 k8s 的做法~~
+- [x] migrate
 - [x] ~~redis 不想强依赖 redis~~ db cache, 最后使用了 DB cache
 - [x] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
 - [x] git server cache

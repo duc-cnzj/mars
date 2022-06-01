@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/duc-cnzj/mars/internal/models"
 	"testing"
 	"time"
 
@@ -81,6 +82,7 @@ type Project struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
+
 type Commands struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 }
@@ -100,6 +102,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.True(t, db.Migrator().HasTable("commands"))
+	assert.False(t, db.Migrator().HasColumn(&Project{}, "manifest"))
 	types, err := db.Migrator().ColumnTypes(&GitlabProject{})
 	assert.Nil(t, err)
 	for _, columnType := range types {
@@ -108,6 +111,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+
 	assert.Nil(t, ma.AutoMigrate())
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
@@ -116,14 +120,54 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_branch"))
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.False(t, db.Migrator().HasTable("commands"))
+	assert.True(t, db.Migrator().HasColumn(&Project{}, "manifest"))
 
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)
 	for _, columnType := range types {
-		t.Log(columnType.Name(), columnType.DatabaseTypeName())
 		if columnType.Name() == "global_config" {
 			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
 			break
 		}
 	}
+}
+
+func TestManager_AutoMigrate2(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db.Exec("PRAGMA foreign_keys = ON", nil)
+	s, _ := db.DB()
+	defer s.Close()
+
+	ma := &Manager{db: db}
+	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Changelog{}, &models.GitProject{}))
+
+	p := &models.Project{
+		Name:      "app",
+		Manifest:  "",
+		Namespace: models.Namespace{Name: "test"},
+	}
+	assert.Nil(t, db.Create(p).Error)
+	assert.Nil(t, db.Create(&models.Changelog{
+		Version:   1,
+		Username:  "abc",
+		Manifest:  "xxx",
+		ProjectID: p.ID,
+		GitProject: models.GitProject{
+			Name: "xx",
+		},
+	}).Error)
+	assert.Nil(t, db.Create(&models.Changelog{
+		Version:   2,
+		Username:  "duc",
+		Manifest:  "yyy",
+		ProjectID: p.ID,
+		GitProject: models.GitProject{
+			Name: "yy",
+		},
+	}).Error)
+
+	assert.Nil(t, ma.AutoMigrate())
+	var pp models.Project
+	db.First(&pp, p.ID)
+	assert.Equal(t, "yyy", pp.Manifest)
 }

@@ -38,6 +38,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	assert.Len(t, p.shellCh, 0)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	p.Close("aaaa")
+	p.Close("aaaa")
 	assert.Len(t, p.shellCh, 2)
 	a := <-p.shellCh
 	assert.Equal(t, ETX, a.Data)
@@ -160,6 +161,13 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
+	p.closeLock.Lock()
+	p.isClosed = true
+	p.closeLock.Unlock()
+	n, err = p.Write([]byte("aaa"))
+	assert.Nil(t, err)
+	assert.Equal(t, 0, n)
+
 	close(p.doneChan)
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())

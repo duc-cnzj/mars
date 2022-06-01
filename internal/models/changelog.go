@@ -14,7 +14,7 @@ type Changelog struct {
 
 	Version       uint8  `json:"version" gorm:"not null;default:1;"`
 	Username      string `json:"username" gorm:"size:100;not null;comment:修改人"`
-	Manifest      string `json:"manifest" gorm:"type:text;"`
+	Manifest      string `json:"manifest" gorm:"type:longtext;"`
 	Config        string `json:"config" gorm:"type:text;commit:用户提交的配置"`
 	ConfigChanged bool   `json:"config_changed"`
 

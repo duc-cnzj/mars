@@ -26,6 +26,7 @@
     "jshint": "^2.13.1",
     "jsonlint": "^1.6.3",
     "lodash": "^4.17.21",
+    "mac-scrollbar": "^0.10.1",
     "mitt": "^3.0.0",
     "prism-themes": "^1.9.0",
     "prismjs": "^1.28.0",

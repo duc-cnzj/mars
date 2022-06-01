@@ -6,19 +6,28 @@ import { Switch, Route } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
 import AppFooter from "./components/AppFooter";
 import { PrivateRoute } from "./contexts/auth";
+import { GlobalScrollbar } from "mac-scrollbar";
+import "mac-scrollbar/dist/mac-scrollbar.css";
+
 const { Header, Content, Footer } = Layout;
 
-const GitProjectManager = lazy(
-  () => import("./components/GitProjectManager")
-);
-
+const GitProjectManager = lazy(() => import("./components/GitProjectManager"));
 const Events = lazy(() => import("./components/Events"));
 
 const App: FC = () => {
   return (
     <ProvideWebsocket>
+      <GlobalScrollbar />
       <Layout className="app">
-        <Header className="app__header" style={{ position: "fixed", zIndex: 1, width: "100%", overflow: "hidden" }}>
+        <Header
+          className="app__header"
+          style={{
+            position: "fixed",
+            zIndex: 1,
+            width: "100%",
+            overflow: "hidden",
+          }}
+        >
           <AppHeader />
         </Header>
         <Content className="app-content">

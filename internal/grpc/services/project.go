@@ -192,8 +192,8 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	marsC, _ := GetProjectMarsConfig(projectModel.GitProjectId, projectModel.GitBranch)
 	cpu, memory := utils.GetCpuAndMemory(projectModel.GetAllPodMetrics())
 
-	nodePortMapping := utils.GetNodePortMappingByNamespace(projectModel.Namespace.Name)
-	ingMapping := utils.GetIngressMappingByNamespace(projectModel.Namespace.Name)
+	nodePortMapping := utils.GetNodePortMappingByProjects(projectModel.Namespace.Name, projectModel)
+	ingMapping := utils.GetIngressMappingByProjects(projectModel.Namespace.Name, projectModel)
 
 	var urls = make([]*types.ServiceEndpoint, 0)
 	for key, values := range ingMapping {

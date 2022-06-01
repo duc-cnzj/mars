@@ -379,6 +379,7 @@ func (u userConfig) PrettyYaml() string {
 
 func toUpdatesMap(p *models.Project) map[string]any {
 	return map[string]any{
+		"manifest":           p.Manifest,
 		"config":             p.Config,
 		"git_project_id":     p.GitProjectId,
 		"git_commit":         p.GitCommit,
@@ -418,6 +419,7 @@ func (j *Jober) Run() error {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
 			j.manifests = utils.Filter[string](strings.Split(result.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 })
+			j.project.Manifest = result.Manifest
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
 				Pipeline: j.vars.MustGetString("Pipeline"),

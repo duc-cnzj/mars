@@ -140,34 +140,31 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 		return 0, fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
-	send := true
 	t.closeLock.Lock()
+	defer t.closeLock.Unlock()
 	if t.isClosed {
-		send = false
+		return 0, nil
 	}
-	t.closeLock.Unlock()
-	if send {
-		t.recorder.Write(string(p))
-		NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-			Metadata: &websocket_pb.Metadata{
-				Id:     t.conn.id,
-				Uid:    t.conn.uid,
-				Slug:   t.id,
-				Type:   WsHandleExecShellMsg,
-				Result: ResultSuccess,
-			},
-			TerminalMessage: &websocket_pb.TerminalMessage{
-				Op:        OpStdout,
-				Data:      string(p),
-				SessionId: t.id,
-			},
-			Container: &types.Container{
-				Namespace: t.Container.Namespace,
-				Pod:       t.Container.Pod,
-				Container: t.Container.Container,
-			},
-		})
-	}
+	t.recorder.Write(string(p))
+	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+		Metadata: &websocket_pb.Metadata{
+			Id:     t.conn.id,
+			Uid:    t.conn.uid,
+			Slug:   t.id,
+			Type:   WsHandleExecShellMsg,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket_pb.TerminalMessage{
+			Op:        OpStdout,
+			Data:      string(p),
+			SessionId: t.id,
+		},
+		Container: &types.Container{
+			Namespace: t.Container.Namespace,
+			Pod:       t.Container.Pod,
+			Container: t.Container.Container,
+		},
+	})
 
 	return len(p), nil
 }

@@ -39,6 +39,7 @@ type Project struct {
 	FinalExtraValues string `json:"final_extra_values" gorm:"type:text;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`
 
 	ConfigType string `json:"config_type" gorm:"size:255;nullable;"`
+	Manifest   string `json:"manifest" gorm:"type:longtext;"`
 
 	GitCommitWebUrl string     `json:"git_commit_web_url" gorm:"size:255;nullable;"`
 	GitCommitTitle  string     `json:"git_commit_title" gorm:"size:255;nullable;"`

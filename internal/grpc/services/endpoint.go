@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -26,13 +27,15 @@ type EndpointSvc struct {
 
 func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
 	var ns models.Namespace
-	if err := app.DB().Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
+	if err := app.DB().Preload("Projects", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "manifest", "namespace_id", "name")
+	}).Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
 	}
 
 	var res = []*types.ServiceEndpoint{}
-	nodePortMapping := utils.GetNodePortMappingByNamespace(ns.Name)
-	ingMapping := utils.GetIngressMappingByNamespace(ns.Name)
+	nodePortMapping := utils.GetNodePortMappingByProjects(ns.Name, ns.Projects...)
+	ingMapping := utils.GetIngressMappingByProjects(ns.Name, ns.Projects...)
 	for _, hosts := range ingMapping {
 		res = append(res, hosts...)
 	}

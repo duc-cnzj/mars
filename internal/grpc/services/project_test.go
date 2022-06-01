@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -119,7 +120,56 @@ func TestProjectSvc_Show(t *testing.T) {
 	})
 	fromError, _ = status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
-	p := &models.Project{Namespace: models.Namespace{Name: "test"}, GitProjectId: 100, Name: "yyy", PodSelectors: "a=a"}
+	ing1 := v12.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "networking.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test",
+			Name:      "yyy",
+			Labels: map[string]string{
+				"app.kubernetes.io/instance": "yyy",
+			}},
+		Spec: v12.IngressSpec{
+			Rules: []v12.IngressRule{
+				{
+					Host: "yyy.com",
+				},
+			},
+		},
+	}
+	svc1 := v1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test",
+			Name:      "svc1",
+			Labels: map[string]string{
+				"app.kubernetes.io/instance": "yyy",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type: "NodePort",
+			Ports: []v1.ServicePort{
+				{
+					Name:     "http",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30000,
+				},
+				{
+					Name:     "ui",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30001,
+				},
+			},
+		},
+	}
+	p := &models.Project{Namespace: models.Namespace{Name: "test"}, GitProjectId: 100, Name: "yyy", PodSelectors: "a=a", Manifest: strings.Join(encodeToYaml(&ing1, &svc1), "---")}
 	db.Create(p)
 	mcfg := mars.Config{
 		Elements: []*mars.Element{
@@ -168,54 +218,14 @@ func TestProjectSvc_Show(t *testing.T) {
 		}
 		return true, res, nil
 	})
-
 	fk := fake.NewSimpleClientset(&v1.ServiceList{
 		Items: []v1.Service{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test",
-					Name:      "svc1",
-					Labels: map[string]string{
-						"app.kubernetes.io/instance": "yyy",
-					},
-				},
-				Spec: v1.ServiceSpec{
-					Type: "NodePort",
-					Ports: []v1.ServicePort{
-						{
-							Name:     "http",
-							Protocol: "tcp",
-							Port:     80,
-							NodePort: 30000,
-						},
-						{
-							Name:     "ui",
-							Protocol: "tcp",
-							Port:     80,
-							NodePort: 30001,
-						},
-					},
-				},
-			},
+			svc1,
 		},
 	},
 		&v12.IngressList{
 			Items: []v12.Ingress{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "test",
-						Name:      "yyy",
-						Labels: map[string]string{
-							"app.kubernetes.io/instance": "yyy",
-						}},
-					Spec: v12.IngressSpec{
-						Rules: []v12.IngressRule{
-							{
-								Host: "yyy.com",
-							},
-						},
-					},
-				},
+				ing1,
 			},
 		},
 	)
