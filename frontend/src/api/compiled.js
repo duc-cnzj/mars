@@ -15438,7 +15438,7 @@ export const project = $root.project = (() => {
          * Properties of an AllContainersResponse.
          * @memberof project
          * @interface IAllContainersResponse
-         * @property {Array.<types.Container>|null} [items] AllContainersResponse items
+         * @property {Array.<types.StateContainer>|null} [items] AllContainersResponse items
          */
 
         /**
@@ -15459,7 +15459,7 @@ export const project = $root.project = (() => {
 
         /**
          * AllContainersResponse items.
-         * @member {Array.<types.Container>} items
+         * @member {Array.<types.StateContainer>} items
          * @memberof project.AllContainersResponse
          * @instance
          */
@@ -15479,7 +15479,7 @@ export const project = $root.project = (() => {
                 writer = $Writer.create();
             if (message.items != null && message.items.length)
                 for (let i = 0; i < message.items.length; ++i)
-                    $root.types.Container.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                    $root.types.StateContainer.encode(message.items[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
             return writer;
         };
 
@@ -15504,7 +15504,7 @@ export const project = $root.project = (() => {
                 case 1:
                     if (!(message.items && message.items.length))
                         message.items = [];
-                    message.items.push($root.types.Container.decode(reader, reader.uint32()));
+                    message.items.push($root.types.StateContainer.decode(reader, reader.uint32()));
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -16670,6 +16670,129 @@ export const types = $root.types = (() => {
         };
 
         return Container;
+    })();
+
+    types.StateContainer = (function() {
+
+        /**
+         * Properties of a StateContainer.
+         * @memberof types
+         * @interface IStateContainer
+         * @property {string|null} [namespace] StateContainer namespace
+         * @property {string|null} [pod] StateContainer pod
+         * @property {string|null} [container] StateContainer container
+         * @property {boolean|null} [is_old] StateContainer is_old
+         */
+
+        /**
+         * Constructs a new StateContainer.
+         * @memberof types
+         * @classdesc Represents a StateContainer.
+         * @implements IStateContainer
+         * @constructor
+         * @param {types.IStateContainer=} [properties] Properties to set
+         */
+        function StateContainer(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * StateContainer namespace.
+         * @member {string} namespace
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.namespace = "";
+
+        /**
+         * StateContainer pod.
+         * @member {string} pod
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.pod = "";
+
+        /**
+         * StateContainer container.
+         * @member {string} container
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.container = "";
+
+        /**
+         * StateContainer is_old.
+         * @member {boolean} is_old
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.is_old = false;
+
+        /**
+         * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
+         * @function encode
+         * @memberof types.StateContainer
+         * @static
+         * @param {types.StateContainer} message StateContainer message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        StateContainer.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.namespace);
+            if (message.pod != null && Object.hasOwnProperty.call(message, "pod"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
+            if (message.container != null && Object.hasOwnProperty.call(message, "container"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.container);
+            if (message.is_old != null && Object.hasOwnProperty.call(message, "is_old"))
+                writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_old);
+            return writer;
+        };
+
+        /**
+         * Decodes a StateContainer message from the specified reader or buffer.
+         * @function decode
+         * @memberof types.StateContainer
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {types.StateContainer} StateContainer
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        StateContainer.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.types.StateContainer();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.namespace = reader.string();
+                    break;
+                case 2:
+                    message.pod = reader.string();
+                    break;
+                case 3:
+                    message.container = reader.string();
+                    break;
+                case 4:
+                    message.is_old = reader.bool();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return StateContainer;
     })();
 
     types.ExtraValue = (function() {

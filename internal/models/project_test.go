@@ -82,33 +82,55 @@ func TestProject_GetAllPods(t *testing.T) {
 	app := mock.NewMockApplicationInterface(ctrl)
 	defer ctrl.Finish()
 	instance.SetInstance(app)
-	var zero int32 = 0
 	rs := &appsv1.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			UID:       "aaaa",
 			Namespace: "test",
 			Name:      "rs",
-		},
-		Spec: appsv1.ReplicaSetSpec{
-			Replicas: &zero,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind: "Deployment",
+					UID:  "deploy-1",
+				},
+			},
+			ResourceVersion: "1",
 		},
 	}
-	var one int32 = 1
 	rs2 := &appsv1.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			UID:       "bbbb",
 			Namespace: "test",
 			Name:      "rs2",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind: "Deployment",
+					UID:  "deploy-1",
+				},
+			},
+			ResourceVersion: "3",
 		},
-		Spec: appsv1.ReplicaSetSpec{
-			Replicas: &one,
+	}
+	rs3 := &appsv1.ReplicaSet{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "cccc",
+			Namespace: "test",
+			Name:      "rs3",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind: "Deployment",
+					UID:  "deploy-1",
+				},
+			},
+			ResourceVersion: "2",
 		},
 	}
 	fk := fake2.NewSimpleClientset(
 		rs,
 		rs2,
+		rs3,
 		&v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod1",
@@ -137,8 +159,8 @@ func TestProject_GetAllPods(t *testing.T) {
 					{
 						APIVersion: "apps/v1",
 						Kind:       "ReplicaSet",
-						Name:       "rs",
-						UID:        "aaaa",
+						Name:       "rs3",
+						UID:        "cccc",
 					},
 				},
 			},
@@ -178,7 +200,16 @@ func TestProject_GetAllPods(t *testing.T) {
 	}
 	assert.Nil(t, m.GetAllPods())
 	m.PodSelectors = "a=a|b=b"
-	assert.Len(t, m.GetAllPods(), 1)
+	assert.Len(t, m.GetAllPods(), 3)
+	var oldCount int
+	for _, po := range m.GetAllPods() {
+		if po.IsOld {
+			oldCount++
+			continue
+		}
+		assert.Equal(t, "pod2", po.Pod.Name)
+	}
+	assert.Equal(t, 2, oldCount)
 }
 
 func TestProject_GetEnvValues(t *testing.T) {

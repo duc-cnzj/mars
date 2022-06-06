@@ -27,7 +27,7 @@ const TabShell: React.FC<{
   resizeAt: number;
   updatedAt: any;
 }> = ({ namespace, id, resizeAt, updatedAt }) => {
-  const [list, setList] = useState<pb.types.Container[]>([]);
+  const [list, setList] = useState<pb.types.StateContainer[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [term, setTerm] = useState<Terminal>();
@@ -313,7 +313,7 @@ const TabShell: React.FC<{
             key={item.pod + "|" + item.container}
             value={item.pod + "|" + item.container}
           >
-            {item.container}
+            {item.container}{item.is_old && <span style={{marginLeft: 2, fontSize: 10, color: "#ef4444"}}>(old)</span>}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
               {item.pod}
             </Tag>

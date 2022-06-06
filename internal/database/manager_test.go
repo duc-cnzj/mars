@@ -1,14 +1,14 @@
 package database
 
 import (
-	"github.com/duc-cnzj/mars/internal/models"
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/models"
+
 	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 

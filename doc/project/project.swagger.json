@@ -210,7 +210,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/typesContainer"
+            "$ref": "#/definitions/typesStateContainer"
           }
         }
       }
@@ -297,20 +297,6 @@
         }
       },
       "additionalProperties": {}
-    },
-    "typesContainer": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "pod": {
-          "type": "string"
-        },
-        "container": {
-          "type": "string"
-        }
-      }
     },
     "typesDeploy": {
       "type": "string",
@@ -474,6 +460,24 @@
         },
         "port_name": {
           "type": "string"
+        }
+      }
+    },
+    "typesStateContainer": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        },
+        "container": {
+          "type": "string"
+        },
+        "is_old": {
+          "type": "boolean",
+          "title": "在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod"
         }
       }
     },

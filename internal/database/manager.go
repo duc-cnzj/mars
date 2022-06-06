@@ -35,9 +35,6 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 			Migrate: func(tx *gorm.DB) error {
 				return tx.AutoMigrate(dst...)
 			},
-			Rollback: func(tx *gorm.DB) error {
-				return nil
-			},
 		},
 		{
 			ID: "2022-01-01",
@@ -93,9 +90,6 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				}
 				return nil
 			},
-			Rollback: func(tx *gorm.DB) error {
-				return nil
-			},
 		},
 		{
 			ID: "2022-05-31-global_config-text-longtext",
@@ -124,9 +118,6 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				}
 				return nil
 			},
-			Rollback: func(tx *gorm.DB) error {
-				return nil
-			},
 		},
 		{
 			ID: "2022-05-31-manifest",
@@ -147,9 +138,6 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 					}
 				}
 
-				return nil
-			},
-			Rollback: func(tx *gorm.DB) error {
 				return nil
 			},
 		},

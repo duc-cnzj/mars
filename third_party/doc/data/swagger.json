@@ -2443,7 +2443,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/typesContainer"
+            "$ref": "#/definitions/typesStateContainer"
           }
         }
       }
@@ -2597,20 +2597,6 @@
         "version": {
           "type": "string",
           "format": "int64"
-        }
-      }
-    },
-    "typesContainer": {
-      "type": "object",
-      "properties": {
-        "container": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "pod": {
-          "type": "string"
         }
       }
     },
@@ -2915,6 +2901,24 @@
           "type": "string"
         },
         "url": {
+          "type": "string"
+        }
+      }
+    },
+    "typesStateContainer": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string"
+        },
+        "is_old": {
+          "type": "boolean",
+          "title": "在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "pod": {
           "type": "string"
         }
       }

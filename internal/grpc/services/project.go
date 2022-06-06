@@ -224,14 +224,15 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 
 	var list = projectModel.GetAllPods()
 
-	var containerList []*types.Container
+	var containerList []*types.StateContainer
 	for _, item := range list {
-		for _, c := range item.Spec.Containers {
+		for _, c := range item.Pod.Spec.Containers {
 			containerList = append(containerList,
-				&types.Container{
+				&types.StateContainer{
 					Namespace: projectModel.Namespace.Name,
-					Pod:       item.Name,
+					Pod:       item.Pod.Name,
 					Container: c.Name,
+					IsOld:     item.IsOld,
 				},
 			)
 		}
