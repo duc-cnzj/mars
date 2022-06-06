@@ -27,6 +27,14 @@ message Container {
   string container = 3;
 }
 
+message StateContainer {
+  string namespace = 1;
+  string pod = 2;
+  string container = 3;
+  // 在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod
+  bool is_old = 4;
+}
+
 message ExtraValue {
   string path = 1;
   string value = 2;

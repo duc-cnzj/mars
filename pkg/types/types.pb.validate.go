@@ -242,6 +242,114 @@ var _ interface {
 	ErrorName() string
 } = ContainerValidationError{}
 
+// Validate checks the field values on StateContainer with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *StateContainer) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StateContainer with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in StateContainerMultiError,
+// or nil if none found.
+func (m *StateContainer) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StateContainer) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Namespace
+
+	// no validation rules for Pod
+
+	// no validation rules for Container
+
+	// no validation rules for IsOld
+
+	if len(errors) > 0 {
+		return StateContainerMultiError(errors)
+	}
+
+	return nil
+}
+
+// StateContainerMultiError is an error wrapping multiple validation errors
+// returned by StateContainer.ValidateAll() if the designated constraints
+// aren't met.
+type StateContainerMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StateContainerMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StateContainerMultiError) AllErrors() []error { return m }
+
+// StateContainerValidationError is the validation error returned by
+// StateContainer.Validate if the designated constraints aren't met.
+type StateContainerValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StateContainerValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StateContainerValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StateContainerValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StateContainerValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StateContainerValidationError) ErrorName() string { return "StateContainerValidationError" }
+
+// Error satisfies the builtin error interface
+func (e StateContainerValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStateContainer.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StateContainerValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StateContainerValidationError{}
+
 // Validate checks the field values on ExtraValue with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

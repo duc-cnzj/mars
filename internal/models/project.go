@@ -14,9 +14,10 @@ import (
 	"gorm.io/gorm"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -72,9 +73,14 @@ func (project *Project) GetPodSelectors() []string {
 	return strings.Split(project.PodSelectors, "|")
 }
 
-func (project *Project) GetAllPods() []v1.Pod {
+type StatePod struct {
+	IsOld bool
+	Pod   corev1.Pod
+}
+
+func (project *Project) GetAllPods() []StatePod {
 	var list []corev1.Pod
-	var newList []corev1.Pod
+	var newList []StatePod
 	var split []string
 	if len(project.PodSelectors) > 0 {
 		split = strings.Split(project.PodSelectors, "|")
@@ -82,7 +88,7 @@ func (project *Project) GetAllPods() []v1.Pod {
 	if len(split) == 0 {
 		return nil
 	}
-	notEqualSelector := fields.OneTermNotEqualSelector("status.phase", string(v1.PodFailed))
+	notEqualSelector := fields.OneTermNotEqualSelector("status.phase", string(corev1.PodFailed))
 	for _, labels := range split {
 		l, _ := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels,
@@ -91,9 +97,13 @@ func (project *Project) GetAllPods() []v1.Pod {
 
 		list = append(list, l.Items...)
 	}
+
 	var m = make(map[string]*appsv1.ReplicaSet)
+	var objectMap = make(map[string]runtime.Object)
+	var oldReplicaMap = make(map[string]struct{})
+
+	// TODO: 兼容 sts pod
 	for _, pod := range list {
-		flag := true
 		for _, reference := range pod.OwnerReferences {
 			if reference.Kind == "ReplicaSet" {
 				var (
@@ -108,16 +118,44 @@ func (project *Project) GetAllPods() []v1.Pod {
 						continue
 					}
 					m[string(reference.UID)] = rs
-				}
-				if rs.Spec.Replicas != nil && *rs.Spec.Replicas == 0 {
-					flag = false
-					break
+					for _, re := range rs.OwnerReferences {
+						if re.Kind == "Deployment" {
+							uniqueKey := string(re.UID)
+							if old, found := objectMap[uniqueKey]; found {
+								accessor1, _ := meta.Accessor(old)
+								accessor2, _ := meta.Accessor(rs)
+								if accessor1.GetResourceVersion() != accessor2.GetResourceVersion() {
+									if accessor1.GetResourceVersion() < accessor2.GetResourceVersion() {
+										oldReplicaMap[string(accessor1.GetUID())] = struct{}{}
+										objectMap[uniqueKey] = rs
+									} else {
+										oldReplicaMap[string(accessor2.GetUID())] = struct{}{}
+									}
+								}
+							} else {
+								objectMap[uniqueKey] = rs
+							}
+							break
+						}
+					}
 				}
 			}
 		}
-		if flag {
-			newList = append(newList, pod)
+	}
+
+	for _, pod := range list {
+		var isOld bool
+		for _, reference := range pod.OwnerReferences {
+			if _, ok := oldReplicaMap[string(reference.UID)]; ok {
+				isOld = true
+				break
+			}
 		}
+
+		newList = append(newList, StatePod{
+			IsOld: isOld,
+			Pod:   pod,
+		})
 	}
 
 	return newList

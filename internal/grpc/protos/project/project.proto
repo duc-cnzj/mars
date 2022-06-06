@@ -32,7 +32,7 @@ message AllContainersRequest {
 }
 
 message AllContainersResponse {
-  repeated types.Container items = 1;
+  repeated types.StateContainer items = 1;
 }
 
 message ApplyResponse {

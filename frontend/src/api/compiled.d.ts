@@ -7286,7 +7286,7 @@ export namespace project {
     interface IAllContainersResponse {
 
         /** AllContainersResponse items */
-        items?: (types.Container[]|null);
+        items?: (types.StateContainer[]|null);
     }
 
     /** Represents an AllContainersResponse. */
@@ -7299,7 +7299,7 @@ export namespace project {
         constructor(properties?: project.IAllContainersResponse);
 
         /** AllContainersResponse items. */
-        public items: types.Container[];
+        public items: types.StateContainer[];
 
         /**
          * Encodes the specified AllContainersResponse message. Does not implicitly {@link project.AllContainersResponse.verify|verify} messages.
@@ -7881,6 +7881,62 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.Container;
+    }
+
+    /** Properties of a StateContainer. */
+    interface IStateContainer {
+
+        /** StateContainer namespace */
+        namespace?: (string|null);
+
+        /** StateContainer pod */
+        pod?: (string|null);
+
+        /** StateContainer container */
+        container?: (string|null);
+
+        /** StateContainer is_old */
+        is_old?: (boolean|null);
+    }
+
+    /** Represents a StateContainer. */
+    class StateContainer implements IStateContainer {
+
+        /**
+         * Constructs a new StateContainer.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: types.IStateContainer);
+
+        /** StateContainer namespace. */
+        public namespace: string;
+
+        /** StateContainer pod. */
+        public pod: string;
+
+        /** StateContainer container. */
+        public container: string;
+
+        /** StateContainer is_old. */
+        public is_old: boolean;
+
+        /**
+         * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
+         * @param message StateContainer message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: types.StateContainer, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a StateContainer message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns StateContainer
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.StateContainer;
     }
 
     /** Properties of an ExtraValue. */

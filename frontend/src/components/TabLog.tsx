@@ -11,7 +11,7 @@ const ProjectContainerLogs: React.FC<{
   namespace: string;
 }> = ({ id, namespace, updatedAt }) => {
   const [value, setValue] = useState<string>();
-  const [list, setList] = useState<pb.types.Container[]>();
+  const [list, setList] = useState<pb.types.StateContainer[]>();
 
   const listContainer = useCallback(async () => {
     return allPodContainers({ project_id: id }).then((res) => {
@@ -54,7 +54,7 @@ const ProjectContainerLogs: React.FC<{
             key={item.pod + "|" + item.container}
             value={item.pod + "|" + item.container}
           >
-            {item.container}
+            {item.container}{item.is_old && <span style={{marginLeft: 2, fontSize: 10, color: "#ef4444"}}>(old)</span>}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
               {item.pod}
             </Tag>

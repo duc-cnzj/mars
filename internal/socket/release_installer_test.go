@@ -1,13 +1,14 @@
 package socket
 
 import (
+	"testing"
+	"time"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
-	"testing"
-	"time"
 )
 
 func Test_newReleaseInstaller(t *testing.T) {
@@ -47,7 +48,7 @@ func Test_releaseInstaller_logger(t *testing.T) {
 	installer.percenter = newProcessPercent(msger, &fakeSleeper{})
 	installer.logger()("test: %s", "aaa")
 	assert.Equal(t, int64(1), installer.percenter.Current())
-	msg:=<-installer.messageCh.Chan()
+	msg := <-installer.messageCh.Chan()
 	assert.Equal(t, "[如果长时间未成功，请试试 debug 模式]: test: aaa", msg.Msg)
 	assert.Equal(t, contracts.MessageText, msg.Type)
 }
