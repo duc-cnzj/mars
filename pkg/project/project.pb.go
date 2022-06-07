@@ -696,7 +696,7 @@ type HostVariablesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// 指定了项目名称，如果不指定则使用从 git server 获取的项目名称
+	// 如果不指定则使用从 git server 获取的项目名称
 	ProjectName  string `protobuf:"bytes,1,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
 	Namespace    string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	GitProjectId int64  `protobuf:"varint,3,opt,name=git_project_id,json=gitProjectId,proto3" json:"git_project_id,omitempty"`
