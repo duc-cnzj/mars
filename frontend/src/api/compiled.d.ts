@@ -7632,6 +7632,100 @@ export namespace project {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ListResponse;
     }
 
+    /** Properties of a HostVariablesRequest. */
+    interface IHostVariablesRequest {
+
+        /** HostVariablesRequest project_name */
+        project_name?: (string|null);
+
+        /** HostVariablesRequest namespace */
+        namespace?: (string|null);
+
+        /** HostVariablesRequest git_project_id */
+        git_project_id?: (number|null);
+
+        /** HostVariablesRequest git_branch */
+        git_branch?: (string|null);
+    }
+
+    /** Represents a HostVariablesRequest. */
+    class HostVariablesRequest implements IHostVariablesRequest {
+
+        /**
+         * Constructs a new HostVariablesRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: project.IHostVariablesRequest);
+
+        /** HostVariablesRequest project_name. */
+        public project_name: string;
+
+        /** HostVariablesRequest namespace. */
+        public namespace: string;
+
+        /** HostVariablesRequest git_project_id. */
+        public git_project_id: number;
+
+        /** HostVariablesRequest git_branch. */
+        public git_branch: string;
+
+        /**
+         * Encodes the specified HostVariablesRequest message. Does not implicitly {@link project.HostVariablesRequest.verify|verify} messages.
+         * @param message HostVariablesRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: project.HostVariablesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a HostVariablesRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns HostVariablesRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.HostVariablesRequest;
+    }
+
+    /** Properties of a HostVariablesResponse. */
+    interface IHostVariablesResponse {
+
+        /** HostVariablesResponse hosts */
+        hosts?: ({ [k: string]: string }|null);
+    }
+
+    /** Represents a HostVariablesResponse. */
+    class HostVariablesResponse implements IHostVariablesResponse {
+
+        /**
+         * Constructs a new HostVariablesResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: project.IHostVariablesResponse);
+
+        /** HostVariablesResponse hosts. */
+        public hosts: { [k: string]: string };
+
+        /**
+         * Encodes the specified HostVariablesResponse message. Does not implicitly {@link project.HostVariablesResponse.verify|verify} messages.
+         * @param message HostVariablesResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: project.HostVariablesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a HostVariablesResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns HostVariablesResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.HostVariablesResponse;
+    }
+
     /** Represents a Project */
     class Project extends $protobuf.rpc.Service {
 
@@ -7726,6 +7820,20 @@ export namespace project {
          * @returns Promise
          */
         public allContainers(request: project.AllContainersRequest): Promise<project.AllContainersResponse>;
+
+        /**
+         * Calls HostVariables.
+         * @param request HostVariablesRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and HostVariablesResponse
+         */
+        public hostVariables(request: project.HostVariablesRequest, callback: project.Project.HostVariablesCallback): void;
+
+        /**
+         * Calls HostVariables.
+         * @param request HostVariablesRequest message or plain object
+         * @returns Promise
+         */
+        public hostVariables(request: project.HostVariablesRequest): Promise<project.HostVariablesResponse>;
     }
 
     namespace Project {
@@ -7771,6 +7879,13 @@ export namespace project {
          * @param [response] AllContainersResponse
          */
         type AllContainersCallback = (error: (Error|null), response?: project.AllContainersResponse) => void;
+
+        /**
+         * Callback as used by {@link project.Project#hostVariables}.
+         * @param error Error, if any
+         * @param [response] HostVariablesResponse
+         */
+        type HostVariablesCallback = (error: (Error|null), response?: project.HostVariablesResponse) => void;
     }
 }
 

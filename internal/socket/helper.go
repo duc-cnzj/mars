@@ -93,28 +93,6 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []s
 	return selectors
 }
 
-var hostMatch = regexp.MustCompile(`\s+([\w-_]*)<\s*.Host\d+\s*>`)
-
-func getPreOccupiedLenByValuesYaml(values string) int {
-	var sub = 0
-	if len(values) > 0 {
-		submatch := hostMatch.FindAllStringSubmatch(values, -1)
-		for _, i := range submatch {
-			if len(i) == 2 {
-				sub = max(sub, len(i[1]))
-			}
-		}
-	}
-	return sub
-}
-
-func max(a, b int) int {
-	if a < b {
-		return b
-	}
-	return a
-}
-
 var AuditLogWithChange = events.AuditLog
 
 type timeOrderedSetStringItem struct {

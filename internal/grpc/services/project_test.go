@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/plugins/domain_manager"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -612,4 +613,64 @@ func TestEmptyMessager(t *testing.T) {
 	em.SendProtoMsg(nil)
 	em.Stop(nil)
 	assert.True(t, true)
+}
+
+func TestProjectSvc_HostVariables(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{
+		GitServerPlugin: config.Plugin{
+			Name: "test_git_server",
+		},
+		DomainManagerPlugin: config.Plugin{
+			Name: "test_domain_plugin_driver",
+			Args: nil,
+		},
+	}).AnyTimes()
+	app.EXPECT().GetPluginByName("test_git_server").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	app.EXPECT().GetPluginByName("test_domain_plugin_driver").AnyTimes().Return(&domain_manager.DefaultDomainManager{})
+	p := mock.NewMockProjectInterface(m)
+	gitS.EXPECT().GetProject("999").Return(p, nil)
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
+	db.AutoMigrate(&models.GitProject{})
+	mc := mars.Config{
+		ValuesYaml: "",
+	}
+	marshal, _ := json.Marshal(&mc)
+	db.Create(&models.GitProject{
+		GitProjectId:  999,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal),
+	})
+	p.EXPECT().GetName().Return("pppp")
+	variables, err := new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+		Namespace:    "ns",
+		GitProjectId: 999,
+		GitBranch:    "dev",
+	})
+	assert.Nil(t, err)
+	assert.Len(t, variables.Hosts, 10)
+	assert.Equal(t, "pppp-ns-1.faker-domain.local", variables.Hosts["Host1"])
+	assert.Equal(t, "pppp-ns-2.faker-domain.local", variables.Hosts["Host2"])
+	assert.Equal(t, "pppp-ns-3.faker-domain.local", variables.Hosts["Host3"])
+	assert.Equal(t, "pppp-ns-4.faker-domain.local", variables.Hosts["Host4"])
+	assert.Equal(t, "pppp-ns-5.faker-domain.local", variables.Hosts["Host5"])
+	assert.Equal(t, "pppp-ns-6.faker-domain.local", variables.Hosts["Host6"])
+	assert.Equal(t, "pppp-ns-7.faker-domain.local", variables.Hosts["Host7"])
+	assert.Equal(t, "pppp-ns-8.faker-domain.local", variables.Hosts["Host8"])
+	assert.Equal(t, "pppp-ns-9.faker-domain.local", variables.Hosts["Host9"])
+	assert.Equal(t, "pppp-ns-10.faker-domain.local", variables.Hosts["Host10"])
+
+	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+		ProjectName:  "duc",
+		Namespace:    "ns",
+		GitProjectId: 999,
+		GitBranch:    "dev",
+	})
+	assert.Equal(t, "duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
 }

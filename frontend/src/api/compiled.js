@@ -16211,6 +16211,231 @@ export const project = $root.project = (() => {
         return ListResponse;
     })();
 
+    project.HostVariablesRequest = (function() {
+
+        /**
+         * Properties of a HostVariablesRequest.
+         * @memberof project
+         * @interface IHostVariablesRequest
+         * @property {string|null} [project_name] HostVariablesRequest project_name
+         * @property {string|null} [namespace] HostVariablesRequest namespace
+         * @property {number|null} [git_project_id] HostVariablesRequest git_project_id
+         * @property {string|null} [git_branch] HostVariablesRequest git_branch
+         */
+
+        /**
+         * Constructs a new HostVariablesRequest.
+         * @memberof project
+         * @classdesc Represents a HostVariablesRequest.
+         * @implements IHostVariablesRequest
+         * @constructor
+         * @param {project.IHostVariablesRequest=} [properties] Properties to set
+         */
+        function HostVariablesRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * HostVariablesRequest project_name.
+         * @member {string} project_name
+         * @memberof project.HostVariablesRequest
+         * @instance
+         */
+        HostVariablesRequest.prototype.project_name = "";
+
+        /**
+         * HostVariablesRequest namespace.
+         * @member {string} namespace
+         * @memberof project.HostVariablesRequest
+         * @instance
+         */
+        HostVariablesRequest.prototype.namespace = "";
+
+        /**
+         * HostVariablesRequest git_project_id.
+         * @member {number} git_project_id
+         * @memberof project.HostVariablesRequest
+         * @instance
+         */
+        HostVariablesRequest.prototype.git_project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * HostVariablesRequest git_branch.
+         * @member {string} git_branch
+         * @memberof project.HostVariablesRequest
+         * @instance
+         */
+        HostVariablesRequest.prototype.git_branch = "";
+
+        /**
+         * Encodes the specified HostVariablesRequest message. Does not implicitly {@link project.HostVariablesRequest.verify|verify} messages.
+         * @function encode
+         * @memberof project.HostVariablesRequest
+         * @static
+         * @param {project.HostVariablesRequest} message HostVariablesRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        HostVariablesRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.project_name != null && Object.hasOwnProperty.call(message, "project_name"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.project_name);
+            if (message.namespace != null && Object.hasOwnProperty.call(message, "namespace"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.namespace);
+            if (message.git_project_id != null && Object.hasOwnProperty.call(message, "git_project_id"))
+                writer.uint32(/* id 3, wireType 0 =*/24).int64(message.git_project_id);
+            if (message.git_branch != null && Object.hasOwnProperty.call(message, "git_branch"))
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.git_branch);
+            return writer;
+        };
+
+        /**
+         * Decodes a HostVariablesRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof project.HostVariablesRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {project.HostVariablesRequest} HostVariablesRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        HostVariablesRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.project.HostVariablesRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.project_name = reader.string();
+                    break;
+                case 2:
+                    message.namespace = reader.string();
+                    break;
+                case 3:
+                    message.git_project_id = reader.int64();
+                    break;
+                case 4:
+                    message.git_branch = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return HostVariablesRequest;
+    })();
+
+    project.HostVariablesResponse = (function() {
+
+        /**
+         * Properties of a HostVariablesResponse.
+         * @memberof project
+         * @interface IHostVariablesResponse
+         * @property {Object.<string,string>|null} [hosts] HostVariablesResponse hosts
+         */
+
+        /**
+         * Constructs a new HostVariablesResponse.
+         * @memberof project
+         * @classdesc Represents a HostVariablesResponse.
+         * @implements IHostVariablesResponse
+         * @constructor
+         * @param {project.IHostVariablesResponse=} [properties] Properties to set
+         */
+        function HostVariablesResponse(properties) {
+            this.hosts = {};
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * HostVariablesResponse hosts.
+         * @member {Object.<string,string>} hosts
+         * @memberof project.HostVariablesResponse
+         * @instance
+         */
+        HostVariablesResponse.prototype.hosts = $util.emptyObject;
+
+        /**
+         * Encodes the specified HostVariablesResponse message. Does not implicitly {@link project.HostVariablesResponse.verify|verify} messages.
+         * @function encode
+         * @memberof project.HostVariablesResponse
+         * @static
+         * @param {project.HostVariablesResponse} message HostVariablesResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        HostVariablesResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.hosts != null && Object.hasOwnProperty.call(message, "hosts"))
+                for (let keys = Object.keys(message.hosts), i = 0; i < keys.length; ++i)
+                    writer.uint32(/* id 1, wireType 2 =*/10).fork().uint32(/* id 1, wireType 2 =*/10).string(keys[i]).uint32(/* id 2, wireType 2 =*/18).string(message.hosts[keys[i]]).ldelim();
+            return writer;
+        };
+
+        /**
+         * Decodes a HostVariablesResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof project.HostVariablesResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {project.HostVariablesResponse} HostVariablesResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        HostVariablesResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.project.HostVariablesResponse(), key, value;
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    if (message.hosts === $util.emptyObject)
+                        message.hosts = {};
+                    let end2 = reader.uint32() + reader.pos;
+                    key = "";
+                    value = "";
+                    while (reader.pos < end2) {
+                        let tag2 = reader.uint32();
+                        switch (tag2 >>> 3) {
+                        case 1:
+                            key = reader.string();
+                            break;
+                        case 2:
+                            value = reader.string();
+                            break;
+                        default:
+                            reader.skipType(tag2 & 7);
+                            break;
+                        }
+                    }
+                    message.hosts[key] = value;
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return HostVariablesResponse;
+    })();
+
     project.Project = (function() {
 
         /**
@@ -16424,6 +16649,39 @@ export const project = $root.project = (() => {
          * @instance
          * @param {project.AllContainersRequest} request AllContainersRequest message or plain object
          * @returns {Promise<project.AllContainersResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link project.Project#hostVariables}.
+         * @memberof project.Project
+         * @typedef HostVariablesCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {project.HostVariablesResponse} [response] HostVariablesResponse
+         */
+
+        /**
+         * Calls HostVariables.
+         * @function hostVariables
+         * @memberof project.Project
+         * @instance
+         * @param {project.HostVariablesRequest} request HostVariablesRequest message or plain object
+         * @param {project.Project.HostVariablesCallback} callback Node-style callback called with the error, if any, and HostVariablesResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(Project.prototype.hostVariables = function hostVariables(request, callback) {
+            return this.rpcCall(hostVariables, $root.project.HostVariablesRequest, $root.project.HostVariablesResponse, request, callback);
+        }, "name", { value: "HostVariables" });
+
+        /**
+         * Calls HostVariables.
+         * @function hostVariables
+         * @memberof project.Project
+         * @instance
+         * @param {project.HostVariablesRequest} request HostVariablesRequest message or plain object
+         * @returns {Promise<project.HostVariablesResponse>} Promise
          * @variation 2
          */
 
