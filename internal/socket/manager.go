@@ -897,7 +897,7 @@ const (
 	VarTlsSecret        = "TlsSecret"
 )
 
-var tagRegex = regexp.MustCompile(`{{\s*(\.Branch|\.Commit|\.Pipeline)\s*}}`)
+var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
 
 type VariableLoader struct {
 	values vars
