@@ -256,7 +256,7 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 		assert.Equal(t, "context canceled", err.Error())
 	}()
 	select {
-	case <-time.After(1200 * time.Millisecond):
+	case <-time.After(1300 * time.Millisecond):
 		cancel()
 	}
 	_, ok := <-done

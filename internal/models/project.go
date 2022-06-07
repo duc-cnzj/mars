@@ -19,7 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/kubectl/pkg/util/deployment"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -104,6 +103,8 @@ func (s SortStatePod) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+const RevisionAnnotation = "deployment.kubernetes.io/revision"
+
 func (project *Project) GetAllPods() SortStatePod {
 	var list []corev1.Pod
 	var newList SortStatePod
@@ -150,8 +151,8 @@ func (project *Project) GetAllPods() SortStatePod {
 							if old, found := objectMap[uniqueKey]; found {
 								accessor1, _ := meta.Accessor(old)
 								accessor2, _ := meta.Accessor(rs)
-								accessor1Revision := accessor1.GetAnnotations()[deployment.RevisionAnnotation]
-								accessor2Revision := accessor2.GetAnnotations()[deployment.RevisionAnnotation]
+								accessor1Revision := accessor1.GetAnnotations()[RevisionAnnotation]
+								accessor2Revision := accessor2.GetAnnotations()[RevisionAnnotation]
 								if accessor1Revision != "" && accessor2Revision != "" && accessor1Revision != accessor2Revision {
 									if accessor1Revision < accessor2Revision {
 										oldReplicaMap[string(accessor1.GetUID())] = struct{}{}
