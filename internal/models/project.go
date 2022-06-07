@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -78,9 +79,23 @@ type StatePod struct {
 	Pod   corev1.Pod
 }
 
-func (project *Project) GetAllPods() []StatePod {
+type SortStatePod []StatePod
+
+func (s SortStatePod) Len() int {
+	return len(s)
+}
+
+func (s SortStatePod) Less(i, j int) bool {
+	return !s[i].IsOld && s[j].IsOld
+}
+
+func (s SortStatePod) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (project *Project) GetAllPods() SortStatePod {
 	var list []corev1.Pod
-	var newList []StatePod
+	var newList SortStatePod
 	var split []string
 	if len(project.PodSelectors) > 0 {
 		split = strings.Split(project.PodSelectors, "|")
@@ -157,6 +172,7 @@ func (project *Project) GetAllPods() []StatePod {
 			Pod:   pod,
 		})
 	}
+	sort.Sort(newList)
 
 	return newList
 }

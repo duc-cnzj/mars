@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -306,4 +307,45 @@ func TestProject_ProtoTransform(t *testing.T) {
 		UpdatedAt:         date.ToRFC3339DatetimeString(&m.UpdatedAt),
 		DeletedAt:         date.ToRFC3339DatetimeString(&m.DeletedAt.Time),
 	}, m.ProtoTransform())
+}
+
+func TestSortStatePod(t *testing.T) {
+	s := SortStatePod{
+		{
+			IsOld: false,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "a"},
+			},
+		},
+		{
+			IsOld: false,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "e"},
+			},
+		},
+		{
+			IsOld: true,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "b"},
+			},
+		},
+		{
+			IsOld: false,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "c"},
+			},
+		},
+		{
+			IsOld: true,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "d"},
+			},
+		},
+	}
+	sort.Sort(s)
+	assert.Equal(t, s[0].Pod.Name, "a")
+	assert.Equal(t, s[1].Pod.Name, "e")
+	assert.Equal(t, s[2].Pod.Name, "c")
+	assert.Equal(t, s[3].Pod.Name, "b")
+	assert.Equal(t, s[4].Pod.Name, "d")
 }
