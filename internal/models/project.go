@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/kubectl/pkg/util/deployment"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -78,9 +80,33 @@ type StatePod struct {
 	Pod   corev1.Pod
 }
 
-func (project *Project) GetAllPods() []StatePod {
+type SortStatePod []StatePod
+
+func (s SortStatePod) Len() int {
+	return len(s)
+}
+
+func (s SortStatePod) Less(i, j int) bool {
+	if !s[i].IsOld && s[j].IsOld {
+		return true
+	}
+
+	if s[i].IsOld == s[j].IsOld {
+		if s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s SortStatePod) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (project *Project) GetAllPods() SortStatePod {
 	var list []corev1.Pod
-	var newList []StatePod
+	var newList SortStatePod
 	var split []string
 	if len(project.PodSelectors) > 0 {
 		split = strings.Split(project.PodSelectors, "|")
@@ -124,8 +150,10 @@ func (project *Project) GetAllPods() []StatePod {
 							if old, found := objectMap[uniqueKey]; found {
 								accessor1, _ := meta.Accessor(old)
 								accessor2, _ := meta.Accessor(rs)
-								if accessor1.GetResourceVersion() != accessor2.GetResourceVersion() {
-									if accessor1.GetResourceVersion() < accessor2.GetResourceVersion() {
+								accessor1Revision := accessor1.GetAnnotations()[deployment.RevisionAnnotation]
+								accessor2Revision := accessor2.GetAnnotations()[deployment.RevisionAnnotation]
+								if accessor1Revision != "" && accessor2Revision != "" && accessor1Revision != accessor2Revision {
+									if accessor1Revision < accessor2Revision {
 										oldReplicaMap[string(accessor1.GetUID())] = struct{}{}
 										objectMap[uniqueKey] = rs
 									} else {
@@ -157,6 +185,7 @@ func (project *Project) GetAllPods() []StatePod {
 			Pod:   pod,
 		})
 	}
+	sort.Sort(newList)
 
 	return newList
 }

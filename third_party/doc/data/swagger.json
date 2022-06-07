@@ -1442,6 +1442,39 @@
         }
       }
     },
+    "/api/projects/host_variables": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "HostVariables 获取 hosts 变量",
+        "operationId": "Project_HostVariables",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/projectHostVariablesRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/projectHostVariablesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/projects/{project_id}": {
       "get": {
         "tags": [
@@ -2468,6 +2501,36 @@
         "results": {
           "type": "array",
           "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "projectHostVariablesRequest": {
+      "type": "object",
+      "properties": {
+        "git_branch": {
+          "type": "string"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "project_name": {
+          "type": "string",
+          "title": "如果不指定则使用从 git server 获取的项目名称"
+        }
+      }
+    },
+    "projectHostVariablesResponse": {
+      "type": "object",
+      "properties": {
+        "hosts": {
+          "type": "object",
+          "additionalProperties": {
             "type": "string"
           }
         }

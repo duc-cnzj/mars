@@ -241,6 +241,21 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 	return &project.AllContainersResponse{Items: containerList}, nil
 }
 
+func (p *ProjectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {
+	if req.ProjectName == "" {
+		gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(req.GitProjectId)))
+		req.ProjectName = gitProject.GetName()
+	}
+	marsC, _ := utils.GetProjectMarsConfig(req.GitProjectId, req.GitBranch)
+	sub := utils.GetPreOccupiedLenByValuesYaml(marsC.ValuesYaml)
+	hosts := make(map[string]string)
+	for i := 1; i <= 10; i++ {
+		hosts[fmt.Sprintf("%s%d", socket.VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(req.ProjectName, req.Namespace, i, sub)
+	}
+
+	return &project.HostVariablesResponse{Hosts: hosts}, nil
+}
+
 type emptyMessager struct {
 }
 

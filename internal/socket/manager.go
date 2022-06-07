@@ -897,7 +897,7 @@ const (
 	VarTlsSecret        = "TlsSecret"
 )
 
-var tagRegex = regexp.MustCompile(`{{\s*(\.Branch|\.Commit|\.Pipeline)\s*}}`)
+var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
 
 type VariableLoader struct {
 	values vars
@@ -935,7 +935,7 @@ func (v *VariableLoader) Load(j *Jober) error {
 	v.values[VarImagePullSecrets] = renderResult.String()
 
 	//Host1...Host10
-	sub := getPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
+	sub := utils.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
 	mlog.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
 		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub)
