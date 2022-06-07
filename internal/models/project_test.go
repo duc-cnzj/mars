@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fake2 "k8s.io/client-go/kubernetes/fake"
 	testing2 "k8s.io/client-go/testing"
+	"k8s.io/kubectl/pkg/util/deployment"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	"k8s.io/metrics/pkg/client/clientset/versioned/fake"
 )
@@ -86,6 +87,9 @@ func TestProject_GetAllPods(t *testing.T) {
 	rs := &appsv1.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				deployment.RevisionAnnotation: "1",
+			},
 			UID:       "aaaa",
 			Namespace: "test",
 			Name:      "rs",
@@ -95,12 +99,14 @@ func TestProject_GetAllPods(t *testing.T) {
 					UID:  "deploy-1",
 				},
 			},
-			ResourceVersion: "1",
 		},
 	}
 	rs2 := &appsv1.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				deployment.RevisionAnnotation: "3",
+			},
 			UID:       "bbbb",
 			Namespace: "test",
 			Name:      "rs2",
@@ -110,12 +116,14 @@ func TestProject_GetAllPods(t *testing.T) {
 					UID:  "deploy-1",
 				},
 			},
-			ResourceVersion: "3",
 		},
 	}
 	rs3 := &appsv1.ReplicaSet{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				deployment.RevisionAnnotation: "2",
+			},
 			UID:       "cccc",
 			Namespace: "test",
 			Name:      "rs3",
@@ -125,7 +133,6 @@ func TestProject_GetAllPods(t *testing.T) {
 					UID:  "deploy-1",
 				},
 			},
-			ResourceVersion: "2",
 		},
 	}
 	fk := fake2.NewSimpleClientset(
@@ -315,37 +322,52 @@ func TestSortStatePod(t *testing.T) {
 			IsOld: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "a"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
 			},
 		},
 		{
 			IsOld: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "e"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
 			},
 		},
 		{
 			IsOld: true,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "b"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
 			},
 		},
 		{
 			IsOld: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "c"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
 			},
 		},
 		{
 			IsOld: true,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "d"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
 			},
 		},
 	}
 	sort.Sort(s)
-	assert.Equal(t, s[0].Pod.Name, "a")
-	assert.Equal(t, s[1].Pod.Name, "e")
-	assert.Equal(t, s[2].Pod.Name, "c")
-	assert.Equal(t, s[3].Pod.Name, "b")
-	assert.Equal(t, s[4].Pod.Name, "d")
+	assert.Equal(t, s[0].Pod.Name, "e")
+	assert.Equal(t, s[1].Pod.Name, "c")
+	assert.Equal(t, s[2].Pod.Name, "a")
+	assert.Equal(t, s[3].Pod.Name, "d")
+	assert.Equal(t, s[4].Pod.Name, "b")
 }

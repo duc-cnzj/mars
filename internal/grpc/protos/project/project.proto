@@ -78,7 +78,7 @@ message ListResponse {
 }
 
 message HostVariablesRequest {
-  // 指定了项目名称，如果不指定则使用从 git server 获取的项目名称
+  // 如果不指定则使用从 git server 获取的项目名称
   string project_name = 1;
   string namespace = 2 [(validate.rules).string.min_bytes = 1];
   int64 git_project_id = 3 [(validate.rules).int64.gt = 0];
