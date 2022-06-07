@@ -250,7 +250,7 @@ func (p *ProjectSvc) HostVariables(ctx context.Context, req *project.HostVariabl
 	sub := utils.GetPreOccupiedLenByValuesYaml(marsC.ValuesYaml)
 	hosts := make(map[string]string)
 	for i := 1; i <= 10; i++ {
-		hosts[fmt.Sprintf("%s%d", socket.VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(req.ProjectName, req.Namespace, i, sub)
+		hosts[fmt.Sprintf("%s%d", socket.VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(req.ProjectName, utils.GetMarsNamespace(req.Namespace), i, sub)
 	}
 
 	return &project.HostVariablesResponse{Hosts: hosts}, nil

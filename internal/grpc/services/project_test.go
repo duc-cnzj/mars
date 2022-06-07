@@ -621,6 +621,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	app := testutil.MockApp(m)
 	gitS := mock.NewMockGitServer(m)
 	app.EXPECT().Config().Return(&config.Config{
+		NsPrefix: "duc-",
 		GitServerPlugin: config.Plugin{
 			Name: "test_git_server",
 		},
@@ -655,16 +656,16 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Len(t, variables.Hosts, 10)
-	assert.Equal(t, "pppp-ns-1.faker-domain.local", variables.Hosts["Host1"])
-	assert.Equal(t, "pppp-ns-2.faker-domain.local", variables.Hosts["Host2"])
-	assert.Equal(t, "pppp-ns-3.faker-domain.local", variables.Hosts["Host3"])
-	assert.Equal(t, "pppp-ns-4.faker-domain.local", variables.Hosts["Host4"])
-	assert.Equal(t, "pppp-ns-5.faker-domain.local", variables.Hosts["Host5"])
-	assert.Equal(t, "pppp-ns-6.faker-domain.local", variables.Hosts["Host6"])
-	assert.Equal(t, "pppp-ns-7.faker-domain.local", variables.Hosts["Host7"])
-	assert.Equal(t, "pppp-ns-8.faker-domain.local", variables.Hosts["Host8"])
-	assert.Equal(t, "pppp-ns-9.faker-domain.local", variables.Hosts["Host9"])
-	assert.Equal(t, "pppp-ns-10.faker-domain.local", variables.Hosts["Host10"])
+	assert.Equal(t, "pppp-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
+	assert.Equal(t, "pppp-duc-ns-2.faker-domain.local", variables.Hosts["Host2"])
+	assert.Equal(t, "pppp-duc-ns-3.faker-domain.local", variables.Hosts["Host3"])
+	assert.Equal(t, "pppp-duc-ns-4.faker-domain.local", variables.Hosts["Host4"])
+	assert.Equal(t, "pppp-duc-ns-5.faker-domain.local", variables.Hosts["Host5"])
+	assert.Equal(t, "pppp-duc-ns-6.faker-domain.local", variables.Hosts["Host6"])
+	assert.Equal(t, "pppp-duc-ns-7.faker-domain.local", variables.Hosts["Host7"])
+	assert.Equal(t, "pppp-duc-ns-8.faker-domain.local", variables.Hosts["Host8"])
+	assert.Equal(t, "pppp-duc-ns-9.faker-domain.local", variables.Hosts["Host9"])
+	assert.Equal(t, "pppp-duc-ns-10.faker-domain.local", variables.Hosts["Host10"])
 
 	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		ProjectName:  "duc",
@@ -672,5 +673,5 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitProjectId: 999,
 		GitBranch:    "dev",
 	})
-	assert.Equal(t, "duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
+	assert.Equal(t, "duc-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
 }
