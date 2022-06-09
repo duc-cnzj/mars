@@ -14,11 +14,7 @@ var (
 func Register(e contracts.Event, l contracts.Listener) {
 	mu.Lock()
 	defer mu.Unlock()
-	if _, ok := registry[e]; ok {
-		registry[e] = append(registry[e], l)
-	} else {
-		registry[e] = []contracts.Listener{l}
-	}
+	registry[e] = append(registry[e], l)
 }
 
 func RegisteredEvents() map[contracts.Event][]contracts.Listener {

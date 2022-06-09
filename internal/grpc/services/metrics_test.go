@@ -255,10 +255,8 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 		t.Log(err)
 		assert.Equal(t, "context canceled", err.Error())
 	}()
-	select {
-	case <-time.After(1300 * time.Millisecond):
-		cancel()
-	}
+	<-time.After(1300 * time.Millisecond)
+	cancel()
 	_, ok := <-done
 	assert.False(t, ok)
 	assert.Len(t, tsm.result, 3)
@@ -337,10 +335,8 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 		}, tsm)
 		assert.Nil(t, err)
 	}()
-	select {
-	case <-time.After(1200 * time.Millisecond):
-		cancel()
-	}
+	<-time.After(1200 * time.Millisecond)
+	cancel()
 	_, ok := <-done
 	assert.False(t, ok)
 	assert.Len(t, tsm.result, 1)
@@ -384,10 +380,8 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 		}, tsm)
 		assert.Equal(t, "xxx", err.Error())
 	}()
-	select {
-	case <-time.After(1200 * time.Millisecond):
-		cancel()
-	}
+	<-time.After(1200 * time.Millisecond)
+	cancel()
 	_, ok := <-done
 	assert.False(t, ok)
 	assert.Len(t, tsm.result, 0)
@@ -448,10 +442,8 @@ func TestMetricsSvc_StreamTopPod_Error2(t *testing.T) {
 		}, tsm)
 		assert.Equal(t, "err", err.Error())
 	}()
-	select {
-	case <-time.After(1200 * time.Millisecond):
-		cancel()
-	}
+	<-time.After(1200 * time.Millisecond)
+	cancel()
 	_, ok := <-done
 	assert.False(t, ok)
 	assert.Len(t, tsm.result, 1)

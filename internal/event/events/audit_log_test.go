@@ -61,13 +61,6 @@ func TestFileAuditLog(t *testing.T) {
 	assert.True(t, called)
 }
 
-type mockCreate struct {
-}
-
-func (c *mockCreate) Create(data any) {
-
-}
-
 func TestHandleAuditLog(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	app := mock.NewMockApplicationInterface(ctrl)

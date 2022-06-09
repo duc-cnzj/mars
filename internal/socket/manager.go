@@ -112,6 +112,8 @@ func (v vars) MustGetString(key string) string {
 type Jober struct {
 	done chan struct{}
 
+	loaders []Loader
+
 	dryRun    bool
 	manifests []string
 
@@ -180,6 +182,7 @@ func NewJober(
 	opts ...Option,
 ) contracts.Job {
 	jb := &Jober{
+		loaders:        defaultLoaders(),
 		done:           make(chan struct{}),
 		user:           user,
 		pubsub:         pubsub,
@@ -625,7 +628,7 @@ func (j *Jober) LoadConfigs() error {
 		ch <- func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 
-			for _, defaultLoader := range defaultLoaders() {
+			for _, defaultLoader := range j.loaders {
 				if err := j.GetStoppedErrorIfHas(); err != nil {
 					return err
 				}

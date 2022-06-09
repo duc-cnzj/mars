@@ -2,30 +2,143 @@ package socket
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"sort"
 	"sync"
 	"testing"
 
+	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/app/instance"
+	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/plugins/domain_manager"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli/values"
 )
 
 func TestChartFileLoader_Load(t *testing.T) {
 }
 
 func TestDynamicLoader_Load(t *testing.T) {
+	em := &emptyMsger{}
+	job := &Jober{
+		input: &websocket_pb.CreateProjectInput{
+			Config: "xxxx",
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			ConfigField: "app->config",
+			IsSimpleEnv: true,
+		},
+	}
+	assert.Nil(t, (&DynamicLoader{}).Load(job))
+	assert.Equal(t,
+		`app:
+  config: xxxx
+`, job.dynamicConfigYaml)
+	job2 := &Jober{
+		input: &websocket_pb.CreateProjectInput{
+			Config: "name: duc\nage: 17",
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			ConfigField: "app->config",
+			IsSimpleEnv: false,
+		},
+	}
+	assert.Nil(t, (&DynamicLoader{}).Load(job2))
+	assert.Equal(t,
+		`app:
+  config:
+    age: 17
+    name: duc
+`, job2.dynamicConfigYaml)
 }
 
 func TestExtraValuesLoader_Load(t *testing.T) {
+	em := &emptyMsger{}
+	job := &Jober{
+		input: &websocket_pb.CreateProjectInput{
+			ExtraValues: []*types.ExtraValue{
+				{
+					Path:  "app->config",
+					Value: "1",
+				},
+			},
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			Elements: []*mars.Element{
+				{
+					Path:         "app->config",
+					Type:         mars.ElementType_ElementTypeSelect,
+					Default:      "1",
+					Description:  "replica count",
+					SelectValues: []string{"1", "2", "3"},
+				},
+				{
+					Path:        "app->xxx",
+					Type:        mars.ElementType_ElementTypeSwitch,
+					Default:     "true",
+					Description: "bool value",
+				},
+			},
+		},
+	}
+
+	assert.Nil(t, (&ExtraValuesLoader{}).Load(job))
+	sort.Strings(job.extraValues)
+	assert.Equal(t,
+		`app:
+  config: "1"
+`,
+		job.extraValues[0])
+	assert.Equal(t,
+		`app:
+  xxx: true
+`,
+		job.extraValues[1])
+
+	err := (&ExtraValuesLoader{}).Load(&Jober{
+		input: &websocket_pb.CreateProjectInput{
+			ExtraValues: []*types.ExtraValue{
+				{
+					Path:  "app->config",
+					Value: "4",
+				},
+			},
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			Elements: []*mars.Element{
+				{
+					Path:         "app->config",
+					Type:         mars.ElementType_ElementTypeSelect,
+					Default:      "1",
+					Description:  "replica count",
+					SelectValues: []string{"1", "2", "3"},
+				},
+			},
+		},
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "app->config 必须在 [1 2 3] 里面, 你传的是 4", err.Error())
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {
@@ -287,9 +400,56 @@ func TestJober_IsNew(t *testing.T) {
 }
 
 func TestJober_IsStopped(t *testing.T) {
+	j := &Jober{
+		stopCtx: context.TODO(),
+	}
+	assert.False(t, j.IsStopped())
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	j2 := &Jober{
+		stopCtx: cancel,
+	}
+	assert.True(t, j2.IsStopped())
+}
+
+type emptyLoader struct {
+	err    error
+	called bool
+}
+
+func (e *emptyLoader) Load(jober *Jober) error {
+	e.called = true
+	return e.err
 }
 
 func TestJober_LoadConfigs(t *testing.T) {
+	l := &emptyLoader{}
+	assert.Nil(t, (&Jober{
+		messager: &emptyMsger{},
+		stopCtx:  context.TODO(),
+		loaders:  []Loader{l},
+	}).LoadConfigs())
+	assert.True(t, l.called)
+
+	l2 := &emptyLoader{}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	assert.Equal(t, "context canceled", (&Jober{
+		messager: &emptyMsger{},
+		stopCtx:  cancel,
+		loaders:  []Loader{l2},
+	}).LoadConfigs().Error())
+	assert.False(t, l2.called)
+
+	l3 := &emptyLoader{
+		err: errors.New("xxx"),
+	}
+	assert.Equal(t, "xxx", (&Jober{
+		messager: &emptyMsger{},
+		stopCtx:  context.TODO(),
+		loaders:  []Loader{l3},
+	}).LoadConfigs().Error())
+	assert.True(t, l3.called)
 }
 
 func TestJober_Logs(t *testing.T) {
@@ -422,9 +582,100 @@ func TestJober_Validate(t *testing.T) {
 }
 
 func TestMarsLoader_Load(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	app := mock.NewMockApplicationInterface(ctrl)
+	defer ctrl.Finish()
+	instance.SetInstance(app)
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
+	db.AutoMigrate(&models.GitProject{})
+	mc := mars.Config{
+		ConfigFile:       "cf",
+		ConfigFileValues: "vv",
+		ConfigField:      "f",
+		IsSimpleEnv:      true,
+		ConfigFileType:   "php",
+		LocalChartPath:   "./charts",
+		Branches:         []string{"dev", "master"},
+		ValuesYaml:       "xxx",
+		Elements:         nil,
+	}
+	marshal, _ := json.Marshal(&mc)
+	db.Create(&models.GitProject{
+		GitProjectId:  99,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal),
+	})
+	job := &Jober{
+		input:     &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
+		messager:  &emptyMsger{},
+		percenter: &emptyPercenter{},
+	}
+	assert.Nil(t, (&MarsLoader{}).Load(job))
+	assert.Equal(t, mc.String(), job.config.String())
+}
+
+type dump struct {
+	assertFn func(x any)
+}
+
+func (d *dump) Matches(x any) bool {
+	d.assertFn(x)
+	return true
+}
+
+func (d *dump) String() string {
+	return ""
 }
 
 func TestMergeValuesLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	finfo := mock.NewMockFileInfo(m)
+	finfo.EXPECT().Path().Return("/app/config.yaml")
+	up.EXPECT().Put(gomock.Any(), &dump{assertFn: func(x any) {
+		all, _ := io.ReadAll(x.(io.Reader))
+		result := map[string]any{}
+		yaml.Unmarshal(all, &result)
+		assert.Equal(t, 1, result["app"].(map[any]any)["one"])
+		assert.Equal(t, "two", result["app"].(map[any]any)["two"])
+		assert.Equal(t, 3, result["app"].(map[any]any)["three"])
+		assert.Equal(t, 4, result["app"].(map[any]any)["four"])
+		assert.Equal(t, []any{map[any]any{"name": "secret"}}, result["imagePullSecrets"])
+	}}).Return(finfo, nil)
+	vy := `
+app:
+  one: one
+  two: 2
+`
+	dcy := `
+app:
+  one: 1
+  two: two
+`
+	ev1 := `
+app:
+  three: 3
+`
+	ev2 := `
+app:
+  four: 4
+`
+	job := &Jober{
+		dynamicConfigYaml: dcy,
+		imagePullSecrets:  []string{"secret"},
+		valuesYaml:        vy,
+		extraValues:       []string{ev1, ev2},
+		valuesOptions:     &values.Options{},
+		input:             &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
+		messager:          &emptyMsger{},
+		percenter:         &emptyPercenter{},
+	}
+	assert.Nil(t, (&MergeValuesLoader{}).Load(job))
+	assert.Equal(t, "/app/config.yaml", job.valuesOptions.ValueFiles[0])
 }
 
 func TestNewJober(t *testing.T) {
@@ -433,8 +684,60 @@ func TestNewJober(t *testing.T) {
 	assert.True(t, jober.IsDryRun())
 }
 
-func TestReleaseInstallerLoader_Load(t *testing.T) {
+type emptyMsger struct {
+	msgs   []string
+	called int
+	contracts.DeployMsger
+}
 
+func (e *emptyMsger) SendMsg(s string) {
+	if e.msgs == nil {
+		e.msgs = []string{}
+	}
+	e.msgs = append(e.msgs, s)
+	e.called++
+}
+
+type emptyPercenter struct {
+	called int
+	contracts.Percentable
+}
+
+func (e *emptyPercenter) To(percent int64) {
+	e.called++
+}
+
+func TestReleaseInstallerLoader_Load(t *testing.T) {
+	ep := &emptyPercenter{}
+	em := &emptyMsger{}
+	job := &Jober{
+		chart:          &chart.Chart{},
+		valuesOptions:  &values.Options{},
+		percenter:      ep,
+		messager:       em,
+		dryRun:         true,
+		timeoutSeconds: 20,
+		input: &websocket_pb.CreateProjectInput{
+			Atomic: true,
+		},
+		project: &models.Project{
+			Name: "app",
+		},
+		ns: &models.Namespace{
+			Name: "ns",
+		},
+	}
+	(&ReleaseInstallerLoader{}).Load(job)
+	assert.Equal(t, 1, ep.called)
+	assert.Equal(t, 1, em.called)
+	in := job.installer.(*releaseInstaller)
+	assert.Equal(t, true, in.dryRun)
+	assert.Equal(t, int64(20), in.timeoutSeconds)
+	assert.Equal(t, "app", in.releaseName)
+	assert.Equal(t, "ns", in.namespace)
+	assert.Equal(t, true, in.wait)
+	assert.Same(t, job.valuesOptions, in.valueOpts)
+	assert.Same(t, job.chart, in.chart)
 }
 
 func TestSafeWriteMessageCh_Chan(t *testing.T) {
@@ -483,6 +786,146 @@ func TestSafeWriteMessageCh_Send(t *testing.T) {
 }
 
 func TestVariableLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{
+		GitServerPlugin:     config.Plugin{Name: "gits"},
+		DomainManagerPlugin: config.Plugin{Name: "domain"},
+	}).AnyTimes()
+
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	pipe := mock.NewMockPipelineInterface(m)
+	pipe.EXPECT().GetID().Return(int64(9999))
+	pipe.EXPECT().GetRef().Return("dev")
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(pipe, nil)
+
+	app.EXPECT().GetPluginByName("domain").Return(&domain_manager.DefaultDomainManager{}).AnyTimes()
+
+	em := &emptyMsger{}
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
+	job := &Jober{
+		commit: commit,
+		config: &mars.Config{
+			ValuesYaml: `
+VarImagePullSecrets: <.ImagePullSecrets>
+image: <.Pipeline>-<.Branch>
+`,
+		},
+		project: &models.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &models.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em,
+		percenter:        &emptyPercenter{},
+	}
+	assert.Nil(t, (&VariableLoader{}).Load(job))
+	assert.Equal(t, `
+VarImagePullSecrets: [{name: a},{name: b},{name: c},]
+image: 9999-dev
+`,
+		job.valuesYaml)
+	assert.Equal(t, "dev", job.vars[VarBranch])
+	assert.Equal(t, "short_id", job.vars[VarCommit])
+	assert.Equal(t, int64(9999), job.vars[VarPipeline])
+	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
+}
+
+func TestVariableLoader_Load_ok(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{
+		GitServerPlugin:     config.Plugin{Name: "gits"},
+		DomainManagerPlugin: config.Plugin{Name: "domain"},
+	}).AnyTimes()
+
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+
+	app.EXPECT().GetPluginByName("domain").Return(&domain_manager.DefaultDomainManager{}).AnyTimes()
+
+	em := &emptyMsger{}
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
+	job := &Jober{
+		commit: commit,
+		config: &mars.Config{
+			ValuesYaml: `
+VarImagePullSecrets: <.ImagePullSecrets>
+`,
+		},
+		project: &models.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &models.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em,
+		percenter:        &emptyPercenter{},
+	}
+	assert.Nil(t, (&VariableLoader{}).Load(job))
+	assert.Equal(t, `
+VarImagePullSecrets: [{name: a},{name: b},{name: c},]
+`,
+		job.valuesYaml)
+	assert.Equal(t, "dev", job.vars[VarBranch])
+	assert.Equal(t, "short_id", job.vars[VarCommit])
+	assert.Equal(t, int64(0), job.vars[VarPipeline])
+	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
+}
+
+func TestVariableLoader_Load_fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{
+		GitServerPlugin:     config.Plugin{Name: "gits"},
+		DomainManagerPlugin: config.Plugin{Name: "domain"},
+	}).AnyTimes()
+
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+
+	app.EXPECT().GetPluginByName("domain").Return(&domain_manager.DefaultDomainManager{}).AnyTimes()
+
+	em := &emptyMsger{}
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
+	job := &Jober{
+		commit: commit,
+		config: &mars.Config{
+			ValuesYaml: `
+VarImagePullSecrets: <.ImagePullSecrets>
+image: <.Pipeline>-<.Branch>
+`,
+		},
+		project: &models.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &models.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em,
+		percenter:        &emptyPercenter{},
+	}
+	err := (&VariableLoader{}).Load(job)
+	assert.Equal(t, "无法获取 Pipeline 信息", err.Error())
 }
 
 func TestWithDryRun(t *testing.T) {

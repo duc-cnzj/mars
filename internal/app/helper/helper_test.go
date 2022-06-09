@@ -59,7 +59,6 @@ func (t *testdbManager) DB() *gorm.DB {
 }
 
 func (t *testdbManager) SetDB(db *gorm.DB) {
-	return
 }
 
 func (t *testdbManager) AutoMigrate(dst ...any) error {

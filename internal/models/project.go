@@ -138,7 +138,7 @@ func (project *Project) GetAllPods() SortStatePod {
 					err error
 					ok  bool
 				)
-				if rs, ok = m[string(reference.UID)]; !ok {
+				if _, ok = m[string(reference.UID)]; !ok {
 					rs, err = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
 					if err != nil {
 						mlog.Debug(err)
