@@ -1,4 +1,5 @@
 <h1 align="center">Mars</h1>
+<div align="center"><img style="width: 100px;height: 100px" src="./frontend/public/logo192.png" /></div>
 <p align="center">专为devops而生，30秒内部署一个应用。</p>
 <br><br>
 
