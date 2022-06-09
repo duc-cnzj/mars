@@ -1082,6 +1082,8 @@ user:
 	yaml.Unmarshal([]byte(marshalYAML.(string)), &m)
 	assert.Equal(t, 18, m["user"].(map[any]any)["age"])
 	assert.Equal(t, "duc", m["user"].(map[any]any)["name"])
+	a, _ := mergeYamlString{}.MarshalYAML()
+	assert.Equal(t, "", a)
 }
 
 func Test_sortableExtraItem(t *testing.T) {
