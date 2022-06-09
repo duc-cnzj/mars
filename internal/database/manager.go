@@ -1,7 +1,6 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -45,19 +44,19 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				if tx.Migrator().HasColumn(&models.Changelog{}, "gitlab_project_id") {
 					// changelogs rename gitlab_project_id => git_project_id
 					if err := tx.Migrator().RenameColumn(&models.Changelog{}, "gitlab_project_id", "git_project_id"); err != nil {
-						return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+						return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 					}
 				}
 
 				if tx.Migrator().HasTable("gitlab_projects") {
 					// GitlabProject rename GitProject
 					if err := tx.Migrator().RenameTable("gitlab_projects", &models.GitProject{}); err != nil {
-						return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+						return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 					}
 					if tx.Migrator().HasColumn(&models.GitProject{}, "gitlab_project_id") {
 						// gitlab_project_id => git_project_id
 						if err := tx.Migrator().RenameColumn(&models.GitProject{}, "gitlab_project_id", "git_project_id"); err != nil {
-							return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+							return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 						}
 					}
 				}
@@ -66,26 +65,26 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				// gitlab_project_id git_project_id
 				if tx.Migrator().HasColumn(&models.Project{}, "gitlab_project_id") {
 					if err := tx.Migrator().RenameColumn(&models.Project{}, "gitlab_project_id", "git_project_id"); err != nil {
-						return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+						return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 					}
 				}
 				// gitlab_branch git_branch
 				if tx.Migrator().HasColumn(&models.Project{}, "gitlab_branch") {
 					if err := tx.Migrator().RenameColumn(&models.Project{}, "gitlab_branch", "git_branch"); err != nil {
-						return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+						return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 					}
 				}
 				// gitlab_commit git_commit
 				if tx.Migrator().HasColumn(&models.Project{}, "gitlab_commit") {
 					if err := tx.Migrator().RenameColumn(&models.Project{}, "gitlab_commit", "git_commit"); err != nil {
-						return errors.New(fmt.Sprintf("[%s]: err: %v", migrateV3ToV4, err))
+						return fmt.Errorf("[%s]: err: %v", migrateV3ToV4, err)
 					}
 				}
 				// v3 => v4 end.
 
 				if tx.Migrator().HasTable("commands") {
 					if err := tx.Migrator().DropTable("commands"); err != nil {
-						return errors.New(fmt.Sprintf("[DropTable 'commands']: err: %v", err))
+						return fmt.Errorf("[DropTable 'commands']: err: %v", err)
 					}
 				}
 				return nil

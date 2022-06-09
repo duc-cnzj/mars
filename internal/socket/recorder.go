@@ -75,7 +75,7 @@ func (r *Recorder) Write(data string) (err error) {
 		return err
 	}
 	marshal, _ := json.Marshal(data)
-	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Now().Sub(r.startTime).Microseconds())/1000000, string(marshal)))
+	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
 	return err
 }
 

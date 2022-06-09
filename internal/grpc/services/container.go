@@ -403,9 +403,8 @@ func (c *closeable) Close() {
 }
 
 type execWriter struct {
-	reader io.Reader
-	state  *closeable
-	ch     chan string
+	state *closeable
+	ch    chan string
 }
 
 func (rw *execWriter) IsClosed() bool {

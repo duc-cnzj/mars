@@ -392,7 +392,7 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 	assert.Equal(t, "aaa", file.Data)
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "cfg.yaml").Return("aaa", nil).Times(1)
 
-	file, _ = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "12",
 		Branch:       "dev",
 	})

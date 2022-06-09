@@ -118,7 +118,7 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	assert.Len(t, list.Items, 1)
 	assert.Equal(t, "mars-", list.Items[0].GenerateName)
 
-	res, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+	_, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace: "terminating-ns",
 	})
 	s, _ := status.FromError(err)

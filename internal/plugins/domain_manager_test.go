@@ -13,7 +13,6 @@ import (
 type mockApp struct {
 	cache    contracts.CacheInterface
 	p        map[string]contracts.PluginInterface
-	dm       contracts.PluginInterface
 	callback int
 	contracts.ApplicationInterface
 }

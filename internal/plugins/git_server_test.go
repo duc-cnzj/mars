@@ -194,19 +194,6 @@ func Test_project_GetWebURL(t *testing.T) {
 	assert.Equal(t, p.WebUrl, p.GetWebURL())
 }
 
-type cache struct {
-	key     string
-	seconds int
-	called  bool
-}
-
-func (c *cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	c.key = key
-	c.seconds = seconds
-	c.called = true
-	return nil, nil
-}
-
 func Test_gitServerCache_AllBranches(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
