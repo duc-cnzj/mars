@@ -865,7 +865,7 @@ func (d *ExtraValuesLoader) typeValue(element *mars.Element, input string) (any,
 			}
 		}
 		if !in {
-			return nil, fmt.Errorf("%s 必须在 %v 里面, 你传的是 %s", element.Path, element.SelectValues, input)
+			return nil, fmt.Errorf("%s 必须在 '%v' 里面, 你传的是 %s", element.Path, strings.Join(element.SelectValues, ","), input)
 		}
 
 		return input, nil

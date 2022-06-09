@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"sync"
@@ -142,9 +143,131 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {
+	items := (&ExtraValuesLoader{}).deepSetItems(map[string]any{"a": "a"})
+	assert.Equal(t, "a: a\n", items[0])
+	items = (&ExtraValuesLoader{}).deepSetItems(map[string]any{"a->b": "ab"})
+	assert.Equal(t,
+		`a:
+  b: ab
+`, items[0])
 }
 
 func TestExtraValuesLoader_typeValue(t *testing.T) {
+	var tests = []struct {
+		ele    *mars.Element
+		input  string
+		result any
+		err    string
+	}{
+		{
+			ele: &mars.Element{
+				Type: mars.ElementType_ElementTypeSwitch,
+			},
+			input:  "",
+			result: false,
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Type: mars.ElementType_ElementTypeSwitch,
+			},
+			input:  "true",
+			result: true,
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeSwitch,
+			},
+			input: "xxx",
+			err:   "app->config 字段类型不正确，应该为 bool，你传入的是 xxx",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeInputNumber,
+			},
+			input:  "",
+			result: int64(0),
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeInputNumber,
+			},
+			input:  "10",
+			result: int64(10),
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeInputNumber,
+			},
+			input:  "xxx",
+			result: nil,
+			err:    "app->config 字段类型不正确，应该为整数，你传入的是 xxx",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeRadio,
+				SelectValues: []string{
+					"a", "b", "c",
+				},
+			},
+			input:  "a",
+			result: "a",
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeRadio,
+				SelectValues: []string{
+					"a", "b", "c",
+				},
+			},
+			input:  "d",
+			result: "",
+			err:    "app->config 必须在 'a,b,c' 里面, 你传的是 d",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeSelect,
+				SelectValues: []string{
+					"a", "b", "c",
+				},
+			},
+			input:  "b",
+			result: "b",
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: 10000,
+			},
+			input:  "xxx",
+			result: "xxx",
+			err:    "",
+		},
+	}
+	for i, test := range tests {
+		tt := test
+		t.Run(fmt.Sprintf("test-%v", i), func(t *testing.T) {
+			t.Parallel()
+			value, err := (&ExtraValuesLoader{}).typeValue(tt.ele, tt.input)
+			if err != nil {
+				assert.Equal(t, err.Error(), tt.err)
+			} else {
+				assert.Equal(t, tt.result, value)
+			}
+		})
+	}
 }
 
 func TestJober_AddDestroyFunc(t *testing.T) {
