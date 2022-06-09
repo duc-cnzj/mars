@@ -139,7 +139,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 		},
 	})
 	assert.Error(t, err)
-	assert.Equal(t, "app->config 必须在 [1 2 3] 里面, 你传的是 4", err.Error())
+	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {
