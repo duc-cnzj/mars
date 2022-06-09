@@ -1070,6 +1070,18 @@ func Test_defaultLoaders(t *testing.T) {
 }
 
 func Test_mergeYamlString_MarshalYAML(t *testing.T) {
+	s := mergeYamlString{`
+user:
+  name: duc
+`, `
+user:
+  age: 18
+`}
+	marshalYAML, _ := s.MarshalYAML()
+	m := map[string]any{}
+	yaml.Unmarshal([]byte(marshalYAML.(string)), &m)
+	assert.Equal(t, 18, m["user"].(map[any]any)["age"])
+	assert.Equal(t, "duc", m["user"].(map[any]any)["name"])
 }
 
 func Test_sortableExtraItem(t *testing.T) {
