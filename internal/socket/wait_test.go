@@ -2,6 +2,7 @@ package socket
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -43,5 +44,15 @@ func TestWaitSocketExit_Wait(t *testing.T) {
 		}()
 	}
 	exit.Wait()
+	assert.Equal(t, 0, exit.Count())
+	exit.Inc()
+	done := make(chan struct{}, 1)
+	go func() {
+		exit.Wait()
+		done <- struct{}{}
+	}()
+	time.Sleep(200 * time.Millisecond)
+	exit.Dec()
+	<-done
 	assert.Equal(t, 0, exit.Count())
 }
