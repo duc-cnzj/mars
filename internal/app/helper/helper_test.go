@@ -6,8 +6,8 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 

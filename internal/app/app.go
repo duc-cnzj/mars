@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/cache"
@@ -16,7 +18,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/database"
 	"github.com/duc-cnzj/mars/internal/event"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 )
 
 type Hook string

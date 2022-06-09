@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
+	"golang.org/x/sync/singleflight"
 )
 
 type Store interface {

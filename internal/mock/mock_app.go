@@ -10,8 +10,8 @@ import (
 
 	config "github.com/duc-cnzj/mars/internal/config"
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
-	singleflight "github.com/duc-cnzj/mars/internal/utils/singleflight"
 	gomock "github.com/golang/mock/gomock"
+	singleflight "golang.org/x/sync/singleflight"
 )
 
 // MockApplicationInterface is a mock of ApplicationInterface interface.

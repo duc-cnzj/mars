@@ -7,9 +7,9 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/singleflight"
 )
 
 func TestNewCache(t *testing.T) {

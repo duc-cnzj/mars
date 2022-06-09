@@ -12,7 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
-	"github.com/duc-cnzj/mars/internal/utils/singleflight"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
