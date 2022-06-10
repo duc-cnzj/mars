@@ -1025,6 +1025,14 @@ func Test_DisplayNameValidate(t *testing.T) {
 		wantsErr bool
 	}{
 		{
+			name:     "-a",
+			wantsErr: true,
+		},
+		{
+			name:     "A-a_aA",
+			wantsErr: false,
+		},
+		{
 			name:     "a",
 			wantsErr: false,
 		},
