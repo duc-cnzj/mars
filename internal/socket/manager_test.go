@@ -9,6 +9,7 @@ import (
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -16,11 +17,14 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/event"
+	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/plugins/domain_manager"
+	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -671,7 +675,231 @@ func TestJober_ReleaseInstaller(t *testing.T) {
 	assert.Same(t, ri, j.ReleaseInstaller())
 }
 
-func TestJober_Run(t *testing.T) {
+func TestJober_Run_Fail(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
+	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Event{}, &models.Changelog{}))
+
+	msgCh := &SafeWriteMessageCh{
+		ch: make(chan contracts.MessageItem, 100),
+	}
+	proj := &models.Project{
+		Name:         "app",
+		DeployStatus: uint8(types.Deploy_StatusDeploying),
+		Namespace: models.Namespace{
+			Name: "ns",
+		},
+	}
+	assert.Nil(t, db.Create(proj).Error)
+
+	stopCtx := context.TODO()
+	rinstaller := mock.NewMockReleaseInstaller(m)
+
+	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	job := &Jober{
+		messager:  &emptyMsger{},
+		project:   proj,
+		isNew:     true,
+		dryRun:    false,
+		installer: rinstaller,
+		stopCtx:   stopCtx,
+		messageCh: msgCh,
+	}
+	assert.Equal(t, "xxx", job.Run().Error())
+	assert.Equal(t, "xxx", job.messager.(*emptyMsger).msgs[0])
+	newProj := &models.Project{}
+	assert.Nil(t, db.Unscoped().Where("`id` = ?", proj.ID).First(&newProj).Error)
+	assert.True(t, newProj.DeletedAt.Valid)
+}
+
+func TestJober_Run_Success(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
+	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Event{}, &models.Changelog{}, &models.GitProject{}))
+
+	msgCh := &SafeWriteMessageCh{
+		ch: make(chan contracts.MessageItem, 100),
+	}
+	proj := &models.Project{
+		GitProjectId:     100,
+		Name:             "app",
+		DeployStatus:     uint8(types.Deploy_StatusDeploying),
+		ExtraValues:      `[{"path": "app->config", "value": "xxx"}]`,
+		FinalExtraValues: `["xx", "yy"]`,
+		Namespace: models.Namespace{
+			Name: "ns",
+		},
+	}
+	gp := &models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "busyapp",
+		GitProjectId:  100,
+	}
+	db.Create(gp)
+	assert.Nil(t, db.Create(proj).Error)
+
+	stopCtx := context.TODO()
+	rinstaller := mock.NewMockReleaseInstaller(m)
+	rinstaller.EXPECT().Chart().Return(&chart.Chart{Metadata: &chart.Metadata{Name: "busyapp"}, Values: map[string]any{}}).Times(1)
+	manifest := `
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: busybox
+  name: busybox
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - command:
+        - sh
+        - -c
+        - sleep 3600;
+        image: busybox:latest
+        imagePullPolicy: Always
+        name: busybox
+        resources:
+          limits:
+            cpu: 10m
+            memory: 10Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+`
+	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&release.Release{
+		Config:   map[string]any{},
+		Manifest: manifest,
+	}, nil)
+
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetTitle().Return("title")
+	commit.EXPECT().GetWebURL().Return("url")
+	commit.EXPECT().GetAuthorName().Return("duc")
+	date := time.Now()
+	commit.EXPECT().GetCommittedDate().Return(&date)
+
+	gits := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits)
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+
+	commit2 := mock.NewMockCommitInterface(m)
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit2, nil)
+	commit2.EXPECT().GetWebURL().Return("weburl2").Times(1)
+
+	d := event.NewDispatcher(app)
+	d.Listen(events.EventProjectChanged, events.HandleProjectChanged)
+	d.Listen(events.EventAuditLog, events.HandleAuditLog)
+	app.EXPECT().EventDispatcher().Return(d).AnyTimes()
+
+	job := &Jober{
+		percenter: &emptyPercenter{},
+		user: contracts.UserInfo{
+			OpenIDClaims: contracts.OpenIDClaims{
+				Name: "duc",
+			},
+		},
+		ns: &proj.Namespace,
+		input: &websocket_pb.CreateProjectInput{
+			ExtraValues: []*types.ExtraValue{{
+				Path:  "app->config",
+				Value: "xxx",
+			}},
+		},
+		prevProject: proj,
+		config: &mars.Config{
+			ConfigFileType: "go",
+		},
+		commit:      commit,
+		messager:    &emptyMsger{},
+		project:     proj,
+		isNew:       false,
+		dryRun:      false,
+		installer:   rinstaller,
+		stopCtx:     stopCtx,
+		messageCh:   msgCh,
+		extraValues: []string{"ex-aaa", "ex-bbb"},
+		vars:        map[string]any{"var-a": "aaa", "var-b": "bbb"},
+	}
+	assert.Nil(t, job.Run())
+	assert.Equal(t, "部署成功", job.messager.(*emptyMsger).msgs[0])
+
+	assert.Equal(t, "{}\n", job.Project().OverrideValues)
+	assert.Equal(t, manifest, job.Project().Manifest)
+	assert.Equal(t, "app=busybox", job.Project().PodSelectors)
+	assert.Equal(t, "busybox:latest", job.Project().DockerImage)
+	assert.Equal(t, "title", job.Project().GitCommitTitle)
+	assert.Equal(t, "url", job.Project().GitCommitWebUrl)
+	assert.Equal(t, "duc", job.Project().GitCommitAuthor)
+	assert.Equal(t, date.String(), job.Project().GitCommitDate.String())
+	assert.Equal(t, "go", job.Project().ConfigType)
+	assert.Equal(t, `[{"path":"app-\u003econfig","value":"xxx"}]`, job.Project().ExtraValues)
+	assert.Equal(t, `["ex-aaa","ex-bbb"]`, job.Project().FinalExtraValues)
+	assert.Equal(t, `{"var-a":"aaa","var-b":"bbb"}`, job.Project().EnvValues)
+
+	var clog models.Changelog
+	db.First(&clog)
+	assert.Equal(t, int(1), int(clog.Version))
+	assert.Equal(t, manifest, clog.Manifest)
+	assert.Equal(t, gp.ID, clog.GitProjectID)
+
+	var adlog models.Event
+	db.First(&adlog)
+	assert.Equal(t, "duc", adlog.Username)
+	assert.Equal(t, types.EventActionType_Update, types.EventActionType(adlog.Action))
+	assert.Equal(t,
+		`config: ""
+branch: ""
+commit: ""
+atomic: false
+web_url: weburl2
+extra_values:
+- path: app->config
+  value: xxx
+final_extra_values: |
+  {}
+env_values:
+  var-a: aaa
+  var-b: bbb
+`, adlog.Old)
+	assert.Equal(t,
+		`config: ""
+branch: ""
+commit: ""
+atomic: false
+web_url: url
+extra_values:
+- path: app->config
+  value: xxx
+final_extra_values: |
+  {}
+env_values:
+  var-a: aaa
+  var-b: bbb
+`, adlog.New)
 }
 
 func TestJober_Stop(t *testing.T) {
@@ -702,6 +930,69 @@ func TestJober_User(t *testing.T) {
 }
 
 func TestJober_Validate(t *testing.T) {
+	job := &Jober{
+		wsType: 99999,
+	}
+	err := job.Validate()
+	assert.Equal(t, "type error: 99999", err.Error())
+
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+
+	job2 := &Jober{
+		input: &websocket_pb.CreateProjectInput{
+			NamespaceId: 9999,
+		},
+		messager:  &emptyMsger{},
+		percenter: &emptyPercenter{},
+		wsType:    websocket_pb.Type_CreateProject,
+	}
+	assert.Equal(t, "[FAILED]: 校验名称空间: record not found", job2.Validate().Error())
+
+	ns := &models.Namespace{Name: "ns", ImagePullSecrets: "aa,bb"}
+	db.Create(ns)
+	gits := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).Times(2)
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	commit := mock.NewMockCommitInterface(m)
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(2)
+	job3 := &Jober{
+		input: &websocket_pb.CreateProjectInput{
+			NamespaceId:  int64(ns.ID),
+			GitProjectId: 100,
+			GitBranch:    "dev",
+			GitCommit:    "commit",
+			Config:       "xxx",
+			Atomic:       true,
+		},
+		messager:  &emptyMsger{},
+		percenter: &emptyPercenter{},
+		wsType:    websocket_pb.Type_CreateProject,
+	}
+	assert.Nil(t, job3.Validate())
+	assert.Same(t, commit, job3.Commit())
+	assert.Equal(t, []string{"aa", "bb"}, job3.imagePullSecrets)
+	var p models.Project
+	db.First(&p)
+	assert.Equal(t, uint8(types.Deploy_StatusDeploying), p.DeployStatus)
+	assert.Equal(t, 100, int(p.GitProjectId))
+	assert.Equal(t, "dev", p.GitBranch)
+	assert.Equal(t, "commit", p.GitCommit)
+	assert.Equal(t, "xxx", p.Config)
+	assert.Equal(t, true, p.Atomic)
+	assert.Nil(t, job3.prevProject)
+
+	assert.Equal(t, "有别人也在操作这个项目，等等哦~", job3.Validate().Error())
+
+	db.Model(&p).UpdateColumn("deploy_status", types.Deploy_StatusDeployed)
+	assert.Nil(t, job3.Validate())
+	assert.NotNil(t, job3.prevProject)
 }
 
 func TestMarsLoader_Load(t *testing.T) {
@@ -808,12 +1099,25 @@ func TestNewJober(t *testing.T) {
 }
 
 type emptyMsger struct {
+	sync.Mutex
 	msgs   []string
 	called int
 	contracts.DeployMsger
 }
 
+func (e *emptyMsger) SendDeployedResult(t websocket_pb.ResultType, msg string, p *types.ProjectModel) {
+	e.Lock()
+	defer e.Unlock()
+	if e.msgs == nil {
+		e.msgs = []string{}
+	}
+	e.msgs = append(e.msgs, msg)
+	e.called++
+}
+
 func (e *emptyMsger) SendMsg(s string) {
+	e.Lock()
+	defer e.Unlock()
 	if e.msgs == nil {
 		e.msgs = []string{}
 	}

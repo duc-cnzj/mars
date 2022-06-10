@@ -307,8 +307,10 @@ func (j *Jober) HandleMessage() {
 				default:
 					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
 				}
+				return
 			case contracts.MessageSuccess:
 				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
+				return
 			}
 		}
 	}
@@ -404,9 +406,16 @@ func toUpdatesMap(p *models.Project) map[string]any {
 }
 
 func (j *Jober) Run() error {
-	go j.HandleMessage()
+	done := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			done <- struct{}{}
+			close(done)
+		}()
+		j.HandleMessage()
+	}()
 
-	return func() error {
+	err := func() error {
 		defer j.messageCh.Closed()
 		var (
 			result *release.Release
@@ -492,7 +501,7 @@ func (j *Jober) Run() error {
 				Branch:           j.project.GitBranch,
 				Commit:           j.project.GitCommit,
 				Atomic:           j.project.Atomic,
-				WebUrl:           j.Commit().GetWebURL(),
+				WebUrl:           j.project.GitCommitWebUrl,
 				ExtraValues:      j.input.ExtraValues,
 				FinalExtraValues: mergeYamlString(j.extraValues),
 				EnvValues:        j.vars,
@@ -523,6 +532,8 @@ func (j *Jober) Run() error {
 		}
 		return err
 	}()
+	<-done
+	return err
 }
 
 func (j *Jober) GetStoppedErrorIfHas() error {
