@@ -123,3 +123,19 @@ func Test_intPid(t *testing.T) {
 	assert.False(t, intPid("abc"))
 	assert.False(t, intPid("1_a"))
 }
+
+func TestGetProjectName(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gitS := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	p := mock.NewMockProjectInterface(m)
+	gitS.EXPECT().GetProject("1").Return(p, nil).AnyTimes()
+	p.EXPECT().GetName().Return("app").AnyTimes()
+	assert.Equal(t, "app", GetProjectName("1", &mars.Config{}))
+	assert.Equal(t, "app-2", GetProjectName("1", &mars.Config{DisplayName: "app-2"}))
+}

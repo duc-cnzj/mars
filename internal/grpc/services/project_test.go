@@ -570,6 +570,7 @@ func Test_messager_send(t *testing.T) {
 	m.send(nil)
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 	m.Stop(nil)
+	m.send(nil)
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
 
