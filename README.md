@@ -3,7 +3,11 @@
 <p align="center">专为devops而生，30秒内部署一个应用。</p>
 <br><br>
 
+<div align="center">
+
 [![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
+
+</div>
 
 [查看文档](https://youngduc.gitbook.io/mars/)
 
@@ -87,51 +91,4 @@ func main()  {
 
 - [ ] 国际化
 - [ ] ratelimiter
-- [ ] 外部接口调用优化
 - [ ] namespace all -> list
-- [ ] grpc 可配置使用 tls
-- ~~[ ] 增加 basic? or CA? auth，参考 k8s 的做法~~
-- [x] migrate
-- [x] ~~redis 不想强依赖 redis~~ db cache, 最后使用了 DB cache
-- [x] gitlab 接口缓存优化，commit 接口有些值都是固定的可以做缓存
-- [x] git server cache
-- [x] 所有 gitlab 都改成 git
-- [x] 通过 ci 发布客户端
-- [x] export/import 配置文件
-- [x] 重构所有表单，增加表单验证
-- [x] 自定义额外字段，组合模式(前端就算了，连类都不用了，都是 FC)
-- [x] client 集成 copy to pod & uploader
-- [x] rpc 增加远程执行容器命令接口
-- [x] 接口验证
-- [x] 前端 namespace 页面 margin-bottom
-- [x] 缺一个 project list
-- [x] 打开modal无法下滑页面的问题 `ant-scrolling-effect` overflow: hidden 引起的，从 modal click 给 body 加 class 入手解决
-- [x] c.GitServer().ProjectList 不应该叫list，因为拿到的是全部，要叫 all
-- [x] add current metrics
-- [x] 增加修改记录，能清楚的记录谁在什么时候修改了什么
-- [x] ui 美化
-- [x] 引入 values 字段替换掉之前的 DockerRepository、DockerTagFormat、IngressOverwriteValues。
-- [x] ws 部分也是用 proto 定义，input 和 response 都通过 proto。
-- [x] 插件化 ingress/tls 证书的注入方式
-- [x] opentracing
-- [x] shell 自适应高度
-- [x] gin -> grpc ？
-- [x] grpc-gateway 替换 gin, branch: `grpc`
-- [x] 重构 ui 创建项目部分代码
-- [x] 重构后端部署部分代码
-- [x] 多容器还没写
-- [x] sessionId 还是要用起来
-- [x] 前端shell退出后，后端对应的 goroutine 也要退出，防止泄漏
-- [x] 高可用化
-- ~~socket install 方法剥离出来~~
-- ~~分离 ResponseMetadata 中的 Data~~
-- ~~断开连接使用图标的方式~~
-- ~~配置可启动之后再添加~~
-
-## v4.3 changes
-
-- [x] proto 大改动
-- [x] grpc 接口 present/参数+
-- [x] 更多接口
-- [x] ui 显示 project id
-- [x] ui 显示 namespace id
