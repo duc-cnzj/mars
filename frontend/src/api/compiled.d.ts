@@ -4365,6 +4365,9 @@ export namespace git {
 
         /** Option branch */
         branch?: (string|null);
+
+        /** Option display_name */
+        display_name?: (string|null);
     }
 
     /** Represents an Option. */
@@ -4393,6 +4396,9 @@ export namespace git {
 
         /** Option branch. */
         public branch: string;
+
+        /** Option display_name. */
+        public display_name: string;
 
         /**
          * Encodes the specified Option message. Does not implicitly {@link git.Option.verify|verify} messages.
@@ -5962,6 +5968,9 @@ export namespace mars {
 
         /** Config elements */
         elements?: (mars.Element[]|null);
+
+        /** Config display_name */
+        display_name?: (string|null);
     }
 
     /** Represents a Config. */
@@ -5999,6 +6008,9 @@ export namespace mars {
 
         /** Config elements. */
         public elements: mars.Element[];
+
+        /** Config display_name. */
+        public display_name: string;
 
         /**
          * Encodes the specified Config message. Does not implicitly {@link mars.Config.verify|verify} messages.

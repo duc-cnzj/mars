@@ -24,6 +24,14 @@ message Config {
 
   // elements 自定义字段
   repeated Element elements = 9;
+
+  // 显示的名称 (helm app name), 不填就使用 git server project name
+  // 以字母开头结尾，中间可以有 '_' '-'
+  string display_name = 10 [(validate.rules).string = {
+    pattern:   "^[A-Za-z]([A-Z-_a-z]*[^_-])*$",
+    max_bytes: 64,
+    ignore_empty: true,
+  }];
 }
 
 enum ElementType {

@@ -9,7 +9,10 @@ import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
 SyntaxHighlighter.registerLanguage('yaml', pyaml);
 
 const MarsExample: React.FC = () => {
-  const example = `# 项目默认的配置文件(可选)
+  const example = `# 显示的名称 (helm app name), 不填就使用 git server project name
+# 以字母开头结尾，中间可以有 '_' '-', 例如 my_app, my_app
+display_name: app
+# 项目默认的配置文件(可选)
 config_file: config.yaml
 # 默认配置, 必须用 '|', 全局配置文件，如果没有设置 config_file 则使用这个
 config_file_values: |

@@ -69,3 +69,35 @@ func TestDBCache_Remember(t *testing.T) {
 func TestNewDBCache(t *testing.T) {
 	assert.Implements(t, (*contracts.CacheInterface)(nil), NewDBCache(nil))
 }
+
+func TestDBCache_Clear(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	app := mock.NewMockApplicationInterface(ctrl)
+	defer ctrl.Finish()
+	instance.SetInstance(app)
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
+	sf := singleflight.Group{}
+	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
+	db.AutoMigrate(&models.DBCache{})
+
+	var count int64
+	db.Model(&models.DBCache{}).Count(&count)
+	assert.Equal(t, int64(0), count)
+
+	NewDBCache(app).Remember("key-1", 100, func() ([]byte, error) {
+		return []byte("a-1"), nil
+	})
+	NewDBCache(app).Remember("key-2", 100, func() ([]byte, error) {
+		return []byte("a-2"), nil
+	})
+	db.Model(&models.DBCache{}).Count(&count)
+	assert.Equal(t, int64(2), count)
+
+	assert.Nil(t, NewDBCache(app).Clear("key-1"))
+
+	var caches []*models.DBCache
+	db.Model(&models.DBCache{}).Find(&caches)
+	assert.Len(t, caches, 1)
+	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte("a-2")), caches[0].Value)
+}

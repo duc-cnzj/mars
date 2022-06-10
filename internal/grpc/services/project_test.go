@@ -485,7 +485,6 @@ func TestProjectSvc_List(t *testing.T) {
 
 func TestProjectSvc_completeInput(t *testing.T) {
 	req := &project.ApplyRequest{
-		Name:      "xxx",
 		GitCommit: "xxx",
 	}
 	m := gomock.NewController(t)
@@ -496,7 +495,6 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
 	new(ProjectSvc).completeInput(req, msger)
 	req.GitCommit = ""
-	req.Name = ""
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 	err := new(ProjectSvc).completeInput(req, msger)
 	assert.Equal(t, "没有可用的 commit", err.Error())
@@ -506,12 +504,8 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	commit.EXPECT().GetTitle().Return("").Times(1)
 	commit.EXPECT().GetWebURL().Return("").Times(1)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(1)
-	project := mock.NewMockProjectInterface(m)
-	project.EXPECT().GetName().Return("pro").Times(1)
-	gits.EXPECT().GetProject(gomock.Any()).Return(project, nil).Times(1)
 	err = new(ProjectSvc).completeInput(req, msger)
 	assert.Nil(t, err)
-	assert.Equal(t, "pro", req.Name)
 	assert.Equal(t, "1", req.GitCommit)
 }
 
@@ -643,11 +637,12 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		ValuesYaml: "",
 	}
 	marshal, _ := json.Marshal(&mc)
-	db.Create(&models.GitProject{
+	gp := &models.GitProject{
 		GitProjectId:  999,
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal),
-	})
+	}
+	db.Create(gp)
 	p.EXPECT().GetName().Return("pppp")
 	variables, err := new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		Namespace:    "ns",
@@ -674,4 +669,16 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitBranch:    "dev",
 	})
 	assert.Equal(t, "duc-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
+
+	mc1 := mars.Config{
+		DisplayName: "app",
+	}
+	marshal1, _ := json.Marshal(&mc1)
+	db.Model(&gp).UpdateColumn("global_config", string(marshal1))
+	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+		Namespace:    "ns",
+		GitProjectId: 999,
+		GitBranch:    "dev",
+	})
+	assert.Equal(t, "app-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
 }

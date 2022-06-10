@@ -19,7 +19,7 @@ func NewDBCache(app contracts.ApplicationInterface) *DBCache {
 }
 
 func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.app.Singleflight().Do(fmt.Sprintf("cache-remember-%s", key), func() (any, error) {
+	do, err, _ := c.app.Singleflight().Do(c.cacheKey(key), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
@@ -51,4 +51,12 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 		return nil, err
 	}
 	return do.([]byte), nil
+}
+
+func (c *DBCache) Clear(key string) error {
+	return c.app.DBManager().DB().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
+}
+
+func (c *DBCache) cacheKey(key string) string {
+	return fmt.Sprintf("cache-remember-%s", key)
 }

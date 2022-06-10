@@ -46,6 +46,7 @@ interface Config extends pb.mars.Config {}
 const { Option } = Select;
 
 const initConfig = {
+  display_name: "",
   config_file: "",
   config_file_values: "",
   config_field: "",
@@ -466,6 +467,14 @@ const ConfigModal: React.FC<{
                       position: "relative",
                     }}
                   >
+                    <Form.Item
+                      label="应用名称"
+                      rules={[{pattern: new RegExp("^[A-Za-z]([A-Z-_a-z]*[^_-])*$"), message: "名称必须符合表达式 '^[A-Za-z]([A-Z-_a-z]*[^_-])*$', 格式例如 my_app, my-app, app"}]}
+                      name={"display_name"}
+                    >
+                      <Input disabled={!editMode || !globalEnabled} />
+                    </Form.Item>
+
                     <Form.Item
                       label="charts 的目录(需要第一个设置并且保存)"
                       name={"local_chart_path"}

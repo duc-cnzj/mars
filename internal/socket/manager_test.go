@@ -14,7 +14,6 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event"
@@ -941,7 +940,7 @@ func TestJober_Validate(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
-	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.GitProject{})
 
 	job2 := &Jober{
 		input: &websocket_pb.CreateProjectInput{
@@ -955,13 +954,26 @@ func TestJober_Validate(t *testing.T) {
 
 	ns := &models.Namespace{Name: "ns", ImagePullSecrets: "aa,bb"}
 	db.Create(ns)
+	marsC := mars.Config{
+		DisplayName: "app",
+	}
+	marshal, _ := json.Marshal(&marsC)
+	gp := &models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "git-app",
+		GitProjectId:  100,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal),
+	}
+	db.Create(gp)
 	gits := mock.NewMockGitServer(m)
 	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).Times(2)
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	commit := mock.NewMockCommitInterface(m)
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(2)
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).AnyTimes()
 	job3 := &Jober{
 		input: &websocket_pb.CreateProjectInput{
 			NamespaceId:  int64(ns.ID),
@@ -976,6 +988,7 @@ func TestJober_Validate(t *testing.T) {
 		wsType:    websocket_pb.Type_CreateProject,
 	}
 	assert.Nil(t, job3.Validate())
+	assert.Equal(t, "app", job3.input.Name)
 	assert.Same(t, commit, job3.Commit())
 	assert.Equal(t, []string{"aa", "bb"}, job3.imagePullSecrets)
 	var p models.Project
@@ -991,42 +1004,62 @@ func TestJober_Validate(t *testing.T) {
 	assert.Equal(t, "有别人也在操作这个项目，等等哦~", job3.Validate().Error())
 
 	db.Model(&p).UpdateColumn("deploy_status", types.Deploy_StatusDeployed)
+	marshal2, _ := json.Marshal(&mars.Config{
+		DisplayName: "",
+	})
 	assert.Nil(t, job3.Validate())
 	assert.NotNil(t, job3.prevProject)
+
+	db.Model(&gp).UpdateColumn("global_config", string(marshal2))
+	gitproj := mock.NewMockProjectInterface(m)
+	gitproj.EXPECT().GetName().Return("app-git")
+	gits.EXPECT().GetProject("100").Return(gitproj, nil)
+	job3.input.Name = ""
+	assert.Nil(t, job3.Validate())
+	assert.Equal(t, "app-git", job3.input.Name)
 }
 
-func TestMarsLoader_Load(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	app := mock.NewMockApplicationInterface(ctrl)
-	defer ctrl.Finish()
-	instance.SetInstance(app)
-	db, closeFn := testutil.SetGormDB(ctrl, app)
-	defer closeFn()
-	db.AutoMigrate(&models.GitProject{})
-	mc := mars.Config{
-		ConfigFile:       "cf",
-		ConfigFileValues: "vv",
-		ConfigField:      "f",
-		IsSimpleEnv:      true,
-		ConfigFileType:   "php",
-		LocalChartPath:   "./charts",
-		Branches:         []string{"dev", "master"},
-		ValuesYaml:       "xxx",
-		Elements:         nil,
+func Test_DisplayNameValidate(t *testing.T) {
+	var tests = []struct {
+		name     string
+		wantsErr bool
+	}{
+		{
+			name:     "-a",
+			wantsErr: true,
+		},
+		{
+			name:     "A-a_aA",
+			wantsErr: false,
+		},
+		{
+			name:     "a",
+			wantsErr: false,
+		},
+		{
+			name:     "a-",
+			wantsErr: true,
+		},
+		{
+			name:     "a-a",
+			wantsErr: false,
+		},
+		{
+			name:     "a-_a",
+			wantsErr: false,
+		},
+		{
+			name:     "a-_a_",
+			wantsErr: true,
+		},
 	}
-	marshal, _ := json.Marshal(&mc)
-	db.Create(&models.GitProject{
-		GitProjectId:  99,
-		GlobalEnabled: true,
-		GlobalConfig:  string(marshal),
-	})
-	job := &Jober{
-		input:     &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
-		messager:  &emptyMsger{},
-		percenter: &emptyPercenter{},
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wantsErr, (&mars.Config{DisplayName: tt.name}).Validate() != nil)
+		})
 	}
-	assert.Nil(t, (&MarsLoader{}).Load(job))
-	assert.Equal(t, mc.String(), job.config.String())
 }
 
 type dump struct {
@@ -1363,7 +1396,6 @@ func TestWithDryRun(t *testing.T) {
 
 func Test_defaultLoaders(t *testing.T) {
 	assert.Equal(t, []Loader{
-		&MarsLoader{},
 		&ChartFileLoader{},
 		&VariableLoader{},
 		&DynamicLoader{},

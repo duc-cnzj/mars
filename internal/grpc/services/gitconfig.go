@@ -140,6 +140,9 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 	if request.Config != nil && len(request.Config.Branches) == 0 {
 		request.Config.Branches = []string{"*"}
 	}
+	if request.Config != nil && request.Config.DisplayName != project.GlobalMarsConfig().DisplayName {
+		app.Cache().Clear(ProjectOptionsCacheKey)
+	}
 	marshal, err := json.Marshal(request.Config)
 	if err != nil {
 		return nil, err

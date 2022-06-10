@@ -117,3 +117,11 @@ func intPid(pid string) bool {
 	}
 	return false
 }
+
+func GetProjectName[T ~int | ~int64 | ~string](projectID T, marsC *mars.Config) string {
+	if marsC.DisplayName != "" {
+		return marsC.DisplayName
+	}
+	gitProject, _ := plugins.GetGitServer().GetProject(fmt.Sprintf("%v", projectID))
+	return gitProject.GetName()
+}

@@ -282,6 +282,17 @@ func TestGitConfigSvc_Update(t *testing.T) {
 		Config:       mc,
 	})
 	assert.Equal(t, []string{"*"}, update.Config.Branches)
+
+	cache := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(cache)
+	mc.DisplayName = "app"
+	cache.EXPECT().Clear("ProjectOptions").Times(1)
+	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(1)
+	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+		GitProjectId: 11,
+		Config:       mc,
+	})
+	assert.Equal(t, "app", update.Config.DisplayName)
 }
 
 func Test_getDefaultBranch(t *testing.T) {

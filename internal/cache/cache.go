@@ -8,6 +8,7 @@ import (
 type Store interface {
 	Get(key string) (value []byte, err error)
 	Set(key string, value []byte, expireSeconds int) (err error)
+	Delete(key string) error
 }
 
 type Cache struct {
@@ -47,4 +48,8 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 	}
 
 	return do.([]byte), err
+}
+
+func (c *Cache) Clear(key string) error {
+	return c.fc.Delete(key)
 }

@@ -28,3 +28,9 @@ func (g *GoCacheAdapter) Set(key string, value []byte, expireSeconds int) (err e
 
 	return nil
 }
+
+func (g *GoCacheAdapter) Delete(key string) error {
+	g.c.Delete(key)
+
+	return nil
+}

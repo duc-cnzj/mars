@@ -297,6 +297,10 @@
             "$ref": "#/definitions/marsElement"
           },
           "title": "elements 自定义字段"
+        },
+        "display_name": {
+          "type": "string",
+          "title": "显示的名称 (helm app name), 不填就使用 git server project name\n以字母开头结尾，中间可以有 '_' '-'"
         }
       }
     },

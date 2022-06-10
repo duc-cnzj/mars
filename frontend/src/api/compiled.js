@@ -9385,6 +9385,7 @@ export const git = $root.git = (() => {
          * @property {boolean|null} [isLeaf] Option isLeaf
          * @property {string|null} [gitProjectId] Option gitProjectId
          * @property {string|null} [branch] Option branch
+         * @property {string|null} [display_name] Option display_name
          */
 
         /**
@@ -9451,6 +9452,14 @@ export const git = $root.git = (() => {
         Option.prototype.branch = "";
 
         /**
+         * Option display_name.
+         * @member {string} display_name
+         * @memberof git.Option
+         * @instance
+         */
+        Option.prototype.display_name = "";
+
+        /**
          * Encodes the specified Option message. Does not implicitly {@link git.Option.verify|verify} messages.
          * @function encode
          * @memberof git.Option
@@ -9474,6 +9483,8 @@ export const git = $root.git = (() => {
                 writer.uint32(/* id 5, wireType 2 =*/42).string(message.gitProjectId);
             if (message.branch != null && Object.hasOwnProperty.call(message, "branch"))
                 writer.uint32(/* id 6, wireType 2 =*/50).string(message.branch);
+            if (message.display_name != null && Object.hasOwnProperty.call(message, "display_name"))
+                writer.uint32(/* id 7, wireType 2 =*/58).string(message.display_name);
             return writer;
         };
 
@@ -9512,6 +9523,9 @@ export const git = $root.git = (() => {
                     break;
                 case 6:
                     message.branch = reader.string();
+                    break;
+                case 7:
+                    message.display_name = reader.string();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -12652,6 +12666,7 @@ export const mars = $root.mars = (() => {
          * @property {Array.<string>|null} [branches] Config branches
          * @property {string|null} [values_yaml] Config values_yaml
          * @property {Array.<mars.Element>|null} [elements] Config elements
+         * @property {string|null} [display_name] Config display_name
          */
 
         /**
@@ -12744,6 +12759,14 @@ export const mars = $root.mars = (() => {
         Config.prototype.elements = $util.emptyArray;
 
         /**
+         * Config display_name.
+         * @member {string} display_name
+         * @memberof mars.Config
+         * @instance
+         */
+        Config.prototype.display_name = "";
+
+        /**
          * Encodes the specified Config message. Does not implicitly {@link mars.Config.verify|verify} messages.
          * @function encode
          * @memberof mars.Config
@@ -12775,6 +12798,8 @@ export const mars = $root.mars = (() => {
             if (message.elements != null && message.elements.length)
                 for (let i = 0; i < message.elements.length; ++i)
                     $root.mars.Element.encode(message.elements[i], writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
+            if (message.display_name != null && Object.hasOwnProperty.call(message, "display_name"))
+                writer.uint32(/* id 10, wireType 2 =*/82).string(message.display_name);
             return writer;
         };
 
@@ -12826,6 +12851,9 @@ export const mars = $root.mars = (() => {
                     if (!(message.elements && message.elements.length))
                         message.elements = [];
                     message.elements.push($root.mars.Element.decode(reader, reader.uint32()));
+                    break;
+                case 10:
+                    message.display_name = reader.string();
                     break;
                 default:
                     reader.skipType(tag & 7);
