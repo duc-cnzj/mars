@@ -104,6 +104,32 @@ func (m *Config) validate(all bool) error {
 
 	}
 
+	if m.GetDisplayName() != "" {
+
+		if len(m.GetDisplayName()) > 64 {
+			err := ConfigValidationError{
+				field:  "DisplayName",
+				reason: "value length must be at most 64 bytes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_Config_DisplayName_Pattern.MatchString(m.GetDisplayName()) {
+			err := ConfigValidationError{
+				field:  "DisplayName",
+				reason: "value does not match regex pattern \"^[A-Za-z]([A-Z-_a-z]*[^_-])*$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ConfigMultiError(errors)
 	}
@@ -180,6 +206,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ConfigValidationError{}
+
+var _Config_DisplayName_Pattern = regexp.MustCompile("^[A-Za-z]([A-Z-_a-z]*[^_-])*$")
 
 // Validate checks the field values on Element with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

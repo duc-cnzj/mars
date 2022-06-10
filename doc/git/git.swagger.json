@@ -467,6 +467,9 @@
         },
         "branch": {
           "type": "string"
+        },
+        "display_name": {
+          "type": "string"
         }
       }
     },

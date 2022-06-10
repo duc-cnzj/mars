@@ -39,6 +39,7 @@ message Option {
   bool isLeaf = 4;
   string gitProjectId = 5;
   string branch = 6;
+  string display_name = 7;
 }
 
 message ProjectOptionsResponse {

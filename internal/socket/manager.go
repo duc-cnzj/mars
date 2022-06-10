@@ -573,6 +573,24 @@ func (j *Jober) Validate() error {
 		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
 	}
 	j.ns = &ns
+
+	j.Messager().SendMsg("[Loading]: 加载用户配置")
+	j.Percenter().To(10)
+
+	marsC, err := utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
+	if err != nil {
+		return err
+	}
+	j.config = marsC
+	if j.input.Name == "" {
+		if marsC.DisplayName != "" {
+			j.input.Name = marsC.DisplayName
+		} else {
+			gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(j.input.GitProjectId)))
+			j.input.Name = gitProject.GetName()
+		}
+	}
+
 	j.project = &models.Project{
 		Name:         slug.Make(j.input.Name),
 		GitProjectId: int(j.input.GitProjectId),
@@ -622,7 +640,6 @@ func (j *Jober) Validate() error {
 
 func defaultLoaders() []Loader {
 	return []Loader{
-		&MarsLoader{},
 		&ChartFileLoader{},
 		&VariableLoader{},
 		&DynamicLoader{},
@@ -662,24 +679,6 @@ func (j *Jober) LoadConfigs() error {
 
 type Loader interface {
 	Load(*Jober) error
-}
-
-type MarsLoader struct{}
-
-func (m *MarsLoader) Load(j *Jober) error {
-	const loaderName = "[MarsLoader]: "
-
-	j.Messager().SendMsg(loaderName + "加载用户配置")
-	j.Percenter().To(10)
-
-	marsC, err := utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
-	if err != nil {
-		j.Messager().SendMsg(fmt.Sprintf(loaderName+"加载 mars config 失败: %s", err.Error()))
-		return err
-	}
-	j.config = marsC
-
-	return nil
 }
 
 type ChartFileLoader struct{}

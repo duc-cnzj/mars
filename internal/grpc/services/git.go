@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/duc-cnzj/mars-client/v4/git"
+	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -135,8 +136,10 @@ const (
 	OptionTypeCommit  string = "commit"
 )
 
+const ProjectOptionsCacheKey = "ProjectOptions"
+
 func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
-	remember, err := app.Cache().Remember("ProjectOptions", 30, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(ProjectOptionsCacheKey, 30, func() ([]byte, error) {
 		var (
 			enabledProjects []models.GitProject
 			ch              = make(chan *git.Option)
@@ -149,15 +152,26 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 			go func(project models.GitProject) {
 				defer wg.Done()
 				defer utils.HandlePanic("ProjectOptions")
-				if !project.GlobalEnabled {
-					if _, err := GetProjectMarsConfig(project.GitProjectId, project.DefaultBranch); err != nil {
-						mlog.Debug(err)
-						return
-					}
+				var (
+					marsC *mars.Config
+					err   error
+				)
+				if marsC, err = GetProjectMarsConfig(project.GitProjectId, project.DefaultBranch); err != nil {
+					mlog.Debug(err)
+					return
+				}
+				var (
+					displayName string = project.Name
+					pname       string = project.Name
+				)
+				if marsC.DisplayName != "" {
+					displayName = marsC.DisplayName
+					pname = fmt.Sprintf("%s(%s)", project.Name, displayName)
 				}
 				ch <- &git.Option{
+					DisplayName:  displayName,
 					Value:        fmt.Sprintf("%d", project.GitProjectId),
-					Label:        project.Name,
+					Label:        pname,
 					IsLeaf:       false,
 					Type:         OptionTypeProject,
 					GitProjectId: strconv.Itoa(project.GitProjectId),

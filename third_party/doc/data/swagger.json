@@ -2145,6 +2145,9 @@
         "branch": {
           "type": "string"
         },
+        "display_name": {
+          "type": "string"
+        },
         "gitProjectId": {
           "type": "string"
         },
@@ -2298,6 +2301,10 @@
         "config_file_values": {
           "type": "string",
           "title": "config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个"
+        },
+        "display_name": {
+          "type": "string",
+          "title": "显示的名称 (helm app name), 不填就使用 git server project name\n以字母开头结尾，中间可以有 '_' '-'"
         },
         "elements": {
           "type": "array",

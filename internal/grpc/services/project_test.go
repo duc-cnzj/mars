@@ -485,7 +485,6 @@ func TestProjectSvc_List(t *testing.T) {
 
 func TestProjectSvc_completeInput(t *testing.T) {
 	req := &project.ApplyRequest{
-		Name:      "xxx",
 		GitCommit: "xxx",
 	}
 	m := gomock.NewController(t)
@@ -496,7 +495,6 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
 	new(ProjectSvc).completeInput(req, msger)
 	req.GitCommit = ""
-	req.Name = ""
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 	err := new(ProjectSvc).completeInput(req, msger)
 	assert.Equal(t, "没有可用的 commit", err.Error())
@@ -506,12 +504,8 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	commit.EXPECT().GetTitle().Return("").Times(1)
 	commit.EXPECT().GetWebURL().Return("").Times(1)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(1)
-	project := mock.NewMockProjectInterface(m)
-	project.EXPECT().GetName().Return("pro").Times(1)
-	gits.EXPECT().GetProject(gomock.Any()).Return(project, nil).Times(1)
 	err = new(ProjectSvc).completeInput(req, msger)
 	assert.Nil(t, err)
-	assert.Equal(t, "pro", req.Name)
 	assert.Equal(t, "1", req.GitCommit)
 }
 

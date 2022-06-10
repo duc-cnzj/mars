@@ -67,6 +67,10 @@ func (e *errorstore) Get(key string) (value []byte, err error) {
 	return nil, errors.New("errorstore get err")
 }
 
+func (e *errorstore) Delete(key string) error {
+	return nil
+}
+
 func TestCache_RememberErrorStore(t *testing.T) {
 	var i int
 	cache := NewCache(&errorstore{}, &singleflight.Group{})
@@ -84,17 +88,21 @@ func TestCache_RememberErrorStore(t *testing.T) {
 	assert.Equal(t, 2, i)
 }
 
-func TestCache_RememberNoCache(t *testing.T) {
-	var i int
-	cache := &NoCache{}
-	fn := func() {
-		cache.Remember("duc", 10, func() ([]byte, error) {
-			i++
-			return []byte("duccc"), nil
-		})
+func TestCache_Clear(t *testing.T) {
+	cache := NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
+	called := 0
+	fn := func() ([]byte, error) {
+		called++
+		return []byte("aaa"), nil
 	}
-	fn()
-	fn()
-	fn()
-	assert.Equal(t, 3, i)
+	// +1
+	cache.Remember("aaa", 100, fn)
+	// +0
+	cache.Remember("aaa", 100, fn)
+	assert.Nil(t, cache.Clear("aaa"))
+	// +1
+	cache.Remember("aaa", 100, fn)
+	assert.Equal(t, 2, called)
+	cache.Remember("aaa", 100, fn)
+	assert.Equal(t, 2, called)
 }

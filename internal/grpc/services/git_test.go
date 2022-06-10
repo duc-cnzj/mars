@@ -439,13 +439,15 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.GitProject{})
+	marshal, _ := json.Marshal(&mars.Config{DisplayName: "app"})
+
 	p1 := &models.GitProject{
 		DefaultBranch: "dev",
 		Name:          "a",
 		GitProjectId:  1,
 		Enabled:       true,
 		GlobalEnabled: true,
-		GlobalConfig:  "",
+		GlobalConfig:  string(marshal),
 	}
 	p2 := &models.GitProject{
 		DefaultBranch: "dev1",
@@ -460,11 +462,21 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	res, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Nil(t, err)
 	assert.Len(t, res.Items, 2)
+	assert.Equal(t, "a(app)", res.Items[0].Label)
 	assert.Equal(t, "", res.Items[0].Branch)
 	assert.Equal(t, OptionTypeProject, res.Items[0].Type)
 	assert.Equal(t, fmt.Sprintf("%d", p1.ID), res.Items[0].Value)
 	assert.Equal(t, false, res.Items[0].IsLeaf)
 	assert.Equal(t, "1", res.Items[0].GitProjectId)
+	assert.Equal(t, "app", res.Items[0].DisplayName)
+
+	assert.Equal(t, "", res.Items[1].Branch)
+	assert.Equal(t, "b", res.Items[1].Label)
+	assert.Equal(t, OptionTypeProject, res.Items[1].Type)
+	assert.Equal(t, fmt.Sprintf("%d", p2.ID), res.Items[1].Value)
+	assert.Equal(t, false, res.Items[1].IsLeaf)
+	assert.Equal(t, "2", res.Items[1].GitProjectId)
+	assert.Equal(t, "b", res.Items[1].DisplayName)
 }
 
 func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {

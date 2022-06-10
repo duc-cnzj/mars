@@ -157,10 +157,6 @@ func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger contracts.
 		input.GitCommit = lastCommit.GetID()
 		msger.SendMsg(fmt.Sprintf("未传入commit，使用最新的commit [%s](%s)", lastCommit.GetTitle(), lastCommit.GetWebURL()))
 	}
-	if input.Name == "" {
-		gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(input.GitProjectId)))
-		input.Name = gitProject.GetName()
-	}
 	return nil
 }
 

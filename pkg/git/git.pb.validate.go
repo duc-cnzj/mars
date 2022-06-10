@@ -542,6 +542,8 @@ func (m *Option) validate(all bool) error {
 
 	// no validation rules for Branch
 
+	// no validation rules for DisplayName
+
 	if len(errors) > 0 {
 		return OptionMultiError(errors)
 	}

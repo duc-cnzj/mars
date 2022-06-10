@@ -33,6 +33,20 @@ func (m *MockCacheInterface) EXPECT() *MockCacheInterfaceMockRecorder {
 	return m.recorder
 }
 
+// Clear mocks base method.
+func (m *MockCacheInterface) Clear(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Clear", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Clear indicates an expected call of Clear.
+func (mr *MockCacheInterfaceMockRecorder) Clear(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockCacheInterface)(nil).Clear), arg0)
+}
+
 // Remember mocks base method.
 func (m *MockCacheInterface) Remember(arg0 string, arg1 int, arg2 func() ([]byte, error)) ([]byte, error) {
 	m.ctrl.T.Helper()

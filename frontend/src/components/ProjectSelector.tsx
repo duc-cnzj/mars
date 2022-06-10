@@ -135,7 +135,7 @@ const ProjectSelector: React.FC<{
               onCh?.({
                 projectName: get(
                   options.find((item) => item.value === values[0]),
-                  "label",
+                  "display_name",
                   ""
                 ),
                 gitProjectId: Number(gitId),
