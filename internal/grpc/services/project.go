@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/duc-cnzj/mars-client/v4/project"
@@ -238,11 +237,14 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 }
 
 func (p *ProjectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {
-	if req.ProjectName == "" {
-		gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(req.GitProjectId)))
-		req.ProjectName = gitProject.GetName()
+	marsC, err := utils.GetProjectMarsConfig(req.GitProjectId, req.GitBranch)
+	if err != nil {
+		return nil, err
 	}
-	marsC, _ := utils.GetProjectMarsConfig(req.GitProjectId, req.GitBranch)
+	if req.ProjectName == "" {
+		req.ProjectName = utils.GetProjectName(fmt.Sprintf("%d", req.GitProjectId), marsC)
+	}
+
 	sub := utils.GetPreOccupiedLenByValuesYaml(marsC.ValuesYaml)
 	hosts := make(map[string]string)
 	for i := 1; i <= 10; i++ {

@@ -583,12 +583,7 @@ func (j *Jober) Validate() error {
 	}
 	j.config = marsC
 	if j.input.Name == "" {
-		if marsC.DisplayName != "" {
-			j.input.Name = marsC.DisplayName
-		} else {
-			gitProject, _ := plugins.GetGitServer().GetProject(strconv.Itoa(int(j.input.GitProjectId)))
-			j.input.Name = gitProject.GetName()
-		}
+		j.input.Name = utils.GetProjectName(j.input.GitProjectId, marsC)
 	}
 
 	j.project = &models.Project{

@@ -637,11 +637,12 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		ValuesYaml: "",
 	}
 	marshal, _ := json.Marshal(&mc)
-	db.Create(&models.GitProject{
+	gp := &models.GitProject{
 		GitProjectId:  999,
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal),
-	})
+	}
+	db.Create(gp)
 	p.EXPECT().GetName().Return("pppp")
 	variables, err := new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		Namespace:    "ns",
@@ -668,4 +669,16 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitBranch:    "dev",
 	})
 	assert.Equal(t, "duc-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
+
+	mc1 := mars.Config{
+		DisplayName: "app",
+	}
+	marshal1, _ := json.Marshal(&mc1)
+	db.Model(&gp).UpdateColumn("global_config", string(marshal1))
+	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+		Namespace:    "ns",
+		GitProjectId: 999,
+		GitBranch:    "dev",
+	})
+	assert.Equal(t, "app-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
 }
