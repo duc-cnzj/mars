@@ -6,6 +6,7 @@ package contracts
 //go:generate mockgen -destination ../mock/mock_socket_deploy_msger.go -package mock github.com/duc-cnzj/mars/internal/contracts DeployMsger
 //go:generate mockgen -destination ../mock/mock_socket_job.go -package mock github.com/duc-cnzj/mars/internal/contracts Job
 //go:generate mockgen -destination ../mock/mock_socket_session_mapper.go -package mock github.com/duc-cnzj/mars/internal/contracts SessionMapper
+//go:generate mockgen -destination ../mock/mock_release_installer.go -package mock github.com/duc-cnzj/mars/internal/contracts ReleaseInstaller
 
 import (
 	"context"
