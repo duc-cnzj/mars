@@ -13,6 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/adapter"
+	"github.com/duc-cnzj/mars/internal/cache"
+	gocache "github.com/patrickmn/go-cache"
+	"golang.org/x/sync/singleflight"
+
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
@@ -367,7 +372,7 @@ func TestInstallProject_LoadConfigsFail2(t *testing.T) {
 }
 
 func TestNewWebsocketManager(t *testing.T) {
-	assert.NotNil(t, NewWebsocketManager())
+	assert.NotNil(t, NewWebsocketManager(1*time.Second))
 }
 
 type rw struct {
@@ -405,7 +410,7 @@ func TestWebsocketManager_Info(t *testing.T) {
 		h: map[string][]string{},
 		w: nil,
 	}
-	NewWebsocketManager().Info(rwer, nil)
+	NewWebsocketManager(1*time.Second).Info(rwer, nil)
 	assert.Equal(t, "application/json", rwer.h["Content-Type"][0])
 	marshal, _ := json.Marshal("info...")
 	assert.Equal(t, marshal, rwer.w)
@@ -459,7 +464,7 @@ func TestWebsocketManager_initConn(t *testing.T) {
 	defer func() {
 		Wait = NewWaitSocketExit()
 	}()
-	conn := NewWebsocketManager().initConn(r, nil)
+	conn := NewWebsocketManager(1*time.Second).initConn(r, nil)
 	assert.Equal(t, ps, conn.pubSub)
 	assert.NotEmpty(t, conn.id)
 	assert.Equal(t, "xxx", conn.uid)
@@ -497,7 +502,7 @@ func TestWebsocketManager_initConn2(t *testing.T) {
 	defer func() {
 		Wait = NewWaitSocketExit()
 	}()
-	conn := NewWebsocketManager().initConn(r, nil)
+	conn := NewWebsocketManager(1*time.Second).initConn(r, nil)
 	assert.NotEmpty(t, conn.uid)
 }
 
@@ -569,15 +574,11 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
+	app.EXPECT().Cache().Return(&cache.NoCache{}).AnyTimes()
 	app.EXPECT().Done().Return(ch).Times(1)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
 		close(ch)
-	}()
-	pre := HealthTickDuration
-	HealthTickDuration = 1 * time.Second
-	defer func() {
-		HealthTickDuration = pre
 	}()
 
 	app.EXPECT().Config().Return(&config.Config{
@@ -595,7 +596,41 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
 	app.EXPECT().GetPluginByName("test_ws").Return(ws)
 
-	NewWebsocketManager().TickClusterHealth()
+	NewWebsocketManager(1 * time.Second).TickClusterHealth()
+	time.Sleep(2 * time.Second)
+}
+
+func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	ch := make(chan struct{})
+	cache := cache.NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
+	app.EXPECT().Cache().Return(cache).AnyTimes()
+	app.EXPECT().Done().Return(ch).AnyTimes()
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		close(ch)
+	}()
+
+	app.EXPECT().Config().Return(&config.Config{
+		WsSenderPlugin: config.Plugin{
+			Name: "test_ws",
+		},
+	}).AnyTimes()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(), MetricsClient: fake2.NewSimpleClientset()}).AnyTimes()
+	ps := mock.NewMockPubSub(m)
+	ps.EXPECT().ToAll(gomock.Any()).Times(1)
+
+	ws := mock.NewMockWsSender(m)
+	ws.EXPECT().New("", "").Return(ps).AnyTimes()
+	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
+	app.EXPECT().GetPluginByName("test_ws").Return(ws).AnyTimes()
+
+	for i := 0; i < 10; i++ {
+		go NewWebsocketManager(1 * time.Second).TickClusterHealth()
+	}
 	time.Sleep(2 * time.Second)
 }
 

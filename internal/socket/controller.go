@@ -20,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
@@ -103,16 +104,16 @@ func (c *WsConn) GetShellChannel(sessionID string) (chan *websocket_pb.TerminalM
 	return nil, fmt.Errorf("%v not found channel", sessionID)
 }
 
-type WebsocketManager struct{}
-
-func NewWebsocketManager() *WebsocketManager {
-	return &WebsocketManager{}
+type WebsocketManager struct {
+	healthTickDuration time.Duration
 }
 
-var HealthTickDuration = 15 * time.Second
+func NewWebsocketManager(healthTickDuration time.Duration) *WebsocketManager {
+	return &WebsocketManager{healthTickDuration: healthTickDuration}
+}
 
-func (*WebsocketManager) TickClusterHealth() {
-	ticker := time.NewTicker(HealthTickDuration)
+func (w *WebsocketManager) TickClusterHealth() {
+	ticker := time.NewTicker(w.healthTickDuration)
 	done := app.App().Done()
 	sub := plugins.GetWsSender().New("", "")
 	go func() {
@@ -121,24 +122,28 @@ func (*WebsocketManager) TickClusterHealth() {
 		for {
 			select {
 			case <-ticker.C:
-				info := utils.ClusterInfo()
-				sub.ToAll(&websocket_pb.WsHandleClusterResponse{
-					Metadata: &websocket_pb.Metadata{
-						Type: WsClusterInfoSync,
-					},
-					Info: &cluster.InfoResponse{
-						Status:            info.Status,
-						FreeMemory:        info.FreeMemory,
-						FreeCpu:           info.FreeCpu,
-						FreeRequestMemory: info.FreeRequestMemory,
-						FreeRequestCpu:    info.FreeRequestCpu,
-						TotalMemory:       info.TotalMemory,
-						TotalCpu:          info.TotalCpu,
-						UsageMemoryRate:   info.UsageMemoryRate,
-						UsageCpuRate:      info.UsageCpuRate,
-						RequestMemoryRate: info.RequestMemoryRate,
-						RequestCpuRate:    info.RequestCpuRate,
-					},
+				app.Cache().Remember("TickClusterHealth", int(w.healthTickDuration), func() ([]byte, error) {
+					info := utils.ClusterInfo()
+					sub.ToAll(&websocket_pb.WsHandleClusterResponse{
+						Metadata: &websocket_pb.Metadata{
+							Type: WsClusterInfoSync,
+						},
+						Info: &cluster.InfoResponse{
+							Status:            info.Status,
+							FreeMemory:        info.FreeMemory,
+							FreeCpu:           info.FreeCpu,
+							FreeRequestMemory: info.FreeRequestMemory,
+							FreeRequestCpu:    info.FreeRequestCpu,
+							TotalMemory:       info.TotalMemory,
+							TotalCpu:          info.TotalCpu,
+							UsageMemoryRate:   info.UsageMemoryRate,
+							UsageCpuRate:      info.UsageCpuRate,
+							RequestMemoryRate: info.RequestMemoryRate,
+							RequestCpuRate:    info.RequestCpuRate,
+						},
+					})
+					now := time.Now()
+					return []byte(date.ToRFC3339DatetimeString(&now)), nil
 				})
 			case <-done:
 				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")

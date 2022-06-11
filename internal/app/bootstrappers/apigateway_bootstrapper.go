@@ -284,7 +284,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveWs(mux *mux.Router) {
-	ws := socket.NewWebsocketManager()
+	ws := socket.NewWebsocketManager(15 * time.Second)
 	ws.TickClusterHealth()
 	mux.HandleFunc("/api/ws_info", ws.Info)
 	mux.HandleFunc("/ws", ws.Ws)
