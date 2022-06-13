@@ -55,7 +55,7 @@ build_web:
 
 .PHONY: test
 test:
-	go test ./... -race -count=1 -cover
+	go test ./... -race -count=1 -cover -coverprofile=cover.out
 
 .PHONY: build_linux_amd64
 build_linux_amd64:

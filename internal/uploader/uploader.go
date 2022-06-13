@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 )
 
-const DefaultRootDir = "/tmp/mars-uploads"
+var DefaultRootDir = "/tmp/mars-uploads"
 
 type Uploader struct {
 	rootDir string
@@ -81,6 +81,10 @@ func (u *Uploader) Delete(path string) error {
 
 func (u *Uploader) DirSize(dir string) (int64, error) {
 	var size int64
+	exists := u.DirExists(dir)
+	if !exists {
+		return 0, nil
+	}
 	if err := filepath.Walk(u.getPath(dir), func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			size += info.Size()

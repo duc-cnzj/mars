@@ -1,3 +1,4 @@
 config.yaml
 app
 !app*/
+cover.out

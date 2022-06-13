@@ -68,6 +68,14 @@ func TestMyPtyHandler_Next(t *testing.T) {
 
 	close(p.sizeChan)
 	assert.Nil(t, p.Next())
+}
+
+func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
+	p := &MyPtyHandler{
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}),
+	}
 
 	close(p.doneChan)
 	assert.Nil(t, p.Next())
