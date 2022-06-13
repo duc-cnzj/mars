@@ -9,6 +9,8 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/utils/date"
 	"github.com/stretchr/testify/assert"
+
+	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 )
 
@@ -59,6 +61,7 @@ func TestGitProject_PrettyYaml(t *testing.T) {
 				SelectValues: []string{"dev", "master", "*"},
 			},
 		},
+		DisplayName: "app",
 	}
 	marshal, _ := json.Marshal(&marsCfg)
 	m := GitProject{
@@ -87,7 +90,43 @@ elements:
   - dev
   - master
   - '*'
+display_name: app
 `, m.PrettyYaml())
+}
+
+// 确保 mars config 和 GitProject global_config 保存的项目数量是一致的，避免在增加活删除字段时导致两边不一致
+func TestGitProject_PrettyYaml_SameAsMarsConfig(t *testing.T) {
+	marsCfg := mars.Config{
+		ConfigFile:       "cfgfile",
+		ConfigFileValues: "values",
+		ConfigField:      "conf",
+		IsSimpleEnv:      true,
+		ConfigFileType:   "yaml",
+		LocalChartPath:   "./charts",
+		Branches:         []string{"master", "dev"},
+		ValuesYaml:       "name: duc\nage: 27",
+		Elements: []*mars.Element{
+			{
+				Path:         "conf->env",
+				Type:         mars.ElementType_ElementTypeSelect,
+				Default:      "dev",
+				Description:  "environment",
+				SelectValues: []string{"dev", "master", "*"},
+			},
+		},
+		DisplayName: "app",
+	}
+	marshal, _ := json.Marshal(&marsCfg)
+	m := GitProject{
+		ID:           1,
+		GlobalConfig: string(marshal),
+	}
+
+	var yamlMap = make(map[string]any)
+	var jsonMap = make(map[string]any)
+	assert.Nil(t, yaml.Unmarshal([]byte(m.PrettyYaml()), &yamlMap))
+	assert.Nil(t, json.Unmarshal(marshal, &jsonMap))
+	assert.Equal(t, len(yamlMap), len(jsonMap))
 }
 
 func TestGitProject_ProtoTransform(t *testing.T) {

@@ -45,6 +45,7 @@ func (g GitProject) PrettyYaml() string {
 		Branches         []string        `yaml:"branches"`
 		ValuesYaml       map[string]any  `yaml:"values_yaml"`
 		Elements         []*mars.Element `yaml:"elements"`
+		DisplayName      string          `yaml:"display_name"`
 	}{
 		ConfigFile:       clone.ConfigFile,
 		ConfigFileValues: clone.ConfigFileValues,
@@ -55,6 +56,7 @@ func (g GitProject) PrettyYaml() string {
 		Branches:         clone.Branches,
 		ValuesYaml:       v,
 		Elements:         clone.Elements,
+		DisplayName:      clone.DisplayName,
 	}
 	bf := bytes.Buffer{}
 	yaml.NewEncoder(&bf).Encode(data)
