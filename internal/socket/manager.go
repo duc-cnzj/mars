@@ -60,7 +60,7 @@ const (
 	WsAuthorize          = websocket_pb.Type_HandleAuthorize
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 1024 * 5
+	maxMessageSize = 1024 * 50
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
 	// Time allowed to read the next pong message from the peer.
