@@ -94,7 +94,7 @@ display_name: app
 `, m.PrettyYaml())
 }
 
-// 确保 mars config 和 GitProject global_config 保存的项目数量是一致的，避免在增加活删除字段时导致两边不一致
+// 确保 mars config 和 GitProject global_config 保存的项目字段数量是一致的，避免在增加或者删除字段时导致两边不一致
 func TestGitProject_PrettyYaml_SameAsMarsConfig(t *testing.T) {
 	marsCfg := mars.Config{
 		ConfigFile:       "cfgfile",
