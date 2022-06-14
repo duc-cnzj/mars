@@ -143,6 +143,21 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
+
+	err = (&ExtraValuesLoader{}).Load(&Jober{
+		input: &websocket_pb.CreateProjectInput{
+			ExtraValues: []*types.ExtraValue{
+				{
+					Path:  "app->config",
+					Value: "4",
+				},
+			},
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config:    &mars.Config{},
+	})
+	assert.Equal(t, "不允许自定义字段 app->config", err.Error())
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {
@@ -967,8 +982,9 @@ func TestJober_Validate(t *testing.T) {
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	commit := mock.NewMockCommitInterface(m)
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).AnyTimes()
+	h := mock.NewMockHelmer(m)
 	job3 := &Jober{
+		helmer: h,
 		input: &websocket_pb.CreateProjectInput{
 			NamespaceId:  int64(ns.ID),
 			GitProjectId: 100,
@@ -980,8 +996,12 @@ func TestJober_Validate(t *testing.T) {
 		messager:  &emptyMsger{},
 		percenter: &emptyPercenter{},
 		wsType:    websocket_pb.Type_CreateProject,
+		dryRun:    false,
 	}
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
+
 	assert.Nil(t, job3.Validate())
+	assert.Equal(t, 1, len(job3.destroyFuncs))
 	assert.Equal(t, "app", job3.input.Name)
 	assert.Same(t, commit, job3.Commit())
 	assert.Equal(t, []string{"aa", "bb"}, job3.imagePullSecrets)
@@ -1001,6 +1021,7 @@ func TestJober_Validate(t *testing.T) {
 	marshal2, _ := json.Marshal(&mars.Config{
 		DisplayName: "",
 	})
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
 	assert.Nil(t, job3.Validate())
 	assert.NotNil(t, job3.prevProject)
 
@@ -1009,8 +1030,16 @@ func TestJober_Validate(t *testing.T) {
 	gitproj.EXPECT().GetName().Return("app-git")
 	gits.EXPECT().GetProject("100").Return(gitproj, nil)
 	job3.input.Name = ""
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, "app-git", job3.input.Name)
+
+	h.EXPECT().ReleaseStatus(gomock.Any(), gomock.Any()).Return(types.Deploy_StatusUnknown).AnyTimes()
+	job3.CallDestroyFuncs()
+	assert.Equal(t, uint8(types.Deploy_StatusUnknown), job3.project.DeployStatus)
+
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("aaa")).Times(1)
+	assert.Equal(t, "aaa", job3.Validate().Error())
 }
 
 func Test_DisplayNameValidate(t *testing.T) {
@@ -1117,6 +1146,18 @@ app:
 	}
 	assert.Nil(t, (&MergeValuesLoader{}).Load(job))
 	assert.Equal(t, "/app/config.yaml", job.valuesOptions.ValueFiles[0])
+
+	job2 := &Jober{
+		dynamicConfigYaml: "",
+		imagePullSecrets:  nil,
+		valuesYaml:        "",
+		extraValues:       nil,
+		valuesOptions:     &values.Options{},
+		input:             &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
+		messager:          &emptyMsger{},
+		percenter:         &emptyPercenter{},
+	}
+	assert.Nil(t, (&MergeValuesLoader{}).Load(job2))
 }
 
 func TestNewJober(t *testing.T) {
@@ -1287,6 +1328,24 @@ image: 9999-dev
 	assert.Equal(t, "short_id", job.vars[VarCommit])
 	assert.Equal(t, int64(9999), job.vars[VarPipeline])
 	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
+
+	em2 := &emptyMsger{}
+	job2 := &Jober{
+		commit: commit,
+		config: &mars.Config{
+			ValuesYaml: "",
+		},
+		project: &models.Project{
+			Name:      "app",
+			GitBranch: "dev",
+		},
+		ns:               &models.Namespace{Name: "ns"},
+		imagePullSecrets: []string{"a", "b", "c"},
+		messager:         em2,
+		percenter:        &emptyPercenter{},
+	}
+	assert.Nil(t, (&VariableLoader{}).Load(job2))
+	assert.Equal(t, "[VariableLoader]: 未发现可用的 values.yaml", em2.msgs[1])
 }
 
 func TestVariableLoader_Load_ok(t *testing.T) {

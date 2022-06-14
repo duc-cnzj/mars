@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
+	"helm.sh/helm/v3/pkg/action"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -14,7 +18,30 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
+type DefaultHelmer struct{}
+
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
+	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun)
+}
+
+func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log action.DebugLog, dryRun bool) error {
+	return utils.Rollback(releaseName, namespace, wait, log, dryRun)
+}
+
+func (d *DefaultHelmer) PackageChart(path string, destDir string) (string, error) {
+	return utils.PackageChart(path, destDir)
+}
+
+func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log action.DebugLog) error {
+	return utils.UninstallRelease(releaseName, namespace, log)
+}
+
+func (d *DefaultHelmer) ReleaseStatus(namespace, releaseName string) types.Deploy {
+	return utils.ReleaseStatus(namespace, releaseName)
+}
+
 type releaseInstaller struct {
+	helmer         contracts.Helmer
 	dryRun         bool
 	chart          *chart.Chart
 	timeoutSeconds int64
@@ -30,6 +57,7 @@ type releaseInstaller struct {
 
 func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
 	return &releaseInstaller{
+		helmer:         &DefaultHelmer{},
 		dryRun:         dryRun,
 		chart:          chart,
 		valueOpts:      valueOpts,
@@ -52,7 +80,7 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
-	re, err := utils.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun)
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun)
 	if err == nil {
 		return re, nil
 	}
@@ -60,13 +88,13 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	if !r.dryRun && !isNew {
 		// 失败了，需要手动回滚
 		mlog.Debug("rollback project")
-		if err := utils.Rollback(r.releaseName, r.namespace, false, r.logger(), r.dryRun); err != nil {
+		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.logger(), r.dryRun); err != nil {
 			mlog.Debug(err)
 		}
 	}
 	if !r.dryRun && isNew {
 		mlog.Debug("uninstall project")
-		if err := utils.UninstallRelease(r.releaseName, r.namespace, r.logger()); err != nil {
+		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.logger()); err != nil {
 			mlog.Debug(err)
 		}
 	}

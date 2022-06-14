@@ -2,7 +2,9 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
@@ -37,6 +39,10 @@ func TestBranchPass(t *testing.T) {
 	cfg = &mars.Config{Branches: []string{"*-dev"}}
 	assert.True(t, BranchPass(cfg, "a-dev"))
 	assert.True(t, BranchPass(cfg, "b-dev"))
+
+	// regex syntax error
+	cfg = &mars.Config{Branches: []string{"[a-zA-Z]{10000,}*"}}
+	assert.False(t, BranchPass(cfg, strings.Repeat("a", 100000)))
 }
 
 func TestGetProjectMarsConfig(t *testing.T) {
@@ -71,8 +77,11 @@ func TestGetProjectMarsConfig(t *testing.T) {
 	gs := mock.NewMockGitServer(ctrl)
 	gs.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
-	app.EXPECT().GetPluginByName("test_git_server").Return(gs)
+	app.EXPECT().GetPluginByName("test_git_server").Return(gs).AnyTimes()
 	pid := 199
+	gs.EXPECT().GetFileContentWithBranch(fmt.Sprintf("%v", pid), "dev", ".mars.yaml").Return("", errors.New("xxx"))
+	_, err := GetProjectMarsConfig(pid, "dev")
+	assert.Equal(t, "xxx", err.Error())
 	gs.EXPECT().GetFileContentWithBranch(fmt.Sprintf("%v", pid), "dev", ".mars.yaml").Return(string(marshal), nil)
 	cfg, _ = GetProjectMarsConfig(pid, "dev")
 	assert.Equal(t, &mc, cfg)

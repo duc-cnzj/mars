@@ -40,6 +40,9 @@ func TestGitProject_GlobalMarsConfig(t *testing.T) {
 		GlobalConfig: string(marshal),
 	}
 	assert.Equal(t, &marsCfg, m.GlobalMarsConfig())
+
+	m2 := GitProject{}
+	assert.Equal(t, (&mars.Config{}).String(), m2.GlobalMarsConfig().String())
 }
 
 func TestGitProject_PrettyYaml(t *testing.T) {

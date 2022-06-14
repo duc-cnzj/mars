@@ -107,7 +107,8 @@ func (v vars) MustGetString(key string) string {
 }
 
 type Jober struct {
-	done chan struct{}
+	helmer contracts.Helmer
+	done   chan struct{}
 
 	loaders []Loader
 
@@ -179,6 +180,7 @@ func NewJober(
 	opts ...Option,
 ) contracts.Job {
 	jb := &Jober{
+		helmer:         &DefaultHelmer{},
 		loaders:        defaultLoaders(),
 		done:           make(chan struct{}),
 		user:           user,
@@ -616,7 +618,7 @@ func (j *Jober) Validate() error {
 	j.AddDestroyFunc(func() {
 		mlog.Debug("update DeployStatus in DestroyFunc")
 		if !j.IsDryRun() {
-			app.DB().Model(&j.project).Update("deploy_status", utils.ReleaseStatus(j.Namespace().Name, j.project.Name))
+			app.DB().Model(&j.project).Update("deploy_status", j.helmer.ReleaseStatus(j.Namespace().Name, j.project.Name))
 		}
 	})
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
@@ -738,7 +740,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 
 	j.Percenter().To(30)
 	j.Messager().SendMsg(loaderName + "打包 helm charts")
-	chart, err := utils.PackageChart(chartDir, chartDir)
+	chart, err := j.helmer.PackageChart(chartDir, chartDir)
 	if err != nil {
 		return err
 	}
@@ -999,9 +1001,12 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	for i, s := range j.imagePullSecrets {
 		imagePullSecrets[i] = map[string]any{"name": s}
 	}
-	yamlImagePullSecrets, _ := yaml.Marshal(map[string]any{
-		"imagePullSecrets": imagePullSecrets,
-	})
+	var yamlImagePullSecrets []byte
+	if len(imagePullSecrets) > 0 {
+		yamlImagePullSecrets, _ = yaml.Marshal(map[string]any{
+			"imagePullSecrets": imagePullSecrets,
+		})
+	}
 
 	var opts []config.YAMLOption
 	if j.valuesYaml != "" {

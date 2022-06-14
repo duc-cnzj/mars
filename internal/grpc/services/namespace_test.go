@@ -2,14 +2,13 @@ package services
 
 import (
 	"context"
-	"errors"
-	"sync"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
+	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"helm.sh/helm/v3/pkg/action"
 	v12 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -165,17 +163,10 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: clientset}).AnyTimes()
 
 	d.EXPECT().Dispatch(events.EventNamespaceDeleted, gomock.Any()).Times(1)
-	lock := sync.Mutex{}
-	times := 0
-	_, err := (&NamespaceSvc{UninstallReleaseFunc: func(releaseName, namespace string, log action.DebugLog) error {
-		lock.Lock()
-		defer lock.Unlock()
-		if times >= 1 {
-			return errors.New("xx")
-		}
-		times++
-		return nil
-	}}).Delete(adminCtx(), &namespace.DeleteRequest{
+	h := mock.NewMockHelmer(m)
+	h.EXPECT().Uninstall("duc", "dev-aaa", gomock.Any()).Times(1)
+	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1)
+	_, err := (&NamespaceSvc{helmer: h}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Nil(t, err)

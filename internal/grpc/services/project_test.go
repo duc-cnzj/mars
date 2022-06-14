@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"helm.sh/helm/v3/pkg/action"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -101,6 +100,8 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 	assert.Len(t, containers.Items, 1)
 	assert.Equal(t, "pod3", containers.Items[0].Pod)
 	assert.Equal(t, "c1", containers.Items[0].Container)
+	_, err = new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
+	assert.Equal(t, "record not found", err.Error())
 }
 
 func TestProjectSvc_Show(t *testing.T) {
@@ -259,19 +260,24 @@ func TestProjectSvc_Delete(t *testing.T) {
 	defer closeDB()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
-	p := &models.Project{Namespace: models.Namespace{Name: "test"}}
+	p := &models.Project{Namespace: models.Namespace{Name: "test"}, Name: "app"}
 	db.Create(p)
 	d := assertAuditLogFired(m, app)
 	assert.False(t, p.DeletedAt.Valid)
 	d.EXPECT().Dispatch(events.EventProjectDeleted, gomock.Any()).Times(1)
-	_, err := (&ProjectSvc{UninstallReleaseFunc: func(releaseName, namespace string, log action.DebugLog) error {
-		return nil
-	}}).Delete(adminCtx(), &project.DeleteRequest{
+	h := mock.NewMockHelmer(m)
+	h.EXPECT().Uninstall("app", "test", gomock.Any()).Times(1).Return(errors.New("xxx"))
+	_, err := (&ProjectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
 		ProjectId: int64(p.ID),
 	})
 	assert.Nil(t, err)
 	db.Unscoped().First(&p)
 	assert.True(t, p.DeletedAt.Valid)
+
+	_, err = (&ProjectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
+		ProjectId: int64(999999),
+	})
+	assert.Error(t, err)
 }
 
 func TestProjectSvc_Apply(t *testing.T) {
@@ -375,6 +381,15 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 		return &mockJob{msger: msger, t: t}
 	}}).Apply(req, ma)
 	assert.Equal(t, "context canceled", err.Error())
+
+	app := testutil.MockApp(m)
+	gits := mockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
+	req.GitCommit = ""
+	err = (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		return &mockJob{msger: msger, t: t}
+	}}).Apply(req, ma)
+	assert.Equal(t, "没有可用的 commit", err.Error())
 }
 
 func TestProjectSvc_ApplyDryRun(t *testing.T) {

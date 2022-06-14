@@ -24,8 +24,13 @@ func TestChangelogSvc_Show(t *testing.T) {
 	db, f := testutil.SetGormDB(ctrl, app)
 	defer f()
 
-	db.AutoMigrate(&models.Changelog{}, &models.Project{}, &models.GitProject{}, &models.Namespace{})
 	c := new(ChangelogSvc)
+	_, err := c.Show(context.TODO(), &changelog.ShowRequest{
+		ProjectId:   int64(9999),
+		OnlyChanged: false,
+	})
+	assert.Error(t, err)
+	db.AutoMigrate(&models.Changelog{}, &models.Project{}, &models.GitProject{}, &models.Namespace{})
 	p1 := &models.Project{Name: "p1", Namespace: models.Namespace{Name: "aaa"}}
 	assert.Nil(t, db.Create(p1).Error)
 	gitp1 := &models.GitProject{

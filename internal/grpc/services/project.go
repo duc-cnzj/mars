@@ -26,16 +26,16 @@ import (
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		project.RegisterProjectServer(s, &ProjectSvc{
-			NewJobFunc:           socket.NewJober,
-			UninstallReleaseFunc: utils.UninstallRelease,
+			helmer:     &socket.DefaultHelmer{},
+			NewJobFunc: socket.NewJober,
 		})
 	})
 	RegisterEndpoint(project.RegisterProjectHandlerFromEndpoint)
 }
 
 type ProjectSvc struct {
-	UninstallReleaseFunc utils.UninstallReleaseFunc
-	NewJobFunc           socket.NewJobFunc
+	helmer     contracts.Helmer
+	NewJobFunc socket.NewJobFunc
 	project.UnimplementedProjectServer
 }
 
@@ -163,7 +163,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := p.UninstallReleaseFunc(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
+	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)

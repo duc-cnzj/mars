@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -25,11 +26,11 @@ func TestFile_DeleteFile(t *testing.T) {
 	sqlDB, _, _ := sqlmock.New()
 	defer sqlDB.Close()
 	gormDB, _ := gorm.Open(mysql.New(mysql.Config{SkipInitializeWithVersion: true, Conn: sqlDB}), &gorm.Config{})
-	app.EXPECT().DBManager().Times(1).Return(dbManager)
+	app.EXPECT().DBManager().Times(2).Return(dbManager)
 	uploader := mock.NewMockUploader(ctrl)
-	app.EXPECT().Uploader().Return(uploader)
+	app.EXPECT().Uploader().Return(uploader).Times(2)
 	uploader.EXPECT().Delete(gomock.Any()).Times(1)
-	dbManager.EXPECT().DB().Return(gormDB).Times(1)
+	dbManager.EXPECT().DB().Return(gormDB).Times(2)
 	m := File{
 		ID:            1,
 		Path:          "/filepath",
@@ -44,6 +45,10 @@ func TestFile_DeleteFile(t *testing.T) {
 		DeletedAt:     gorm.DeletedAt{},
 	}
 	m.DeleteFile()
+
+	(&File{}).DeleteFile()
+	uploader.EXPECT().Delete(gomock.Any()).Times(1).Return(errors.New("xxx"))
+	(&File{Path: "xxx", ID: 9999}).DeleteFile()
 }
 
 func TestFile_ProtoTransform(t *testing.T) {

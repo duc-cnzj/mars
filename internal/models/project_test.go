@@ -371,3 +371,9 @@ func TestSortStatePod(t *testing.T) {
 	assert.Equal(t, s[3].Pod.Name, "d")
 	assert.Equal(t, s[4].Pod.Name, "b")
 }
+
+func TestProject_SetPodSelectors(t *testing.T) {
+	p := &Project{}
+	p.SetPodSelectors([]string{"app=a", "tag=1.0"})
+	assert.Equal(t, p.PodSelectors, "app=a|tag=1.0")
+}

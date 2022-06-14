@@ -119,10 +119,17 @@ func TestGetCpuAndMemoryQuantity(t *testing.T) {
 					v1.ResourceMemory: *resource.NewQuantity(5*(1000*1000), resource.DecimalSI),
 				},
 			},
+			{
+				Name: "container2",
+				Usage: v1.ResourceList{
+					v1.ResourceCPU:    *resource.NewMilliQuantity(4, resource.DecimalSI),
+					v1.ResourceMemory: *resource.NewQuantity(5*(1000*1000), resource.DecimalSI),
+				},
+			},
 		},
 	})
-	assert.Equal(t, resource.NewMilliQuantity(4, resource.DecimalSI).String(), cpu.String())
-	assert.Equal(t, resource.NewQuantity(5*(1000*1000), resource.DecimalSI).String(), memory.String())
+	assert.Equal(t, resource.NewMilliQuantity(8, resource.DecimalSI).String(), cpu.String())
+	assert.Equal(t, resource.NewQuantity(10*(1000*1000), resource.DecimalSI).String(), memory.String())
 }
 
 func Test_analyseMetricsToCpuAndMemory(t *testing.T) {
