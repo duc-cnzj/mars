@@ -53,6 +53,17 @@ func TestCache_Remember(t *testing.T) {
 	fn3()
 	fn3()
 	assert.Equal(t, 3, z)
+
+	nocacheCalled := 0
+	cache.Remember("cache-nocache", 10, func() ([]byte, error) {
+		nocacheCalled++
+		return nil, nil
+	})
+	cache.Remember("cache-nocache", 0, func() ([]byte, error) {
+		nocacheCalled++
+		return nil, nil
+	})
+	assert.Equal(t, 2, nocacheCalled)
 }
 
 type errorstore struct{}

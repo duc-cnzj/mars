@@ -35,6 +35,7 @@ import (
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		container.RegisterContainerServer(s, &Container{
+			Steamer:           &DefaultStreamer{},
 			CopyFileToPodFunc: utils.CopyFileToPod,
 			Executor:          &DefaultRemoteExecutor{},
 			ExecBuilder:       &DefaultExecBuilder{},
@@ -44,6 +45,7 @@ func init() {
 }
 
 type Container struct {
+	Steamer           Steamer
 	ExecBuilder       ExecRequestBuilder
 	Executor          RemoteExecutor
 	CopyFileToPodFunc utils.CopyFileToPodFunc
@@ -319,18 +321,29 @@ func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequ
 	}, nil
 }
 
+type Steamer interface {
+	Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error)
+}
+
+type DefaultStreamer struct{}
+
+func (d *DefaultStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
+	var limit int64 = 2000
+	logs := app.K8sClientSet().CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{
+		Follow:    true,
+		Container: container,
+		TailLines: &limit,
+	})
+
+	return logs.Stream(ctx)
+}
+
 func (c *Container) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
 		return status.Errorf(codes.NotFound, reason)
 	}
 
-	var limit int64 = 2000
-	logs := app.K8sClientSet().CoreV1().Pods(request.Namespace).GetLogs(request.Pod, &v1.PodLogOptions{
-		Follow:    true,
-		Container: request.Container,
-		TailLines: &limit,
-	})
-	stream, err := logs.Stream(context.TODO())
+	stream, err := c.Steamer.Stream(context.TODO(), request.Namespace, request.Pod, request.Container)
 	if err != nil {
 		return err
 	}

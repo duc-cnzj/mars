@@ -337,6 +337,24 @@ func TestContainer_Exec_Error(t *testing.T) {
 			Message: "aaa",
 		},
 	}).String(), result[0].String())
+
+	err = (&Container{
+		Executor: &fakeRemoteExecutor{execErr: nil, funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
+			stdout.Write([]byte("aaa"))
+		}},
+		ExecBuilder: &fakeExecRequestBuilder{},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			return errors.New("xxx")
+		},
+		ctx: context.TODO(),
+	})
+	assert.Equal(t, "xxx", err.Error())
 }
 
 func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
@@ -457,11 +475,50 @@ func (e *streamLogServer) Send(res *container.LogResponse) error {
 	return e.send(res)
 }
 
+type errorStreamer struct{}
+
+func (e *errorStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
+	return nil, errors.New("xxx")
+}
+
+type streamReadClose struct {
+	times  int
+	closed bool
+}
+
+func (s *streamReadClose) Read(p []byte) (n int, err error) {
+	if s.times >= 1 {
+		return 0, errors.New("xxx")
+	}
+
+	s.times++
+	bytes := []byte(`aaa
+bbb
+ccc
+`)
+	copy(p, bytes)
+	return len(bytes), nil
+}
+
+func (s *streamReadClose) Close() error {
+	s.closed = true
+	return nil
+}
+
+type myStreamer struct {
+	s io.ReadCloser
+}
+
+func (e *myStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
+	e.s = &streamReadClose{}
+	return e.s, nil
+}
+
 func TestContainer_StreamContainerLog(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	app.EXPECT().Done().Return(nil)
+	app.EXPECT().Done().Return(nil).Times(1)
 
 	fk := fake.NewSimpleClientset(
 		&v1.Pod{
@@ -478,16 +535,24 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		Client: fk,
 	})
 
-	err := new(Container).StreamContainerLog(&container.LogRequest{
+	err := (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "naas",
 		Pod:       "poaaa",
 		Container: "app",
 	}, nil)
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
+
+	err = (&Container{Steamer: &errorStreamer{}}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, nil)
+	assert.Equal(t, "xxx", err.Error())
+
 	var mu sync.Mutex
 	var result []*container.LogResponse
-	err = new(Container).StreamContainerLog(&container.LogRequest{
+	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -501,6 +566,118 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		ctx: context.TODO(),
 	})
 	assert.Nil(t, err)
+}
+
+func TestContainer_StreamContainerLog_AppDone(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	done := make(chan struct{})
+	close(done)
+	app.EXPECT().Done().Return(done).AnyTimes()
+
+	ms := &myStreamer{}
+	err := (&Container{Steamer: ms}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Equal(t, "server shutdown", err.Error())
+	assert.True(t, ms.s.(*streamReadClose).closed)
+}
+
+func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+
+	fk := fake.NewSimpleClientset(
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pod1",
+				Namespace: "duc",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		},
+	)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+
+	app.EXPECT().Done().Return(nil).AnyTimes()
+
+	var mu sync.Mutex
+	var result []*container.LogResponse
+	ms := &myStreamer{}
+	err := (&Container{Steamer: ms}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+	assert.Len(t, result, 3)
+	assert.True(t, ms.s.(*streamReadClose).closed)
+
+	ms2 := &myStreamer{}
+	err = (&Container{Steamer: ms2}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			return errors.New("xxx")
+		},
+		ctx: context.TODO(),
+	})
+	assert.Equal(t, "xxx", err.Error())
+	assert.True(t, ms2.s.(*streamReadClose).closed)
+
+	ms3 := &myStreamer{}
+	c, cn := context.WithCancel(context.TODO())
+	cn()
+	err = (&Container{Steamer: ms3}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			return nil
+		},
+		ctx: c,
+	})
+	assert.Equal(t, "context canceled", err.Error())
+	assert.True(t, ms3.s.(*streamReadClose).closed)
 }
 
 type streamCopyToPodServer struct {

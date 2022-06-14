@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/namespace"
@@ -163,7 +165,15 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: clientset}).AnyTimes()
 
 	d.EXPECT().Dispatch(events.EventNamespaceDeleted, gomock.Any()).Times(1)
+	lock := sync.Mutex{}
+	times := 0
 	_, err := (&NamespaceSvc{UninstallReleaseFunc: func(releaseName, namespace string, log action.DebugLog) error {
+		lock.Lock()
+		defer lock.Unlock()
+		if times >= 1 {
+			return errors.New("xx")
+		}
+		times++
 		return nil
 	}}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),

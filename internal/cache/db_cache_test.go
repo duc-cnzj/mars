@@ -64,6 +64,21 @@ func TestDBCache_Remember(t *testing.T) {
 		return nil, errors.New("aaa")
 	})
 	assert.Equal(t, "aaa", err.Error())
+
+	nocacheCalled := 0
+	_, err = NewDBCache(app).Remember("no-cache-0-second", 10, func() ([]byte, error) {
+		nocacheCalled++
+		return nil, nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, nocacheCalled)
+
+	_, err = NewDBCache(app).Remember("no-cache-0-second", 0, func() ([]byte, error) {
+		nocacheCalled++
+		return nil, nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, nocacheCalled)
 }
 
 func TestNewDBCache(t *testing.T) {

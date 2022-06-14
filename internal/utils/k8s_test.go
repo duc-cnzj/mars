@@ -90,6 +90,43 @@ func TestCreateDockerSecret(t *testing.T) {
 	}, secret)
 }
 
+func TestCreateDockerSecret_EmptyServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	fk := fake.NewSimpleClientset()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client: fk,
+	})
+	secret, _ := CreateDockerSecret("default", "name", "pwd", "1@q.c", "")
+	dockercfgAuth := DockerConfigEntry{
+		Username: "name",
+		Password: "pwd",
+		Email:    "1@q.c",
+		Auth:     base64.StdEncoding.EncodeToString([]byte("name:pwd")),
+	}
+
+	dockerCfgJSON := DockerConfigJSON{
+		Auths: map[string]DockerConfigEntry{"https://index.docker.io/v1/": dockercfgAuth},
+	}
+
+	marshal, _ := json.Marshal(dockerCfgJSON)
+	assert.Equal(t, &corev1.Secret{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Namespace:    "default",
+			GenerateName: "mars-",
+		},
+		Data: map[string][]byte{
+			".dockerconfigjson": marshal,
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
+	}, secret)
+}
+
 func TestIsPodRunning(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -145,6 +182,9 @@ func TestIsPodRunning(t *testing.T) {
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client: fk,
 	})
+	_, e := IsPodRunning("duc", "pod_not_exists")
+	assert.Equal(t, "pods \"pod_not_exists\" not found", e)
+
 	running, _ := IsPodRunning("duc", "pod1")
 	assert.True(t, running)
 	running, r := IsPodRunning("duc", "pod2")
@@ -358,6 +398,12 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 					Port:     80,
 					NodePort: 30004,
 				},
+				{
+					Name:     "xxxx",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30005,
+				},
 			},
 		},
 	}
@@ -387,8 +433,10 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 	mapping := GetNodePortMappingByProjects(ns.Name, ns.Projects...)
 	httpCount := 0
 	grpcCount := 0
+	total := 0
 	for _, endpoints := range mapping {
 		for _, endpoint := range endpoints {
+			total++
 			if strings.HasPrefix(endpoint.Url, "http") {
 				httpCount++
 			}
@@ -400,6 +448,7 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 	}
 	assert.Equal(t, 4, httpCount)
 	assert.Equal(t, 1, grpcCount)
+	assert.Equal(t, 6, total)
 }
 
 func TestFilterK8sTypeFromManifest(t *testing.T) {

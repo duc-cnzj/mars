@@ -57,15 +57,22 @@ func TestHumanDuration(t *testing.T) {
 		d    time.Duration
 		want string
 	}{
+		{d: -1 * time.Second, want: "0s"},
+		{d: -100 * time.Second, want: "<invalid>"},
 		{d: time.Second, want: "1s"},
 		{d: 70 * time.Second, want: "70s"},
 		{d: 190 * time.Second, want: "3m10s"},
+		{d: 9 * time.Minute, want: "9m"},
 		{d: 70 * time.Minute, want: "70m"},
+		{d: 7 * time.Hour, want: "7h"},
+		{d: 7*time.Hour + 10*time.Minute, want: "7h10m"},
 		{d: 47 * time.Hour, want: "47h"},
+		{d: 7 * 24 * time.Hour, want: "7d"},
 		{d: 49 * time.Hour, want: "2d1h"},
 		{d: (8*24 + 2) * time.Hour, want: "8d"},
 		{d: (367 * 24) * time.Hour, want: "367d"},
 		{d: (365*2*24 + 25) * time.Hour, want: "2y1d"},
+		{d: (365*7*24 + 2) * time.Hour, want: "7y"},
 		{d: (365*8*24 + 2) * time.Hour, want: "8y"},
 	}
 	for _, tt := range tests {
