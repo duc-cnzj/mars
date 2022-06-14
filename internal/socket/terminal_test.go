@@ -169,9 +169,7 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
-	p.closeLock.Lock()
-	p.isClosed = true
-	p.closeLock.Unlock()
+	p.closeable.Close()
 	n, err = p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 0, n)

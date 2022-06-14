@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -283,8 +282,7 @@ func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s st
 }
 
 type messager struct {
-	mu        sync.RWMutex
-	isStopped bool
+	closeable utils.Closeable
 	stoperr   error
 
 	sendPercent bool
@@ -362,15 +360,11 @@ func (m *messager) send(res *project.ApplyResponse) {
 }
 
 func (m *messager) Stop(err error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.isStopped = true
-	m.stoperr = err
+	if m.closeable.Close() {
+		m.stoperr = err
+	}
 }
 
 func (m *messager) IsStopped() bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	return m.isStopped
+	return m.closeable.IsClosed()
 }

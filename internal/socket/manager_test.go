@@ -357,8 +357,7 @@ func TestJober_HandleMessage_DoneClosed(t *testing.T) {
 		done:     done,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	j.HandleMessage()
@@ -377,8 +376,7 @@ func TestJober_HandleMessage_AppDoneClosed(t *testing.T) {
 		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	j.HandleMessage()
@@ -395,8 +393,7 @@ func TestJober_HandleMessage_TextMessage(t *testing.T) {
 		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	go func() {
@@ -421,8 +418,7 @@ func TestJober_HandleMessage_ErrorMessage(t *testing.T) {
 		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	go func() {
@@ -447,8 +443,7 @@ func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
 		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	go func() {
@@ -489,8 +484,7 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
-			closed: false,
-			ch:     ch,
+			ch: ch,
 		},
 	}
 	go func() {
@@ -1203,8 +1197,7 @@ func TestReleaseInstallerLoader_Load(t *testing.T) {
 func TestSafeWriteMessageCh_Chan(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
 	sc := &SafeWriteMessageCh{
-		closed: false,
-		ch:     ch,
+		ch: ch,
 	}
 	fn := func() <-chan contracts.MessageItem {
 		return ch
@@ -1215,8 +1208,7 @@ func TestSafeWriteMessageCh_Chan(t *testing.T) {
 func TestSafeWriteMessageCh_Closed(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
 	sc := &SafeWriteMessageCh{
-		closed: false,
-		ch:     ch,
+		ch: ch,
 	}
 	sc.Closed()
 	_, ok := <-ch
@@ -1226,8 +1218,7 @@ func TestSafeWriteMessageCh_Closed(t *testing.T) {
 func TestSafeWriteMessageCh_Send(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
 	sc := &SafeWriteMessageCh{
-		closed: false,
-		ch:     ch,
+		ch: ch,
 	}
 	wg := sync.WaitGroup{}
 	for i := 0; i < 2; i++ {

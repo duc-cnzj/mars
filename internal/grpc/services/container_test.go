@@ -875,13 +875,6 @@ func TestFindDefaultContainer(t *testing.T) {
 	assert.Equal(t, "", defaultContainer)
 }
 
-func Test_closeable_IsClosed(t *testing.T) {
-	c := &closeable{}
-	assert.False(t, c.IsClosed())
-	c.Close()
-	assert.True(t, c.IsClosed())
-}
-
 func Test_execWriter_IsClosed(t *testing.T) {
 	w := newExecWriter()
 	assert.False(t, w.IsClosed())

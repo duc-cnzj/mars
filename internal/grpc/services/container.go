@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -398,51 +397,31 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 	}
 }
 
-type closeable struct {
-	sync.RWMutex
-	closed bool
-}
-
-func (c *closeable) IsClosed() bool {
-	c.RLock()
-	defer c.RUnlock()
-	return c.closed
-}
-
-func (c *closeable) Close() {
-	c.Lock()
-	defer c.Unlock()
-	c.closed = true
-}
-
 type execWriter struct {
-	state *closeable
-	ch    chan string
+	closeable utils.Closeable
+	ch        chan string
 }
 
 func (rw *execWriter) IsClosed() bool {
-	return rw.state.IsClosed()
+	return rw.closeable.IsClosed()
 }
 
 func (rw *execWriter) Close() error {
-	if rw.IsClosed() {
-		return nil
+	if rw.closeable.Close() {
+		close(rw.ch)
 	}
-	rw.state.Close()
-	close(rw.ch)
 
 	return nil
 }
 
 func newExecWriter() *execWriter {
 	return &execWriter{
-		state: &closeable{},
-		ch:    make(chan string, 100),
+		ch: make(chan string, 100),
 	}
 }
 
 func (rw *execWriter) Write(p []byte) (int, error) {
-	if rw.state.IsClosed() {
+	if rw.closeable.IsClosed() {
 		mlog.Warning("execWriter close")
 		return 0, errors.New("closed")
 	}

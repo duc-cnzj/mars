@@ -50,8 +50,7 @@ type MyPtyHandler struct {
 
 	shellCh chan *websocket_pb.TerminalMessage
 
-	closeLock sync.Mutex
-	isClosed  bool
+	closeable utils.Closeable
 }
 
 func (t *MyPtyHandler) SetShell(shell string) {
@@ -67,13 +66,9 @@ func (t *MyPtyHandler) Recorder() RecorderInterface {
 }
 
 func (t *MyPtyHandler) Close(reason string) {
-	t.closeLock.Lock()
-	if t.isClosed {
-		t.closeLock.Unlock()
+	if !t.closeable.Close() {
 		return
 	}
-	t.isClosed = true
-	t.closeLock.Unlock()
 
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
@@ -140,9 +135,7 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 		return 0, fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
-	t.closeLock.Lock()
-	defer t.closeLock.Unlock()
-	if t.isClosed {
+	if t.closeable.IsClosed() {
 		return 0, nil
 	}
 	t.recorder.Write(string(p))

@@ -1,18 +1,14 @@
 package socket
 
 import (
-	"sync"
-
 	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars/internal/contracts"
-
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/utils"
 )
 
 type messager struct {
-	mu        sync.RWMutex
-	isStopped bool
+	closeable utils.Closeable
 	stoperr   error
 
 	conn     *WsConn
@@ -25,17 +21,13 @@ func NewMessageSender(conn *WsConn, slugName string, wsType websocket_pb.Type) c
 }
 
 func (ms *messager) Stop(err error) {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
-	ms.stoperr = err
-	ms.isStopped = true
+	if ms.closeable.Close() {
+		ms.stoperr = err
+	}
 }
 
 func (ms *messager) IsStopped() bool {
-	ms.mu.RLock()
-	defer ms.mu.RUnlock()
-
-	return ms.isStopped
+	return ms.closeable.IsClosed()
 }
 
 func (ms *messager) SendDeployedResult(result websocket_pb.ResultType, msg string, p *types.ProjectModel) {

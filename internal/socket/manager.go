@@ -72,25 +72,22 @@ const (
 type WsResponse = websocket_pb.WsMetadataResponse
 
 type SafeWriteMessageCh struct {
-	sync.Mutex
-	closed bool
-	ch     chan contracts.MessageItem
+	closeable utils.Closeable
+	ch        chan contracts.MessageItem
 }
 
 func (s *SafeWriteMessageCh) Closed() {
 	mlog.Debug("SafeWriteMessageCh closed")
-	s.Lock()
-	defer s.Unlock()
-	s.closed = true
-	close(s.ch)
+	if s.closeable.Close() {
+		close(s.ch)
+	}
 }
+
 func (s *SafeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 	return s.ch
 }
 func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
-	s.Lock()
-	defer s.Unlock()
-	if s.closed {
+	if s.closeable.IsClosed() {
 		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
 	}
