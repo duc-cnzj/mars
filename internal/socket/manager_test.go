@@ -1034,7 +1034,7 @@ func TestJober_Validate(t *testing.T) {
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, "app-git", job3.input.Name)
 
-	h.EXPECT().ReleaseStatus(gomock.Any(), gomock.Any()).Return(types.Deploy_StatusUnknown).AnyTimes()
+	h.EXPECT().ReleaseStatus("app-git", "ns").Return(types.Deploy_StatusUnknown).AnyTimes()
 	job3.CallDestroyFuncs()
 	assert.Equal(t, uint8(types.Deploy_StatusUnknown), job3.project.DeployStatus)
 

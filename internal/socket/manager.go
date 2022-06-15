@@ -618,7 +618,7 @@ func (j *Jober) Validate() error {
 	j.AddDestroyFunc(func() {
 		mlog.Debug("update DeployStatus in DestroyFunc")
 		if !j.IsDryRun() {
-			app.DB().Model(&j.project).Update("deploy_status", j.helmer.ReleaseStatus(j.Namespace().Name, j.project.Name))
+			app.DB().Model(&j.project).Update("deploy_status", j.helmer.ReleaseStatus(j.project.Name, j.Namespace().Name))
 		}
 	})
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()

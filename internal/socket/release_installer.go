@@ -36,8 +36,8 @@ func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log action.Debu
 	return utils.UninstallRelease(releaseName, namespace, log)
 }
 
-func (d *DefaultHelmer) ReleaseStatus(namespace, releaseName string) types.Deploy {
-	return utils.ReleaseStatus(namespace, releaseName)
+func (d *DefaultHelmer) ReleaseStatus(releaseName, namespace string) types.Deploy {
+	return utils.ReleaseStatus(releaseName, namespace)
 }
 
 type releaseInstaller struct {

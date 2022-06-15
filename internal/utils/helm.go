@@ -250,7 +250,7 @@ var (
 	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
-func ReleaseStatus(namespace, releaseName string) types.Deploy {
+func ReleaseStatus(releaseName, namespace string) types.Deploy {
 	actionConfig, _, err := getActionConfigAndSettings(namespace, mlog.Debugf)
 	if err != nil {
 		return types.Deploy_StatusUnknown
