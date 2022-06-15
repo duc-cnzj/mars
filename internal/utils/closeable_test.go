@@ -15,7 +15,24 @@ func Test_Closeable_IsClosed(t *testing.T) {
 	assert.False(t, c.Close())
 }
 
-func Test_Closeable_race_test(t *testing.T) {
+func Test_Closeable_Closed_Race(t *testing.T) {
+	c := &Closeable{}
+	wg := sync.WaitGroup{}
+	a := 0
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if c.Close() {
+				a++
+			}
+		}()
+	}
+	wg.Wait()
+	assert.Equal(t, 1, a)
+}
+
+func Test_Closeable_Race(t *testing.T) {
 	c := &Closeable{}
 	wg := sync.WaitGroup{}
 	for i := 0; i < 100; i++ {

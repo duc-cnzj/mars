@@ -16,6 +16,6 @@ func (c *Closeable) Close() bool {
 	if c.IsClosed() {
 		return false
 	}
-	atomic.StoreInt64(&c.closed, closed)
-	return true
+
+	return atomic.SwapInt64(&c.closed, closed) != closed
 }
