@@ -103,6 +103,9 @@ func TestMetricsSvc_CpuMemoryInProject(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	_, err := new(MetricsSvc).CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{ProjectId: int64(999999)})
+	assert.Equal(t, "record not found", err.Error())
+
 	p := &models.Project{
 		Name:         "p",
 		PodSelectors: "app=test",
@@ -252,7 +255,6 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
-		t.Log(err)
 		assert.Equal(t, "context canceled", err.Error())
 	}()
 	<-time.After(1300 * time.Millisecond)
@@ -267,6 +269,36 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 		assert.Equal(t, "4 m", response.HumanizeCpu)
 		assert.Equal(t, "5.0 MB", response.HumanizeMemory)
 	}
+}
+
+func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	instance.SetInstance(app)
+	fk := fake.NewSimpleClientset(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "pod",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodFailed,
+		},
+	})
+	mk := &fake2.Clientset{}
+	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, errors.New("xxx")
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:        fk,
+		MetricsClient: mk,
+	}).AnyTimes()
+	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		Namespace: "ns",
+		Pod:       "pod",
+	}, nil)
+	assert.Equal(t, "xxx", err.Error())
 }
 
 func TestMetricsSvc_StreamTopPod2(t *testing.T) {

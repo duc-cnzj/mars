@@ -156,10 +156,14 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	})
 	assert.Error(t, err)
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})
-	_, err = new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
-		NamespaceId: 123,
+
+	p1 := &models.Project{Namespace: models.Namespace{Name: "app-ns"}, Name: "app"}
+	assert.Nil(t, db.Create(p1).Error)
+	assert.Nil(t, db.Where("`id` = ?", p1.Namespace.ID).Delete(&models.Namespace{}).Error)
+	_, err = new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
+		ProjectId: int64(p1.ID),
 	})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	svc1 := corev1.Service{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Service",

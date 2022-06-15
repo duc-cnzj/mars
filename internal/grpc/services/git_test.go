@@ -44,7 +44,7 @@ func TestGitSvc_All(t *testing.T) {
 	p2.EXPECT().GetWebURL().Return("weburl2")
 	p2.EXPECT().GetAvatarURL().Return("avatar2")
 	p2.EXPECT().GetDescription().Return("desc2")
-	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil)
+	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil).Times(1)
 
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
@@ -63,6 +63,10 @@ func TestGitSvc_All(t *testing.T) {
 	assert.Equal(t, int64(2), all.Items[1].Id)
 	assert.Equal(t, true, all.Items[1].Enabled)
 	assert.Equal(t, true, all.Items[1].GlobalEnabled)
+
+	gits.EXPECT().AllProjects().Return(nil, errors.New("xxx")).Times(1)
+	_, err = new(GitSvc).All(context.TODO(), &git.AllRequest{})
+	assert.Equal(t, "xxx", err.Error())
 }
 
 func TestGitSvc_BranchOptions(t *testing.T) {
@@ -74,7 +78,7 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	b1.EXPECT().GetName().Return("b1").MinTimes(2)
 	b2 := mock.NewMockBranchInterface(m)
 	b2.EXPECT().GetName().Return("b2").MinTimes(2)
-	gits.EXPECT().AllBranches("1").Return([]contracts.BranchInterface{b1, b2}, nil)
+	gits.EXPECT().AllBranches("1").Return([]contracts.BranchInterface{b1, b2}, nil).Times(1)
 	options, err := new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "1",
 		All:          true,
@@ -113,6 +117,16 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 		All:          false,
 	})
 	assert.Equal(t, "b1", options.Items[0].Branch)
+
+	gits.EXPECT().AllBranches("100").Return([]contracts.BranchInterface{b1}, nil).Times(1)
+	b1.EXPECT().IsDefault().Return(false)
+	gits.EXPECT().GetFileContentWithBranch("100", "", ".mars.yaml").Return("", errors.New("xx")).Times(1)
+	res, err := new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+		GitProjectId: "100",
+		All:          false,
+	})
+	assert.Nil(t, err)
+	assert.Len(t, res.Items, 0)
 }
 
 func TestGitSvc_Commit(t *testing.T) {
@@ -396,6 +410,13 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 		GitProjectId: "12",
 		Branch:       "dev",
 	})
+
+	gits.EXPECT().GetFileContentWithBranch("9999", "dev", ".mars.yaml").Return("", errors.New("aaa")).Times(1)
+	_, err = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+		GitProjectId: "9999",
+		Branch:       "dev",
+	})
+	assert.Equal(t, "aaa", err.Error())
 }
 
 func TestGitSvc_PipelineInfo(t *testing.T) {

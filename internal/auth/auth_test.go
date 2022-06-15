@@ -53,6 +53,8 @@ func TestAuth_VerifyToken(t *testing.T) {
 	assert.True(t, b)
 	_, b = auth.VerifyToken("bearer" + sign.Token)
 	assert.True(t, b)
+	_, b = auth.VerifyToken("")
+	assert.False(t, b)
 }
 
 func TestNewAuth(t *testing.T) {

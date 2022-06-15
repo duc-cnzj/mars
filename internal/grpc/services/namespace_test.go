@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/namespace"
@@ -165,7 +166,7 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 	d.EXPECT().Dispatch(events.EventNamespaceDeleted, gomock.Any()).Times(1)
 	h := mock.NewMockHelmer(m)
 	h.EXPECT().Uninstall("duc", "dev-aaa", gomock.Any()).Times(1)
-	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1)
+	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1).Return(errors.New("xxx"))
 	_, err := (&NamespaceSvc{helmer: h}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),
 	})

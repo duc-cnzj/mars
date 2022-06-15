@@ -697,4 +697,12 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitBranch:    "dev",
 	})
 	assert.Equal(t, "app-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
+
+	gitS.EXPECT().GetFileContentWithBranch("99999999", "dev-xxx", ".mars.yaml").Return("", errors.New("xxx"))
+	_, err = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+		Namespace:    "ns-xxx",
+		GitProjectId: 99999999,
+		GitBranch:    "dev-xxx",
+	})
+	assert.Equal(t, "xxx", err.Error())
 }

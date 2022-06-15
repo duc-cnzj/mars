@@ -293,6 +293,11 @@ func TestGitConfigSvc_Update(t *testing.T) {
 		Config:       mc,
 	})
 	assert.Equal(t, "app", update.Config.DisplayName)
+	_, err = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+		GitProjectId: 9999999,
+		Config:       mc,
+	})
+	assert.Equal(t, "record not found", err.Error())
 }
 
 func Test_getDefaultBranch(t *testing.T) {
