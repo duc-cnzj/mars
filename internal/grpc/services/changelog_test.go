@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"github.com/duc-cnzj/mars/internal/utils/date"
-	"gorm.io/gorm"
 	"testing"
 	"time"
 
@@ -12,6 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +92,6 @@ func TestChangelogSvc_Show(t *testing.T) {
 			ConfigChanged:   true,
 			ProjectID:       p1.ID,
 			GitProjectID:    gitp1.ID,
-			DeletedAt:       gorm.DeletedAt{},
 			Project:         models.Project{},
 			GitProject:      models.GitProject{},
 		},
