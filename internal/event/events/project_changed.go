@@ -21,7 +21,11 @@ func init() {
 func HandleProjectChanged(data any, e contracts.Event) error {
 	if changedData, ok := data.(*ProjectChangedData); ok {
 		last := &models.Changelog{}
-		app.DB().Where("`project_id` = ?", changedData.Project.ID).Order("`id` desc").First(&last)
+		app.DB().
+			Select("config", "id", "version", "git_project_id", "project_id", "git_commit").
+			Where("`project_id` = ?", changedData.Project.ID).
+			Order("`id` desc").
+			First(&last)
 		gp := models.GitProject{}
 		app.DB().Select("id", "git_project_id").Where("`git_project_id` = ?", changedData.Project.GitProjectId).First(&gp)
 		var (
