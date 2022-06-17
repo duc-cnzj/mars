@@ -140,6 +140,15 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-07-17-changelogs-add-more-columns",
+			Migrate: func(tx *gorm.DB) error {
+				if err := tx.AutoMigrate(&models.Changelog{}); err != nil {
+					return fmt.Errorf("[%s]: err: %v", "2022-07-17-changelogs-add-more-columns", err)
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

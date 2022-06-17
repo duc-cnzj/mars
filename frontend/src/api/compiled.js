@@ -17302,6 +17302,17 @@ export const types = $root.types = (() => {
          * @property {types.ProjectModel|null} [project] ChangelogModel project
          * @property {types.GitProjectModel|null} [git_project] ChangelogModel git_project
          * @property {string|null} [date] ChangelogModel date
+         * @property {string|null} [config_type] ChangelogModel config_type
+         * @property {string|null} [git_branch] ChangelogModel git_branch
+         * @property {string|null} [git_commit] ChangelogModel git_commit
+         * @property {string|null} [docker_image] ChangelogModel docker_image
+         * @property {string|null} [env_values] ChangelogModel env_values
+         * @property {string|null} [extra_values] ChangelogModel extra_values
+         * @property {string|null} [final_extra_values] ChangelogModel final_extra_values
+         * @property {string|null} [git_commit_web_url] ChangelogModel git_commit_web_url
+         * @property {string|null} [git_commit_title] ChangelogModel git_commit_title
+         * @property {string|null} [git_commit_author] ChangelogModel git_commit_author
+         * @property {string|null} [git_commit_date] ChangelogModel git_commit_date
          * @property {string|null} [created_at] ChangelogModel created_at
          * @property {string|null} [updated_at] ChangelogModel updated_at
          * @property {string|null} [deleted_at] ChangelogModel deleted_at
@@ -17411,6 +17422,94 @@ export const types = $root.types = (() => {
         ChangelogModel.prototype.date = "";
 
         /**
+         * ChangelogModel config_type.
+         * @member {string} config_type
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.config_type = "";
+
+        /**
+         * ChangelogModel git_branch.
+         * @member {string} git_branch
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_branch = "";
+
+        /**
+         * ChangelogModel git_commit.
+         * @member {string} git_commit
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_commit = "";
+
+        /**
+         * ChangelogModel docker_image.
+         * @member {string} docker_image
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.docker_image = "";
+
+        /**
+         * ChangelogModel env_values.
+         * @member {string} env_values
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.env_values = "";
+
+        /**
+         * ChangelogModel extra_values.
+         * @member {string} extra_values
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.extra_values = "";
+
+        /**
+         * ChangelogModel final_extra_values.
+         * @member {string} final_extra_values
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.final_extra_values = "";
+
+        /**
+         * ChangelogModel git_commit_web_url.
+         * @member {string} git_commit_web_url
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_commit_web_url = "";
+
+        /**
+         * ChangelogModel git_commit_title.
+         * @member {string} git_commit_title
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_commit_title = "";
+
+        /**
+         * ChangelogModel git_commit_author.
+         * @member {string} git_commit_author
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_commit_author = "";
+
+        /**
+         * ChangelogModel git_commit_date.
+         * @member {string} git_commit_date
+         * @memberof types.ChangelogModel
+         * @instance
+         */
+        ChangelogModel.prototype.git_commit_date = "";
+
+        /**
          * ChangelogModel created_at.
          * @member {string} created_at
          * @memberof types.ChangelogModel
@@ -17468,6 +17567,28 @@ export const types = $root.types = (() => {
                 $root.types.GitProjectModel.encode(message.git_project, writer.uint32(/* id 10, wireType 2 =*/82).fork()).ldelim();
             if (message.date != null && Object.hasOwnProperty.call(message, "date"))
                 writer.uint32(/* id 11, wireType 2 =*/90).string(message.date);
+            if (message.config_type != null && Object.hasOwnProperty.call(message, "config_type"))
+                writer.uint32(/* id 12, wireType 2 =*/98).string(message.config_type);
+            if (message.git_branch != null && Object.hasOwnProperty.call(message, "git_branch"))
+                writer.uint32(/* id 13, wireType 2 =*/106).string(message.git_branch);
+            if (message.git_commit != null && Object.hasOwnProperty.call(message, "git_commit"))
+                writer.uint32(/* id 14, wireType 2 =*/114).string(message.git_commit);
+            if (message.docker_image != null && Object.hasOwnProperty.call(message, "docker_image"))
+                writer.uint32(/* id 15, wireType 2 =*/122).string(message.docker_image);
+            if (message.env_values != null && Object.hasOwnProperty.call(message, "env_values"))
+                writer.uint32(/* id 16, wireType 2 =*/130).string(message.env_values);
+            if (message.extra_values != null && Object.hasOwnProperty.call(message, "extra_values"))
+                writer.uint32(/* id 17, wireType 2 =*/138).string(message.extra_values);
+            if (message.final_extra_values != null && Object.hasOwnProperty.call(message, "final_extra_values"))
+                writer.uint32(/* id 18, wireType 2 =*/146).string(message.final_extra_values);
+            if (message.git_commit_web_url != null && Object.hasOwnProperty.call(message, "git_commit_web_url"))
+                writer.uint32(/* id 19, wireType 2 =*/154).string(message.git_commit_web_url);
+            if (message.git_commit_title != null && Object.hasOwnProperty.call(message, "git_commit_title"))
+                writer.uint32(/* id 20, wireType 2 =*/162).string(message.git_commit_title);
+            if (message.git_commit_author != null && Object.hasOwnProperty.call(message, "git_commit_author"))
+                writer.uint32(/* id 21, wireType 2 =*/170).string(message.git_commit_author);
+            if (message.git_commit_date != null && Object.hasOwnProperty.call(message, "git_commit_date"))
+                writer.uint32(/* id 22, wireType 2 =*/178).string(message.git_commit_date);
             if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
                 writer.uint32(/* id 100, wireType 2 =*/802).string(message.created_at);
             if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
@@ -17527,6 +17648,39 @@ export const types = $root.types = (() => {
                     break;
                 case 11:
                     message.date = reader.string();
+                    break;
+                case 12:
+                    message.config_type = reader.string();
+                    break;
+                case 13:
+                    message.git_branch = reader.string();
+                    break;
+                case 14:
+                    message.git_commit = reader.string();
+                    break;
+                case 15:
+                    message.docker_image = reader.string();
+                    break;
+                case 16:
+                    message.env_values = reader.string();
+                    break;
+                case 17:
+                    message.extra_values = reader.string();
+                    break;
+                case 18:
+                    message.final_extra_values = reader.string();
+                    break;
+                case 19:
+                    message.git_commit_web_url = reader.string();
+                    break;
+                case 20:
+                    message.git_commit_title = reader.string();
+                    break;
+                case 21:
+                    message.git_commit_author = reader.string();
+                    break;
+                case 22:
+                    message.git_commit_date = reader.string();
                     break;
                 case 100:
                     message.created_at = reader.string();

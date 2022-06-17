@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useCallback, useState } from "react";
-import { Popover, Button, Collapse } from "antd";
-import { HistoryOutlined } from "@ant-design/icons";
+import { Popover, Button, Collapse, Tooltip } from "antd";
+import { HistoryOutlined, CarryOutOutlined } from "@ant-design/icons";
 import ReactDiffViewer from "react-diff-viewer";
 import { getHighlightSyntax } from "../utils/highlight";
 import { changelogs } from "../api/changelog";
@@ -65,20 +65,11 @@ const Content: React.FC<{
   onDataChange: (s: string) => void;
 }> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
   const [list, setList] = useState<pb.types.ChangelogModel[]>();
-  const [initlist, setInitList] = useState<pb.types.ChangelogModel[]>();
-  const [data, setData] = useState("");
   useEffect(() => {
     changelogs({ project_id: projectID, only_changed: true }).then((res) => {
       setList(res.data.items);
-      setInitList(res.data.items);
     });
   }, [projectID, updatedAt]);
-
-  useEffect(() => {
-    if (initlist) {
-      setList(initlist.filter((item) => item.config !== currentConfig));
-    }
-  }, [currentConfig, initlist]);
 
   const highlightSyntax = useCallback(
     (str: string) => (
@@ -99,55 +90,89 @@ const Content: React.FC<{
         pointerEvents: "auto",
       }}
     >
-      <Collapse
-        accordion
-        onChange={(k) => {
-          let l = list?.find((item) => item.version === Number(k));
-          l && setData(l.config);
-        }}
-      >
+      <Collapse accordion bordered={false}>
         {list?.map((item) => (
           <Panel
             key={item.version}
             header={
               <>
-                {item.username}: [{item.date}]: version {item.version}
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <div style={{ flexShrink: 0 }}>
+                    <span style={{ color: "red", margin: "0 5px" }}>
+                      {item.username}
+                    </span>{" "}
+                    于 <strong style={{ margin: "0 5px" }}>{item.date}</strong>{" "}
+                    更新了项目
+                  </div>
+
+                  <div
+                    style={{
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      marginLeft: 5,
+                      flexShrink: 1,
+                    }}
+                  >
+                    <Tooltip
+                      placement="top"
+                      title={
+                        <div style={{ fontSize: 12 }}>
+                          {item.git_commit_author} 提交于
+                          {item.git_commit_date}
+                        </div>
+                      }
+                    >
+                      <a href={item.git_commit_web_url} target="_blank">
+                        {item.git_commit_title}
+                      </a>
+                    </Tooltip>
+                  </div>
+                </div>
               </>
             }
           >
-            <div>
-              <ReactDiffViewer
-                disableWordDiff
-                styles={{
-                  line: { fontSize: 12 },
-                  gutter: { padding: "0 5px", minWidth: 20 },
-                  marker: { padding: "0 6px" },
-                  diffContainer: {
-                    display: "block",
-                    width: "100%",
-                    overflowX: "auto",
-                  },
-                }}
-                useDarkTheme
-                renderContent={highlightSyntax}
-                showDiffOnly
-                oldValue={currentConfig}
-                newValue={data}
-                splitView={false}
-              />
-              <div style={{ display: "flex", flexDirection: "row-reverse" }}>
-                <Button
-                  onClick={() => {
-                    onDataChange(data);
-                    setData(data);
-                  }}
-                  size="small"
-                  type="dashed"
-                  style={{ marginTop: 3 }}
-                >
-                  使用这个配置
-                </Button>
-              </div>
+            <div style={{ marginTop: 5 }}>
+              {currentConfig === item.config ? (
+                <div>和当前配置一致</div>
+              ) : (
+                <div>
+                  <ReactDiffViewer
+                    disableWordDiff
+                    styles={{
+                      line: { fontSize: 12 },
+                      gutter: { padding: "0 5px", minWidth: 20 },
+                      marker: { padding: "0 6px" },
+                      diffContainer: {
+                        display: "block",
+                        width: "100%",
+                        overflowX: "auto",
+                      },
+                    }}
+                    useDarkTheme
+                    renderContent={highlightSyntax}
+                    showDiffOnly
+                    oldValue={currentConfig}
+                    newValue={item.config}
+                    splitView={false}
+                  />
+
+                  <div
+                    style={{ display: "flex", flexDirection: "row-reverse" }}
+                  >
+                    <Button
+                      onClick={() => {
+                        onDataChange(item.config);
+                      }}
+                      size="small"
+                      type="dashed"
+                      style={{ marginTop: 3 }}
+                    >
+                      使用这个配置
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Panel>
         ))}

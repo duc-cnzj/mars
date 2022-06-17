@@ -508,8 +508,6 @@ func (j *Jober) Run() error {
 			if !j.IsDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
 					Project:  j.project,
-					Manifest: result.Manifest,
-					Config:   j.input.Config,
 					Username: j.User().Name,
 				})
 			}

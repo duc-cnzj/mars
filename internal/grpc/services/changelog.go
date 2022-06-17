@@ -33,7 +33,20 @@ func (c *ChangelogSvc) Show(ctx context.Context, request *changelog.ShowRequest)
 			}
 			return db
 		}).
-		Select("ID", "Version", "Username", "Config", "ConfigChanged", "ProjectID", "GitProjectID").
+		Select(
+			"id",
+			"version",
+			"username",
+			"config",
+			"config_changed",
+			"project_id",
+			"git_project_id",
+			"git_commit_title",
+			"git_commit_web_url",
+			"git_commit_date",
+			"git_commit_author",
+			"created_at",
+		).
 		Where("`project_id` = ?", request.ProjectId).
 		Order("`version` DESC").
 		Limit(5).

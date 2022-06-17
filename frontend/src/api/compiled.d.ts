@@ -8196,6 +8196,39 @@ export namespace types {
         /** ChangelogModel date */
         date?: (string|null);
 
+        /** ChangelogModel config_type */
+        config_type?: (string|null);
+
+        /** ChangelogModel git_branch */
+        git_branch?: (string|null);
+
+        /** ChangelogModel git_commit */
+        git_commit?: (string|null);
+
+        /** ChangelogModel docker_image */
+        docker_image?: (string|null);
+
+        /** ChangelogModel env_values */
+        env_values?: (string|null);
+
+        /** ChangelogModel extra_values */
+        extra_values?: (string|null);
+
+        /** ChangelogModel final_extra_values */
+        final_extra_values?: (string|null);
+
+        /** ChangelogModel git_commit_web_url */
+        git_commit_web_url?: (string|null);
+
+        /** ChangelogModel git_commit_title */
+        git_commit_title?: (string|null);
+
+        /** ChangelogModel git_commit_author */
+        git_commit_author?: (string|null);
+
+        /** ChangelogModel git_commit_date */
+        git_commit_date?: (string|null);
+
         /** ChangelogModel created_at */
         created_at?: (string|null);
 
@@ -8247,6 +8280,39 @@ export namespace types {
 
         /** ChangelogModel date. */
         public date: string;
+
+        /** ChangelogModel config_type. */
+        public config_type: string;
+
+        /** ChangelogModel git_branch. */
+        public git_branch: string;
+
+        /** ChangelogModel git_commit. */
+        public git_commit: string;
+
+        /** ChangelogModel docker_image. */
+        public docker_image: string;
+
+        /** ChangelogModel env_values. */
+        public env_values: string;
+
+        /** ChangelogModel extra_values. */
+        public extra_values: string;
+
+        /** ChangelogModel final_extra_values. */
+        public final_extra_values: string;
+
+        /** ChangelogModel git_commit_web_url. */
+        public git_commit_web_url: string;
+
+        /** ChangelogModel git_commit_title. */
+        public git_commit_title: string;
+
+        /** ChangelogModel git_commit_author. */
+        public git_commit_author: string;
+
+        /** ChangelogModel git_commit_date. */
+        public git_commit_date: string;
 
         /** ChangelogModel created_at. */
         public created_at: string;

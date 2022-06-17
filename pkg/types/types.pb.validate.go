@@ -657,6 +657,28 @@ func (m *ChangelogModel) validate(all bool) error {
 
 	// no validation rules for Date
 
+	// no validation rules for ConfigType
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitCommit
+
+	// no validation rules for DockerImage
+
+	// no validation rules for EnvValues
+
+	// no validation rules for ExtraValues
+
+	// no validation rules for FinalExtraValues
+
+	// no validation rules for GitCommitWebUrl
+
+	// no validation rules for GitCommitTitle
+
+	// no validation rules for GitCommitAuthor
+
+	// no validation rules for GitCommitDate
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt

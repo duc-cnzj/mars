@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"github.com/duc-cnzj/mars/internal/utils/date"
+	"gorm.io/gorm"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/changelog"
 	"github.com/duc-cnzj/mars/internal/app/instance"
@@ -41,6 +44,7 @@ func TestChangelogSvc_Show(t *testing.T) {
 		GitProjectId: 101,
 	}
 	assert.Nil(t, db.Create(gitp2).Error)
+	parse, _ := time.Parse("2006-01-02 00:00:00", "2022-06-17 00:00:00")
 	var testData = []models.Changelog{
 		{
 			Version:       1,
@@ -78,12 +82,20 @@ func TestChangelogSvc_Show(t *testing.T) {
 			GitProjectID:  gitp2.ID,
 		},
 		{
-			Version:       6,
-			Username:      "duc6",
-			Config:        "config6",
-			ConfigChanged: true,
-			ProjectID:     p1.ID,
-			GitProjectID:  gitp1.ID,
+			ID:              0,
+			Version:         6,
+			Username:        "duc6",
+			Config:          "config6",
+			GitCommitWebUrl: "url",
+			GitCommitTitle:  "title",
+			GitCommitAuthor: "duc",
+			GitCommitDate:   &parse,
+			ConfigChanged:   true,
+			ProjectID:       p1.ID,
+			GitProjectID:    gitp1.ID,
+			DeletedAt:       gorm.DeletedAt{},
+			Project:         models.Project{},
+			GitProject:      models.GitProject{},
 		},
 	}
 	for _, datum := range testData {
@@ -96,9 +108,17 @@ func TestChangelogSvc_Show(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Len(t, show.Items, 5)
+
+	assert.Equal(t, "title", show.Items[0].GitCommitTitle)
+	assert.Equal(t, date.ToHumanizeDatetimeString(&parse), show.Items[0].GitCommitDate)
+	assert.Equal(t, "url", show.Items[0].GitCommitWebUrl)
+	assert.NotEqual(t, "很久以前", show.Items[0].Date)
+	assert.Equal(t, "duc", show.Items[0].GitCommitAuthor)
+
 	assert.Equal(t, "duc6", show.Items[0].Username)
 	assert.Equal(t, "config6", show.Items[0].Config)
 	assert.Equal(t, true, show.Items[0].ConfigChanged)
+
 	assert.Equal(t, int64(gitp1.ID), show.Items[0].GitProjectId)
 	assert.Equal(t, int64(p1.ID), show.Items[0].ProjectId)
 	assert.Equal(t, int64(6), show.Items[0].Version)
