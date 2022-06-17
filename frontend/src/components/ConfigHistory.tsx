@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useCallback, useState } from "react";
 import { Popover, Button, Collapse, Tooltip } from "antd";
-import { HistoryOutlined, CarryOutOutlined } from "@ant-design/icons";
+import { HistoryOutlined } from "@ant-design/icons";
 import ReactDiffViewer from "react-diff-viewer";
 import { getHighlightSyntax } from "../utils/highlight";
 import { changelogs } from "../api/changelog";
