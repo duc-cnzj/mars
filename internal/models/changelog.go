@@ -12,7 +12,7 @@ import (
 type Changelog struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Version  int64  `json:"version" gorm:"not null;default:1;"`
+	Version  int    `json:"version" gorm:"not null;default:1;type:integer;"`
 	Username string `json:"username" gorm:"size:100;not null;comment:修改人"`
 	Manifest string `json:"manifest" gorm:"type:longtext;"`
 	Config   string `json:"config" gorm:"type:text;commit:用户提交的配置"`

@@ -30,7 +30,7 @@ func HandleProjectChanged(data any, e contracts.Event) error {
 		app.DB().Select("id", "git_project_id").Where("`git_project_id` = ?", changedData.Project.GitProjectId).First(&gp)
 		var (
 			configChanged bool
-			version       int64 = 1
+			version       int = 1
 		)
 		if last != nil {
 			if last.Config != changedData.Project.Config || last.GitCommit != changedData.Project.GitCommit {

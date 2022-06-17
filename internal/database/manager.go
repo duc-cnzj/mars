@@ -149,6 +149,15 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-07-17-changelogs-version-tinyint-to-int",
+			Migrate: func(tx *gorm.DB) error {
+				if err := tx.Migrator().AlterColumn(&models.Changelog{}, "Version"); err != nil {
+					return fmt.Errorf("[%s]: err: %v", "2022-07-17-changelogs-version-tinyint-to-int", err)
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {
