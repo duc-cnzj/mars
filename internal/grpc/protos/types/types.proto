@@ -60,6 +60,18 @@ message ChangelogModel {
   GitProjectModel git_project = 10;
   string date = 11;
 
+  string config_type = 12;
+  string git_branch = 13;
+  string git_commit = 14;
+  string docker_image = 15;
+  string env_values = 16;
+  string extra_values = 17;
+  string final_extra_values = 18;
+  string git_commit_web_url = 19;
+  string git_commit_title = 20;
+  string git_commit_author = 21;
+  string git_commit_date = 22;
+
   string created_at = 100;
   string updated_at = 101;
   string deleted_at = 102;

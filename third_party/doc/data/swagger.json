@@ -2628,6 +2628,9 @@
         "config_changed": {
           "type": "boolean"
         },
+        "config_type": {
+          "type": "string"
+        },
         "created_at": {
           "type": "string"
         },
@@ -2635,6 +2638,36 @@
           "type": "string"
         },
         "deleted_at": {
+          "type": "string"
+        },
+        "docker_image": {
+          "type": "string"
+        },
+        "env_values": {
+          "type": "string"
+        },
+        "extra_values": {
+          "type": "string"
+        },
+        "final_extra_values": {
+          "type": "string"
+        },
+        "git_branch": {
+          "type": "string"
+        },
+        "git_commit": {
+          "type": "string"
+        },
+        "git_commit_author": {
+          "type": "string"
+        },
+        "git_commit_date": {
+          "type": "string"
+        },
+        "git_commit_title": {
+          "type": "string"
+        },
+        "git_commit_web_url": {
           "type": "string"
         },
         "git_project": {
