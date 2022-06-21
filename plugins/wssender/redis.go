@@ -122,7 +122,7 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 				case plugins.ToAll:
 					p.ch <- message.Data
 				case plugins.ToOthers:
-					if message.To == plugins.ToOthers && message.ID != p.id {
+					if message.ID != p.id {
 						p.ch <- message.Data
 					}
 				}
