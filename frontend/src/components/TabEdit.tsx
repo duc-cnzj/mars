@@ -130,10 +130,10 @@ const ModalSub: React.FC<{
     }
   };
 
-  const resetTimeCost = useCallback(()=>{
-    setStart(false)
-    setStartAt(0)
-  },[])
+  const resetTimeCost = useCallback(() => {
+    setStart(false);
+    setStartAt(0);
+  }, []);
 
   const onCancel = useCallback(() => {
     if (!wsReady) {
@@ -170,10 +170,10 @@ const ModalSub: React.FC<{
   // 更新成功，触发 onSuccess
   useEffect(() => {
     if (deployStatus !== DeployStatusEnum.DeployUnknown) {
-      resetTimeCost()
+      resetTimeCost();
     }
     if (deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
-      resetTimeCost()
+      resetTimeCost();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setShowLog(false);
       onSuccess();
@@ -182,7 +182,7 @@ const ModalSub: React.FC<{
 
   useEffect(() => {
     if (!wsReady) {
-      resetTimeCost()
+      resetTimeCost();
       dispatch(setCreateProjectLoading(slug, false));
     }
   }, [wsReady, dispatch, slug, resetTimeCost]);
@@ -263,16 +263,19 @@ const ModalSub: React.FC<{
                   {showLog ? "隐藏" : "查看"}日志
                 </Button>
               )}
-              <ConfigHistory
-                onDataChange={(s: string) => {
-                  form.setFieldsValue({ config: s });
-                  setData((d) => ({ ...d, config: s }));
-                }}
-                projectID={detail.id}
-                configType={detail.config_type}
-                currentConfig={data.config}
-                updatedAt={detail.updated_at}
-              />
+
+              {!isLoading && (
+                <ConfigHistory
+                  onDataChange={(s: string) => {
+                    form.setFieldsValue({ config: s });
+                    setData((d) => ({ ...d, config: s }));
+                  }}
+                  projectID={detail.id}
+                  configType={detail.config_type}
+                  currentConfig={data.config}
+                  updatedAt={detail.updated_at}
+                />
+              )}
             </div>
             <Form.Item noStyle name={"debug"}>
               <DebugModeSwitch />
