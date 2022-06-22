@@ -8,7 +8,6 @@ import pb from "../api/compiled";
 const { Panel } = Collapse;
 
 const ConfigHistory: React.FC<{
-  show: boolean;
   projectID: number;
   configType: string;
   currentConfig: string;
@@ -20,14 +19,8 @@ const ConfigHistory: React.FC<{
   configType,
   updatedAt,
   onDataChange,
-  show,
 }) => {
   const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!show) {
-      setVisible(false);
-    }
-  }, [show]);
   return (
     <Popover
       placement="right"

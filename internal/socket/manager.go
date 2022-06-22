@@ -591,6 +591,7 @@ func (j *Jober) Validate() error {
 		Config:       j.input.Config,
 		NamespaceId:  ns.ID,
 		Atomic:       j.input.Atomic,
+		ConfigType:   marsC.ConfigFileType,
 	}
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")

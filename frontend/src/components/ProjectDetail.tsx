@@ -131,7 +131,7 @@ const ItemDetailModal: React.FC<{
                   </ErrorBoundary>
                 </Suspense>
               </TabPane>
-              <TabPane tab="配置更新" key="update-config">
+              <TabPane forceRender tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
                   {detail?.project && detail.project.namespace && (
                     <TabEdit

@@ -964,7 +964,8 @@ func TestJober_Validate(t *testing.T) {
 	ns := &models.Namespace{Name: "ns", ImagePullSecrets: "aa,bb"}
 	db.Create(ns)
 	marsC := mars.Config{
-		DisplayName: "app",
+		DisplayName:    "app",
+		ConfigFileType: "go",
 	}
 	marshal, _ := json.Marshal(&marsC)
 	gp := &models.GitProject{
@@ -1013,6 +1014,7 @@ func TestJober_Validate(t *testing.T) {
 	assert.Equal(t, "commit", p.GitCommit)
 	assert.Equal(t, "xxx", p.Config)
 	assert.Equal(t, true, p.Atomic)
+	assert.Equal(t, "go", p.ConfigType)
 	assert.Nil(t, job3.prevProject)
 
 	assert.Equal(t, "有别人也在操作这个项目，等等哦~", job3.Validate().Error())
