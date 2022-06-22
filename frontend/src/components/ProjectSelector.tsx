@@ -8,6 +8,7 @@ import { useAsyncState } from "../utils/async";
 
 const ProjectSelector: React.FC<{
   isCreate: boolean;
+  disabled?: boolean;
   value?: {
     projectName: string;
     gitProjectId: string;
@@ -21,7 +22,7 @@ const ProjectSelector: React.FC<{
     gitBranch: string;
     gitCommit: string;
   }) => void;
-}> = ({ value: v, onChange: onCh, isCreate }) => {
+}> = ({ value: v, onChange: onCh, isCreate, disabled }) => {
   const [options, setOptions] = useAsyncState<pb.git.Option[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
@@ -158,9 +159,9 @@ const ProjectSelector: React.FC<{
       title={{ style: { marginTop: 0, height: 24 } }}
     >
       <Cascader
+        disabled={disabled}
         options={options}
         style={{ width: "100%" }}
-        autoFocus
         value={value}
         allowClear={false}
         loadData={loadData}

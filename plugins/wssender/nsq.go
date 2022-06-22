@@ -154,7 +154,7 @@ func (h *handler) HandleMessage(m *gonsq.Message) error {
 	case plugins.ToAll:
 		h.msgCh <- message.Data
 	case plugins.ToOthers:
-		if message.To == plugins.ToOthers && message.ID != h.id {
+		if message.ID != h.id {
 			h.msgCh <- message.Data
 		}
 	}

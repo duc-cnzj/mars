@@ -3,7 +3,7 @@ import { Timeline } from "antd";
 import { useSelector } from "react-redux";
 import { selectList } from "../store/reducers/createProject";
 
-const LogOutput: React.FC<{ slug: string }> = ({ slug }) => {
+const LogOutput: React.FC<{ slug: string;pending?: React.ReactNode }> = ({ slug, pending }) => {
   const list = useSelector(selectList);
   const getResultColor = useCallback((data: string) => {
     switch (data) {
@@ -18,7 +18,7 @@ const LogOutput: React.FC<{ slug: string }> = ({ slug }) => {
 
   return (
     <Timeline
-      pending={list[slug]?.isLoading ? "loading..." : false}
+      pending={list[slug]?.isLoading ? (pending ? pending : "loading...") : false}
       reverse={true}
       style={{ paddingLeft: 2 }}
     >

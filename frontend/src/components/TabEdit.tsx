@@ -19,20 +19,15 @@ import {
 } from "../store/actions";
 import { toSlug } from "../utils/slug";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import {
-  ArrowLeftOutlined,
-  StopOutlined,
-  ArrowRightOutlined,
-} from "@ant-design/icons";
+import { StopOutlined } from "@ant-design/icons";
 import classNames from "classnames";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
-import TimeCost from "./TimeCost";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
+import TimeCost from "./TimeCost";
 
 interface WatchData {
-  projectName: string;
   gitProjectId: number;
   gitBranch: string;
   gitCommit: string;
@@ -46,22 +41,33 @@ const ModalSub: React.FC<{
   elements: pb.mars.Element[];
   updatedAt: any;
 }> = ({ detail, onSuccess, updatedAt, namespaceId, elements }) => {
-  let id = detail.id;
   const ws = useWs();
   const wsReady = useWsReady();
   const [form] = Form.useForm();
-  const [editVisible, setEditVisible] = useState<boolean>(true);
-  const [timelineVisible, setTimelineVisible] = useState<boolean>(false);
   const list = useSelector(selectList);
   const dispatch = useDispatch();
+
+  let slug = useMemo(
+    () => toSlug(namespaceId, detail.name),
+    [namespaceId, detail.name]
+  );
+  const isLoading = useMemo(() => list[slug]?.isLoading ?? false, [list, slug]);
+  const deployStatus = useMemo(() => list[slug]?.deployStatus, [list, slug]);
+  const processPercent = useMemo(
+    () => list[slug]?.processPercent,
+    [list, slug]
+  );
+
+  const [start, setStart] = useState(false);
+  const [startAt, setStartAt] = useState(0);
+  const [showLog, setShowLog] = useState(false);
+
   const [data, setData] = useState<WatchData>({
-    projectName: detail.name,
     gitProjectId: Number(detail.git_project_id),
     gitBranch: detail.git_branch,
     gitCommit: detail.git_commit,
     config: detail.config,
   });
-  const [start, setStart] = useState(false);
 
   const formInitData = useMemo(
     () => ({
@@ -83,46 +89,33 @@ const ModalSub: React.FC<{
     [detail]
   );
 
-  let slug = useMemo(
-    () => toSlug(namespaceId || 0, detail.name),
-    [namespaceId, detail.name]
-  );
-
   const onChange = useCallback(
-    (v: {
-      projectName: string;
-      gitProjectId: number;
-      gitBranch: string;
-      gitCommit: string;
-    }) => {
+    (v) => {
       setData((d) => ({ ...d, ...v }));
       form.setFieldsValue({ selectors: v });
     },
     [form]
   );
   const updateDeploy = (values: any) => {
+    console.log(values);
+    if (!wsReady) {
+      message.error("连接断开了");
+      return;
+    }
     if (values.extra_values) {
       values.extra_values = values.extra_values.map((i: any) => ({
         ...i,
         value: String(i.value),
       }));
     }
-    if (!wsReady) {
-      message.error("连接断开了");
-      return;
-    }
-    if (data.gitCommit && data.gitBranch) {
-      setStart(true);
-      setEditVisible(false);
-      setTimelineVisible(true);
-
+    if (values.selectors.gitCommit && values.selectors.gitBranch) {
       let s = pb.websocket.UpdateProjectInput.encode({
         type: pb.websocket.Type.UpdateProject,
 
         extra_values: values.extra_values,
-        project_id: Number(id),
-        git_branch: data.gitBranch,
-        git_commit: data.gitCommit,
+        project_id: Number(detail.id),
+        git_branch: values.selectors.gitBranch,
+        git_commit: values.selectors.gitCommit,
         config: values.config,
         atomic: !values.debug,
       }).finish();
@@ -130,25 +123,32 @@ const ModalSub: React.FC<{
 
       dispatch(clearCreateProjectLog(slug));
       dispatch(setCreateProjectLoading(slug, true));
+      setShowLog(true);
+      setStart(true);
+      setStartAt(Date.now());
       ws?.send(s);
     }
   };
+
+  const resetTimeCost = useCallback(()=>{
+    setStart(false)
+    setStartAt(0)
+  },[])
 
   const onCancel = useCallback(() => {
     if (!wsReady) {
       message.error("连接断开了");
       return;
     }
-    if (data.gitProjectId && data.gitBranch && data.gitCommit) {
+    if (Number(namespaceId) > 0 && detail.name.length > 0) {
       let s = pb.websocket.CancelInput.encode({
         type: pb.websocket.Type.CancelProject,
         namespace_id: Number(namespaceId),
-        name: data.projectName,
+        name: detail.name,
       }).finish();
       ws?.send(s);
-      return;
     }
-  }, [data, ws, namespaceId, wsReady]);
+  }, [ws, namespaceId, wsReady, detail.name]);
 
   const highlightSyntax = useCallback(
     (str: string) => (
@@ -162,30 +162,30 @@ const ModalSub: React.FC<{
   );
 
   const onReset = useCallback(() => {
+    setShowLog(false);
     form.resetFields();
-    setData((d) => ({ ...d, ...formInitData }));
+    setData(formInitData);
   }, [form, formInitData]);
 
   // 更新成功，触发 onSuccess
   useEffect(() => {
-    if (list[slug]?.deployStatus !== DeployStatusEnum.DeployUnknown) {
-      setStart(false);
+    if (deployStatus !== DeployStatusEnum.DeployUnknown) {
+      resetTimeCost()
     }
-    if (list[slug]?.deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
-      setStart(false);
-      setTimelineVisible(false);
-      setEditVisible(true);
+    if (deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
+      resetTimeCost()
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
+      setShowLog(false);
       onSuccess();
     }
-  }, [list, dispatch, slug, onSuccess]);
+  }, [deployStatus, dispatch, slug, onSuccess, resetTimeCost]);
 
   useEffect(() => {
     if (!wsReady) {
-      setStart(false);
+      resetTimeCost()
       dispatch(setCreateProjectLoading(slug, false));
     }
-  }, [wsReady, dispatch, slug]);
+  }, [wsReady, dispatch, slug, resetTimeCost]);
 
   return (
     <div className="edit-project">
@@ -199,7 +199,6 @@ const ModalSub: React.FC<{
         onFinish={updateDeploy}
       >
         <div
-          className={classNames({ "display-none": !editVisible })}
           style={{ height: "100%", display: "flex", flexDirection: "column" }}
         >
           <PipelineInfo
@@ -208,35 +207,13 @@ const ModalSub: React.FC<{
             commit={data.gitCommit}
           />
 
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              marginBottom: 10,
-            }}
+          <Form.Item
+            name="selectors"
+            style={{ width: "100%", marginBottom: 10 }}
+            rules={[{ required: true, message: "项目必选" }]}
           >
-            {list[slug]?.output?.length > 0 && (
-              <Button
-                type="dashed"
-                style={{ marginRight: 5 }}
-                disabled={list[slug]?.isLoading}
-                onClick={() => {
-                  setEditVisible(false);
-                  setTimelineVisible(true);
-                }}
-                icon={<ArrowRightOutlined />}
-              />
-            )}
-
-            <Form.Item
-              name="selectors"
-              style={{ width: "100%", margin: 0 }}
-              rules={[{ required: true, message: "项目必选" }]}
-            >
-              <ProjectSelector isCreate={false} onChange={onChange} />
-            </Form.Item>
-          </div>
+            <ProjectSelector isCreate={false} onChange={onChange} />
+          </Form.Item>
 
           <div
             style={{
@@ -245,32 +222,48 @@ const ModalSub: React.FC<{
               alignItems: "center",
             }}
           >
-            <div
-              className={classNames("edit-project__footer", {
-                "edit-project--hidden": list[slug]?.isLoading,
-              })}
-            >
-              <span style={{ marginRight: 5 }}>编辑配置:</span>
-
-              <Button
-                size="small"
-                style={{ marginRight: 5, fontSize: 12 }}
-                disabled={list[slug]?.isLoading}
-                onClick={onReset}
-              >
-                重置
-              </Button>
+            <div className={classNames("edit-project__footer")}>
               <Button
                 htmlType="submit"
                 style={{ fontSize: 12, marginRight: 5 }}
                 size="small"
                 type="primary"
-                loading={list[slug]?.isLoading}
+                loading={isLoading}
               >
                 部署
               </Button>
+
+              <Button
+                size="small"
+                hidden={isLoading}
+                style={{ marginRight: 5, fontSize: 12 }}
+                disabled={isLoading}
+                onClick={onReset}
+              >
+                重置
+              </Button>
+              <Button
+                style={{ fontSize: 12, marginRight: 5 }}
+                size="small"
+                hidden={!isLoading}
+                danger
+                icon={<StopOutlined />}
+                type="dashed"
+                onClick={onCancel}
+              >
+                取消
+              </Button>
+              {list[slug]?.output?.length > 0 && (
+                <Button
+                  type="dashed"
+                  style={{ fontSize: 12, marginRight: 5 }}
+                  size="small"
+                  onClick={() => setShowLog((show) => !show)}
+                >
+                  {showLog ? "隐藏" : "查看"}日志
+                </Button>
+              )}
               <ConfigHistory
-                show={editVisible}
                 onDataChange={(s: string) => {
                   form.setFieldsValue({ config: s });
                   setData((d) => ({ ...d, config: s }));
@@ -286,6 +279,25 @@ const ModalSub: React.FC<{
             </Form.Item>
           </div>
           <div
+            style={{ marginTop: 10 }}
+            className={classNames({ "display-none": !showLog })}
+          >
+            <Progress
+              strokeColor={{
+                from: "#108ee9",
+                to: "#87d068",
+              }}
+              style={{ padding: "0 3px", marginBottom: 5 }}
+              percent={processPercent}
+              status="active"
+            />
+            <LogOutput
+              pending={<TimeCost start={start} startAt={startAt} />}
+              slug={slug}
+            />
+          </div>
+          <div
+            className={classNames({ "display-none": showLog })}
             style={{
               minWidth: 200,
               marginBottom: 20,
@@ -321,7 +333,7 @@ const ModalSub: React.FC<{
                       lineNumbers: true,
                     }}
                     onChange={(v) => {
-                      form.setFieldsValue(["config", v]);
+                      form.setFieldsValue({ config: v });
                       setData((d) => {
                         return { ...d, config: v };
                       });
@@ -355,65 +367,6 @@ const ModalSub: React.FC<{
               </Col>
             </Row>
           </div>
-        </div>
-        <div
-          id="preview"
-          style={{ height: "100%", overflow: "auto" }}
-          className={classNames("preview", {
-            "display-none": !timelineVisible,
-          })}
-        >
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 20 }}
-          >
-            <Button
-              type="dashed"
-              disabled={list[slug]?.isLoading}
-              onClick={() => {
-                setEditVisible(true);
-                setTimelineVisible(false);
-              }}
-              icon={<ArrowLeftOutlined />}
-            />
-            <Progress
-              strokeColor={{
-                from: "#108ee9",
-                to: "#87d068",
-              }}
-              style={{ padding: "0 10px" }}
-              percent={list[slug]?.processPercent}
-              status="active"
-            />
-          </div>
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
-          >
-            <TimeCost start={start} />
-
-            <Button
-              size="small"
-              type="primary"
-              loading={list[slug]?.isLoading}
-              htmlType="submit"
-              style={{ marginRight: 10, marginLeft: 10, fontSize: 12 }}
-            >
-              部署
-            </Button>
-            <Button
-              style={{ fontSize: 12 }}
-              size="small"
-              hidden={
-                list[slug]?.deployStatus === DeployStatusEnum.DeployCanceled
-              }
-              danger
-              icon={<StopOutlined />}
-              type="dashed"
-              onClick={onCancel}
-            >
-              取消
-            </Button>
-          </div>
-          <LogOutput slug={slug} />
         </div>
       </Form>
     </div>
