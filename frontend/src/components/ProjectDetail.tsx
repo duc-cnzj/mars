@@ -3,7 +3,6 @@ import React, {
   useCallback,
   useEffect,
   memo,
-  lazy,
   Suspense,
 } from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
