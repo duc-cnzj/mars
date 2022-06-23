@@ -116,13 +116,14 @@ func (w *WebsocketManager) TickClusterHealth() {
 	ticker := time.NewTicker(w.healthTickDuration)
 	done := app.App().Done()
 	sub := plugins.GetWsSender().New("", "")
+
 	go func() {
 		defer utils.HandlePanic("TickClusterHealth")
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				app.Cache().Remember("TickClusterHealth", int(w.healthTickDuration), func() ([]byte, error) {
+				app.Cache().Remember("TickClusterHealth", int(w.healthTickDuration.Seconds()), func() ([]byte, error) {
 					info := utils.ClusterInfo()
 					sub.ToAll(&websocket_pb.WsHandleClusterResponse{
 						Metadata: &websocket_pb.Metadata{

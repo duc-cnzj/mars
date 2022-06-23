@@ -15,11 +15,10 @@ import ErrorBoundary from "./ErrorBoundary";
 import ServiceEndpoint from "./ServiceEndpoint";
 import { useDispatch } from "react-redux";
 import pb from "../api/compiled";
-
+import TabInfo from "./TabInfo";
+import TabEdit from "./TabEdit";
+import Shell from "./TabShell";
 import TabLog from "./TabLog";
-const TabInfo = lazy(() => import("./TabInfo"));
-const TabEdit = lazy(() => import("./TabEdit"));
-const Shell = lazy(() => import("./TabShell"));
 
 const { TabPane } = Tabs;
 
@@ -43,9 +42,10 @@ const ItemDetailModal: React.FC<{
   }, [item.id, visible, namespaceId]);
 
   const onSuccess = useCallback(() => {
-    item.id && detailProject(item.id).then((res) => {
-      setDetail(res.data);
-    });
+    item.id &&
+      detailProject(item.id).then((res) => {
+        setDetail(res.data);
+      });
   }, [item.id]);
 
   const onCancel = useCallback(() => {
@@ -104,7 +104,8 @@ const ItemDetailModal: React.FC<{
           centered
           style={{ height: "100%" }}
         >
-          {(item.deploy_status === pb.types.Deploy.StatusDeployed || item.deploy_status === pb.types.Deploy.StatusDeploying) && (
+          {(item.deploy_status === pb.types.Deploy.StatusDeployed ||
+            item.deploy_status === pb.types.Deploy.StatusDeploying) && (
             <>
               <TabPane tab="容器日志" key="container-logs">
                 {detail?.project && detail.project.namespace ? (

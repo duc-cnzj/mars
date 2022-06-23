@@ -10,6 +10,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -600,6 +601,24 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	time.Sleep(2 * time.Second)
 }
 
+type noCache struct {
+	sync.Mutex
+	key     string
+	seconds int
+}
+
+func (n *noCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+	n.Lock()
+	defer n.Unlock()
+	n.key = key
+	n.seconds = seconds
+	return fn()
+}
+
+func (n *noCache) Clear(key string) error {
+	return nil
+}
+
 func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -632,6 +651,44 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 		go NewWebsocketManager(1 * time.Second).TickClusterHealth()
 	}
 	time.Sleep(2 * time.Second)
+}
+
+func TestWebsocketManager_TickClusterHealth_CheckParams(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	ch := make(chan struct{})
+	cache := &noCache{}
+	done := make(chan struct{})
+	app.EXPECT().Cache().Return(cache).AnyTimes()
+	app.EXPECT().Done().Return(ch).AnyTimes()
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		close(ch)
+		close(done)
+	}()
+
+	app.EXPECT().Config().Return(&config.Config{
+		WsSenderPlugin: config.Plugin{
+			Name: "test_ws",
+		},
+	}).AnyTimes()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(), MetricsClient: fake2.NewSimpleClientset()}).AnyTimes()
+	ps := mock.NewMockPubSub(m)
+	ps.EXPECT().ToAll(gomock.Any()).Times(1)
+
+	ws := mock.NewMockWsSender(m)
+	ws.EXPECT().New("", "").Return(ps).AnyTimes()
+	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
+	app.EXPECT().GetPluginByName("test_ws").Return(ws).AnyTimes()
+
+	NewWebsocketManager(1 * time.Second).TickClusterHealth()
+	<-done
+	cache.Lock()
+	defer cache.Unlock()
+	assert.Equal(t, "TickClusterHealth", cache.key)
+	assert.Equal(t, int(1), cache.seconds)
 }
 
 func Test_Upgrader(t *testing.T) {

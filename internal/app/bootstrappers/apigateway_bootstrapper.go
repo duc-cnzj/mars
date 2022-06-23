@@ -211,6 +211,10 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
 	open, err := os.Open(fil.Path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "file not found", http.StatusNotFound)
+			return
+		}
 		mlog.Error(err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
