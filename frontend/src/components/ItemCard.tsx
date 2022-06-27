@@ -29,10 +29,13 @@ const Item: React.FC<{
 
   return (
     <Card
+      style={{ height: "100%" }}
       title={
         <div className="title">
           <div className="title-left">
-            <Tooltip title={<span style={{fontSize: 10}}>id: {item.id}</span>}>
+            <Tooltip
+              title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
+            >
               <div
                 className="title-namespace"
                 onClick={() => copy(item.id, "已复制 id")}
