@@ -46,7 +46,9 @@ const PipelineInfo: React.FC<{
         .catch((e) => {
           setInfo(undefined);
         });
+      return;
     }
+    setInfo(undefined);
   }, [projectId, branch, commit]);
 
   return (
