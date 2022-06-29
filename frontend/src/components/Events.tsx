@@ -139,6 +139,12 @@ const EventList: React.FC = () => {
               下载文件
             </Tag>
           );
+        case pb.types.EventActionType.Login:
+          return (
+            <Tag color="#38bdf8" style={style}>
+              登录
+            </Tag>
+          );
         case pb.types.EventActionType.DryRun:
           return (
             <Tag color="#818cf8" style={style}>
@@ -232,6 +238,7 @@ const EventList: React.FC = () => {
               <Option value={pb.types.EventActionType.Shell}>执行命令</Option>
               <Option value={pb.types.EventActionType.Update}>更新</Option>
               <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
+              <Option value={pb.types.EventActionType.Login}>登录</Option>
             </Select>
           </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>

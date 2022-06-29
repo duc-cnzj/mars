@@ -7913,7 +7913,8 @@ export namespace types {
         Upload = 4,
         Download = 5,
         DryRun = 6,
-        Shell = 7
+        Shell = 7,
+        Login = 8
     }
 
     /** Properties of a Pod. */

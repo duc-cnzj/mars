@@ -335,6 +335,7 @@ type userConfig struct {
 	Commit           string              `yaml:"commit"`
 	Atomic           bool                `yaml:"atomic"`
 	WebUrl           string              `yaml:"web_url"`
+	Title            string              `yaml:"title"`
 	ExtraValues      []*types.ExtraValue `yaml:"extra_values"`
 	FinalExtraValues mergeYamlString     `yaml:"final_extra_values"`
 	EnvValues        vars                `yaml:"env_values"`
@@ -489,6 +490,7 @@ func (j *Jober) Run() error {
 				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
 				if err == nil {
 					oldConf.WebUrl = commit.GetWebURL()
+					oldConf.Title = commit.GetTitle()
 				}
 			} else {
 				if !j.IsDryRun() {
@@ -501,6 +503,7 @@ func (j *Jober) Run() error {
 				Commit:           j.project.GitCommit,
 				Atomic:           j.project.Atomic,
 				WebUrl:           j.project.GitCommitWebUrl,
+				Title:            j.project.GitCommitTitle,
 				ExtraValues:      j.input.ExtraValues,
 				FinalExtraValues: mergeYamlString(j.extraValues),
 				EnvValues:        j.vars,

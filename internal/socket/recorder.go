@@ -101,7 +101,7 @@ func (r *Recorder) Close() error {
 		var emodal = models.Event{
 			Action:   uint8(types.EventActionType_Shell),
 			Username: r.t.conn.GetUser().Name,
-			Message:  fmt.Sprintf("user exec container: '%s' namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
+			Message:  fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
 			Duration: date.HumanDuration(time.Since(r.startTime)),
 		}

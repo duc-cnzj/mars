@@ -62,7 +62,8 @@
               "Upload",
               "Download",
               "DryRun",
-              "Shell"
+              "Shell",
+              "Login"
             ],
             "default": "Unknown"
           }
@@ -134,7 +135,8 @@
         "Upload",
         "Download",
         "DryRun",
-        "Shell"
+        "Shell",
+        "Login"
       ],
       "default": "Unknown"
     },

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars-client/v4/auth"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -48,7 +50,7 @@ type IDToken interface {
 
 func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
 	if request.Username == "admin" && request.Password == a.adminPwd {
-		data, err := a.authsvc.Sign(contracts.UserInfo{
+		userinfo := contracts.UserInfo{
 			LogoutUrl: "",
 			Roles:     []string{"admin"},
 			OpenIDClaims: contracts.OpenIDClaims{
@@ -56,10 +58,13 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 				Name:  "管理员",
 				Email: "admin@mars.com",
 			},
-		})
+		}
+		data, err := a.authsvc.Sign(userinfo)
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, err.Error())
 		}
+		AuditLog(userinfo.Name, types.EventActionType_Login, fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email))
+
 		return &auth.LoginResponse{
 			Token:     data.Token,
 			ExpiresIn: data.ExpiredIn,
@@ -152,6 +157,7 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	AuditLog(userinfo.Name, types.EventActionType_Login, fmt.Sprintf("用户 '%s' email: '%s' 登录了系统", userinfo.Name, userinfo.Email))
 
 	return &auth.ExchangeResponse{
 		Token:     data.Token,

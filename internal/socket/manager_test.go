@@ -817,6 +817,7 @@ spec:
 	commit2 := mock.NewMockCommitInterface(m)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit2, nil)
 	commit2.EXPECT().GetWebURL().Return("weburl2").Times(1)
+	commit2.EXPECT().GetTitle().Return("title2").Times(1)
 
 	d := event.NewDispatcher(app)
 	d.Listen(events.EventProjectChanged, events.HandleProjectChanged)
@@ -884,6 +885,7 @@ branch: ""
 commit: ""
 atomic: false
 web_url: weburl2
+title: title2
 extra_values:
 - path: app->config
   value: xxx
@@ -899,6 +901,7 @@ branch: ""
 commit: ""
 atomic: false
 web_url: url
+title: title
 extra_values:
 - path: app->config
   value: xxx
@@ -1552,6 +1555,7 @@ branch: ""
 commit: ""
 atomic: false
 web_url: ""
+title: ""
 extra_values:
 - path: a
   value: ""

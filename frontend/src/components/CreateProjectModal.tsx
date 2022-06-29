@@ -185,6 +185,7 @@ const CreateProjectModal: React.FC<{
     }
     if (deployStatus === DeployStatusEnum.DeploySuccess) {
       resetTimeCost();
+      setData(undefined);
       setElements([]);
       form.resetFields();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));

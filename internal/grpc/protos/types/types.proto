@@ -13,6 +13,7 @@ enum EventActionType {
   Download = 5;
   DryRun = 6;
   Shell = 7;
+  Login = 8;
 }
 
 

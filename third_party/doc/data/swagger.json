@@ -435,7 +435,8 @@
               "Upload",
               "Download",
               "DryRun",
-              "Shell"
+              "Shell",
+              "Login"
             ],
             "type": "string",
             "default": "Unknown",
@@ -2724,7 +2725,8 @@
         "Upload",
         "Download",
         "DryRun",
-        "Shell"
+        "Shell",
+        "Login"
       ]
     },
     "typesEventModel": {

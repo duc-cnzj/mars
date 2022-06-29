@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
@@ -20,6 +19,8 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 )
@@ -63,12 +64,16 @@ func TestAuthSvc_Info(t *testing.T) {
 }
 
 func TestAuthSvc_Login(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
 	key, _ := rsa.GenerateKey(rand.Reader, 1024)
 	privateKey, _ := x509.MarshalPKCS8PrivateKey(key)
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
 	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
 	svc := NewAuthSvc(authSvc, nil, "admin", nil)
+	app := testutil.MockApp(m)
+	assertAuditLogFired(m, app)
 	login, err := svc.Login(context.TODO(), &auth.LoginRequest{
 		Username: "admin",
 		Password: "admin",
@@ -181,6 +186,8 @@ func TestAuthSvc_Exchange(t *testing.T) {
 		Token:     "xx",
 		ExpiredIn: 100,
 	}, nil).Times(1)
+	app := testutil.MockApp(m)
+	assertAuditLogFired(m, app)
 	exchange, err := NewAuthSvc(asvc, contracts.OidcConfig{
 		"a": {
 			Provider:           nil,

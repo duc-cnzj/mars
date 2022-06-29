@@ -108,11 +108,13 @@ func (n *NamespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 
 func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
 	var ns models.Namespace
+	var deletedProjectNames []string
 	// 删除空间前，要先删除空间下的项目
 	if app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error == nil {
 		wg := sync.WaitGroup{}
 		wg.Add(len(ns.Projects))
 		for _, project := range ns.Projects {
+			deletedProjectNames = append(deletedProjectNames, project.Name)
 			go func(releaseName, namespace string) {
 				defer wg.Done()
 				defer utils.HandlePanic("NamespaceSvc.Delete")
@@ -154,7 +156,7 @@ loop:
 
 	app.Event().Dispatch(events.EventNamespaceDeleted, events.NamespaceDeletedData{NsModel: &ns})
 
-	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete, fmt.Sprintf("删除项目空间: id: %d %s", ns.ID, ns.Name))
+	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete, fmt.Sprintf("删除项目空间: id: '%d' '%s', 删除的项目有: '%s'", ns.ID, ns.Name, strings.Join(deletedProjectNames, ", ")))
 
 	return &namespace.DeleteResponse{}, nil
 }
