@@ -63,7 +63,7 @@ func Test_branch_IsDefault(t *testing.T) {
 
 func Test_commit_GetAuthorEmail(t *testing.T) {
 	c := commit{
-		AuthorEmail: "admin@mars.com",
+		AuthorEmail: "1025434218@qq.com",
 	}
 	assert.Equal(t, c.AuthorEmail, c.GetAuthorEmail())
 }

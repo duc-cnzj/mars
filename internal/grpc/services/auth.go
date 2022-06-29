@@ -56,7 +56,7 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 			OpenIDClaims: contracts.OpenIDClaims{
 				Sub:   "1",
 				Name:  "管理员",
-				Email: "admin@mars.com",
+				Email: "1025434218@qq.com",
 			},
 		}
 		data, err := a.authsvc.Sign(userinfo)

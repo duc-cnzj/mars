@@ -80,7 +80,7 @@ func TestAuthSvc_Login(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	token, ok := authSvc.VerifyToken(login.Token)
-	assert.Equal(t, "admin@mars.com", token.StandardClaims.Subject)
+	assert.Equal(t, "1025434218@qq.com", token.StandardClaims.Subject)
 	assert.True(t, ok)
 	assert.Equal(t, "管理员", token.UserInfo.Name)
 
