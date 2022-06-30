@@ -65,6 +65,10 @@ func (t *MyPtyHandler) Recorder() RecorderInterface {
 	return t.recorder
 }
 
+func (t *MyPtyHandler) IsClosed() bool {
+	return t.closeable.IsClosed()
+}
+
 func (t *MyPtyHandler) Close(reason string) {
 	if !t.closeable.Close() {
 		return
@@ -132,11 +136,11 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
-		return 0, fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
+		return len(p), fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
 	if t.closeable.IsClosed() {
-		return 0, nil
+		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.id)
 	}
 	t.recorder.Write(string(p))
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
@@ -339,7 +343,11 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	} else {
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
-		for _, testShell := range validShells {
+		for idx, testShell := range validShells {
+			if session.IsClosed() {
+				mlog.Warningf("session 已关闭，不会继续尝试连接其他 shell: '%s'", strings.Join(validShells[idx:], ", "))
+				break
+			}
 			cmd := []string{testShell}
 			session.SetShell(testShell)
 			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {

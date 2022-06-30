@@ -35,9 +35,11 @@ func TestMyPtyHandler_Close(t *testing.T) {
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 2),
 		doneChan: make(chan struct{}),
 	}
+	assert.False(t, p.IsClosed())
 	assert.Len(t, p.shellCh, 0)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	p.Close("aaaa")
+	assert.True(t, p.IsClosed())
 	p.Close("aaaa")
 	assert.Len(t, p.shellCh, 2)
 	a := <-p.shellCh
@@ -171,13 +173,13 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	assert.Equal(t, 3, n)
 	p.closeable.Close()
 	n, err = p.Write([]byte("aaa"))
-	assert.Nil(t, err)
-	assert.Equal(t, 0, n)
+	assert.Equal(t, "[Websocket]: duc ws already closed", err.Error())
+	assert.Equal(t, 3, n)
 
 	close(p.doneChan)
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())
-	assert.Equal(t, 0, n)
+	assert.Equal(t, 3, n)
 }
 
 func TestSessionMap_Close(t *testing.T) {

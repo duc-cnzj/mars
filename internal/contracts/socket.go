@@ -44,6 +44,7 @@ type PtyHandler interface {
 	TerminalMessageChan() chan *websocket.TerminalMessage
 	SetShell(string)
 	Close(string)
+	IsClosed() bool
 	Toast(string) error
 }
 

@@ -2,6 +2,8 @@ package bootstrappers
 
 import (
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -15,6 +17,12 @@ func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		config *restclient.Config
 		err    error
 	)
+
+	runtime.ErrorHandlers = []func(err error){
+		func(err error) {
+			mlog.Warning(err)
+		},
+	}
 
 	if app.Config().KubeConfig != "" {
 		config, err = clientcmd.BuildConfigFromFlags("", app.Config().KubeConfig)

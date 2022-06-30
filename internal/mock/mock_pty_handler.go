@@ -47,6 +47,20 @@ func (mr *MockPtyHandlerMockRecorder) Close(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPtyHandler)(nil).Close), arg0)
 }
 
+// IsClosed mocks base method.
+func (m *MockPtyHandler) IsClosed() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsClosed")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsClosed indicates an expected call of IsClosed.
+func (mr *MockPtyHandlerMockRecorder) IsClosed() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClosed", reflect.TypeOf((*MockPtyHandler)(nil).IsClosed))
+}
+
 // Next mocks base method.
 func (m *MockPtyHandler) Next() *remotecommand.TerminalSize {
 	m.ctrl.T.Helper()
