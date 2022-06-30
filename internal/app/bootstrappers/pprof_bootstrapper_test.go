@@ -1,7 +1,10 @@
 package bootstrappers
 
 import (
+	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -22,4 +25,8 @@ func TestPprofBootstrapper_Bootstrap(t *testing.T) {
 		ProfileEnabled: true,
 	})
 	(&PprofBootstrapper{}).Bootstrap(app)
+}
+
+func TestPprofRunner_Shutdown(t *testing.T) {
+	assert.Nil(t, (&pprofRunner{}).Shutdown(context.TODO()))
 }
