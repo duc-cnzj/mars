@@ -81,6 +81,7 @@ const ItemDetailModal: React.FC<{
           setResizeAt(new Date().getTime());
         }}
         className="draggable-modal"
+        destroyOnClose
         visible={visible}
         initialWidth={900}
         initialHeight={600}
@@ -131,7 +132,7 @@ const ItemDetailModal: React.FC<{
                   </ErrorBoundary>
                 </Suspense>
               </TabPane>
-              <TabPane forceRender tab="配置更新" key="update-config">
+              <TabPane tab="配置更新" key="update-config">
                 <Suspense fallback={<Skeleton active />}>
                   {detail?.project && detail.project.namespace && (
                     <TabEdit

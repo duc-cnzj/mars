@@ -111,11 +111,8 @@ func TestHandleWsCreateProject(t *testing.T) {
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
-	pubsub := mock.NewMockPubSub(m)
-	job.EXPECT().PubSub().Return(pubsub).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	job.EXPECT().ID().Return("1").AnyTimes()
 	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
 	cs.EXPECT().Remove("1").Times(1)
@@ -213,11 +210,8 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
-	pubsub := mock.NewMockPubSub(m)
-	job.EXPECT().PubSub().Return(pubsub).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	job.EXPECT().ID().Return("1").AnyTimes()
 	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
 
@@ -276,11 +270,8 @@ func TestInstallProject_Success(t *testing.T) {
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
-	pubsub := mock.NewMockPubSub(m)
-	job.EXPECT().PubSub().Return(pubsub).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	InstallProject(job)
 }
 
@@ -330,9 +321,6 @@ func TestInstallProject_RunFail(t *testing.T) {
 	job.EXPECT().Finish().Times(1)
 	job.EXPECT().IsDryRun().Return(false).Times(1)
 	job.EXPECT().Prune().Times(1)
-	ps := mock.NewMockPubSub(m)
-	ps.EXPECT().ToAll(gomock.Any()).Times(1)
-	job.EXPECT().PubSub().Return(ps)
 	InstallProject(job)
 }
 

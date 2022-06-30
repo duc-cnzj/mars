@@ -333,10 +333,16 @@ func TestJober_Done(t *testing.T) {
 }
 
 func TestJober_Finish(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ps := mock.NewMockPubSub(m)
 	j := &Jober{
-		done: make(chan struct{}),
+		pubsub: ps,
+		done:   make(chan struct{}),
 	}
 
+	ps.EXPECT().ToAll(gomock.Any()).Times(1)
 	j.Finish()
 	_, ok := <-j.done
 	assert.False(t, ok)
@@ -987,7 +993,10 @@ func TestJober_Validate(t *testing.T) {
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	commit := mock.NewMockCommitInterface(m)
 	h := mock.NewMockHelmer(m)
+	ps := mock.NewMockPubSub(m)
+	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(4)
 	job3 := &Jober{
+		pubsub: ps,
 		helmer: h,
 		input: &websocket_pb.CreateProjectInput{
 			NamespaceId:  int64(ns.ID),
@@ -1003,7 +1012,6 @@ func TestJober_Validate(t *testing.T) {
 		dryRun:    false,
 	}
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, 1, len(job3.destroyFuncs))
 	assert.Equal(t, "app", job3.input.Name)

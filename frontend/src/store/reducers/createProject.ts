@@ -13,8 +13,6 @@ export enum DeployStatus {
   DeployFailed = "failed",
   DeployCanceled = "canceled",
   DeploySuccess = "success",
-
-  DeployUpdateSuccess = "update_success"
 }
 
 export interface CreateProjectItem {

@@ -8,6 +8,8 @@ import {
   SET_CLUSTER_INFO,
   SET_SHELL_SESSION_ID,
   SET_SHELL_LOG,
+  SET_TIMER_START_AT,
+  SET_TIMER_START,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -74,6 +76,20 @@ export const setShellLog = (id: string, log: pb.websocket.TerminalMessage) => ({
     log: log,
   },
 });
+export const setStart = (id: string, start: boolean) => ({
+  type: SET_TIMER_START,
+  data: {
+    id: id,
+    start: start,
+  },
+});
+export const setStartAt = (id: string, startAt: number) => ({
+  type: SET_TIMER_START_AT,
+  data: {
+    id: id,
+    startAt: startAt,
+  },
+});
 
 export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
   type: SET_CLUSTER_INFO,
@@ -107,7 +123,7 @@ export const handleEvents = (
         if (data.end) {
           switch (data.result) {
             case pb.websocket.ResultType.Deployed:
-              dispatch(setDeployStatus(id, DeployStatus.DeployUpdateSuccess));
+              dispatch(setDeployStatus(id, DeployStatus.DeploySuccess));
               message.success("部署成功");
               dispatch(clearCreateProjectLog(id));
               break;

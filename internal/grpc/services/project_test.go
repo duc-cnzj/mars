@@ -289,11 +289,8 @@ func TestProjectSvc_Apply(t *testing.T) {
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
-	pubsub := mock.NewMockPubSub(m)
-	job.EXPECT().PubSub().Return(pubsub).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	app := testutil.MockApp(m)
 	ws := mockWsServer(m, app)
 	ps := mock.NewMockPubSub(m)
@@ -418,11 +415,8 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
-	pubsub := mock.NewMockPubSub(m)
-	job.EXPECT().PubSub().Return(pubsub).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	pubsub.EXPECT().ToOthers(gomock.Any()).Times(1)
 	job.EXPECT().Manifests().Return([]string{"Manifests"}).Times(1)
 
 	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
