@@ -342,7 +342,7 @@ func TestJober_Finish(t *testing.T) {
 		done:   make(chan struct{}),
 	}
 
-	ps.EXPECT().ToAll(gomock.Any()).Times(1)
+	ps.EXPECT().ToAll(reloadProjectsMessage).Times(1)
 	j.Finish()
 	_, ok := <-j.done
 	assert.False(t, ok)
