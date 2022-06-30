@@ -50,10 +50,7 @@ const CreateProjectModal: React.FC<{
     gitBranch: string;
     gitCommit: string;
   }>();
-  let slug = useMemo(
-    () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
-    [namespaceId, data]
-  );
+  let slug = useMemo(() => toSlug(namespaceId, data?.projectName ? data.projectName : ""), [namespaceId, data]);
 
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useAsyncState<boolean>(false);
@@ -78,6 +75,7 @@ const CreateProjectModal: React.FC<{
     [dispatch, slug]
   );
 
+  const [deployStarted, setDeployStarted] = useState(false)
   const [showLog, setShowLog] = useState(start);
 
   const isLoading = useMemo(() => list[slug]?.isLoading ?? false, [list, slug]);
@@ -143,6 +141,7 @@ const CreateProjectModal: React.FC<{
         setShowLog(true);
         setStart(true);
         setStartAt(Date.now());
+        setDeployStarted(true)
         ws?.send(s);
         return;
       }
@@ -206,6 +205,9 @@ const CreateProjectModal: React.FC<{
   );
 
   useEffect(() => {
+    if (!deployStarted) {
+      return;
+    }
     if (deployStatus !== DeployStatusEnum.DeployUnknown) {
       resetTimeCost();
     }
@@ -223,6 +225,7 @@ const CreateProjectModal: React.FC<{
   }, [
     list,
     dispatch,
+    deployStarted,
     slug,
     onCancel,
     form,
