@@ -216,7 +216,6 @@ const CreateProjectModal: React.FC<{
       form.resetFields();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setShowLog(false);
-      console.log("a")
       setTimeout(() => {
         setVisible(false);
       }, 500);

@@ -190,7 +190,6 @@ const ModalSub: React.FC<{
     if (deployStatus !== DeployStatusEnum.DeployUnknown) {
       resetTimeCost();
     }
-    console.log(deployStatus, "xxx");
     if (deployStatus === DeployStatusEnum.DeploySuccess) {
       console.log("11");
       resetTimeCost();
