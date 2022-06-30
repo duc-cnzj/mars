@@ -16,6 +16,8 @@ import {
   clearCreateProjectLog,
   setCreateProjectLoading,
   setDeployStatus,
+  setStart as dispatchSetStart,
+  setStartAt as dispatchSetStartAt,
 } from "../store/actions";
 import { toSlug } from "../utils/slug";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
@@ -26,6 +28,7 @@ import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
 import TimeCost from "./TimeCost";
+import { selectTimer } from "../store/reducers/deployTimer";
 
 interface WatchData {
   gitProjectId: number;
@@ -58,9 +61,24 @@ const ModalSub: React.FC<{
     [list, slug]
   );
 
-  const [start, setStart] = useState(false);
-  const [startAt, setStartAt] = useState(0);
-  const [showLog, setShowLog] = useState(false);
+  const timer = useSelector(selectTimer);
+  const start = useMemo(() => timer[slug]?.start || false, [timer, slug]);
+  const startAt = useMemo(() => timer[slug]?.startAt || 0, [timer, slug]);
+  const setStart = useCallback(
+    (start: boolean) => {
+      dispatch(dispatchSetStart(slug, start));
+    },
+    [dispatch, slug]
+  );
+
+  const setStartAt = useCallback(
+    (startAt: number) => {
+      dispatch(dispatchSetStartAt(slug, startAt));
+    },
+    [dispatch, slug]
+  );
+
+  const [showLog, setShowLog] = useState(start);
 
   const [data, setData] = useState<WatchData>({
     gitProjectId: Number(detail.git_project_id),
@@ -133,7 +151,7 @@ const ModalSub: React.FC<{
   const resetTimeCost = useCallback(() => {
     setStart(false);
     setStartAt(0);
-  }, []);
+  }, [setStartAt, setStart]);
 
   const onCancel = useCallback(() => {
     if (!wsReady) {
@@ -172,7 +190,7 @@ const ModalSub: React.FC<{
     if (deployStatus !== DeployStatusEnum.DeployUnknown) {
       resetTimeCost();
     }
-    if (deployStatus === DeployStatusEnum.DeployUpdateSuccess) {
+    if (deployStatus === DeployStatusEnum.DeploySuccess) {
       resetTimeCost();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
       setShowLog(false);
@@ -281,95 +299,94 @@ const ModalSub: React.FC<{
               <DebugModeSwitch />
             </Form.Item>
           </div>
-          <div
-            style={{ marginTop: 10 }}
-            className={classNames({ "display-none": !showLog })}
-          >
-            <Progress
-              strokeColor={{
-                from: "#108ee9",
-                to: "#87d068",
-              }}
-              style={{ padding: "0 3px", marginBottom: 5 }}
-              percent={processPercent}
-              status="active"
-            />
-            <LogOutput
-              pending={<TimeCost start={start} startAt={startAt} />}
-              slug={slug}
-            />
-          </div>
-          <div
-            className={classNames({ "display-none": showLog })}
-            style={{
-              minWidth: 200,
-              marginBottom: 20,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Form.Item name="extra_values" noStyle>
-              <Elements
-                elements={orderBy(elements, ["type"], ["asc"])}
-                style={{
-                  inputNumber: { fontSize: 10, width: "100%" },
-                  input: { fontSize: 10 },
-                  label: { fontSize: 10 },
-                  formItem: {
-                    marginBottom: 0,
-                    marginTop: 0,
-                    display: "inline-block",
-                    width: "calc(30% - 8px)",
-                    marginRight: 8,
-                  },
+          {showLog ? (
+            <div style={{ marginTop: 10 }}>
+              <Progress
+                strokeColor={{
+                  from: "#108ee9",
+                  to: "#87d068",
                 }}
+                style={{ padding: "0 3px", marginBottom: 5 }}
+                percent={processPercent}
+                status="active"
               />
-            </Form.Item>
-            <Row style={{ height: "100%", marginTop: 3 }}>
-              <Col span={detail.config === data.config ? 24 : 12}>
-                <Form.Item name={"config"} noStyle>
-                  <CodeMirror
-                    options={{
-                      mode: getMode(detail.config_type),
-                      theme: "dracula",
-                      lineNumbers: true,
-                    }}
-                    onChange={(v) => {
-                      form.setFieldsValue({ config: v });
-                      setData((d) => {
-                        return { ...d, config: v };
-                      });
-                    }}
-                  />
-                </Form.Item>
-              </Col>
-              <Col
-                className="diff-viewer"
-                span={detail.config === data.config ? 0 : 12}
-                style={{ fontSize: 13 }}
-              >
-                <ReactDiffViewer
-                  styles={{
-                    gutter: { padding: "0 5px", minWidth: 25 },
-                    marker: { padding: "0 6px" },
-                    diffContainer: {
-                      display: "block",
-                      width: "100%",
-                      overflowX: "auto",
+              <LogOutput
+                pending={<TimeCost start={start} startAt={startAt} />}
+                slug={slug}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                minWidth: 200,
+                marginBottom: 20,
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Form.Item name="extra_values" noStyle>
+                <Elements
+                  elements={orderBy(elements, ["type"], ["asc"])}
+                  style={{
+                    inputNumber: { fontSize: 10, width: "100%" },
+                    input: { fontSize: 10 },
+                    label: { fontSize: 10 },
+                    formItem: {
+                      marginBottom: 0,
+                      marginTop: 0,
+                      display: "inline-block",
+                      width: "calc(30% - 8px)",
+                      marginRight: 8,
                     },
                   }}
-                  useDarkTheme
-                  disableWordDiff
-                  renderContent={highlightSyntax}
-                  showDiffOnly={false}
-                  oldValue={detail.config}
-                  newValue={data.config}
-                  splitView={false}
                 />
-              </Col>
-            </Row>
-          </div>
+              </Form.Item>
+              <Row style={{ height: "100%", marginTop: 3 }}>
+                <Col span={detail.config === data.config ? 24 : 12}>
+                  <Form.Item name={"config"} noStyle>
+                    <CodeMirror
+                      options={{
+                        mode: getMode(detail.config_type),
+                        theme: "dracula",
+                        lineNumbers: true,
+                      }}
+                      onChange={(v) => {
+                        form.setFieldsValue({ config: v });
+                        setData((d) => {
+                          return { ...d, config: v };
+                        });
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col
+                  className="diff-viewer"
+                  span={detail.config === data.config ? 0 : 12}
+                  style={{ fontSize: 13 }}
+                >
+                  <ReactDiffViewer
+                    styles={{
+                      gutter: { padding: "0 5px", minWidth: 25 },
+                      marker: { padding: "0 6px" },
+                      diffContainer: {
+                        display: "block",
+                        width: "100%",
+                        overflowX: "auto",
+                      },
+                    }}
+                    useDarkTheme
+                    disableWordDiff
+                    renderContent={highlightSyntax}
+                    showDiffOnly={false}
+                    oldValue={detail.config}
+                    newValue={data.config}
+                    splitView={false}
+                  />
+                </Col>
+              </Row>
+            </div>
+          )}
         </div>
       </Form>
     </div>

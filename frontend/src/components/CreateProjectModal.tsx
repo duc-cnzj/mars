@@ -7,7 +7,7 @@ import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
 import { orderBy } from "lodash";
 import { useAsyncState } from "../utils/async";
-
+import { selectTimer } from "../store/reducers/deployTimer";
 import { configFile } from "../api/git";
 import {
   DeployStatus as DeployStatusEnum,
@@ -21,8 +21,9 @@ import {
   clearCreateProjectLog,
   setCreateProjectLoading,
   setDeployStatus,
+  setStart as dispatchSetStart,
+  setStartAt as dispatchSetStartAt,
 } from "../store/actions";
-import classNames from "classnames";
 import { toSlug } from "../utils/slug";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
@@ -49,10 +50,7 @@ const CreateProjectModal: React.FC<{
     gitBranch: string;
     gitCommit: string;
   }>();
-  let slug = useMemo(
-    () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
-    [namespaceId, data]
-  );
+  let slug = useMemo(() => toSlug(namespaceId, data?.projectName ? data.projectName : ""), [namespaceId, data]);
 
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useAsyncState<boolean>(false);
@@ -60,9 +58,25 @@ const CreateProjectModal: React.FC<{
 
   const [elements, setElements] = useState<pb.mars.Element[]>();
 
-  const [start, setStart] = useState(false);
-  const [startAt, setStartAt] = useState(0);
-  const [showLog, setShowLog] = useState(false);
+  const timer = useSelector(selectTimer);
+  const start = useMemo(() => timer[slug]?.start || false, [timer, slug]);
+  const startAt = useMemo(() => timer[slug]?.startAt || 0, [timer, slug]);
+  const setStart = useCallback(
+    (start: boolean) => {
+      dispatch(dispatchSetStart(slug, start));
+    },
+    [dispatch, slug]
+  );
+
+  const setStartAt = useCallback(
+    (startAt: number) => {
+      dispatch(dispatchSetStartAt(slug, startAt));
+    },
+    [dispatch, slug]
+  );
+
+  const [deployStarted, setDeployStarted] = useState(false)
+  const [showLog, setShowLog] = useState(start);
 
   const isLoading = useMemo(() => list[slug]?.isLoading ?? false, [list, slug]);
   const deployStatus = useMemo(() => list[slug]?.deployStatus, [list, slug]);
@@ -74,7 +88,7 @@ const CreateProjectModal: React.FC<{
   const resetTimeCost = useCallback(() => {
     setStart(false);
     setStartAt(0);
-  }, []);
+  }, [setStartAt, setStart]);
 
   const onCancel = useCallback(() => {
     setElements([]);
@@ -127,13 +141,24 @@ const CreateProjectModal: React.FC<{
         setShowLog(true);
         setStart(true);
         setStartAt(Date.now());
+        setDeployStarted(true)
         ws?.send(s);
         return;
       }
 
       message.error("项目id, 分支，提交必填");
     },
-    [dispatch, slug, ws, namespaceId, wsReady, data, elements]
+    [
+      dispatch,
+      setStart,
+      setStartAt,
+      slug,
+      ws,
+      namespaceId,
+      wsReady,
+      data,
+      elements,
+    ]
   );
 
   const onRemove = useCallback(() => {
@@ -180,6 +205,9 @@ const CreateProjectModal: React.FC<{
   );
 
   useEffect(() => {
+    if (!deployStarted) {
+      return;
+    }
     if (deployStatus !== DeployStatusEnum.DeployUnknown) {
       resetTimeCost();
     }
@@ -197,6 +225,7 @@ const CreateProjectModal: React.FC<{
   }, [
     list,
     dispatch,
+    deployStarted,
     slug,
     onCancel,
     form,
@@ -314,58 +343,58 @@ const CreateProjectModal: React.FC<{
                   <DebugModeSwitch />
                 </Form.Item>
               </div>
-              <div
-                style={{ marginTop: 10 }}
-                className={classNames({ "display-none": !showLog })}
-              >
-                <Progress
-                  strokeColor={{
-                    from: "#108ee9",
-                    to: "#87d068",
+
+              {showLog ? (
+                <div style={{ marginTop: 10 }}>
+                  <Progress
+                    strokeColor={{
+                      from: "#108ee9",
+                      to: "#87d068",
+                    }}
+                    style={{ padding: "0 3px", marginBottom: 5 }}
+                    percent={processPercent}
+                    status="active"
+                  />
+                  <LogOutput
+                    pending={<TimeCost start={start} startAt={startAt} />}
+                    slug={slug}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    minWidth: 200,
+                    marginBottom: 20,
+                    height: "100%",
                   }}
-                  style={{ padding: "0 3px", marginBottom: 5 }}
-                  percent={processPercent}
-                  status="active"
-                />
-                <LogOutput
-                  pending={<TimeCost start={start} startAt={startAt} />}
-                  slug={slug}
-                />
-              </div>
-              <div
-                className={classNames({ "display-none": showLog })}
-                style={{
-                  minWidth: 200,
-                  marginBottom: 20,
-                  height: "100%",
-                }}
-              >
-                <Form.Item name="extra_values" noStyle>
-                  <Elements
-                    elements={orderBy(elements, ["type"], ["asc"])}
-                    style={{
-                      inputNumber: { fontSize: 10, width: "100%" },
-                      input: { fontSize: 10 },
-                      label: { fontSize: 10 },
-                      formItem: {
-                        marginBottom: 5,
-                        display: "inline-block",
-                        width: "calc(33% - 8px)",
-                        marginRight: 8,
-                      },
-                    }}
-                  />
-                </Form.Item>
-                <Form.Item name="config" style={{ height: "100%" }} noStyle>
-                  <CodeMirror
-                    options={{
-                      mode: mode,
-                      theme: "dracula",
-                      lineNumbers: true,
-                    }}
-                  />
-                </Form.Item>
-              </div>
+                >
+                  <Form.Item name="extra_values" noStyle>
+                    <Elements
+                      elements={orderBy(elements, ["type"], ["asc"])}
+                      style={{
+                        inputNumber: { fontSize: 10, width: "100%" },
+                        input: { fontSize: 10 },
+                        label: { fontSize: 10 },
+                        formItem: {
+                          marginBottom: 5,
+                          display: "inline-block",
+                          width: "calc(33% - 8px)",
+                          marginRight: 8,
+                        },
+                      }}
+                    />
+                  </Form.Item>
+                  <Form.Item name="config" style={{ height: "100%" }} noStyle>
+                    <CodeMirror
+                      options={{
+                        mode: mode,
+                        theme: "dracula",
+                        lineNumbers: true,
+                      }}
+                    />
+                  </Form.Item>
+                </div>
+              )}
             </Form>
           </div>
         </div>

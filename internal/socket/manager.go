@@ -69,6 +69,8 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
+var reloadProjectsMessage = &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
+
 type WsResponse = websocket_pb.WsMetadataResponse
 
 type SafeWriteMessageCh struct {
@@ -253,6 +255,7 @@ func (j *Jober) Done() <-chan struct{} {
 func (j *Jober) Finish() {
 	mlog.Debug("finished")
 	close(j.done)
+	j.PubSub().ToAll(reloadProjectsMessage)
 }
 
 func (j *Jober) Prune() {
@@ -616,6 +619,9 @@ func (j *Jober) Validate() error {
 		}
 		j.project.ID = p.ID
 		j.prevProject = &p
+	}
+	if !j.IsDryRun() {
+		j.PubSub().ToSelf(reloadProjectsMessage)
 	}
 	j.AddDestroyFunc(func() {
 		mlog.Debug("update DeployStatus in DestroyFunc")

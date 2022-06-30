@@ -456,12 +456,6 @@ func InstallProject(job contracts.Job) (err error) {
 		return
 	}
 
-	res := &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
-	if err = job.Run(); err != nil {
-		job.PubSub().ToAll(res)
-		return
-	}
-
-	job.PubSub().ToOthers(res)
+	err = job.Run()
 	return
 }

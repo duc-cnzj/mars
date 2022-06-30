@@ -75,7 +75,16 @@ func Test_authenticated(t *testing.T) {
 	assert.Equal(t, "duc", value.(*contracts.UserInfo).Name)
 }
 
-func Test_download(t *testing.T) {}
+func Test_download(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	download(recorder, "f.txt", strings.NewReader("aaa"))
+	assert.Equal(t, "application/octet-stream", recorder.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape("f.txt")), recorder.Header().Get("Content-Disposition"))
+	assert.Equal(t, "0", recorder.Header().Get("Expires"))
+	assert.Equal(t, "binary", recorder.Header().Get("Content-Transfer-Encoding"))
+	assert.Equal(t, "*", recorder.Header().Get("Access-Control-Expose-Headers"))
+	assert.Equal(t, "aaa", recorder.Body.String())
+}
 
 func Test_handFile(t *testing.T) {
 	m := gomock.NewController(t)
