@@ -314,6 +314,7 @@ func isValidShell(validShells []string, shell string) bool {
 
 var silenceShellExitMessages = []string{
 	"command terminated with exit code 126",
+	"command terminated with exit code 130",
 }
 
 func silence(err error) bool {
