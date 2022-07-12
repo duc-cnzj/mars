@@ -39,6 +39,11 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		if request.ActionType != types.EventActionType_Unknown {
 			db = db.Where("`action` = ?", request.GetActionType())
 		}
+
+		if request.Message != "" {
+			db = db.Where("`message` LIKE ?", "%"+request.Message+"%")
+		}
+
 		return db
 	}
 

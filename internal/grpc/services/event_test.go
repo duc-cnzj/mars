@@ -62,6 +62,14 @@ func TestEventSvc_List(t *testing.T) {
 	})
 	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
 	assert.Equal(t, int64(f.ID), list.Items[0].File.Id)
+
+	list, _ = e.List(context.TODO(), &event.ListRequest{
+		Page:     1,
+		PageSize: 100,
+		Message:  "by duc",
+	})
+	assert.Len(t, list.Items, 1)
+	assert.Equal(t, list.Items[0].Message, "message by duc at now")
 }
 
 func seedEvents(db *gorm.DB) *models.File {
@@ -79,7 +87,7 @@ func seedEvents(db *gorm.DB) *models.File {
 		{
 			Action:   uint8(types.EventActionType_Shell),
 			Username: "duc",
-			Message:  "message",
+			Message:  "message by duc at now",
 			Old:      "old",
 			New:      "new",
 			Duration: "10s",

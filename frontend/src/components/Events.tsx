@@ -1,6 +1,14 @@
-import React, { useState, useEffect, useCallback, memo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  memo,
+  useRef,
+  useMemo,
+} from "react";
 import { getHighlightSyntax } from "../utils/highlight";
 import ReactDiffViewer from "react-diff-viewer";
+import { debounce } from "lodash";
 import {
   Card,
   Skeleton,
@@ -12,6 +20,7 @@ import {
   Popconfirm,
   Modal,
   message,
+  Input,
 } from "antd";
 import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
@@ -40,7 +49,8 @@ const EventList: React.FC = () => {
   const [data, setData] = useState<pb.types.EventModel[]>([]);
   const [queries, setQueries] = useState<{
     action_type: pb.types.EventActionType;
-  }>({ action_type: pb.types.EventActionType.Unknown });
+    message: string;
+  }>({ action_type: pb.types.EventActionType.Unknown, message: "" });
 
   useEffect(() => {
     diskInfoApi().then(({ data }) => setDiskInfo(data));
@@ -55,6 +65,7 @@ const EventList: React.FC = () => {
       page: paginate.page + 1,
       page_size: paginate.page_size,
       action_type: queries.action_type,
+      message: queries.message,
     })
       .then(({ data: res }) => {
         setData((data) => [...data, ...res.items]);
@@ -72,28 +83,36 @@ const EventList: React.FC = () => {
   };
 
   const scrollDiv = useRef<HTMLDivElement>(null);
+  const search = useMemo(
+    () =>
+      debounce((action_type, message) => {
+        if (scrollDiv.current) {
+          scrollDiv.current.scrollTo(0, 0);
+        }
+        events({
+          page: 1,
+          page_size: defaultPageSize,
+          action_type: action_type,
+          message: message,
+        })
+          .then(({ data: res }) => {
+            setData(res.items);
+            setPaginate({
+              page: Number(res.page),
+              page_size: Number(res.page_size),
+              count: Number(res.count),
+            });
+          })
+          .catch((e) => {
+            message.error(e.response.data.message);
+          });
+      }, 500),
+    []
+  );
 
   useEffect(() => {
-    if (scrollDiv.current) {
-      scrollDiv.current.scrollTo(0, 0);
-    }
-    events({
-      page: 1,
-      page_size: defaultPageSize,
-      action_type: queries.action_type,
-    })
-      .then(({ data: res }) => {
-        setData(res.items);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-          count: Number(res.count),
-        });
-      })
-      .catch((e) => {
-        message.error(e.response.data.message);
-      });
-  }, [queries]);
+    search(queries.action_type, queries.message);
+  }, [search, queries]);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
   const [shellModalVisible, setShellModalVisible] = useState(false);
@@ -225,7 +244,7 @@ const EventList: React.FC = () => {
               size="small"
               style={{ width: 120, marginLeft: 10 }}
               onChange={(v) => {
-                setQueries({ action_type: v });
+                setQueries((q) => ({ ...q, action_type: v }));
               }}
             >
               <Option value={pb.types.EventActionType.Unknown}>全部</Option>
@@ -240,6 +259,15 @@ const EventList: React.FC = () => {
               <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
               <Option value={pb.types.EventActionType.Login}>登录</Option>
             </Select>
+            <Input
+              size="small"
+              placeholder="搜索内容"
+              style={{ marginLeft: 10, zIndex: 0 }}
+              allowClear
+              onChange={(v) => {
+                setQueries((q) => ({ ...q, message: v.target.value }));
+              }}
+            />
           </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>
             文件占用:{" "}

@@ -3585,6 +3585,9 @@ export namespace event {
 
         /** ListRequest action_type */
         action_type?: (types.EventActionType|null);
+
+        /** ListRequest message */
+        message?: (string|null);
     }
 
     /** Represents a ListRequest. */
@@ -3604,6 +3607,9 @@ export namespace event {
 
         /** ListRequest action_type. */
         public action_type: types.EventActionType;
+
+        /** ListRequest message. */
+        public message: string;
 
         /**
          * Encodes the specified ListRequest message. Does not implicitly {@link event.ListRequest.verify|verify} messages.

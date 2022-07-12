@@ -442,6 +442,11 @@
             "default": "Unknown",
             "name": "action_type",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "message",
+            "in": "query"
           }
         ],
         "responses": {
