@@ -3586,8 +3586,8 @@ export namespace event {
         /** ListRequest action_type */
         action_type?: (types.EventActionType|null);
 
-        /** ListRequest message */
-        message?: (string|null);
+        /** ListRequest search */
+        search?: (string|null);
     }
 
     /** Represents a ListRequest. */
@@ -3608,8 +3608,8 @@ export namespace event {
         /** ListRequest action_type. */
         public action_type: types.EventActionType;
 
-        /** ListRequest message. */
-        public message: string;
+        /** ListRequest search. */
+        public search: string;
 
         /**
          * Encodes the specified ListRequest message. Does not implicitly {@link event.ListRequest.verify|verify} messages.

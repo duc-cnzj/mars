@@ -141,6 +141,7 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 			},
 		},
 		{
+			//这里错了，实际上是 06-17
 			ID: "2022-07-17-changelogs-add-more-columns",
 			Migrate: func(tx *gorm.DB) error {
 				if err := tx.AutoMigrate(&models.Changelog{}); err != nil {
@@ -150,10 +151,22 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 			},
 		},
 		{
+			//这里错了，实际上是 06-17
 			ID: "2022-07-17-changelogs-version-tinyint-to-int",
 			Migrate: func(tx *gorm.DB) error {
 				if err := tx.Migrator().AlterColumn(&models.Changelog{}, "Version"); err != nil {
 					return fmt.Errorf("[%s]: err: %v", "2022-07-17-changelogs-version-tinyint-to-int", err)
+				}
+				return nil
+			},
+		},
+		{
+			ID: "2022-07-12-add-action-index-to-events-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Event{}, "Action") {
+					if err := tx.Migrator().CreateIndex(&models.Event{}, "Action"); err != nil {
+						return fmt.Errorf("[%s]: err: %v", "2022-07-12-add-action-index-to-events-table", err)
+					}
 				}
 				return nil
 			},

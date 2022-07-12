@@ -12,7 +12,8 @@ message ListRequest {
   int64 page = 1 [(validate.rules).int64.gte = 1];
   int64 page_size = 2 [(validate.rules).int64.gte = 1];
   types.EventActionType action_type = 3;
-  string message = 4;
+  // 模糊搜索 message 和 username
+  string search = 4;
 }
 
 message ListResponse {

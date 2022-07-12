@@ -40,8 +40,9 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 			db = db.Where("`action` = ?", request.GetActionType())
 		}
 
-		if request.Message != "" {
-			db = db.Where("`message` LIKE ?", "%"+request.Message+"%")
+		// 全表扫了，很慢
+		if request.Search != "" {
+			db = db.Where("`message` LIKE ? or `username` LIKE ?", "%"+request.Search+"%", request.Search+"%")
 		}
 
 		return db

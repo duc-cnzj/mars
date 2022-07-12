@@ -66,10 +66,17 @@ func TestEventSvc_List(t *testing.T) {
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:     1,
 		PageSize: 100,
-		Message:  "by duc",
+		Search:   "by duc",
 	})
 	assert.Len(t, list.Items, 1)
 	assert.Equal(t, list.Items[0].Message, "message by duc at now")
+	list, _ = e.List(context.TODO(), &event.ListRequest{
+		Page:     1,
+		PageSize: 100,
+		Search:   "Hi.Du",
+	})
+	assert.Len(t, list.Items, 1)
+	assert.Equal(t, list.Items[0].Username, "Hi.Duc")
 }
 
 func seedEvents(db *gorm.DB) *models.File {
@@ -86,7 +93,7 @@ func seedEvents(db *gorm.DB) *models.File {
 	var testData = []models.Event{
 		{
 			Action:   uint8(types.EventActionType_Shell),
-			Username: "duc",
+			Username: "Hi.Duc",
 			Message:  "message by duc at now",
 			Old:      "old",
 			New:      "new",

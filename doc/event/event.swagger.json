@@ -68,7 +68,8 @@
             "default": "Unknown"
           },
           {
-            "name": "message",
+            "name": "search",
+            "description": "模糊搜索 message 和 username",
             "in": "query",
             "required": false,
             "type": "string"

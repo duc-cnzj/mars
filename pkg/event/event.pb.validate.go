@@ -85,7 +85,7 @@ func (m *ListRequest) validate(all bool) error {
 
 	// no validation rules for ActionType
 
-	// no validation rules for Message
+	// no validation rules for Search
 
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)

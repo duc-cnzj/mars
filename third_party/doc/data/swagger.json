@@ -445,7 +445,8 @@
           },
           {
             "type": "string",
-            "name": "message",
+            "description": "模糊搜索 message 和 username",
+            "name": "search",
             "in": "query"
           }
         ],

@@ -87,6 +87,24 @@ type Commands struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 }
 
+type Event struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Action   uint8  `json:"action" gorm:"type:tinyint;not null;default:0;"`
+	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
+	Message  string `json:"message" gorm:"size:255;not null;default:'';"`
+
+	Old      string `json:"old" gorm:"type:text;"`
+	New      string `json:"new" gorm:"type:text;"`
+	Duration string `json:"duration" gorm:"not null;default:''"`
+
+	FileID *int `json:"file_id" gorm:"nullable;"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
 func TestManager_AutoMigrate(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	db.Exec("PRAGMA foreign_keys = ON", nil)
@@ -94,7 +112,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	defer s.Close()
 
 	ma := &Manager{db: db}
-	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}))
+	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}))
 	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.True(t, db.Migrator().HasColumn("gitlab_projects", "gitlab_project_id"))
@@ -111,6 +129,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
 	assert.Nil(t, ma.AutoMigrate())
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
@@ -121,6 +140,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.False(t, db.Migrator().HasTable("commands"))
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "manifest"))
+	assert.True(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)
@@ -139,7 +159,7 @@ func TestManager_AutoMigrate2(t *testing.T) {
 	defer s.Close()
 
 	ma := &Manager{db: db}
-	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Changelog{}, &models.GitProject{}))
+	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Changelog{}, &models.GitProject{}, &models.Event{}))
 
 	p := &models.Project{
 		Name:      "app",

@@ -38,6 +38,8 @@ import { getToken } from "../utils/token";
 const defaultPageSize = 15;
 const { Option } = Select;
 
+const initQuery = { action_type: pb.types.EventActionType.Unknown, search: "" }
+
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [diskInfo, setDiskInfo] = useState<pb.file.DiskInfoResponse>();
@@ -49,8 +51,8 @@ const EventList: React.FC = () => {
   const [data, setData] = useState<pb.types.EventModel[]>([]);
   const [queries, setQueries] = useState<{
     action_type: pb.types.EventActionType;
-    message: string;
-  }>({ action_type: pb.types.EventActionType.Unknown, message: "" });
+    search: string;
+  }>(initQuery);
 
   useEffect(() => {
     diskInfoApi().then(({ data }) => setDiskInfo(data));
@@ -65,7 +67,7 @@ const EventList: React.FC = () => {
       page: paginate.page + 1,
       page_size: paginate.page_size,
       action_type: queries.action_type,
-      message: queries.message,
+      search: queries.search,
     })
       .then(({ data: res }) => {
         setData((data) => [...data, ...res.items]);
@@ -83,36 +85,40 @@ const EventList: React.FC = () => {
   };
 
   const scrollDiv = useRef<HTMLDivElement>(null);
-  const search = useMemo(
+  const fetch = useCallback((action_type, search) => {
+    if (scrollDiv.current) {
+      scrollDiv.current.scrollTo(0, 0);
+    }
+    events({
+      page: 1,
+      page_size: defaultPageSize,
+      action_type: action_type,
+      search: search,
+    })
+      .then(({ data: res }) => {
+        setData(res.items);
+        setPaginate({
+          page: Number(res.page),
+          page_size: Number(res.page_size),
+          count: Number(res.count),
+        });
+      })
+      .catch((e) => {
+        message.error(e.response.data.message);
+      });
+  }, []);
+
+  const debounceFetch = useMemo(
     () =>
-      debounce((action_type, message) => {
-        if (scrollDiv.current) {
-          scrollDiv.current.scrollTo(0, 0);
-        }
-        events({
-          page: 1,
-          page_size: defaultPageSize,
-          action_type: action_type,
-          message: message,
-        })
-          .then(({ data: res }) => {
-            setData(res.items);
-            setPaginate({
-              page: Number(res.page),
-              page_size: Number(res.page_size),
-              count: Number(res.count),
-            });
-          })
-          .catch((e) => {
-            message.error(e.response.data.message);
-          });
+      debounce((action_type, search) => {
+        fetch(action_type, search);
       }, 500),
-    []
+    [fetch]
   );
 
   useEffect(() => {
-    search(queries.action_type, queries.message);
-  }, [search, queries]);
+    fetch(initQuery.action_type, initQuery.search);
+  }, [fetch])
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
   const [shellModalVisible, setShellModalVisible] = useState(false);
@@ -245,6 +251,7 @@ const EventList: React.FC = () => {
               style={{ width: 120, marginLeft: 10 }}
               onChange={(v) => {
                 setQueries((q) => ({ ...q, action_type: v }));
+                fetch(v, queries.search)
               }}
             >
               <Option value={pb.types.EventActionType.Unknown}>全部</Option>
@@ -265,7 +272,8 @@ const EventList: React.FC = () => {
               style={{ marginLeft: 10, zIndex: 0 }}
               allowClear
               onChange={(v) => {
-                setQueries((q) => ({ ...q, message: v.target.value }));
+                setQueries((q) => ({ ...q, search: v.target.value }));
+                debounceFetch(queries.action_type, v.target.value);
               }}
             />
           </div>
