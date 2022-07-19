@@ -248,7 +248,7 @@ const EventList: React.FC = () => {
             <Select
               defaultValue={pb.types.EventActionType.Unknown}
               size="small"
-              style={{ width: 120, marginLeft: 10 }}
+              style={{ width: 200, marginLeft: 10 }}
               onChange={(v) => {
                 setQueries((q) => ({ ...q, action_type: v }));
                 fetch(v, queries.search)

@@ -94,6 +94,7 @@ const CreateProjectModal: React.FC<{
     setElements([]);
     form.resetFields();
     resetTimeCost();
+    setShowLog(false);
     setData(undefined);
     setVisible(false);
     dispatch(clearCreateProjectLog(slug));
