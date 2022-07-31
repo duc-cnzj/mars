@@ -9,7 +9,8 @@ import (
 
 func HandlePanic(title string) {
 	bf := make([]byte, 1024*5)
-	runtime.Stack(bf, false)
+	n := runtime.Stack(bf, false)
+	bf = bf[:n]
 
 	err := recover()
 	if err != nil {
