@@ -602,6 +602,13 @@ func (j *Jober) Validate() error {
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")
 
+	j.AddDestroyFunc(func() {
+		mlog.Debug("update DeployStatus in DestroyFunc")
+		if !j.IsDryRun() && j.Project().ID > 0 {
+			app.DB().Model(j.Project()).Update("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+		}
+	})
+
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
 		if !j.IsDryRun() {
@@ -611,24 +618,18 @@ func (j *Jober) Validate() error {
 		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
 	} else {
+		j.project.ID = p.ID
+		j.prevProject = &p
 		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
 			return errors.New("有别人也在操作这个项目，等等哦~")
 		}
 		if !j.IsDryRun() {
 			app.DB().Model(&p).Update("deploy_status", types.Deploy_StatusDeploying)
 		}
-		j.project.ID = p.ID
-		j.prevProject = &p
 	}
 	if !j.IsDryRun() {
 		j.PubSub().ToSelf(reloadProjectsMessage)
 	}
-	j.AddDestroyFunc(func() {
-		mlog.Debug("update DeployStatus in DestroyFunc")
-		if !j.IsDryRun() {
-			app.DB().Model(&j.project).Update("deploy_status", j.helmer.ReleaseStatus(j.project.Name, j.Namespace().Name))
-		}
-	})
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
 
 	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)

@@ -262,6 +262,8 @@ func read(wsconn *WsConn) error {
 
 		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
+				defer utils.HandlePanic(wsRequest.Type.String())
+
 				// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
 				if wsconn.GetUser().Sub == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
 					NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
@@ -274,8 +276,6 @@ func read(wsconn *WsConn) error {
 }
 
 func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsAuthorize")
-
 	var input websocket_pb.AuthorizeTokenInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		mlog.Error("[Websocket]: " + err.Error())
@@ -290,8 +290,6 @@ func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
 }
 
 func HandleWsHandleCloseShell(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsHandleCloseShell")
-
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		mlog.Error(err.Error())
@@ -304,8 +302,6 @@ func HandleWsHandleCloseShell(c *WsConn, t websocket_pb.Type, message []byte) {
 }
 
 func HandleWsHandleExecShellMsg(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsHandleExecShellMsg")
-
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -352,8 +348,6 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 }
 
 func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsCancel")
-
 	var input websocket_pb.CancelInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -369,8 +363,6 @@ func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 }
 
 func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsCreateProject")
-
 	var input websocket_pb.CreateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -390,8 +382,6 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 var getSlugName = utils.GetSlugName
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
-	defer utils.HandlePanic("HandleWsUpdateProject")
-
 	var input websocket_pb.UpdateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
