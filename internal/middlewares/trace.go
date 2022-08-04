@@ -2,32 +2,37 @@ package middlewares
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
-var grpcGatewayTag = opentracing.Tag{Key: string(ext.Component), Value: "grpc-gateway"}
+var grpcGatewayTag = attribute.String("component", "grpc-gateway")
 
+// TracingWrapper
+// [W3C Tracing Headers](https://www.w3.org/TR/trace-context/)
 func TracingWrapper(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		url := r.URL.String()
 		if !TracingIgnoreFn(context.TODO(), r.URL.Path) {
-			parentSpanContext, err := opentracing.GlobalTracer().Extract(
-				opentracing.HTTPHeaders,
-				opentracing.HTTPHeadersCarrier(r.Header))
-			if err == nil || err == opentracing.ErrSpanContextNotFound {
-				serverSpan := opentracing.GlobalTracer().StartSpan(
-					url,
-					ext.RPCServerOption(parentSpanContext),
-					grpcGatewayTag,
-					opentracing.Tags{"url": url},
-				)
-				r = r.WithContext(opentracing.ContextWithSpan(r.Context(), serverSpan))
-				defer serverSpan.Finish()
-			}
+			url := r.URL.String()
+			ctxt := propagation.TraceContext{}
+			start, span := app.Tracer().Start(ctxt.Extract(r.Context(), propagation.HeaderCarrier(r.Header)), fmt.Sprintf("[%s]: %s", r.Method, url))
+			span.SetAttributes(grpcGatewayTag)
+			span.SetAttributes(attribute.String("url", url))
+			span.SetAttributes(attribute.String("method", r.Method))
+			span.SetAttributes(attribute.String("user-agent", r.UserAgent()))
+			defer span.End()
+			r = r.WithContext(start)
 		}
 		h.ServeHTTP(w, r)
 	})
@@ -53,4 +58,95 @@ func TracingIgnoreFn(ctx context.Context, fullMethodName string) bool {
 	}
 
 	return false
+}
+
+type GatewayCarrier metadata.MD
+
+func (hc GatewayCarrier) Get(key string) string {
+	vals := metadata.MD(hc).Get(key)
+	if len(vals) > 0 {
+		return vals[0]
+	}
+	return ""
+}
+
+func (hc GatewayCarrier) Set(key string, value string) {
+	metadata.MD(hc).Set(key, value)
+}
+
+func (hc GatewayCarrier) Keys() []string {
+	keys := make([]string, 0, len(hc))
+	for k := range hc {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func TraceUnaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	start, span := app.Tracer().Start(ctx, "TraceUnaryClientInterceptor")
+	defer span.End()
+	span.SetAttributes(attribute.String("method", method))
+	ctxt := propagation.TraceContext{}
+	if outMD, found := metadata.FromOutgoingContext(ctx); found {
+		ctxt.Inject(start, GatewayCarrier(outMD))
+		ctx = metadata.NewOutgoingContext(ctx, metadata.MD(outMD))
+	} else {
+		outMD := metadata.MD{}
+		ctxt.Inject(start, GatewayCarrier(outMD))
+		ctx = metadata.NewOutgoingContext(ctx, metadata.MD(outMD))
+	}
+
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
+}
+
+func TraceUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	ctxt := propagation.TraceContext{}
+	md := metadata.MD{}
+	if incomingContext, b := metadata.FromIncomingContext(ctx); b {
+		ctx = ctxt.Extract(ctx, GatewayCarrier(incomingContext))
+		md = incomingContext
+	}
+	start, span := app.Tracer().Start(ctx, "grpc server")
+	defer span.End()
+	span.SetAttributes(attribute.String("method", info.FullMethod))
+	incomingContext := metadata.NewIncomingContext(start, md)
+	user, _ := marsauthorizor.GetUser(incomingContext)
+	if user != nil {
+		span.SetAttributes(attribute.String("user", user.Name))
+		span.SetAttributes(attribute.String("email", user.Email))
+	}
+	i, err := handler(incomingContext, req)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+	return i, err
+}
+
+func TraceStreamServerInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	ctx := ss.Context()
+	ctxt := propagation.TraceContext{}
+	md := metadata.MD{}
+	if incomingContext, b := metadata.FromIncomingContext(ctx); b {
+		ctx = ctxt.Extract(ctx, GatewayCarrier(incomingContext))
+		md = incomingContext
+	}
+	start, span := app.Tracer().Start(ctx, "grpc stream server")
+	defer span.End()
+	span.SetAttributes(attribute.String("method", info.FullMethod))
+	incomingContext := metadata.NewIncomingContext(start, md)
+	user, _ := marsauthorizor.GetUser(incomingContext)
+	if user != nil {
+		span.SetAttributes(attribute.String("user", user.Name))
+		span.SetAttributes(attribute.String("email", user.Email))
+	}
+	err := handler(srv, ss)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, err.Error())
+	}
+
+	return err
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 	"k8s.io/client-go/kubernetes"
@@ -89,4 +90,7 @@ type ApplicationInterface interface {
 
 	SetCache(CacheInterface)
 	Cache() CacheInterface
+
+	SetTracer(trace.Tracer)
+	GetTracer() trace.Tracer
 }

@@ -9,7 +9,6 @@ import (
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,6 +18,7 @@ import (
 	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
+	"github.com/duc-cnzj/mars/internal/middlewares"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/validator"
 )
@@ -64,8 +64,8 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	}
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			grpc_opentracing.StreamServerInterceptor(traceWithOpName()),
 			grpc_auth.StreamServerInterceptor(Authenticate),
+			middlewares.TraceStreamServerInterceptor,
 			marsauthorizor.StreamServerInterceptor(),
 			validator.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p any) (err error) {
@@ -87,8 +87,8 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			grpc_prometheus.StreamServerInterceptor,
 		),
 		grpc.ChainUnaryInterceptor(
-			grpc_opentracing.UnaryServerInterceptor(traceWithOpName()),
 			grpc_auth.UnaryServerInterceptor(Authenticate),
+			middlewares.TraceUnaryServerInterceptor,
 			marsauthorizor.UnaryServerInterceptor(),
 			validator.UnaryServerInterceptor(),
 			func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
@@ -125,12 +125,6 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	}(server)
 
 	return nil
-}
-
-func traceWithOpName() grpc_opentracing.Option {
-	return grpc_opentracing.WithOpName(func(method string) string {
-		return "[Tracer]: " + method
-	})
 }
 
 func Authenticate(ctx context.Context) (context.Context, error) {

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
@@ -74,8 +75,9 @@ type Application struct {
 	uploader     contracts.Uploader
 	auth         contracts.AuthInterface
 
-	sf    *singleflight.Group
-	cache contracts.CacheInterface
+	sf     *singleflight.Group
+	cache  contracts.CacheInterface
+	tracer trace.Tracer
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {
@@ -218,6 +220,14 @@ func (app *Application) Bootstrap() error {
 
 func (app *Application) Config() *config.Config {
 	return app.config
+}
+
+func (app *Application) SetTracer(t trace.Tracer) {
+	app.tracer = t
+}
+
+func (app *Application) GetTracer() trace.Tracer {
+	return app.tracer
 }
 
 func (app *Application) DBManager() contracts.DBManager {
