@@ -32,6 +32,7 @@ func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 			trace.WithResource(newResource()),
 		}
 		if !app.IsDebug() {
+			// [采样器参考](https://github.com/open-telemetry/docs-cn/blob/main/specification/trace/sdk.md)
 			opts = append(opts, trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(0.3))))
 		}
 		tp := trace.NewTracerProvider(opts...)
