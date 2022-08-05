@@ -487,7 +487,7 @@ type streamReadClose struct {
 }
 
 func (s *streamReadClose) Read(p []byte) (n int, err error) {
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	if s.times >= 1 {
 		return 0, errors.New("xxx")
 	}
