@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/duc-cnzj/mars-client/v4/cluster"
@@ -16,6 +17,7 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -67,7 +69,7 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
 	}
 	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]contracts.PtyHandler), conn: wsconn}
-	app.Metrics().IncWebsocketConn()
+	metrics.WebsocketConnectionsCount.Inc()
 	Wait.Inc()
 
 	return wsconn
@@ -80,7 +82,7 @@ func (c *WsConn) Shutdown() {
 	c.terminalSessions.CloseAll()
 	c.pubSub.Close()
 	c.conn.Close()
-	app.Metrics().DecWebsocketConn()
+	metrics.WebsocketConnectionsCount.Dec()
 	Wait.Dec()
 }
 
@@ -262,7 +264,12 @@ func read(wsconn *WsConn) error {
 
 		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
-				defer utils.HandlePanic(wsRequest.Type.String())
+				defer utils.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
+					metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+				})
+				defer func(t time.Time) {
+					metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(time.Since(t).Seconds())
+				}(time.Now())
 
 				// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
 				if wsconn.GetUser().Sub == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {

@@ -230,20 +230,6 @@ func (mr *MockApplicationInterfaceMockRecorder) K8sClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "K8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).K8sClient))
 }
 
-// Metrics mocks base method.
-func (m *MockApplicationInterface) Metrics() contracts.Metrics {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Metrics")
-	ret0, _ := ret[0].(contracts.Metrics)
-	return ret0
-}
-
-// Metrics indicates an expected call of Metrics.
-func (mr *MockApplicationInterfaceMockRecorder) Metrics() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Metrics", reflect.TypeOf((*MockApplicationInterface)(nil).Metrics))
-}
-
 // Oidc mocks base method.
 func (m *MockApplicationInterface) Oidc() contracts.OidcConfig {
 	m.ctrl.T.Helper()
@@ -342,18 +328,6 @@ func (m *MockApplicationInterface) SetK8sClient(arg0 *contracts.K8sClient) {
 func (mr *MockApplicationInterfaceMockRecorder) SetK8sClient(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetK8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).SetK8sClient), arg0)
-}
-
-// SetMetrics mocks base method.
-func (m *MockApplicationInterface) SetMetrics(arg0 contracts.Metrics) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetMetrics", arg0)
-}
-
-// SetMetrics indicates an expected call of SetMetrics.
-func (mr *MockApplicationInterfaceMockRecorder) SetMetrics(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMetrics", reflect.TypeOf((*MockApplicationInterface)(nil).SetMetrics), arg0)
 }
 
 // SetOidc mocks base method.

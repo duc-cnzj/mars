@@ -20,3 +20,20 @@ func HandlePanic(title string) {
 		}
 	}
 }
+
+func HandlePanicWithCallback(title string, callback func(error)) {
+	bf := make([]byte, 1024*5)
+	n := runtime.Stack(bf, false)
+	bf = bf[:n]
+
+	err := recover()
+	if err != nil {
+		if e, ok := err.(error); ok {
+			callback(e)
+		}
+		mlog.Errorf("[Panic]: title: %v, err: %v --- [%s]", title, err, string(bf))
+		if app.App() != nil && app.App().IsDebug() {
+			panic(err)
+		}
+	}
+}

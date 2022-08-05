@@ -9,7 +9,7 @@ import (
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,6 +18,7 @@ import (
 	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/grpc/services"
+	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/duc-cnzj/mars/internal/middlewares"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/validator"
@@ -76,42 +77,48 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 			})),
 			func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 				defer func(t time.Time) {
-					user, err := marsauthorizor.GetUser(ctx)
-					if err == nil {
+					user, e := marsauthorizor.GetUser(ctx)
+					if e == nil {
 						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
 					}
 				}(time.Now())
 
-				return handler(srv, ss)
+				e := handler(srv, ss)
+				if e != nil {
+					metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
+				}
+				return e
 			},
-			grpc_prometheus.StreamServerInterceptor,
 		),
 		grpc.ChainUnaryInterceptor(
 			grpc_auth.UnaryServerInterceptor(Authenticate),
+			func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+				defer func(t time.Time) {
+					user := &contracts.UserInfo{}
+					if u, err := marsauthorizor.GetUser(ctx); err == nil {
+						user = u
+					}
+					mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
+					metrics.GrpcLatency.With(prometheus.Labels{"method": info.FullMethod}).Observe(time.Since(t).Seconds())
+				}(time.Now())
+
+				i, err := handler(ctx, req)
+				if err != nil {
+					metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
+				}
+				return i, err
+			},
 			middlewares.TraceUnaryServerInterceptor,
 			marsauthorizor.UnaryServerInterceptor(),
 			validator.UnaryServerInterceptor(),
-			func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-				defer func(t time.Time) {
-					user, err := marsauthorizor.GetUser(ctx)
-					if err == nil {
-						mlog.Infof("[Grpc]: user: %v, visit: %v, use: %s.", user.Name, info.FullMethod, time.Since(t))
-					}
-				}(time.Now())
-
-				return handler(ctx, req)
-			},
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p any) (err error) {
 				bf := make([]byte, 1024*5)
 				runtime.Stack(bf, false)
 				mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 				return nil
 			})),
-			grpc_prometheus.UnaryServerInterceptor,
 		),
 	)
-
-	grpc_prometheus.Register(server)
 
 	for _, registryFunc := range services.RegisteredServers() {
 		registryFunc(server, app.App())

@@ -3,14 +3,15 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"io"
+	"strings"
+	"sync/atomic"
+
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/metadata"
-	"io"
-	"strings"
-	"sync/atomic"
 
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars-client/v4/changelog"

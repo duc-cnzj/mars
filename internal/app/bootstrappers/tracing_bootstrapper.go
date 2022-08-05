@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"context"
+	"time"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -27,14 +28,15 @@ func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 			return err
 		}
 		tp := trace.NewTracerProvider(
-			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithBatcher(jaeexp),
 			trace.WithResource(newResource()),
 		)
 		otel.SetTracerProvider(tp)
 		app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 			mlog.Info("shutdown tracer")
-			if err := tp.Shutdown(context.TODO()); err != nil {
+			timeout, cancelFunc := context.WithTimeout(context.TODO(), 3*time.Second)
+			defer cancelFunc()
+			if err := tp.Shutdown(timeout); err != nil {
 				mlog.Error(err)
 			}
 		})

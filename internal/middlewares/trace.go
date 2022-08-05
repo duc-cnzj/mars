@@ -83,7 +83,7 @@ func (hc GatewayCarrier) Keys() []string {
 }
 
 func TraceUnaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	start, span := app.Tracer().Start(ctx, "TraceUnaryClientInterceptor")
+	start, span := app.Tracer().Start(ctx, "TraceUnaryClientInterceptor: "+method)
 	defer span.End()
 	span.SetAttributes(attribute.String("method", method))
 	ctxt := propagation.TraceContext{}
@@ -110,9 +110,8 @@ func TraceUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryS
 		ctx = ctxt.Extract(ctx, GatewayCarrier(incomingContext))
 		md = incomingContext
 	}
-	start, span := app.Tracer().Start(ctx, "grpc server")
+	start, span := app.Tracer().Start(ctx, info.FullMethod)
 	defer span.End()
-	span.SetAttributes(attribute.String("method", info.FullMethod))
 	incomingContext := metadata.NewIncomingContext(start, md)
 	user, _ := marsauthorizor.GetUser(incomingContext)
 	if user != nil {
@@ -134,9 +133,10 @@ func TraceStreamServerInterceptor(srv any, ss grpc.ServerStream, info *grpc.Stre
 		ctx = ctxt.Extract(ctx, GatewayCarrier(incomingContext))
 		md = incomingContext
 	}
-	start, span := app.Tracer().Start(ctx, "grpc stream server")
+	start, span := app.Tracer().Start(ctx, info.FullMethod)
 	defer span.End()
-	span.SetAttributes(attribute.String("method", info.FullMethod))
+	span.SetAttributes(attribute.Bool("is_server_stream", info.IsServerStream))
+	span.SetAttributes(attribute.Bool("is_client_stream", info.IsClientStream))
 	incomingContext := metadata.NewIncomingContext(start, md)
 	user, _ := marsauthorizor.GetUser(incomingContext)
 	if user != nil {

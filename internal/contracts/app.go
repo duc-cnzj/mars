@@ -1,7 +1,6 @@
 package contracts
 
 //go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/internal/contracts ApplicationInterface
-//go:generate mockgen -destination ../mock/mock_metrics.go -package mock github.com/duc-cnzj/mars/internal/contracts Metrics
 
 import (
 	"context"
@@ -18,11 +17,6 @@ import (
 )
 
 type Callback func(ApplicationInterface)
-
-type Metrics interface {
-	IncWebsocketConn()
-	DecWebsocketConn()
-}
 
 type Server interface {
 	Run(context.Context) error
@@ -48,9 +42,6 @@ type OidcConfig map[string]OidcConfigItem
 
 type ApplicationInterface interface {
 	IsDebug() bool
-
-	SetMetrics(Metrics)
-	Metrics() Metrics
 
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
