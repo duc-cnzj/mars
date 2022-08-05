@@ -66,7 +66,6 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(Authenticate),
-			middlewares.TraceStreamServerInterceptor,
 			marsauthorizor.StreamServerInterceptor(),
 			validator.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p any) (err error) {

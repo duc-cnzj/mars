@@ -15,7 +15,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	trace2 "go.opentelemetry.io/otel/trace"
@@ -236,95 +235,4 @@ func TestTraceUnaryServerInterceptor1(t *testing.T) {
 	assert.Equal(t, mm["user"], "")
 	assert.Equal(t, mm["email"], "")
 	assert.Equal(t, codes.Unset, s.Status().Code)
-}
-
-type mockGrpcStream struct {
-	grpc.ServerStream
-	ctx context.Context
-}
-
-func (s *mockGrpcStream) Context() context.Context {
-	return s.ctx
-}
-
-func TestTraceStreamServerInterceptor(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	tp := trace.NewTracerProvider()
-	tracer := tp.Tracer("test")
-	tw := &tracerWrap{t: tracer}
-	app.EXPECT().GetTracer().Return(tw)
-	base := context.TODO()
-	start, span := tracer.Start(base, "base")
-	defer span.End()
-
-	ctxt := propagation.TraceContext{}
-	md := metadata.MD{}
-	ctxt.Inject(start, GatewayCarrier(md))
-
-	err := TraceStreamServerInterceptor(nil, &mockGrpcStream{
-		ctx: marsauthorizor.SetUser(metadata.NewIncomingContext(context.TODO(), md), &contracts.UserInfo{
-			OpenIDClaims: contracts.OpenIDClaims{
-				Name:  "duc",
-				Email: "1025434218@qq.com",
-			},
-		}),
-	}, &grpc.StreamServerInfo{
-		FullMethod:     "test",
-		IsClientStream: true,
-		IsServerStream: true,
-	}, func(srv any, stream grpc.ServerStream) error {
-		return errors.New("xxx")
-	})
-	assert.Equal(t, errors.New("xxx"), err)
-	s := tw.span.(trace.ReadWriteSpan)
-	assert.True(t, s.Parent().HasTraceID())
-	mm := make(map[string]any)
-	for _, value := range s.Attributes() {
-		var v any
-		switch value.Value.Type() {
-		case attribute.BOOL:
-			v = value.Value.AsBool()
-		case attribute.STRING:
-			v = value.Value.AsString()
-		}
-		mm[string(value.Key)] = v
-	}
-	assert.Equal(t, mm["is_server_stream"], true)
-	assert.Equal(t, mm["is_client_stream"], true)
-	assert.Equal(t, mm["user"], "duc")
-	assert.Equal(t, mm["email"], "1025434218@qq.com")
-	assert.Equal(t, codes.Error, s.Status().Code)
-	assert.Equal(t, "xxx", s.Status().Description)
-}
-
-func TestTraceStreamClientInterceptor(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	tp := trace.NewTracerProvider()
-	tracer := tp.Tracer("test")
-	tw := &tracerWrap{t: tracer}
-	app.EXPECT().GetTracer().Return(tw)
-	base := context.TODO()
-	start, span := tracer.Start(base, "base")
-	defer span.End()
-
-	res, err := TraceStreamClientInterceptor(metadata.NewOutgoingContext(start, metadata.MD{"a": []string{"b"}}), nil, nil, "test", func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-		md, _ := metadata.FromOutgoingContext(ctx)
-		assert.Equal(t, md.Get("a")[0], "b")
-		return nil, errors.New("xxx")
-	})
-	assert.Nil(t, res)
-	assert.Equal(t, "xxx", err.Error())
-	s := tw.span.(trace.ReadWriteSpan)
-	assert.True(t, s.Parent().HasTraceID())
-	mm := make(map[string]string)
-	for _, value := range s.Attributes() {
-		mm[string(value.Key)] = value.Value.AsString()
-	}
-	assert.Equal(t, mm["method"], "test")
-	assert.Equal(t, codes.Error, s.Status().Code)
-	assert.Equal(t, "xxx", s.Status().Description)
 }

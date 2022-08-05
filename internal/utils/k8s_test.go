@@ -560,3 +560,53 @@ func TestRuntimeObjectList_Has(t *testing.T) {
 		},
 	}))
 }
+
+const f = `
+---
+# Source: mars/templates/rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-mars
+  namespace: devops-test
+  labels:
+    helm.sh/chart: mars-1.3.1
+    app.kubernetes.io/name: mars
+    app.kubernetes.io/instance: mars-charts
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: mars/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mars-charts-secret
+  labels:
+    helm.sh/chart: mars-1.3.1
+    app.kubernetes.io/name: mars
+    app.kubernetes.io/instance: mars-charts
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+stringData:
+  config.yaml: |
+    private_key: "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----"
+---
+# Source: mars/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: user-mars-devops-test-ClusterRoleBinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: user-mars
+    namespace: devops-test
+`
+
+func TestSplitManifests(t *testing.T) {
+	manifests := SplitManifests(f)
+	assert.Len(t, manifests, 3)
+}
