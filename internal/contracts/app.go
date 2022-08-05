@@ -1,12 +1,13 @@
 package contracts
 
 //go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/internal/contracts ApplicationInterface
-//go:generate mockgen -destination ../mock/mock_metrics.go -package mock github.com/duc-cnzj/mars/internal/contracts Metrics
+//go:generate mockgen -destination ../mock/mock_tracer.go -package mock go.opentelemetry.io/otel/trace Tracer
 
 import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 	"k8s.io/client-go/kubernetes"
@@ -17,11 +18,6 @@ import (
 )
 
 type Callback func(ApplicationInterface)
-
-type Metrics interface {
-	IncWebsocketConn()
-	DecWebsocketConn()
-}
 
 type Server interface {
 	Run(context.Context) error
@@ -47,9 +43,6 @@ type OidcConfig map[string]OidcConfigItem
 
 type ApplicationInterface interface {
 	IsDebug() bool
-
-	SetMetrics(Metrics)
-	Metrics() Metrics
 
 	K8sClient() *K8sClient
 	SetK8sClient(*K8sClient)
@@ -89,4 +82,7 @@ type ApplicationInterface interface {
 
 	SetCache(CacheInterface)
 	Cache() CacheInterface
+
+	SetTracer(trace.Tracer)
+	GetTracer() trace.Tracer
 }

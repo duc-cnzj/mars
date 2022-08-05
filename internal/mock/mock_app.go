@@ -11,6 +11,7 @@ import (
 	config "github.com/duc-cnzj/mars/internal/config"
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
+	trace "go.opentelemetry.io/otel/trace"
 	singleflight "golang.org/x/sync/singleflight"
 )
 
@@ -187,6 +188,20 @@ func (mr *MockApplicationInterfaceMockRecorder) GetPlugins() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlugins", reflect.TypeOf((*MockApplicationInterface)(nil).GetPlugins))
 }
 
+// GetTracer mocks base method.
+func (m *MockApplicationInterface) GetTracer() trace.Tracer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTracer")
+	ret0, _ := ret[0].(trace.Tracer)
+	return ret0
+}
+
+// GetTracer indicates an expected call of GetTracer.
+func (mr *MockApplicationInterfaceMockRecorder) GetTracer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracer", reflect.TypeOf((*MockApplicationInterface)(nil).GetTracer))
+}
+
 // IsDebug mocks base method.
 func (m *MockApplicationInterface) IsDebug() bool {
 	m.ctrl.T.Helper()
@@ -213,20 +228,6 @@ func (m *MockApplicationInterface) K8sClient() *contracts.K8sClient {
 func (mr *MockApplicationInterfaceMockRecorder) K8sClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "K8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).K8sClient))
-}
-
-// Metrics mocks base method.
-func (m *MockApplicationInterface) Metrics() contracts.Metrics {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Metrics")
-	ret0, _ := ret[0].(contracts.Metrics)
-	return ret0
-}
-
-// Metrics indicates an expected call of Metrics.
-func (mr *MockApplicationInterfaceMockRecorder) Metrics() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Metrics", reflect.TypeOf((*MockApplicationInterface)(nil).Metrics))
 }
 
 // Oidc mocks base method.
@@ -329,18 +330,6 @@ func (mr *MockApplicationInterfaceMockRecorder) SetK8sClient(arg0 any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetK8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).SetK8sClient), arg0)
 }
 
-// SetMetrics mocks base method.
-func (m *MockApplicationInterface) SetMetrics(arg0 contracts.Metrics) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetMetrics", arg0)
-}
-
-// SetMetrics indicates an expected call of SetMetrics.
-func (mr *MockApplicationInterfaceMockRecorder) SetMetrics(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMetrics", reflect.TypeOf((*MockApplicationInterface)(nil).SetMetrics), arg0)
-}
-
 // SetOidc mocks base method.
 func (m *MockApplicationInterface) SetOidc(arg0 contracts.OidcConfig) {
 	m.ctrl.T.Helper()
@@ -363,6 +352,18 @@ func (m *MockApplicationInterface) SetPlugins(arg0 map[string]contracts.PluginIn
 func (mr *MockApplicationInterfaceMockRecorder) SetPlugins(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPlugins", reflect.TypeOf((*MockApplicationInterface)(nil).SetPlugins), arg0)
+}
+
+// SetTracer mocks base method.
+func (m *MockApplicationInterface) SetTracer(arg0 trace.Tracer) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTracer", arg0)
+}
+
+// SetTracer indicates an expected call of SetTracer.
+func (mr *MockApplicationInterfaceMockRecorder) SetTracer(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTracer", reflect.TypeOf((*MockApplicationInterface)(nil).SetTracer), arg0)
 }
 
 // SetUploader mocks base method.

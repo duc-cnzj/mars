@@ -7,7 +7,11 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/duc-cnzj/mars-client/v4/gitconfig"
+	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars-client/v4/changelog"
@@ -17,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/file"
 	"github.com/duc-cnzj/mars-client/v4/git"
+	"github.com/duc-cnzj/mars-client/v4/gitconfig"
 	"github.com/duc-cnzj/mars-client/v4/metrics"
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/picture"
@@ -65,6 +70,7 @@ type Client struct {
 
 	conn        *grpc.ClientConn
 	dialOptions []grpc.DialOption
+	tracer      trace.Tracer
 
 	auth      auth.AuthClient
 	changelog changelog.ChangelogClient
@@ -314,5 +320,55 @@ func WithUnaryClientInterceptor(op grpc.UnaryClientInterceptor) Option {
 func WithStreamClientInterceptor(op grpc.StreamClientInterceptor) Option {
 	return func(c *Client) {
 		c.StreamClientInterceptors = append(c.StreamClientInterceptors, op)
+	}
+}
+
+func WithTracer(tracer trace.Tracer) Option {
+	return func(c *Client) {
+		c.tracer = tracer
+		c.UnaryClientInterceptors = append(c.UnaryClientInterceptors, TraceUnaryClientInterceptor(c.tracer))
+	}
+}
+
+type GatewayCarrier metadata.MD
+
+func (hc GatewayCarrier) Get(key string) string {
+	vals := metadata.MD(hc).Get(key)
+	if len(vals) > 0 {
+		return vals[0]
+	}
+	return ""
+}
+
+func (hc GatewayCarrier) Set(key string, value string) {
+	metadata.MD(hc).Set(key, value)
+}
+
+func (hc GatewayCarrier) Keys() []string {
+	keys := make([]string, 0, len(hc))
+	for k := range hc {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func TraceUnaryClientInterceptor(tracer trace.Tracer) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		start, span := tracer.Start(ctx, "TraceUnaryClientInterceptor: "+method)
+		defer span.End()
+		span.SetAttributes(attribute.String("method", method))
+		ctxt := propagation.TraceContext{}
+		md := metadata.MD{}
+		if outMD, found := metadata.FromOutgoingContext(ctx); found {
+			md = outMD
+		}
+		ctxt.Inject(start, GatewayCarrier(md))
+		ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
+
+		err := invoker(ctx, method, req, reply, cc, opts...)
+		if err != nil {
+			span.SetStatus(otelcodes.Error, err.Error())
+		}
+		return err
 	}
 }

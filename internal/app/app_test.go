@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/cache"
+
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -63,7 +65,11 @@ func TestApplication_Cache(t *testing.T) {
 	defer m.Finish()
 	c := mock.NewMockCacheInterface(m)
 	a.SetCache(c)
-	assert.Same(t, c, a.Cache())
+	assert.IsType(t, (*cache.MetricsForCache)(nil), a.Cache())
+	assert.Same(t, c, a.Cache().(*cache.MetricsForCache).Cache)
+
+	a.SetCache(cache.NewMetricsForCache(c))
+	assert.Same(t, c, a.Cache().(*cache.MetricsForCache).Cache)
 }
 
 func TestApplication_Config(t *testing.T) {
@@ -129,15 +135,6 @@ func TestApplication_K8sClient(t *testing.T) {
 	c := &contracts.K8sClient{}
 	a.SetK8sClient(c)
 	assert.Same(t, c, a.K8sClient())
-}
-
-func TestApplication_Metrics(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	a := NewApplication(&config.Config{})
-	mm := mock.NewMockMetrics(m)
-	a.SetMetrics(mm)
-	assert.Same(t, mm, a.Metrics())
 }
 
 func TestApplication_Oidc(t *testing.T) {
@@ -233,13 +230,6 @@ func TestNewApplication(t *testing.T) {
 	assert.Implements(t, (*contracts.ApplicationInterface)(nil), NewApplication(&config.Config{}))
 }
 
-func Test_emptyMetrics_DecWebsocketConn(t *testing.T) {
-	em := emptyMetrics{}
-	em.DecWebsocketConn()
-	em.IncWebsocketConn()
-	assert.True(t, true)
-}
-
 func TestApplication_SetOidc(t *testing.T) {
 	a := NewApplication(&config.Config{})
 	cfg := contracts.OidcConfig{
@@ -248,4 +238,13 @@ func TestApplication_SetOidc(t *testing.T) {
 	}
 	a.SetOidc(cfg)
 	assert.Equal(t, cfg, a.Oidc())
+}
+
+func TestApplication_SetTracer(t *testing.T) {
+	a := NewApplication(&config.Config{})
+	m := gomock.NewController(t)
+	defer m.Finish()
+	tracer := mock.NewMockTracer(m)
+	a.SetTracer(tracer)
+	assert.Same(t, tracer, a.GetTracer())
 }

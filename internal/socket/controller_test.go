@@ -441,10 +441,6 @@ func TestWebsocketManager_initConn(t *testing.T) {
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
 	app.EXPECT().GetPluginByName("test_ws").Return(ws)
 
-	me := mock.NewMockMetrics(m)
-	app.EXPECT().Metrics().Return(me)
-	me.EXPECT().IncWebsocketConn().Times(1)
-
 	parse, _ := url.Parse("https://mars.local/ws?uid=xxx")
 	r := &http.Request{
 		URL: parse,
@@ -478,10 +474,6 @@ func TestWebsocketManager_initConn2(t *testing.T) {
 	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
 	app.EXPECT().GetPluginByName("test_ws").Return(ws)
-
-	me := mock.NewMockMetrics(m)
-	app.EXPECT().Metrics().Return(me)
-	me.EXPECT().IncWebsocketConn().Times(1)
 
 	parse, _ := url.Parse("https://mars.local/ws")
 	r := &http.Request{
@@ -532,10 +524,6 @@ func TestWsConn_SetUser(t *testing.T) {
 func TestWsConn_Shutdown(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := testutil.MockApp(m)
-	me := mock.NewMockMetrics(m)
-	me.EXPECT().DecWebsocketConn().Times(1)
-	app.EXPECT().Metrics().Return(me)
 	cs := mock.NewMockCancelSignaler(m)
 	cs.EXPECT().CancelAll().Times(1)
 	tm := mock.NewMockSessionMapper(m)

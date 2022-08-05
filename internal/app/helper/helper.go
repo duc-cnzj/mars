@@ -4,6 +4,8 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"
@@ -50,14 +52,14 @@ func K8sMetrics() versioned.Interface {
 	return App().K8sClient().MetricsClient
 }
 
-func Metrics() contracts.Metrics {
-	return App().Metrics()
-}
-
 func Singleflight() *singleflight.Group {
 	return App().Singleflight()
 }
 
 func Cache() contracts.CacheInterface {
 	return App().Cache()
+}
+
+func Tracer() trace.Tracer {
+	return App().GetTracer()
 }

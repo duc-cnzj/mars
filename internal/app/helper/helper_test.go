@@ -3,6 +3,8 @@ package app
 import (
 	"testing"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -12,17 +14,17 @@ import (
 )
 
 type testApp struct {
-	authCalled       bool
-	cacheCalled      bool
-	configCalled     bool
-	dbCalled         bool
-	eventCalled      bool
-	k8sCalled        bool
-	k8smetricsCalled bool
-	dbmanager        contracts.DBManager
-	oidcCalled       bool
-	uploaderCalled   bool
-	sfCalled         bool
+	authCalled     bool
+	cacheCalled    bool
+	configCalled   bool
+	dbCalled       bool
+	eventCalled    bool
+	k8sCalled      bool
+	dbmanager      contracts.DBManager
+	oidcCalled     bool
+	uploaderCalled bool
+	sfCalled       bool
+	tracerCalled   bool
 
 	contracts.ApplicationInterface
 }
@@ -44,6 +46,12 @@ func (a *testApp) Singleflight() *singleflight.Group {
 	a.sfCalled = true
 	return nil
 }
+
+func (a *testApp) GetTracer() trace.Tracer {
+	a.tracerCalled = true
+	return nil
+}
+
 func (a *testApp) K8sClient() *contracts.K8sClient {
 	a.k8sCalled = true
 	return &contracts.K8sClient{}
@@ -79,10 +87,6 @@ func (a *testApp) Config() *config.Config {
 }
 func (a *testApp) Cache() contracts.CacheInterface {
 	a.cacheCalled = true
-	return nil
-}
-func (a *testApp) Metrics() contracts.Metrics {
-	a.k8smetricsCalled = true
 	return nil
 }
 
@@ -150,13 +154,6 @@ func TestK8sMetrics(t *testing.T) {
 	assert.True(t, a.k8sCalled)
 }
 
-func TestMetrics(t *testing.T) {
-	a := &testApp{}
-	instance.SetInstance(a)
-	Metrics()
-	assert.True(t, a.k8smetricsCalled)
-}
-
 func TestOidc(t *testing.T) {
 	a := &testApp{}
 	instance.SetInstance(a)
@@ -176,4 +173,11 @@ func TestUploader(t *testing.T) {
 	instance.SetInstance(a)
 	Uploader()
 	assert.True(t, a.uploaderCalled)
+}
+
+func TestTracer(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	Tracer()
+	assert.True(t, a.tracerCalled)
 }

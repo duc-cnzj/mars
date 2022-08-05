@@ -4,10 +4,13 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"reflect"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
@@ -17,6 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/database"
 	"github.com/duc-cnzj/mars/internal/event"
+	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/duc-cnzj/mars/internal/mlog"
 )
 
@@ -47,14 +51,6 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.AppBootstrapper{},
 }
 
-type emptyMetrics struct{}
-
-func (e *emptyMetrics) IncWebsocketConn() {
-}
-
-func (e *emptyMetrics) DecWebsocketConn() {
-}
-
 type Application struct {
 	done          context.Context
 	doneFunc      func()
@@ -62,7 +58,6 @@ type Application struct {
 	clientSet     *contracts.K8sClient
 	dbManager     contracts.DBManager
 	dispatcher    contracts.DispatcherInterface
-	metrics       contracts.Metrics
 	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
 
@@ -74,8 +69,9 @@ type Application struct {
 	uploader     contracts.Uploader
 	auth         contracts.AuthInterface
 
-	sf    *singleflight.Group
-	cache contracts.CacheInterface
+	sf     *singleflight.Group
+	cache  contracts.CacheInterface
+	tracer trace.Tracer
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {
@@ -83,7 +79,11 @@ func (app *Application) SetCache(c contracts.CacheInterface) {
 }
 
 func (app *Application) Cache() contracts.CacheInterface {
-	return app.cache
+	if c, ok := app.cache.(*cache.MetricsForCache); ok {
+		return c
+	}
+
+	return cache.NewMetricsForCache(app.cache)
 }
 
 func (app *Application) Auth() contracts.AuthInterface {
@@ -108,14 +108,6 @@ func (app *Application) Oidc() contracts.OidcConfig {
 
 func (app *Application) SetOidc(provider contracts.OidcConfig) {
 	app.oidcProvider = provider
-}
-
-func (app *Application) SetMetrics(metrics contracts.Metrics) {
-	app.metrics = metrics
-}
-
-func (app *Application) Metrics() contracts.Metrics {
-	return app.metrics
 }
 
 func (app *Application) GetPluginByName(name string) contracts.PluginInterface {
@@ -175,7 +167,6 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 		doneFunc:      cancelFunc,
 		hooks:         map[Hook][]contracts.Callback{},
 		servers:       []contracts.Server{},
-		metrics:       &emptyMetrics{},
 		sf:            &singleflight.Group{},
 		cache:         &cache.NoCache{},
 	}
@@ -190,9 +181,14 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	instance.SetInstance(app)
 
 	for _, bootstrapper := range mustBooted {
-		if err := bootstrapper.Bootstrap(app); err != nil {
-			mlog.Fatal(err)
-		}
+		func() {
+			defer func(t time.Time) {
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+			}(time.Now())
+			if err := bootstrapper.Bootstrap(app); err != nil {
+				mlog.Fatal(err)
+			}
+		}()
 	}
 
 	if app.IsDebug() {
@@ -208,7 +204,13 @@ func printConfig(app contracts.ApplicationInterface) {
 
 func (app *Application) Bootstrap() error {
 	for _, bootstrapper := range app.bootstrappers {
-		if err := bootstrapper.Bootstrap(app); err != nil {
+		err := func() error {
+			defer func(t time.Time) {
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+			}(time.Now())
+			return bootstrapper.Bootstrap(app)
+		}()
+		if err != nil {
 			return err
 		}
 	}
@@ -218,6 +220,14 @@ func (app *Application) Bootstrap() error {
 
 func (app *Application) Config() *config.Config {
 	return app.config
+}
+
+func (app *Application) SetTracer(t trace.Tracer) {
+	app.tracer = t
+}
+
+func (app *Application) GetTracer() trace.Tracer {
+	return app.tracer
 }
 
 func (app *Application) DBManager() contracts.DBManager {

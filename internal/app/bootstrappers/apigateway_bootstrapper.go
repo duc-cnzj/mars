@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -31,9 +32,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -68,12 +67,25 @@ type apiGateway struct {
 	server   *http.Server
 }
 
+func HeaderMatcher(key string) (string, bool) {
+	key = strings.ToLower(key)
+	switch key {
+	case "tracestate":
+		fallthrough
+	case "traceparent":
+		return key, true
+	default:
+		return runtime.DefaultHeaderMatcher(key)
+	}
+}
 func (a *apiGateway) Run(ctx context.Context) error {
 	mlog.Infof("[Server]: start apiGateway runner at %s.", a.endpoint)
 
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
+		runtime.WithOutgoingHeaderMatcher(HeaderMatcher),
+		runtime.WithIncomingHeaderMatcher(HeaderMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseEnumNumbers:  true,
@@ -87,7 +99,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithFilterFunc(middlewares.TracingIgnoreFn), grpc_opentracing.WithTracer(opentracing.GlobalTracer()))),
+		grpc.WithChainUnaryInterceptor(middlewares.TraceUnaryClientInterceptor),
 	}
 
 	for _, f := range services.RegisteredEndpoints() {

@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 
+	"helm.sh/helm/v3/pkg/releaseutil"
+
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -84,6 +86,17 @@ func (l RuntimeObjectList) Has(in runtime.Object) bool {
 	return false
 }
 
+// SplitManifests
+// 因为有些 secret 自带 --- 的值，导致 spilt "---" 解析异常
+func SplitManifests(manifest string) []string {
+	mapManifests := releaseutil.SplitManifests(manifest)
+	var manifests []string
+	for _, s := range mapManifests {
+		manifests = append(manifests, s)
+	}
+	return manifests
+}
+
 func FilterRuntimeObjectFromManifests[T runtime.Object](manifests []string) RuntimeObjectList {
 	var m = make(RuntimeObjectList, 0)
 	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
@@ -117,7 +130,7 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 	cfg := app.Config()
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
-		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](Filter[string](strings.Split(project.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 }))
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](SplitManifests(project.Manifest))
 	}
 
 	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
@@ -174,7 +187,7 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 func GetIngressMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
-		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](Filter[string](strings.Split(project.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 }))
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](SplitManifests(project.Manifest))
 	}
 
 	var m = map[string][]*Endpoint{}
