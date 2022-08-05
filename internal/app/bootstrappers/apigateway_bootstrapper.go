@@ -100,6 +100,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(middlewares.TraceUnaryClientInterceptor),
+		grpc.WithChainStreamInterceptor(middlewares.TraceStreamClientInterceptor),
 	}
 
 	for _, f := range services.RegisteredEndpoints() {

@@ -298,3 +298,33 @@ func TestTraceStreamServerInterceptor(t *testing.T) {
 	assert.Equal(t, codes.Error, s.Status().Code)
 	assert.Equal(t, "xxx", s.Status().Description)
 }
+
+func TestTraceStreamClientInterceptor(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	tp := trace.NewTracerProvider()
+	tracer := tp.Tracer("test")
+	tw := &tracerWrap{t: tracer}
+	app.EXPECT().GetTracer().Return(tw)
+	base := context.TODO()
+	start, span := tracer.Start(base, "base")
+	defer span.End()
+
+	res, err := TraceStreamClientInterceptor(metadata.NewOutgoingContext(start, metadata.MD{"a": []string{"b"}}), nil, nil, "test", func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		md, _ := metadata.FromOutgoingContext(ctx)
+		assert.Equal(t, md.Get("a")[0], "b")
+		return nil, errors.New("xxx")
+	})
+	assert.Nil(t, res)
+	assert.Equal(t, "xxx", err.Error())
+	s := tw.span.(trace.ReadWriteSpan)
+	assert.True(t, s.Parent().HasTraceID())
+	mm := make(map[string]string)
+	for _, value := range s.Attributes() {
+		mm[string(value.Key)] = value.Value.AsString()
+	}
+	assert.Equal(t, mm["method"], "test")
+	assert.Equal(t, codes.Error, s.Status().Code)
+	assert.Equal(t, "xxx", s.Status().Description)
+}

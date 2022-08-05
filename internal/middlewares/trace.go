@@ -90,7 +90,6 @@ func TraceUnaryClientInterceptor(ctx context.Context, method string, req, reply 
 	ctxt := propagation.TraceContext{}
 	md := metadata.MD{}
 	if outMD, found := metadata.FromOutgoingContext(ctx); found {
-		ctxt.Inject(start, GatewayCarrier(outMD))
 		md = outMD
 	}
 	ctxt.Inject(start, GatewayCarrier(md))
@@ -101,6 +100,25 @@ func TraceUnaryClientInterceptor(ctx context.Context, method string, req, reply 
 		span.SetStatus(codes.Error, err.Error())
 	}
 	return err
+}
+
+func TraceStreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	start, span := app.Tracer().Start(ctx, "TraceStreamClientInterceptor: "+method)
+	defer span.End()
+	span.SetAttributes(attribute.String("method", method))
+	ctxt := propagation.TraceContext{}
+	md := metadata.MD{}
+	if outMD, found := metadata.FromOutgoingContext(ctx); found {
+		md = outMD
+	}
+	ctxt.Inject(start, GatewayCarrier(md))
+	ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
+
+	stream, err := streamer(ctx, desc, cc, method, opts...)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return stream, err
 }
 
 func TraceUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {

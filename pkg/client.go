@@ -360,7 +360,6 @@ func TraceUnaryClientInterceptor(tracer trace.Tracer) grpc.UnaryClientIntercepto
 		ctxt := propagation.TraceContext{}
 		md := metadata.MD{}
 		if outMD, found := metadata.FromOutgoingContext(ctx); found {
-			ctxt.Inject(start, GatewayCarrier(outMD))
 			md = outMD
 		}
 		ctxt.Inject(start, GatewayCarrier(md))
