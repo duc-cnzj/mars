@@ -609,4 +609,5 @@ subjects:
 func TestSplitManifests(t *testing.T) {
 	manifests := SplitManifests(f)
 	assert.Len(t, manifests, 3)
+	assert.NotEqual(t, 3, len(strings.Split(f, "---")))
 }
