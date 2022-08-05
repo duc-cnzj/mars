@@ -12,17 +12,16 @@ import (
 )
 
 type testApp struct {
-	authCalled       bool
-	cacheCalled      bool
-	configCalled     bool
-	dbCalled         bool
-	eventCalled      bool
-	k8sCalled        bool
-	k8smetricsCalled bool
-	dbmanager        contracts.DBManager
-	oidcCalled       bool
-	uploaderCalled   bool
-	sfCalled         bool
+	authCalled     bool
+	cacheCalled    bool
+	configCalled   bool
+	dbCalled       bool
+	eventCalled    bool
+	k8sCalled      bool
+	dbmanager      contracts.DBManager
+	oidcCalled     bool
+	uploaderCalled bool
+	sfCalled       bool
 
 	contracts.ApplicationInterface
 }
@@ -79,10 +78,6 @@ func (a *testApp) Config() *config.Config {
 }
 func (a *testApp) Cache() contracts.CacheInterface {
 	a.cacheCalled = true
-	return nil
-}
-func (a *testApp) Metrics() contracts.Metrics {
-	a.k8smetricsCalled = true
 	return nil
 }
 
@@ -148,13 +143,6 @@ func TestK8sMetrics(t *testing.T) {
 	instance.SetInstance(a)
 	K8sMetrics()
 	assert.True(t, a.k8sCalled)
-}
-
-func TestMetrics(t *testing.T) {
-	a := &testApp{}
-	instance.SetInstance(a)
-	Metrics()
-	assert.True(t, a.k8smetricsCalled)
 }
 
 func TestOidc(t *testing.T) {

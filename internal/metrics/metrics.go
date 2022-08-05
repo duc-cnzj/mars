@@ -79,6 +79,14 @@ var (
 		Help:        "cache bytes 统计",
 		ConstLabels: prometheus.Labels{"hostname": hostname},
 	}, []string{"key"})
+
+	CacheRememberDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Subsystem:   system,
+		Name:        "cache_remember_duration_seconds",
+		Help:        "cache Remember 调用时间",
+		ConstLabels: prometheus.Labels{"hostname": hostname},
+		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+	}, []string{"key"})
 )
 
 func init() {
@@ -92,4 +100,5 @@ func init() {
 	prometheus.MustRegister(WebsocketPanicCount)
 
 	prometheus.MustRegister(CacheBytesGauge)
+	prometheus.MustRegister(CacheRememberDuration)
 }

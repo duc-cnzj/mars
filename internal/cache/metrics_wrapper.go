@@ -1,21 +1,26 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type MetricsForCache struct {
-	c contracts.CacheInterface
+	Cache contracts.CacheInterface
 }
 
 func NewMetricsForCache(c contracts.CacheInterface) *MetricsForCache {
-	return &MetricsForCache{c: c}
+	return &MetricsForCache{Cache: c}
 }
 
 func (m *MetricsForCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	bytes, err := m.c.Remember(key, seconds, fn)
+	defer func(t time.Time) {
+		metrics.CacheRememberDuration.With(prometheus.Labels{"key": key}).Observe(time.Since(t).Seconds())
+	}(time.Now())
+	bytes, err := m.Cache.Remember(key, seconds, fn)
 	if err == nil {
 		metrics.CacheBytesGauge.With(prometheus.Labels{"key": key}).Set(float64(len(bytes)))
 	}
@@ -24,5 +29,5 @@ func (m *MetricsForCache) Remember(key string, seconds int, fn func() ([]byte, e
 }
 
 func (m *MetricsForCache) Clear(key string) error {
-	return m.c.Clear(key)
+	return m.Cache.Clear(key)
 }
