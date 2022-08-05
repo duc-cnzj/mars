@@ -27,10 +27,14 @@ func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 		if err != nil {
 			return err
 		}
-		tp := trace.NewTracerProvider(
+		opts := []trace.TracerProviderOption{
 			trace.WithBatcher(jaeexp),
 			trace.WithResource(newResource()),
-		)
+		}
+		if !app.IsDebug() {
+			opts = append(opts, trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(0.3))))
+		}
+		tp := trace.NewTracerProvider(opts...)
 		otel.SetTracerProvider(tp)
 		app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 			mlog.Info("shutdown tracer")
