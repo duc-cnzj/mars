@@ -354,18 +354,17 @@ func (hc GatewayCarrier) Keys() []string {
 
 func TraceUnaryClientInterceptor(tracer trace.Tracer) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		start, span := tracer.Start(ctx, "TraceUnaryClientInterceptor")
+		start, span := tracer.Start(ctx, "TraceUnaryClientInterceptor: "+method)
 		defer span.End()
 		span.SetAttributes(attribute.String("method", method))
 		ctxt := propagation.TraceContext{}
+		md := metadata.MD{}
 		if outMD, found := metadata.FromOutgoingContext(ctx); found {
 			ctxt.Inject(start, GatewayCarrier(outMD))
-			ctx = metadata.NewOutgoingContext(ctx, metadata.MD(outMD))
-		} else {
-			outMD := metadata.MD{}
-			ctxt.Inject(start, GatewayCarrier(outMD))
-			ctx = metadata.NewOutgoingContext(ctx, metadata.MD(outMD))
+			md = outMD
 		}
+		ctxt.Inject(start, GatewayCarrier(md))
+		ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
 
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if err != nil {
