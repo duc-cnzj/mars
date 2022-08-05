@@ -3,6 +3,8 @@ package app
 import (
 	"testing"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -22,6 +24,7 @@ type testApp struct {
 	oidcCalled     bool
 	uploaderCalled bool
 	sfCalled       bool
+	tracerCalled   bool
 
 	contracts.ApplicationInterface
 }
@@ -43,6 +46,12 @@ func (a *testApp) Singleflight() *singleflight.Group {
 	a.sfCalled = true
 	return nil
 }
+
+func (a *testApp) GetTracer() trace.Tracer {
+	a.tracerCalled = true
+	return nil
+}
+
 func (a *testApp) K8sClient() *contracts.K8sClient {
 	a.k8sCalled = true
 	return &contracts.K8sClient{}
@@ -164,4 +173,11 @@ func TestUploader(t *testing.T) {
 	instance.SetInstance(a)
 	Uploader()
 	assert.True(t, a.uploaderCalled)
+}
+
+func TestTracer(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	Tracer()
+	assert.True(t, a.tracerCalled)
 }

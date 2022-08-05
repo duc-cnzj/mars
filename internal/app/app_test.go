@@ -67,6 +67,9 @@ func TestApplication_Cache(t *testing.T) {
 	a.SetCache(c)
 	assert.IsType(t, (*cache.MetricsForCache)(nil), a.Cache())
 	assert.Same(t, c, a.Cache().(*cache.MetricsForCache).Cache)
+
+	a.SetCache(cache.NewMetricsForCache(c))
+	assert.Same(t, c, a.Cache().(*cache.MetricsForCache).Cache)
 }
 
 func TestApplication_Config(t *testing.T) {
@@ -235,4 +238,13 @@ func TestApplication_SetOidc(t *testing.T) {
 	}
 	a.SetOidc(cfg)
 	assert.Equal(t, cfg, a.Oidc())
+}
+
+func TestApplication_SetTracer(t *testing.T) {
+	a := NewApplication(&config.Config{})
+	m := gomock.NewController(t)
+	defer m.Finish()
+	tracer := mock.NewMockTracer(m)
+	a.SetTracer(tracer)
+	assert.Same(t, tracer, a.GetTracer())
 }

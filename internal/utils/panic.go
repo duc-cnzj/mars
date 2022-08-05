@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"runtime"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -28,8 +29,11 @@ func HandlePanicWithCallback(title string, callback func(error)) {
 
 	err := recover()
 	if err != nil {
-		if e, ok := err.(error); ok {
+		switch e := err.(type) {
+		case error:
 			callback(e)
+		case string:
+			callback(errors.New(e))
 		}
 		mlog.Errorf("[Panic]: title: %v, err: %v --- [%s]", title, err, string(bf))
 		if app.App() != nil && app.App().IsDebug() {
