@@ -269,6 +269,13 @@ func read(wsconn *WsConn) error {
 				})
 				defer func(t time.Time) {
 					metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(time.Since(t).Seconds())
+					e := recover()
+					if e == nil {
+						metrics.WebsocketRequestTotalSuccess.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+					} else {
+						metrics.WebsocketRequestTotalFail.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+						panic(e)
+					}
 				}(time.Now())
 
 				// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作

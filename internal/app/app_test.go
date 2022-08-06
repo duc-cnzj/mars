@@ -2,15 +2,17 @@ package app
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/duc-cnzj/mars/internal/cache"
-
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
 
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,12 +45,13 @@ func TestApplication_BeforeServerRunHooks(t *testing.T) {
 }
 
 type bootstrapper struct {
+	err    error
 	called bool
 }
 
 func (b *bootstrapper) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
 	b.called = true
-	return nil
+	return b.err
 }
 
 func TestApplication_Bootstrap(t *testing.T) {
@@ -57,6 +60,9 @@ func TestApplication_Bootstrap(t *testing.T) {
 	assert.False(t, b.called)
 	a.Bootstrap()
 	assert.True(t, b.called)
+
+	ap := NewApplication(&config.Config{}, WithBootstrappers(&bootstrapper{err: errors.New("xxx")}))
+	assert.Equal(t, "xxx", ap.Bootstrap().Error())
 }
 
 func TestApplication_Cache(t *testing.T) {
@@ -143,6 +149,8 @@ func TestApplication_Oidc(t *testing.T) {
 }
 
 type testServer struct {
+	runErr         error
+	shutdownErr    error
 	beforeShutdown func(*testServer)
 	ran            bool
 	shutdown       bool
@@ -150,13 +158,15 @@ type testServer struct {
 
 func (t *testServer) Run(ctx context.Context) error {
 	t.ran = true
-	return nil
+	return t.runErr
 }
 
 func (t *testServer) Shutdown(ctx context.Context) error {
-	t.beforeShutdown(t)
+	if t.beforeShutdown != nil {
+		t.beforeShutdown(t)
+	}
 	t.shutdown = true
-	return nil
+	return t.shutdownErr
 }
 
 func TestApplication_RegisterAfterShutdownFunc(t *testing.T) {
@@ -193,7 +203,14 @@ func TestApplication_RegisterBeforeShutdownFunc(t *testing.T) {
 
 func TestApplication_Run(t *testing.T) {
 	a := NewApplication(&config.Config{})
-	ts := &testServer{}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+	e := errors.New("xxx")
+	l.EXPECT().Fatal(e).Times(1)
+	ts := &testServer{runErr: e}
 	a.AddServer(ts)
 	a.Run()
 	assert.True(t, ts.ran)
@@ -247,4 +264,18 @@ func TestApplication_SetTracer(t *testing.T) {
 	tracer := mock.NewMockTracer(m)
 	a.SetTracer(tracer)
 	assert.Same(t, tracer, a.GetTracer())
+}
+
+func TestApplication_Shutdown(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	a := NewApplication(&config.Config{})
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+	e := errors.New("xxx")
+	a.AddServer(&testServer{shutdownErr: e})
+	l.EXPECT().Error(e).Times(1)
+	l.EXPECT().Info(gomock.Any()).Times(1)
+	a.Shutdown()
 }

@@ -84,8 +84,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 				e := handler(srv, ss)
 				if e != nil {
+					metrics.GrpcRequestTotalFail.With(prometheus.Labels{"method": info.FullMethod}).Inc()
 					metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
+				} else {
+					metrics.GrpcRequestTotalSuccess.With(prometheus.Labels{"method": info.FullMethod}).Inc()
 				}
+
 				return e
 			},
 		),
@@ -103,8 +107,12 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 				i, err := handler(ctx, req)
 				if err != nil {
+					metrics.GrpcRequestTotalFail.With(prometheus.Labels{"method": info.FullMethod}).Inc()
 					metrics.GrpcErrorCount.With(prometheus.Labels{"method": info.FullMethod}).Inc()
+				} else {
+					metrics.GrpcRequestTotalSuccess.With(prometheus.Labels{"method": info.FullMethod}).Inc()
 				}
+
 				return i, err
 			},
 			middlewares.TraceUnaryServerInterceptor,

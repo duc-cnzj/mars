@@ -51,6 +51,15 @@ var (
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
 	}, []string{"method"})
 
+	GrpcRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "grpc_request_total",
+		Help:        "grpc 请求总数",
+		ConstLabels: prometheus.Labels{"hostname": hostname},
+	}, []string{"method", "result"})
+	GrpcRequestTotalFail    = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
+	GrpcRequestTotalSuccess = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
+
 	GrpcErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "grpc_errors_total",
@@ -72,6 +81,15 @@ var (
 		Help:        "websocket panic 错误数量",
 		ConstLabels: prometheus.Labels{"hostname": hostname},
 	}, []string{"method"})
+
+	WebsocketRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "websocket_request_total",
+		Help:        "websocket 请求总数",
+		ConstLabels: prometheus.Labels{"hostname": hostname},
+	}, []string{"method", "result"})
+	WebsocketRequestTotalFail    = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
+	WebsocketRequestTotalSuccess = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
 
 	CacheBytesGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
@@ -95,9 +113,11 @@ func init() {
 
 	prometheus.MustRegister(GrpcLatency)
 	prometheus.MustRegister(GrpcErrorCount)
+	prometheus.MustRegister(GrpcRequestTotal)
 
 	prometheus.MustRegister(WebsocketRequestLatency)
 	prometheus.MustRegister(WebsocketPanicCount)
+	prometheus.MustRegister(WebsocketRequestTotal)
 
 	prometheus.MustRegister(CacheBytesGauge)
 	prometheus.MustRegister(CacheRememberDuration)
