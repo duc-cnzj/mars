@@ -34,6 +34,10 @@ const (
 
 var _ contracts.ApplicationInterface = (*Application)(nil)
 
+var MustBooted = []contracts.Bootstrapper{
+	&bootstrappers.LogBootstrapper{},
+}
+
 var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.EventBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
@@ -69,9 +73,10 @@ type Application struct {
 	uploader     contracts.Uploader
 	auth         contracts.AuthInterface
 
-	sf     *singleflight.Group
-	cache  contracts.CacheInterface
-	tracer trace.Tracer
+	sf         *singleflight.Group
+	cache      contracts.CacheInterface
+	tracer     trace.Tracer
+	mustBooted []contracts.Bootstrapper
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {
@@ -154,13 +159,16 @@ func WithBootstrappers(bootstrappers ...contracts.Bootstrapper) Option {
 	}
 }
 
-func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
-	var mustBooted = []contracts.Bootstrapper{
-		&bootstrappers.LogBootstrapper{},
+func WithMustBootedBootstrappers(bootstrappers ...contracts.Bootstrapper) Option {
+	return func(app *Application) {
+		app.mustBooted = bootstrappers
 	}
+}
 
+func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
 	app := &Application{
+		mustBooted:    MustBooted,
 		bootstrappers: DefaultBootstrappers,
 		config:        config,
 		done:          doneCtx,
@@ -180,7 +188,7 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 
 	instance.SetInstance(app)
 
-	for _, bootstrapper := range mustBooted {
+	for _, bootstrapper := range app.mustBooted {
 		func() {
 			defer func(t time.Time) {
 				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())

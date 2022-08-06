@@ -65,6 +65,17 @@ func TestApplication_Bootstrap(t *testing.T) {
 	assert.Equal(t, "xxx", ap.Bootstrap().Error())
 }
 
+func TestApplication_Bootstrap1(t *testing.T) {
+	e := errors.New("xxx")
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+	l.EXPECT().Fatal(e).Times(1)
+	NewApplication(&config.Config{}, WithMustBootedBootstrappers(&bootstrapper{err: e}))
+}
+
 func TestApplication_Cache(t *testing.T) {
 	a := NewApplication(&config.Config{})
 	m := gomock.NewController(t)

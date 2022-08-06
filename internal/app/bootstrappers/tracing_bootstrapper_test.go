@@ -15,7 +15,7 @@ func TestTracingBootstrapper_Bootstrap(t *testing.T) {
 	defer controller.Finish()
 	app := testutil.MockApp(controller)
 	app.EXPECT().Config().Return(&config.Config{JaegerAgentHostPort: "xxxxxxxxxx"})
-	app.EXPECT().IsDebug().Return(true)
+	app.EXPECT().IsDebug().Return(false)
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).Times(1)
 	app.EXPECT().SetTracer(gomock.Any()).Times(1)
 	assert.Nil(t, (&TracingBootstrapper{}).Bootstrap(app))
