@@ -46,10 +46,17 @@ func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 			}
 		})
 	}
+	otel.SetErrorHandler(&errorHandler{})
 	tracer := otel.Tracer("mars")
 	app.SetTracer(tracer)
 
 	return nil
+}
+
+type errorHandler struct{}
+
+func (e *errorHandler) Handle(err error) {
+	mlog.Warning(err)
 }
 
 func newResource() *resource.Resource {

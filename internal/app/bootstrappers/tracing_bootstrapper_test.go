@@ -1,8 +1,13 @@
 package bootstrappers
 
 import (
+	"errors"
 	"sort"
 	"testing"
+
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/sirupsen/logrus"
 
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/testutil"
@@ -42,4 +47,17 @@ func Test_newResource(t *testing.T) {
 func Test_newJaegerExporter(t *testing.T) {
 	_, err := newJaegerExporter("", "", "")
 	assert.Nil(t, err)
+}
+
+func TestErrorHandler_Handle(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+
+	e := errors.New("xxx")
+	l.EXPECT().Warning(e)
+	eh := &errorHandler{}
+	eh.Handle(e)
 }

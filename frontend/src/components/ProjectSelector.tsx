@@ -27,15 +27,11 @@ const ProjectSelector: React.FC<{
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
 
+  const [selectedValues, setSelectedValues] = useState<(string | number)[]>([]);
+
   // 初始化，设置 initvalue
   useEffect(() => {
-    if (
-      value.length < 1 &&
-      v &&
-      v.gitCommit &&
-      v.gitBranch &&
-      v.gitProjectId
-    ) {
+    if (value.length < 1 && v && v.gitCommit && v.gitBranch && v.gitProjectId) {
       projectOptions().then((res) => {
         let r = res.data.items.find(
           (item) => item.gitProjectId === String(v.gitProjectId)
@@ -46,9 +42,7 @@ const ProjectSelector: React.FC<{
           branch: v.gitBranch,
           commit: v.gitCommit,
         }).then((res) => {
-          r &&
-            res.data &&
-            setValue([r.label, v.gitBranch, res.data.label]);
+          r && res.data && setValue([r.label, v.gitBranch, res.data.label]);
           setLoading(false);
         });
       });
@@ -112,6 +106,7 @@ const ProjectSelector: React.FC<{
   );
 
   const onChange = (values: (string | number)[]) => {
+    setSelectedValues(values);
     let gitId = get(values, 0, 0);
     let gbranch = get(values, 1, "");
     let gcommit = get(values, 2, "");
@@ -160,6 +155,36 @@ const ProjectSelector: React.FC<{
     >
       <Cascader
         disabled={disabled}
+        showSearch={{
+          filter: (inputValue: string, options: any, fieldNames: any) => {
+            return options.some((option: any) => {
+              switch (selectedValues.length) {
+                case 1:
+                  if (option.type !== "branch") {
+                    return false;
+                  }
+                  if (String(option.gitProjectId) !== String(selectedValues[0])) {
+                    return false;
+                  }
+                  break;
+                case 2:
+                  if (option.type !== "commit") {
+                    return false;
+                  }
+                  if (String(option.gitProjectId) !== String(selectedValues[0])) {
+                    return false;
+                  }
+                  break;
+              }
+
+              return (
+                (option.label as string)
+                  .toLowerCase()
+                  .indexOf(inputValue.toLowerCase()) > -1
+              );
+            });
+          },
+        }}
         options={options}
         style={{ width: "100%" }}
         value={value}
