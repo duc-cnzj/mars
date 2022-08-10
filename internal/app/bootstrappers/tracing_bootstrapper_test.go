@@ -5,25 +5,49 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/sirupsen/logrus"
-
-	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
+type trueExtractValueMatcher struct {
+	v any
+}
+
+func (t *trueExtractValueMatcher) Matches(x any) bool {
+	t.v = x
+	return true
+}
+
+func (t *trueExtractValueMatcher) String() string {
+	return ""
+}
+
 func TestTracingBootstrapper_Bootstrap(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	app := testutil.MockApp(controller)
-	app.EXPECT().Config().Return(&config.Config{JaegerAgentHostPort: "xxxxxxxxxx"})
+	app.EXPECT().Config().Return(&config.Config{JaegerAgentHostPort: "127.0.0.1:6831"})
 	app.EXPECT().IsDebug().Return(false)
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).Times(1)
+	tm := &trueExtractValueMatcher{}
+	app.EXPECT().RegisterAfterShutdownFunc(tm).Times(1)
 	app.EXPECT().SetTracer(gomock.Any()).Times(1)
 	assert.Nil(t, (&TracingBootstrapper{}).Bootstrap(app))
+
+	l.EXPECT().Info("shutdown tracer").Times(1)
+	tm.v.(contracts.Callback)(app)
 }
 
 func Test_newResource(t *testing.T) {
@@ -45,7 +69,7 @@ func Test_newResource(t *testing.T) {
 }
 
 func Test_newJaegerExporter(t *testing.T) {
-	_, err := newJaegerExporter("", "", "")
+	_, err := newJaegerExporter("", "")
 	assert.Nil(t, err)
 }
 

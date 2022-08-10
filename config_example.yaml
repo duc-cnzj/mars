@@ -67,8 +67,6 @@ db_port: 3306
 db_username: root
 db_password: ""
 
-jaeger_user: ""
-jaeger_password: ""
 jaeger_agent_host_port: ""
 
 # 集群外网访问 ip

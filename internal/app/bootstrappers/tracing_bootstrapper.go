@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -23,7 +24,11 @@ type TracingBootstrapper struct{}
 func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
 	if cfg.JaegerAgentHostPort != "" {
-		jaeexp, err := newJaegerExporter(cfg.JaegerAgentHostPort, cfg.JaegerUser, cfg.JaegerPassword)
+		host, port, err := net.SplitHostPort(cfg.JaegerAgentHostPort)
+		if err != nil {
+			return err
+		}
+		jaeexp, err := newJaegerExporter(host, port)
 		if err != nil {
 			return err
 		}
@@ -73,12 +78,11 @@ func newResource() *resource.Resource {
 	)
 }
 
-func newJaegerExporter(hostAndPort, user, pwd string) (trace.SpanExporter, error) {
+func newJaegerExporter(host, port string) (trace.SpanExporter, error) {
 	return jaeger.New(
-		jaeger.WithCollectorEndpoint(
-			jaeger.WithUsername(user),
-			jaeger.WithPassword(pwd),
-			jaeger.WithEndpoint(hostAndPort),
+		jaeger.WithAgentEndpoint(
+			jaeger.WithAgentHost(host),
+			jaeger.WithAgentPort(port),
 		),
 	)
 }
