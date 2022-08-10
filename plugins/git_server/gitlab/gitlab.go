@@ -171,16 +171,30 @@ type server struct {
 }
 
 func (g *server) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
-	c, _, err := g.client.Commits.GetCommit(pid, sha)
+	var p *gitlab.PipelineInfo
+	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
+		ListOptions: gitlab.ListOptions{
+			Page:    1,
+			PerPage: 100,
+		},
+		SHA: gitlab.String(sha),
+	})
 	if err != nil {
 		return nil, err
 	}
+	// 只拿 push/web 的 pipeline
+	for _, info := range pipelines {
+		if info.Source == "push" || info.Source == "web" {
+			p = info
+			break
+		}
+	}
 
-	if c.LastPipeline == nil {
+	if p == nil {
 		return nil, errors.New("pipeline not found")
 	}
 
-	return &pipeline{p: c.LastPipeline}, nil
+	return &pipeline{p: p}, nil
 }
 
 func (g *server) Name() string {
