@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
-
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
@@ -25,8 +24,6 @@ var (
 var _ plugins.PictureInterface = (*Bing)(nil)
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
-
 	p := &Bing{}
 	plugins.RegisterPlugin(p.Name(), p)
 }

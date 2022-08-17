@@ -14,10 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 type timer interface {
 	Unix() int64
 }
