@@ -376,7 +376,7 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 		case <-server.Context().Done():
 			stream.Close()
 			mlog.Debug("[Stream]: client exit with: ", server.Context().Err())
-			return server.Context().Err()
+			return nil
 		case msg, ok := <-ch:
 			if !ok {
 				stream.Close()
