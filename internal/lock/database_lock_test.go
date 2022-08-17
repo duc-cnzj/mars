@@ -182,3 +182,12 @@ func TestDatabaseLock_RenewalAcquire(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, int64(1), atomic.LoadInt64(&i))
 }
+
+func BenchmarkName(b *testing.B) {
+	lock := NewDatabaseLock([2]int{-1, 100}, db)
+	for i := 0; i < b.N; i++ {
+		if release, ok := lock.RenewalAcquire(fmt.Sprintf("key-%v", i), 3, 2); ok {
+			release()
+		}
+	}
+}
