@@ -415,6 +415,7 @@ func (j *Jober) Run() error {
 			done <- struct{}{}
 			close(done)
 		}()
+		defer utils.HandlePanic("[Websocket]: Jober Run")
 		j.HandleMessage()
 	}()
 

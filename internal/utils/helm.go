@@ -36,8 +36,6 @@ func init() {
 	kube.New(nil)
 }
 
-type DeleteFunc func()
-
 type internalCloser struct {
 	closeFn func() error
 }
@@ -186,8 +184,6 @@ func send(obj any, releaseName string, fn func(format string, v ...any)) {
 		}
 	}
 }
-
-type UninstallReleaseFunc func(releaseName, namespace string, log action.DebugLog) error
 
 func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
 	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
