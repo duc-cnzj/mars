@@ -171,6 +171,13 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-17-add-cache_locks-table",
+			Migrate: func(tx *gorm.DB) error {
+				tx.AutoMigrate(&models.CacheLock{})
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {
