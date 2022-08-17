@@ -677,7 +677,7 @@ func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
 		},
 		ctx: c,
 	})
-	assert.Equal(t, "context canceled", err.Error())
+	assert.Nil(t, err)
 	assert.True(t, ms3.s.(*streamReadClose).closed)
 }
 
