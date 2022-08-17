@@ -25,9 +25,7 @@ func TestMain(t *testing.M) {
 	db = gormDB
 	var all []*models.CacheLock
 	db.Find(&all)
-	for _, lock := range all {
-		db.Delete(&lock)
-	}
+	db.Delete(&all)
 	db.AutoMigrate(&models.CacheLock{})
 	code := t.Run()
 	sqlDB.Close()
