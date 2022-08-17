@@ -2,26 +2,26 @@ package lock
 
 import (
 	"fmt"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/adapter"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 var db *gorm.DB
 
 func TestMain(t *testing.M) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", "root", "", "127.0.0.1", "3306", "lock_db_test")
-	gormDB, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	gormDB, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: &adapter.GormLoggerAdapter{}})
 	sqlDB, _ := gormDB.DB()
-	gormDB.Logger.LogMode(logger.Info)
 	db = gormDB
 	var all []*models.CacheLock
 	db.Find(&all)
@@ -66,20 +66,31 @@ func TestDatabaseLock_Acquire(t *testing.T) {
 	assert.Nil(t, db.Where("`key` = ?", key).First(cl).Error)
 
 	assert.True(t, lock.Acquire(key2, 1))
-	//defer lock.Release(key2)
+	defer lock.Release(key2)
 	time.Sleep(2 * time.Second)
 	assert.True(t, lock.Acquire(key2, 1))
 }
 
+type mockTimer struct {
+	i int
+	l []int64
+}
+
+func (m *mockTimer) Unix() int64 {
+	t := m.l[m.i]
+	m.i++
+	return t
+}
+
 func TestDatabaseLock_AcquireLottery(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 	key := "AcquireLottery"
 	key2 := "AcquireLottery2"
 	lock := NewDatabaseLock([2]int{5, 1}, db)
+	lock.timer = &mockTimer{l: []int64{100, 162}}
 	acquire := lock.Acquire(key, 1)
 	defer lock.Release(key)
 	assert.True(t, acquire)
-	time.Sleep(2 * time.Second)
 	var count int64
 	db.Model(&models.CacheLock{}).Where("`key` = ?", key).Count(&count)
 	assert.Equal(t, int64(1), count)
@@ -143,5 +154,31 @@ func TestDatabaseLock_Release(t *testing.T) {
 
 func Test_realTimers_Now(t *testing.T) {
 	t.Parallel()
-	assert.IsType(t, time.Time{}, (&realTimers{}).Now())
+	assert.Greater(t, time.Now().Unix()+5, (&realTimers{}).Unix())
+	assert.Less(t, time.Now().Unix()-5, (&realTimers{}).Unix())
+}
+
+func TestDatabaseLock_RenewalAcquire(t *testing.T) {
+	t.Parallel()
+	key := "RenewalAcquire"
+	lock := NewDatabaseLock([2]int{-1, 100}, db)
+	lock2 := NewDatabaseLock([2]int{-1, 100}, db)
+	var i int64
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if release, ok := lock.RenewalAcquire(key, 3, 2); ok {
+			func() {
+				defer release()
+				atomic.AddInt64(&i, 1)
+				time.Sleep(5 * time.Second)
+			}()
+		}
+	}()
+	time.Sleep(4 * time.Second)
+	assert.False(t, lock2.Acquire(key, 10))
+	assert.False(t, lock.Acquire(key, 10))
+	wg.Wait()
+	assert.Equal(t, int64(1), atomic.LoadInt64(&i))
 }

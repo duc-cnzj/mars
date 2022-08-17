@@ -4,11 +4,14 @@
 package lock
 
 import (
+	"context"
+	"math/rand"
+	"time"
+
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"gorm.io/gorm"
-	"math/rand"
-	"time"
 )
 
 func init() {
@@ -17,17 +20,12 @@ func init() {
 
 type timer interface {
 	Unix() int64
-	Now() time.Time
 }
 
 type realTimers struct{}
 
 func (r *realTimers) Unix() int64 {
 	return time.Now().Unix()
-}
-
-func (r *realTimers) Now() time.Time {
-	return time.Now()
 }
 
 type DatabaseLock struct {
@@ -39,6 +37,35 @@ type DatabaseLock struct {
 
 func NewDatabaseLock(lottery [2]int, db *gorm.DB) *DatabaseLock {
 	return &DatabaseLock{lottery: lottery, db: db, owner: utils.RandomString(40), timer: &realTimers{}}
+}
+
+func (d *DatabaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (func(), bool) {
+	if d.Acquire(key, seconds) {
+		ctx, cancelFunc := context.WithCancel(context.TODO())
+		go func() {
+			defer utils.HandlePanic("[lock]: key: " + key)
+
+			ticker := time.NewTicker(time.Second * time.Duration(renewalSeconds))
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					mlog.Debug("[lock]: canceled: " + key)
+					return
+				case <-ticker.C:
+					if !d.renewalExistKey(key, seconds) {
+						mlog.Warning("[lock]: err renewal lock: " + key)
+						return
+					}
+				}
+			}
+		}()
+		return func() {
+			cancelFunc()
+			d.Release(key)
+		}, true
+	}
+	return nil, false
 }
 
 func (d *DatabaseLock) Acquire(key string, seconds int64) bool {
@@ -58,7 +85,7 @@ func (d *DatabaseLock) Acquire(key string, seconds int64) bool {
 		acquired = true
 	}
 	if !acquired {
-		updates := d.db.Model(&models.CacheLock{}).Where("`key` = ? AND (`owner` = ? or `expiration` <= ?)", key, d.owner, unix).Updates(map[string]any{
+		updates := d.db.Model(&models.CacheLock{}).Where("`key` = ? AND `expiration` <= ?", key, unix).Updates(map[string]any{
 			"owner":      d.owner,
 			"expiration": expiration,
 		})
@@ -68,7 +95,32 @@ func (d *DatabaseLock) Acquire(key string, seconds int64) bool {
 	}
 
 	if rand.Intn(d.lottery[1]) < d.lottery[0] {
-		d.db.Where("`expiration` < ?", unix).Delete(&models.CacheLock{})
+		d.db.Where("`expiration` < ?", unix-60).Delete(&models.CacheLock{})
+	}
+
+	return acquired
+}
+
+func (d *DatabaseLock) renewalExistKey(key string, seconds int64) bool {
+	var (
+		acquired bool
+
+		unix       = d.timer.Unix()
+		expiration = unix + seconds
+	)
+
+	cl := &models.CacheLock{}
+	first := d.db.Where("`key` = ?", key).First(cl)
+	if first.Error != nil {
+		return acquired
+	}
+
+	updates := d.db.Model(&models.CacheLock{}).Where("`key` = ? AND `owner` = ?", key, d.owner).Updates(map[string]any{
+		"owner":      d.owner,
+		"expiration": expiration,
+	})
+	if updates.RowsAffected >= 1 {
+		acquired = true
 	}
 
 	return acquired
