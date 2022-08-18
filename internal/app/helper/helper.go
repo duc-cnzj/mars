@@ -63,3 +63,6 @@ func Cache() contracts.CacheInterface {
 func Tracer() trace.Tracer {
 	return App().GetTracer()
 }
+func DistributedLocks() contracts.Locker {
+	return App().DistributedLocks()
+}

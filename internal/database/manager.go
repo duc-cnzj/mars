@@ -178,6 +178,16 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-18-rebuild-table-db-cache",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Migrator().HasColumn(&models.DBCache{}, "id") {
+					tx.Migrator().RenameTable("db_cache", "db_cache_old")
+				}
+				tx.Migrator().AutoMigrate(&models.DBCache{})
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

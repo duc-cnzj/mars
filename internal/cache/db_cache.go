@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"gorm.io/gorm/clause"
 )
 
 type DBCache struct {
@@ -25,8 +26,8 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 		}
 
 		var cache models.DBCache
-		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).Order("`id` DESC").First(&cache)
-		if cache.ID > 0 {
+		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache)
+		if cache.Key != "" {
 			bs, err := base64.StdEncoding.DecodeString(cache.Value)
 			if err == nil {
 				return bs, nil
@@ -42,7 +43,10 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 			Value:     toString,
 			ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
 		}
-		if err = c.app.DBManager().DB().Create(&cache).Error; err != nil {
+		if err = c.app.DBManager().DB().Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "key"}},
+			DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at", "updated_at"}),
+		}).Create(&cache).Error; err != nil {
 			mlog.Error(err)
 		}
 		return bytes, nil

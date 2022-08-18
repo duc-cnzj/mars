@@ -85,4 +85,10 @@ type ApplicationInterface interface {
 
 	SetTracer(trace.Tracer)
 	GetTracer() trace.Tracer
+
+	SetCronManager(CronManager)
+	CronManager() CronManager
+
+	DistributedLocks() Locker
+	SetDistributedLocks(Locker)
 }

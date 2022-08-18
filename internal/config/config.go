@@ -40,6 +40,8 @@ type Config struct {
 	GitServerCached bool   `mapstructure:"git_server_cached"`
 	CacheDriver     string `mapstructure:"cache_driver"`
 
+	MetricsPort string `mapstructure:"metrics_port"`
+
 	AdminPassword string `mapstructure:"admin_password"`
 	PrivateKey    string `mapstructure:"private_key"`
 

@@ -13,11 +13,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	mcron "github.com/duc-cnzj/mars/internal/cron"
 	"github.com/duc-cnzj/mars/internal/database"
 	"github.com/duc-cnzj/mars/internal/event"
 	"github.com/duc-cnzj/mars/internal/metrics"
@@ -46,12 +48,14 @@ var DefaultBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
+	&bootstrappers.DistributedLocksBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
 	&bootstrappers.OidcBootstrapper{},
 	&bootstrappers.TracingBootstrapper{},
+	&bootstrappers.CronBootstrapper{},
 	&bootstrappers.AppBootstrapper{},
 }
 
@@ -68,15 +72,25 @@ type Application struct {
 	hooksMu sync.RWMutex
 	hooks   map[Hook][]contracts.Callback
 
-	plugins      map[string]contracts.PluginInterface
-	oidcProvider contracts.OidcConfig
-	uploader     contracts.Uploader
-	auth         contracts.AuthInterface
+	plugins          map[string]contracts.PluginInterface
+	oidcProvider     contracts.OidcConfig
+	uploader         contracts.Uploader
+	auth             contracts.AuthInterface
+	cronManager      contracts.CronManager
+	distributedLocks contracts.Locker
 
 	sf         *singleflight.Group
 	cache      contracts.CacheInterface
 	tracer     trace.Tracer
 	mustBooted []contracts.Bootstrapper
+}
+
+func (app *Application) DistributedLocks() contracts.Locker {
+	return app.distributedLocks
+}
+
+func (app *Application) SetDistributedLocks(l contracts.Locker) {
+	app.distributedLocks = l
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {
@@ -93,6 +107,13 @@ func (app *Application) Cache() contracts.CacheInterface {
 
 func (app *Application) Auth() contracts.AuthInterface {
 	return app.auth
+}
+
+func (app *Application) CronManager() contracts.CronManager {
+	return app.cronManager
+}
+func (app *Application) SetCronManager(m contracts.CronManager) {
+	app.cronManager = m
 }
 
 func (app *Application) SetAuth(auth contracts.AuthInterface) {
@@ -179,6 +200,7 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 		cache:         &cache.NoCache{},
 	}
 
+	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)
 	app.dispatcher = event.NewDispatcher(app)
 	app.dbManager = database.NewManager(app)
 
@@ -287,7 +309,7 @@ func (app *Application) Shutdown() {
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()
 			if err := server.Shutdown(ctx); err != nil {
-				mlog.Error(err)
+				mlog.Warningf("[Shutdown]: %s %s", reflect.TypeOf(server).String(), err)
 			}
 		}(server)
 	}

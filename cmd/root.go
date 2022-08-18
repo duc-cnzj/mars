@@ -42,11 +42,17 @@ func init() {
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
 	rootCmd.PersistentFlags().BoolP("debug", "", true, "debug mode.")
-	rootCmd.PersistentFlags().StringP("app_port", "", "6000", "app port.")
-	rootCmd.PersistentFlags().StringP("grpc_port", "", "", "grpc port.")
-	rootCmd.PersistentFlags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
+
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("app_port", rootCmd.PersistentFlags().Lookup("app_port"))
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
 	viper.BindPFlag("grpc_port", rootCmd.PersistentFlags().Lookup("grpc_port"))
+	viper.BindPFlag("metrics_port", rootCmd.PersistentFlags().Lookup("metrics_port"))
+
+	apiCronCmd.Flags().StringP("metrics_port", "", "9091", "metrics port")
+
+	apiGatewayCmd.Flags().StringP("metrics_port", "", "9091", "metrics port")
+	apiGatewayCmd.Flags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
+	apiGatewayCmd.Flags().StringP("app_port", "", "6000", "app port.")
+	apiGatewayCmd.Flags().StringP("grpc_port", "", "", "grpc port.")
 }

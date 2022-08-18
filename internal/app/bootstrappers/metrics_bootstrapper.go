@@ -12,19 +12,21 @@ import (
 type MetricsBootstrapper struct{}
 
 func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&metricsRunner{})
+	app.AddServer(&metricsRunner{port: app.Config().MetricsPort})
 
 	return nil
 }
 
-type metricsRunner struct{}
+type metricsRunner struct {
+	port string
+}
 
 func (m *metricsRunner) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mlog.Info("[Server]: metrics running at :9091/metrics")
+	mlog.Infof("[Server]: metrics running at :%s/metrics", m.port)
 	mux.Handle("/metrics", promhttp.Handler())
 	go func() {
-		http.ListenAndServe(":9091", mux)
+		http.ListenAndServe(":"+m.port, mux)
 	}()
 	return nil
 }

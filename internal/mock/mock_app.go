@@ -118,6 +118,20 @@ func (mr *MockApplicationInterfaceMockRecorder) Config() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockApplicationInterface)(nil).Config))
 }
 
+// CronManager mocks base method.
+func (m *MockApplicationInterface) CronManager() contracts.CronManager {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CronManager")
+	ret0, _ := ret[0].(contracts.CronManager)
+	return ret0
+}
+
+// CronManager indicates an expected call of CronManager.
+func (mr *MockApplicationInterfaceMockRecorder) CronManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CronManager", reflect.TypeOf((*MockApplicationInterface)(nil).CronManager))
+}
+
 // DBManager mocks base method.
 func (m *MockApplicationInterface) DBManager() contracts.DBManager {
 	m.ctrl.T.Helper()
@@ -130,6 +144,20 @@ func (m *MockApplicationInterface) DBManager() contracts.DBManager {
 func (mr *MockApplicationInterfaceMockRecorder) DBManager() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DBManager", reflect.TypeOf((*MockApplicationInterface)(nil).DBManager))
+}
+
+// DistributedLocks mocks base method.
+func (m *MockApplicationInterface) DistributedLocks() contracts.Locker {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DistributedLocks")
+	ret0, _ := ret[0].(contracts.Locker)
+	return ret0
+}
+
+// DistributedLocks indicates an expected call of DistributedLocks.
+func (mr *MockApplicationInterfaceMockRecorder) DistributedLocks() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributedLocks", reflect.TypeOf((*MockApplicationInterface)(nil).DistributedLocks))
 }
 
 // Done mocks base method.
@@ -304,6 +332,30 @@ func (m *MockApplicationInterface) SetCache(arg0 contracts.CacheInterface) {
 func (mr *MockApplicationInterfaceMockRecorder) SetCache(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCache", reflect.TypeOf((*MockApplicationInterface)(nil).SetCache), arg0)
+}
+
+// SetCronManager mocks base method.
+func (m *MockApplicationInterface) SetCronManager(arg0 contracts.CronManager) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCronManager", arg0)
+}
+
+// SetCronManager indicates an expected call of SetCronManager.
+func (mr *MockApplicationInterfaceMockRecorder) SetCronManager(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCronManager", reflect.TypeOf((*MockApplicationInterface)(nil).SetCronManager), arg0)
+}
+
+// SetDistributedLocks mocks base method.
+func (m *MockApplicationInterface) SetDistributedLocks(arg0 contracts.Locker) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDistributedLocks", arg0)
+}
+
+// SetDistributedLocks indicates an expected call of SetDistributedLocks.
+func (mr *MockApplicationInterfaceMockRecorder) SetDistributedLocks(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDistributedLocks", reflect.TypeOf((*MockApplicationInterface)(nil).SetDistributedLocks), arg0)
 }
 
 // SetEventDispatcher mocks base method.

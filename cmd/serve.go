@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	apiGatewayCmd.AddCommand(apiCronCmd)
+}
+
 var apiGatewayCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "start mars server use grpc.",
