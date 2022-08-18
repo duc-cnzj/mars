@@ -217,6 +217,42 @@ func TestDatabaseLock_RenewalAcquire(t *testing.T) {
 	assert.Equal(t, int64(1), atomic.LoadInt64(&i))
 }
 
+func TestDatabaseLock_RenewalAcquire2(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
+	lock := NewDatabaseLock([2]int{-1, 100}, db)
+	assert.False(t, lock.renewalExistKey("not-exists", 10))
+}
+
+func TestDatabaseLock_RenewalAcquire3(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
+	t.Parallel()
+	key := "RenewalAcquire3"
+	lock := NewDatabaseLock([2]int{-1, 100}, db)
+	lock2 := NewDatabaseLock([2]int{-1, 100}, db)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if release, ok := lock.RenewalAcquire(key, 3, 2); ok {
+			func() {
+				defer release()
+				time.Sleep(5 * time.Second)
+			}()
+		}
+	}()
+	go func() {
+		time.Sleep(1 * time.Second)
+		lock.Release(key)
+	}()
+	time.Sleep(4 * time.Second)
+	assert.True(t, lock2.Acquire(key, 10))
+	wg.Wait()
+}
+
 func BenchmarkDatabaseLock_RenewalAcquire(b *testing.B) {
 	if !prepared {
 		b.Skipf("db not installed")
