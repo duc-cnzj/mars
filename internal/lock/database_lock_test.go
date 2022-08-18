@@ -17,18 +17,36 @@ import (
 )
 
 var db *gorm.DB
+var prepared bool
 
 func TestMain(t *testing.M) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", "root", "", "127.0.0.1", "3306", "lock_db_test")
-	gormDB, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: &adapter.GormLoggerAdapter{}})
-	sqlDB, _ := gormDB.DB()
-	db = gormDB
-	var all []*models.CacheLock
-	db.Find(&all)
-	db.Delete(&all)
-	db.AutoMigrate(&models.CacheLock{})
+	var (
+		user   string = os.Getenv("DB_USERNAME")
+		port   string = os.Getenv("DB_PORT")
+		dbname string = os.Getenv("DB_DATABASE")
+		dbhost string = os.Getenv("DB_HOST")
+		dbpwd  string = os.Getenv("DB_PASSWORD")
+	)
+	setDefault := func(key *string, value string) {
+		if *key == "" {
+			*key = value
+		}
+	}
+	setDefault(&user, "root")
+	setDefault(&port, "3306")
+	setDefault(&dbname, "mars_test_db")
+	setDefault(&dbhost, "127.0.0.1")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
+	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: &adapter.GormLoggerAdapter{}})
+	if err == nil {
+		prepared = true
+		sqlDB, _ := gormDB.DB()
+		defer sqlDB.Close()
+		db = gormDB
+		db.Migrator().DropTable(&models.CacheLock{})
+		db.AutoMigrate(&models.CacheLock{})
+	}
 	code := t.Run()
-	sqlDB.Close()
 	os.Exit(code)
 }
 
@@ -39,6 +57,9 @@ func TestNewDatabaseLock(t *testing.T) {
 }
 
 func TestDatabaseLock_Acquire(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "Acquire"
 	key2 := "Acquire2"
@@ -81,6 +102,9 @@ func (m *mockTimer) Unix() int64 {
 }
 
 func TestDatabaseLock_AcquireLottery(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "AcquireLottery"
 	key2 := "AcquireLottery2"
@@ -100,6 +124,9 @@ func TestDatabaseLock_AcquireLottery(t *testing.T) {
 }
 
 func TestDatabaseLock_ForceRelease(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "ForceRelease"
 	lockOne := NewDatabaseLock([2]int{-1, 100}, db)
@@ -116,6 +143,9 @@ func TestDatabaseLock_ForceRelease(t *testing.T) {
 }
 
 func TestDatabaseLock_Owner(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "Owner"
 	key2 := "Owner2"
@@ -137,6 +167,9 @@ func TestDatabaseLock_Owner(t *testing.T) {
 }
 
 func TestDatabaseLock_Release(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "Release"
 	lockOne := NewDatabaseLock([2]int{-1, 100}, db)
@@ -157,6 +190,9 @@ func Test_realTimers_Now(t *testing.T) {
 }
 
 func TestDatabaseLock_RenewalAcquire(t *testing.T) {
+	if !prepared {
+		t.Skipf("db not installed")
+	}
 	t.Parallel()
 	key := "RenewalAcquire"
 	lock := NewDatabaseLock([2]int{-1, 100}, db)
@@ -182,6 +218,9 @@ func TestDatabaseLock_RenewalAcquire(t *testing.T) {
 }
 
 func BenchmarkDatabaseLock_RenewalAcquire(b *testing.B) {
+	if !prepared {
+		b.Skipf("db not installed")
+	}
 	lock := NewDatabaseLock([2]int{-1, 100}, db)
 	for i := 0; i < b.N; i++ {
 		if release, ok := lock.RenewalAcquire(fmt.Sprintf("key-%v", i), 3, 2); ok {
