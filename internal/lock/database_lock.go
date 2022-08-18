@@ -8,10 +8,12 @@ import (
 	"math/rand"
 	"time"
 
+	"gorm.io/gorm"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"gorm.io/gorm"
 )
 
 type timer interface {
@@ -24,18 +26,18 @@ func (r *realTimers) Unix() int64 {
 	return time.Now().Unix()
 }
 
-type DatabaseLock struct {
+type databaseLock struct {
 	lottery [2]int
 	timer   timer
 	owner   string
 	db      *gorm.DB
 }
 
-func NewDatabaseLock(lottery [2]int, db *gorm.DB) *DatabaseLock {
-	return &DatabaseLock{lottery: lottery, db: db, owner: utils.RandomString(40), timer: &realTimers{}}
+func NewDatabaseLock(lottery [2]int, db *gorm.DB) contracts.Locker {
+	return &databaseLock{lottery: lottery, db: db, owner: utils.RandomString(40), timer: &realTimers{}}
 }
 
-func (d *DatabaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (func(), bool) {
+func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (func(), bool) {
 	if d.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {
@@ -64,7 +66,7 @@ func (d *DatabaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds 
 	return nil, false
 }
 
-func (d *DatabaseLock) Acquire(key string, seconds int64) bool {
+func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
 
@@ -97,7 +99,7 @@ func (d *DatabaseLock) Acquire(key string, seconds int64) bool {
 	return acquired
 }
 
-func (d *DatabaseLock) renewalExistKey(key string, seconds int64) bool {
+func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 	var (
 		acquired bool
 
@@ -122,7 +124,7 @@ func (d *DatabaseLock) renewalExistKey(key string, seconds int64) bool {
 	return acquired
 }
 
-func (d *DatabaseLock) Release(key string) bool {
+func (d *databaseLock) Release(key string) bool {
 	if d.Owner(key) == d.owner {
 		d.db.Where("`key` = ? AND `owner` = ?", key, d.owner).Delete(&models.CacheLock{})
 		return true
@@ -131,12 +133,12 @@ func (d *DatabaseLock) Release(key string) bool {
 	return false
 }
 
-func (d *DatabaseLock) ForceRelease(key string) bool {
+func (d *databaseLock) ForceRelease(key string) bool {
 	d.db.Where("`key` = ?", key).Delete(&models.CacheLock{})
 	return true
 }
 
-func (d *DatabaseLock) Owner(key string) string {
+func (d *databaseLock) Owner(key string) string {
 	cl := &models.CacheLock{}
 	d.db.Where("`key` = ?", key).First(cl)
 
