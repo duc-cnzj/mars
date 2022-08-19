@@ -117,6 +117,13 @@ var (
 		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"cron_name"})
 
+	CronErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "cron_error_total",
+		Help:        "cron error 错误数量",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+	}, []string{"cron_name"})
+
 	CronCommandCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_command_total",
@@ -151,4 +158,5 @@ func init() {
 	prometheus.MustRegister(CronPanicCount)
 	prometheus.MustRegister(CronDuration)
 	prometheus.MustRegister(CronCommandCount)
+	prometheus.MustRegister(CronErrorCount)
 }

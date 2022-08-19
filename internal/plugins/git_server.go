@@ -31,12 +31,15 @@ var (
 func init() {
 	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
 		if app.Config().GitServerCached {
-			manager.NewCommand("all_git_project_cache", func() {
+			manager.NewCommand("all_git_project_cache", func() error {
 				app.Cache().Clear(keyAllProjects())
-				GetGitServer().AllProjects()
+				if _, err := GetGitServer().AllProjects(); err != nil {
+					return err
+				}
+				return nil
 			}).EveryFiveMinutes()
 
-			manager.NewCommand("all_branch_cache", func() {
+			manager.NewCommand("all_branch_cache", func() error {
 				var (
 					enabledGitProjects []*models.GitProject
 					wg                 = &sync.WaitGroup{}
@@ -67,6 +70,7 @@ func init() {
 				}
 				close(ch)
 				wg.Wait()
+				return nil
 			}).EveryTwoMinutes()
 		}
 	})

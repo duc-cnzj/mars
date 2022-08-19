@@ -13,7 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func Wrap(name string, fn func(), locker contracts.Locker) func() {
+func Wrap(name string, fn func() error, locker contracts.Locker) func() {
 	label := prometheus.Labels{"cron_name": name}
 	return func() {
 		defer recovery.HandlePanicWithCallback("[CRON]: "+name, func(err error) {
@@ -33,7 +33,10 @@ func Wrap(name string, fn func(), locker contracts.Locker) func() {
 			mlog.Infof("[CRON-START: %s]: '%s' start at %s.", locker.ID(), name, now.Format("2006-01-02 15:04:05.000"))
 			defer releaseFn()
 
-			fn()
+			if err := fn(); err != nil {
+				mlog.Errorf("[CRON]: '%s' err: '%v'", name, err)
+				metrics.CronErrorCount.With(label).Inc()
+			}
 		}
 	}
 }

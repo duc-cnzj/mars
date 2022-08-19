@@ -23,7 +23,7 @@ func NewManager(runner contracts.CronRunner, app contracts.ApplicationInterface)
 	return &Manager{commands: make(map[string]*Command), runner: runner, app: app}
 }
 
-func (m *Manager) NewCommand(name string, fn func()) contracts.Command {
+func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
 	m.Lock()
 	defer m.Unlock()
 	if _, ok := m.commands[name]; ok {

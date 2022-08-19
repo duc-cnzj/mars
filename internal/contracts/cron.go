@@ -9,7 +9,7 @@ type CronRunner interface {
 }
 
 type CronManager interface {
-	NewCommand(name string, fn func()) Command
+	NewCommand(name string, fn func() error) Command
 	Run(context.Context) error
 	Shutdown(context.Context) error
 
