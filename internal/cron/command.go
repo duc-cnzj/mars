@@ -152,6 +152,9 @@ func (c *Command) HourlyAt(minutes []int) contracts.Command {
 	for _, day := range minutes {
 		minsStr = append(minsStr, strconv.Itoa(day))
 	}
+	if len(minutes) == 0 {
+		minsStr = []string{"0"}
+	}
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, strings.Join(minsStr, ","))
 	return c
@@ -197,13 +200,16 @@ func (c *Command) At(time string) contracts.Command {
 }
 
 func (c *Command) DailyAt(time string) contracts.Command {
-	split := strings.Split(time, ":")
-	minute := "0"
-	if len(split) == 2 {
-		minute = split[1]
+	hour, minute := "0", "0"
+	if time != "" {
+		split := strings.Split(time, ":")
+		if len(split) == 2 {
+			minute = split[1]
+		}
+		hour = split[0]
 	}
 	c.spliceIntoPosition(POS_SECOND, "0")
-	c.spliceIntoPosition(POS_HOUR, split[0])
+	c.spliceIntoPosition(POS_HOUR, hour)
 	c.spliceIntoPosition(POS_MINUTE, minute)
 	return c
 }
@@ -223,7 +229,7 @@ func (c *Command) Mondays() contracts.Command {
 }
 
 func (c *Command) Tuesdays() contracts.Command {
-	c.Days([]int{THURSDAY})
+	c.Days([]int{TUESDAY})
 	return c
 }
 
@@ -273,7 +279,7 @@ func (c *Command) Monthly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
-	c.spliceIntoPosition(POS_MONTH, "1")
+	c.spliceIntoPosition(POS_DAY_OF_MONTH, "1")
 	return c
 }
 
@@ -305,6 +311,9 @@ func (c *Command) Quarterly() contracts.Command {
 }
 
 func (c *Command) QuarterlyOn(dayOfQuarter string, time string) contracts.Command {
+	if dayOfQuarter == "" {
+		dayOfQuarter = "1"
+	}
 	c.DailyAt(time)
 	c.spliceIntoPosition(POS_DAY_OF_MONTH, dayOfQuarter)
 	c.spliceIntoPosition(POS_MONTH, "1-12/3")
@@ -332,6 +341,7 @@ func (c *Command) Days(days []int) contracts.Command {
 	for _, day := range days {
 		daysStr = append(daysStr, strconv.Itoa(day))
 	}
+	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(5, strings.Join(daysStr, ","))
 	return c
 }
