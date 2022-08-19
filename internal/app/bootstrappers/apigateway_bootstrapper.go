@@ -41,6 +41,10 @@ import (
 
 type ApiGatewayBootstrapper struct{}
 
+func (a *ApiGatewayBootstrapper) Tags() []string {
+	return []string{"api"}
+}
+
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort)})
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {

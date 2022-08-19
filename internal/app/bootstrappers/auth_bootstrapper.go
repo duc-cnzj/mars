@@ -11,6 +11,10 @@ import (
 
 type AuthBootstrapper struct{}
 
+func (a *AuthBootstrapper) Tags() []string {
+	return nil
+}
+
 func (a *AuthBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(app.Config().PrivateKey))
 	if err != nil {

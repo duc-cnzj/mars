@@ -27,6 +27,7 @@ type Server interface {
 
 type Bootstrapper interface {
 	Bootstrap(ApplicationInterface) error
+	Tags() []string
 }
 
 type K8sClient struct {

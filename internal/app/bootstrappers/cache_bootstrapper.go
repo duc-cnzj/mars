@@ -18,6 +18,10 @@ import (
 
 type CacheBootstrapper struct{}
 
+func (a *CacheBootstrapper) Tags() []string {
+	return nil
+}
+
 func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
 	if cfg.DBDriver == "sqlite" && cfg.CacheDriver == "db" {

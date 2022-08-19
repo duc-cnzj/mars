@@ -15,6 +15,10 @@ import (
 
 type AppBootstrapper struct{}
 
+func (a *AppBootstrapper) Tags() []string {
+	return nil
+}
+
 func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	// 预加载插件
 	plugins.GetWsSender()
@@ -27,7 +31,7 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 		name, key, crt := plugins.GetDomainManager().GetCerts()
 		if name != "" && key != "" && crt != "" {
 			var namespaceList []models.Namespace
-			app.DBManager().DB().Select("ID", "Name").Find(&namespaceList)
+			app.DB().Select("ID", "Name").Find(&namespaceList)
 			var changed bool
 			var changedSecrets []*v1.Secret
 			for _, n := range namespaceList {

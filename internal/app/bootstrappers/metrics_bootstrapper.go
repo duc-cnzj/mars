@@ -11,6 +11,10 @@ import (
 
 type MetricsBootstrapper struct{}
 
+func (m *MetricsBootstrapper) Tags() []string {
+	return []string{"metrics"}
+}
+
 func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	app.AddServer(&metricsRunner{port: app.Config().MetricsPort})
 

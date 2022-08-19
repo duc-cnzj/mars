@@ -6,9 +6,11 @@ import (
 
 type CronBootstrapper struct{}
 
+func (c *CronBootstrapper) Tags() []string {
+	return []string{"cron"}
+}
+
 func (c *CronBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	if app.Config().StartCron {
-		app.AddServer(app.CronManager())
-	}
+	app.AddServer(app.CronManager())
 	return nil
 }

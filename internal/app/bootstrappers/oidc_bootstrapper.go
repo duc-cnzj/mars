@@ -10,7 +10,11 @@ import (
 
 type OidcBootstrapper struct{}
 
-func (D *OidcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
+func (o *OidcBootstrapper) Tags() []string {
+	return []string{}
+}
+
+func (o *OidcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
 	var oidcConfig contracts.OidcConfig = make(contracts.OidcConfig)
 	for _, setting := range cfg.Oidc {

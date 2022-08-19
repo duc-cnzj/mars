@@ -10,6 +10,10 @@ import (
 
 type LogBootstrapper struct{}
 
+func (a *LogBootstrapper) Tags() []string {
+	return []string{}
+}
+
 func (a *LogBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	switch app.Config().LogChannel {
 	case "", "logrus":

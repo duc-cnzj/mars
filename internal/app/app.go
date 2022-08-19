@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -66,6 +67,9 @@ type Application struct {
 	sf         *singleflight.Group
 	tracer     trace.Tracer
 	mustBooted []contracts.Bootstrapper
+
+	excludeTags  []string
+	excludeBoots []contracts.Bootstrapper
 }
 
 func (app *Application) CacheLock() contracts.Locker {
@@ -169,6 +173,12 @@ func WithMustBootedBootstrappers(bootstrappers ...contracts.Bootstrapper) Option
 	}
 }
 
+func WithExcludeTags(tags ...string) Option {
+	return func(app *Application) {
+		app.excludeTags = tags
+	}
+}
+
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
 	app := &Application{
@@ -188,6 +198,14 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 
 	for _, opt := range opts {
 		opt(app)
+	}
+
+	var mustBootExcludeBoots, excludeBoots []contracts.Bootstrapper
+	if len(app.excludeTags) > 0 {
+		app.mustBooted, mustBootExcludeBoots = excludeBootstrapperByTags(app.excludeTags, app.mustBooted)
+		app.bootstrappers, excludeBoots = excludeBootstrapperByTags(app.excludeTags, app.bootstrappers)
+		app.excludeBoots = append(app.excludeBoots, mustBootExcludeBoots...)
+		app.excludeBoots = append(app.excludeBoots, excludeBoots...)
 	}
 
 	instance.SetInstance(app)
@@ -210,8 +228,38 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	return app
 }
 
-func printConfig(app contracts.ApplicationInterface) {
+type bootTags []string
+
+func (bt bootTags) Has(tag string) bool {
+	for _, t := range bt {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func excludeBootstrapperByTags(tags []string, boots []contracts.Bootstrapper) ([]contracts.Bootstrapper, []contracts.Bootstrapper) {
+	var newBoots, excludeBoots []contracts.Bootstrapper
+loop:
+	for _, boot := range boots {
+		for _, tag := range tags {
+			if bootTags(boot.Tags()).Has(tag) {
+				excludeBoots = append(excludeBoots, boot)
+				continue loop
+			}
+		}
+
+		newBoots = append(newBoots, boot)
+	}
+	return newBoots, excludeBoots
+}
+
+func printConfig(app *Application) {
 	mlog.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
+	for _, boot := range app.excludeBoots {
+		mlog.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", reflect.TypeOf(boot).String(), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
+	}
 }
 
 func (app *Application) Bootstrap() error {

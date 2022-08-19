@@ -11,6 +11,10 @@ import (
 
 type UploadBootstrapper struct{}
 
+func (*UploadBootstrapper) Tags() []string {
+	return []string{}
+}
+
 func (*UploadBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
 	if cfg.UploadDir != "" {

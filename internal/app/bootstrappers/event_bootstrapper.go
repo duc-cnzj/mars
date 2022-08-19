@@ -8,6 +8,10 @@ import (
 
 type EventBootstrapper struct{}
 
+func (e *EventBootstrapper) Tags() []string {
+	return nil
+}
+
 func (e *EventBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	for e, listeners := range mevent.RegisteredEvents() {
 		for _, listener := range listeners {
