@@ -12,7 +12,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
-var defaultStore = newStore()
+var defaultStore = NewMemStore()
 
 type memStore struct {
 	m map[string]*memItem
@@ -57,7 +57,7 @@ func (s *memStore) Count() int {
 	return len(s.m)
 }
 
-func newStore() *memStore {
+func NewMemStore() *memStore {
 	return &memStore{
 		m: make(map[string]*memItem),
 	}

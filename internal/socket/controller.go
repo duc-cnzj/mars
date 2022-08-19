@@ -24,7 +24,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
@@ -120,6 +119,7 @@ func (w *WebsocketManager) TickClusterHealth() {
 	ticker := time.NewTicker(w.healthTickDuration)
 	done := app.App().Done()
 	sub := plugins.GetWsSender().New("", "")
+	lock := app.CacheLock()
 
 	go func() {
 		defer recovery.HandlePanic("TickClusterHealth")
@@ -127,29 +127,30 @@ func (w *WebsocketManager) TickClusterHealth() {
 		for {
 			select {
 			case <-ticker.C:
-				app.Cache().Remember("TickClusterHealth", int(w.healthTickDuration.Seconds()), func() ([]byte, error) {
-					info := utils.ClusterInfo()
-					sub.ToAll(&websocket_pb.WsHandleClusterResponse{
-						Metadata: &websocket_pb.Metadata{
-							Type: WsClusterInfoSync,
-						},
-						Info: &cluster.InfoResponse{
-							Status:            info.Status,
-							FreeMemory:        info.FreeMemory,
-							FreeCpu:           info.FreeCpu,
-							FreeRequestMemory: info.FreeRequestMemory,
-							FreeRequestCpu:    info.FreeRequestCpu,
-							TotalMemory:       info.TotalMemory,
-							TotalCpu:          info.TotalCpu,
-							UsageMemoryRate:   info.UsageMemoryRate,
-							UsageCpuRate:      info.UsageCpuRate,
-							RequestMemoryRate: info.RequestMemoryRate,
-							RequestCpuRate:    info.RequestCpuRate,
-						},
-					})
-					now := time.Now()
-					return []byte(date.ToRFC3339DatetimeString(&now)), nil
-				})
+				if lock.Acquire("TickClusterHealth", 5) {
+					func() {
+						defer lock.Release("TickClusterHealth")
+						info := utils.ClusterInfo()
+						sub.ToAll(&websocket_pb.WsHandleClusterResponse{
+							Metadata: &websocket_pb.Metadata{
+								Type: WsClusterInfoSync,
+							},
+							Info: &cluster.InfoResponse{
+								Status:            info.Status,
+								FreeMemory:        info.FreeMemory,
+								FreeCpu:           info.FreeCpu,
+								FreeRequestMemory: info.FreeRequestMemory,
+								FreeRequestCpu:    info.FreeRequestCpu,
+								TotalMemory:       info.TotalMemory,
+								TotalCpu:          info.TotalCpu,
+								UsageMemoryRate:   info.UsageMemoryRate,
+								UsageCpuRate:      info.UsageCpuRate,
+								RequestMemoryRate: info.RequestMemoryRate,
+								RequestCpuRate:    info.RequestCpuRate,
+							},
+						})
+					}()
+				}
 			case <-done:
 				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
 				return

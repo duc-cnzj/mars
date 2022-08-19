@@ -64,7 +64,7 @@ func Tracer() trace.Tracer {
 	return App().GetTracer()
 }
 
-func DistributedLocks() contracts.Locker {
+func CacheLock() contracts.Locker {
 	return App().CacheLock()
 }
 
