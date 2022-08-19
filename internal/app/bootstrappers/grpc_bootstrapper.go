@@ -27,7 +27,7 @@ import (
 type GrpcBootstrapper struct{}
 
 func (g *GrpcBootstrapper) Tags() []string {
-	return []string{"api"}
+	return []string{"api", "grpc"}
 }
 
 func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -390,4 +391,20 @@ func Test_excludeBootstrapperByTags(t *testing.T) {
 		res, _ := excludeBootstrapperByTags(ca.tags, ca.boots)
 		assert.Equal(t, ca.wants, res)
 	}
+}
+
+type CustomBoot struct{}
+
+func (c CustomBoot) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
+	return nil
+}
+
+func (c CustomBoot) Tags() []string {
+	return nil
+}
+
+func Test_bootShortName(t *testing.T) {
+	assert.Empty(t, bootShortName(nil))
+	assert.Equal(t, "EventBootstrapper", bootShortName(&bootstrappers.EventBootstrapper{}))
+	assert.Equal(t, "CustomBoot", bootShortName(CustomBoot{}))
 }

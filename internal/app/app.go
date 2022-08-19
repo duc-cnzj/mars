@@ -213,7 +213,7 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	for _, bootstrapper := range app.mustBooted {
 		func() {
 			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
 			}(time.Now())
 			if err := bootstrapper.Bootstrap(app); err != nil {
 				mlog.Fatal(err)
@@ -258,7 +258,7 @@ loop:
 func printConfig(app *Application) {
 	mlog.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
 	for _, boot := range app.excludeBoots {
-		mlog.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", reflect.TypeOf(boot).String(), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
+		mlog.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", bootShortName(boot), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
 	}
 }
 
@@ -266,7 +266,7 @@ func (app *Application) Bootstrap() error {
 	for _, bootstrapper := range app.bootstrappers {
 		err := func() error {
 			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
 			}(time.Now())
 			return bootstrapper.Bootstrap(app)
 		}()
@@ -384,4 +384,12 @@ func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {
 	app.hooksMu.Lock()
 	defer app.hooksMu.Unlock()
 	app.hooks[BeforeRunHook] = append(app.hooks[BeforeRunHook], cb)
+}
+
+func bootShortName(boot contracts.Bootstrapper) string {
+	if boot == nil {
+		return ""
+	}
+	s := strings.Split(reflect.TypeOf(boot).String(), ".")
+	return s[len(s)-1]
 }

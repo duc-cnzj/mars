@@ -42,7 +42,7 @@ import (
 type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Tags() []string {
-	return []string{"api"}
+	return []string{"api", "gateway"}
 }
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

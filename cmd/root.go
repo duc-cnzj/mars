@@ -26,6 +26,7 @@ func Execute(configFile []byte) {
 	}
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
+	rootCmd.AddCommand(showCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
