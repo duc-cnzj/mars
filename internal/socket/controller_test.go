@@ -574,13 +574,25 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	time.Sleep(2 * time.Second)
 }
 
+type slowLocker struct {
+	contracts.Locker
+}
+
+func (s *slowLocker) Acquire(key string, seconds int64) bool {
+	if s.Locker.Acquire(key, seconds) {
+		time.Sleep(200 * time.Millisecond)
+		return true
+	}
+	return false
+}
+
 func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
 	l := lock.NewMemStore()
-	app.EXPECT().CacheLock().Return(lock.NewMemoryLock([2]int{-1, 100}, l)).AnyTimes()
+	app.EXPECT().CacheLock().Return(&slowLocker{Locker: lock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
 	app.EXPECT().Done().Return(ch).AnyTimes()
 	go func() {
 		time.Sleep(1500 * time.Millisecond)

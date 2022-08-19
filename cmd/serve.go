@@ -62,7 +62,7 @@ func init() {
 	apiGatewayCmd.Flags().StringP("app_port", "", "6000", "app port.")
 	apiGatewayCmd.Flags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
 	apiGatewayCmd.Flags().StringP("grpc_port", "", "", "grpc port.")
-	apiGatewayCmd.Flags().StringP("exclude_server", "", "", "server that not start, join with ',', these choices(api/metrics/cron/profile).")
+	apiGatewayCmd.Flags().StringP("exclude_server", "", "", "do not start these services(api/metrics/cron/profile), join with ','.")
 
 	viper.BindPFlag("config", apiGatewayCmd.Flags().Lookup("config"))
 	viper.BindPFlag("debug", apiGatewayCmd.Flags().Lookup("debug"))
