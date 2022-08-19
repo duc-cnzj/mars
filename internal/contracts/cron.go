@@ -23,6 +23,8 @@ type Command interface {
 	Func() func()
 	//Expression cron 表达式: "* * * * * *"
 	Expression() string
+	//Cron 自定义 expression "* * * * * *"
+	Cron(expression string) Command
 	//EverySecond 每 1 秒
 	EverySecond() Command
 	//EveryTwoSeconds 每 2 秒

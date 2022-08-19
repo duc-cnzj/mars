@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 type timer interface {
@@ -41,7 +42,7 @@ func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds 
 	if d.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {
-			defer utils.HandlePanic("[lock]: key: " + key)
+			defer recovery.HandlePanic("[lock]: key: " + key)
 
 			ticker := time.NewTicker(time.Second * time.Duration(renewalSeconds))
 			defer ticker.Stop()

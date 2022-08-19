@@ -13,6 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	trace "go.opentelemetry.io/otel/trace"
 	singleflight "golang.org/x/sync/singleflight"
+	gorm "gorm.io/gorm"
 )
 
 // MockApplicationInterface is a mock of ApplicationInterface interface.
@@ -130,6 +131,20 @@ func (m *MockApplicationInterface) CronManager() contracts.CronManager {
 func (mr *MockApplicationInterfaceMockRecorder) CronManager() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CronManager", reflect.TypeOf((*MockApplicationInterface)(nil).CronManager))
+}
+
+// DB mocks base method.
+func (m *MockApplicationInterface) DB() *gorm.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DB")
+	ret0, _ := ret[0].(*gorm.DB)
+	return ret0
+}
+
+// DB indicates an expected call of DB.
+func (mr *MockApplicationInterfaceMockRecorder) DB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DB", reflect.TypeOf((*MockApplicationInterface)(nil).DB))
 }
 
 // DBManager mocks base method.

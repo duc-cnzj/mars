@@ -9,6 +9,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 var defaultStore = newStore()
@@ -131,7 +132,7 @@ func (m *memoryLock) RenewalAcquire(key string, seconds int64, renewalSeconds in
 	if m.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {
-			defer utils.HandlePanic("[lock]: key: " + key)
+			defer recovery.HandlePanic("[lock]: key: " + key)
 
 			ticker := time.NewTicker(time.Second * time.Duration(renewalSeconds))
 			defer ticker.Stop()

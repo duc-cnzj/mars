@@ -1,9 +1,20 @@
 package cache
 
 import (
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/cron/commands"
 	"github.com/duc-cnzj/mars/internal/mlog"
+
 	"golang.org/x/sync/singleflight"
 )
+
+func init() {
+	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
+		manager.NewCommand("help2", func() {
+			mlog.Info("need help!")
+		}).At("08:51")
+	})
+}
 
 type Store interface {
 	Get(key string) (value []byte, err error)

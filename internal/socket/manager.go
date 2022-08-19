@@ -37,6 +37,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 const (
@@ -415,7 +416,7 @@ func (j *Jober) Run() error {
 			done <- struct{}{}
 			close(done)
 		}()
-		defer utils.HandlePanic("[Websocket]: Jober Run")
+		defer recovery.HandlePanic("[Websocket]: Jober Run")
 		j.HandleMessage()
 	}()
 
@@ -656,7 +657,7 @@ func defaultLoaders() []Loader {
 func (j *Jober) LoadConfigs() error {
 	ch := make(chan error)
 	go func() {
-		defer utils.HandlePanic("LoadConfigs")
+		defer recovery.HandlePanic("LoadConfigs")
 		ch <- func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 

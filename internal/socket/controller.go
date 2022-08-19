@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
@@ -120,7 +122,7 @@ func (w *WebsocketManager) TickClusterHealth() {
 	sub := plugins.GetWsSender().New("", "")
 
 	go func() {
-		defer utils.HandlePanic("TickClusterHealth")
+		defer recovery.HandlePanic("TickClusterHealth")
 		defer ticker.Stop()
 		for {
 			select {
@@ -191,7 +193,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			mlog.Debugf("[Websocket]: go read exit, err: %v", err)
 		}()
-		defer utils.HandlePanic("[Websocket]: read recovery")
+		defer recovery.HandlePanic("[Websocket]: read recovery")
 		err = read(wsconn)
 		ch <- struct{}{}
 	}()
@@ -205,7 +207,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
-	defer utils.HandlePanic("Websocket: Write")
+	defer recovery.HandlePanic("Websocket: Write")
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -264,7 +266,7 @@ func read(wsconn *WsConn) error {
 
 		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
-				defer utils.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
+				defer recovery.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
 					metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
 				})
 				defer func(t time.Time) {

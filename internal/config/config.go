@@ -40,6 +40,8 @@ type Config struct {
 	GitServerCached bool   `mapstructure:"git_server_cached"`
 	CacheDriver     string `mapstructure:"cache_driver"`
 
+	StartCron bool
+
 	MetricsPort string `mapstructure:"metrics_port"`
 
 	AdminPassword string `mapstructure:"admin_password"`
@@ -123,6 +125,7 @@ func Init(cfgFile string) *Config {
 	})
 
 	cfg := &Config{NsPrefix: "devops-"}
+	cfg.StartCron = viper.GetBool("start_cron")
 
 	viper.Unmarshal(&cfg)
 	if cfg.GrpcPort == "" {

@@ -33,6 +33,7 @@ var appVersion = version.GetVersion().String()
 
 var (
 	BootstrapperStartMetrics = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:   "",
 		Subsystem:   system,
 		Name:        "bootstrapper_duration_seconds",
 		Help:        "系统启动各阶段耗时",

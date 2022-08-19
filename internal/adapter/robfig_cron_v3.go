@@ -4,10 +4,12 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/robfig/cron/v3"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/robfig/cron/v3"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 type RobfigCronV3Runner struct {
@@ -20,6 +22,7 @@ type RobfigCronV3Runner struct {
 func NewRobfigCronV3Runner() *RobfigCronV3Runner {
 	return &RobfigCronV3Runner{
 		c: cron.New(
+			cron.WithLocation(time.Local),
 			cron.WithSeconds(),
 			cron.WithChain(
 				cron.Recover(&CronLogger{}),
@@ -43,7 +46,7 @@ func (c *RobfigCronV3Runner) AddCommand(name string, expression string, fn func(
 
 func (c *RobfigCronV3Runner) Run(ctx context.Context) error {
 	go func() {
-		defer utils.HandlePanic("[CRON]: robfig/cron/v3 Run")
+		defer recovery.HandlePanic("[CRON]: robfig/cron/v3 Run")
 		c.c.Run()
 	}()
 	return nil

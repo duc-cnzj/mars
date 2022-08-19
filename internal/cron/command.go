@@ -48,6 +48,11 @@ func (c *Command) Name() string {
 	return c.name
 }
 
+func (c *Command) Cron(expression string) contracts.Command {
+	c.expression = expression
+	return c
+}
+
 func (c *Command) EverySecond() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*")
 	return c

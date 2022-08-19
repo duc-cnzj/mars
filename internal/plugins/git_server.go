@@ -8,11 +8,38 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/cron/commands"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 )
 
 var gitServerOnce = sync.Once{}
+
+func init() {
+	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
+		if app.Config().GitServerCached {
+			manager.NewCommand("all_git_project_cache", func() {
+				GetGitServer().AllProjects()
+			}).EveryFiveMinutes()
+			manager.NewCommand("all_branch_cache", func() {
+				var enabledGitProjects []*models.GitProject
+				app.DB().Where("`enabled` = ?", true).Find(&enabledGitProjects)
+				wg := &sync.WaitGroup{}
+				for _, p := range enabledGitProjects {
+					wg.Add(1)
+					go func(pid int) {
+						defer recovery.HandlePanic("[CRON]: all_branch_cache")
+						GetGitServer().AllBranches(fmt.Sprintf("%d", pid))
+					}(p.GitProjectId)
+				}
+				wg.Wait()
+			}).EveryTwoMinutes()
+		}
+	})
+}
 
 type GitServer interface {
 	contracts.PluginInterface

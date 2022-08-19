@@ -22,11 +22,13 @@ var CronBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.TracingBootstrapper{},
 }
 
-var apiCronCmd = &cobra.Command{
+var cronCmd = &cobra.Command{
 	Use:   "cron",
 	Short: "start mars cronjob.",
 	Run: func(cmd *cobra.Command, args []string) {
-		app := app.NewApplication(config.Init(cfgFile), app.WithBootstrappers(CronBootstrappers...))
+		cfg := config.Init(cfgFile)
+		cfg.StartCron = true
+		app := app.NewApplication(cfg, app.WithBootstrappers(CronBootstrappers...))
 		if err := app.Bootstrap(); err != nil {
 			mlog.Fatal(err)
 		}

@@ -23,6 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/date"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 func init() {
@@ -151,7 +152,7 @@ func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 		for _, project := range enabledProjects {
 			go func(project models.GitProject) {
 				defer wg.Done()
-				defer utils.HandlePanic("ProjectOptions")
+				defer recovery.HandlePanic("ProjectOptions")
 				var (
 					marsC *mars.Config
 					err   error

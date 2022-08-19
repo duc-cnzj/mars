@@ -188,6 +188,17 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-19-drop-table-db_cache_old",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Migrator().HasTable("db_cache_old") {
+					if err := tx.Migrator().DropTable("db_cache_old"); err != nil {
+						return fmt.Errorf("[%s]: err: %v", "2022-08-19-drop-table-db_cache_old", err)
+					}
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

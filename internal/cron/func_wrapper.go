@@ -5,18 +5,18 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/metrics"
-	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 func Wrap(name string, fn func(), locker contracts.Locker) func() {
 	label := prometheus.Labels{"cron_name": name}
 	return func() {
-		defer utils.HandlePanicWithCallback("[CRON]: "+name, func(err error) {
+		defer recovery.HandlePanicWithCallback("[CRON]: "+name, func(err error) {
 			metrics.CronPanicCount.With(label).Inc()
 		})
 

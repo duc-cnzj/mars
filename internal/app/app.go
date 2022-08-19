@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
@@ -38,25 +39,6 @@ var _ contracts.ApplicationInterface = (*Application)(nil)
 
 var MustBooted = []contracts.Bootstrapper{
 	&bootstrappers.LogBootstrapper{},
-}
-
-var DefaultBootstrappers = []contracts.Bootstrapper{
-	&bootstrappers.EventBootstrapper{},
-	&bootstrappers.PluginsBootstrapper{},
-	&bootstrappers.AuthBootstrapper{},
-	&bootstrappers.UploadBootstrapper{},
-	&bootstrappers.CacheBootstrapper{},
-	&bootstrappers.K8sClientBootstrapper{},
-	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.DistributedLocksBootstrapper{},
-	&bootstrappers.ApiGatewayBootstrapper{},
-	&bootstrappers.PprofBootstrapper{},
-	&bootstrappers.GrpcBootstrapper{},
-	&bootstrappers.MetricsBootstrapper{},
-	&bootstrappers.OidcBootstrapper{},
-	&bootstrappers.TracingBootstrapper{},
-	&bootstrappers.CronBootstrapper{},
-	&bootstrappers.AppBootstrapper{},
 }
 
 type Application struct {
@@ -189,15 +171,14 @@ func WithMustBootedBootstrappers(bootstrappers ...contracts.Bootstrapper) Option
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
 	app := &Application{
-		mustBooted:    MustBooted,
-		bootstrappers: DefaultBootstrappers,
-		config:        config,
-		done:          doneCtx,
-		doneFunc:      cancelFunc,
-		hooks:         map[Hook][]contracts.Callback{},
-		servers:       []contracts.Server{},
-		sf:            &singleflight.Group{},
-		cache:         &cache.NoCache{},
+		mustBooted: MustBooted,
+		config:     config,
+		done:       doneCtx,
+		doneFunc:   cancelFunc,
+		hooks:      map[Hook][]contracts.Callback{},
+		servers:    []contracts.Server{},
+		sf:         &singleflight.Group{},
+		cache:      &cache.NoCache{},
 	}
 
 	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)
@@ -262,6 +243,10 @@ func (app *Application) GetTracer() trace.Tracer {
 
 func (app *Application) DBManager() contracts.DBManager {
 	return app.dbManager
+}
+
+func (app *Application) DB() *gorm.DB {
+	return app.dbManager.DB()
 }
 
 func (app *Application) IsDebug() bool {

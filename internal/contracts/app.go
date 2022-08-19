@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
@@ -57,6 +58,7 @@ type ApplicationInterface interface {
 	Config() *config.Config
 
 	DBManager() DBManager
+	DB() *gorm.DB
 
 	Oidc() OidcConfig
 	SetOidc(OidcConfig)
