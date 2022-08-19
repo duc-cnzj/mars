@@ -286,7 +286,7 @@ func TestApplication_Shutdown(t *testing.T) {
 	defer mlog.SetLogger(logrus.New())
 	e := errors.New("xxx")
 	a.AddServer(&testServer{shutdownErr: e})
-	l.EXPECT().Error(e).Times(1)
 	l.EXPECT().Info(gomock.Any()).Times(1)
+	l.EXPECT().Warningf(gomock.Any(), gomock.Any()).Times(1)
 	a.Shutdown()
 }

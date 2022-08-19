@@ -65,7 +65,7 @@ func Tracer() trace.Tracer {
 }
 
 func DistributedLocks() contracts.Locker {
-	return App().DistributedLocks()
+	return App().CacheLock()
 }
 
 func CronManager() contracts.CronManager {

@@ -85,12 +85,12 @@ type ApplicationInterface interface {
 	SetCache(CacheInterface)
 	Cache() CacheInterface
 
+	CacheLock() Locker
+	SetCacheLock(Locker)
+
 	SetTracer(trace.Tracer)
 	GetTracer() trace.Tracer
 
 	SetCronManager(CronManager)
 	CronManager() CronManager
-
-	DistributedLocks() Locker
-	SetDistributedLocks(Locker)
 }

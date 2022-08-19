@@ -24,13 +24,15 @@ func Wrap(name string, fn func(), locker contracts.Locker) func() {
 		key := fmt.Sprintf("cron-%s", name)
 		releaseFn, acquired := locker.RenewalAcquire(key, 30, 20)
 		if acquired {
+			now := time.Now()
 			defer func(t time.Time) {
+				mlog.Infof("[CRON-DONE: %s]: '%s' done, use %s.", locker.ID(), name, time.Since(t))
 				metrics.CronDuration.With(label).Observe(time.Since(t).Seconds())
 				metrics.CronCommandCount.With(label).Inc()
-			}(time.Now())
+			}(now)
+			mlog.Infof("[CRON-START: %s]: '%s' start at %s.", locker.ID(), name, now.Format("2006-01-02 15:04:05.000"))
 			defer releaseFn()
 
-			mlog.Debugf("[CRON]: run %s at %s", name, time.Now())
 			fn()
 		}
 	}

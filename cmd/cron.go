@@ -16,7 +16,6 @@ var CronBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.DistributedLocksBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
 	&bootstrappers.TracingBootstrapper{},

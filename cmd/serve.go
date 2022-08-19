@@ -18,7 +18,6 @@ var ServerBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.DistributedLocksBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},

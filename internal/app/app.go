@@ -54,25 +54,26 @@ type Application struct {
 	hooksMu sync.RWMutex
 	hooks   map[Hook][]contracts.Callback
 
-	plugins          map[string]contracts.PluginInterface
-	oidcProvider     contracts.OidcConfig
-	uploader         contracts.Uploader
-	auth             contracts.AuthInterface
-	cronManager      contracts.CronManager
-	distributedLocks contracts.Locker
+	plugins      map[string]contracts.PluginInterface
+	oidcProvider contracts.OidcConfig
+	uploader     contracts.Uploader
+	auth         contracts.AuthInterface
+	cronManager  contracts.CronManager
+
+	cache     contracts.CacheInterface
+	cacheLock contracts.Locker
 
 	sf         *singleflight.Group
-	cache      contracts.CacheInterface
 	tracer     trace.Tracer
 	mustBooted []contracts.Bootstrapper
 }
 
-func (app *Application) DistributedLocks() contracts.Locker {
-	return app.distributedLocks
+func (app *Application) CacheLock() contracts.Locker {
+	return app.cacheLock
 }
 
-func (app *Application) SetDistributedLocks(l contracts.Locker) {
-	app.distributedLocks = l
+func (app *Application) SetCacheLock(l contracts.Locker) {
+	app.cacheLock = l
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {

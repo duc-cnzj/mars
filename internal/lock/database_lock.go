@@ -31,11 +31,11 @@ type databaseLock struct {
 	lottery [2]int
 	timer   timer
 	owner   string
-	db      *gorm.DB
+	dbFunc  func() *gorm.DB
 }
 
-func NewDatabaseLock(lottery [2]int, db *gorm.DB) contracts.Locker {
-	return &databaseLock{lottery: lottery, db: db, owner: utils.RandomString(40), timer: &realTimers{}}
+func NewDatabaseLock(lottery [2]int, dbFunc func() *gorm.DB) contracts.Locker {
+	return &databaseLock{lottery: lottery, dbFunc: dbFunc, owner: utils.RandomString(40), timer: &realTimers{}}
 }
 
 func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (func(), bool) {
@@ -67,6 +67,14 @@ func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds 
 	return nil, false
 }
 
+func (d *databaseLock) ID() string {
+	return d.owner
+}
+
+func (d *databaseLock) Type() string {
+	return "database"
+}
+
 func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
@@ -75,7 +83,7 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 		expiration = unix + seconds
 	)
 
-	db := d.db.Create(&models.CacheLock{
+	db := d.dbFunc().Create(&models.CacheLock{
 		Key:        key,
 		Owner:      d.owner,
 		Expiration: expiration,
@@ -84,7 +92,7 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 		acquired = true
 	}
 	if !acquired {
-		updates := d.db.Model(&models.CacheLock{}).Where("`key` = ? AND `expiration` <= ?", key, unix).Updates(map[string]any{
+		updates := d.dbFunc().Model(&models.CacheLock{}).Where("`key` = ? AND `expiration` <= ?", key, unix).Updates(map[string]any{
 			"owner":      d.owner,
 			"expiration": expiration,
 		})
@@ -94,7 +102,7 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	}
 
 	if rand.Intn(d.lottery[1]) < d.lottery[0] {
-		d.db.Where("`expiration` < ?", unix-60).Delete(&models.CacheLock{})
+		d.dbFunc().Where("`expiration` < ?", unix-60).Delete(&models.CacheLock{})
 	}
 
 	return acquired
@@ -109,12 +117,12 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 	)
 
 	cl := &models.CacheLock{}
-	first := d.db.Where("`key` = ?", key).First(cl)
+	first := d.dbFunc().Where("`key` = ?", key).First(cl)
 	if first.Error != nil {
 		return acquired
 	}
 
-	updates := d.db.Model(&models.CacheLock{}).Where("`key` = ? AND `owner` = ?", key, d.owner).Updates(map[string]any{
+	updates := d.dbFunc().Model(&models.CacheLock{}).Where("`key` = ? AND `owner` = ?", key, d.owner).Updates(map[string]any{
 		"owner":      d.owner,
 		"expiration": expiration,
 	})
@@ -127,7 +135,7 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 
 func (d *databaseLock) Release(key string) bool {
 	if d.Owner(key) == d.owner {
-		d.db.Where("`key` = ? AND `owner` = ?", key, d.owner).Delete(&models.CacheLock{})
+		d.dbFunc().Where("`key` = ? AND `owner` = ?", key, d.owner).Delete(&models.CacheLock{})
 		return true
 	}
 
@@ -135,13 +143,13 @@ func (d *databaseLock) Release(key string) bool {
 }
 
 func (d *databaseLock) ForceRelease(key string) bool {
-	d.db.Where("`key` = ?", key).Delete(&models.CacheLock{})
+	d.dbFunc().Where("`key` = ?", key).Delete(&models.CacheLock{})
 	return true
 }
 
 func (d *databaseLock) Owner(key string) string {
 	cl := &models.CacheLock{}
-	d.db.Where("`key` = ?", key).First(cl)
+	d.dbFunc().Where("`key` = ?", key).First(cl)
 
 	return cl.Owner
 }

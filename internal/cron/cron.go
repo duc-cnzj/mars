@@ -29,7 +29,7 @@ func (m *Manager) NewCommand(name string, fn func()) contracts.Command {
 	if _, ok := m.commands[name]; ok {
 		panic(fmt.Sprintf("[CRON]: job %s already exists", name))
 	}
-	cmd := &Command{expression: expression, name: name, fn: Wrap(name, fn, m.app.DistributedLocks())}
+	cmd := &Command{expression: expression, name: name, fn: Wrap(name, fn, m.app.CacheLock())}
 	m.commands[name] = cmd
 	return cmd
 }
@@ -65,6 +65,7 @@ func (m *Manager) List() []contracts.Command {
 }
 
 func (m *Manager) Shutdown(ctx context.Context) error {
+	mlog.Info("[Server]: shutdown cron manager.")
 	return m.runner.Shutdown(ctx)
 }
 

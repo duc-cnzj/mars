@@ -39,7 +39,7 @@ func (c *RobfigCronV3Runner) AddCommand(name string, expression string, fn func(
 	if err != nil {
 		return err
 	}
-	mlog.Debugf("[CRON]: ADD '%s', spec: '%s', id: '%d'", name, expression, id)
+	mlog.Infof("[CRON]: ADD '%s', spec: '%s', id: '%d'", name, expression, id)
 	c.entryMap[name] = int64(id)
 	return nil
 }
@@ -56,7 +56,7 @@ func (c *RobfigCronV3Runner) Shutdown(ctx context.Context) error {
 	stopCtx := c.c.Stop()
 	select {
 	case <-stopCtx.Done():
-		return stopCtx.Err()
+		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	}

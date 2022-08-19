@@ -14,6 +14,7 @@ func SetGormDB(m *gomock.Controller, app *mock.MockApplicationInterface) (*gorm.
 	db.Exec("PRAGMA foreign_keys = ON", nil)
 	s, _ := db.DB()
 	manager.EXPECT().DB().Return(db).AnyTimes()
+	app.EXPECT().DB().Return(db).AnyTimes()
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	return db, func() {
 		s.Close()

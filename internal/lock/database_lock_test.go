@@ -63,7 +63,9 @@ func TestDatabaseLock_Acquire(t *testing.T) {
 	t.Parallel()
 	key := "Acquire"
 	key2 := "Acquire2"
-	lock := NewDatabaseLock([2]int{-1, 100}, db)
+	lock := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	})
 
 	num := 10
 	var count int64
@@ -108,7 +110,9 @@ func TestDatabaseLock_AcquireLottery(t *testing.T) {
 	t.Parallel()
 	key := "AcquireLottery"
 	key2 := "AcquireLottery2"
-	lock := NewDatabaseLock([2]int{5, 1}, db).(*databaseLock)
+	lock := NewDatabaseLock([2]int{5, 1}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	lock.timer = &mockTimer{l: []int64{100, 162}}
 	acquire := lock.Acquire(key, 1)
 	defer lock.Release(key)
@@ -129,8 +133,12 @@ func TestDatabaseLock_ForceRelease(t *testing.T) {
 	}
 	t.Parallel()
 	key := "ForceRelease"
-	lockOne := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
-	lockTwo := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lockOne := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
+	lockTwo := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 
 	lockOne.Acquire(key, 1000)
 	defer lockOne.Release(key)
@@ -149,8 +157,12 @@ func TestDatabaseLock_Owner(t *testing.T) {
 	t.Parallel()
 	key := "Owner"
 	key2 := "Owner2"
-	lockOne := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
-	lockTwo := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lockOne := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
+	lockTwo := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	assert.NotEqual(t, lockOne.owner, lockTwo.owner)
 
 	lockOne.Acquire(key, 1000)
@@ -172,8 +184,12 @@ func TestDatabaseLock_Release(t *testing.T) {
 	}
 	t.Parallel()
 	key := "Release"
-	lockOne := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
-	lockTwo := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lockOne := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
+	lockTwo := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	assert.NotEqual(t, lockOne.owner, lockTwo.owner)
 
 	lockOne.Acquire(key, 1000)
@@ -195,8 +211,12 @@ func TestDatabaseLock_RenewalAcquire(t *testing.T) {
 	}
 	t.Parallel()
 	key := "RenewalAcquire"
-	lock := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
-	lock2 := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lock := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
+	lock2 := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	var i int64
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -223,7 +243,9 @@ func TestDatabaseLock_RenewalAcquire2(t *testing.T) {
 		t.Skipf("db not installed")
 	}
 	key := "RenewalAcquire2"
-	lock := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lock := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	assert.False(t, lock.renewalExistKey("not-exists", 10))
 
 	fn, ok := lock.RenewalAcquire(key, 3, 2)
@@ -239,8 +261,12 @@ func TestDatabaseLock_RenewalAcquire3(t *testing.T) {
 	}
 	t.Parallel()
 	key := "RenewalAcquire3"
-	lock := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
-	lock2 := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lock := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
+	lock2 := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -265,7 +291,9 @@ func BenchmarkDatabaseLock_RenewalAcquire(b *testing.B) {
 	if !prepared {
 		b.Skipf("db not installed")
 	}
-	lock := NewDatabaseLock([2]int{-1, 100}, db).(*databaseLock)
+	lock := NewDatabaseLock([2]int{-1, 100}, func() *gorm.DB {
+		return db
+	}).(*databaseLock)
 	for i := 0; i < b.N; i++ {
 		if release, ok := lock.RenewalAcquire(fmt.Sprintf("key-%v", i), 3, 2); ok {
 			release()

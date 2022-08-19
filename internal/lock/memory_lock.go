@@ -84,6 +84,14 @@ func NewMemoryLock(lottery [2]int, s *memStore) contracts.Locker {
 	return &memoryLock{lottery: lottery, owner: utils.RandomString(40), timer: &realTimers{}, locks: s}
 }
 
+func (m *memoryLock) ID() string {
+	return m.owner
+}
+
+func (m *memoryLock) Type() string {
+	return "memory"
+}
+
 func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
