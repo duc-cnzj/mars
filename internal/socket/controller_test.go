@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/lock"
+	"github.com/duc-cnzj/mars/internal/cache_lock"
 
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
@@ -547,7 +547,7 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	l := lock.NewMemoryLock([2]int{-1, 100}, lock.NewMemStore())
+	l := cache_lock.NewMemoryLock([2]int{-1, 100}, cache_lock.NewMemStore())
 	app.EXPECT().CacheLock().Return(l).AnyTimes()
 	app.EXPECT().Done().Return(ch).Times(1)
 	go func() {
@@ -591,8 +591,8 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	l := lock.NewMemStore()
-	app.EXPECT().CacheLock().Return(&slowLocker{Locker: lock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
+	l := cache_lock.NewMemStore()
+	app.EXPECT().CacheLock().Return(&slowLocker{Locker: cache_lock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
 	app.EXPECT().Done().Return(ch).AnyTimes()
 	go func() {
 		time.Sleep(1500 * time.Millisecond)

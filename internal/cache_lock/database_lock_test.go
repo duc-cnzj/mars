@@ -1,4 +1,4 @@
-package lock
+package cache_lock
 
 import (
 	"fmt"
@@ -299,4 +299,17 @@ func BenchmarkDatabaseLock_RenewalAcquire(b *testing.B) {
 			release()
 		}
 	}
+}
+
+func Test_databaseLock_ID(t *testing.T) {
+	id := NewDatabaseLock([2]int{0, 0}, func() *gorm.DB {
+		return nil
+	}).ID()
+	assert.Len(t, id, 40)
+}
+
+func Test_databaseLock_Type(t *testing.T) {
+	assert.Equal(t, "database", NewDatabaseLock([2]int{0, 0}, func() *gorm.DB {
+		return nil
+	}).Type())
 }

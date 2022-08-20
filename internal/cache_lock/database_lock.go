@@ -1,7 +1,7 @@
-// Package lock
+// Package cache_lock
 //
 // Laravel yyds!
-package lock
+package cache_lock
 
 import (
 	"context"

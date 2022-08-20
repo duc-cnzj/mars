@@ -1,4 +1,4 @@
-package lock
+package cache_lock
 
 import (
 	"fmt"
@@ -195,4 +195,13 @@ func BenchmarkMemoryLock_RenewalAcquire(b *testing.B) {
 			//lock.Release(key)
 		}
 	}
+}
+
+func Test_memoryLock_ID(t *testing.T) {
+	id := NewMemoryLock([2]int{0, 0}, nil).ID()
+	assert.Len(t, id, 40)
+}
+
+func Test_memoryLock_Type(t *testing.T) {
+	assert.Equal(t, "memory", NewMemoryLock([2]int{0, 0}, nil).Type())
 }

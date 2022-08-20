@@ -1,4 +1,4 @@
-package lock
+package cache_lock
 
 import (
 	"context"
