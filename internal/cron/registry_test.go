@@ -8,6 +8,7 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	registry = nil
 	assert.Len(t, RegisteredCronJobs(), 0)
 	Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {})
 	assert.Len(t, RegisteredCronJobs(), 1)
