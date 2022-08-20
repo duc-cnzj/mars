@@ -67,9 +67,6 @@ func TestManager_Run(t *testing.T) {
 	called := false
 	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
 		called = true
-		manager.NewCommand("a", func() error {
-			return nil
-		})
 	})
 	cm := NewManager(runner, app)
 	cm.NewCommand("duc", func() error {
@@ -77,7 +74,6 @@ func TestManager_Run(t *testing.T) {
 	}).EveryTwoSeconds()
 	ctx := context.TODO()
 	runner.EXPECT().Run(ctx).Times(1)
-	runner.EXPECT().AddCommand("a", expression, gomock.Any()).Times(1)
 	runner.EXPECT().AddCommand("duc", "*/2 * * * * *", gomock.Any()).Times(1)
 	cm.Run(ctx)
 	assert.True(t, called)
