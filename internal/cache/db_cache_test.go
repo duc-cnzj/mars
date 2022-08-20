@@ -21,9 +21,7 @@ import (
 )
 
 func newCacheByApp(app contracts.ApplicationInterface) *DBCache {
-	return NewDBCache(func() *singleflight.Group {
-		return app.Singleflight()
-	}, func() *gorm.DB {
+	return NewDBCache(app.Singleflight(), func() *gorm.DB {
 		return app.DB()
 	})
 }

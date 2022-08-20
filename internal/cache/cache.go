@@ -13,16 +13,16 @@ type Store interface {
 }
 
 type Cache struct {
-	fc               Store
-	singleflightFunc func() *singleflight.Group
+	fc Store
+	sf *singleflight.Group
 }
 
-func NewCache(fc Store, singleflightFunc func() *singleflight.Group) *Cache {
-	return &Cache{fc: fc, singleflightFunc: singleflightFunc}
+func NewCache(fc Store, sf *singleflight.Group) *Cache {
+	return &Cache{fc: fc, sf: sf}
 }
 
 func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.singleflightFunc().Do("CacheRemember:"+key, func() (any, error) {
+	do, err, _ := c.sf.Do("CacheRemember:"+key, func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}

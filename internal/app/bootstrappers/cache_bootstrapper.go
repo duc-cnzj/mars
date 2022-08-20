@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/cache_lock"
-	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 
 	gocache "github.com/patrickmn/go-cache"
@@ -33,9 +32,7 @@ func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 
 	switch driver {
 	case "db":
-		app.SetCache(cachein.NewDBCache(func() *singleflight.Group {
-			return app.Singleflight()
-		}, func() *gorm.DB {
+		app.SetCache(cachein.NewDBCache(app.Singleflight(), func() *gorm.DB {
 			return app.DB()
 		}))
 		app.SetCacheLock(cache_lock.NewDatabaseLock([2]int{2, 100}, func() *gorm.DB {
@@ -44,9 +41,7 @@ func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 	case "memory":
 		c := gocache.New(5*time.Minute, 10*time.Minute)
 		app.SetCacheLock(cache_lock.NewMemoryLock([2]int{2, 100}, nil))
-		app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), func() *singleflight.Group {
-			return app.Singleflight()
-		}))
+		app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), app.Singleflight()))
 	default:
 		return errors.New("unknown cache driver: " + driver)
 	}

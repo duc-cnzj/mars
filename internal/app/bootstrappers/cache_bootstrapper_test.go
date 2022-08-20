@@ -47,7 +47,7 @@ func TestCacheBootstrapper_Bootstrap(t *testing.T) {
 		DBDriver:    "sqlite",
 		CacheDriver: "db",
 	}).Times(1)
-	app.EXPECT().Singleflight().Times(1)
+	app.EXPECT().Singleflight().Times(2)
 	app.EXPECT().SetCache(&cacheMatcher{
 		wants: (*cache.Cache)(nil),
 		t:     t,

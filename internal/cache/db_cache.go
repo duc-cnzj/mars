@@ -14,16 +14,16 @@ import (
 )
 
 type DBCache struct {
-	singleflightFunc func() *singleflight.Group
-	dbFunc           func() *gorm.DB
+	sf     *singleflight.Group
+	dbFunc func() *gorm.DB
 }
 
-func NewDBCache(singleflightFunc func() *singleflight.Group, dbFunc func() *gorm.DB) *DBCache {
-	return &DBCache{singleflightFunc: singleflightFunc, dbFunc: dbFunc}
+func NewDBCache(sf *singleflight.Group, dbFunc func() *gorm.DB) *DBCache {
+	return &DBCache{sf: sf, dbFunc: dbFunc}
 }
 
 func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.singleflightFunc().Do(c.cacheKey(key), func() (any, error) {
+	do, err, _ := c.sf.Do(c.cacheKey(key), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
