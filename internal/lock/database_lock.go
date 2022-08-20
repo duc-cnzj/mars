@@ -38,7 +38,7 @@ func NewDatabaseLock(lottery [2]int, dbFunc func() *gorm.DB) contracts.Locker {
 	return &databaseLock{lottery: lottery, dbFunc: dbFunc, owner: utils.RandomString(40), timer: &realTimers{}}
 }
 
-func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (func(), bool) {
+func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (func(), bool) {
 	if d.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {

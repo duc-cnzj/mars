@@ -29,7 +29,9 @@ func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
 	if _, ok := m.commands[name]; ok {
 		panic(fmt.Sprintf("[CRON]: job %s already exists", name))
 	}
-	cmd := &Command{expression: expression, name: name, fn: Wrap(name, fn, m.app.CacheLock())}
+	cmd := &Command{expression: expression, name: name, fn: Wrap(name, fn, func() contracts.Locker {
+		return m.app.CacheLock()
+	})}
 	m.commands[name] = cmd
 	return cmd
 }

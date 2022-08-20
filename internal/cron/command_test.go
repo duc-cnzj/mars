@@ -345,6 +345,7 @@ func TestCommand_Weekly(t *testing.T) {
 
 func TestCommand_WeeklyOn(t *testing.T) {
 	assert.Equal(t, "0 00 19 * * 0", newCommand().WeeklyOn(SUNDAY, "19:00").Expression())
+	assert.Equal(t, "0 0 0 * * 0", newCommand().WeeklyOn(SUNDAY, "").Expression())
 }
 
 func TestCommand_Yearly(t *testing.T) {

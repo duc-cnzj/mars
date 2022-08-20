@@ -136,7 +136,7 @@ func (m *memoryLock) Count() int {
 	return m.locks.Count()
 }
 
-func (m *memoryLock) RenewalAcquire(key string, seconds int64, renewalSeconds int) (releaseFn func(), acquired bool) {
+func (m *memoryLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (releaseFn func(), acquired bool) {
 	if m.Acquire(key, seconds) {
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		go func() {
