@@ -129,6 +129,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+	assert.False(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
 	assert.Nil(t, ma.AutoMigrate())
@@ -141,6 +142,8 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasTable("commands"))
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "manifest"))
 	assert.True(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
+	assert.True(t, db.Migrator().HasTable("cache_locks"))
+	assert.False(t, db.Migrator().HasColumn(&models.DBCache{}, "id"))
 
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)

@@ -74,7 +74,6 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 }
 
 func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool) (*release.Release, error) {
-	defer utils.HandlePanic("releaseInstaller: Run")
 	defer mlog.Debug("releaseInstaller exit")
 
 	r.messageCh = messageCh

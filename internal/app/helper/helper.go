@@ -63,3 +63,11 @@ func Cache() contracts.CacheInterface {
 func Tracer() trace.Tracer {
 	return App().GetTracer()
 }
+
+func CacheLock() contracts.Locker {
+	return App().CacheLock()
+}
+
+func CronManager() contracts.CronManager {
+	return App().CronManager()
+}

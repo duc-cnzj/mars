@@ -28,7 +28,11 @@ var Models = []any{
 
 type DBBootstrapper struct{}
 
-func (D *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
+func (d *DBBootstrapper) Tags() []string {
+	return []string{}
+}
+
+func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	var (
 		db  *gorm.DB
 		err error

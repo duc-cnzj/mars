@@ -17,7 +17,7 @@ func TestSetGormDB(t *testing.T) {
 	db, f := SetGormDB(m, app)
 	defer f()
 	assert.NotNil(t, db)
-	assert.Equal(t, db, app.DBManager().DB())
+	assert.Equal(t, db, app.DB())
 }
 
 func TestMockApp(t *testing.T) {

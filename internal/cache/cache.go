@@ -2,6 +2,7 @@ package cache
 
 import (
 	"github.com/duc-cnzj/mars/internal/mlog"
+
 	"golang.org/x/sync/singleflight"
 )
 

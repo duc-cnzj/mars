@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -65,6 +66,10 @@ func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 			if rows == -1 {
 				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {
+				if strings.Contains(err.Error(), "for key 'cache_locks.PRIMARY'") {
+					mlog.Debugf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
+					return
+				}
 				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
 		case elapsed > slowThreshold && g.level >= logger.Warn:

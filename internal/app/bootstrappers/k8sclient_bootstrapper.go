@@ -12,7 +12,11 @@ import (
 
 type K8sClientBootstrapper struct{}
 
-func (i *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
+func (k *K8sClientBootstrapper) Tags() []string {
+	return []string{}
+}
+
+func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	var (
 		config *restclient.Config
 		err    error

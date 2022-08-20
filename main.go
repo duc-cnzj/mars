@@ -2,6 +2,8 @@ package main
 
 import (
 	_ "embed"
+	"math/rand"
+	"time"
 
 	"github.com/duc-cnzj/mars/cmd"
 
@@ -14,6 +16,10 @@ import (
 
 //go:embed config_example.yaml
 var configFile []byte
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	cmd.Execute(configFile)

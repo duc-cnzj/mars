@@ -29,6 +29,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 func init() {
@@ -100,7 +101,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 
 	go func() {
 		defer writer.Close()
-		defer utils.HandlePanic("Exec")
+		defer recovery.HandlePanic("Exec")
 		err := c.Executor.Execute("POST", params.URL(), restConfig, nil, writer, writer, false, nil)
 		if err != nil {
 			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
@@ -354,7 +355,7 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 			mlog.Debug("[Stream]:  read exit!")
 			close(ch)
 		}()
-		defer utils.HandlePanic("StreamContainerLog")
+		defer recovery.HandlePanic("StreamContainerLog")
 
 		for {
 			bytes, err := bf.ReadBytes('\n')
@@ -376,7 +377,7 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 		case <-server.Context().Done():
 			stream.Close()
 			mlog.Debug("[Stream]: client exit with: ", server.Context().Err())
-			return server.Context().Err()
+			return nil
 		case msg, ok := <-ch:
 			if !ok {
 				stream.Close()

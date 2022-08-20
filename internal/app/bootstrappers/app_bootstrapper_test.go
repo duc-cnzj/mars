@@ -99,3 +99,7 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 	assert.Equal(t, "key", s2.StringData["tls.key"])
 	assert.Equal(t, "crt", s2.StringData["tls.crt"])
 }
+
+func TestAppBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&AppBootstrapper{}).Tags())
+}

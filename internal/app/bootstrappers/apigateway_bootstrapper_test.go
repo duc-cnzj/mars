@@ -188,3 +188,7 @@ func Test_handleDownload(t *testing.T) {}
 func Test_handleDownloadConfig(t *testing.T) {}
 
 func Test_serveWs(t *testing.T) {}
+
+func TestApiGatewayBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{"api", "gateway"}, (&ApiGatewayBootstrapper{}).Tags())
+}

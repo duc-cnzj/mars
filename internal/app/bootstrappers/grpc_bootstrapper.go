@@ -26,6 +26,10 @@ import (
 
 type GrpcBootstrapper struct{}
 
+func (g *GrpcBootstrapper) Tags() []string {
+	return []string{"api", "grpc"}
+}
+
 func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	app.AddServer(&grpcRunner{endpoint: fmt.Sprintf("0.0.0.0:%s", app.Config().GrpcPort)})
 

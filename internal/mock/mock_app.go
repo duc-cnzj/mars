@@ -13,6 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	trace "go.opentelemetry.io/otel/trace"
 	singleflight "golang.org/x/sync/singleflight"
+	gorm "gorm.io/gorm"
 )
 
 // MockApplicationInterface is a mock of ApplicationInterface interface.
@@ -104,6 +105,20 @@ func (mr *MockApplicationInterfaceMockRecorder) Cache() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cache", reflect.TypeOf((*MockApplicationInterface)(nil).Cache))
 }
 
+// CacheLock mocks base method.
+func (m *MockApplicationInterface) CacheLock() contracts.Locker {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CacheLock")
+	ret0, _ := ret[0].(contracts.Locker)
+	return ret0
+}
+
+// CacheLock indicates an expected call of CacheLock.
+func (mr *MockApplicationInterfaceMockRecorder) CacheLock() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheLock", reflect.TypeOf((*MockApplicationInterface)(nil).CacheLock))
+}
+
 // Config mocks base method.
 func (m *MockApplicationInterface) Config() *config.Config {
 	m.ctrl.T.Helper()
@@ -116,6 +131,34 @@ func (m *MockApplicationInterface) Config() *config.Config {
 func (mr *MockApplicationInterfaceMockRecorder) Config() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockApplicationInterface)(nil).Config))
+}
+
+// CronManager mocks base method.
+func (m *MockApplicationInterface) CronManager() contracts.CronManager {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CronManager")
+	ret0, _ := ret[0].(contracts.CronManager)
+	return ret0
+}
+
+// CronManager indicates an expected call of CronManager.
+func (mr *MockApplicationInterfaceMockRecorder) CronManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CronManager", reflect.TypeOf((*MockApplicationInterface)(nil).CronManager))
+}
+
+// DB mocks base method.
+func (m *MockApplicationInterface) DB() *gorm.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DB")
+	ret0, _ := ret[0].(*gorm.DB)
+	return ret0
+}
+
+// DB indicates an expected call of DB.
+func (mr *MockApplicationInterfaceMockRecorder) DB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DB", reflect.TypeOf((*MockApplicationInterface)(nil).DB))
 }
 
 // DBManager mocks base method.
@@ -304,6 +347,30 @@ func (m *MockApplicationInterface) SetCache(arg0 contracts.CacheInterface) {
 func (mr *MockApplicationInterfaceMockRecorder) SetCache(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCache", reflect.TypeOf((*MockApplicationInterface)(nil).SetCache), arg0)
+}
+
+// SetCacheLock mocks base method.
+func (m *MockApplicationInterface) SetCacheLock(arg0 contracts.Locker) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCacheLock", arg0)
+}
+
+// SetCacheLock indicates an expected call of SetCacheLock.
+func (mr *MockApplicationInterfaceMockRecorder) SetCacheLock(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCacheLock", reflect.TypeOf((*MockApplicationInterface)(nil).SetCacheLock), arg0)
+}
+
+// SetCronManager mocks base method.
+func (m *MockApplicationInterface) SetCronManager(arg0 contracts.CronManager) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetCronManager", arg0)
+}
+
+// SetCronManager indicates an expected call of SetCronManager.
+func (mr *MockApplicationInterfaceMockRecorder) SetCronManager(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCronManager", reflect.TypeOf((*MockApplicationInterface)(nil).SetCronManager), arg0)
 }
 
 // SetEventDispatcher mocks base method.

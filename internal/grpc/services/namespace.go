@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -117,7 +118,7 @@ func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 			deletedProjectNames = append(deletedProjectNames, project.Name)
 			go func(releaseName, namespace string) {
 				defer wg.Done()
-				defer utils.HandlePanic("NamespaceSvc.Delete")
+				defer recovery.HandlePanic("NamespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
 				if err := n.helmer.Uninstall(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)

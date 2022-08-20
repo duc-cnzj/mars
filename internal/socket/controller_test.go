@@ -10,14 +10,10 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/adapter"
-	"github.com/duc-cnzj/mars/internal/cache"
-	gocache "github.com/patrickmn/go-cache"
-	"golang.org/x/sync/singleflight"
+	"github.com/duc-cnzj/mars/internal/cache_lock"
 
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
@@ -551,7 +547,8 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	app.EXPECT().Cache().Return(&cache.NoCache{}).AnyTimes()
+	l := cache_lock.NewMemoryLock([2]int{-1, 100}, cache_lock.NewMemStore())
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
 	app.EXPECT().Done().Return(ch).Times(1)
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
@@ -577,22 +574,16 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	time.Sleep(2 * time.Second)
 }
 
-type noCache struct {
-	sync.Mutex
-	key     string
-	seconds int
+type slowLocker struct {
+	contracts.Locker
 }
 
-func (n *noCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	n.Lock()
-	defer n.Unlock()
-	n.key = key
-	n.seconds = seconds
-	return fn()
-}
-
-func (n *noCache) Clear(key string) error {
-	return nil
+func (s *slowLocker) Acquire(key string, seconds int64) bool {
+	if s.Locker.Acquire(key, seconds) {
+		time.Sleep(200 * time.Millisecond)
+		return true
+	}
+	return false
 }
 
 func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
@@ -600,8 +591,8 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	cache := cache.NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
-	app.EXPECT().Cache().Return(cache).AnyTimes()
+	l := cache_lock.NewMemStore()
+	app.EXPECT().CacheLock().Return(&slowLocker{Locker: cache_lock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
 	app.EXPECT().Done().Return(ch).AnyTimes()
 	go func() {
 		time.Sleep(1500 * time.Millisecond)
@@ -627,44 +618,6 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 		go NewWebsocketManager(1 * time.Second).TickClusterHealth()
 	}
 	time.Sleep(2 * time.Second)
-}
-
-func TestWebsocketManager_TickClusterHealth_CheckParams(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	ch := make(chan struct{})
-	cache := &noCache{}
-	done := make(chan struct{})
-	app.EXPECT().Cache().Return(cache).AnyTimes()
-	app.EXPECT().Done().Return(ch).AnyTimes()
-	go func() {
-		time.Sleep(1500 * time.Millisecond)
-		close(ch)
-		close(done)
-	}()
-
-	app.EXPECT().Config().Return(&config.Config{
-		WsSenderPlugin: config.Plugin{
-			Name: "test_ws",
-		},
-	}).AnyTimes()
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(), MetricsClient: fake2.NewSimpleClientset()}).AnyTimes()
-	ps := mock.NewMockPubSub(m)
-	ps.EXPECT().ToAll(gomock.Any()).Times(1)
-
-	ws := mock.NewMockWsSender(m)
-	ws.EXPECT().New("", "").Return(ps).AnyTimes()
-	ws.EXPECT().Initialize(gomock.Any()).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
-	app.EXPECT().GetPluginByName("test_ws").Return(ws).AnyTimes()
-
-	NewWebsocketManager(1 * time.Second).TickClusterHealth()
-	<-done
-	cache.Lock()
-	defer cache.Unlock()
-	assert.Equal(t, "TickClusterHealth", cache.key)
-	assert.Equal(t, int(1), cache.seconds)
 }
 
 func Test_Upgrader(t *testing.T) {

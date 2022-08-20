@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -49,6 +50,9 @@ type bootstrapper struct {
 	called bool
 }
 
+func (b *bootstrapper) Tags() []string {
+	return nil
+}
 func (b *bootstrapper) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
 	b.called = true
 	return b.err
@@ -286,7 +290,121 @@ func TestApplication_Shutdown(t *testing.T) {
 	defer mlog.SetLogger(logrus.New())
 	e := errors.New("xxx")
 	a.AddServer(&testServer{shutdownErr: e})
-	l.EXPECT().Error(e).Times(1)
 	l.EXPECT().Info(gomock.Any()).Times(1)
+	l.EXPECT().Warningf(gomock.Any(), gomock.Any()).Times(1)
 	a.Shutdown()
+}
+
+func TestWithExcludeTags(t *testing.T) {
+	tags := []string{"a", "b", "c"}
+	assert.Equal(t, tags, NewApplication(&config.Config{}, WithExcludeTags(tags...)).(*Application).excludeTags)
+}
+
+type boota struct{}
+
+func (b *boota) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
+	return nil
+}
+
+func (b *boota) Tags() []string {
+	return []string{"a", "aa", "aaa"}
+}
+
+type bootb struct{}
+
+func (b *bootb) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
+	return nil
+}
+
+func (b *bootb) Tags() []string {
+	return []string{"b", "bb", "bbb"}
+}
+
+type bootc struct{}
+
+func (b *bootc) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
+	return nil
+}
+
+func (b *bootc) Tags() []string {
+	return []string{"c", "cc", "ccc"}
+}
+
+func Test_excludeBootstrapperByTags(t *testing.T) {
+	var cases = []struct {
+		tags  []string
+		boots []contracts.Bootstrapper
+		wants []contracts.Bootstrapper
+	}{
+		{
+			tags: []string{"a", "b"},
+			boots: []contracts.Bootstrapper{
+				&boota{},
+				&bootb{},
+				&bootc{},
+			},
+			wants: []contracts.Bootstrapper{
+				&bootc{},
+			},
+		},
+		{
+			tags: []string{"c", "d"},
+			boots: []contracts.Bootstrapper{
+				&boota{},
+				&bootb{},
+				&bootc{},
+			},
+			wants: []contracts.Bootstrapper{
+				&boota{},
+				&bootb{},
+			},
+		},
+		{
+			tags: []string{},
+			boots: []contracts.Bootstrapper{
+				&boota{},
+				&bootb{},
+				&bootc{},
+			},
+			wants: []contracts.Bootstrapper{
+				&boota{},
+				&bootb{},
+				&bootc{},
+			},
+		},
+		{
+			tags: []string{"a", "aa"},
+			boots: []contracts.Bootstrapper{
+				&boota{},
+				&boota{},
+				&boota{},
+				&bootb{},
+				&bootc{},
+			},
+			wants: []contracts.Bootstrapper{
+				&bootb{},
+				&bootc{},
+			},
+		},
+	}
+	for _, ca := range cases {
+		res, _ := excludeBootstrapperByTags(ca.tags, ca.boots)
+		assert.Equal(t, ca.wants, res)
+	}
+}
+
+type CustomBoot struct{}
+
+func (c CustomBoot) Bootstrap(applicationInterface contracts.ApplicationInterface) error {
+	return nil
+}
+
+func (c CustomBoot) Tags() []string {
+	return nil
+}
+
+func Test_bootShortName(t *testing.T) {
+	assert.Empty(t, bootShortName(nil))
+	assert.Equal(t, "EventBootstrapper", bootShortName(&bootstrappers.EventBootstrapper{}))
+	assert.Equal(t, "CustomBoot", bootShortName(CustomBoot{}))
 }

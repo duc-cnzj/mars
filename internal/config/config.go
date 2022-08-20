@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -16,12 +17,30 @@ type Plugin struct {
 	Args map[string]any `mapstructure:"args"`
 }
 
+func (p Plugin) String() string {
+	var args = ""
+	for k, v := range p.Args {
+		args += fmt.Sprintf("%s=%v", k, v)
+	}
+	return fmt.Sprintf("%s %s", p.Name, args)
+}
+
 func (p Plugin) GetArgs() map[string]any {
 	if p.Args == nil {
 		return map[string]any{}
 	}
 
 	return p.Args
+}
+
+type DockerAuths []DockerAuth
+
+func (a DockerAuths) String() string {
+	var strs []string
+	for _, auth := range a {
+		strs = append(strs, fmt.Sprintf("[%v]", auth))
+	}
+	return strings.Join(strs, " ")
 }
 
 type DockerAuth struct {
@@ -31,14 +50,19 @@ type DockerAuth struct {
 	Server   string `mapstructure:"server"`
 }
 
+func (a DockerAuth) String() string {
+	return fmt.Sprintf("username='%s' password='%s' email='%s' server='%s'", a.Username, a.Password, a.Email, a.Server)
+}
+
 type Config struct {
 	AppPort         string `mapstructure:"app_port"`
 	GrpcPort        string `mapstructure:"grpc_port"`
 	Debug           bool   `mapstructure:"debug"`
 	LogChannel      string `mapstructure:"log_channel"`
-	ProfileEnabled  bool   `mapstructure:"profile_enabled"`
 	GitServerCached bool   `mapstructure:"git_server_cached"`
 	CacheDriver     string `mapstructure:"cache_driver"`
+
+	MetricsPort string `mapstructure:"metrics_port"`
 
 	AdminPassword string `mapstructure:"admin_password"`
 	PrivateKey    string `mapstructure:"private_key"`
@@ -65,10 +89,7 @@ type Config struct {
 	DBPassword string `mapstructure:"db_password"`
 	DBDatabase string `mapstructure:"db_database"`
 
-	ImagePullSecrets []DockerAuth `mapstructure:"imagepullsecrets"`
-
-	GitlabToken   string `mapstructure:"gitlab_token"`
-	GitlabBaseURL string `mapstructure:"gitlab_baseurl"`
+	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`
 
 	InstallTimeout time.Duration `mapstructure:"install_timeout"`
 	Oidc           []OidcSetting `mapstructure:"oidc"`
@@ -131,13 +152,18 @@ func Init(cfgFile string) *Config {
 		cfg.GrpcPort = fmt.Sprintf("%d", port)
 	}
 
+	if cfg.UploadMaxSize == "" {
+		cfg.UploadMaxSize = "50Mi"
+	}
+
 	return cfg
 }
 
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)
 	if err != nil {
-		return 50 << 20
+		parseBytes, _ := humanize.ParseBytes("50Mi")
+		return parseBytes
 	}
 	return bytes
 }

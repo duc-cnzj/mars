@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
@@ -26,6 +27,7 @@ type Server interface {
 
 type Bootstrapper interface {
 	Bootstrap(ApplicationInterface) error
+	Tags() []string
 }
 
 type K8sClient struct {
@@ -57,6 +59,7 @@ type ApplicationInterface interface {
 	Config() *config.Config
 
 	DBManager() DBManager
+	DB() *gorm.DB
 
 	Oidc() OidcConfig
 	SetOidc(OidcConfig)
@@ -83,6 +86,12 @@ type ApplicationInterface interface {
 	SetCache(CacheInterface)
 	Cache() CacheInterface
 
+	CacheLock() Locker
+	SetCacheLock(Locker)
+
 	SetTracer(trace.Tracer)
 	GetTracer() trace.Tracer
+
+	SetCronManager(CronManager)
+	CronManager() CronManager
 }

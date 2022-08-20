@@ -25,7 +25,6 @@ var (
 var _ plugins.PictureInterface = (*Cartoon)(nil)
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	p := &Cartoon{}
 	plugins.RegisterPlugin(p.Name(), p)
 }

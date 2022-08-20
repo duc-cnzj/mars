@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
 )
@@ -15,18 +14,14 @@ func TestPprofBootstrapper_Bootstrap(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	app := mock.NewMockApplicationInterface(controller)
-	app.EXPECT().AddServer(gomock.Any()).Times(0)
-	app.EXPECT().Config().Times(1).Return(&config.Config{
-		ProfileEnabled: false,
-	})
-	(&PprofBootstrapper{}).Bootstrap(app)
 	app.EXPECT().AddServer(gomock.Any()).Times(1)
-	app.EXPECT().Config().Times(1).Return(&config.Config{
-		ProfileEnabled: true,
-	})
 	(&PprofBootstrapper{}).Bootstrap(app)
 }
 
 func TestPprofRunner_Shutdown(t *testing.T) {
 	assert.Nil(t, (&pprofRunner{}).Shutdown(context.TODO()))
+}
+
+func TestPprofBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{"profile"}, (&PprofBootstrapper{}).Tags())
 }

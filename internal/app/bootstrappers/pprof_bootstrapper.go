@@ -11,10 +11,12 @@ import (
 
 type PprofBootstrapper struct{}
 
+func (p *PprofBootstrapper) Tags() []string {
+	return []string{"profile"}
+}
+
 func (p *PprofBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	if app.Config().ProfileEnabled {
-		app.AddServer(&pprofRunner{})
-	}
+	app.AddServer(&pprofRunner{})
 
 	return nil
 }

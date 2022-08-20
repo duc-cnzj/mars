@@ -21,6 +21,10 @@ const serviceName = "mars"
 
 type TracingBootstrapper struct{}
 
+func (t *TracingBootstrapper) Tags() []string {
+	return []string{"trace"}
+}
+
 func (t *TracingBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	cfg := app.Config()
 	if cfg.JaegerAgentHostPort != "" {

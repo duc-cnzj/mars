@@ -14,6 +14,16 @@ import (
 
 var gitServerOnce = sync.Once{}
 
+var (
+	ListCommitsCacheSeconds       int = 10
+	AllBranchesCacheSeconds       int = 60 * 2
+	AllProjectsCacheSeconds       int = 60 * 5
+	GetFileContentCacheSeconds    int = 0
+	GetDirectoryFilesCacheSeconds int = 0
+
+	GetCommitCacheSeconds int = 60 * 60
+)
+
 type GitServer interface {
 	contracts.PluginInterface
 
@@ -54,16 +64,6 @@ func GetGitServer() GitServer {
 	return p.(GitServer)
 }
 
-var (
-	ListCommitsCacheSeconds       int = 10
-	AllBranchesCacheSeconds       int = 60 * 2
-	AllProjectsCacheSeconds       int = 60 * 5
-	GetFileContentCacheSeconds    int = 0
-	GetDirectoryFilesCacheSeconds int = 0
-
-	GetCommitCacheSeconds int = 60 * 60
-)
-
 // gitServerCache
 // 用来缓存一些耗时比较久的请求
 type gitServerCache struct {
@@ -94,8 +94,12 @@ func (g *gitServerCache) ListProjects(page, pageSize int) (contracts.ListProject
 	return g.s.ListProjects(page, pageSize)
 }
 
+func CacheKeyAllProjects() string {
+	return "AllProjects"
+}
+
 func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
-	remember, err := app.Cache().Remember("AllProjects", AllProjectsCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(CacheKeyAllProjects(), AllProjectsCacheSeconds, func() ([]byte, error) {
 		projects, err := g.s.AllProjects()
 		if err != nil {
 			return nil, err
@@ -131,8 +135,12 @@ func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (contracts
 	return g.s.ListBranches(pid, page, pageSize)
 }
 
+func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) string {
+	return fmt.Sprintf("AllBranches-%v", pid)
+}
+
 func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("AllBranches-%v", pid), AllBranchesCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(CacheKeyAllBranches(pid), AllBranchesCacheSeconds, func() ([]byte, error) {
 		b, err := g.s.AllBranches(pid)
 		if err != nil {
 			return nil, err

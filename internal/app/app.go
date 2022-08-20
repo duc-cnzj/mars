@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -12,12 +13,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
 
+	"github.com/duc-cnzj/mars/internal/adapter"
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	mcron "github.com/duc-cnzj/mars/internal/cron"
 	"github.com/duc-cnzj/mars/internal/database"
 	"github.com/duc-cnzj/mars/internal/event"
 	"github.com/duc-cnzj/mars/internal/metrics"
@@ -38,23 +42,6 @@ var MustBooted = []contracts.Bootstrapper{
 	&bootstrappers.LogBootstrapper{},
 }
 
-var DefaultBootstrappers = []contracts.Bootstrapper{
-	&bootstrappers.EventBootstrapper{},
-	&bootstrappers.PluginsBootstrapper{},
-	&bootstrappers.AuthBootstrapper{},
-	&bootstrappers.UploadBootstrapper{},
-	&bootstrappers.CacheBootstrapper{},
-	&bootstrappers.K8sClientBootstrapper{},
-	&bootstrappers.DBBootstrapper{},
-	&bootstrappers.ApiGatewayBootstrapper{},
-	&bootstrappers.PprofBootstrapper{},
-	&bootstrappers.GrpcBootstrapper{},
-	&bootstrappers.MetricsBootstrapper{},
-	&bootstrappers.OidcBootstrapper{},
-	&bootstrappers.TracingBootstrapper{},
-	&bootstrappers.AppBootstrapper{},
-}
-
 type Application struct {
 	done          context.Context
 	doneFunc      func()
@@ -72,11 +59,25 @@ type Application struct {
 	oidcProvider contracts.OidcConfig
 	uploader     contracts.Uploader
 	auth         contracts.AuthInterface
+	cronManager  contracts.CronManager
+
+	cache     contracts.CacheInterface
+	cacheLock contracts.Locker
 
 	sf         *singleflight.Group
-	cache      contracts.CacheInterface
 	tracer     trace.Tracer
 	mustBooted []contracts.Bootstrapper
+
+	excludeTags  []string
+	excludeBoots []contracts.Bootstrapper
+}
+
+func (app *Application) CacheLock() contracts.Locker {
+	return app.cacheLock
+}
+
+func (app *Application) SetCacheLock(l contracts.Locker) {
+	app.cacheLock = l
 }
 
 func (app *Application) SetCache(c contracts.CacheInterface) {
@@ -93,6 +94,13 @@ func (app *Application) Cache() contracts.CacheInterface {
 
 func (app *Application) Auth() contracts.AuthInterface {
 	return app.auth
+}
+
+func (app *Application) CronManager() contracts.CronManager {
+	return app.cronManager
+}
+func (app *Application) SetCronManager(m contracts.CronManager) {
+	app.cronManager = m
 }
 
 func (app *Application) SetAuth(auth contracts.AuthInterface) {
@@ -165,20 +173,26 @@ func WithMustBootedBootstrappers(bootstrappers ...contracts.Bootstrapper) Option
 	}
 }
 
+func WithExcludeTags(tags ...string) Option {
+	return func(app *Application) {
+		app.excludeTags = tags
+	}
+}
+
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
 	app := &Application{
-		mustBooted:    MustBooted,
-		bootstrappers: DefaultBootstrappers,
-		config:        config,
-		done:          doneCtx,
-		doneFunc:      cancelFunc,
-		hooks:         map[Hook][]contracts.Callback{},
-		servers:       []contracts.Server{},
-		sf:            &singleflight.Group{},
-		cache:         &cache.NoCache{},
+		mustBooted: MustBooted,
+		config:     config,
+		done:       doneCtx,
+		doneFunc:   cancelFunc,
+		hooks:      map[Hook][]contracts.Callback{},
+		servers:    []contracts.Server{},
+		sf:         &singleflight.Group{},
+		cache:      &cache.NoCache{},
 	}
 
+	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)
 	app.dispatcher = event.NewDispatcher(app)
 	app.dbManager = database.NewManager(app)
 
@@ -186,12 +200,20 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 		opt(app)
 	}
 
+	var mustBootExcludeBoots, excludeBoots []contracts.Bootstrapper
+	if len(app.excludeTags) > 0 {
+		app.mustBooted, mustBootExcludeBoots = excludeBootstrapperByTags(app.excludeTags, app.mustBooted)
+		app.bootstrappers, excludeBoots = excludeBootstrapperByTags(app.excludeTags, app.bootstrappers)
+		app.excludeBoots = append(app.excludeBoots, mustBootExcludeBoots...)
+		app.excludeBoots = append(app.excludeBoots, excludeBoots...)
+	}
+
 	instance.SetInstance(app)
 
 	for _, bootstrapper := range app.mustBooted {
 		func() {
 			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
 			}(time.Now())
 			if err := bootstrapper.Bootstrap(app); err != nil {
 				mlog.Fatal(err)
@@ -206,15 +228,45 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	return app
 }
 
-func printConfig(app contracts.ApplicationInterface) {
+type bootTags []string
+
+func (bt bootTags) Has(tag string) bool {
+	for _, t := range bt {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func excludeBootstrapperByTags(tags []string, boots []contracts.Bootstrapper) ([]contracts.Bootstrapper, []contracts.Bootstrapper) {
+	var newBoots, excludeBoots []contracts.Bootstrapper
+loop:
+	for _, boot := range boots {
+		for _, tag := range tags {
+			if bootTags(boot.Tags()).Has(tag) {
+				excludeBoots = append(excludeBoots, boot)
+				continue loop
+			}
+		}
+
+		newBoots = append(newBoots, boot)
+	}
+	return newBoots, excludeBoots
+}
+
+func printConfig(app *Application) {
 	mlog.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
+	for _, boot := range app.excludeBoots {
+		mlog.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", bootShortName(boot), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
+	}
 }
 
 func (app *Application) Bootstrap() error {
 	for _, bootstrapper := range app.bootstrappers {
 		err := func() error {
 			defer func(t time.Time) {
-				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": reflect.TypeOf(bootstrapper).String()}).Set(time.Since(t).Seconds())
+				metrics.BootstrapperStartMetrics.With(prometheus.Labels{"bootstrapper": bootShortName(bootstrapper)}).Set(time.Since(t).Seconds())
 			}(time.Now())
 			return bootstrapper.Bootstrap(app)
 		}()
@@ -240,6 +292,10 @@ func (app *Application) GetTracer() trace.Tracer {
 
 func (app *Application) DBManager() contracts.DBManager {
 	return app.dbManager
+}
+
+func (app *Application) DB() *gorm.DB {
+	return app.dbManager.DB()
 }
 
 func (app *Application) IsDebug() bool {
@@ -287,7 +343,7 @@ func (app *Application) Shutdown() {
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()
 			if err := server.Shutdown(ctx); err != nil {
-				mlog.Error(err)
+				mlog.Warningf("[Shutdown]: %s %s", reflect.TypeOf(server).String(), err)
 			}
 		}(server)
 	}
@@ -328,4 +384,12 @@ func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {
 	app.hooksMu.Lock()
 	defer app.hooksMu.Unlock()
 	app.hooks[BeforeRunHook] = append(app.hooks[BeforeRunHook], cb)
+}
+
+func bootShortName(boot contracts.Bootstrapper) string {
+	if boot == nil {
+		return ""
+	}
+	s := strings.Split(reflect.TypeOf(boot).String(), ".")
+	return s[len(s)-1]
 }

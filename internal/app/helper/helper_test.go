@@ -14,17 +14,19 @@ import (
 )
 
 type testApp struct {
-	authCalled     bool
-	cacheCalled    bool
-	configCalled   bool
-	dbCalled       bool
-	eventCalled    bool
-	k8sCalled      bool
-	dbmanager      contracts.DBManager
-	oidcCalled     bool
-	uploaderCalled bool
-	sfCalled       bool
-	tracerCalled   bool
+	authCalled        bool
+	cacheCalled       bool
+	configCalled      bool
+	dbCalled          bool
+	eventCalled       bool
+	k8sCalled         bool
+	dbmanager         contracts.DBManager
+	oidcCalled        bool
+	uploaderCalled    bool
+	sfCalled          bool
+	tracerCalled      bool
+	cronManagerCalled bool
+	cacheLockCalled   bool
 
 	contracts.ApplicationInterface
 }
@@ -49,6 +51,15 @@ func (a *testApp) Singleflight() *singleflight.Group {
 
 func (a *testApp) GetTracer() trace.Tracer {
 	a.tracerCalled = true
+	return nil
+}
+
+func (a *testApp) CronManager() contracts.CronManager {
+	a.cronManagerCalled = true
+	return nil
+}
+func (a *testApp) CacheLock() contracts.Locker {
+	a.cacheLockCalled = true
 	return nil
 }
 
@@ -180,4 +191,18 @@ func TestTracer(t *testing.T) {
 	instance.SetInstance(a)
 	Tracer()
 	assert.True(t, a.tracerCalled)
+}
+
+func TestCacheLock(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	CacheLock()
+	assert.True(t, a.cacheLockCalled)
+}
+
+func TestCronManager(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	CronManager()
+	assert.True(t, a.cronManagerCalled)
 }

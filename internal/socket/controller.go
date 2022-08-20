@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,7 +24,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
@@ -118,36 +119,38 @@ func (w *WebsocketManager) TickClusterHealth() {
 	ticker := time.NewTicker(w.healthTickDuration)
 	done := app.App().Done()
 	sub := plugins.GetWsSender().New("", "")
+	lock := app.CacheLock()
 
 	go func() {
-		defer utils.HandlePanic("TickClusterHealth")
+		defer recovery.HandlePanic("TickClusterHealth")
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				app.Cache().Remember("TickClusterHealth", int(w.healthTickDuration.Seconds()), func() ([]byte, error) {
-					info := utils.ClusterInfo()
-					sub.ToAll(&websocket_pb.WsHandleClusterResponse{
-						Metadata: &websocket_pb.Metadata{
-							Type: WsClusterInfoSync,
-						},
-						Info: &cluster.InfoResponse{
-							Status:            info.Status,
-							FreeMemory:        info.FreeMemory,
-							FreeCpu:           info.FreeCpu,
-							FreeRequestMemory: info.FreeRequestMemory,
-							FreeRequestCpu:    info.FreeRequestCpu,
-							TotalMemory:       info.TotalMemory,
-							TotalCpu:          info.TotalCpu,
-							UsageMemoryRate:   info.UsageMemoryRate,
-							UsageCpuRate:      info.UsageCpuRate,
-							RequestMemoryRate: info.RequestMemoryRate,
-							RequestCpuRate:    info.RequestCpuRate,
-						},
-					})
-					now := time.Now()
-					return []byte(date.ToRFC3339DatetimeString(&now)), nil
-				})
+				if lock.Acquire("TickClusterHealth", 5) {
+					func() {
+						defer lock.Release("TickClusterHealth")
+						info := utils.ClusterInfo()
+						sub.ToAll(&websocket_pb.WsHandleClusterResponse{
+							Metadata: &websocket_pb.Metadata{
+								Type: WsClusterInfoSync,
+							},
+							Info: &cluster.InfoResponse{
+								Status:            info.Status,
+								FreeMemory:        info.FreeMemory,
+								FreeCpu:           info.FreeCpu,
+								FreeRequestMemory: info.FreeRequestMemory,
+								FreeRequestCpu:    info.FreeRequestCpu,
+								TotalMemory:       info.TotalMemory,
+								TotalCpu:          info.TotalCpu,
+								UsageMemoryRate:   info.UsageMemoryRate,
+								UsageCpuRate:      info.UsageCpuRate,
+								RequestMemoryRate: info.RequestMemoryRate,
+								RequestCpuRate:    info.RequestCpuRate,
+							},
+						})
+					}()
+				}
 			case <-done:
 				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
 				return
@@ -191,7 +194,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			mlog.Debugf("[Websocket]: go read exit, err: %v", err)
 		}()
-		defer utils.HandlePanic("[Websocket]: read recovery")
+		defer recovery.HandlePanic("[Websocket]: read recovery")
 		err = read(wsconn)
 		ch <- struct{}{}
 	}()
@@ -205,7 +208,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
-	defer utils.HandlePanic("Websocket: Write")
+	defer recovery.HandlePanic("Websocket: Write")
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -264,7 +267,7 @@ func read(wsconn *WsConn) error {
 
 		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
 			if handler, ok := handlers[wsRequest.Type]; ok {
-				defer utils.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
+				defer recovery.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
 					metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
 				})
 				defer func(t time.Time) {

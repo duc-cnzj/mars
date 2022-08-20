@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 
@@ -63,7 +65,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 			outStream.Close()
 			src.Close()
 		}()
-		defer HandlePanic("CopyFileToPod")
+		defer recovery.HandlePanic("CopyFileToPod")
 
 		if _, err := io.Copy(outStream, src); err != nil {
 			mlog.Error(err)

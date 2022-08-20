@@ -5,28 +5,32 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
+	"gorm.io/gorm/clause"
 )
 
 type DBCache struct {
-	app contracts.ApplicationInterface
+	sf     *singleflight.Group
+	dbFunc func() *gorm.DB
 }
 
-func NewDBCache(app contracts.ApplicationInterface) *DBCache {
-	return &DBCache{app: app}
+func NewDBCache(sf *singleflight.Group, dbFunc func() *gorm.DB) *DBCache {
+	return &DBCache{sf: sf, dbFunc: dbFunc}
 }
 
 func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.app.Singleflight().Do(c.cacheKey(key), func() (any, error) {
+	do, err, _ := c.sf.Do(c.cacheKey(key), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
 
 		var cache models.DBCache
-		c.app.DBManager().DB().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).Order("`id` DESC").First(&cache)
-		if cache.ID > 0 {
+		c.dbFunc().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache)
+		if cache.Key != "" {
 			bs, err := base64.StdEncoding.DecodeString(cache.Value)
 			if err == nil {
 				return bs, nil
@@ -42,7 +46,10 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 			Value:     toString,
 			ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
 		}
-		if err = c.app.DBManager().DB().Create(&cache).Error; err != nil {
+		if err = c.dbFunc().Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "key"}},
+			DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at"}),
+		}).Create(&cache).Error; err != nil {
 			mlog.Error(err)
 		}
 		return bytes, nil
@@ -54,7 +61,7 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 }
 
 func (c *DBCache) Clear(key string) error {
-	return c.app.DBManager().DB().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
+	return c.dbFunc().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
 }
 
 func (c *DBCache) cacheKey(key string) string {

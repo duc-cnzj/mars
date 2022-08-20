@@ -21,33 +21,36 @@ package metrics
 import (
 	"os"
 
+	"github.com/duc-cnzj/mars/version"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const system = "mars"
 
 var hostname, _ = os.Hostname()
+var appVersion = version.GetVersion().String()
 
 var (
 	BootstrapperStartMetrics = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "bootstrapper_duration_seconds",
 		Help:        "系统启动各阶段耗时",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"bootstrapper"})
 
 	WebsocketConnectionsCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "websocket_connections",
 		Help:        "当前 websocket 连接数",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	})
 
 	GrpcLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "grpc_duration_seconds",
 		Help:        "grpc 调用延迟",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
 	}, []string{"method"})
 
@@ -55,7 +58,7 @@ var (
 		Subsystem:   system,
 		Name:        "grpc_request_total",
 		Help:        "grpc 请求总数",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"method", "result"})
 	GrpcRequestTotalFail    = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
 	GrpcRequestTotalSuccess = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
@@ -64,14 +67,14 @@ var (
 		Subsystem:   system,
 		Name:        "grpc_errors_total",
 		Help:        "grpc 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"method"})
 
 	WebsocketRequestLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_duration_seconds",
 		Help:        "websocket 调用延迟",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
 	}, []string{"method"})
 
@@ -79,14 +82,14 @@ var (
 		Subsystem:   system,
 		Name:        "websocket_request_panic_total",
 		Help:        "websocket panic 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"method"})
 
 	WebsocketRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_total",
 		Help:        "websocket 请求总数",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"method", "result"})
 	WebsocketRequestTotalFail    = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
 	WebsocketRequestTotalSuccess = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
@@ -95,16 +98,45 @@ var (
 		Subsystem:   system,
 		Name:        "cache_bytes",
 		Help:        "cache bytes 统计",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"key"})
 
 	CacheRememberDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "cache_remember_duration_seconds",
 		Help:        "cache Remember 调用时间",
-		ConstLabels: prometheus.Labels{"hostname": hostname},
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
 	}, []string{"key"})
+
+	CronPanicCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "cron_panic_total",
+		Help:        "cron panic 错误数量",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+	}, []string{"cron_name"})
+
+	CronErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "cron_error_total",
+		Help:        "cron error 错误数量",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+	}, []string{"cron_name"})
+
+	CronCommandCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem:   system,
+		Name:        "cron_command_total",
+		Help:        "cron command 总数",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+	}, []string{"cron_name"})
+
+	CronDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Subsystem:   system,
+		Name:        "cron_duration_seconds",
+		Help:        "cron 执行时间",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+	}, []string{"cron_name"})
 )
 
 func init() {
@@ -121,4 +153,9 @@ func init() {
 
 	prometheus.MustRegister(CacheBytesGauge)
 	prometheus.MustRegister(CacheRememberDuration)
+
+	prometheus.MustRegister(CronPanicCount)
+	prometheus.MustRegister(CronDuration)
+	prometheus.MustRegister(CronCommandCount)
+	prometheus.MustRegister(CronErrorCount)
 }

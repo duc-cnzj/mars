@@ -171,6 +171,34 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-17-add-cache_locks-table",
+			Migrate: func(tx *gorm.DB) error {
+				tx.AutoMigrate(&models.CacheLock{})
+				return nil
+			},
+		},
+		{
+			ID: "2022-08-18-rebuild-table-db-cache",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Migrator().HasColumn(&models.DBCache{}, "id") {
+					tx.Migrator().RenameTable("db_cache", "db_cache_old")
+				}
+				tx.Migrator().AutoMigrate(&models.DBCache{})
+				return nil
+			},
+		},
+		{
+			ID: "2022-08-19-drop-table-db_cache_old",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Migrator().HasTable("db_cache_old") {
+					if err := tx.Migrator().DropTable("db_cache_old"); err != nil {
+						return fmt.Errorf("[%s]: err: %v", "2022-08-19-drop-table-db_cache_old", err)
+					}
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {
