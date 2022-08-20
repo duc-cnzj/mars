@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 
@@ -80,6 +81,20 @@ func TestManager_Run(t *testing.T) {
 	runner.EXPECT().AddCommand("duc", "*/2 * * * * *", gomock.Any()).Times(1)
 	cm.Run(ctx)
 	assert.True(t, called)
+}
+
+func TestManager_Run_err(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	runner := mock.NewMockCronRunner(m)
+
+	cm := NewManager(runner, app)
+	runner.EXPECT().AddCommand("a", expression, gomock.Any()).Times(1).Return(errors.New("xxx"))
+	cm.NewCommand("a", func() error {
+		return nil
+	})
+	assert.Equal(t, "xxx", cm.Run(context.TODO()).Error())
 }
 
 func TestManager_Shutdown(t *testing.T) {
