@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
@@ -13,6 +15,8 @@ import (
 func TestWrap_Recovery(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().IsDebug().Return(false)
 	l := mock.NewMockLocker(m)
 	l.EXPECT().ID().Return("1").AnyTimes()
 	l.EXPECT().RenewalAcquire(lockKey("duc"), defaultLockSeconds, defaultRenewSeconds).Times(1).Return(func() {}, true)

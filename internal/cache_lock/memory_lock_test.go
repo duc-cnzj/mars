@@ -182,8 +182,34 @@ func TestMemoryLock_RenewalAcquire3(t *testing.T) {
 	wg.Wait()
 }
 
+type emptyLogger struct{}
+
+func NewEmptyLogger() *emptyLogger {
+	return &emptyLogger{}
+}
+
+func (e *emptyLogger) Debug(v ...any) {}
+
+func (e *emptyLogger) Debugf(format string, v ...any) {}
+
+func (e *emptyLogger) Warning(v ...any) {}
+
+func (e *emptyLogger) Warningf(format string, v ...any) {}
+
+func (e *emptyLogger) Info(v ...any) {}
+
+func (e *emptyLogger) Infof(format string, v ...any) {}
+
+func (e *emptyLogger) Error(v ...any) {}
+
+func (e *emptyLogger) Errorf(format string, v ...any) {}
+
+func (e *emptyLogger) Fatal(v ...any) {}
+
+func (e *emptyLogger) Fatalf(format string, v ...any) {}
+
 func BenchmarkMemoryLock_RenewalAcquire(b *testing.B) {
-	mlog.SetLogger(mlog.NewEmptyLogger())
+	mlog.SetLogger(NewEmptyLogger())
 	lock := NewMemoryLock([2]int{-1, 100}, NewMemStore()).(*memoryLock)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

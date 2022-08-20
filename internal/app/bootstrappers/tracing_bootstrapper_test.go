@@ -85,3 +85,7 @@ func TestErrorHandler_Handle(t *testing.T) {
 	eh := &errorHandler{}
 	eh.Handle(e)
 }
+
+func TestTracingBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{"trace"}, (&TracingBootstrapper{}).Tags())
+}

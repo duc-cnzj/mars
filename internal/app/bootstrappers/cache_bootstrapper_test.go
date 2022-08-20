@@ -87,3 +87,7 @@ func TestCacheBootstrapper_Bootstrap(t *testing.T) {
 	}).Times(1)
 	assert.Error(t, (&CacheBootstrapper{}).Bootstrap(app))
 }
+
+func TestCacheBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&CacheBootstrapper{}).Tags())
+}

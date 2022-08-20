@@ -9,7 +9,7 @@ import (
 type EventBootstrapper struct{}
 
 func (e *EventBootstrapper) Tags() []string {
-	return nil
+	return []string{}
 }
 
 func (e *EventBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

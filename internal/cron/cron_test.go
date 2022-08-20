@@ -32,6 +32,9 @@ func TestManager_List(t *testing.T) {
 }
 
 func TestManager_NewCommand(t *testing.T) {
+	mk := gomock.NewController(t)
+	defer mk.Finish()
+	app := testutil.MockApp(mk)
 	m := NewManager(nil, nil)
 	cmd := m.NewCommand("duc", func() error {
 		return nil
@@ -43,6 +46,16 @@ func TestManager_NewCommand(t *testing.T) {
 			return nil
 		})
 	})
+	called := false
+	l := mock.NewMockLocker(mk)
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
+	l.EXPECT().ID().Return("1").AnyTimes()
+	l.EXPECT().RenewalAcquire(lockKey("aaaa"), defaultLockSeconds, defaultRenewSeconds).Return(func() {}, true)
+	NewManager(nil, app).NewCommand("aaaa", func() error {
+		called = true
+		return nil
+	}).Func()()
+	assert.True(t, called)
 }
 
 func TestManager_Run(t *testing.T) {

@@ -26,3 +26,7 @@ func TestLogBootstrapper_Bootstrap(t *testing.T) {
 	err = (&LogBootstrapper{}).Bootstrap(app)
 	assert.Nil(t, err)
 }
+
+func TestLogBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&LogBootstrapper{}).Tags())
+}

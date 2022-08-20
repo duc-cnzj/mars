@@ -27,3 +27,7 @@ func TestDBBootstrapper_Bootstrap(t *testing.T) {
 	app.EXPECT().Config().Return(&config.Config{DBDriver: "xxx"}).Times(1)
 	assert.Equal(t, "db_driver must in ['sqlite', 'mysql']", (&DBBootstrapper{}).Bootstrap(app).Error())
 }
+
+func TestDBBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&DBBootstrapper{}).Tags())
+}

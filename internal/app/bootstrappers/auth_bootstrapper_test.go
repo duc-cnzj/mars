@@ -8,6 +8,8 @@ import (
 	"encoding/pem"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -27,4 +29,8 @@ func TestAuthBootstrapper_Bootstrap(t *testing.T) {
 	}).Times(1)
 	app.EXPECT().SetAuth(auth.NewAuth(key, key.Public().(*rsa.PublicKey))).Times(1)
 	(&AuthBootstrapper{}).Bootstrap(app)
+}
+
+func TestAuthBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&AuthBootstrapper{}).Tags())
 }

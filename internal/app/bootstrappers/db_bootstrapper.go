@@ -29,7 +29,7 @@ var Models = []any{
 type DBBootstrapper struct{}
 
 func (d *DBBootstrapper) Tags() []string {
-	return nil
+	return []string{}
 }
 
 func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

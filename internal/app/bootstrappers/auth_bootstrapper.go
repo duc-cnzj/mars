@@ -12,7 +12,7 @@ import (
 type AuthBootstrapper struct{}
 
 func (a *AuthBootstrapper) Tags() []string {
-	return nil
+	return []string{}
 }
 
 func (a *AuthBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

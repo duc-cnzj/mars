@@ -16,7 +16,7 @@ import (
 type AppBootstrapper struct{}
 
 func (a *AppBootstrapper) Tags() []string {
-	return nil
+	return []string{}
 }
 
 func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

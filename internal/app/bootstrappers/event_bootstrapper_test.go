@@ -23,3 +23,7 @@ func TestEventBootstrapper_Bootstrap(t *testing.T) {
 	d.EXPECT().Listen(gomock.Any(), gomock.Any()).Times(len(mevent.RegisteredEvents()))
 	(&EventBootstrapper{}).Bootstrap(app)
 }
+
+func TestEventBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{}, (&EventBootstrapper{}).Tags())
+}

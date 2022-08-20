@@ -19,7 +19,7 @@ import (
 type CacheBootstrapper struct{}
 
 func (a *CacheBootstrapper) Tags() []string {
-	return nil
+	return []string{}
 }
 
 func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {

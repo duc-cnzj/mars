@@ -21,3 +21,7 @@ func TestPprofBootstrapper_Bootstrap(t *testing.T) {
 func TestPprofRunner_Shutdown(t *testing.T) {
 	assert.Nil(t, (&pprofRunner{}).Shutdown(context.TODO()))
 }
+
+func TestPprofBootstrapper_Tags(t *testing.T) {
+	assert.Equal(t, []string{"profile"}, (&PprofBootstrapper{}).Tags())
+}
