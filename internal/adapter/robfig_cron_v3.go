@@ -74,7 +74,7 @@ func (c *CronLogger) Error(err error, msg string, keysAndValues ...any) {
 
 func formatString(numKeysAndValues int) string {
 	var sb strings.Builder
-	sb.WriteString("[Cron]: %s")
+	sb.WriteString("[CRON]: %s")
 	if numKeysAndValues > 0 {
 		sb.WriteString(", ")
 	}
