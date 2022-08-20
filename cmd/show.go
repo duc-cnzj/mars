@@ -130,7 +130,12 @@ var showPluginsCmd = &cobra.Command{
 		table.SetRowLine(true)
 		table.SetHeader([]string{"ID", "Plugin", "Current"})
 
-		usedPlugins := []string{cfg.PicturePlugin.Name, cfg.WsSenderPlugin.Name, cfg.DomainManagerPlugin.Name, cfg.WsSenderPlugin.Name}
+		usedPlugins := []string{
+			cfg.PicturePlugin.Name,
+			cfg.WsSenderPlugin.Name,
+			cfg.DomainManagerPlugin.Name,
+			cfg.GitServerPlugin.Name,
+		}
 
 		var others [][]string
 		i := 0
