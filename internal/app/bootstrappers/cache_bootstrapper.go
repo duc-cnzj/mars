@@ -44,7 +44,9 @@ func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 	case "memory":
 		c := gocache.New(5*time.Minute, 10*time.Minute)
 		app.SetCacheLock(cache_lock.NewMemoryLock([2]int{2, 100}, nil))
-		app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), app.Singleflight()))
+		app.SetCache(cachein.NewCache(adapter.NewGoCacheAdapter(c), func() *singleflight.Group {
+			return app.Singleflight()
+		}))
 	default:
 		return errors.New("unknown cache driver: " + driver)
 	}
