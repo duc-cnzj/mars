@@ -1,4 +1,4 @@
-package commands
+package cron
 
 import (
 	"testing"

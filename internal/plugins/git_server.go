@@ -10,10 +10,6 @@ import (
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/cron/commands"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 var gitServerOnce = sync.Once{}
@@ -27,54 +23,6 @@ var (
 
 	GetCommitCacheSeconds int = 60 * 60
 )
-
-func init() {
-	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
-		if app.Config().GitServerCached {
-			manager.NewCommand("all_git_project_cache", func() error {
-				app.Cache().Clear(keyAllProjects())
-				if _, err := GetGitServer().AllProjects(); err != nil {
-					return err
-				}
-				return nil
-			}).EveryFiveMinutes()
-
-			manager.NewCommand("all_branch_cache", func() error {
-				var (
-					enabledGitProjects []*models.GitProject
-					wg                 = &sync.WaitGroup{}
-				)
-
-				app.DB().Where("`enabled` = ?", true).Find(&enabledGitProjects)
-				goroutineNum := len(enabledGitProjects)
-
-				if len(enabledGitProjects) > 10 {
-					goroutineNum = 8
-				}
-
-				ch := make(chan *models.GitProject, goroutineNum)
-				for i := 0; i < goroutineNum; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						defer recovery.HandlePanic("[CRON]: all_branch_cache")
-						for gitProject := range ch {
-							app.Cache().Clear(keyAllBranches(gitProject.GitProjectId))
-							_, err := GetGitServer().AllBranches(fmt.Sprintf("%d", gitProject.GitProjectId))
-							mlog.Debugf("[CRON]: fetch AllBranches: '%s' '%d', err: '%v'", gitProject.Name, gitProject.GitProjectId, err)
-						}
-					}()
-				}
-				for i := range enabledGitProjects {
-					ch <- enabledGitProjects[i]
-				}
-				close(ch)
-				wg.Wait()
-				return nil
-			}).EveryTwoMinutes()
-		}
-	})
-}
 
 type GitServer interface {
 	contracts.PluginInterface
@@ -146,12 +94,12 @@ func (g *gitServerCache) ListProjects(page, pageSize int) (contracts.ListProject
 	return g.s.ListProjects(page, pageSize)
 }
 
-func keyAllProjects() string {
+func CacheKeyAllProjects() string {
 	return "AllProjects"
 }
 
 func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
-	remember, err := app.Cache().Remember(keyAllProjects(), AllProjectsCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(CacheKeyAllProjects(), AllProjectsCacheSeconds, func() ([]byte, error) {
 		projects, err := g.s.AllProjects()
 		if err != nil {
 			return nil, err
@@ -187,12 +135,12 @@ func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (contracts
 	return g.s.ListBranches(pid, page, pageSize)
 }
 
-func keyAllBranches[T ~string | ~int | ~int64](pid T) string {
+func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) string {
 	return fmt.Sprintf("AllBranches-%v", pid)
 }
 
 func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
-	remember, err := app.Cache().Remember(keyAllBranches(pid), AllBranchesCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(CacheKeyAllBranches(pid), AllBranchesCacheSeconds, func() ([]byte, error) {
 		b, err := g.s.AllBranches(pid)
 		if err != nil {
 			return nil, err

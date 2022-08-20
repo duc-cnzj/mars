@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/cron/commands"
 	"github.com/duc-cnzj/mars/internal/mlog"
 )
 
@@ -38,7 +37,7 @@ func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
 
 func (m *Manager) Run(ctx context.Context) error {
 	mlog.Info("[Server]: start cron.")
-	for _, callback := range commands.RegisteredCronJobs() {
+	for _, callback := range RegisteredCronJobs() {
 		callback(m, m.app)
 	}
 	for _, command := range m.List() {

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/cron/commands"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/golang/mock/gomock"
@@ -65,7 +64,7 @@ func TestManager_Run(t *testing.T) {
 	app := testutil.MockApp(m)
 	runner := mock.NewMockCronRunner(m)
 	called := false
-	commands.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
+	Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
 		called = true
 	})
 	cm := NewManager(runner, app)

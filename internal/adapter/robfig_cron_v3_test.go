@@ -3,14 +3,15 @@ package adapter
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestCronLogger_Error(t *testing.T) {

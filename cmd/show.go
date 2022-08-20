@@ -12,7 +12,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/cron"
-	"github.com/duc-cnzj/mars/internal/cron/commands"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -87,7 +86,7 @@ var showCronJobsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		app := app.NewApplication(config.Init(cfgFile), app.WithMustBootedBootstrappers(&loggerBootstrapper{}))
 		cm := cron.NewManager(nil, app)
-		for _, callback := range commands.RegisteredCronJobs() {
+		for _, callback := range cron.RegisteredCronJobs() {
 			callback(cm, app)
 		}
 		table := tablewriter.NewWriter(os.Stdout)
