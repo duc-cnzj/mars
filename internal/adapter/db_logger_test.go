@@ -95,6 +95,10 @@ func TestGormLoggerAdapter_Trace(t *testing.T) {
 		return "aaa", 100
 	}, errors.New("xxx"))
 	assert.Regexp(t, `\[SQL\]: xxx \[(.*?)ms\] \[rows:100\] aaa \S+$`, l.errs[1])
+	(&GormLoggerAdapter{level: logger.Info}).Trace(context.TODO(), time1, func() (string, int64) {
+		return "aaa", 100
+	}, errors.New("xxx for key 'cache_locks.PRIMARY'"))
+	assert.Regexp(t, `\[SQL\]: xxx for key 'cache_locks.PRIMARY' \[(.*?)ms\] \[rows:100\] aaa \S+$`, l.debugs[2])
 
 	time2 := time.Now().Add(-1 * time.Second)
 	(&GormLoggerAdapter{level: logger.Info}).Trace(context.TODO(), time2, func() (string, int64) {
