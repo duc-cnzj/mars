@@ -18,7 +18,6 @@ func TestWrap_Recovery(t *testing.T) {
 	l.EXPECT().RenewalAcquire(lockKey("duc"), defaultLockSeconds, defaultRenewSeconds).Times(1).Return(func() {}, true)
 	Wrap("duc", func() error {
 		panic("err")
-		return nil
 	}, func() contracts.Locker {
 		return l
 	})()
