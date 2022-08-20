@@ -53,3 +53,23 @@ func TestInit(t *testing.T) {
 	assert.Greater(t, cfg.GrpcPort, "0")
 	assert.Equal(t, "devops-", cfg.NsPrefix)
 }
+
+func TestPlugin_String(t *testing.T) {
+	p := Plugin{
+		Name: "test",
+		Args: map[string]any{"k": "v"},
+	}
+	assert.Equal(t, "test k=v", p.String())
+}
+
+func TestDockerAuths_String(t *testing.T) {
+	auths := DockerAuths{
+		{
+			Username: "u",
+			Password: "p",
+			Email:    "e",
+			Server:   "s",
+		},
+	}
+	assert.Equal(t, "[username='u' password='p' email='e' server='s']", auths.String())
+}
