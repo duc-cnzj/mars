@@ -2,6 +2,8 @@ package bootstrappers
 
 import (
 	"github.com/duc-cnzj/mars/internal/contracts"
+
+	_ "github.com/duc-cnzj/mars/internal/cron/commands"
 )
 
 type CronBootstrapper struct{}
