@@ -60,12 +60,12 @@ function DraggableModalInnerNonMemo({
 
     const onFocus = useCallback(() => dispatch({ type: 'focus', id }), [id, dispatch])
 
-    const onDragWithID = useCallback(args => dispatch({ type: 'drag', id, ...args }), [
+    const onDragWithID = useCallback((args: any) => dispatch({ type: 'drag', id, ...args }), [
         dispatch,
         id,
     ])
 
-    const onResizeWithID = useCallback(args => {
+    const onResizeWithID = useCallback((args: any) => {
         onResize?.()
         dispatch({ type: 'resize', id, ...args })
     }, [

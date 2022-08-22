@@ -108,7 +108,7 @@ const ModalSub: React.FC<{
   );
 
   const onChange = useCallback(
-    (v) => {
+    (v: any) => {
       setData((d) => ({ ...d, ...v }));
       form.setFieldsValue({ selectors: v });
     },

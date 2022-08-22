@@ -85,7 +85,7 @@ const EventList: React.FC = () => {
   };
 
   const scrollDiv = useRef<HTMLDivElement>(null);
-  const fetch = useCallback((action_type, search) => {
+  const fetch = useCallback((action_type: any, search: any) => {
     if (scrollDiv.current) {
       scrollDiv.current.scrollTo(0, 0);
     }

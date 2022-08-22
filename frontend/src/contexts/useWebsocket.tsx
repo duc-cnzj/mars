@@ -32,7 +32,7 @@ export function useWsReady(): boolean {
   return false;
 }
 
-export const ProvideWebsocket: React.FC = ({ children }) => {
+export const ProvideWebsocket: React.FC<{children: React.ReactNode;}> = ({ children }) => {
   const dispatch = useDispatch();
   const [ws, setWs] = useState<any>();
 
