@@ -199,6 +199,22 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-23-events-new-old-table-to-longtext",
+			Migrate: func(tx *gorm.DB) error {
+				var fields = []string{"Old", "New"}
+				for _, field := range fields {
+					if err := tx.Migrator().AlterColumn(&models.Event{}, field); err != nil {
+						return fmt.Errorf("[%s]: err: %v", "2022-08-23-events-new-old-table-to-longtext", err)
+					}
+				}
+				// sqlite 在 migrate 会丢失索引，所以这里需要重新添加
+				if !tx.Migrator().HasIndex(&models.Event{}, "Action") {
+					tx.Migrator().CreateIndex(&models.Event{}, "Action")
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

@@ -129,6 +129,13 @@ func TestManager_AutoMigrate(t *testing.T) {
 			break
 		}
 	}
+	etypes, err := db.Migrator().ColumnTypes(&Event{})
+	assert.Nil(t, err)
+	for _, columnType := range etypes {
+		if columnType.Name() == "old" || columnType.Name() == "new" {
+			assert.Equal(t, "text", columnType.DatabaseTypeName())
+		}
+	}
 	assert.False(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
@@ -149,6 +156,14 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.Nil(t, err)
 	for _, columnType := range types {
 		if columnType.Name() == "global_config" {
+			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
+			break
+		}
+	}
+	etypes, err = db.Migrator().ColumnTypes("events")
+	assert.Nil(t, err)
+	for _, columnType := range etypes {
+		if columnType.Name() == "old" || columnType.Name() == "new" {
 			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
 			break
 		}
