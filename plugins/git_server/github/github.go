@@ -382,7 +382,7 @@ func (g *server) GetDirectoryFilesWithBranch(pid string, branch string, path str
 	})
 	var res []string
 	for _, content := range directoryContent {
-		res = append(res, content.GetName())
+		res = append(res, content.GetPath())
 	}
 	return res, nil
 }
