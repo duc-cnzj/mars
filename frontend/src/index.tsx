@@ -1,5 +1,4 @@
 import React, { Suspense, lazy } from "react";
-import { createRoot } from 'react-dom/client';
 import "./styles/index.less";
 import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
@@ -7,6 +6,7 @@ import store from "./store";
 import { disableReactDevTools } from "@fvilers/disable-react-devtools";
 import { BrowserRouter as Router, Switch } from "react-router-dom";
 import { PrivateRoute, GuestRoute, ProvideAuth } from "./contexts/auth";
+import ReactDOM from 'react-dom';
 
 const Login = lazy(() => import("./components/Login"));
 const Callback = lazy(() => import("./components/AuthCallback"));
@@ -17,8 +17,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const container = document.getElementById('root');
-const root = createRoot(container!); // createRoot(container!) if you use TypeScript
-root.render(
+ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
       <Suspense fallback={null}>
@@ -40,6 +39,6 @@ root.render(
       </Suspense>
     </Provider>
   </React.StrictMode>
-);
+, container);
 
 reportWebVitals();
