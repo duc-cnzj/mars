@@ -12,7 +12,7 @@ import (
 
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
-	"github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
 )
 
@@ -377,13 +377,25 @@ func (g *server) GetFileContentWithSha(pid string, sha string, filename string) 
 
 func (g *server) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
-	_, directoryContent, _, _ := g.client.Repositories.GetContents(context.TODO(), g.username, p.GetName(), path, &github.RepositoryContentGetOptions{
+
+	return g.getDirectoryFilesWithBranch(pid, branch, p.GetName(), path, recursive)
+}
+
+func (g *server) getDirectoryFilesWithBranch(pid string, branch string, repo string, path string, recursive bool) ([]string, error) {
+	_, directoryContent, _, _ := g.client.Repositories.GetContents(context.TODO(), g.username, repo, path, &github.RepositoryContentGetOptions{
 		Ref: branch,
 	})
 	var res []string
 	for _, content := range directoryContent {
-		res = append(res, content.GetPath())
+		if content.GetType() == "file" {
+			res = append(res, content.GetPath())
+		}
+		if content.GetType() == "dir" && recursive {
+			files, _ := g.getDirectoryFilesWithBranch(pid, branch, repo, content.GetPath(), recursive)
+			res = append(res, files...)
+		}
 	}
+
 	return res, nil
 }
 

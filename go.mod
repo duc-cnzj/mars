@@ -15,7 +15,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.47.2
-	github.com/google/go-github/v41 v41.0.0
+	github.com/google/go-github/v47 v47.0.1-0.20220822225427-243bda850b1f
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0

@@ -704,10 +704,15 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	// 如果是这个格式意味着是远程项目, 'uid|branch|path'
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载 helm charts path: %s", j.config.LocalChartPath))
 
+	var (
+		pid    string = fmt.Sprintf("%d", j.input.GitProjectId)
+		branch string = j.input.GitBranch
+		path   string = j.config.LocalChartPath
+	)
 	if utils.IsRemoteChart(j.config) {
-		pid := split[0]
-		branch := split[1]
-		path := split[2]
+		pid = split[0]
+		branch = split[1]
+		path = split[2]
 		files, _ = plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
@@ -719,21 +724,6 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 		}
 
 		dir = path
-
-		loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
-		if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
-			for _, dependency := range loadDir.Metadata.Dependencies {
-				if strings.HasPrefix(dependency.Repository, "file://") {
-					depFiles, _ := plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
-					_, depDeleteFn, err := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
-					if err != nil {
-						return err
-					}
-					j.AddDestroyFunc(depDeleteFn)
-					j.Messager().SendMsg(fmt.Sprintf("下载本地依赖 %s", dependency.Name))
-				}
-			}
-		}
 		j.Messager().SendMsg(fmt.Sprintf(loaderName+"识别为远程仓库 uid %v branch %s path %s", pid, branch, path))
 	} else {
 		var err error
@@ -744,8 +734,22 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 			return err
 		}
 	}
-
 	j.AddDestroyFunc(deleteDirFn)
+
+	loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
+	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
+		for _, dependency := range loadDir.Metadata.Dependencies {
+			if strings.HasPrefix(dependency.Repository, "file://") {
+				depFiles, _ := plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
+				_, depDeleteFn, err := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
+				if err != nil {
+					return err
+				}
+				j.AddDestroyFunc(depDeleteFn)
+				j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载本地依赖 %s", dependency.Name))
+			}
+		}
+	}
 
 	chartDir := filepath.Join(tmpChartsDir, dir)
 
