@@ -7,7 +7,6 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/version"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	marsVersion "github.com/duc-cnzj/mars/version"
 )
 
@@ -19,6 +18,8 @@ func init() {
 }
 
 type VersionSvc struct {
+	Guest
+
 	version.UnsafeVersionServer
 }
 
@@ -38,9 +39,4 @@ func (*VersionSvc) Version(ctx context.Context, request *version.Request) (*vers
 		HelmVersion:    vv.HelmVersion,
 		GitRepo:        vv.GitRepo,
 	}, nil
-}
-
-func (*VersionSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }

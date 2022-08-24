@@ -27,6 +27,8 @@ func init() {
 }
 
 type AuthSvc struct {
+	Guest
+
 	cfg             contracts.OidcConfig
 	adminPwd        string
 	authsvc         contracts.AuthInterface
@@ -163,11 +165,6 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 		Token:     data.Token,
 		ExpiresIn: data.ExpiredIn,
 	}, nil
-}
-
-func (a *AuthSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }
 
 type DefaultAuthProvider struct {

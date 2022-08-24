@@ -255,7 +255,7 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
-		assert.Equal(t, "context canceled", err.Error())
+		assert.Nil(t, err)
 	}()
 	<-time.After(1300 * time.Millisecond)
 	cancel()

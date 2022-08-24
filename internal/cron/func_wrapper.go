@@ -25,7 +25,7 @@ func Wrap(name string, fn func() error, lockerFn func() contracts.Locker) func()
 			metrics.CronPanicCount.With(label).Inc()
 		})
 
-		time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
 		releaseFn, acquired := lockerFn().RenewalAcquire(lockKey(name), defaultLockSeconds, defaultRenewSeconds)
 		if acquired {
 			now := time.Now()

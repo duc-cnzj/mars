@@ -7,7 +7,6 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/cluster"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
 )
 
@@ -19,6 +18,8 @@ func init() {
 }
 
 type ClusterSvc struct {
+	Guest
+
 	cluster.UnimplementedClusterServer
 }
 
@@ -38,9 +39,4 @@ func (c *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) 
 		RequestMemoryRate: info.RequestMemoryRate,
 		RequestCpuRate:    info.RequestCpuRate,
 	}, nil
-}
-
-func (c *ClusterSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }

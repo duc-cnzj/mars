@@ -7,7 +7,6 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/picture"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
 )
 
@@ -19,6 +18,8 @@ func init() {
 }
 
 type PictureSvc struct {
+	Guest
+
 	picture.UnimplementedPictureServer
 }
 
@@ -32,9 +33,4 @@ func (p *PictureSvc) Background(ctx context.Context, req *picture.BackgroundRequ
 		Url:       one.Url,
 		Copyright: one.Copyright,
 	}, nil
-}
-
-func (p *PictureSvc) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
-	mlog.Debug("client is calling method:", fullMethodName)
-	return ctx, nil
 }

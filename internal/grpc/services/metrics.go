@@ -82,7 +82,7 @@ func (m *MetricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics
 	for {
 		select {
 		case <-server.Context().Done():
-			return server.Context().Err()
+			return nil
 		case <-ticker.C:
 			if err := fn(); err != nil {
 				return err
