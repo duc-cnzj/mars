@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/duc-cnzj/mars/internal/adapter"
@@ -110,11 +111,16 @@ var showEventsCmd = &cobra.Command{
 		app.Bootstrap()
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetRowLine(true)
-		table.SetHeader([]string{"ID", "Event Name", "Listener Count"})
+		table.SetHeader([]string{"ID", "Event Name", "Listener Names", "Listener Count"})
 		i := 0
 		for event, listeners := range events.RegisteredEvents() {
 			i++
-			table.Append([]string{fmt.Sprintf("%d", i), event.String(), fmt.Sprintf("%d", len(listeners))})
+			var listenerNames []string
+			for _, listener := range listeners {
+				s := strings.Split(GetFunctionName(listener), ".")
+				listenerNames = append(listenerNames, s[len(s)-1])
+			}
+			table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
 		}
 
 		table.Render()
@@ -185,4 +191,8 @@ var showConfigCmd = &cobra.Command{
 
 		table.Render()
 	},
+}
+
+func GetFunctionName(i any) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
