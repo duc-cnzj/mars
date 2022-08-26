@@ -299,94 +299,91 @@ const ModalSub: React.FC<{
               <DebugModeSwitch />
             </Form.Item>
           </div>
-          {showLog ? (
-            <div style={{ marginTop: 10 }}>
-              <Progress
-                strokeColor={{
-                  from: "#108ee9",
-                  to: "#87d068",
-                }}
-                style={{ padding: "0 3px", marginBottom: 5 }}
-                percent={processPercent}
-                status="active"
-              />
-              <LogOutput
-                pending={<TimeCost start={start} startAt={startAt} />}
-                slug={slug}
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                minWidth: 200,
-                marginBottom: 20,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
+          <div style={{ marginTop: 10, display: showLog ? "block" : "none" }}>
+            <Progress
+              strokeColor={{
+                from: "#108ee9",
+                to: "#87d068",
               }}
-            >
-              <Form.Item name="extra_values" noStyle>
-                <Elements
-                  elements={orderBy(elements, ["type"], ["asc"])}
-                  style={{
-                    inputNumber: { fontSize: 10, width: "100%" },
-                    input: { fontSize: 10 },
-                    label: { fontSize: 10 },
-                    formItem: {
-                      marginBottom: 0,
-                      marginTop: 0,
-                      display: "inline-block",
-                      width: "calc(30% - 8px)",
-                      marginRight: 8,
+              style={{ padding: "0 3px", marginBottom: 5 }}
+              percent={processPercent}
+              status="active"
+            />
+            <LogOutput
+              pending={<TimeCost start={start} startAt={startAt} />}
+              slug={slug}
+            />
+          </div>
+          <div
+            style={{
+              display: !showLog ? "flex" : "none",
+              minWidth: 200,
+              marginBottom: 20,
+              height: "100%",
+              flexDirection: "column",
+            }}
+          >
+            <Form.Item name="extra_values" noStyle>
+              <Elements
+                elements={orderBy(elements, ["type"], ["asc"])}
+                style={{
+                  inputNumber: { fontSize: 10, width: "100%" },
+                  input: { fontSize: 10 },
+                  label: { fontSize: 10 },
+                  formItem: {
+                    marginBottom: 0,
+                    marginTop: 0,
+                    display: "inline-block",
+                    width: "calc(30% - 8px)",
+                    marginRight: 8,
+                  },
+                }}
+              />
+            </Form.Item>
+            <Row style={{ height: "100%", marginTop: 3 }}>
+              <Col span={detail.config === data.config ? 24 : 12}>
+                <Form.Item name={"config"} noStyle>
+                  <CodeMirror
+                    options={{
+                      mode: getMode(detail.config_type),
+                      theme: "dracula",
+                      lineNumbers: true,
+                    }}
+                    onChange={(v) => {
+                      form.setFieldsValue({ config: v });
+                      setData((d) => {
+                        return { ...d, config: v };
+                      });
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col
+                className="diff-viewer"
+                span={detail.config === data.config ? 0 : 12}
+                style={{ fontSize: 13 }}
+              >
+                <ReactDiffViewer
+                  styles={{
+                    gutter: { padding: "0 5px", minWidth: 25 },
+                    marker: { padding: "0 6px" },
+                    diffContainer: {
+                      display: "block",
+                      width: "100%",
+                      overflowX: "auto",
                     },
                   }}
+                  useDarkTheme
+                  disableWordDiff
+                  renderContent={highlightSyntax}
+                  showDiffOnly={false}
+                  oldValue={detail.config}
+                  newValue={data.config}
+                  splitView={false}
                 />
-              </Form.Item>
-              <Row style={{ height: "100%", marginTop: 3 }}>
-                <Col span={detail.config === data.config ? 24 : 12}>
-                  <Form.Item name={"config"} noStyle>
-                    <CodeMirror
-                      options={{
-                        mode: getMode(detail.config_type),
-                        theme: "dracula",
-                        lineNumbers: true,
-                      }}
-                      onChange={(v) => {
-                        form.setFieldsValue({ config: v });
-                        setData((d) => {
-                          return { ...d, config: v };
-                        });
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col
-                  className="diff-viewer"
-                  span={detail.config === data.config ? 0 : 12}
-                  style={{ fontSize: 13 }}
-                >
-                  <ReactDiffViewer
-                    styles={{
-                      gutter: { padding: "0 5px", minWidth: 25 },
-                      marker: { padding: "0 6px" },
-                      diffContainer: {
-                        display: "block",
-                        width: "100%",
-                        overflowX: "auto",
-                      },
-                    }}
-                    useDarkTheme
-                    disableWordDiff
-                    renderContent={highlightSyntax}
-                    showDiffOnly={false}
-                    oldValue={detail.config}
-                    newValue={data.config}
-                    splitView={false}
-                  />
-                </Col>
-              </Row>
-            </div>
-          )}
+              </Col>
+            </Row>
+          </div>
         </div>
       </Form>
     </div>

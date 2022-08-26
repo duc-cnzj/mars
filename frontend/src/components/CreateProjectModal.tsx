@@ -50,7 +50,10 @@ const CreateProjectModal: React.FC<{
     gitBranch: string;
     gitCommit: string;
   }>();
-  let slug = useMemo(() => toSlug(namespaceId, data?.projectName ? data.projectName : ""), [namespaceId, data]);
+  let slug = useMemo(
+    () => toSlug(namespaceId, data?.projectName ? data.projectName : ""),
+    [namespaceId, data]
+  );
 
   const [mode, setMode] = useState<string>("text/x-yaml");
   const [visible, setVisible] = useAsyncState<boolean>(false);
@@ -75,7 +78,7 @@ const CreateProjectModal: React.FC<{
     [dispatch, slug]
   );
 
-  const [deployStarted, setDeployStarted] = useState(false)
+  const [deployStarted, setDeployStarted] = useState(false);
   const [showLog, setShowLog] = useState(start);
 
   const isLoading = useMemo(() => list[slug]?.isLoading ?? false, [list, slug]);
@@ -142,7 +145,7 @@ const CreateProjectModal: React.FC<{
         setShowLog(true);
         setStart(true);
         setStartAt(Date.now());
-        setDeployStarted(true)
+        setDeployStarted(true);
         ws?.send(s);
         return;
       }
@@ -345,57 +348,57 @@ const CreateProjectModal: React.FC<{
                 </Form.Item>
               </div>
 
-              {showLog ? (
-                <div style={{ marginTop: 10 }}>
-                  <Progress
-                    strokeColor={{
-                      from: "#108ee9",
-                      to: "#87d068",
-                    }}
-                    style={{ padding: "0 3px", marginBottom: 5 }}
-                    percent={processPercent}
-                    status="active"
-                  />
-                  <LogOutput
-                    pending={<TimeCost start={start} startAt={startAt} />}
-                    slug={slug}
-                  />
-                </div>
-              ) : (
-                <div
-                  style={{
-                    minWidth: 200,
-                    marginBottom: 20,
-                    height: "100%",
+              <div
+                style={{ display: showLog ? "block" : "none", marginTop: 10 }}
+              >
+                <Progress
+                  strokeColor={{
+                    from: "#108ee9",
+                    to: "#87d068",
                   }}
-                >
-                  <Form.Item name="extra_values" noStyle>
-                    <Elements
-                      elements={orderBy(elements, ["type"], ["asc"])}
-                      style={{
-                        inputNumber: { fontSize: 10, width: "100%" },
-                        input: { fontSize: 10 },
-                        label: { fontSize: 10 },
-                        formItem: {
-                          marginBottom: 5,
-                          display: "inline-block",
-                          width: "calc(33% - 8px)",
-                          marginRight: 8,
-                        },
-                      }}
-                    />
-                  </Form.Item>
-                  <Form.Item name="config" style={{ height: "100%" }} noStyle>
-                    <CodeMirror
-                      options={{
-                        mode: mode,
-                        theme: "dracula",
-                        lineNumbers: true,
-                      }}
-                    />
-                  </Form.Item>
-                </div>
-              )}
+                  style={{ padding: "0 3px", marginBottom: 5 }}
+                  percent={processPercent}
+                  status="active"
+                />
+                <LogOutput
+                  pending={<TimeCost start={start} startAt={startAt} />}
+                  slug={slug}
+                />
+              </div>
+              <div
+                style={{
+                  display: !showLog ? "block" : "none",
+                  minWidth: 200,
+                  marginBottom: 20,
+                  height: "100%",
+                }}
+              >
+                <Form.Item name="extra_values" noStyle>
+                  <Elements
+                    elements={orderBy(elements, ["type"], ["asc"])}
+                    style={{
+                      inputNumber: { fontSize: 10, width: "100%" },
+                      input: { fontSize: 10 },
+                      label: { fontSize: 10 },
+                      formItem: {
+                        marginBottom: 5,
+                        display: "inline-block",
+                        width: "calc(33% - 8px)",
+                        marginRight: 8,
+                      },
+                    }}
+                  />
+                </Form.Item>
+                <Form.Item name="config" style={{ height: "100%" }} noStyle>
+                  <CodeMirror
+                    options={{
+                      mode: mode,
+                      theme: "dracula",
+                      lineNumbers: true,
+                    }}
+                  />
+                </Form.Item>
+              </div>
             </Form>
           </div>
         </div>

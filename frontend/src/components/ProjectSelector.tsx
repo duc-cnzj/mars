@@ -154,11 +154,22 @@ const ProjectSelector: React.FC<{
       title={{ style: { marginTop: 0, height: 24 } }}
     >
       <Cascader
+        onDropdownVisibleChange={() => {
+          if (selectedValues && selectedValues.length !== 3) {
+            setSelectedValues([])
+          }
+        }}
         disabled={disabled}
         showSearch={{
           filter: (inputValue: string, options: any, fieldNames: any) => {
             return options.some((option: any) => {
               switch (selectedValues.length) {
+                case 0:
+                  if (option.type !== "project") {
+                    return false;
+                  }
+                  option.children = []
+                  break;
                 case 1:
                   if (option.type !== "branch") {
                     return false;

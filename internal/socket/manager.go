@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -786,7 +787,7 @@ func (d *DynamicLoader) Load(j *Jober) error {
 	}
 
 	dynamicConfigYaml, err := utils.ParseInputConfig(j.config, j.input.Config)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
 	j.dynamicConfigYaml = dynamicConfigYaml
