@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/uploader"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
@@ -189,6 +191,7 @@ func WithExcludeTags(tags ...string) Option {
 
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
+
 	app := &Application{
 		mustBooted: MustBooted,
 		config:     config,
@@ -199,7 +202,12 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 		sf:         &singleflight.Group{},
 		cache:      &cache.NoCache{},
 	}
-
+	localUploader, err := uploader.NewUploader(config.UploadDir, "")
+	if err != nil {
+		return nil
+	}
+	app.localUploader = localUploader
+	app.uploader = localUploader
 	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)
 	app.dispatcher = event.NewDispatcher(app)
 	app.dbManager = database.NewManager(app)

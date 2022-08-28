@@ -46,7 +46,8 @@
         ],
         "tags": [
           "Auth"
-        ]
+        ],
+        "security": []
       }
     },
     "/api/auth/info": {
@@ -126,7 +127,8 @@
         },
         "tags": [
           "Auth"
-        ]
+        ],
+        "security": []
       }
     }
   },

@@ -20,8 +20,8 @@ type S3 struct {
 	disk          string
 }
 
-func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader) *S3 {
-	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: ""}
+func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, rootDir string) *S3 {
+	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
 func (s *S3) root() string {

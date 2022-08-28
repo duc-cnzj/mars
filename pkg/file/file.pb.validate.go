@@ -980,3 +980,211 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListResponseValidationError{}
+
+// Validate checks the field values on MaxUploadSizeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MaxUploadSizeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MaxUploadSizeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MaxUploadSizeRequestMultiError, or nil if none found.
+func (m *MaxUploadSizeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MaxUploadSizeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return MaxUploadSizeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MaxUploadSizeRequestMultiError is an error wrapping multiple validation
+// errors returned by MaxUploadSizeRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MaxUploadSizeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MaxUploadSizeRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MaxUploadSizeRequestMultiError) AllErrors() []error { return m }
+
+// MaxUploadSizeRequestValidationError is the validation error returned by
+// MaxUploadSizeRequest.Validate if the designated constraints aren't met.
+type MaxUploadSizeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MaxUploadSizeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MaxUploadSizeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MaxUploadSizeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MaxUploadSizeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MaxUploadSizeRequestValidationError) ErrorName() string {
+	return "MaxUploadSizeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MaxUploadSizeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMaxUploadSizeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MaxUploadSizeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MaxUploadSizeRequestValidationError{}
+
+// Validate checks the field values on MaxUploadSizeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MaxUploadSizeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MaxUploadSizeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MaxUploadSizeResponseMultiError, or nil if none found.
+func (m *MaxUploadSizeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MaxUploadSizeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HumanizeSize
+
+	// no validation rules for Bytes
+
+	if len(errors) > 0 {
+		return MaxUploadSizeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MaxUploadSizeResponseMultiError is an error wrapping multiple validation
+// errors returned by MaxUploadSizeResponse.ValidateAll() if the designated
+// constraints aren't met.
+type MaxUploadSizeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MaxUploadSizeResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MaxUploadSizeResponseMultiError) AllErrors() []error { return m }
+
+// MaxUploadSizeResponseValidationError is the validation error returned by
+// MaxUploadSizeResponse.Validate if the designated constraints aren't met.
+type MaxUploadSizeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MaxUploadSizeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MaxUploadSizeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MaxUploadSizeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MaxUploadSizeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MaxUploadSizeResponseValidationError) ErrorName() string {
+	return "MaxUploadSizeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MaxUploadSizeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMaxUploadSizeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MaxUploadSizeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MaxUploadSizeResponseValidationError{}

@@ -31,6 +31,7 @@ type FileClient interface {
 	DeleteUndocumentedFiles(ctx context.Context, in *DeleteUndocumentedFilesRequest, opts ...grpc.CallOption) (*DeleteUndocumentedFilesResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error)
+	MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest, opts ...grpc.CallOption) (*MaxUploadSizeResponse, error)
 }
 
 type fileClient struct {
@@ -77,6 +78,15 @@ func (c *fileClient) DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...
 	return out, nil
 }
 
+func (c *fileClient) MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest, opts ...grpc.CallOption) (*MaxUploadSizeResponse, error) {
+	out := new(MaxUploadSizeResponse)
+	err := c.cc.Invoke(ctx, "/file.File/MaxUploadSize", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FileServer is the server API for File service.
 // All implementations must embed UnimplementedFileServer
 // for forward compatibility
@@ -89,6 +99,7 @@ type FileServer interface {
 	DeleteUndocumentedFiles(context.Context, *DeleteUndocumentedFilesRequest) (*DeleteUndocumentedFilesResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error)
+	MaxUploadSize(context.Context, *MaxUploadSizeRequest) (*MaxUploadSizeResponse, error)
 	mustEmbedUnimplementedFileServer()
 }
 
@@ -107,6 +118,9 @@ func (UnimplementedFileServer) DeleteUndocumentedFiles(context.Context, *DeleteU
 }
 func (UnimplementedFileServer) DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiskInfo not implemented")
+}
+func (UnimplementedFileServer) MaxUploadSize(context.Context, *MaxUploadSizeRequest) (*MaxUploadSizeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MaxUploadSize not implemented")
 }
 func (UnimplementedFileServer) mustEmbedUnimplementedFileServer() {}
 
@@ -193,6 +207,24 @@ func _File_DiskInfo_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _File_MaxUploadSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MaxUploadSizeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).MaxUploadSize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/file.File/MaxUploadSize",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).MaxUploadSize(ctx, req.(*MaxUploadSizeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // File_ServiceDesc is the grpc.ServiceDesc for File service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -215,6 +247,10 @@ var File_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiskInfo",
 			Handler:    _File_DiskInfo_Handler,
+		},
+		{
+			MethodName: "MaxUploadSize",
+			Handler:    _File_MaxUploadSize_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

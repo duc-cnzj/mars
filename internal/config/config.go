@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const DefaultMaxUploadSize = "50M"
+
 type Plugin struct {
 	Name string         `mapstructure:"name"`
 	Args map[string]any `mapstructure:"args"`
@@ -158,7 +160,7 @@ func Init(cfgFile string) *Config {
 	}
 
 	if cfg.UploadMaxSize == "" {
-		cfg.UploadMaxSize = "50Mi"
+		cfg.UploadMaxSize = DefaultMaxUploadSize
 	}
 
 	return cfg
@@ -167,7 +169,7 @@ func Init(cfgFile string) *Config {
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)
 	if err != nil {
-		parseBytes, _ := humanize.ParseBytes("50Mi")
+		parseBytes, _ := humanize.ParseBytes(DefaultMaxUploadSize)
 		return parseBytes
 	}
 	return bytes

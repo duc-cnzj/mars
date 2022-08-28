@@ -107,6 +107,29 @@
         ]
       }
     },
+    "/api/files/max_upload_size": {
+      "get": {
+        "operationId": "File_MaxUploadSize",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileMaxUploadSizeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "File"
+        ],
+        "security": []
+      }
+    },
     "/api/files/{id}": {
       "delete": {
         "summary": "删除文件",
@@ -192,6 +215,18 @@
         "count": {
           "type": "string",
           "format": "int64"
+        }
+      }
+    },
+    "fileMaxUploadSizeResponse": {
+      "type": "object",
+      "properties": {
+        "humanize_size": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },

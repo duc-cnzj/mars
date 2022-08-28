@@ -109,7 +109,7 @@ func (m *File) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUndocu
 		mapFilePath[f.Path] = struct{}{}
 	}
 
-	directoryFiles, _ := app.Uploader().AllDirectoryFiles(app.Config().UploadDir)
+	directoryFiles, _ := app.Uploader().AllDirectoryFiles("")
 	for _, directoryFile := range directoryFiles {
 		if _, ok := mapFilePath[directoryFile.Path()]; !ok {
 			clearList = append(clearList, &types.FileModel{
@@ -145,7 +145,18 @@ func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.Del
 	return &file.DeleteResponse{}, nil
 }
 
+func (*File) MaxUploadSize(ctx context.Context, request *file.MaxUploadSizeRequest) (*file.MaxUploadSizeResponse, error) {
+	return &file.MaxUploadSizeResponse{
+		HumanizeSize: humanize.Bytes(app.Config().MaxUploadSize()),
+		Bytes:        app.Config().MaxUploadSize(),
+	}, nil
+}
+
 func (m *File) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if fullMethodName == "MaxUploadSize" {
+		return ctx, nil
+	}
+
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}

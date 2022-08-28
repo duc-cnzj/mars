@@ -24,6 +24,10 @@ export function downloadConfig() {
   return download(`/api/config/export`);
 }
 
+export function maxUploadSize() {
+  return ajax.get<pb.file.MaxUploadSizeResponse>(`/api/files/max_upload_size`);
+}
+
 const download = (url: string) => {
   return ajax
     .get(url, { responseType: "blob" })

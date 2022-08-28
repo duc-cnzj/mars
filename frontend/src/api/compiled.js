@@ -8796,6 +8796,168 @@ export const file = $root.file = (() => {
         return ListResponse;
     })();
 
+    file.MaxUploadSizeRequest = (function() {
+
+        /**
+         * Properties of a MaxUploadSizeRequest.
+         * @memberof file
+         * @interface IMaxUploadSizeRequest
+         */
+
+        /**
+         * Constructs a new MaxUploadSizeRequest.
+         * @memberof file
+         * @classdesc Represents a MaxUploadSizeRequest.
+         * @implements IMaxUploadSizeRequest
+         * @constructor
+         * @param {file.IMaxUploadSizeRequest=} [properties] Properties to set
+         */
+        function MaxUploadSizeRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * Encodes the specified MaxUploadSizeRequest message. Does not implicitly {@link file.MaxUploadSizeRequest.verify|verify} messages.
+         * @function encode
+         * @memberof file.MaxUploadSizeRequest
+         * @static
+         * @param {file.MaxUploadSizeRequest} message MaxUploadSizeRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        MaxUploadSizeRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            return writer;
+        };
+
+        /**
+         * Decodes a MaxUploadSizeRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof file.MaxUploadSizeRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {file.MaxUploadSizeRequest} MaxUploadSizeRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        MaxUploadSizeRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.MaxUploadSizeRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return MaxUploadSizeRequest;
+    })();
+
+    file.MaxUploadSizeResponse = (function() {
+
+        /**
+         * Properties of a MaxUploadSizeResponse.
+         * @memberof file
+         * @interface IMaxUploadSizeResponse
+         * @property {string|null} [humanize_size] MaxUploadSizeResponse humanize_size
+         * @property {number|null} [bytes] MaxUploadSizeResponse bytes
+         */
+
+        /**
+         * Constructs a new MaxUploadSizeResponse.
+         * @memberof file
+         * @classdesc Represents a MaxUploadSizeResponse.
+         * @implements IMaxUploadSizeResponse
+         * @constructor
+         * @param {file.IMaxUploadSizeResponse=} [properties] Properties to set
+         */
+        function MaxUploadSizeResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * MaxUploadSizeResponse humanize_size.
+         * @member {string} humanize_size
+         * @memberof file.MaxUploadSizeResponse
+         * @instance
+         */
+        MaxUploadSizeResponse.prototype.humanize_size = "";
+
+        /**
+         * MaxUploadSizeResponse bytes.
+         * @member {number} bytes
+         * @memberof file.MaxUploadSizeResponse
+         * @instance
+         */
+        MaxUploadSizeResponse.prototype.bytes = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+
+        /**
+         * Encodes the specified MaxUploadSizeResponse message. Does not implicitly {@link file.MaxUploadSizeResponse.verify|verify} messages.
+         * @function encode
+         * @memberof file.MaxUploadSizeResponse
+         * @static
+         * @param {file.MaxUploadSizeResponse} message MaxUploadSizeResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        MaxUploadSizeResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.humanize_size != null && Object.hasOwnProperty.call(message, "humanize_size"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.humanize_size);
+            if (message.bytes != null && Object.hasOwnProperty.call(message, "bytes"))
+                writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.bytes);
+            return writer;
+        };
+
+        /**
+         * Decodes a MaxUploadSizeResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof file.MaxUploadSizeResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {file.MaxUploadSizeResponse} MaxUploadSizeResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        MaxUploadSizeResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.MaxUploadSizeResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.humanize_size = reader.string();
+                    break;
+                case 2:
+                    message.bytes = reader.uint64();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return MaxUploadSizeResponse;
+    })();
+
     file.File = (function() {
 
         /**
@@ -8943,6 +9105,39 @@ export const file = $root.file = (() => {
          * @instance
          * @param {file.DiskInfoRequest} request DiskInfoRequest message or plain object
          * @returns {Promise<file.DiskInfoResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link file.File#maxUploadSize}.
+         * @memberof file.File
+         * @typedef MaxUploadSizeCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {file.MaxUploadSizeResponse} [response] MaxUploadSizeResponse
+         */
+
+        /**
+         * Calls MaxUploadSize.
+         * @function maxUploadSize
+         * @memberof file.File
+         * @instance
+         * @param {file.MaxUploadSizeRequest} request MaxUploadSizeRequest message or plain object
+         * @param {file.File.MaxUploadSizeCallback} callback Node-style callback called with the error, if any, and MaxUploadSizeResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(File.prototype.maxUploadSize = function maxUploadSize(request, callback) {
+            return this.rpcCall(maxUploadSize, $root.file.MaxUploadSizeRequest, $root.file.MaxUploadSizeResponse, request, callback);
+        }, "name", { value: "MaxUploadSize" });
+
+        /**
+         * Calls MaxUploadSize.
+         * @function maxUploadSize
+         * @memberof file.File
+         * @instance
+         * @param {file.MaxUploadSizeRequest} request MaxUploadSizeRequest message or plain object
+         * @returns {Promise<file.MaxUploadSizeResponse>} Promise
          * @variation 2
          */
 

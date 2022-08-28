@@ -16,17 +16,14 @@ import (
 type s3UploaderBootstraper struct{}
 
 func (s *s3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) error {
-	local, _ := uploader.NewUploader(app.Config().UploadDir, "")
-
 	var (
 		endpoint        = app.Config().S3Endpoint
 		accessKeyID     = app.Config().S3AccessKeyID
 		secretAccessKey = app.Config().S3SecretAccessKey
 		useSSL          = app.Config().S3UseSSL
 	)
-	app.SetLocalUploader(local)
 	if endpoint == "" || accessKeyID == "" || secretAccessKey == "" {
-		app.SetUploader(local)
+		app.SetUploader(app.LocalUploader())
 		return nil
 	}
 
@@ -38,9 +35,8 @@ func (s *s3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 	if err != nil {
 		return err
 	}
-	mlog.Warning("use s3")
-	app.Config().UploadDir = ""
-	app.SetUploader(uploader.NewS3(minioClient, "mars", local))
+	app.Config().UploadDir = "data"
+	app.SetUploader(uploader.NewS3(minioClient, "mars", app.LocalUploader(), app.Config().UploadDir))
 	return nil
 }
 

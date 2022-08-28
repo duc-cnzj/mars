@@ -13,6 +13,7 @@
   "paths": {
     "/api/auth/exchange": {
       "post": {
+        "security": [],
         "tags": [
           "Auth"
         ],
@@ -103,6 +104,7 @@
     },
     "/api/auth/settings": {
       "get": {
+        "security": [],
         "tags": [
           "Auth"
         ],
@@ -543,6 +545,29 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/fileDiskInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/files/max_upload_size": {
+      "get": {
+        "security": [],
+        "tags": [
+          "File"
+        ],
+        "operationId": "File_MaxUploadSize",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileMaxUploadSizeResponse"
             }
           },
           "default": {
@@ -2024,6 +2049,18 @@
         "page_size": {
           "type": "string",
           "format": "int64"
+        }
+      }
+    },
+    "fileMaxUploadSizeResponse": {
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "humanize_size": {
+          "type": "string"
         }
       }
     },
