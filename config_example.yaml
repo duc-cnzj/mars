@@ -55,6 +55,12 @@ upload_dir: ""
 # 默认 50m, 使用 MB,Gi,m,g这样的写法
 #upload_max_size: "50m"
 
+# 文件上传到 s3
+s3_endpoint: ""
+s3_access_key_id: ""
+s3_secret_access_key: ""
+s3_use_ssl: false
+
 # database
 # 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径
 db_driver: "sqlite"
