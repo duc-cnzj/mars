@@ -47,7 +47,11 @@ func TestUploader_AbsolutePath(t *testing.T) {
 
 func TestUploader_Disk(t *testing.T) {
 	uploader, _ := NewUploader("/", "disk")
-	assert.Equal(t, "/aa", uploader.Disk("aa").AbsolutePath("/"))
+	assert.Equal(t, "/disk/aa", uploader.Disk("/aa").AbsolutePath("/"))
+	disk := uploader.Disk("1").Disk("2").Disk("3")
+	d := disk.(*Uploader)
+	assert.Equal(t, "/disk/1/2", d.rootDir)
+	assert.Equal(t, "3", d.disk)
 }
 
 func TestUploader_root(t *testing.T) {

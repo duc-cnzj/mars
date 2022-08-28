@@ -30,6 +30,8 @@ type Uploader interface {
 	MkDir(path string, recursive bool) error
 	AbsolutePath(path string) string
 	Put(path string, content io.Reader) (FileInfo, error)
+	Read(string string) (io.ReadCloser, error)
+	Stat(file string) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
 	NewFile(path string) (File, error)
 	RemoveEmptyDir(dir string) error

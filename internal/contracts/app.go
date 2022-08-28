@@ -52,6 +52,9 @@ type ApplicationInterface interface {
 	Auth() AuthInterface
 	SetAuth(AuthInterface)
 
+	SetLocalUploader(Uploader)
+	LocalUploader() Uploader
+
 	SetUploader(Uploader)
 	Uploader() Uploader
 

@@ -57,7 +57,7 @@ func (u *Uploader) root() string {
 
 func (u *Uploader) Disk(s string) contracts.Uploader {
 	return &Uploader{
-		rootDir: u.rootDir,
+		rootDir: u.root(),
 		disk:    s,
 	}
 }
@@ -133,6 +133,22 @@ func (f *fileInfo) Path() string {
 
 func (f *fileInfo) Size() uint64 {
 	return f.size
+}
+
+func (u *Uploader) Read(file string) (io.ReadCloser, error) {
+	return os.Open(u.getPath(file))
+}
+
+func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
+	stat, err := os.Stat(u.getPath(file))
+	if err != nil {
+		return nil, err
+	}
+
+	return &fileInfo{
+		path: stat.Name(),
+		size: uint64(stat.Size()),
+	}, nil
 }
 
 func (u *Uploader) RemoveEmptyDir(dir string) error {

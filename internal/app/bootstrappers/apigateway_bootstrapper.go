@@ -196,9 +196,14 @@ func handFile(gmux *runtime.ServeMux) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			file, err := os.ReadFile(f.Path)
+			read, err := app.Uploader().Read(f.Path)
 			if err == nil {
-				w.Write(file)
+				all, _ := io.ReadAll(read)
+				w.Write(all)
+				return
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				http.Error(w, err.Error(), http.StatusNotFound)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -225,7 +230,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
-	open, err := os.Open(fil.Path)
+	read, err := app.Uploader().Read(fil.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "file not found", http.StatusNotFound)
@@ -235,9 +240,9 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	defer open.Close()
+	defer read.Close()
 
-	download(w, fileName, open)
+	download(w, fileName, read)
 }
 
 func download(w http.ResponseWriter, filename string, reader io.Reader) {

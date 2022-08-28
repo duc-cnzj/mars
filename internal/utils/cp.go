@@ -37,7 +37,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	if targetContainerDir == "" {
 		targetContainerDir = "/tmp"
 	}
-	st, err := os.Stat(fpath)
+	st, err := app.Uploader().Stat(fpath)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
@@ -50,16 +50,30 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	dir := filepath.Dir(fpath)
 	path := filepath.Join(dir, base+".tar.gz")
 	mlog.Debugf("[CopyFileToPod]: %v", path)
-	if err := archiver.Archive([]string{fpath}, path); err != nil {
+	read, err := app.Uploader().Read(fpath)
+	if err != nil {
 		return nil, err
 	}
-	defer app.Uploader().Delete(path)
+	defer read.Close()
+	var srcPath string = fpath + ".archive"
+	if !localUploader().Exists(srcPath) {
+		put, err := localUploader().Put(srcPath, read)
+		if err != nil {
+			return nil, err
+		}
+		srcPath = put.Path()
+	}
+	if err := archiver.Archive([]string{srcPath}, path); err != nil {
+		return nil, err
+	}
+	defer os.Remove(path)
+	defer localUploader().Delete(srcPath)
 	src, err := os.Open(path)
 	if err != nil {
 		mlog.Error(err)
 		return nil, err
 	}
-	go func(reader *io.PipeReader, outStream *io.PipeWriter, src *os.File) {
+	go func(reader *io.PipeReader, outStream *io.PipeWriter, src io.ReadCloser) {
 		defer func() {
 			reader.Close()
 			outStream.Close()

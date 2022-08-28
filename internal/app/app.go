@@ -68,8 +68,9 @@ type Application struct {
 	tracer     trace.Tracer
 	mustBooted []contracts.Bootstrapper
 
-	excludeTags  []string
-	excludeBoots []contracts.Bootstrapper
+	excludeTags   []string
+	excludeBoots  []contracts.Bootstrapper
+	localUploader contracts.Uploader
 }
 
 func (app *Application) CacheLock() contracts.Locker {
@@ -107,6 +108,13 @@ func (app *Application) SetAuth(auth contracts.AuthInterface) {
 	app.auth = auth
 }
 
+func (app *Application) SetLocalUploader(uploader contracts.Uploader) {
+	app.localUploader = uploader
+}
+
+func (app *Application) LocalUploader() contracts.Uploader {
+	return app.localUploader
+}
 func (app *Application) SetUploader(uploader contracts.Uploader) {
 	app.uploader = uploader
 }

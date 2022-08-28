@@ -1,3 +1,4 @@
+import { message } from "antd";
 import ajax from "./ajax";
 import pb from "./compiled";
 
@@ -10,15 +11,17 @@ export function diskInfo() {
 }
 
 export function deleteUndocumentedFiles() {
-  return ajax.delete<pb.file.DeleteUndocumentedFilesResponse>(`/api/files/delete_undocumented_files`);
+  return ajax.delete<pb.file.DeleteUndocumentedFilesResponse>(
+    `/api/files/delete_undocumented_files`
+  );
 }
 
 export function downloadFile(id: number) {
-  return download(`/api/download_file/${id}`)
+  return download(`/api/download_file/${id}`);
 }
 
 export function downloadConfig() {
-  return download(`/api/config/export`)
+  return download(`/api/config/export`);
 }
 
 const download = (url: string) => {
@@ -42,5 +45,10 @@ const download = (url: string) => {
       a.click(); //执行下载
       window.URL.revokeObjectURL(a.href); //释放url
       document.body.removeChild(a); //释放标签
+    })
+    .catch((e) => {
+      if (e.response.status === 404) {
+        message.error("文件不存在");
+      }
     });
-}
+};

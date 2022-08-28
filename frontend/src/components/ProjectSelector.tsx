@@ -162,6 +162,7 @@ const ProjectSelector: React.FC<{
         disabled={disabled}
         showSearch={{
           filter: (inputValue: string, options: any, fieldNames: any) => {
+            console.log(selectedValues)
             return options.some((option: any) => {
               switch (selectedValues.length) {
                 case 0:

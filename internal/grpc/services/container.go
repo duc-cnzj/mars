@@ -227,6 +227,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 		if err != nil {
 			if err == io.EOF && f != nil {
 				stat, _ := f.Stat()
+				f.Close()
 
 				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
 				app.DB().Create(&file)
