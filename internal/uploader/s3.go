@@ -24,21 +24,6 @@ func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, roo
 	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
-func (s *S3) root() string {
-	if s.disk != "" {
-		return filepath.Join(s.rootDir, s.disk)
-	}
-
-	return s.rootDir
-}
-
-func (s *S3) getPath(path string) string {
-	if strings.HasPrefix(path, s.root()) {
-		return path
-	}
-	return filepath.Join(s.root(), path)
-}
-
 func (s *S3) Disk(disk string) contracts.Uploader {
 	return &S3{
 		localUploader: s.localUploader.Disk(disk),
@@ -51,6 +36,7 @@ func (s *S3) Disk(disk string) contracts.Uploader {
 
 func (s *S3) DeleteDir(dir string) error {
 	dir = s.getPath(dir)
+	s.localUploader.DeleteDir(dir)
 	return s.Delete(dir)
 }
 
@@ -152,6 +138,23 @@ func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	return finfos, nil
 }
 
+func (s *S3) RemoveEmptyDir(dir string) error {
+	return s.localUploader.RemoveEmptyDir(dir)
+}
+
+func (s *S3) NewFile(path string) (contracts.File, error) {
+	file, err := s.localUploader.NewFile(s.getPath(path))
+	if err != nil {
+		return nil, err
+	}
+	return &s3File{
+		localUploader: s.localUploader,
+		s3:            s,
+		name:          s.getPath(path),
+		File:          file,
+	}, err
+}
+
 type s3File struct {
 	localUploader contracts.Uploader
 	s3            *S3
@@ -179,19 +182,17 @@ func (s *s3File) Close() error {
 	return err
 }
 
-func (s *S3) NewFile(path string) (contracts.File, error) {
-	file, err := s.localUploader.NewFile(s.getPath(path))
-	if err != nil {
-		return nil, err
+func (s *S3) getPath(path string) string {
+	if strings.HasPrefix(path, s.root()) {
+		return path
 	}
-	return &s3File{
-		localUploader: s.localUploader,
-		s3:            s,
-		name:          s.getPath(path),
-		File:          file,
-	}, err
+	return filepath.Join(s.root(), path)
 }
 
-func (s *S3) RemoveEmptyDir(dir string) error {
-	return nil
+func (s *S3) root() string {
+	if s.disk != "" {
+		return filepath.Join(s.rootDir, s.disk)
+	}
+
+	return s.rootDir
 }
