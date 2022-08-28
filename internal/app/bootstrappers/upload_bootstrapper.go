@@ -34,6 +34,7 @@ func (*UploadBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	if err != nil {
 		return err
 	}
+	app.SetLocalUploader(up)
 	app.SetUploader(up)
 
 	return nil

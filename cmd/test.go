@@ -23,7 +23,6 @@ func (s *s3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 		useSSL          = app.Config().S3UseSSL
 	)
 	if endpoint == "" || accessKeyID == "" || secretAccessKey == "" {
-		app.SetUploader(app.LocalUploader())
 		return nil
 	}
 

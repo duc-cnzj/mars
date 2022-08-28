@@ -18,9 +18,8 @@ import (
 var ServerBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.EventBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
+	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.AuthBootstrapper{},
-	&s3UploaderBootstraper{},
-	//&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
@@ -32,6 +31,7 @@ var ServerBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
 	&bootstrappers.AppBootstrapper{},
+	&s3UploaderBootstraper{},
 }
 
 var apiGatewayCmd = &cobra.Command{
