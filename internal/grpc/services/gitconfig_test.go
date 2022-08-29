@@ -284,10 +284,10 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Equal(t, []string{"*"}, update.Config.Branches)
 
 	cache := mock.NewMockCacheInterface(m)
-	app.EXPECT().Cache().Return(cache)
+	app.EXPECT().Cache().Return(cache).Times(2)
 	mc.DisplayName = "app"
-	cache.EXPECT().Clear("ProjectOptions").Times(1)
-	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(1)
+	cache.EXPECT().Clear("ProjectOptions").Times(2)
+	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
 	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,
@@ -298,6 +298,15 @@ func TestGitConfigSvc_Update(t *testing.T) {
 		Config:       mc,
 	})
 	assert.Equal(t, "record not found", err.Error())
+	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+		GitProjectId: 11,
+		Config: &mars.Config{
+			ConfigFileValues: " aa ",
+			ValuesYaml:       " bb ",
+		},
+	})
+	assert.Equal(t, " aa", update.Config.ConfigFileValues)
+	assert.Equal(t, " bb", update.Config.ValuesYaml)
 }
 
 func Test_getDefaultBranch(t *testing.T) {

@@ -263,7 +263,7 @@ const EventList: React.FC = () => {
           </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>
             文件占用:{" "}
-            {diskInfo?.humanize_usage}
+            <span style={{ color: "blue" }}>{diskInfo?.humanize_usage}</span>
           </div>
         </div>
       }

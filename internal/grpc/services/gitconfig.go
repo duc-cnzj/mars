@@ -143,6 +143,8 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 	if request.Config != nil && request.Config.DisplayName != project.GlobalMarsConfig().DisplayName {
 		app.Cache().Clear(ProjectOptionsCacheKey)
 	}
+	request.Config.ConfigFileValues = strings.TrimRight(request.Config.ConfigFileValues, " ")
+	request.Config.ValuesYaml = strings.TrimRight(request.Config.ValuesYaml, " ")
 	marshal, err := json.Marshal(request.Config)
 	if err != nil {
 		return nil, err
