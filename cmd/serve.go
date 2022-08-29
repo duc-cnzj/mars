@@ -18,8 +18,8 @@ import (
 var ServerBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.EventBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
-	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.AuthBootstrapper{},
+	&bootstrappers.UploadBootstrapper{},
 	&bootstrappers.CacheBootstrapper{},
 	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
