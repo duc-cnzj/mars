@@ -66,10 +66,7 @@ func CleanUploadFiles() error {
 
 		cleanFunc = func(up contracts.Uploader, db *gorm.DB, fileID int, filePath string) bool {
 			if !up.Exists(filePath) {
-				tx := db.Delete(&models.File{ID: fileID})
-				if tx.Error != nil {
-					mlog.Error(tx.Error)
-				}
+				db.Delete(&models.File{ID: fileID})
 				return true
 			}
 			return false
@@ -116,9 +113,7 @@ func CleanUploadFiles() error {
 		ups = append(ups, app.Uploader())
 	}
 	for _, up := range ups {
-		if err := fn(up, filesMap); err != nil {
-			mlog.Error(err)
-		}
+		fn(up, filesMap)
 	}
 
 	localUploader.RemoveEmptyDir()

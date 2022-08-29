@@ -1,14 +1,15 @@
 package uploader
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewS3(t *testing.T) {
@@ -178,11 +179,13 @@ func TestS3_Read(t *testing.T) {
 	uploader, _ := NewUploader("", "")
 	s3Cli := NewS3(s3, testBucketName, uploader, "")
 	s3Cli.DeleteDir("")
-	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
+	_, err := s3Cli.Read("aaa")
+	assert.Error(t, err)
+	_, err = s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
 	read, err := s3Cli.Read("aaa")
-	defer read.Close()
 	assert.Nil(t, err)
+	defer read.Close()
 	all, _ := io.ReadAll(read)
 	assert.Equal(t, "aaa", string(all))
 }
