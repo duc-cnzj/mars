@@ -109,7 +109,7 @@ func (m *File) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUndocu
 		mapFilePath[f.Path] = struct{}{}
 	}
 
-	directoryFiles, _ := app.Uploader().AllDirectoryFiles("")
+	directoryFiles, _ := app.Uploader().AllDirectoryFiles(app.Config().UploadDir)
 	for _, directoryFile := range directoryFiles {
 		if _, ok := mapFilePath[directoryFile.Path()]; !ok {
 			clearList = append(clearList, &types.FileModel{

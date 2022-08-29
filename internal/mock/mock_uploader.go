@@ -222,3 +222,17 @@ func (mr *MockUploaderMockRecorder) Stat(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockUploader)(nil).Stat), arg0)
 }
+
+// Type mocks base method.
+func (m *MockUploader) Type() contracts.UploadType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Type")
+	ret0, _ := ret[0].(contracts.UploadType)
+	return ret0
+}
+
+// Type indicates an expected call of Type.
+func (mr *MockUploaderMockRecorder) Type() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*MockUploader)(nil).Type))
+}

@@ -55,22 +55,22 @@ type Application struct {
 	hooksMu sync.RWMutex
 	hooks   map[Hook][]contracts.Callback
 
-	plugins      map[string]contracts.PluginInterface
-	oidcProvider contracts.OidcConfig
-	uploader     contracts.Uploader
-	auth         contracts.AuthInterface
-	cronManager  contracts.CronManager
-
-	cache     contracts.CacheInterface
-	cacheLock contracts.Locker
-
-	sf         *singleflight.Group
-	tracer     trace.Tracer
-	mustBooted []contracts.Bootstrapper
-
-	excludeTags   []string
-	excludeBoots  []contracts.Bootstrapper
+	plugins       map[string]contracts.PluginInterface
+	oidcProvider  contracts.OidcConfig
+	uploader      contracts.Uploader
 	localUploader contracts.Uploader
+	auth          contracts.AuthInterface
+
+	cronManager contracts.CronManager
+	cache       contracts.CacheInterface
+
+	cacheLock contracts.Locker
+	sf        *singleflight.Group
+	tracer    trace.Tracer
+
+	mustBooted   []contracts.Bootstrapper
+	excludeTags  []string
+	excludeBoots []contracts.Bootstrapper
 }
 
 func (app *Application) CacheLock() contracts.Locker {

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/duc-cnzj/mars/internal/utils"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/minio/minio-go/v7"
@@ -24,7 +26,7 @@ func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, roo
 	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
-func (s *S3) Type() contracts.UploadType{
+func (s *S3) Type() contracts.UploadType {
 	return contracts.S3
 }
 
@@ -160,6 +162,7 @@ func (s *S3) NewFile(path string) (contracts.File, error) {
 }
 
 type s3File struct {
+	utils.Closeable
 	localUploader contracts.Uploader
 	s3            *S3
 	contracts.File
@@ -171,19 +174,21 @@ func (s *s3File) Name() string {
 }
 
 func (s *s3File) Close() error {
-	s.File.Close()
-	defer s.localUploader.Delete(s.File.Name())
-	open, err := s.localUploader.Read(s.File.Name())
-	if err != nil {
+	if s.Closeable.Close() {
+		s.File.Close()
+		defer s.localUploader.Delete(s.File.Name())
+		open, err := s.localUploader.Read(s.File.Name())
+		if err != nil {
+			return err
+		}
+		defer open.Close()
+		_, err = s.s3.put(s.name, s.File.Name())
+		if err != nil {
+			mlog.Error(err)
+		}
 		return err
 	}
-	defer open.Close()
-	_, err = s.s3.put(s.name, s.File.Name())
-	if err != nil {
-		mlog.Error(err)
-	}
-
-	return err
+	return nil
 }
 
 func (s *S3) getPath(path string) string {

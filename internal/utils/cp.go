@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -33,44 +35,45 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	var (
 		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 		reader, outStream = io.Pipe()
+		uploader          = app.Uploader()
+		localUploader     = app.LocalUploader()
 	)
 	if targetContainerDir == "" {
 		targetContainerDir = "/tmp"
 	}
-	st, err := app.Uploader().Stat(fpath)
+	st, err := uploader.Stat(fpath)
 	if err != nil {
-		mlog.Error(err)
 		return nil, err
 	}
-	if uint64(st.Size()) > app.Config().MaxUploadSize() {
+	if st.Size() > app.Config().MaxUploadSize() {
 		return nil, fmt.Errorf("最大不得超过 %s, 你上传的文件大小是 %s", humanize.Bytes(app.Config().MaxUploadSize()), humanize.Bytes(uint64(st.Size())))
 	}
 
-	base := filepath.Base(fpath)
-	dir := filepath.Dir(fpath)
-	path := filepath.Join(dir, base+".tar.gz")
+	baseName := filepath.Base(fpath)
+	path := filepath.Join(filepath.Dir(fpath), baseName+".tar.gz")
 	mlog.Debugf("[CopyFileToPod]: %v", path)
-	read, err := app.Uploader().Read(fpath)
-	if err != nil {
-		return nil, err
-	}
-	defer read.Close()
-	var srcPath string = fpath + ".archive"
-	if !localUploader().Exists(srcPath) {
-		put, err := localUploader().Put(srcPath, read)
+	var srcPath string = fpath
+	// 如果是非 local 类型的，需要远程下载到 local 进行打包，再上传到容器
+	if uploader.Type() != contracts.Local {
+		read, err := uploader.Read(fpath)
+		if err != nil {
+			return nil, err
+		}
+		defer read.Close()
+		srcPath = fpath + ".remote"
+		put, err := localUploader.Put(srcPath, read)
 		if err != nil {
 			return nil, err
 		}
 		srcPath = put.Path()
+		defer localUploader.Delete(srcPath)
 	}
 	if err := archiver.Archive([]string{srcPath}, path); err != nil {
 		return nil, err
 	}
 	defer os.Remove(path)
-	defer localUploader().Delete(srcPath)
 	src, err := os.Open(path)
 	if err != nil {
-		mlog.Error(err)
 		return nil, err
 	}
 	go func(reader *io.PipeReader, outStream *io.PipeWriter, src io.ReadCloser) {
@@ -118,7 +121,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		TargetDir:     targetContainerDir,
 		ErrOut:        errbf.String(),
 		StdOut:        outbf.String(),
-		ContainerPath: filepath.Join(targetContainerDir, base),
-		FileName:      base,
+		ContainerPath: filepath.Join(targetContainerDir, baseName),
+		FileName:      baseName,
 	}, err
 }

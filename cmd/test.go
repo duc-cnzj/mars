@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 	"strings"
+
+	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
 
 	"github.com/duc-cnzj/mars/internal/app"
 	"github.com/duc-cnzj/mars/internal/config"

@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/uploader"
 
 	"github.com/minio/minio-go/v7"
@@ -35,5 +36,6 @@ func (s *S3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 	}
 	app.Config().UploadDir = "data"
 	app.SetUploader(uploader.NewS3(minioClient, "mars", app.LocalUploader(), app.Config().UploadDir))
+	mlog.Info("s3 uploader booted!")
 	return nil
 }
