@@ -275,246 +275,6 @@ var _ interface {
 	ErrorName() string
 } = DeleteResponseValidationError{}
 
-// Validate checks the field values on DeleteUndocumentedFilesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteUndocumentedFilesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteUndocumentedFilesRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// DeleteUndocumentedFilesRequestMultiError, or nil if none found.
-func (m *DeleteUndocumentedFilesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteUndocumentedFilesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DeleteUndocumentedFilesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteUndocumentedFilesRequestMultiError is an error wrapping multiple
-// validation errors returned by DeleteUndocumentedFilesRequest.ValidateAll()
-// if the designated constraints aren't met.
-type DeleteUndocumentedFilesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteUndocumentedFilesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteUndocumentedFilesRequestMultiError) AllErrors() []error { return m }
-
-// DeleteUndocumentedFilesRequestValidationError is the validation error
-// returned by DeleteUndocumentedFilesRequest.Validate if the designated
-// constraints aren't met.
-type DeleteUndocumentedFilesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteUndocumentedFilesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteUndocumentedFilesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteUndocumentedFilesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteUndocumentedFilesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteUndocumentedFilesRequestValidationError) ErrorName() string {
-	return "DeleteUndocumentedFilesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteUndocumentedFilesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteUndocumentedFilesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteUndocumentedFilesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteUndocumentedFilesRequestValidationError{}
-
-// Validate checks the field values on DeleteUndocumentedFilesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteUndocumentedFilesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteUndocumentedFilesResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// DeleteUndocumentedFilesResponseMultiError, or nil if none found.
-func (m *DeleteUndocumentedFilesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteUndocumentedFilesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetItems() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, DeleteUndocumentedFilesResponseValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, DeleteUndocumentedFilesResponseValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return DeleteUndocumentedFilesResponseValidationError{
-					field:  fmt.Sprintf("Items[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return DeleteUndocumentedFilesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteUndocumentedFilesResponseMultiError is an error wrapping multiple
-// validation errors returned by DeleteUndocumentedFilesResponse.ValidateAll()
-// if the designated constraints aren't met.
-type DeleteUndocumentedFilesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteUndocumentedFilesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteUndocumentedFilesResponseMultiError) AllErrors() []error { return m }
-
-// DeleteUndocumentedFilesResponseValidationError is the validation error
-// returned by DeleteUndocumentedFilesResponse.Validate if the designated
-// constraints aren't met.
-type DeleteUndocumentedFilesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteUndocumentedFilesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteUndocumentedFilesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteUndocumentedFilesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteUndocumentedFilesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteUndocumentedFilesResponseValidationError) ErrorName() string {
-	return "DeleteUndocumentedFilesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteUndocumentedFilesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteUndocumentedFilesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteUndocumentedFilesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteUndocumentedFilesResponseValidationError{}
-
 // Validate checks the field values on DiskInfoRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -980,3 +740,211 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListResponseValidationError{}
+
+// Validate checks the field values on MaxUploadSizeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MaxUploadSizeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MaxUploadSizeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MaxUploadSizeRequestMultiError, or nil if none found.
+func (m *MaxUploadSizeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MaxUploadSizeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return MaxUploadSizeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MaxUploadSizeRequestMultiError is an error wrapping multiple validation
+// errors returned by MaxUploadSizeRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MaxUploadSizeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MaxUploadSizeRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MaxUploadSizeRequestMultiError) AllErrors() []error { return m }
+
+// MaxUploadSizeRequestValidationError is the validation error returned by
+// MaxUploadSizeRequest.Validate if the designated constraints aren't met.
+type MaxUploadSizeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MaxUploadSizeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MaxUploadSizeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MaxUploadSizeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MaxUploadSizeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MaxUploadSizeRequestValidationError) ErrorName() string {
+	return "MaxUploadSizeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MaxUploadSizeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMaxUploadSizeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MaxUploadSizeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MaxUploadSizeRequestValidationError{}
+
+// Validate checks the field values on MaxUploadSizeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MaxUploadSizeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MaxUploadSizeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MaxUploadSizeResponseMultiError, or nil if none found.
+func (m *MaxUploadSizeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MaxUploadSizeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HumanizeSize
+
+	// no validation rules for Bytes
+
+	if len(errors) > 0 {
+		return MaxUploadSizeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MaxUploadSizeResponseMultiError is an error wrapping multiple validation
+// errors returned by MaxUploadSizeResponse.ValidateAll() if the designated
+// constraints aren't met.
+type MaxUploadSizeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MaxUploadSizeResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MaxUploadSizeResponseMultiError) AllErrors() []error { return m }
+
+// MaxUploadSizeResponseValidationError is the validation error returned by
+// MaxUploadSizeResponse.Validate if the designated constraints aren't met.
+type MaxUploadSizeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MaxUploadSizeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MaxUploadSizeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MaxUploadSizeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MaxUploadSizeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MaxUploadSizeResponseValidationError) ErrorName() string {
+	return "MaxUploadSizeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MaxUploadSizeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMaxUploadSizeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MaxUploadSizeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MaxUploadSizeResponseValidationError{}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 
 	"github.com/golang/mock/gomock"
@@ -25,4 +26,12 @@ func TestMockApp(t *testing.T) {
 	defer m.Finish()
 	a := MockApp(m)
 	assert.Same(t, app.App(), a)
+}
+
+func TestAssertAuditLogFired(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	a := MockApp(m)
+	AssertAuditLogFired(m, a)
+	a.EventDispatcher().Dispatch(events.EventAuditLog, nil)
 }

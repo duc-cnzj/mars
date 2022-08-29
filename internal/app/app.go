@@ -43,33 +43,32 @@ var MustBooted = []contracts.Bootstrapper{
 }
 
 type Application struct {
-	done          context.Context
+	done   context.Context
+	config *config.Config
+
 	doneFunc      func()
-	config        *config.Config
-	clientSet     *contracts.K8sClient
-	dbManager     contracts.DBManager
-	dispatcher    contracts.DispatcherInterface
 	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
+	mustBooted    []contracts.Bootstrapper
+	excludeBoots  []contracts.Bootstrapper
+	excludeTags   []string
 
 	hooksMu sync.RWMutex
 	hooks   map[Hook][]contracts.Callback
 
-	plugins      map[string]contracts.PluginInterface
-	oidcProvider contracts.OidcConfig
-	uploader     contracts.Uploader
-	auth         contracts.AuthInterface
-	cronManager  contracts.CronManager
-
-	cache     contracts.CacheInterface
-	cacheLock contracts.Locker
-
-	sf         *singleflight.Group
-	tracer     trace.Tracer
-	mustBooted []contracts.Bootstrapper
-
-	excludeTags  []string
-	excludeBoots []contracts.Bootstrapper
+	uploader      contracts.Uploader
+	localUploader contracts.Uploader
+	plugins       map[string]contracts.PluginInterface
+	oidcProvider  contracts.OidcConfig
+	auth          contracts.AuthInterface
+	clientSet     *contracts.K8sClient
+	dbManager     contracts.DBManager
+	dispatcher    contracts.DispatcherInterface
+	cronManager   contracts.CronManager
+	cache         contracts.CacheInterface
+	cacheLock     contracts.Locker
+	tracer        trace.Tracer
+	sf            *singleflight.Group
 }
 
 func (app *Application) CacheLock() contracts.Locker {
@@ -107,6 +106,13 @@ func (app *Application) SetAuth(auth contracts.AuthInterface) {
 	app.auth = auth
 }
 
+func (app *Application) SetLocalUploader(uploader contracts.Uploader) {
+	app.localUploader = uploader
+}
+
+func (app *Application) LocalUploader() contracts.Uploader {
+	return app.localUploader
+}
 func (app *Application) SetUploader(uploader contracts.Uploader) {
 	app.uploader = uploader
 }
@@ -181,6 +187,7 @@ func WithExcludeTags(tags ...string) Option {
 
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
+
 	app := &Application{
 		mustBooted: MustBooted,
 		config:     config,

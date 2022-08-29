@@ -31,7 +31,7 @@ func TestDownloadFiles(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
-	app.EXPECT().Uploader().Return(up).AnyTimes()
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
 	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
 	up.EXPECT().AbsolutePath(gomock.Any()).Return("/tmp")
 

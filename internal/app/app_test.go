@@ -253,6 +253,15 @@ func TestApplication_Uploader(t *testing.T) {
 	assert.Same(t, up, a.Uploader())
 }
 
+func TestApplication_LocalUploader(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	a := NewApplication(&config.Config{})
+	up := mock.NewMockUploader(m)
+	a.SetLocalUploader(up)
+	assert.Same(t, up, a.LocalUploader())
+}
+
 func TestApplication_Singleflight(t *testing.T) {
 	a := NewApplication(&config.Config{})
 	assert.Same(t, a.Singleflight(), a.Singleflight())

@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const DefaultMaxUploadSize = "50M"
+
 type Plugin struct {
 	Name string         `mapstructure:"name"`
 	Args map[string]any `mapstructure:"args"`
@@ -74,6 +76,11 @@ type Config struct {
 
 	UploadDir     string `mapstructure:"upload_dir"`
 	UploadMaxSize string `mapstructure:"upload_max_size"`
+
+	S3Endpoint        string `mapstructure:"s3_endpoint"`
+	S3AccessKeyID     string `mapstructure:"s3_access_key_id"`
+	S3SecretAccessKey string `mapstructure:"s3_secret_access_key"`
+	S3UseSSL          bool   `mapstructure:"s3_use_ssl"`
 
 	KubeConfig string `mapstructure:"kubeconfig"`
 	NsPrefix   string `mapstructure:"ns_prefix"`
@@ -153,7 +160,7 @@ func Init(cfgFile string) *Config {
 	}
 
 	if cfg.UploadMaxSize == "" {
-		cfg.UploadMaxSize = "50Mi"
+		cfg.UploadMaxSize = DefaultMaxUploadSize
 	}
 
 	return cfg
@@ -162,7 +169,7 @@ func Init(cfgFile string) *Config {
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)
 	if err != nil {
-		parseBytes, _ := humanize.ParseBytes("50Mi")
+		parseBytes, _ := humanize.ParseBytes(DefaultMaxUploadSize)
 		return parseBytes
 	}
 	return bytes

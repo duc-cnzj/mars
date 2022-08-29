@@ -9,15 +9,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/file"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
 )
@@ -67,7 +64,7 @@ func (m *File) List(ctx context.Context, request *file.ListRequest) (*file.ListR
 }
 
 func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
-	size, err := app.Uploader().DirSize(app.Config().UploadDir)
+	size, err := app.Uploader().DirSize()
 	if err != nil {
 		return nil, err
 	}
@@ -75,57 +72,6 @@ func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*fi
 		Usage:         size,
 		HumanizeUsage: humanize.Bytes(uint64(size)),
 	}, nil
-}
-
-type listFiles []*types.FileModel
-
-type item struct {
-	Name string `yaml:"name"`
-	Size string `yaml:"size"`
-}
-
-func (l listFiles) PrettyYaml() string {
-	var items = make([]item, 0, len(l))
-	for _, f := range l {
-		items = append(items, item{
-			Name: f.Path,
-			Size: f.HumanizeSize,
-		})
-	}
-	marshal, _ := yaml.Marshal(items)
-	return string(marshal)
-}
-
-func (m *File) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUndocumentedFilesRequest) (*file.DeleteUndocumentedFilesResponse, error) {
-	var (
-		files       []models.File
-		mapFilePath = make(map[string]struct{})
-
-		clearList = make(listFiles, 0)
-	)
-
-	app.DB().Select("ID", "Path").Find(&files)
-	for _, f := range files {
-		mapFilePath[f.Path] = struct{}{}
-	}
-
-	directoryFiles, _ := app.Uploader().AllDirectoryFiles(app.Config().UploadDir)
-	for _, directoryFile := range directoryFiles {
-		if _, ok := mapFilePath[directoryFile.Path()]; !ok {
-			clearList = append(clearList, &types.FileModel{
-				Path:         directoryFile.Path(),
-				HumanizeSize: humanize.Bytes(directoryFile.Size()),
-				Size:         int64(directoryFile.Size()),
-			})
-			if err := app.Uploader().Delete(directoryFile.Path()); err != nil {
-				mlog.Error(err)
-			}
-		}
-	}
-	app.Uploader().RemoveEmptyDir(app.Config().UploadDir)
-	events.AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete, "删除未被记录的文件", clearList, nil)
-
-	return &file.DeleteUndocumentedFilesResponse{Items: clearList}, nil
 }
 
 func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {
@@ -145,7 +91,18 @@ func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.Del
 	return &file.DeleteResponse{}, nil
 }
 
+func (*File) MaxUploadSize(ctx context.Context, request *file.MaxUploadSizeRequest) (*file.MaxUploadSizeResponse, error) {
+	return &file.MaxUploadSizeResponse{
+		HumanizeSize: humanize.Bytes(app.Config().MaxUploadSize()),
+		Bytes:        app.Config().MaxUploadSize(),
+	}, nil
+}
+
 func (m *File) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if fullMethodName == "MaxUploadSize" {
+		return ctx, nil
+	}
+
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}

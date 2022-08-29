@@ -107,7 +107,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 	db.AutoMigrate(&models.File{})
 	file := &models.File{}
 	db.Create(file)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 	res, err := (&Container{
 		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
 			return &utils.CopyFileToPodResult{
@@ -765,13 +765,14 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
 
 	up := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 	app.EXPECT().Uploader().Return(up).AnyTimes()
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.File{})
 	file := &models.File{}
 	db.Create(file)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	up.EXPECT().Disk(gomock.Any()).Return(up)
 	up.EXPECT().AbsolutePath(gomock.Any()).Return("/tmp/aa.txt")

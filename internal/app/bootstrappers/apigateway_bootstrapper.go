@@ -83,8 +83,6 @@ func HeaderMatcher(key string) (string, bool) {
 	}
 }
 func (a *apiGateway) Run(ctx context.Context) error {
-	mlog.Infof("[Server]: start apiGateway runner at %s.", a.endpoint)
-
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
@@ -137,7 +135,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	a.server = s
 
 	go func(s *http.Server) {
-		mlog.Info("api-gateway start at ", s.Addr)
+		mlog.Infof("[Server]: start apiGateway runner at %s.", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
@@ -196,9 +194,14 @@ func handFile(gmux *runtime.ServeMux) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			file, err := os.ReadFile(f.Path)
+			read, err := app.Uploader().Read(f.Path)
 			if err == nil {
-				w.Write(file)
+				all, _ := io.ReadAll(read)
+				w.Write(all)
+				return
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				http.Error(w, err.Error(), http.StatusNotFound)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -225,7 +228,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
-	open, err := os.Open(fil.Path)
+	read, err := app.Uploader().Read(fil.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "file not found", http.StatusNotFound)
@@ -235,9 +238,9 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	defer open.Close()
+	defer read.Close()
 
-	download(w, fileName, open)
+	download(w, fileName, read)
 }
 
 func download(w http.ResponseWriter, filename string, reader io.Reader) {
@@ -289,7 +292,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file := models.File{Path: put.Path(), Username: info.Name, Size: put.Size()}
+	file := models.File{Path: put.Path(), Username: info.Name, Size: put.Size(), UploadType: uploader.Type()}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

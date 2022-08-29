@@ -219,7 +219,7 @@ func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {
 		GlobalConfig:  string(marshal),
 	}
 	db.Create(p)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 	_, err := new(GitConfigSvc).ToggleGlobalStatus(adminCtx(), &gitconfig.ToggleGlobalStatusRequest{
 		GitProjectId: 11,
 		Enabled:      false,
@@ -268,7 +268,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 		ValuesYaml:       "",
 		Elements:         nil,
 	}
-	d := assertAuditLogFired(m, app)
+	d := testutil.AssertAuditLogFired(m, app)
 	update, err := new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,

@@ -262,7 +262,7 @@ func TestProjectSvc_Delete(t *testing.T) {
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{Namespace: models.Namespace{Name: "test"}, Name: "app"}
 	db.Create(p)
-	d := assertAuditLogFired(m, app)
+	d := testutil.AssertAuditLogFired(m, app)
 	assert.False(t, p.DeletedAt.Valid)
 	d.EXPECT().Dispatch(events.EventProjectDeleted, gomock.Any()).Times(1)
 	h := mock.NewMockHelmer(m)

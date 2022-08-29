@@ -73,7 +73,7 @@ func TestAuthSvc_Login(t *testing.T) {
 	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
 	svc := NewAuthSvc(authSvc, nil, "admin", nil)
 	app := testutil.MockApp(m)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 	login, err := svc.Login(context.TODO(), &auth.LoginRequest{
 		Username: "admin",
 		Password: "admin",
@@ -187,7 +187,7 @@ func TestAuthSvc_Exchange(t *testing.T) {
 		ExpiredIn: 100,
 	}, nil).Times(1)
 	app := testutil.MockApp(m)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 	exchange, err := NewAuthSvc(asvc, contracts.OidcConfig{
 		"a": {
 			Provider:           nil,

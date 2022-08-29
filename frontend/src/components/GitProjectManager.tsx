@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, memo } from "react";
 import { disabledProject, enabledProject, allProjects } from "../api/git";
 import { CopyOutlined } from "@ant-design/icons";
 import { copy } from "../utils/copy";
+import { maxUploadSize } from "../api/file";
 import {
   List,
   Avatar,
@@ -24,7 +25,10 @@ const GitProjectManager: React.FC = () => {
   const [list, setList] = useState<pb.git.ProjectItem[]>([]);
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
-
+  const [maxUploadInfo, setMaxUploadInfo] = useState({
+    bytes: 0,
+    humanizeSize: "",
+  });
   const fetchList = useCallback(() => {
     return allProjects()
       .then((res) => {
@@ -32,6 +36,15 @@ const GitProjectManager: React.FC = () => {
       })
       .catch((e) => message.error(e.response.data.message));
   }, [setList]);
+
+  useEffect(() => {
+    maxUploadSize().then(({ data }) => {
+      setMaxUploadInfo({
+        bytes: data.bytes,
+        humanizeSize: data.humanize_size,
+      });
+    });
+  }, []);
 
   useEffect(() => {
     fetchList().then(() => {
@@ -78,15 +91,23 @@ const GitProjectManager: React.FC = () => {
   );
 
   const [loading, setLoading] = useState(false);
-  const beforeUpload = useCallback((file: any) => {
-    const isLt50M = file.size / 1024 / 1024 <= 50;
-    if (!isLt50M) {
-      message.error("文件最大不能超过 50MB!");
-    }
-    setLoading(isLt50M);
 
-    return isLt50M;
-  }, []);
+  const beforeUpload = useCallback(
+    (file: any) => {
+      if (maxUploadInfo.bytes === 0) {
+        return true;
+      }
+      const isLtMaxSize = file.size <= maxUploadInfo.bytes;
+      if (!isLtMaxSize) {
+        message.error(`文件最大不能超过 ${maxUploadInfo.humanizeSize}!`);
+      }
+      setLoading(isLtMaxSize);
+
+      return isLtMaxSize;
+    },
+    [maxUploadInfo]
+  );
+
   const props = {
     name: "file",
     beforeUpload: beforeUpload,

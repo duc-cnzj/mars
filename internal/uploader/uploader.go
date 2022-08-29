@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -55,9 +56,13 @@ func (u *Uploader) root() string {
 	return u.rootDir
 }
 
+func (u *Uploader) Type() contracts.UploadType {
+	return contracts.Local
+}
+
 func (u *Uploader) Disk(s string) contracts.Uploader {
 	return &Uploader{
-		rootDir: u.rootDir,
+		rootDir: u.root(),
 		disk:    s,
 	}
 }
@@ -79,12 +84,9 @@ func (u *Uploader) Delete(path string) error {
 	return os.Remove(u.getPath(path))
 }
 
-func (u *Uploader) DirSize(dir string) (int64, error) {
+func (u *Uploader) DirSize() (int64, error) {
 	var size int64
-	exists := u.DirExists(dir)
-	if !exists {
-		return 0, nil
-	}
+	dir := u.root()
 	if err := filepath.Walk(u.getPath(dir), func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			size += info.Size()
@@ -123,8 +125,13 @@ func dirExists(dir string) bool {
 }
 
 type fileInfo struct {
-	path string
-	size uint64
+	path         string
+	size         uint64
+	lastModified time.Time
+}
+
+func NewFileInfo[T uint64 | int64 | int](path string, size T, lastModified time.Time) *fileInfo {
+	return &fileInfo{path: path, size: uint64(size), lastModified: lastModified}
 }
 
 func (f *fileInfo) Path() string {
@@ -135,9 +142,28 @@ func (f *fileInfo) Size() uint64 {
 	return f.size
 }
 
-func (u *Uploader) RemoveEmptyDir(dir string) error {
+func (f *fileInfo) LastModified() time.Time {
+	return f.lastModified
+}
+
+func (u *Uploader) Read(file string) (io.ReadCloser, error) {
+	return os.Open(u.getPath(file))
+}
+
+func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
+	fpath := u.getPath(file)
+	stat, err := os.Stat(fpath)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFileInfo(fpath, stat.Size(), stat.ModTime()), nil
+}
+
+func (u *Uploader) RemoveEmptyDir() error {
 	var dirs []string
-	filepath.WalkDir(u.getPath(dir), func(path string, d fs.DirEntry, err error) error {
+	dir := u.root()
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			dirs = append(dirs, path)
 		}
@@ -166,10 +192,7 @@ func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 				return err
 			}
 			if !info.IsDir() {
-				files = append(files, &fileInfo{
-					path: path,
-					size: uint64(info.Size()),
-				})
+				files = append(files, NewFileInfo(path, info.Size(), info.ModTime()))
 			}
 			return nil
 		})
@@ -202,10 +225,7 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 	}
 	stat, _ := create.Stat()
 
-	return &fileInfo{
-		path: create.Name(),
-		size: uint64(stat.Size()),
-	}, nil
+	return NewFileInfo(create.Name(), stat.Size(), stat.ModTime()), nil
 }
 
 func (u *Uploader) NewFile(path string) (contracts.File, error) {

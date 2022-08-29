@@ -21,11 +21,18 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.18'
+      - name: Setup minio
+        run: |
+          docker run -d -p 9000:9000 --name minio \
+            -e "MINIO_ACCESS_KEY=minioadmin" \
+            -e "MINIO_SECRET_KEY=minioadmin" \
+            minio/minio server /data
       - name: Run coverage
         env:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USERNAME: root
           DB_DATABASE: test
+          S3_ENDPOINT: localhost:9000
         run: |
           mkdir frontend/build && touch frontend/build/dummy
           go test ./... -race -coverprofile=coverage.txt -covermode=atomic

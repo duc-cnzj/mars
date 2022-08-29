@@ -273,6 +273,20 @@ func (mr *MockApplicationInterfaceMockRecorder) K8sClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "K8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).K8sClient))
 }
 
+// LocalUploader mocks base method.
+func (m *MockApplicationInterface) LocalUploader() contracts.Uploader {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LocalUploader")
+	ret0, _ := ret[0].(contracts.Uploader)
+	return ret0
+}
+
+// LocalUploader indicates an expected call of LocalUploader.
+func (mr *MockApplicationInterfaceMockRecorder) LocalUploader() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalUploader", reflect.TypeOf((*MockApplicationInterface)(nil).LocalUploader))
+}
+
 // Oidc mocks base method.
 func (m *MockApplicationInterface) Oidc() contracts.OidcConfig {
 	m.ctrl.T.Helper()
@@ -395,6 +409,18 @@ func (m *MockApplicationInterface) SetK8sClient(arg0 *contracts.K8sClient) {
 func (mr *MockApplicationInterfaceMockRecorder) SetK8sClient(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetK8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).SetK8sClient), arg0)
+}
+
+// SetLocalUploader mocks base method.
+func (m *MockApplicationInterface) SetLocalUploader(arg0 contracts.Uploader) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLocalUploader", arg0)
+}
+
+// SetLocalUploader indicates an expected call of SetLocalUploader.
+func (mr *MockApplicationInterfaceMockRecorder) SetLocalUploader(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLocalUploader", reflect.TypeOf((*MockApplicationInterface)(nil).SetLocalUploader), arg0)
 }
 
 // SetOidc mocks base method.

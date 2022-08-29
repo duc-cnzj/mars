@@ -62,6 +62,14 @@ func TestEventSvc_List(t *testing.T) {
 	})
 	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
 	assert.Equal(t, int64(f.ID), list.Items[0].File.Id)
+	db.Delete(&f)
+	list, _ = e.List(context.TODO(), &event.ListRequest{
+		Page:       1,
+		PageSize:   2,
+		ActionType: types.EventActionType_Delete,
+	})
+	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
+	assert.Nil(t, list.Items[0].File)
 
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:     1,

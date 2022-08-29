@@ -31,6 +31,7 @@ var ServerBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
 	&bootstrappers.AppBootstrapper{},
+	&bootstrappers.S3UploaderBootstraper{},
 }
 
 var apiGatewayCmd = &cobra.Command{

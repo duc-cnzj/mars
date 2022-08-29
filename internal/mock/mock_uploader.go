@@ -93,18 +93,18 @@ func (mr *MockUploaderMockRecorder) DeleteDir(arg0 any) *gomock.Call {
 }
 
 // DirSize mocks base method.
-func (m *MockUploader) DirSize(arg0 string) (int64, error) {
+func (m *MockUploader) DirSize() (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DirSize", arg0)
+	ret := m.ctrl.Call(m, "DirSize")
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DirSize indicates an expected call of DirSize.
-func (mr *MockUploaderMockRecorder) DirSize(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) DirSize() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DirSize", reflect.TypeOf((*MockUploader)(nil).DirSize), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DirSize", reflect.TypeOf((*MockUploader)(nil).DirSize))
 }
 
 // Disk mocks base method.
@@ -179,16 +179,60 @@ func (mr *MockUploaderMockRecorder) Put(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockUploader)(nil).Put), arg0, arg1)
 }
 
-// RemoveEmptyDir mocks base method.
-func (m *MockUploader) RemoveEmptyDir(arg0 string) error {
+// Read mocks base method.
+func (m *MockUploader) Read(arg0 string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveEmptyDir", arg0)
+	ret := m.ctrl.Call(m, "Read", arg0)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Read indicates an expected call of Read.
+func (mr *MockUploaderMockRecorder) Read(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockUploader)(nil).Read), arg0)
+}
+
+// RemoveEmptyDir mocks base method.
+func (m *MockUploader) RemoveEmptyDir() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveEmptyDir")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveEmptyDir indicates an expected call of RemoveEmptyDir.
-func (mr *MockUploaderMockRecorder) RemoveEmptyDir(arg0 any) *gomock.Call {
+func (mr *MockUploaderMockRecorder) RemoveEmptyDir() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveEmptyDir", reflect.TypeOf((*MockUploader)(nil).RemoveEmptyDir), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveEmptyDir", reflect.TypeOf((*MockUploader)(nil).RemoveEmptyDir))
+}
+
+// Stat mocks base method.
+func (m *MockUploader) Stat(arg0 string) (contracts.FileInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stat", arg0)
+	ret0, _ := ret[0].(contracts.FileInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Stat indicates an expected call of Stat.
+func (mr *MockUploaderMockRecorder) Stat(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockUploader)(nil).Stat), arg0)
+}
+
+// Type mocks base method.
+func (m *MockUploader) Type() contracts.UploadType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Type")
+	ret0, _ := ret[0].(contracts.UploadType)
+	return ret0
+}
+
+// Type indicates an expected call of Type.
+func (mr *MockUploaderMockRecorder) Type() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*MockUploader)(nil).Type))
 }

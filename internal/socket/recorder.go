@@ -82,7 +82,10 @@ func (r *Recorder) Write(data string) (err error) {
 func (r *Recorder) Close() error {
 	r.RLock()
 	defer r.RUnlock()
-	var err error
+	var (
+		err      error
+		uploader = app.Uploader()
+	)
 	if r.f == nil || r.startTime.IsZero() {
 		return nil
 	}
@@ -90,12 +93,13 @@ func (r *Recorder) Close() error {
 	var emptyFile bool = true
 	if stat.Size() > 0 {
 		file := &models.File{
-			Path:      r.filepath,
-			Size:      uint64(stat.Size()),
-			Username:  r.t.conn.GetUser().Name,
-			Namespace: r.container.Namespace,
-			Pod:       r.container.Pod,
-			Container: r.container.Container,
+			UploadType: uploader.Type(),
+			Path:       r.filepath,
+			Size:       uint64(stat.Size()),
+			Username:   r.t.conn.GetUser().Name,
+			Namespace:  r.container.Namespace,
+			Pod:        r.container.Pod,
+			Container:  r.container.Container,
 		}
 		app.DB().Create(file)
 		var emodal = models.Event{
@@ -111,7 +115,7 @@ func (r *Recorder) Close() error {
 	}
 	err = r.f.Close()
 	if emptyFile {
-		app.Uploader().Delete(r.f.Name())
+		uploader.Delete(r.f.Name())
 	}
 	return err
 }

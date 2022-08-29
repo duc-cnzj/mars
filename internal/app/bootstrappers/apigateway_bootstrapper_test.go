@@ -164,6 +164,7 @@ binary data
 	rr2 := httptest.NewRecorder()
 
 	up := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.Local)
 	app.EXPECT().Uploader().Return(up)
 	up.EXPECT().Disk("users").Return(up)
 	finfo := mock.NewMockFileInfo(m)

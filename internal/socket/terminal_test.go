@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"k8s.io/client-go/tools/remotecommand"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
@@ -26,6 +28,8 @@ func TestHandleExecShell(t *testing.T) {}
 func TestMyPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Uploader().Return(nil).AnyTimes()
 	ps := mock.NewMockPubSub(m)
 	p := &MyPtyHandler{
 		id:       "duc",

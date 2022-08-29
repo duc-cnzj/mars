@@ -27,10 +27,9 @@ type FileClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	//  删除文件
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
-	//  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
-	DeleteUndocumentedFiles(ctx context.Context, in *DeleteUndocumentedFilesRequest, opts ...grpc.CallOption) (*DeleteUndocumentedFilesResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error)
+	MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest, opts ...grpc.CallOption) (*MaxUploadSizeResponse, error)
 }
 
 type fileClient struct {
@@ -59,18 +58,18 @@ func (c *fileClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc
 	return out, nil
 }
 
-func (c *fileClient) DeleteUndocumentedFiles(ctx context.Context, in *DeleteUndocumentedFilesRequest, opts ...grpc.CallOption) (*DeleteUndocumentedFilesResponse, error) {
-	out := new(DeleteUndocumentedFilesResponse)
-	err := c.cc.Invoke(ctx, "/file.File/DeleteUndocumentedFiles", in, out, opts...)
+func (c *fileClient) DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error) {
+	out := new(DiskInfoResponse)
+	err := c.cc.Invoke(ctx, "/file.File/DiskInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileClient) DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error) {
-	out := new(DiskInfoResponse)
-	err := c.cc.Invoke(ctx, "/file.File/DiskInfo", in, out, opts...)
+func (c *fileClient) MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest, opts ...grpc.CallOption) (*MaxUploadSizeResponse, error) {
+	out := new(MaxUploadSizeResponse)
+	err := c.cc.Invoke(ctx, "/file.File/MaxUploadSize", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,10 +84,9 @@ type FileServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	//  删除文件
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
-	//  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
-	DeleteUndocumentedFiles(context.Context, *DeleteUndocumentedFilesRequest) (*DeleteUndocumentedFilesResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error)
+	MaxUploadSize(context.Context, *MaxUploadSizeRequest) (*MaxUploadSizeResponse, error)
 	mustEmbedUnimplementedFileServer()
 }
 
@@ -102,11 +100,11 @@ func (UnimplementedFileServer) List(context.Context, *ListRequest) (*ListRespons
 func (UnimplementedFileServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedFileServer) DeleteUndocumentedFiles(context.Context, *DeleteUndocumentedFilesRequest) (*DeleteUndocumentedFilesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteUndocumentedFiles not implemented")
-}
 func (UnimplementedFileServer) DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiskInfo not implemented")
+}
+func (UnimplementedFileServer) MaxUploadSize(context.Context, *MaxUploadSizeRequest) (*MaxUploadSizeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MaxUploadSize not implemented")
 }
 func (UnimplementedFileServer) mustEmbedUnimplementedFileServer() {}
 
@@ -157,24 +155,6 @@ func _File_Delete_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-func _File_DeleteUndocumentedFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteUndocumentedFilesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileServer).DeleteUndocumentedFiles(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/file.File/DeleteUndocumentedFiles",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServer).DeleteUndocumentedFiles(ctx, req.(*DeleteUndocumentedFilesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _File_DiskInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiskInfoRequest)
 	if err := dec(in); err != nil {
@@ -189,6 +169,24 @@ func _File_DiskInfo_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FileServer).DiskInfo(ctx, req.(*DiskInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_MaxUploadSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MaxUploadSizeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).MaxUploadSize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/file.File/MaxUploadSize",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).MaxUploadSize(ctx, req.(*MaxUploadSizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -209,12 +207,12 @@ var File_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _File_Delete_Handler,
 		},
 		{
-			MethodName: "DeleteUndocumentedFiles",
-			Handler:    _File_DeleteUndocumentedFiles_Handler,
-		},
-		{
 			MethodName: "DiskInfo",
 			Handler:    _File_DiskInfo_Handler,
+		},
+		{
+			MethodName: "MaxUploadSize",
+			Handler:    _File_MaxUploadSize_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -49,8 +49,9 @@ func NewCloser(fn func() error) io.Closer {
 }
 
 func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
+	var localUploader = app.LocalUploader()
 	file := fmt.Sprintf("mars-%s-%s.yaml", time.Now().Format("2006-01-02"), RandomString(20))
-	info, err := app.Uploader().Put(file, bytes.NewReader(data))
+	info, err := localUploader.Put(file, bytes.NewReader(data))
 	if err != nil {
 		return "", nil, err
 	}
@@ -58,7 +59,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 
 	return path, NewCloser(func() error {
 		mlog.Debug("delete file: " + path)
-		if err := app.Uploader().Delete(path); err != nil {
+		if err := localUploader.Delete(path); err != nil {
 			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
 			return err
 		}

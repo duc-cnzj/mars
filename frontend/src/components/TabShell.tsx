@@ -20,6 +20,7 @@ import pb from "../api/compiled";
 import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
+import { maxUploadSize } from "../api/file";
 
 const TabShell: React.FC<{
   namespace: string;
@@ -33,6 +34,10 @@ const TabShell: React.FC<{
   const [term, setTerm] = useState<Terminal>();
   const [timestamp, setTimestamp] = useState(new Date().getTime());
   const fitAddon = useMemo(() => new FitAddon(), []);
+  const [maxUploadInfo, setMaxUploadInfo] = useState({
+    bytes: 0,
+    humanizeSize: "",
+  });
 
   const ref = useRef<HTMLDivElement>(null);
   const sessions = useSelector(selectSessions);
@@ -40,6 +45,15 @@ const TabShell: React.FC<{
   const wsReady = useWsReady();
 
   let sname = useMemo(() => namespace + "|" + value, [namespace, value]);
+
+  useEffect(() => {
+    maxUploadSize().then(({ data }) => {
+      setMaxUploadInfo({
+        bytes: data.bytes,
+        humanizeSize: data.humanize_size,
+      });
+    });
+  }, []);
 
   const listContainer = useCallback(
     () =>
@@ -245,15 +259,21 @@ const TabShell: React.FC<{
     [namespace, initShell, listContainer]
   );
 
-  const beforeUpload = useCallback((file: any) => {
-    const isLt50M = file.size / 1024 / 1024 <= 50;
-    if (!isLt50M) {
-      message.error("文件最大不能超过 50MB!");
-    }
-    setLoading(isLt50M);
+  const beforeUpload = useCallback(
+    (file: any) => {
+      if (maxUploadInfo.bytes === 0) {
+        return true;
+      }
+      const isLtMaxSize = file.size <= maxUploadInfo.bytes;
+      if (!isLtMaxSize) {
+        message.error(`文件最大不能超过 ${maxUploadInfo.humanizeSize}!`);
+      }
+      setLoading(isLtMaxSize);
 
-    return isLt50M;
-  }, []);
+      return isLtMaxSize;
+    },
+    [maxUploadInfo]
+  );
 
   const [loading, setLoading] = useState(false);
 
@@ -313,7 +333,12 @@ const TabShell: React.FC<{
             key={item.pod + "|" + item.container}
             value={item.pod + "|" + item.container}
           >
-            {item.container}{item.is_old && <span style={{marginLeft: 2, fontSize: 10, color: "#ef4444"}}>(old)</span>}
+            {item.container}
+            {item.is_old && (
+              <span style={{ marginLeft: 2, fontSize: 10, color: "#ef4444" }}>
+                (old)
+              </span>
+            )}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
               {item.pod}
             </Tag>

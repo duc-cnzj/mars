@@ -5,6 +5,7 @@ package file;
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "types/types.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars-client/v4/file;file";
 
@@ -14,12 +15,6 @@ message DeleteRequest {
 
 message DeleteResponse {
   types.FileModel file = 1;
-}
-
-message DeleteUndocumentedFilesRequest {}
-
-message DeleteUndocumentedFilesResponse {
-  repeated types.FileModel items = 1;
 }
 
 message DiskInfoRequest {}
@@ -42,6 +37,13 @@ message ListResponse{
   int64 count = 4;
 }
 
+message MaxUploadSizeRequest{}
+
+message MaxUploadSizeResponse{
+  string humanize_size = 1;
+  uint64 bytes = 2;
+}
+
 service File {
   //  文件列表
   rpc List(ListRequest) returns (ListResponse) {
@@ -57,17 +59,20 @@ service File {
     };
   }
 
-  //  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
-  rpc DeleteUndocumentedFiles(DeleteUndocumentedFilesRequest) returns(DeleteUndocumentedFilesResponse) {
-    option (google.api.http) = {
-      delete: "/api/files/delete_undocumented_files",
-    };
-  }
-
   // DiskInfo 查看上传文件目录大小
   rpc DiskInfo(DiskInfoRequest) returns (DiskInfoResponse) {
     option (google.api.http) = {
       get: "/api/files/disk_info",
+    };
+  }
+
+  rpc MaxUploadSize(MaxUploadSizeRequest) returns (MaxUploadSizeResponse) {
+    option (google.api.http) = {
+      get: "/api/files/max_upload_size",
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: {} // Disable security key
     };
   }
 }

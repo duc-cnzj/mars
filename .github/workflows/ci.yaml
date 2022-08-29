@@ -38,6 +38,15 @@ jobs:
     needs: [build-frontend]
     name: unittest
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: test
+        ports:
+          - 33306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - uses: actions/checkout@v2
       - name: Download frontend files
@@ -54,6 +63,18 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.18'
+      - name: Setup minio
+        run: |
+          docker run -d -p 9000:9000 --name minio \
+            -e "MINIO_ACCESS_KEY=minioadmin" \
+            -e "MINIO_SECRET_KEY=minioadmin" \
+            minio/minio server /data
+      - name: Run coverage
+        env:
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+          DB_USERNAME: root
+          DB_DATABASE: test
+          S3_ENDPOINT: localhost:9000
       - run: |
           make test
 

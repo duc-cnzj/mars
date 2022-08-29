@@ -203,7 +203,7 @@ func TestGitSvc_DisableProject(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
@@ -236,7 +236,7 @@ func TestGitSvc_DisableProject2(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
@@ -262,7 +262,7 @@ func TestGitSvc_EnableProject(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
@@ -295,7 +295,7 @@ func TestGitSvc_EnableProject2(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	_, err := new(GitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
 		GitProjectId: "123",
@@ -320,7 +320,7 @@ func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 
 	_, err := new(GitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
 		GitProjectId: "123",

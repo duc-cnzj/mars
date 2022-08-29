@@ -7,6 +7,14 @@ package contracts
 import (
 	"io"
 	"os"
+	"time"
+)
+
+type UploadType string
+
+const (
+	Local UploadType = "local"
+	S3    UploadType = "s3"
 )
 
 type File interface {
@@ -19,18 +27,22 @@ type File interface {
 type FileInfo interface {
 	Path() string
 	Size() uint64
+	LastModified() time.Time
 }
 
 type Uploader interface {
 	Disk(string) Uploader
+	Type() UploadType
 	DeleteDir(dir string) error
-	DirSize(dir string) (int64, error)
+	DirSize() (int64, error)
 	Delete(path string) error
 	Exists(path string) bool
 	MkDir(path string, recursive bool) error
 	AbsolutePath(path string) string
 	Put(path string, content io.Reader) (FileInfo, error)
+	Read(string string) (io.ReadCloser, error)
+	Stat(file string) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
 	NewFile(path string) (File, error)
-	RemoveEmptyDir(dir string) error
+	RemoveEmptyDir() error
 }

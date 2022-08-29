@@ -225,10 +225,14 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 	for {
 		recv, err := server.Recv()
 		if err != nil {
-			if err == io.EOF && f != nil {
+			if f != nil {
 				stat, _ := f.Stat()
+				f.Close()
+				if err != io.EOF {
+					return err
+				}
 
-				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
+				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size()), UploadType: updisk.Type()}
 				app.DB().Create(&file)
 				res, err := c.CopyToPod(server.Context(), &container.CopyToPodRequest{
 					FileId:    int64(file.ID),
@@ -249,10 +253,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 					Filename:    res.FileName,
 				})
 			}
-			if f != nil {
-				f.Close()
-				updisk.Delete(f.Name())
-			}
+
 			return err
 		}
 		if fpath == "" {

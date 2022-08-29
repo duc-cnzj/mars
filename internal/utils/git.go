@@ -6,26 +6,26 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 func DownloadFiles(pid any, commit string, files []string) (string, func(), error) {
+	var localUploader = app.LocalUploader()
 	id := fmt.Sprintf("%v", pid)
 	dir := fmt.Sprintf("mars_tmp_%s", RandomString(10))
-	if err := app.Uploader().MkDir(dir, false); err != nil {
+	if err := localUploader.MkDir(dir, false); err != nil {
 		return "", nil, err
 	}
 
-	return DownloadFilesToDir(id, commit, files, app.Uploader().AbsolutePath(dir))
+	return DownloadFilesToDir(id, commit, files, localUploader.AbsolutePath(dir))
 }
 
 func DownloadFilesToDir(pid any, commit string, files []string, dir string) (string, func(), error) {
-	uploader := app.Uploader()
-
+	var localUploader = app.LocalUploader()
 	wg := &sync.WaitGroup{}
 	wg.Add(len(files))
 	for _, file := range files {
@@ -36,8 +36,8 @@ func DownloadFilesToDir(pid any, commit string, files []string, dir string) (str
 			if err != nil {
 				mlog.Error(err)
 			}
-			fp := filepath.Join(dir, file)
-			if _, err := uploader.Put(fp, strings.NewReader(raw)); err != nil {
+			localPath := filepath.Join(dir, file)
+			if _, err := localUploader.Put(localPath, strings.NewReader(raw)); err != nil {
 				mlog.Errorf("[DownloadFilesToDir]: err '%s'", err.Error())
 			}
 		}(file)
@@ -45,7 +45,7 @@ func DownloadFilesToDir(pid any, commit string, files []string, dir string) (str
 	wg.Wait()
 
 	return dir, func() {
-		err := app.Uploader().DeleteDir(dir)
+		err := localUploader.DeleteDir(dir)
 		if err != nil {
 			mlog.Warning(err)
 			return

@@ -36,6 +36,10 @@ func Uploader() contracts.Uploader {
 	return App().Uploader()
 }
 
+func LocalUploader() contracts.Uploader {
+	return App().LocalUploader()
+}
+
 func Event() contracts.DispatcherInterface {
 	return App().EventDispatcher()
 }

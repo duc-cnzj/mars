@@ -15,7 +15,7 @@ func TestConfig_MaxUploadSize(t *testing.T) {
 	cfg := Config{
 		UploadMaxSize: "invalid",
 	}
-	assert.Equal(t, uint64(50<<20), cfg.MaxUploadSize())
+	assert.Equal(t, uint64(50*1000*1000), cfg.MaxUploadSize())
 	cfg.UploadMaxSize = "50m" // 50,000,000
 	assert.Equal(t, uint64(50*1000*1000), cfg.MaxUploadSize())
 	cfg.UploadMaxSize = "50mib" // 50 * 1024 * 1024
