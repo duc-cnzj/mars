@@ -60,6 +60,7 @@ s3_endpoint: ""
 s3_access_key_id: ""
 s3_secret_access_key: ""
 s3_use_ssl: false
+s3_bucket: mars
 
 # database
 # 'sqlite' or 'mysql', 如果是 'sqlite', 'db_database' 为 db 绝对路径

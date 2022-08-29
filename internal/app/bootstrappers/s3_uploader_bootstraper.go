@@ -21,6 +21,7 @@ func (s *S3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 		accessKeyID     = app.Config().S3AccessKeyID
 		secretAccessKey = app.Config().S3SecretAccessKey
 		useSSL          = app.Config().S3UseSSL
+		bucket          = app.Config().S3Bucket
 	)
 	if endpoint == "" || accessKeyID == "" || secretAccessKey == "" {
 		return nil
@@ -34,7 +35,7 @@ func (s *S3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 	if err != nil {
 		return err
 	}
-	app.SetUploader(uploader.NewS3(minioClient, "mars", app.LocalUploader(), "data"))
+	app.SetUploader(uploader.NewS3(minioClient, bucket, app.LocalUploader(), "data"))
 	mlog.Info("s3 uploader booted!")
 	return nil
 }
