@@ -96,6 +96,8 @@ func (l listFiles) PrettyYaml() string {
 	return string(marshal)
 }
 
+// DeleteUndocumentedFiles
+// TODO: rename method
 func (m *File) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUndocumentedFilesRequest) (*file.DeleteUndocumentedFilesResponse, error) {
 	var (
 		files []models.File
