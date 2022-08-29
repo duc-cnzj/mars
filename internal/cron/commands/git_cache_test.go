@@ -24,7 +24,14 @@ func TestGitCache(t *testing.T) {
 	for _, callback := range cron.RegisteredCronJobs() {
 		callback(cm, app)
 	}
-	assert.Len(t, cm.List(), 2)
+	mm := make(map[string]struct{})
+	for _, command := range cm.List() {
+		mm[command.Name()] = struct{}{}
+	}
+	_, ok := mm["all_git_project_cache"]
+	assert.True(t, ok)
+	_, ok = mm["all_branch_cache"]
+	assert.True(t, ok)
 }
 
 func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
