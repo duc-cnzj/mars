@@ -229,7 +229,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 				stat, _ := f.Stat()
 				f.Close()
 
-				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size())}
+				file := models.File{Path: f.Name(), Username: user.Name, Size: uint64(stat.Size()), UploadType: updisk.Type()}
 				app.DB().Create(&file)
 				res, err := c.CopyToPod(server.Context(), &container.CopyToPodRequest{
 					FileId:    int64(file.ID),

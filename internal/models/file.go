@@ -3,23 +3,23 @@ package models
 import (
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils/date"
+	"github.com/dustin/go-humanize"
+	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/dustin/go-humanize"
-
 	app "github.com/duc-cnzj/mars/internal/app/helper"
-
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"gorm.io/gorm"
+	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
 type File struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Path     string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
-	Size     uint64 `json:"size" gorm:"not null;default:0;comment:文件大小"`
-	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
+	UploadType contracts.UploadType `json:"upload_type" gorm:"size:100;not null;default:'local'"`
+	Path       string               `json:"path" gorm:"size:255;not null;comment:文件全路径"`
+	Size       uint64               `json:"size" gorm:"not null;default:0;comment:文件大小"`
+	Username   string               `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
 
 	Namespace     string `json:"namespace" gorm:"size:100;not null;default:'';"`
 	Pod           string `json:"pod" gorm:"size:100;not null;default:'';"`

@@ -215,6 +215,17 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-08-29-add-upload_type-to-files-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasColumn(&models.File{}, "UploadType") {
+					if err := tx.Migrator().AddColumn(&models.File{}, "UploadType"); err != nil {
+						return fmt.Errorf("[%s]: err: %v", "2022-08-29-add-upload_type-to-files-table", err)
+					}
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

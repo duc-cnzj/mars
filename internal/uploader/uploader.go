@@ -55,6 +55,10 @@ func (u *Uploader) root() string {
 	return u.rootDir
 }
 
+func (u *Uploader) Type() contracts.UploadType {
+	return contracts.Local
+}
+
 func (u *Uploader) Disk(s string) contracts.Uploader {
 	return &Uploader{
 		rootDir: u.root(),

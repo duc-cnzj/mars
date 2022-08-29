@@ -9,6 +9,13 @@ import (
 	"os"
 )
 
+type UploadType string
+
+const (
+	Local UploadType = "local"
+	S3    UploadType = "s3"
+)
+
 type File interface {
 	io.ReadWriteCloser
 	io.StringWriter
@@ -23,6 +30,7 @@ type FileInfo interface {
 
 type Uploader interface {
 	Disk(string) Uploader
+	Type() UploadType
 	DeleteDir(dir string) error
 	DirSize(dir string) (int64, error)
 	Delete(path string) error

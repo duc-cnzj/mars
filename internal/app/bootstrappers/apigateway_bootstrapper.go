@@ -294,7 +294,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file := models.File{Path: put.Path(), Username: info.Name, Size: put.Size()}
+	file := models.File{Path: put.Path(), Username: info.Name, Size: put.Size(), UploadType: uploader.Type()}
 	app.DB().Create(&file)
 
 	w.Header().Set("Content-Type", "application/json")

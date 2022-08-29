@@ -24,6 +24,10 @@ func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, roo
 	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
+func (s *S3) Type() contracts.UploadType{
+	return contracts.S3
+}
+
 func (s *S3) Disk(disk string) contracts.Uploader {
 	return &S3{
 		localUploader: s.localUploader.Disk(disk),

@@ -30,6 +30,23 @@ func TestNewManager(t *testing.T) {
 	assert.Implements(t, (*contracts.DBManager)(nil), NewManager(nil))
 }
 
+type File struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Path     string `json:"path" gorm:"size:255;not null;comment:文件全路径"`
+	Size     uint64 `json:"size" gorm:"not null;default:0;comment:文件大小"`
+	Username string `json:"username" gorm:"size:255;not null;default:'';comment:用户名称"`
+
+	Namespace     string `json:"namespace" gorm:"size:100;not null;default:'';"`
+	Pod           string `json:"pod" gorm:"size:100;not null;default:'';"`
+	Container     string `json:"container" gorm:"size:100;not null;default:'';"`
+	ContainerPath string `json:"container_path" gorm:"size:255;not null;default:'';comment:容器中的文件路径"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
 type Changelog struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
@@ -112,7 +129,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	defer s.Close()
 
 	ma := &Manager{db: db}
-	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}))
+	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}, &File{}))
 	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.True(t, db.Migrator().HasColumn("gitlab_projects", "gitlab_project_id"))
@@ -121,6 +138,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasColumn(&Project{}, "gitlab_commit"))
 	assert.True(t, db.Migrator().HasTable("commands"))
 	assert.False(t, db.Migrator().HasColumn(&Project{}, "manifest"))
+	assert.False(t, db.Migrator().HasColumn("files", "upload_type"))
 	types, err := db.Migrator().ColumnTypes(&GitlabProject{})
 	assert.Nil(t, err)
 	for _, columnType := range types {
@@ -140,6 +158,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
 	assert.Nil(t, ma.AutoMigrate())
+	assert.True(t, db.Migrator().HasColumn("files", "upload_type"))
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.False(t, db.Migrator().HasColumn("git_projects", "gitlab_project_id"))
