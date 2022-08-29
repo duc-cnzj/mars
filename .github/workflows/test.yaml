@@ -14,11 +14,6 @@ jobs:
         ports:
           - 33306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-      minio:
-        image: minio/minio
-        ports:
-          - 9000:9000
-        options: server /data --console-address ":9001"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -26,6 +21,14 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.18'
+      - name: Setup minio
+          run: |
+            docker run -d -p 9000:9000 --name minio \
+                       -e "MINIO_ACCESS_KEY=minioadmin" \
+                       -e "MINIO_SECRET_KEY=minioadmin" \
+                       -v /tmp/data:/data \
+                       -v /tmp/config:/root/.minio \
+                       minio/minio server /data
       - name: Run coverage
         env:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
