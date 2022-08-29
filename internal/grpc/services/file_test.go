@@ -76,22 +76,23 @@ func TestFile_DeleteUndocumentedFiles(t *testing.T) {
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	db.AutoMigrate(&models.File{})
 	db.Create(&models.File{
-		Path: "/tmp/path1",
+		UploadType: contracts.Local,
+		Path:       "/tmp/path1",
+	})
+	db.Create(&models.File{
+		UploadType: contracts.S3,
+		Path:       "/tmp/path2",
 	})
 	up := mock.NewMockUploader(m)
-
-	finfo1 := mock.NewMockFileInfo(m)
-	finfo1.EXPECT().Size().Return(uint64(1)).AnyTimes()
-	finfo1.EXPECT().Path().Return("/tmp/path1").AnyTimes()
-
-	finfo2 := mock.NewMockFileInfo(m)
-	finfo2.EXPECT().Size().Return(uint64(2)).AnyTimes()
-	finfo2.EXPECT().Path().Return("/tmp/path2").AnyTimes()
-
-	up.EXPECT().AllDirectoryFiles("/tmp").Return([]contracts.FileInfo{finfo1, finfo2}, nil)
+	localUp := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
-	up.EXPECT().Delete("/tmp/path2").Times(1)
-	up.EXPECT().RemoveEmptyDir("/tmp")
+	app.EXPECT().LocalUploader().Return(localUp).AnyTimes()
+
+	up.EXPECT().Type().Return(contracts.S3).AnyTimes()
+	localUp.EXPECT().Type().Return(contracts.Local).AnyTimes()
+	localUp.EXPECT().Exists("/tmp/path1").Return(true)
+	up.EXPECT().Exists("/tmp/path2").Return(false)
+	localUp.EXPECT().RemoveEmptyDir()
 	assertAuditLogFired(m, app)
 	res, _ := new(File).DeleteUndocumentedFiles(adminCtx(), &file.DeleteUndocumentedFilesRequest{})
 	assert.Len(t, res.Items, 1)
@@ -104,10 +105,10 @@ func TestFile_DiskInfo(t *testing.T) {
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
-	up.EXPECT().DirSize(gomock.Any()).Return(int64(0), errors.New("")).Times(1)
+	up.EXPECT().DirSize().Return(int64(0), errors.New("")).Times(1)
 	_, err := new(File).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
 	assert.Error(t, err)
-	up.EXPECT().DirSize(gomock.Any()).Return(int64(100), nil).Times(1)
+	up.EXPECT().DirSize().Return(int64(100), nil).Times(1)
 	res, _ := new(File).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
 	assert.Equal(t, "100 B", res.HumanizeUsage)
 	assert.Equal(t, int64(100), res.Usage)

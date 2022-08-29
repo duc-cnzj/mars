@@ -83,7 +83,7 @@ func TestUploader_Delete(t *testing.T) {
 
 func TestUploader_DirSize(t *testing.T) {
 	up, _ := NewUploader("", "aaa")
-	size, _ := up.DirSize("app")
+	size, _ := up.DirSize()
 	assert.Equal(t, int64(0), size)
 
 	up.MkDir("app", true)
@@ -91,7 +91,7 @@ func TestUploader_DirSize(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = up.Put("/app/ccc/a.txt", strings.NewReader("ccc"))
 	assert.Nil(t, err)
-	size, _ = up.DirSize("app")
+	size, _ = up.DirSize()
 	assert.Greater(t, size, int64(0))
 }
 
@@ -116,7 +116,7 @@ func TestUploader_RemoveEmptyDir(t *testing.T) {
 	up, _ := NewUploader("", "aaa")
 	assert.Nil(t, up.MkDir("/b/c", true))
 
-	assert.Nil(t, up.RemoveEmptyDir(""))
+	assert.Nil(t, up.RemoveEmptyDir())
 	assert.False(t, up.DirExists("/b/c"))
 	assert.False(t, up.DirExists("/b"))
 	assert.True(t, up.DirExists(""))

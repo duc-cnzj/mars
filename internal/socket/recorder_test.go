@@ -48,6 +48,14 @@ func (m *mockFileInfo) Sys() any {
 func TestRecorder_Close(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
+	db.AutoMigrate(&models.File{}, &models.Event{})
+	up := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
+
 	f := mock.NewMockFile(m)
 	r := &Recorder{
 		filepath: "/tmp/path",
@@ -69,10 +77,7 @@ func TestRecorder_Close(t *testing.T) {
 	f.EXPECT().Stat().Times(0)
 	r.Close()
 	r.startTime = time.Now()
-	app := testutil.MockApp(m)
-	db, closeFn := testutil.SetGormDB(m, app)
-	defer closeFn()
-	db.AutoMigrate(&models.File{}, &models.Event{})
+
 	f.EXPECT().Stat().Times(1).Return(&mockFileInfo{size: 1}, nil)
 	f.EXPECT().Close().Times(1)
 	r.Close()
@@ -93,9 +98,7 @@ func TestRecorder_Close(t *testing.T) {
 	assert.Equal(t, "c", fmodel.Container)
 	assert.Equal(t, "po", fmodel.Pod)
 
-	up := mock.NewMockUploader(m)
 	up.EXPECT().Delete("aaa.txt").Times(1)
-	app.EXPECT().Uploader().Return(up)
 	f.EXPECT().Name().Return("aaa.txt")
 	f.EXPECT().Stat().Return(&mockFileInfo{size: 0}, nil).Times(1)
 	f.EXPECT().Close().Times(1)

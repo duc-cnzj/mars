@@ -765,6 +765,7 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
 
 	up := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 	app.EXPECT().Uploader().Return(up).AnyTimes()
 	db, f := testutil.SetGormDB(m, app)
 	defer f()

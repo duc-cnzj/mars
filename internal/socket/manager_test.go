@@ -1116,7 +1116,7 @@ func TestMergeValuesLoader_Load(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
-	app.EXPECT().Uploader().Return(up).AnyTimes()
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
 	finfo := mock.NewMockFileInfo(m)
 	finfo.EXPECT().Path().Return("/app/config.yaml")
 	up.EXPECT().Put(gomock.Any(), &dump{assertFn: func(x any) {

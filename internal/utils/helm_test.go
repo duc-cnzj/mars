@@ -77,7 +77,7 @@ func TestWriteConfigYamlToTmpFile(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
-	app.EXPECT().Uploader().Return(up).AnyTimes()
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
 	info := mock.NewMockFileInfo(m)
 	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil).Times(1)
 	info.EXPECT().Path().Return("/aa.txt").Times(1)
