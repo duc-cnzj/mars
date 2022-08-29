@@ -3802,76 +3802,6 @@ export namespace file {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DeleteResponse;
     }
 
-    /** Properties of a DeleteUndocumentedFilesRequest. */
-    interface IDeleteUndocumentedFilesRequest {
-    }
-
-    /** Represents a DeleteUndocumentedFilesRequest. */
-    class DeleteUndocumentedFilesRequest implements IDeleteUndocumentedFilesRequest {
-
-        /**
-         * Constructs a new DeleteUndocumentedFilesRequest.
-         * @param [properties] Properties to set
-         */
-        constructor(properties?: file.IDeleteUndocumentedFilesRequest);
-
-        /**
-         * Encodes the specified DeleteUndocumentedFilesRequest message. Does not implicitly {@link file.DeleteUndocumentedFilesRequest.verify|verify} messages.
-         * @param message DeleteUndocumentedFilesRequest message or plain object to encode
-         * @param [writer] Writer to encode to
-         * @returns Writer
-         */
-        public static encode(message: file.DeleteUndocumentedFilesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
-
-        /**
-         * Decodes a DeleteUndocumentedFilesRequest message from the specified reader or buffer.
-         * @param reader Reader or buffer to decode from
-         * @param [length] Message length if known beforehand
-         * @returns DeleteUndocumentedFilesRequest
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DeleteUndocumentedFilesRequest;
-    }
-
-    /** Properties of a DeleteUndocumentedFilesResponse. */
-    interface IDeleteUndocumentedFilesResponse {
-
-        /** DeleteUndocumentedFilesResponse items */
-        items?: (types.FileModel[]|null);
-    }
-
-    /** Represents a DeleteUndocumentedFilesResponse. */
-    class DeleteUndocumentedFilesResponse implements IDeleteUndocumentedFilesResponse {
-
-        /**
-         * Constructs a new DeleteUndocumentedFilesResponse.
-         * @param [properties] Properties to set
-         */
-        constructor(properties?: file.IDeleteUndocumentedFilesResponse);
-
-        /** DeleteUndocumentedFilesResponse items. */
-        public items: types.FileModel[];
-
-        /**
-         * Encodes the specified DeleteUndocumentedFilesResponse message. Does not implicitly {@link file.DeleteUndocumentedFilesResponse.verify|verify} messages.
-         * @param message DeleteUndocumentedFilesResponse message or plain object to encode
-         * @param [writer] Writer to encode to
-         * @returns Writer
-         */
-        public static encode(message: file.DeleteUndocumentedFilesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
-
-        /**
-         * Decodes a DeleteUndocumentedFilesResponse message from the specified reader or buffer.
-         * @param reader Reader or buffer to decode from
-         * @param [length] Message length if known beforehand
-         * @returns DeleteUndocumentedFilesResponse
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DeleteUndocumentedFilesResponse;
-    }
-
     /** Properties of a DiskInfoRequest. */
     interface IDiskInfoRequest {
     }
@@ -4170,20 +4100,6 @@ export namespace file {
         public delete(request: file.DeleteRequest): Promise<file.DeleteResponse>;
 
         /**
-         * Calls DeleteUndocumentedFiles.
-         * @param request DeleteUndocumentedFilesRequest message or plain object
-         * @param callback Node-style callback called with the error, if any, and DeleteUndocumentedFilesResponse
-         */
-        public deleteUndocumentedFiles(request: file.DeleteUndocumentedFilesRequest, callback: file.File.DeleteUndocumentedFilesCallback): void;
-
-        /**
-         * Calls DeleteUndocumentedFiles.
-         * @param request DeleteUndocumentedFilesRequest message or plain object
-         * @returns Promise
-         */
-        public deleteUndocumentedFiles(request: file.DeleteUndocumentedFilesRequest): Promise<file.DeleteUndocumentedFilesResponse>;
-
-        /**
          * Calls DiskInfo.
          * @param request DiskInfoRequest message or plain object
          * @param callback Node-style callback called with the error, if any, and DiskInfoResponse
@@ -4227,13 +4143,6 @@ export namespace file {
          * @param [response] DeleteResponse
          */
         type DeleteCallback = (error: (Error|null), response?: file.DeleteResponse) => void;
-
-        /**
-         * Callback as used by {@link file.File#deleteUndocumentedFiles}.
-         * @param error Error, if any
-         * @param [response] DeleteUndocumentedFilesResponse
-         */
-        type DeleteUndocumentedFilesCallback = (error: (Error|null), response?: file.DeleteUndocumentedFilesResponse) => void;
 
         /**
          * Callback as used by {@link file.File#diskInfo}.

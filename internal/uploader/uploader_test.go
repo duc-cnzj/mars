@@ -1,10 +1,14 @@
 package uploader
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -64,6 +68,8 @@ func TestUploader_root(t *testing.T) {
 func TestFileInfo(t *testing.T) {
 	assert.Equal(t, uint64(100), (&fileInfo{size: uint64(100)}).Size())
 	assert.Equal(t, "/xxx", (&fileInfo{path: "/xxx"}).Path())
+	n := time.Now()
+	assert.Equal(t, n, (&fileInfo{lastModified: n}).LastModified())
 }
 
 func TestUploader_DeleteDir(t *testing.T) {
@@ -148,4 +154,36 @@ func TestUploader_NewFile(t *testing.T) {
 	assert.Nil(t, err)
 	file.Close()
 	assert.True(t, up.Exists("/a/a/a/aaa.txt"))
+}
+
+func TestUploader_Type(t *testing.T) {
+	up, _ := NewUploader("", "")
+	assert.Equal(t, contracts.Local, up.Type())
+}
+
+func TestUploader_Read(t *testing.T) {
+	up, _ := NewUploader("", "aaa")
+	put, err := up.Put("/aa/bb/cc/read.txt", strings.NewReader("aaa"))
+	assert.Nil(t, err)
+	defer up.Delete(put.Path())
+	read, err := up.Read(put.Path())
+	assert.Nil(t, err)
+	defer read.Close()
+	all, err := io.ReadAll(read)
+	assert.Nil(t, err)
+	assert.Equal(t, "aaa", string(all))
+}
+
+func TestUploader_Stat(t *testing.T) {
+	up, _ := NewUploader("", "aaa")
+	put, err := up.Put("/aa/bb/cc/stat.txt", strings.NewReader("aaa"))
+	assert.Nil(t, err)
+	stat, err := up.Stat(put.Path())
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(3), stat.Size())
+	assert.Equal(t, put.Path(), stat.Path())
+
+	_, err = up.Stat("/aa/not-exist.file")
+	assert.Error(t, err)
+
 }

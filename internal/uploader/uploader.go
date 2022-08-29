@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -124,8 +125,13 @@ func dirExists(dir string) bool {
 }
 
 type fileInfo struct {
-	path string
-	size uint64
+	path         string
+	size         uint64
+	lastModified time.Time
+}
+
+func NewFileInfo[T uint64 | int64 | int](path string, size T, lastModified time.Time) *fileInfo {
+	return &fileInfo{path: path, size: uint64(size), lastModified: lastModified}
 }
 
 func (f *fileInfo) Path() string {
@@ -136,20 +142,22 @@ func (f *fileInfo) Size() uint64 {
 	return f.size
 }
 
+func (f *fileInfo) LastModified() time.Time {
+	return f.lastModified
+}
+
 func (u *Uploader) Read(file string) (io.ReadCloser, error) {
 	return os.Open(u.getPath(file))
 }
 
 func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
-	stat, err := os.Stat(u.getPath(file))
+	fpath := u.getPath(file)
+	stat, err := os.Stat(fpath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fileInfo{
-		path: stat.Name(),
-		size: uint64(stat.Size()),
-	}, nil
+	return NewFileInfo(fpath, stat.Size(), stat.ModTime()), nil
 }
 
 func (u *Uploader) RemoveEmptyDir() error {
@@ -184,10 +192,7 @@ func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 				return err
 			}
 			if !info.IsDir() {
-				files = append(files, &fileInfo{
-					path: path,
-					size: uint64(info.Size()),
-				})
+				files = append(files, NewFileInfo(path, info.Size(), info.ModTime()))
 			}
 			return nil
 		})
@@ -220,10 +225,7 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 	}
 	stat, _ := create.Stat()
 
-	return &fileInfo{
-		path: create.Name(),
-		size: uint64(stat.Size()),
-	}, nil
+	return NewFileInfo(create.Name(), stat.Size(), stat.ModTime()), nil
 }
 
 func (u *Uploader) NewFile(path string) (contracts.File, error) {

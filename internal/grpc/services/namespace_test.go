@@ -108,7 +108,7 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	})
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: clientset}).AnyTimes()
 
-	d := assertAuditLogFired(m, app)
+	d := testutil.AssertAuditLogFired(m, app)
 	d.EXPECT().Dispatch(events.EventNamespaceCreated, gomock.Any())
 	res, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace: "bbb",
@@ -147,7 +147,7 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 		},
 	}
 	db.Create(ns)
-	d := assertAuditLogFired(m, app)
+	d := testutil.AssertAuditLogFired(m, app)
 	clientset := fake.NewSimpleClientset(
 		&v12.Secret{
 			ObjectMeta: v1.ObjectMeta{

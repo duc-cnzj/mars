@@ -30,7 +30,6 @@ import {
   deleteFile,
   downloadFile,
   diskInfo as diskInfoApi,
-  deleteUndocumentedFiles,
 } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { getToken } from "../utils/token";
@@ -207,21 +206,6 @@ const EventList: React.FC = () => {
     setIsModalVisible(false);
   }, []);
 
-  const [clearLoading, setClearLoading] = useState(false);
-  const clearDisk = useCallback(() => {
-    setClearLoading(true);
-    deleteUndocumentedFiles().then((res) => {
-      message.success("清理成功");
-      diskInfoApi()
-        .then(({ data }) => {
-          setDiskInfo(data);
-        })
-        .finally(() => {
-          setClearLoading(false);
-        });
-    });
-  }, []);
-
   const handleCancel = useCallback(() => {
     setIsModalVisible(false);
   }, []);
@@ -279,14 +263,7 @@ const EventList: React.FC = () => {
           </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>
             文件占用:{" "}
-            <Button
-              loading={clearLoading}
-              style={{ fontSize: 10 }}
-              type="link"
-              onClick={clearDisk}
-            >
-              {diskInfo?.humanize_usage} 点击清理
-            </Button>
+            {diskInfo?.humanize_usage}
           </div>
         </div>
       }

@@ -100,10 +100,8 @@ func (s *S3) Stat(file string) (contracts.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &fileInfo{
-		path: path,
-		size: uint64(object.Size),
-	}, nil
+
+	return NewFileInfo(path, object.Size, object.LastModified), nil
 }
 
 func (s *S3) Put(path string, content io.Reader) (contracts.FileInfo, error) {
@@ -122,10 +120,8 @@ func (s *S3) put(path string, localPath string) (contracts.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &fileInfo{
-		path: object.Key,
-		size: uint64(object.Size),
-	}, nil
+
+	return NewFileInfo(object.Key, object.Size, object.LastModified), nil
 }
 
 func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
@@ -136,10 +132,7 @@ func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	})
 	var finfos []contracts.FileInfo
 	for object := range objects {
-		finfos = append(finfos, &fileInfo{
-			path: object.Key,
-			size: uint64(object.Size),
-		})
+		finfos = append(finfos, NewFileInfo(object.Key, object.Size, object.LastModified))
 	}
 	return finfos, nil
 }

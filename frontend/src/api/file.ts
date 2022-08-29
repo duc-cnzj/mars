@@ -10,12 +10,6 @@ export function diskInfo() {
   return ajax.get<pb.file.DiskInfoResponse>(`/api/files/disk_info`);
 }
 
-export function deleteUndocumentedFiles() {
-  return ajax.delete<pb.file.DeleteUndocumentedFilesResponse>(
-    `/api/files/delete_undocumented_files`
-  );
-}
-
 export function downloadFile(id: number) {
   return download(`/api/download_file/${id}`);
 }

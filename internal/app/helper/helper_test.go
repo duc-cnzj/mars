@@ -14,19 +14,20 @@ import (
 )
 
 type testApp struct {
-	authCalled        bool
-	cacheCalled       bool
-	configCalled      bool
-	dbCalled          bool
-	eventCalled       bool
-	k8sCalled         bool
-	dbmanager         contracts.DBManager
-	oidcCalled        bool
-	uploaderCalled    bool
-	sfCalled          bool
-	tracerCalled      bool
-	cronManagerCalled bool
-	cacheLockCalled   bool
+	authCalled          bool
+	cacheCalled         bool
+	configCalled        bool
+	dbCalled            bool
+	eventCalled         bool
+	k8sCalled           bool
+	dbmanager           contracts.DBManager
+	oidcCalled          bool
+	uploaderCalled      bool
+	sfCalled            bool
+	tracerCalled        bool
+	cronManagerCalled   bool
+	cacheLockCalled     bool
+	localUploaderCalled bool
 
 	contracts.ApplicationInterface
 }
@@ -41,6 +42,11 @@ func (a *testApp) Auth() contracts.AuthInterface {
 }
 func (a *testApp) Uploader() contracts.Uploader {
 	a.uploaderCalled = true
+	return nil
+}
+
+func (a *testApp) LocalUploader() contracts.Uploader {
+	a.localUploaderCalled = true
 	return nil
 }
 
@@ -184,6 +190,13 @@ func TestUploader(t *testing.T) {
 	instance.SetInstance(a)
 	Uploader()
 	assert.True(t, a.uploaderCalled)
+}
+
+func TestLocalUploader(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	LocalUploader()
+	assert.True(t, a.localUploaderCalled)
 }
 
 func TestTracer(t *testing.T) {

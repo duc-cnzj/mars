@@ -9,7 +9,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
@@ -41,6 +40,7 @@ func adminCtx() context.Context {
 	})
 	return ctx
 }
+
 func TestFile_Delete(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -63,39 +63,9 @@ func TestFile_Delete(t *testing.T) {
 	up := mock.NewMockUploader(m)
 	up.EXPECT().Delete("/tmp/aa.txt").Times(1)
 	app.EXPECT().Uploader().Return(up)
-	assertAuditLogFired(m, app)
+	testutil.AssertAuditLogFired(m, app)
 	_, err = new(File).Delete(adminCtx(), &file.DeleteRequest{Id: int64(f.ID)})
 	assert.Nil(t, err)
-}
-func TestFile_DeleteUndocumentedFiles(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	db, closeDB := testutil.SetGormDB(m, app)
-	defer closeDB()
-	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
-	db.AutoMigrate(&models.File{})
-	db.Create(&models.File{
-		UploadType: contracts.Local,
-		Path:       "/tmp/path1",
-	})
-	db.Create(&models.File{
-		UploadType: contracts.S3,
-		Path:       "/tmp/path2",
-	})
-	up := mock.NewMockUploader(m)
-	localUp := mock.NewMockUploader(m)
-	app.EXPECT().Uploader().Return(up).AnyTimes()
-	app.EXPECT().LocalUploader().Return(localUp).AnyTimes()
-
-	up.EXPECT().Type().Return(contracts.S3).AnyTimes()
-	localUp.EXPECT().Type().Return(contracts.Local).AnyTimes()
-	localUp.EXPECT().Exists("/tmp/path1").Return(true)
-	up.EXPECT().Exists("/tmp/path2").Return(false)
-	localUp.EXPECT().RemoveEmptyDir()
-	assertAuditLogFired(m, app)
-	res, _ := new(File).DeleteUndocumentedFiles(adminCtx(), &file.DeleteUndocumentedFilesRequest{})
-	assert.Len(t, res.Items, 1)
 }
 
 func TestFile_DiskInfo(t *testing.T) {
@@ -163,28 +133,13 @@ func TestFile_List(t *testing.T) {
 	assert.Equal(t, int64(2), list.Count)
 }
 
-func Test_listFiles_PrettyYaml(t *testing.T) {
-	lf := listFiles{
-		{
-			Path:         "/tmp/2.txt",
-			HumanizeSize: "10 MB",
-		},
-		{
-			Path:         "/tmp/1.txt",
-			HumanizeSize: "1 B",
-		},
-	}
-	assert.Equal(t, `- name: /tmp/2.txt
-  size: 10 MB
-- name: /tmp/1.txt
-  size: 1 B
-`, lf.PrettyYaml())
-}
-
-func assertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDispatcherInterface {
-	e := mock.NewMockDispatcherInterface(m)
-	e.EXPECT().Dispatch(events.EventAuditLog, gomock.Any()).Times(1)
-	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
-
-	return e
+func TestFile_MaxUploadSize(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10M"}).AnyTimes()
+	size, err := new(File).MaxUploadSize(context.TODO(), &file.MaxUploadSizeRequest{})
+	assert.Nil(t, err)
+	assert.Equal(t, "10 MB", size.HumanizeSize)
+	assert.Equal(t, uint64(10*1000*1000), size.Bytes)
 }

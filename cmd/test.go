@@ -19,7 +19,10 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		app := app.NewApplication(
 			config.Init(cfgFile),
-			app.WithBootstrappers(&bootstrappers.S3UploaderBootstraper{}),
+			app.WithBootstrappers(
+				&bootstrappers.UploadBootstrapper{},
+				&bootstrappers.S3UploaderBootstraper{},
+			),
 		)
 		if err := app.Bootstrap(); err != nil {
 			mlog.Fatal(err)
@@ -34,6 +37,8 @@ var testCmd = &cobra.Command{
 		put(disk, p1)
 		put(disk, p2)
 		put(disk, p3)
+
+		up.AllDirectoryFiles("")
 		//mlog.Warning(d6.DirSize("/"))
 		//mlog.Warning(disk.DeleteDir("2022/admin"))
 		//

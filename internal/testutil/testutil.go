@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
+	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
 	"gorm.io/driver/sqlite"
@@ -25,4 +26,12 @@ func MockApp(m *gomock.Controller) *mock.MockApplicationInterface {
 	app := mock.NewMockApplicationInterface(m)
 	instance.SetInstance(app)
 	return app
+}
+
+func AssertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDispatcherInterface {
+	e := mock.NewMockDispatcherInterface(m)
+	e.EXPECT().Dispatch(events.EventAuditLog, gomock.Any()).Times(1)
+	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
+
+	return e
 }

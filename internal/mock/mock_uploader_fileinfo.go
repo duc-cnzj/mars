@@ -6,6 +6,7 @@ package mock
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -31,6 +32,20 @@ func NewMockFileInfo(ctrl *gomock.Controller) *MockFileInfo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockFileInfo) EXPECT() *MockFileInfoMockRecorder {
 	return m.recorder
+}
+
+// LastModified mocks base method.
+func (m *MockFileInfo) LastModified() time.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LastModified")
+	ret0, _ := ret[0].(time.Time)
+	return ret0
+}
+
+// LastModified indicates an expected call of LastModified.
+func (mr *MockFileInfoMockRecorder) LastModified() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastModified", reflect.TypeOf((*MockFileInfo)(nil).LastModified))
 }
 
 // Path mocks base method.

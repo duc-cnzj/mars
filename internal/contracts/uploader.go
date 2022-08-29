@@ -7,6 +7,7 @@ package contracts
 import (
 	"io"
 	"os"
+	"time"
 )
 
 type UploadType string
@@ -26,6 +27,7 @@ type File interface {
 type FileInfo interface {
 	Path() string
 	Size() uint64
+	LastModified() time.Time
 }
 
 type Uploader interface {

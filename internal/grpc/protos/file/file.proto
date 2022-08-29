@@ -17,12 +17,6 @@ message DeleteResponse {
   types.FileModel file = 1;
 }
 
-message DeleteUndocumentedFilesRequest {}
-
-message DeleteUndocumentedFilesResponse {
-  repeated types.FileModel items = 1;
-}
-
 message DiskInfoRequest {}
 
 message DiskInfoResponse {
@@ -62,13 +56,6 @@ service File {
   rpc Delete(DeleteRequest) returns (DeleteResponse) {
     option (google.api.http) = {
       delete: "/api/files/{id}",
-    };
-  }
-
-  //  DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有
-  rpc DeleteUndocumentedFiles(DeleteUndocumentedFilesRequest) returns(DeleteUndocumentedFilesResponse) {
-    option (google.api.http) = {
-      delete: "/api/files/delete_undocumented_files",
     };
   }
 

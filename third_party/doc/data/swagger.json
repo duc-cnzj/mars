@@ -510,29 +510,6 @@
         }
       }
     },
-    "/api/files/delete_undocumented_files": {
-      "delete": {
-        "tags": [
-          "File"
-        ],
-        "summary": "DeleteUndocumentedFiles 删除未被记录的文件，model 表中没有，但是文件目录中有",
-        "operationId": "File_DeleteUndocumentedFiles",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/fileDeleteUndocumentedFilesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
     "/api/files/disk_info": {
       "get": {
         "tags": [
@@ -2003,17 +1980,6 @@
       "properties": {
         "file": {
           "$ref": "#/definitions/typesFileModel"
-        }
-      }
-    },
-    "fileDeleteUndocumentedFilesResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/typesFileModel"
-          }
         }
       }
     },
