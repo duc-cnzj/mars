@@ -22,7 +22,12 @@ type S3 struct {
 	disk          string
 }
 
+// NewS3
+// rootDir 必须要，不然在 DeleteDir 的时候如果传空会报错
 func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, rootDir string) *S3 {
+	if rootDir == "" {
+		rootDir = "data"
+	}
 	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
@@ -63,6 +68,7 @@ func (s *S3) DirSize() (int64, error) {
 func (s *S3) Delete(path string) error {
 	path = s.getPath(path)
 	s.localUploader.Delete(path)
+
 	return s.client.RemoveObject(context.TODO(), s.bucket, path, minio.RemoveObjectOptions{
 		ForceDelete: true,
 	})
@@ -156,14 +162,31 @@ func (s *S3) NewFile(path string) (contracts.File, error) {
 
 type s3File struct {
 	utils.Closeable
+	contracts.File
 	localUploader contracts.Uploader
 	s3            *S3
-	contracts.File
-	name string
+	name          string
 }
 
 func (s *s3File) Name() string {
 	return s.name
+}
+
+type s3OsFileInfo struct {
+	name string
+	os.FileInfo
+}
+
+func (s *s3OsFileInfo) Name() string {
+	return s.name
+}
+
+func (s *s3File) Stat() (os.FileInfo, error) {
+	stat, err := s.File.Stat()
+	if err != nil {
+		return nil, err
+	}
+	return &s3OsFileInfo{name: s.name, FileInfo: stat}, nil
 }
 
 func (s *s3File) Close() error {

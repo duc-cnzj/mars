@@ -1,6 +1,9 @@
 package uploader
 
 import (
+	"context"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,12 +16,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var pwd, _ = os.Getwd()
-var testDir = filepath.Join(pwd, "testdir")
+var (
+	pwd, _         = os.Getwd()
+	testDir        = filepath.Join(pwd, "testdir")
+	testBucketName = "testbucket"
+	s3             *minio.Client
+)
+
+var (
+	s3Endpoint string = os.Getenv("S3_ENDPOINT")
+	s3KeyID    string = os.Getenv("S3_KEY_ID")
+	s3SecretID string = os.Getenv("S3_SECRET_ID")
+	skipS3     bool   = true
+)
 
 func TestMain(m *testing.M) {
 	os.RemoveAll(testDir)
 	d := DefaultRootDir
+	if s3Endpoint == "" {
+		s3Endpoint = "localhost:9000"
+	}
+	if s3KeyID == "" {
+		s3KeyID = "minioadmin"
+	}
+	if s3SecretID == "" {
+		s3SecretID = "minioadmin"
+	}
+	s3, _ = minio.New(s3Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(s3KeyID, s3SecretID, ""),
+		Secure: false,
+	})
+	exists, _ := s3.BucketExists(context.TODO(), testBucketName)
+	if exists {
+		s3.RemoveBucketWithOptions(context.TODO(), testBucketName, minio.RemoveBucketOptions{ForceDelete: true})
+	}
+	err := s3.MakeBucket(context.TODO(), testBucketName, minio.MakeBucketOptions{})
+	if err == nil {
+		skipS3 = false
+	}
 	DefaultRootDir = testDir
 	exitCode := m.Run()
 	DefaultRootDir = d
@@ -31,11 +66,6 @@ func TestNewUploader(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "/", uploader.rootDir)
 	assert.Equal(t, "disk", uploader.disk)
-
-	_, err = os.Stat(DefaultRootDir)
-	assert.True(t, os.IsNotExist(err))
-	_, err = NewUploader("", "aaa")
-	assert.Nil(t, err)
 }
 
 func TestFileInfo_Path(t *testing.T) {
@@ -154,6 +184,8 @@ func TestUploader_NewFile(t *testing.T) {
 	assert.Nil(t, err)
 	file.Close()
 	assert.True(t, up.Exists("/a/a/a/aaa.txt"))
+	_, err = up.NewFile("/a/a/a/aaa.txt")
+	assert.Error(t, err)
 }
 
 func TestUploader_Type(t *testing.T) {

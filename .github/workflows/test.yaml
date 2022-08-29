@@ -14,6 +14,10 @@ jobs:
         ports:
           - 33306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      minio:
+        image: minio/minio
+        ports:
+          - 9000:9000
     steps:
       - uses: actions/checkout@v2
         with:
@@ -26,6 +30,7 @@ jobs:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USERNAME: root
           DB_DATABASE: test
+          S3_ENDPOINT: ${{ job.services.minio.ports[9000] }}
         run: |
           mkdir frontend/build && touch frontend/build/dummy
           go test ./... -race -coverprofile=coverage.txt -covermode=atomic
