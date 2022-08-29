@@ -83,12 +83,9 @@ func (u *Uploader) Delete(path string) error {
 	return os.Remove(u.getPath(path))
 }
 
-func (u *Uploader) DirSize(dir string) (int64, error) {
+func (u *Uploader) DirSize() (int64, error) {
 	var size int64
-	exists := u.DirExists(dir)
-	if !exists {
-		return 0, nil
-	}
+	dir := u.root()
 	if err := filepath.Walk(u.getPath(dir), func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			size += info.Size()
@@ -155,9 +152,10 @@ func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
 	}, nil
 }
 
-func (u *Uploader) RemoveEmptyDir(dir string) error {
+func (u *Uploader) RemoveEmptyDir() error {
 	var dirs []string
-	filepath.WalkDir(u.getPath(dir), func(path string, d fs.DirEntry, err error) error {
+	dir := u.root()
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			dirs = append(dirs, path)
 		}

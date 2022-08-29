@@ -52,7 +52,7 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 	baseName := filepath.Base(fpath)
 	path := filepath.Join(filepath.Dir(fpath), baseName+".tar.gz")
 	mlog.Debugf("[CopyFileToPod]: %v", path)
-	var srcPath string = fpath
+	var localPath string = fpath
 	// 如果是非 local 类型的，需要远程下载到 local 进行打包，再上传到容器
 	if uploader.Type() != contracts.Local {
 		read, err := uploader.Read(fpath)
@@ -60,15 +60,17 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 			return nil, err
 		}
 		defer read.Close()
-		srcPath = fpath + ".remote"
-		put, err := localUploader.Put(srcPath, read)
+		if localUploader.Exists(localPath) {
+			localUploader.Delete(localPath)
+		}
+		put, err := localUploader.Put(localPath, read)
 		if err != nil {
 			return nil, err
 		}
-		srcPath = put.Path()
-		defer localUploader.Delete(srcPath)
+		localPath = put.Path()
+		defer localUploader.Delete(localPath)
 	}
-	if err := archiver.Archive([]string{srcPath}, path); err != nil {
+	if err := archiver.Archive([]string{localPath}, path); err != nil {
 		return nil, err
 	}
 	defer os.Remove(path)

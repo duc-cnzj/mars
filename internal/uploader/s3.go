@@ -46,8 +46,8 @@ func (s *S3) DeleteDir(dir string) error {
 	return s.Delete(dir)
 }
 
-func (s *S3) DirSize(dir string) (int64, error) {
-	dir = s.getPath(dir)
+func (s *S3) DirSize() (int64, error) {
+	dir := s.root()
 	objects := s.client.ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
 		Recursive: true,
@@ -144,8 +144,8 @@ func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	return finfos, nil
 }
 
-func (s *S3) RemoveEmptyDir(dir string) error {
-	return s.localUploader.RemoveEmptyDir(dir)
+func (s *S3) RemoveEmptyDir() error {
+	return s.localUploader.RemoveEmptyDir()
 }
 
 func (s *S3) NewFile(path string) (contracts.File, error) {

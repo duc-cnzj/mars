@@ -67,7 +67,7 @@ func (m *File) List(ctx context.Context, request *file.ListRequest) (*file.ListR
 }
 
 func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
-	size, err := app.Uploader().DirSize(app.Config().UploadDir)
+	size, err := app.Uploader().DirSize()
 	if err != nil {
 		return nil, err
 	}
@@ -98,31 +98,41 @@ func (l listFiles) PrettyYaml() string {
 
 func (m *File) DeleteUndocumentedFiles(ctx context.Context, _ *file.DeleteUndocumentedFilesRequest) (*file.DeleteUndocumentedFilesResponse, error) {
 	var (
-		files       []models.File
-		mapFilePath = make(map[string]struct{})
+		files []models.File
 
-		clearList = make(listFiles, 0)
+		clearList     = make(listFiles, 0)
+		uploader      = app.Uploader()
+		localUploader = app.LocalUploader()
+
+		cleanFunc = func(up contracts.Uploader, db *gorm.DB, fileID int, filePath string) bool {
+			if !up.Exists(filePath) {
+				tx := db.Delete(&models.File{ID: fileID})
+				if tx.Error != nil {
+					mlog.Error(tx.Error)
+				}
+				return true
+			}
+			return false
+		}
 	)
 
-	app.DB().Select("ID", "Path").Find(&files)
-	for _, f := range files {
-		mapFilePath[f.Path] = struct{}{}
-	}
-
-	directoryFiles, _ := app.Uploader().AllDirectoryFiles(app.Config().UploadDir)
-	for _, directoryFile := range directoryFiles {
-		if _, ok := mapFilePath[directoryFile.Path()]; !ok {
-			clearList = append(clearList, &types.FileModel{
-				Path:         directoryFile.Path(),
-				HumanizeSize: humanize.Bytes(directoryFile.Size()),
-				Size:         int64(directoryFile.Size()),
-			})
-			if err := app.Uploader().Delete(directoryFile.Path()); err != nil {
-				mlog.Error(err)
+	app.DB().FindInBatches(&files, 100, func(tx *gorm.DB, batch int) error {
+		for _, f := range files {
+			var deleted bool
+			switch f.UploadType {
+			case uploader.Type():
+				deleted = cleanFunc(uploader, tx, f.ID, f.Path)
+			case localUploader.Type():
+				deleted = cleanFunc(localUploader, tx, f.ID, f.Path)
+			}
+			if deleted {
+				clearList = append(clearList, f.ProtoTransform())
 			}
 		}
-	}
-	app.Uploader().RemoveEmptyDir(app.Config().UploadDir)
+		return nil
+	})
+
+	localUploader.RemoveEmptyDir()
 	events.AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete, "删除未被记录的文件", clearList, nil)
 
 	return &file.DeleteUndocumentedFilesResponse{Items: clearList}, nil

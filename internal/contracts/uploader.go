@@ -32,7 +32,7 @@ type Uploader interface {
 	Disk(string) Uploader
 	Type() UploadType
 	DeleteDir(dir string) error
-	DirSize(dir string) (int64, error)
+	DirSize() (int64, error)
 	Delete(path string) error
 	Exists(path string) bool
 	MkDir(path string, recursive bool) error
@@ -42,5 +42,5 @@ type Uploader interface {
 	Stat(file string) (FileInfo, error)
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
 	NewFile(path string) (File, error)
-	RemoveEmptyDir(dir string) error
+	RemoveEmptyDir() error
 }

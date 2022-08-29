@@ -335,7 +335,7 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {item.file_id > 0 &&
+                {!!item.file &&
                   item.action === pb.types.EventActionType.Shell && (
                     <>
                       <Button
@@ -359,7 +359,7 @@ const EventList: React.FC = () => {
                             .then((res) => {
                               setData(
                                 data.map((v) =>
-                                  v.id === item.id ? { ...v, file_id: 0 } : v
+                                  v.id === item.id ? { ...v, file: null } : v
                                 )
                               );
                               message.success("删除成功");
@@ -371,7 +371,7 @@ const EventList: React.FC = () => {
                       />
                     </>
                   )}
-                {item.file_id > 0 &&
+                {!!item.file &&
                   item.action === pb.types.EventActionType.Upload && (
                     <>
                       <Button
@@ -389,7 +389,7 @@ const EventList: React.FC = () => {
                             .then((res) => {
                               setData(
                                 data.map((v) =>
-                                  v.id === item.id ? { ...v, file_id: 0 } : v
+                                  v.id === item.id ? { ...v, file: null } : v
                                 )
                               );
                               message.success("删除成功");

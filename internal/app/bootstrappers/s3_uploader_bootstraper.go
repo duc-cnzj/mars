@@ -34,8 +34,7 @@ func (s *S3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) er
 	if err != nil {
 		return err
 	}
-	app.Config().UploadDir = "data"
-	app.SetUploader(uploader.NewS3(minioClient, "mars", app.LocalUploader(), app.Config().UploadDir))
+	app.SetUploader(uploader.NewS3(minioClient, "mars", app.LocalUploader(), ""))
 	mlog.Info("s3 uploader booted!")
 	return nil
 }

@@ -83,8 +83,6 @@ func HeaderMatcher(key string) (string, bool) {
 	}
 }
 func (a *apiGateway) Run(ctx context.Context) error {
-	mlog.Infof("[Server]: start apiGateway runner at %s.", a.endpoint)
-
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
@@ -137,7 +135,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	a.server = s
 
 	go func(s *http.Server) {
-		mlog.Info("api-gateway start at ", s.Addr)
+		mlog.Infof("[Server]: start apiGateway runner at %s.", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
