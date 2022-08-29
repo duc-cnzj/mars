@@ -22,11 +22,11 @@ jobs:
         with:
           go-version: '1.18'
       - name: Setup minio
-          run: |
-            docker run -d -p 9000:9000 --name minio \
-                       -e "MINIO_ACCESS_KEY=minioadmin" \
-                       -e "MINIO_SECRET_KEY=minioadmin" \
-                       minio/minio server /data
+        run: |
+          docker run -d -p 9000:9000 --name minio \
+            -e "MINIO_ACCESS_KEY=minioadmin" \
+            -e "MINIO_SECRET_KEY=minioadmin" \
+            minio/minio server /data
       - name: Run coverage
         env:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
