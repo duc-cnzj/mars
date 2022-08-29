@@ -43,34 +43,32 @@ var MustBooted = []contracts.Bootstrapper{
 }
 
 type Application struct {
-	done          context.Context
+	done   context.Context
+	config *config.Config
+
 	doneFunc      func()
-	config        *config.Config
-	clientSet     *contracts.K8sClient
-	dbManager     contracts.DBManager
-	dispatcher    contracts.DispatcherInterface
 	servers       []contracts.Server
 	bootstrappers []contracts.Bootstrapper
+	mustBooted    []contracts.Bootstrapper
+	excludeBoots  []contracts.Bootstrapper
+	excludeTags   []string
 
 	hooksMu sync.RWMutex
 	hooks   map[Hook][]contracts.Callback
 
-	plugins       map[string]contracts.PluginInterface
-	oidcProvider  contracts.OidcConfig
 	uploader      contracts.Uploader
 	localUploader contracts.Uploader
+	plugins       map[string]contracts.PluginInterface
+	oidcProvider  contracts.OidcConfig
 	auth          contracts.AuthInterface
-
-	cronManager contracts.CronManager
-	cache       contracts.CacheInterface
-
-	cacheLock contracts.Locker
-	sf        *singleflight.Group
-	tracer    trace.Tracer
-
-	mustBooted   []contracts.Bootstrapper
-	excludeTags  []string
-	excludeBoots []contracts.Bootstrapper
+	clientSet     *contracts.K8sClient
+	dbManager     contracts.DBManager
+	dispatcher    contracts.DispatcherInterface
+	cronManager   contracts.CronManager
+	cache         contracts.CacheInterface
+	cacheLock     contracts.Locker
+	tracer        trace.Tracer
+	sf            *singleflight.Group
 }
 
 func (app *Application) CacheLock() contracts.Locker {
