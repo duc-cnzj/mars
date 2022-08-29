@@ -30,7 +30,7 @@ jobs:
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USERNAME: root
           DB_DATABASE: test
-          S3_ENDPOINT: ${{ job.services.minio.ports[9000] }}
+          S3_ENDPOINT: localhost:${{ job.services.minio.ports[9000] }}
         run: |
           mkdir frontend/build && touch frontend/build/dummy
           go test ./... -race -coverprofile=coverage.txt -covermode=atomic
