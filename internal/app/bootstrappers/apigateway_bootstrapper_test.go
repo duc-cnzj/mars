@@ -193,3 +193,17 @@ func Test_serveWs(t *testing.T) {}
 func TestApiGatewayBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"api", "gateway"}, (&ApiGatewayBootstrapper{}).Tags())
 }
+
+func Test_getUploaderByFile(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	u1 := mock.NewMockUploader(m)
+	u2 := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(u1).AnyTimes()
+	u1.EXPECT().Type().Return(contracts.S3).AnyTimes()
+	app.EXPECT().LocalUploader().Return(u2).AnyTimes()
+	u2.EXPECT().Type().Return(contracts.Local).AnyTimes()
+	assert.Equal(t, u1, getUploaderByFile(&models.File{UploadType: contracts.S3}))
+	assert.Equal(t, u2, getUploaderByFile(&models.File{UploadType: contracts.Local}))
+}

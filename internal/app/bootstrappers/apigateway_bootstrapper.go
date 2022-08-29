@@ -194,7 +194,8 @@ func handFile(gmux *runtime.ServeMux) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			read, err := app.Uploader().Read(f.Path)
+			var up contracts.Uploader = getUploaderByFile(&f)
+			read, err := up.Read(f.Path)
 			if err == nil {
 				all, _ := io.ReadAll(read)
 				w.Write(all)
@@ -209,6 +210,16 @@ func handFile(gmux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
+}
+
+func getUploaderByFile(file *models.File) (up contracts.Uploader) {
+	switch file.UploadType {
+	case app.Uploader().Type():
+		up = app.Uploader()
+	case app.LocalUploader().Type():
+		up = app.LocalUploader()
+	}
+	return
 }
 
 func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
@@ -228,7 +239,8 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
-	read, err := app.Uploader().Read(fil.Path)
+	var up contracts.Uploader = getUploaderByFile(fil)
+	read, err := up.Read(fil.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "file not found", http.StatusNotFound)
