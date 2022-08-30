@@ -39,12 +39,12 @@ var (
 		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 	}, []string{"bootstrapper"})
 
-	WebsocketConnectionsCount = prometheus.NewGauge(prometheus.GaugeOpts{
+	WebsocketConnectionsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "websocket_connections",
 		Help:        "当前 websocket 连接数",
 		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-	})
+	}, []string{"username"})
 
 	GrpcLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,

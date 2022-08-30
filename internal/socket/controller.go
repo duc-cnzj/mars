@@ -70,7 +70,7 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
 	}
 	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]contracts.PtyHandler), conn: wsconn}
-	metrics.WebsocketConnectionsCount.Inc()
+
 	Wait.Inc()
 
 	return wsconn
@@ -83,7 +83,7 @@ func (c *WsConn) Shutdown() {
 	c.terminalSessions.CloseAll()
 	c.pubSub.Close()
 	c.conn.Close()
-	metrics.WebsocketConnectionsCount.Dec()
+	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": c.GetUser().Name}).Dec()
 	Wait.Dec()
 }
 
@@ -303,6 +303,7 @@ func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
 
 	if claims, b := app.Auth().VerifyToken(input.Token); b {
 		c.SetUser(claims.UserInfo)
+		metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": claims.UserInfo.Name}).Inc()
 	}
 }
 
