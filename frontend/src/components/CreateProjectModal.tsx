@@ -391,11 +391,12 @@ const CreateProjectModal: React.FC<{
                 </Form.Item>
                 <Form.Item name="config" style={{ height: "100%" }} noStyle>
                   <CodeMirror
-                    options={{
-                      mode: mode,
-                      theme: "dracula",
-                      lineNumbers: true,
-                    }}
+                  mode={mode}
+                    // options={{
+                    //   mode: mode,
+                    //   theme: "dracula",
+                    //   lineNumbers: true,
+                    // }}
                   />
                 </Form.Item>
               </div>

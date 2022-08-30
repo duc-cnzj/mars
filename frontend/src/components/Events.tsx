@@ -6,8 +6,6 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { getHighlightSyntax } from "../utils/highlight";
-import ReactDiffViewer from "react-diff-viewer";
 import { debounce } from "lodash";
 import {
   Card,
@@ -33,6 +31,7 @@ import {
 } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { getToken } from "../utils/token";
+import DiffViewer from "./DiffViewer";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -186,16 +185,6 @@ const EventList: React.FC = () => {
     []
   );
 
-  const highlightSyntax = useCallback(
-    (str: string) => (
-      <code
-        dangerouslySetInnerHTML={{
-          __html: getHighlightSyntax(str, "yaml"),
-        }}
-      />
-    ),
-    []
-  );
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const showModal = useCallback(() => {
@@ -412,15 +401,13 @@ const EventList: React.FC = () => {
       >
         <ErrorBoundary>
           <div style={{ maxHeight: 550, overflowY: "auto" }}>
-            <ReactDiffViewer
-              disableWordDiff
+            <DiffViewer
               styles={{
                 line: { fontSize: 12, wordBreak: "break-word" },
               }}
-              useDarkTheme
               showDiffOnly
               splitView={config.old !== ""}
-              renderContent={highlightSyntax}
+              mode="yaml"
               oldValue={config.old}
               newValue={config.new}
             />

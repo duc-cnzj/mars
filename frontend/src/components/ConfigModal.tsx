@@ -638,6 +638,7 @@ const ConfigModal: React.FC<{
                         name={"config_file_values"}
                       >
                         <CodeMirror
+                          mode={mode}
                           onChange={(v) => {
                             form.setFieldsValue({ config_file_values: v });
                             setWatch((w) => ({
@@ -645,12 +646,12 @@ const ConfigModal: React.FC<{
                               config_file_values: v,
                             }));
                           }}
-                          options={{
-                            readOnly:
-                              !editMode || !globalEnabled ? "nocursor" : false,
-                            mode: mode,
-                            theme: "dracula",
-                          }}
+                          // options={{
+                          //   readOnly:
+                          //     !editMode || !globalEnabled ? "nocursor" : false,
+                          //   mode: mode,
+                          //   theme: "dracula",
+                          // }}
                         />
                       </Form.Item>
                     </div>
@@ -681,15 +682,16 @@ const ConfigModal: React.FC<{
                         }
                         tooltip="等同于 helm 的 values.yaml, 特别注意: 不能出现特殊的用 '<>' 包裹的变量, go 模板会解析失败!"
                       >
-                        <CodeMirror
-                          value=""
-                          options={{
-                            readOnly:
-                              !editMode || !globalEnabled ? "nocursor" : false,
-                            mode: getMode("yaml"),
-                            theme: "dracula",
-                          }}
-                        />
+                        {/* <CodeMirror
+                          mode={getMode("yaml")}
+                          // value=""
+                          // options={{
+                          //   readOnly:
+                          //     !editMode || !globalEnabled ? "nocursor" : false,
+                          //   mode: getMode("yaml"),
+                          //   theme: "dracula",
+                          // }}
+                        /> */}
                       </Form.Item>
                     </div>
                   </Col>

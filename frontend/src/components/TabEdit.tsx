@@ -1,10 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback, memo } from "react";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
-import ReactDiffViewer from "react-diff-viewer";
 import Elements from "./elements/Elements";
 import PipelineInfo from "./PipelineInfo";
 import ConfigHistory from "./ConfigHistory";
-import { getHighlightSyntax } from "../utils/highlight";
 import { orderBy } from "lodash";
 import {
   DeployStatus as DeployStatusEnum,
@@ -29,6 +27,7 @@ import DebugModeSwitch from "./DebugModeSwitch";
 import pb from "../api/compiled";
 import TimeCost from "./TimeCost";
 import { selectTimer } from "../store/reducers/deployTimer";
+import DiffViewer from "./DiffViewer";
 
 interface WatchData {
   gitProjectId: number;
@@ -167,17 +166,6 @@ const ModalSub: React.FC<{
       ws?.send(s);
     }
   }, [ws, namespaceId, wsReady, detail.name]);
-
-  const highlightSyntax = useCallback(
-    (str: string) => (
-      <code
-        dangerouslySetInnerHTML={{
-          __html: getHighlightSyntax(str, detail.config_type),
-        }}
-      />
-    ),
-    [detail.config_type]
-  );
 
   const onReset = useCallback(() => {
     setShowLog(false);
@@ -344,11 +332,7 @@ const ModalSub: React.FC<{
               <Col span={detail.config === data.config ? 24 : 12}>
                 <Form.Item name={"config"} noStyle>
                   <CodeMirror
-                    options={{
-                      mode: getMode(detail.config_type),
-                      theme: "dracula",
-                      lineNumbers: true,
-                    }}
+                    mode={getMode(detail.config_type)}
                     onChange={(v) => {
                       form.setFieldsValue({ config: v });
                       setData((d) => {
@@ -363,19 +347,8 @@ const ModalSub: React.FC<{
                 span={detail.config === data.config ? 0 : 12}
                 style={{ fontSize: 13 }}
               >
-                <ReactDiffViewer
-                  styles={{
-                    gutter: { padding: "0 5px", minWidth: 25 },
-                    marker: { padding: "0 6px" },
-                    diffContainer: {
-                      display: "block",
-                      width: "100%",
-                      overflowX: "auto",
-                    },
-                  }}
-                  useDarkTheme
-                  disableWordDiff
-                  renderContent={highlightSyntax}
+                <DiffViewer
+                  mode={detail.config_type}
                   showDiffOnly={false}
                   oldValue={detail.config}
                   newValue={data.config}
