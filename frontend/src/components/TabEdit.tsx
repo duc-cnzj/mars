@@ -348,6 +348,16 @@ const ModalSub: React.FC<{
                 style={{ fontSize: 13 }}
               >
                 <DiffViewer
+                  styles={{
+                    gutter: { padding: "0 5px", minWidth: 25 },
+                    marker: { padding: "0 6px" },
+                    diffContainer: {
+                      height: "100%",
+                      display: "block",
+                      width: "100%",
+                      overflowX: "auto",
+                    },
+                  }}
                   mode={detail.config_type}
                   showDiffOnly={false}
                   oldValue={detail.config}
