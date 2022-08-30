@@ -469,7 +469,13 @@ const ConfigModal: React.FC<{
                   >
                     <Form.Item
                       label="应用名称"
-                      rules={[{pattern: new RegExp("^[A-Za-z]([A-Z-_a-z]*[^_-])*$"), message: "名称必须符合表达式 '^[A-Za-z]([A-Z-_a-z]*[^_-])*$', 格式例如 my_app, my-app, app"}]}
+                      rules={[
+                        {
+                          pattern: new RegExp("^[A-Za-z]([A-Z-_a-z]*[^_-])*$"),
+                          message:
+                            "名称必须符合表达式 '^[A-Za-z]([A-Z-_a-z]*[^_-])*$', 格式例如 my_app, my-app, app",
+                        },
+                      ]}
                       name={"display_name"}
                     >
                       <Input disabled={!editMode || !globalEnabled} />
@@ -638,18 +644,13 @@ const ConfigModal: React.FC<{
                         name={"config_file_values"}
                       >
                         <CodeMirror
+                          mode={mode}
                           onChange={(v) => {
                             form.setFieldsValue({ config_file_values: v });
                             setWatch((w) => ({
                               ...w,
                               config_file_values: v,
                             }));
-                          }}
-                          options={{
-                            readOnly:
-                              !editMode || !globalEnabled ? "nocursor" : false,
-                            mode: mode,
-                            theme: "dracula",
                           }}
                         />
                       </Form.Item>
@@ -681,15 +682,7 @@ const ConfigModal: React.FC<{
                         }
                         tooltip="等同于 helm 的 values.yaml, 特别注意: 不能出现特殊的用 '<>' 包裹的变量, go 模板会解析失败!"
                       >
-                        <CodeMirror
-                          value=""
-                          options={{
-                            readOnly:
-                              !editMode || !globalEnabled ? "nocursor" : false,
-                            mode: getMode("yaml"),
-                            theme: "dracula",
-                          }}
-                        />
+                        <CodeMirror mode={getMode("yaml")} />
                       </Form.Item>
                     </div>
                   </Col>

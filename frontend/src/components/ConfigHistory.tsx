@@ -1,10 +1,9 @@
-import React, { memo, useEffect, useCallback, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Popover, Button, Collapse, Tooltip } from "antd";
 import { HistoryOutlined } from "@ant-design/icons";
-import ReactDiffViewer from "react-diff-viewer";
-import { getHighlightSyntax } from "../utils/highlight";
 import { changelogs } from "../api/changelog";
 import pb from "../api/compiled";
+import DiffViewer from "./DiffViewer";
 const { Panel } = Collapse;
 
 const ConfigHistory: React.FC<{
@@ -64,16 +63,6 @@ const Content: React.FC<{
     });
   }, [projectID, updatedAt]);
 
-  const highlightSyntax = useCallback(
-    (str: string) => (
-      <code
-        dangerouslySetInnerHTML={{
-          __html: getHighlightSyntax(str, configType),
-        }}
-      />
-    ),
-    [configType]
-  );
   return (
     <div
       style={{
@@ -130,8 +119,8 @@ const Content: React.FC<{
                 <div>和当前配置一致</div>
               ) : (
                 <div>
-                  <ReactDiffViewer
-                    disableWordDiff
+                  <DiffViewer
+                    mode={configType}
                     styles={{
                       line: { fontSize: 12 },
                       gutter: { padding: "0 5px", minWidth: 20 },
@@ -142,8 +131,6 @@ const Content: React.FC<{
                         overflowX: "auto",
                       },
                     }}
-                    useDarkTheme
-                    renderContent={highlightSyntax}
                     showDiffOnly
                     oldValue={currentConfig}
                     newValue={item.config}
