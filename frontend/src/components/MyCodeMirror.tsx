@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { langs } from "@uiw/codemirror-extensions-langs";
@@ -13,7 +13,7 @@ import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
-export const MyCodeMirror: React.FC<{
+const myCodeMirror: React.FC<{
   mode: string;
   value?: string;
   onChange?: (v: string) => void;
@@ -30,7 +30,7 @@ export const MyCodeMirror: React.FC<{
       extensions.push(autocompletion({ override: [yamlCompletions] }));
       break;
     case "json":
-      extensions.push(linter(jsonParseLinter()),);
+      extensions.push(linter(jsonParseLinter()));
       break;
   }
 
@@ -152,3 +152,6 @@ export const getMode = (mode: string): string => {
       return mode;
   }
 };
+
+export const MyCodeMirror = memo(myCodeMirror);
+export default MyCodeMirror;
