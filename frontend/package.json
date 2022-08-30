@@ -28,6 +28,7 @@
     "codemirror": "^5.61.0",
     "craco-less": "^2.0.0",
     "dayjs": "^1.11.1",
+    "escape-html": "^1.0.3",
     "eslint-config-react-app": "^7.0.1",
     "fetch-readablestream": "^0.2.0",
     "hotkeys-js": "^3.8.7",
@@ -93,6 +94,7 @@
   },
   "devDependencies": {
     "@types/blueimp-md5": "^2.18.0",
+    "@types/escape-html": "^1.0.2",
     "@types/js-yaml": "^4.0.2",
     "@types/jshint": "^2.12.1",
     "@types/lodash": "^4.14.169",

@@ -52,7 +52,7 @@ const myCodeMirror: React.FC<{
         autocompletion: true,
         rectangularSelection: true,
         crosshairCursor: true,
-        highlightActiveLine: true,
+        highlightActiveLine: false,
         highlightSelectionMatches: true,
         closeBracketsKeymap: true,
         searchKeymap: true,
@@ -71,12 +71,18 @@ const theme = EditorView.theme(
       outline: "none",
       height: "100%",
     },
+    ".cm-content": {
+      paddingTop: 0
+    },
     "&.cm-editor.cm-focused": {
       outline: "none",
     },
     ".cm-completionIcon-text": {
       "&:after": { content: "''", fontSize: "50%", verticalAlign: "middle" },
     },
+    ".cm-line": {
+      padding: "1px 0"
+    }
   },
   {}
 );

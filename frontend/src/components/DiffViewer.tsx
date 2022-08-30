@@ -13,6 +13,7 @@ const defaultStyle: ReactDiffViewerStylesOverride = {
     overflowX: "auto",
   },
 };
+
 const DiffViewer: React.FC<{
   mode: string;
   oldValue: string;
@@ -22,16 +23,13 @@ const DiffViewer: React.FC<{
   styles?: ReactDiffViewerStylesOverride;
 }> = ({ mode, oldValue, newValue, splitView, showDiffOnly, styles }) => {
   const highlightSyntax = useCallback(
-    (str: string) =>
-      mode === "html" ? (
-        <code
-          dangerouslySetInnerHTML={{
-            __html: getHighlightSyntax(str, mode),
-          }}
-        />
-      ) : (
-        <code>{str}</code>
-      ),
+    (str: string) => (
+      <code
+        dangerouslySetInnerHTML={{
+          __html: getHighlightSyntax(str, mode),
+        }}
+      />
+    ),
     [mode]
   );
   return (

@@ -1,4 +1,5 @@
 import Prism from "prismjs";
+import escapeHtml from "escape-html";
 
 require("prismjs/components/prism-markup-templating");
 require("prismjs/components/prism-markup");
@@ -29,7 +30,7 @@ export const getHighlightSyntax = (str: string, lang: string): string => {
       case "ini":
         return Prism.highlight(str, Prism.languages.ini, "ini");
       default:
-        return str;
+        return escapeHtml(str);
     }
   } catch (e) {
     console.log(e);
