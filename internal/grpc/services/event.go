@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -31,7 +32,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
-		events   []models.Event
+		events   []EventDiff
 		count    int64
 	)
 
@@ -50,13 +51,18 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 
 	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID")
-	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Order("`id` DESC").Find(&events).Error; err != nil {
+	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Select([]string{
+		"id", "action", "username", "message", "duration", "file_id", "created_at", "updated_at",
+		"(`old` != `new`) as has_diff",
+	}).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
 	}
 	app.DB().Model(&models.Event{}).Scopes(queryScope).Count(&count)
 	res := make([]*types.EventModel, 0, len(events))
 	for _, m := range events {
-		res = append(res, m.ProtoTransform())
+		protoModel := m.ProtoTransform()
+		protoModel.HasDiff = m.HasDiff
+		res = append(res, protoModel)
 	}
 
 	return &event.ListResponse{
@@ -67,10 +73,32 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	}, nil
 }
 
+func (e *EventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
+	var eventModel models.Event
+	err := app.DB().Preload("File").First(&eventModel, request.Id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &event.ShowResponse{Event: eventModel.ProtoTransform()}, nil
+}
+
 func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
 
 	return ctx, nil
+}
+
+type EventDiff struct {
+	models.Event
+	HasDiff bool `json:"has_diff"`
+}
+
+func (EventDiff) TableName() string {
+	return "events"
 }

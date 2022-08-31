@@ -8018,6 +8018,168 @@ export const event = $root.event = (() => {
         return ListResponse;
     })();
 
+    event.ShowRequest = (function() {
+
+        /**
+         * Properties of a ShowRequest.
+         * @memberof event
+         * @interface IShowRequest
+         * @property {number|null} [id] ShowRequest id
+         */
+
+        /**
+         * Constructs a new ShowRequest.
+         * @memberof event
+         * @classdesc Represents a ShowRequest.
+         * @implements IShowRequest
+         * @constructor
+         * @param {event.IShowRequest=} [properties] Properties to set
+         */
+        function ShowRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ShowRequest id.
+         * @member {number} id
+         * @memberof event.ShowRequest
+         * @instance
+         */
+        ShowRequest.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified ShowRequest message. Does not implicitly {@link event.ShowRequest.verify|verify} messages.
+         * @function encode
+         * @memberof event.ShowRequest
+         * @static
+         * @param {event.ShowRequest} message ShowRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ShowRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.id);
+            return writer;
+        };
+
+        /**
+         * Decodes a ShowRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof event.ShowRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {event.ShowRequest} ShowRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ShowRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.event.ShowRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.id = reader.int64();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return ShowRequest;
+    })();
+
+    event.ShowResponse = (function() {
+
+        /**
+         * Properties of a ShowResponse.
+         * @memberof event
+         * @interface IShowResponse
+         * @property {types.EventModel|null} [event] ShowResponse event
+         */
+
+        /**
+         * Constructs a new ShowResponse.
+         * @memberof event
+         * @classdesc Represents a ShowResponse.
+         * @implements IShowResponse
+         * @constructor
+         * @param {event.IShowResponse=} [properties] Properties to set
+         */
+        function ShowResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ShowResponse event.
+         * @member {types.EventModel|null|undefined} event
+         * @memberof event.ShowResponse
+         * @instance
+         */
+        ShowResponse.prototype.event = null;
+
+        /**
+         * Encodes the specified ShowResponse message. Does not implicitly {@link event.ShowResponse.verify|verify} messages.
+         * @function encode
+         * @memberof event.ShowResponse
+         * @static
+         * @param {event.ShowResponse} message ShowResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ShowResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.event != null && Object.hasOwnProperty.call(message, "event"))
+                $root.types.EventModel.encode(message.event, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Decodes a ShowResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof event.ShowResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {event.ShowResponse} ShowResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ShowResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.event.ShowResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.event = $root.types.EventModel.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return ShowResponse;
+    })();
+
     event.Event = (function() {
 
         /**
@@ -8066,6 +8228,39 @@ export const event = $root.event = (() => {
          * @instance
          * @param {event.ListRequest} request ListRequest message or plain object
          * @returns {Promise<event.ListResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link event.Event#show}.
+         * @memberof event.Event
+         * @typedef ShowCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {event.ShowResponse} [response] ShowResponse
+         */
+
+        /**
+         * Calls Show.
+         * @function show
+         * @memberof event.Event
+         * @instance
+         * @param {event.ShowRequest} request ShowRequest message or plain object
+         * @param {event.Event.ShowCallback} callback Node-style callback called with the error, if any, and ShowResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(Event.prototype.show = function show(request, callback) {
+            return this.rpcCall(show, $root.event.ShowRequest, $root.event.ShowResponse, request, callback);
+        }, "name", { value: "Show" });
+
+        /**
+         * Calls Show.
+         * @function show
+         * @memberof event.Event
+         * @instance
+         * @param {event.ShowRequest} request ShowRequest message or plain object
+         * @returns {Promise<event.ShowResponse>} Promise
          * @variation 2
          */
 
@@ -17744,6 +17939,7 @@ export const types = $root.types = (() => {
          * @property {number|null} [file_id] EventModel file_id
          * @property {types.FileModel|null} [file] EventModel file
          * @property {string|null} [event_at] EventModel event_at
+         * @property {boolean|null} [has_diff] EventModel has_diff
          * @property {string|null} [created_at] EventModel created_at
          * @property {string|null} [updated_at] EventModel updated_at
          * @property {string|null} [deleted_at] EventModel deleted_at
@@ -17845,6 +18041,14 @@ export const types = $root.types = (() => {
         EventModel.prototype.event_at = "";
 
         /**
+         * EventModel has_diff.
+         * @member {boolean} has_diff
+         * @memberof types.EventModel
+         * @instance
+         */
+        EventModel.prototype.has_diff = false;
+
+        /**
          * EventModel created_at.
          * @member {string} created_at
          * @memberof types.EventModel
@@ -17900,6 +18104,8 @@ export const types = $root.types = (() => {
                 $root.types.FileModel.encode(message.file, writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
             if (message.event_at != null && Object.hasOwnProperty.call(message, "event_at"))
                 writer.uint32(/* id 10, wireType 2 =*/82).string(message.event_at);
+            if (message.has_diff != null && Object.hasOwnProperty.call(message, "has_diff"))
+                writer.uint32(/* id 11, wireType 0 =*/88).bool(message.has_diff);
             if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
                 writer.uint32(/* id 100, wireType 2 =*/802).string(message.created_at);
             if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
@@ -17956,6 +18162,9 @@ export const types = $root.types = (() => {
                     break;
                 case 10:
                     message.event_at = reader.string();
+                    break;
+                case 11:
+                    message.has_diff = reader.bool();
                     break;
                 case 100:
                     message.created_at = reader.string();

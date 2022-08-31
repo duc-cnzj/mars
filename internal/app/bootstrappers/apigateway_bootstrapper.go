@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 )
 
@@ -88,6 +89,15 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	gmux := runtime.NewServeMux(
 		runtime.WithOutgoingHeaderMatcher(HeaderMatcher),
 		runtime.WithIncomingHeaderMatcher(HeaderMatcher),
+		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
+			writer.Header().Set("X-Content-Type-Options", "nosniff")
+			pattern, ok := runtime.HTTPPathPattern(ctx)
+			if ok {
+				middlewares.SetPattern(writer, pattern)
+			}
+
+			return nil
+		}),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseEnumNumbers:  true,
@@ -123,10 +133,16 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	s := &http.Server{
 		Addr: ":" + app.Config().AppPort,
-		Handler: middlewares.TracingWrapper(
-			middlewares.RouteLogger(
-				middlewares.AllowCORS(
-					router,
+		Handler: middlewares.Recovery(
+			middlewares.DeletePatternHeader(
+				middlewares.ResponseMetrics(
+					middlewares.TracingWrapper(
+						middlewares.RouteLogger(
+							middlewares.AllowCORS(
+								router,
+							),
+						),
+					),
 				),
 			),
 		),

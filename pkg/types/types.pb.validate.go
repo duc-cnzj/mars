@@ -832,6 +832,8 @@ func (m *EventModel) validate(all bool) error {
 
 	// no validation rules for EventAt
 
+	// no validation rules for HasDiff
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt

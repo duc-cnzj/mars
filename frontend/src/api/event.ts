@@ -6,3 +6,7 @@ export async function events({ page, page_size, action_type, search }: pb.event.
     params: { page, page_size, action_type, search },
   });
 }
+
+export async function showEvent(id: number) {
+  return ajax.get<pb.event.ShowResponse>(`/api/events/${id}`);
+}

@@ -413,7 +413,7 @@
         "tags": [
           "Event"
         ],
-        "summary": "List 用户操作事件列表",
+        "summary": "List 用户操作事件列表, 不包含 old, new",
         "operationId": "Event_List",
         "parameters": [
           {
@@ -457,6 +457,38 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/eventListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{id}": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "summary": "Show 查看事件详情, 包含 old, new",
+        "operationId": "Event_Show",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/eventShowResponse"
             }
           },
           "default": {
@@ -1975,6 +2007,14 @@
         }
       }
     },
+    "eventShowResponse": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/typesEventModel"
+        }
+      }
+    },
     "fileDeleteResponse": {
       "type": "object",
       "properties": {
@@ -2762,6 +2802,9 @@
         "file_id": {
           "type": "string",
           "format": "int64"
+        },
+        "has_diff": {
+          "type": "boolean"
         },
         "id": {
           "type": "string",

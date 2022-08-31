@@ -23,11 +23,26 @@ message ListResponse {
   int64 count = 4;
 }
 
+message ShowRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0];
+}
+
+message ShowResponse {
+  types.EventModel event = 1;
+}
+
 service Event {
-  // List 用户操作事件列表
+  // List 用户操作事件列表, 不包含 old, new
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
       get: "/api/events"
+    };
+  }
+
+  //  Show 查看事件详情, 包含 old, new
+  rpc Show(ShowRequest) returns (ShowResponse) {
+    option (google.api.http) = {
+      get: "/api/events/{id}"
     };
   }
 }

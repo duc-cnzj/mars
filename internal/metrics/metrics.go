@@ -137,6 +137,16 @@ var (
 		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
 		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
 	}, []string{"cron_name"})
+
+	// HttpResponseSize
+	// buckets: 5 B 25 B 125 B 625 B 3.1 kB 16 kB 78 kB 391 kB 2.0 MB 9.8 MB 49 MB 244 MB
+	HttpResponseSize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Subsystem:   system,
+		Name:        "http_response_size",
+		Help:        "http response 响应大小",
+		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		Buckets:     prometheus.ExponentialBuckets(5, 5, 12),
+	}, []string{"path"})
 )
 
 func init() {
@@ -158,4 +168,6 @@ func init() {
 	prometheus.MustRegister(CronDuration)
 	prometheus.MustRegister(CronCommandCount)
 	prometheus.MustRegister(CronErrorCount)
+
+	prometheus.MustRegister(HttpResponseSize)
 }

@@ -25,7 +25,7 @@ func HttpCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if Etag != "" {
 			if r.Header.Get("If-None-Match") == Etag {
-				w.WriteHeader(304)
+				w.WriteHeader(http.StatusNotModified)
 				return
 			}
 			w.Header().Set("Etag", Etag)
