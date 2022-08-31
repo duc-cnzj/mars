@@ -1,10 +1,11 @@
 package middlewares
 
 import (
-	"github.com/duc-cnzj/mars/internal/metrics"
-	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sync/atomic"
+
+	"github.com/duc-cnzj/mars/internal/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var MetricsIgnoreFn = TracingIgnoreFn
@@ -28,7 +29,7 @@ func ResponseMetrics(h http.Handler) http.Handler {
 		}
 		rw := &CustomResponseWriter{ResponseWriter: w}
 		defer func() {
-			pattern := rw.Header().Get("pattern")
+			pattern := GetPattern(rw)
 			bytes := rw.bytes.Load()
 			if pattern != "" && bytes != nil {
 				metrics.HttpResponseSize.With(prometheus.Labels{"path": pattern}).Observe(float64(bytes.(int)))

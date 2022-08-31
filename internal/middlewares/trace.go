@@ -27,7 +27,6 @@ func TracingWrapper(h http.Handler) http.Handler {
 		var (
 			ctx  context.Context
 			span trace2.Span
-			rw   http.ResponseWriter = w
 		)
 
 		ctx, span = trace2.NewNoopTracerProvider().Tracer("").Start(r.Context(), "")
@@ -39,20 +38,17 @@ func TracingWrapper(h http.Handler) http.Handler {
 			span.SetAttributes(attribute.String("url", url))
 			span.SetAttributes(attribute.String("method", r.Method))
 			span.SetAttributes(attribute.String("user-agent", r.UserAgent()))
-			rw = &CustomResponseWriter{
-				ResponseWriter: w,
-			}
 		}
 
 		defer func() {
-			pattern := GetPattern(rw)
+			pattern := GetPattern(w)
 			if pattern != "" {
 				span.SetName(pattern)
 			}
 
 			span.End()
 		}()
-		h.ServeHTTP(rw, r.WithContext(ctx))
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -1,9 +1,10 @@
 package middlewares
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeletePatternHeader(t *testing.T) {
@@ -14,4 +15,15 @@ func TestDeletePatternHeader(t *testing.T) {
 	DeletePatternHeader(m).ServeHTTP(rw, &http.Request{})
 	assert.Equal(t, "", rw.Header().Get("pattern"))
 	assert.Equal(t, 1, m.serverCalled)
+}
+
+func TestGetPattern(t *testing.T) {
+	rw := &mockResponseWriter{h: map[string][]string{}}
+	assert.Equal(t, "", GetPattern(rw))
+}
+
+func TestSetPattern(t *testing.T) {
+	rw := &mockResponseWriter{h: map[string][]string{}}
+	SetPattern(rw, "aaa")
+	assert.Equal(t, "aaa", GetPattern(rw))
 }

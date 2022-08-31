@@ -6,11 +6,11 @@ import (
 
 const PatternHeader = "pattern"
 
-func GetPattern(w http.ResponseWriter) string  {
+func GetPattern(w http.ResponseWriter) string {
 	return w.Header().Get(PatternHeader)
 }
 
-func SetPattern(w http.ResponseWriter, val string)  {
+func SetPattern(w http.ResponseWriter, val string) {
 	w.Header().Set(PatternHeader, val)
 }
 
