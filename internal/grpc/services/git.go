@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -140,7 +141,7 @@ const (
 const ProjectOptionsCacheKey = "ProjectOptions"
 
 func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
-	remember, err := app.Cache().Remember(ProjectOptionsCacheKey, 30, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey(ProjectOptionsCacheKey), 30, func() ([]byte, error) {
 		var (
 			enabledProjects []models.GitProject
 			ch              = make(chan *git.Option)

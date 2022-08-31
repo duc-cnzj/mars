@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"golang.org/x/sync/singleflight"
@@ -21,13 +22,13 @@ func NewCache(fc Store, sf *singleflight.Group) *Cache {
 	return &Cache{fc: fc, sf: sf}
 }
 
-func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.sf.Do("CacheRemember:"+key, func() (any, error) {
+func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+	do, err, _ := c.sf.Do("CacheRemember:"+key.String(), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
 
-		res, err := c.fc.Get(key)
+		res, err := c.fc.Get(key.String())
 		mlog.Debugf("CacheRemember: %s, from cache: %t", key, err == nil)
 		if err == nil {
 			return res, nil
@@ -37,7 +38,7 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 			return nil, err
 		}
 		// 设置缓存阶段不管它有没有成功，我 fn() 都是成功的，所以需要返回
-		err = c.fc.Set(key, res, seconds)
+		err = c.fc.Set(key.String(), res, seconds)
 		if err != nil {
 			mlog.Errorf("[CACHE MISSING]: key %s err %v", key, err)
 		}
@@ -51,6 +52,6 @@ func (c *Cache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]
 	return do.([]byte), err
 }
 
-func (c *Cache) Clear(key string) error {
-	return c.fc.Delete(key)
+func (c *Cache) Clear(key contracts.CacheKeyInterface) error {
+	return c.fc.Delete(key.String())
 }

@@ -48,6 +48,7 @@ func (e *Event) ProtoTransform() *types.EventModel {
 		Duration:  e.Duration,
 		FileId:    fID,
 		File:      f,
+		HasDiff:   e.Old != e.New,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),
 		CreatedAt: date.ToRFC3339DatetimeString(&e.CreatedAt),
 		UpdatedAt: date.ToRFC3339DatetimeString(&e.UpdatedAt),

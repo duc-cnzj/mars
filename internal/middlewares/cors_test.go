@@ -8,11 +8,15 @@ import (
 )
 
 type mockHandler struct {
+	fn           func(writer http.ResponseWriter, request *http.Request)
 	serverCalled int
 }
 
 func (m *mockHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	m.serverCalled++
+	if m.fn != nil {
+		m.fn(writer, request)
+	}
 }
 
 type mockResponseWriter struct {
@@ -25,7 +29,7 @@ func (m *mockResponseWriter) Header() http.Header {
 }
 
 func (m *mockResponseWriter) Write(bytes []byte) (int, error) {
-	return 0, nil
+	return len(bytes), nil
 }
 
 func (m *mockResponseWriter) WriteHeader(statusCode int) {

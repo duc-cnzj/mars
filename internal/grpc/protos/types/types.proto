@@ -90,6 +90,7 @@ message EventModel {
 
   FileModel file = 9;
   string event_at = 10;
+  bool has_diff = 11;
 
   string created_at = 100;
   string updated_at = 101;

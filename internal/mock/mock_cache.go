@@ -7,6 +7,7 @@ package mock
 import (
 	reflect "reflect"
 
+	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -34,7 +35,7 @@ func (m *MockCacheInterface) EXPECT() *MockCacheInterfaceMockRecorder {
 }
 
 // Clear mocks base method.
-func (m *MockCacheInterface) Clear(arg0 string) error {
+func (m *MockCacheInterface) Clear(arg0 contracts.CacheKeyInterface) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Clear", arg0)
 	ret0, _ := ret[0].(error)
@@ -48,7 +49,7 @@ func (mr *MockCacheInterfaceMockRecorder) Clear(arg0 any) *gomock.Call {
 }
 
 // Remember mocks base method.
-func (m *MockCacheInterface) Remember(arg0 string, arg1 int, arg2 func() ([]byte, error)) ([]byte, error) {
+func (m *MockCacheInterface) Remember(arg0 contracts.CacheKeyInterface, arg1 int, arg2 func() ([]byte, error)) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Remember", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]byte)

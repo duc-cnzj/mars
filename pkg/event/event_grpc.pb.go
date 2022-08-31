@@ -23,8 +23,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
-	// List 用户操作事件列表
+	// List 用户操作事件列表, 不包含 old, new
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	//  Show 查看事件详情, 包含 old, new
+	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 }
 
 type eventClient struct {
@@ -44,12 +46,23 @@ func (c *eventClient) List(ctx context.Context, in *ListRequest, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *eventClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
+	out := new(ShowResponse)
+	err := c.cc.Invoke(ctx, "/event.Event/Show", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EventServer is the server API for Event service.
 // All implementations must embed UnimplementedEventServer
 // for forward compatibility
 type EventServer interface {
-	// List 用户操作事件列表
+	// List 用户操作事件列表, 不包含 old, new
 	List(context.Context, *ListRequest) (*ListResponse, error)
+	//  Show 查看事件详情, 包含 old, new
+	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	mustEmbedUnimplementedEventServer()
 }
 
@@ -59,6 +72,9 @@ type UnimplementedEventServer struct {
 
 func (UnimplementedEventServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedEventServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
 }
 func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
 
@@ -91,6 +107,24 @@ func _Event_List_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Event_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServer).Show(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/event.Event/Show",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServer).Show(ctx, req.(*ShowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Event_ServiceDesc is the grpc.ServiceDesc for Event service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -101,6 +135,10 @@ var Event_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _Event_List_Handler,
+		},
+		{
+			MethodName: "Show",
+			Handler:    _Event_Show_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

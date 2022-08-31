@@ -453,7 +453,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(c)
-	c.EXPECT().Remember("ProjectOptions", 30, gomock.Any()).Return(nil, errors.New("xxx"))
+	c.EXPECT().Remember(cache.NewKey("ProjectOptions"), 30, gomock.Any()).Return(nil, errors.New("xxx"))
 	_, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Equal(t, "xxx", err.Error())
 

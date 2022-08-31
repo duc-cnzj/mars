@@ -2,12 +2,12 @@ package picture
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -43,7 +43,7 @@ func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, err
 	if !random {
 		seconds = 24 * 60 * 60
 	}
-	bg, _ := app.Cache().Remember(fmt.Sprintf("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
+	bg, _ := app.Cache().Remember(cache.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
 		weburl := urls[rand.Intn(len(urls))]
 		response, err := client.Get(weburl)
 		if err != nil {

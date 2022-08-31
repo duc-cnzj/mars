@@ -20,7 +20,7 @@ func TestCache_Remember(t *testing.T) {
 	var i int
 	cache := NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
 	fn := func() {
-		cache.Remember("duc", 10, func() ([]byte, error) {
+		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
 		})
@@ -32,7 +32,7 @@ func TestCache_Remember(t *testing.T) {
 
 	y := 0
 	fn2 := func() {
-		cache.Remember("cache-y", 1, func() ([]byte, error) {
+		cache.Remember(NewKey("cache-y"), 1, func() ([]byte, error) {
 			y++
 			return []byte("duccc"), nil
 		})
@@ -44,7 +44,7 @@ func TestCache_Remember(t *testing.T) {
 
 	z := 0
 	fn3 := func() {
-		cache.Remember("cache-z", 1, func() ([]byte, error) {
+		cache.Remember(NewKey("cache-z"), 1, func() ([]byte, error) {
 			z++
 			return nil, errors.New("error fn3")
 		})
@@ -55,11 +55,11 @@ func TestCache_Remember(t *testing.T) {
 	assert.Equal(t, 3, z)
 
 	nocacheCalled := 0
-	cache.Remember("cache-nocache", 10, func() ([]byte, error) {
+	cache.Remember(NewKey("cache-nocache"), 10, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
 	})
-	cache.Remember("cache-nocache", 0, func() ([]byte, error) {
+	cache.Remember(NewKey("cache-nocache"), 0, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
 	})
@@ -86,7 +86,7 @@ func TestCache_RememberErrorStore(t *testing.T) {
 	var i int
 	cache := NewCache(&errorstore{}, &singleflight.Group{})
 	fn := func() ([]byte, error) {
-		return cache.Remember("duc", 10, func() ([]byte, error) {
+		return cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
 		})
@@ -107,13 +107,13 @@ func TestCache_Clear(t *testing.T) {
 		return []byte("aaa"), nil
 	}
 	// +1
-	cache.Remember("aaa", 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn)
 	// +0
-	cache.Remember("aaa", 100, fn)
-	assert.Nil(t, cache.Clear("aaa"))
+	cache.Remember(NewKey("aaa"), 100, fn)
+	assert.Nil(t, cache.Clear(NewKey("aaa")))
 	// +1
-	cache.Remember("aaa", 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn)
 	assert.Equal(t, 2, called)
-	cache.Remember("aaa", 100, fn)
+	cache.Remember(NewKey("aaa"), 100, fn)
 	assert.Equal(t, 2, called)
 }

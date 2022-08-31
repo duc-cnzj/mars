@@ -16,18 +16,19 @@ func NewMetricsForCache(c contracts.CacheInterface) *MetricsForCache {
 	return &MetricsForCache{Cache: c}
 }
 
-func (m *MetricsForCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+func (m *MetricsForCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+	labels := prometheus.Labels{"key": key.Slug()}
 	defer func(t time.Time) {
-		metrics.CacheRememberDuration.With(prometheus.Labels{"key": key}).Observe(time.Since(t).Seconds())
+		metrics.CacheRememberDuration.With(labels).Observe(time.Since(t).Seconds())
 	}(time.Now())
 	bytes, err := m.Cache.Remember(key, seconds, fn)
 	if err == nil {
-		metrics.CacheBytesGauge.With(prometheus.Labels{"key": key}).Set(float64(len(bytes)))
+		metrics.CacheBytesGauge.With(labels).Set(float64(len(bytes)))
 	}
 
 	return bytes, err
 }
 
-func (m *MetricsForCache) Clear(key string) error {
+func (m *MetricsForCache) Clear(key contracts.CacheKeyInterface) error {
 	return m.Cache.Clear(key)
 }

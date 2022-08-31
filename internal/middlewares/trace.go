@@ -9,7 +9,6 @@ import (
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -29,10 +28,10 @@ func TracingWrapper(h http.Handler) http.Handler {
 			ctx  context.Context
 			span trace2.Span
 		)
-		ctx, span = trace2.NewNoopTracerProvider().Tracer("").Start(r.Context(), "")
 
+		ctx, span = trace2.NewNoopTracerProvider().Tracer("").Start(r.Context(), "")
+		url := r.URL.String()
 		if !TracingIgnoreFn(r.URL.Path) {
-			url := r.URL.String()
 			ctxt := propagation.TraceContext{}
 			ctx, span = app.Tracer().Start(ctxt.Extract(r.Context(), propagation.HeaderCarrier(r.Header)), fmt.Sprintf("[%s]: %s", r.Method, url))
 			span.SetAttributes(grpcGatewayTag)
@@ -40,9 +39,16 @@ func TracingWrapper(h http.Handler) http.Handler {
 			span.SetAttributes(attribute.String("method", r.Method))
 			span.SetAttributes(attribute.String("user-agent", r.UserAgent()))
 		}
-		defer span.End()
-		r = r.WithContext(ctx)
-		h.ServeHTTP(w, r)
+
+		defer func() {
+			pattern := GetPatternHeader(w)
+			if pattern != "" {
+				span.SetName(pattern)
+			}
+
+			span.End()
+		}()
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

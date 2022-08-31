@@ -70,6 +70,17 @@ func TestEventSvc_List(t *testing.T) {
 	})
 	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
 	assert.Nil(t, list.Items[0].File)
+	assert.True(t, list.Items[0].HasDiff)
+	assert.Empty(t, list.Items[0].Old)
+	assert.Empty(t, list.Items[0].New)
+	assert.NotEmpty(t, list.Items[0].Id)
+	assert.NotEmpty(t, list.Items[0].Action)
+	assert.NotEmpty(t, list.Items[0].Username)
+	assert.NotEmpty(t, list.Items[0].Message)
+	assert.NotEmpty(t, list.Items[0].Duration)
+	assert.NotEmpty(t, list.Items[0].CreatedAt)
+	assert.NotEmpty(t, list.Items[0].UpdatedAt)
+	assert.NotEmpty(t, list.Items[0].DeletedAt)
 
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:     1,
@@ -129,4 +140,60 @@ func seedEvents(db *gorm.DB) *models.File {
 		db.Create(&datum)
 	}
 	return f
+}
+
+func TestEventSvc_Show(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, closeDB := testutil.SetGormDB(m, app)
+	defer closeDB()
+	app.EXPECT().IsDebug().Return(false).AnyTimes()
+	_, err := new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+		Id: 1,
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, fromError.Code())
+	assert.Nil(t, db.AutoMigrate(&models.Event{}, &models.File{}))
+	_, err = new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+		Id: 1,
+	})
+	fromError, _ = status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+
+	f := &models.File{
+		UploadType: "local",
+		Path:       "/app/a.txt",
+		Size:       100,
+		Username:   "duc",
+	}
+	db.Create(f)
+	ev := &models.Event{
+		Action:   1,
+		Username: "duc",
+		Message:  "aaa",
+		Old:      "old",
+		New:      "new",
+		Duration: "10s",
+		FileID:   &f.ID,
+	}
+	db.Create(ev)
+	r, err := new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+		Id: int64(ev.ID),
+	})
+	assert.Nil(t, err)
+	assert.NotEmpty(t, r.Event.Old)
+	assert.NotEmpty(t, r.Event.New)
+	assert.NotEmpty(t, r.Event.Duration)
+	assert.NotEmpty(t, r.Event.Action)
+	assert.NotEmpty(t, r.Event.File)
+	assert.NotEmpty(t, r.Event.Id)
+	assert.NotEmpty(t, r.Event.Message)
+	assert.NotEmpty(t, r.Event.Username)
+	assert.NotEmpty(t, r.Event.EventAt)
+	assert.NotEmpty(t, r.Event.CreatedAt)
+	assert.NotEmpty(t, r.Event.DeletedAt)
+	assert.NotEmpty(t, r.Event.UpdatedAt)
+	assert.NotEmpty(t, r.Event.File.Id)
+	assert.Equal(t, r.Event.File.Id, r.Event.FileId)
 }

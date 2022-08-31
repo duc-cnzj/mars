@@ -3686,6 +3686,82 @@ export namespace event {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ListResponse;
     }
 
+    /** Properties of a ShowRequest. */
+    interface IShowRequest {
+
+        /** ShowRequest id */
+        id?: (number|null);
+    }
+
+    /** Represents a ShowRequest. */
+    class ShowRequest implements IShowRequest {
+
+        /**
+         * Constructs a new ShowRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: event.IShowRequest);
+
+        /** ShowRequest id. */
+        public id: number;
+
+        /**
+         * Encodes the specified ShowRequest message. Does not implicitly {@link event.ShowRequest.verify|verify} messages.
+         * @param message ShowRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: event.ShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ShowRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ShowRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ShowRequest;
+    }
+
+    /** Properties of a ShowResponse. */
+    interface IShowResponse {
+
+        /** ShowResponse event */
+        event?: (types.EventModel|null);
+    }
+
+    /** Represents a ShowResponse. */
+    class ShowResponse implements IShowResponse {
+
+        /**
+         * Constructs a new ShowResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: event.IShowResponse);
+
+        /** ShowResponse event. */
+        public event?: (types.EventModel|null);
+
+        /**
+         * Encodes the specified ShowResponse message. Does not implicitly {@link event.ShowResponse.verify|verify} messages.
+         * @param message ShowResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: event.ShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ShowResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ShowResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ShowResponse;
+    }
+
     /** Represents an Event */
     class Event extends $protobuf.rpc.Service {
 
@@ -3710,6 +3786,20 @@ export namespace event {
          * @returns Promise
          */
         public list(request: event.ListRequest): Promise<event.ListResponse>;
+
+        /**
+         * Calls Show.
+         * @param request ShowRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and ShowResponse
+         */
+        public show(request: event.ShowRequest, callback: event.Event.ShowCallback): void;
+
+        /**
+         * Calls Show.
+         * @param request ShowRequest message or plain object
+         * @returns Promise
+         */
+        public show(request: event.ShowRequest): Promise<event.ShowResponse>;
     }
 
     namespace Event {
@@ -3720,6 +3810,13 @@ export namespace event {
          * @param [response] ListResponse
          */
         type ListCallback = (error: (Error|null), response?: event.ListResponse) => void;
+
+        /**
+         * Callback as used by {@link event.Event#show}.
+         * @param error Error, if any
+         * @param [response] ShowResponse
+         */
+        type ShowCallback = (error: (Error|null), response?: event.ShowResponse) => void;
     }
 }
 
@@ -8388,6 +8485,9 @@ export namespace types {
         /** EventModel event_at */
         event_at?: (string|null);
 
+        /** EventModel has_diff */
+        has_diff?: (boolean|null);
+
         /** EventModel created_at */
         created_at?: (string|null);
 
@@ -8436,6 +8536,9 @@ export namespace types {
 
         /** EventModel event_at. */
         public event_at: string;
+
+        /** EventModel has_diff. */
+        public has_diff: boolean;
 
         /** EventModel created_at. */
         public created_at: string;

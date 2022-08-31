@@ -23,12 +23,8 @@ import {
 import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { events } from "../api/event";
-import {
-  deleteFile,
-  downloadFile,
-  diskInfo as diskInfoApi,
-} from "../api/file";
+import { events, showEvent } from "../api/event";
+import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { getToken } from "../utils/token";
 import DiffViewer from "./DiffViewer";
@@ -36,7 +32,7 @@ import DiffViewer from "./DiffViewer";
 const defaultPageSize = 15;
 const { Option } = Select;
 
-const initQuery = { action_type: pb.types.EventActionType.Unknown, search: "" }
+const initQuery = { action_type: pb.types.EventActionType.Unknown, search: "" };
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -116,7 +112,7 @@ const EventList: React.FC = () => {
 
   useEffect(() => {
     fetch(initQuery.action_type, initQuery.search);
-  }, [fetch])
+  }, [fetch]);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
   const [shellModalVisible, setShellModalVisible] = useState(false);
@@ -187,8 +183,16 @@ const EventList: React.FC = () => {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const showModal = useCallback(() => {
-    setIsModalVisible(true);
+  const showModal = useCallback((id: number) => {
+    showEvent(id).then(({ data }) => {
+      data.event &&
+        setConfig({
+          old: data.event.old || "",
+          new: data.event.new || "",
+          title: `[${data.event.username}]: ` + data.event.message,
+        });
+      setIsModalVisible(true);
+    });
   }, []);
 
   const handleOk = useCallback(() => {
@@ -197,6 +201,7 @@ const EventList: React.FC = () => {
 
   const handleCancel = useCallback(() => {
     setIsModalVisible(false);
+    setConfig({ new: "", old: "", title: "" });
   }, []);
   const getHeight = () => {
     let h = window.innerHeight - 260;
@@ -224,7 +229,7 @@ const EventList: React.FC = () => {
               style={{ width: 200, marginLeft: 10 }}
               onChange={(v) => {
                 setQueries((q) => ({ ...q, action_type: v }));
-                fetch(v, queries.search)
+                fetch(v, queries.search);
               }}
             >
               <Option value={pb.types.EventActionType.Unknown}>全部</Option>
@@ -301,42 +306,39 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {!!item.file &&
-                  item.action === pb.types.EventActionType.Shell && (
-                    <>
-                      <Button
-                        type="dashed"
-                        style={{ marginRight: 5 }}
-                        onClick={() => {
-                          setShellModalVisible(true);
-                          setFileID(item.file_id);
-                        }}
-                      >
-                        查看操作记录{" "}
-                        {item.duration && (
-                          <span style={{ fontSize: "10px", marginLeft: 5 }}>
-                            (时长: {item.duration})
-                          </span>
-                        )}
-                      </Button>
-                      <DeleteFile
-                        onDelete={() => {
-                          deleteFile({ id: item.file_id })
-                            .then((res) => {
-                              setData(
-                                data.map((v) =>
-                                  v.id === item.id ? { ...v, file: null } : v
-                                )
-                              );
-                              message.success("删除成功");
-                            })
-                            .catch((e) =>
-                              message.error(e.response.data.message)
+                {!!item.file && item.action === pb.types.EventActionType.Shell && (
+                  <>
+                    <Button
+                      type="dashed"
+                      style={{ marginRight: 5 }}
+                      onClick={() => {
+                        setShellModalVisible(true);
+                        setFileID(item.file_id);
+                      }}
+                    >
+                      查看操作记录{" "}
+                      {item.duration && (
+                        <span style={{ fontSize: "10px", marginLeft: 5 }}>
+                          (时长: {item.duration})
+                        </span>
+                      )}
+                    </Button>
+                    <DeleteFile
+                      onDelete={() => {
+                        deleteFile({ id: item.file_id })
+                          .then((res) => {
+                            setData(
+                              data.map((v) =>
+                                v.id === item.id ? { ...v, file: null } : v
+                              )
                             );
-                        }}
-                      />
-                    </>
-                  )}
+                            message.success("删除成功");
+                          })
+                          .catch((e) => message.error(e.response.data.message));
+                      }}
+                    />
+                  </>
+                )}
                 {!!item.file &&
                   item.action === pb.types.EventActionType.Upload && (
                     <>
@@ -367,22 +369,15 @@ const EventList: React.FC = () => {
                       />
                     </>
                   )}
-                {!!(item.old || item.new) ? (
+                {item.has_diff && (
                   <Button
                     type="dashed"
                     onClick={() => {
-                      setConfig({
-                        old: item.old,
-                        new: item.new,
-                        title: `[${item.username}]: ` + item.message,
-                      });
-                      showModal();
+                      showModal(item.id);
                     }}
                   >
                     查看改动
                   </Button>
-                ) : (
-                  <></>
                 )}
               </List.Item>
             )}
