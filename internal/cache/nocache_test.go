@@ -10,7 +10,7 @@ func TestCache_RememberNoCache(t *testing.T) {
 	var i int
 	cache := &NoCache{}
 	fn := func() {
-		cache.Remember("duc", 10, func() ([]byte, error) {
+		cache.Remember(NewKey("duc"), 10, func() ([]byte, error) {
 			i++
 			return []byte("duccc"), nil
 		})
@@ -23,5 +23,5 @@ func TestCache_RememberNoCache(t *testing.T) {
 
 func TestNoCache_Clear(t *testing.T) {
 	cache := &NoCache{}
-	assert.Nil(t, cache.Clear("aaa"))
+	assert.Nil(t, cache.Clear(NewKey("aaa")))
 }

@@ -29,7 +29,7 @@ func (m *mockResponseWriter) Header() http.Header {
 }
 
 func (m *mockResponseWriter) Write(bytes []byte) (int, error) {
-	return 0, nil
+	return len(bytes), nil
 }
 
 func (m *mockResponseWriter) WriteHeader(statusCode int) {

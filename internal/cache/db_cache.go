@@ -7,10 +7,11 @@ import (
 
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
-	"gorm.io/gorm/clause"
 )
 
 type DBCache struct {
@@ -22,14 +23,14 @@ func NewDBCache(sf *singleflight.Group, dbFunc func() *gorm.DB) *DBCache {
 	return &DBCache{sf: sf, dbFunc: dbFunc}
 }
 
-func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.sf.Do(c.cacheKey(key), func() (any, error) {
+func (c *DBCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
+	do, err, _ := c.sf.Do(c.cacheKey(key.String()), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
 
 		var cache models.DBCache
-		c.dbFunc().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache)
+		c.dbFunc().Where("`key` = ? and `expired_at` >= ?", key.String(), time.Now()).First(&cache)
 		if cache.Key != "" {
 			bs, err := base64.StdEncoding.DecodeString(cache.Value)
 			if err == nil {
@@ -42,7 +43,7 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 		}
 		toString := base64.StdEncoding.EncodeToString(bytes)
 		cache = models.DBCache{
-			Key:       key,
+			Key:       key.String(),
 			Value:     toString,
 			ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
 		}
@@ -60,8 +61,8 @@ func (c *DBCache) Remember(key string, seconds int, fn func() ([]byte, error)) (
 	return do.([]byte), nil
 }
 
-func (c *DBCache) Clear(key string) error {
-	return c.dbFunc().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
+func (c *DBCache) Clear(key contracts.CacheKeyInterface) error {
+	return c.dbFunc().Where("`key` = ?", key.String()).Delete(&models.DBCache{}).Error
 }
 
 func (c *DBCache) cacheKey(key string) string {

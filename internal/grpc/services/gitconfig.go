@@ -17,6 +17,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/cache"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -141,7 +142,7 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 		request.Config.Branches = []string{"*"}
 	}
 	if request.Config != nil && request.Config.DisplayName != project.GlobalMarsConfig().DisplayName {
-		app.Cache().Clear(ProjectOptionsCacheKey)
+		app.Cache().Clear(cache.NewKey(ProjectOptionsCacheKey))
 	}
 	request.Config.ConfigFileValues = strings.TrimRight(request.Config.ConfigFileValues, " ")
 	request.Config.ValuesYaml = strings.TrimRight(request.Config.ValuesYaml, " ")

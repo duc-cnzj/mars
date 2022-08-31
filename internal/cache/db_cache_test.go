@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -36,9 +37,9 @@ func TestDBCache_Remember(t *testing.T) {
 	sf := singleflight.Group{}
 	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
 	db.AutoMigrate(&models.DBCache{})
-	called := 0
+	var called int64
 	fn := func() ([]byte, error) {
-		called++
+		atomic.AddInt64(&called, 1)
 		time.Sleep(2 * time.Second)
 		return []byte("data"), nil
 	}
@@ -47,7 +48,7 @@ func TestDBCache_Remember(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			newCacheByApp(app).Remember("key", 1000, fn)
+			newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
 		}()
 	}
 	wg.Wait()
@@ -60,28 +61,28 @@ func TestDBCache_Remember(t *testing.T) {
 	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte("data")), c.Value)
 	// 手动修改 value 让 b64 报错，会走 fn 的让 called + 1
 	db.Model(c).Update("value", "xxx")
-	newCacheByApp(app).Remember("key", 1000, fn)
+	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
 
-	assert.Equal(t, 2, called)
-	newCacheByApp(app).Remember("key", 1000, fn)
-	assert.Equal(t, 2, called)
-	newCacheByApp(app).Remember("key", 1000, fn)
-	assert.Equal(t, 2, called)
+	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
+	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
+	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
+	newCacheByApp(app).Remember(NewKey("key"), 1000, fn)
+	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
 
-	_, err := newCacheByApp(app).Remember("key-err", 1000, func() ([]byte, error) {
+	_, err := newCacheByApp(app).Remember(NewKey("key-err"), 1000, func() ([]byte, error) {
 		return nil, errors.New("aaa")
 	})
 	assert.Equal(t, "aaa", err.Error())
 
 	nocacheCalled := 0
-	_, err = newCacheByApp(app).Remember("no-cache-0-second", 10, func() ([]byte, error) {
+	_, err = newCacheByApp(app).Remember(NewKey("no-cache-0-second"), 10, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, nocacheCalled)
 
-	_, err = newCacheByApp(app).Remember("no-cache-0-second", 0, func() ([]byte, error) {
+	_, err = newCacheByApp(app).Remember(NewKey("no-cache-0-second"), 0, func() ([]byte, error) {
 		nocacheCalled++
 		return nil, nil
 	})
@@ -108,16 +109,16 @@ func TestDBCache_Clear(t *testing.T) {
 	db.Model(&models.DBCache{}).Count(&count)
 	assert.Equal(t, int64(0), count)
 
-	newCacheByApp(app).Remember("key-1", 100, func() ([]byte, error) {
+	newCacheByApp(app).Remember(NewKey("key-1"), 100, func() ([]byte, error) {
 		return []byte("a-1"), nil
 	})
-	newCacheByApp(app).Remember("key-2", 100, func() ([]byte, error) {
+	newCacheByApp(app).Remember(NewKey("key-2"), 100, func() ([]byte, error) {
 		return []byte("a-2"), nil
 	})
 	db.Model(&models.DBCache{}).Count(&count)
 	assert.Equal(t, int64(2), count)
 
-	assert.Nil(t, newCacheByApp(app).Clear("key-1"))
+	assert.Nil(t, newCacheByApp(app).Clear(NewKey("key-1")))
 
 	var caches []*models.DBCache
 	db.Model(&models.DBCache{}).Find(&caches)

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	cache2 "github.com/duc-cnzj/mars/internal/cache"
+
 	"github.com/duc-cnzj/mars-client/v4/gitconfig"
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars/internal/auth"
@@ -286,7 +288,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	cache := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(cache).Times(2)
 	mc.DisplayName = "app"
-	cache.EXPECT().Clear("ProjectOptions").Times(2)
+	cache.EXPECT().Clear(cache2.NewKey("ProjectOptions")).Times(2)
 	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
 	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,

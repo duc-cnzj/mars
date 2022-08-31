@@ -9,7 +9,6 @@ import (
 )
 
 func TestResponseMetrics(t *testing.T) {
-
 	var tests = []struct {
 		path string
 		fn   func(writer http.ResponseWriter, request *http.Request)
@@ -19,6 +18,7 @@ func TestResponseMetrics(t *testing.T) {
 			fn: func(writer http.ResponseWriter, request *http.Request) {
 				_, ok := writer.(*CustomResponseWriter)
 				assert.True(t, ok)
+				SetPattern(writer, "/api/xxxx?xxx=xxx")
 			},
 		},
 		{
@@ -61,6 +61,7 @@ func TestResponseMetrics(t *testing.T) {
 		rw := &mockResponseWriter{h: map[string][]string{}}
 		m := &mockHandler{
 			fn: func(writer http.ResponseWriter, request *http.Request) {
+				writer.Write([]byte("aa"))
 				test.fn(writer, request)
 			},
 		}

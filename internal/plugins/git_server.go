@@ -4,9 +4,10 @@ package plugins
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/cache"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -94,8 +95,8 @@ func (g *gitServerCache) ListProjects(page, pageSize int) (contracts.ListProject
 	return g.s.ListProjects(page, pageSize)
 }
 
-func CacheKeyAllProjects() string {
-	return "AllProjects"
+func CacheKeyAllProjects() contracts.CacheKeyInterface {
+	return cache.NewKey("AllProjects")
 }
 
 func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
@@ -135,8 +136,8 @@ func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (contracts
 	return g.s.ListBranches(pid, page, pageSize)
 }
 
-func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) string {
-	return fmt.Sprintf("AllBranches-%v", pid)
+func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) contracts.CacheKeyInterface {
+	return cache.NewKey("AllBranches-%v", pid)
 }
 
 func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
@@ -171,7 +172,7 @@ func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, e
 }
 
 func (g *gitServerCache) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetCommit:%s-%s", pid, sha), GetCommitCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("GetCommit:%s-%s", pid, sha), GetCommitCacheSeconds, func() ([]byte, error) {
 		c, err := g.s.GetCommit(pid, sha)
 		if err != nil {
 			return nil, err
@@ -206,7 +207,7 @@ func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (contracts.Pi
 }
 
 func (g *gitServerCache) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("ListCommits:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("ListCommits:%s-%s", pid, branch), ListCommitsCacheSeconds, func() ([]byte, error) {
 		commits, err := g.s.ListCommits(pid, branch)
 		if err != nil {
 			return nil, err
@@ -245,7 +246,7 @@ func (g *gitServerCache) ListCommits(pid string, branch string) ([]contracts.Com
 }
 
 func (g *gitServerCache) GetFileContentWithBranch(pid string, branch string, filename string) (string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithBranch-%s-%s-%s", pid, branch, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("GetFileContentWithBranch-%s-%s-%s", pid, branch, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
 		content, err := g.s.GetFileContentWithBranch(pid, branch, filename)
 		if err != nil {
 			return nil, err
@@ -259,7 +260,7 @@ func (g *gitServerCache) GetFileContentWithBranch(pid string, branch string, fil
 }
 
 func (g *gitServerCache) GetFileContentWithSha(pid string, sha string, filename string) (string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetFileContentWithSha-%s-%s-%s", pid, sha, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("GetFileContentWithSha-%s-%s-%s", pid, sha, filename), GetFileContentCacheSeconds, func() ([]byte, error) {
 		content, err := g.s.GetFileContentWithSha(pid, sha, filename)
 		if err != nil {
 			return nil, err
@@ -273,7 +274,7 @@ func (g *gitServerCache) GetFileContentWithSha(pid string, sha string, filename 
 }
 
 func (g *gitServerCache) GetDirectoryFilesWithBranch(pid string, branch string, path string, recursive bool) ([]string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithBranch-%s-%s-%s-%v", pid, branch, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("GetDirectoryFilesWithBranch-%s-%s-%s-%v", pid, branch, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
 		withBranch, err := g.s.GetDirectoryFilesWithBranch(pid, branch, path, recursive)
 		if err != nil {
 			return nil, err
@@ -290,7 +291,7 @@ func (g *gitServerCache) GetDirectoryFilesWithBranch(pid string, branch string, 
 }
 
 func (g *gitServerCache) GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error) {
-	remember, err := app.Cache().Remember(fmt.Sprintf("GetDirectoryFilesWithSha-%s-%s-%s-%v", pid, sha, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(cache.NewKey("GetDirectoryFilesWithSha-%s-%s-%s-%v", pid, sha, path, recursive), GetDirectoryFilesCacheSeconds, func() ([]byte, error) {
 		withBranch, err := g.s.GetDirectoryFilesWithSha(pid, sha, path, recursive)
 		if err != nil {
 			return nil, err
