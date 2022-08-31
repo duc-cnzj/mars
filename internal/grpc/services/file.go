@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -99,7 +100,7 @@ func (*File) MaxUploadSize(ctx context.Context, request *file.MaxUploadSizeReque
 }
 
 func (m *File) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
-	if fullMethodName == "MaxUploadSize" {
+	if strings.Contains(fullMethodName, "MaxUploadSize") {
 		return ctx, nil
 	}
 
