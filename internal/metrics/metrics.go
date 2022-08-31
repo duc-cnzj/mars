@@ -19,7 +19,8 @@
 package metrics
 
 import (
-	"os"
+	"math"
+	"time"
 
 	"github.com/duc-cnzj/mars/version"
 
@@ -28,7 +29,6 @@ import (
 
 const system = "mars"
 
-var hostname, _ = os.Hostname()
 var appVersion = version.GetVersion().String()
 
 var (
@@ -36,29 +36,29 @@ var (
 		Subsystem:   system,
 		Name:        "bootstrapper_duration_seconds",
 		Help:        "系统启动各阶段耗时",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"bootstrapper"})
 
 	WebsocketConnectionsCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
 		Name:        "websocket_connections",
 		Help:        "当前 websocket 连接数",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"username"})
 
 	GrpcLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "grpc_duration_seconds",
 		Help:        "grpc 调用延迟",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"method"})
 
 	GrpcRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "grpc_request_total",
 		Help:        "grpc 请求总数",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
 	GrpcRequestTotalFail    = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "fail"})
 	GrpcRequestTotalSuccess = GrpcRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
@@ -67,29 +67,29 @@ var (
 		Subsystem:   system,
 		Name:        "grpc_errors_total",
 		Help:        "grpc 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method"})
 
 	WebsocketRequestLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_duration_seconds",
 		Help:        "websocket 调用延迟",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"method"})
 
 	WebsocketPanicCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_panic_total",
 		Help:        "websocket panic 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method"})
 
 	WebsocketRequestTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "websocket_request_total",
 		Help:        "websocket 请求总数",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"method", "result"})
 	WebsocketRequestTotalFail    = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "panic"})
 	WebsocketRequestTotalSuccess = WebsocketRequestTotal.MustCurryWith(prometheus.Labels{"result": "success"})
@@ -98,44 +98,44 @@ var (
 		Subsystem:   system,
 		Name:        "cache_bytes",
 		Help:        "cache bytes 统计",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"key"})
 
 	CacheRememberDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "cache_remember_duration_seconds",
 		Help:        "cache Remember 调用时间",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 17),
 	}, []string{"key"})
 
 	CronPanicCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_panic_total",
 		Help:        "cron panic 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
 	CronErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_error_total",
 		Help:        "cron error 错误数量",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
 	CronCommandCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem:   system,
 		Name:        "cron_command_total",
 		Help:        "cron command 总数",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
+		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"cron_name"})
 
 	CronDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem:   system,
 		Name:        "cron_duration_seconds",
 		Help:        "cron 执行时间",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-		Buckets:     prometheus.ExponentialBuckets(0.01, 2, 15),
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     prometheus.ExponentialBucketsRange(0.5, (1 * time.Hour).Seconds(), 20),
 	}, []string{"cron_name"})
 
 	// HttpResponseSize
@@ -144,8 +144,8 @@ var (
 		Subsystem:   system,
 		Name:        "http_response_size",
 		Help:        "http response 响应大小",
-		ConstLabels: prometheus.Labels{"hostname": hostname, "version": appVersion},
-		Buckets:     prometheus.ExponentialBuckets(5, 5, 12),
+		ConstLabels: prometheus.Labels{"version": appVersion},
+		Buckets:     append(prometheus.ExponentialBucketsRange(500, 20*1000*1000, 15), math.Inf(+1)),
 	}, []string{"path"})
 )
 
