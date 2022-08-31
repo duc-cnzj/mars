@@ -34,6 +34,9 @@ func TestFile_Authorize(t *testing.T) {
 
 	_, err = new(File).Authorize(context.TODO(), "MaxUploadSize")
 	assert.Nil(t, err)
+
+	_, err = new(File).Authorize(context.TODO(), "/file.File/MaxUploadSize")
+	assert.Nil(t, err)
 }
 
 func adminCtx() context.Context {
