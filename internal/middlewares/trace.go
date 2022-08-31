@@ -41,7 +41,7 @@ func TracingWrapper(h http.Handler) http.Handler {
 		}
 
 		defer func() {
-			pattern := GetPattern(w)
+			pattern := GetPatternHeader(w)
 			if pattern != "" {
 				span.SetName(pattern)
 			}

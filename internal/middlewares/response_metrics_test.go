@@ -18,7 +18,7 @@ func TestResponseMetrics(t *testing.T) {
 			fn: func(writer http.ResponseWriter, request *http.Request) {
 				_, ok := writer.(*CustomResponseWriter)
 				assert.True(t, ok)
-				SetPattern(writer, "/api/xxxx?xxx=xxx")
+				SetPatternHeader(writer, "/api/xxxx?xxx=xxx")
 			},
 		},
 		{

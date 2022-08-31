@@ -19,11 +19,11 @@ func TestDeletePatternHeader(t *testing.T) {
 
 func TestGetPattern(t *testing.T) {
 	rw := &mockResponseWriter{h: map[string][]string{}}
-	assert.Equal(t, "", GetPattern(rw))
+	assert.Equal(t, "", GetPatternHeader(rw))
 }
 
 func TestSetPattern(t *testing.T) {
 	rw := &mockResponseWriter{h: map[string][]string{}}
-	SetPattern(rw, "aaa")
-	assert.Equal(t, "aaa", GetPattern(rw))
+	SetPatternHeader(rw, "aaa")
+	assert.Equal(t, "aaa", GetPatternHeader(rw))
 }

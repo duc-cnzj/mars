@@ -29,7 +29,7 @@ func ResponseMetrics(h http.Handler) http.Handler {
 		}
 		rw := &CustomResponseWriter{ResponseWriter: w}
 		defer func() {
-			pattern := GetPattern(rw)
+			pattern := GetPatternHeader(rw)
 			bytes := rw.bytes.Load()
 			if pattern != "" && bytes != nil {
 				metrics.HttpResponseSize.With(prometheus.Labels{"path": pattern}).Observe(float64(bytes.(int)))

@@ -93,7 +93,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 			writer.Header().Set("X-Content-Type-Options", "nosniff")
 			pattern, ok := runtime.HTTPPathPattern(ctx)
 			if ok {
-				middlewares.SetPattern(writer, pattern)
+				middlewares.SetPatternHeader(writer, pattern)
 			}
 
 			return nil
