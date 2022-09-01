@@ -120,7 +120,9 @@ func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 				defer wg.Done()
 				defer recovery.HandlePanic("NamespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
-				if err := n.helmer.Uninstall(releaseName, namespace, mlog.Debugf); err != nil {
+				if err := n.helmer.Uninstall(releaseName, namespace, func(container []*types.Container, format string, v ...any) {
+					mlog.Debugf(format, v...)
+				}); err != nil {
 					mlog.Error(err)
 					return
 				}

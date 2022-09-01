@@ -25,11 +25,21 @@ export const setCreateProjectLoading = (id: string, loading: boolean) => ({
     isLoading: loading,
   },
 });
-export const appendCreateProjectLog = (id: string, log: string) => ({
+
+export const appendCreateProjectLog = (
+  id: string,
+  log: string,
+  type: pb.websocket.ResultType,
+  containers?: pb.types.Container[]
+) => ({
   type: APPEND_CREATE_PROJECT_LOG,
   data: {
     id,
-    output: log,
+    output: {
+      type,
+      log,
+      containers,
+    },
   },
 });
 
@@ -118,7 +128,12 @@ export const handleEvents = (
         debounceLoadNamespace(dispatch);
         break;
       case pb.websocket.Type.UpdateProject:
-        dispatch(appendCreateProjectLog(id, data.message ? data.message : ""));
+        let containers: pb.types.Container[] = [];
+        if (data.result === pb.websocket.ResultType.WithContainerLog) {
+          containers = pb.websocket.WsWithContainerMessageResponse.decode(input).containers
+        }
+
+        dispatch(appendCreateProjectLog(id, data.message, data.result, containers));
 
         if (data.end) {
           switch (data.result) {
@@ -129,13 +144,13 @@ export const handleEvents = (
               break;
             case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
-              dispatch(appendCreateProjectLog(id, "部署已取消"));
+              dispatch(appendCreateProjectLog(id, "部署已取消", data.result, containers));
               message.warn("部署已取消");
               break;
             case pb.websocket.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
-              dispatch(appendCreateProjectLog(id, "部署失败"));
+              dispatch(appendCreateProjectLog(id, "部署失败", data.result, containers));
               message.error("部署失败");
               break;
           }
@@ -143,7 +158,11 @@ export const handleEvents = (
         }
         break;
       case pb.websocket.Type.CreateProject:
-        dispatch(appendCreateProjectLog(id, data.message ? data.message : ""));
+        let createContainers: pb.types.Container[] = [];
+        if (data.result === pb.websocket.ResultType.WithContainerLog) {
+          createContainers = pb.websocket.WsWithContainerMessageResponse.decode(input).containers
+        }
+        dispatch(appendCreateProjectLog(id, data.message, data.result, createContainers));
 
         if (data.end) {
           switch (data.result) {
@@ -154,13 +173,13 @@ export const handleEvents = (
               break;
             case pb.websocket.ResultType.DeployedCanceled:
               dispatch(setDeployStatus(id, DeployStatus.DeployCanceled));
-              dispatch(appendCreateProjectLog(id, "部署已取消"));
+              dispatch(appendCreateProjectLog(id, "部署已取消", data.result, createContainers));
               message.warn("部署已取消");
               break;
             case pb.websocket.ResultType.DeployedFailed:
             default:
               dispatch(setDeployStatus(id, DeployStatus.DeployFailed));
-              dispatch(appendCreateProjectLog(id, "部署失败"));
+              dispatch(appendCreateProjectLog(id, "部署失败", data.result, createContainers));
               message.error("部署失败");
               break;
           }
@@ -169,7 +188,7 @@ export const handleEvents = (
         }
         break;
       case pb.websocket.Type.ProcessPercent:
-        dispatch(setProcessPercent(id, Number(data.message)));
+        dispatch(setProcessPercent(id, data.percent));
         break;
       case pb.websocket.Type.HandleExecShell:
         if (data.result === pb.websocket.ResultType.Error) {

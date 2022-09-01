@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 
@@ -121,6 +122,7 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 
 	if mars.IsSimpleEnv {
 		if yamlData, err = YamlDeepSetKey(mars.ConfigField, input); err != nil {
+			mlog.Error(err, mars.ConfigField, input)
 			return "", err
 		}
 	} else {

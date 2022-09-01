@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/testutil"
@@ -125,7 +126,7 @@ func Test_send(t *testing.T) {
 			Namespace:       "ns",
 			ResourceVersion: "1",
 		},
-	}, "app", func(format string, v ...any) {
+	}, "app", func(cs []*types.Container, format string, v ...any) {
 		called++
 		str = format
 	})

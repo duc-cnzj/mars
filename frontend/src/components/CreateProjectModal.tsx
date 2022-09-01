@@ -31,7 +31,7 @@ import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
 const initFormValues = {
-  debug: true,
+  debug: false,
   extra_values: [],
   config: "",
 };

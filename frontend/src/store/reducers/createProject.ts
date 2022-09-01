@@ -7,6 +7,7 @@ import {
 } from "../actionTypes";
 
 import { set, get } from "lodash";
+import pb from '../../api/compiled'
 
 export enum DeployStatus {
   DeployUnknown = "unknown",
@@ -15,10 +16,16 @@ export enum DeployStatus {
   DeploySuccess = "success",
 }
 
+export interface Output {
+  type: pb.websocket.ResultType;
+  log: string;
+  containers?: pb.types.Container[];
+}
+
 export interface CreateProjectItem {
   isLoading: boolean;
   deployStatus: DeployStatus;
-  output: string[];
+  output: Output[];
   processPercent: number;
 }
 
@@ -38,7 +45,7 @@ export default function createProject(
     data?: {
       id: string;
       isLoading: boolean;
-      output: string;
+      output: Output;
       deployStatus: string;
       processPercent: number;
     };

@@ -3131,6 +3131,10 @@
         "message": {
           "type": "string"
         },
+        "percent": {
+          "type": "string",
+          "format": "int64"
+        },
         "result": {
           "$ref": "#/definitions/websocketResultType"
         },
@@ -3157,7 +3161,8 @@
         "Success",
         "Deployed",
         "DeployedFailed",
-        "DeployedCanceled"
+        "DeployedCanceled",
+        "LogWithContainers"
       ]
     },
     "websocketTo": {

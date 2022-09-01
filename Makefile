@@ -20,9 +20,13 @@ build_tools:
 		golang.org/x/tools/cmd/goimports \
 		github.com/golang/mock/mockgen
 
+.PHONY: gen_proto
+gen_proto:
+	cd hack && ./gen_proto.sh
+
 .PHONY: gen
 gen:
-	cd hack && ./gen_proto.sh && cd .. && go generate ./... && make fmt
+	go generate ./... && make fmt
 
 .PHONY: lint
 lint:

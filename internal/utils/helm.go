@@ -6,9 +6,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
+	v13 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"net"
 	"os"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/contracts"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -68,10 +75,18 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	}), nil
 }
 
+type LogFn contracts.LogFn
+
+func (l LogFn) UnWrap() func(format string, v ...any) {
+	return func(format string, v ...any) {
+		l(nil, format, v...)
+	}
+}
+
 // UpgradeOrInstall
 // 不会自动回滚
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
-	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn)
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.LogFn, wait bool, timeoutSeconds int64, dryRun bool, lls []string) (*release.Release, error) {
+	actionConfig, settings, err := getActionConfigAndSettings(namespace, LogFn(fn).UnWrap())
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +96,53 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Wait = wait
 	client.DryRun = dryRun
 	client.DisableOpenAPIValidation = true
+	var selectorList []labels.Selector
+	for _, label := range lls {
+		selector, _ := metav1.ParseToLabelSelector(label)
+		asSelector, _ := metav1.LabelSelectorAsSelector(selector)
+		selectorList = append(selectorList, asSelector)
+	}
 
 	if wait && !dryRun {
 		stopch := make(chan struct{}, 1)
 		inf := informers.NewSharedInformerFactoryWithOptions(
 			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
+		inf.Core().V1().Pods().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(oldObj, newObj any) {
+				p := newObj.(*v13.Pod)
+				var matched bool
+				for _, selector := range selectorList {
+					if selector.Matches(labels.Set(p.Labels)) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					return
+				}
+
+				var (
+					containerNames []string
+					contaniners    []*types.Container
+				)
+				for _, status := range p.Status.ContainerStatuses {
+					if !status.Ready && status.RestartCount > 0 {
+						containerNames = append(containerNames, status.Name)
+					}
+				}
+				for _, name := range containerNames {
+					//查看日志
+					contaniners = append(contaniners, &types.Container{
+						Namespace: p.Namespace,
+						Pod:       p.Name,
+						Container: name,
+					})
+				}
+				if len(contaniners) > 0 {
+					fn(contaniners, "容器多次异常重启")
+				}
+			},
+		})
 		inf.Events().V1().Events().Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj any) bool {
 				e := obj.(*v1.Event)
@@ -174,20 +231,21 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
-func send(obj any, releaseName string, fn func(format string, v ...any)) {
+func send(obj any, releaseName string, fn func(container []*types.Container, format string, v ...any)) {
 	event := obj.(*v1.Event)
 	p := event.Regarding
 	get, _ := app.K8sClientSet().CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, v12.GetOptions{ResourceVersion: p.ResourceVersion})
+
 	for _, value := range get.Labels {
 		if value == releaseName {
-			fn(event.Note)
+			fn(nil, event.Note)
 			break
 		}
 	}
 }
 
-func UninstallRelease(releaseName, namespace string, log action.DebugLog) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
+	actionConfig, _, err := getActionConfigAndSettings(namespace, LogFn(log).UnWrap())
 	if err != nil {
 		return err
 	}
@@ -375,8 +433,8 @@ func GetSlugName(namespaceId int64, name string) string {
 	return Md5(fmt.Sprintf("%d-%s", namespaceId, name))
 }
 
-func Rollback(releaseName, namespace string, wait bool, log action.DebugLog, dryRun bool) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
+	actionConfig, _, err := getActionConfigAndSettings(namespace, LogFn(log).UnWrap())
 	if err != nil {
 		return err
 	}

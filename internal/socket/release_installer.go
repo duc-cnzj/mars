@@ -6,9 +6,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"helm.sh/helm/v3/pkg/action"
-
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
@@ -20,11 +17,11 @@ import (
 
 type DefaultHelmer struct{}
 
-func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn func(format string, v ...any), wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
-	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun)
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.LogFn, wait bool, timeoutSeconds int64, dryRun bool, lls []string) (*release.Release, error) {
+	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, lls)
 }
 
-func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log action.DebugLog, dryRun bool) error {
+func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
 	return utils.Rollback(releaseName, namespace, wait, log, dryRun)
 }
 
@@ -32,7 +29,7 @@ func (d *DefaultHelmer) PackageChart(path string, destDir string) (string, error
 	return utils.PackageChart(path, destDir)
 }
 
-func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log action.DebugLog) error {
+func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log contracts.LogFn) error {
 	return utils.UninstallRelease(releaseName, namespace, log)
 }
 
@@ -79,7 +76,18 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun)
+	var lls []string
+	if !r.dryRun {
+		re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, func(container []*types.Container, format string, v ...any) {
+
+		}, r.wait, r.timeoutSeconds, true, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		lls = getPodSelectorsInDeploymentAndStatefulSetByManifest(utils.SplitManifests(re.Manifest))
+	}
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun, lls)
 	if err == nil {
 		return re, nil
 	}
@@ -104,23 +112,20 @@ func (r *releaseInstaller) Logs() []string {
 	return r.logs.sortedItems()
 }
 
-func (r *releaseInstaller) logger() func(format string, v ...any) {
-	return func(format string, v ...any) {
+func (r *releaseInstaller) logger() func(containers []*types.Container, format string, v ...any) {
+	return func(containers []*types.Container, format string, v ...any) {
 		if r.percenter.Current() < 99 {
 			r.percenter.Add()
 		}
 
 		msg := fmt.Sprintf(format, v...)
 
-		if time.Since(r.startTime.Add(time.Minute*3)).Seconds() > 0 {
-			msg = fmt.Sprintf("[如果长时间未成功，请试试 debug 模式]: %s", msg)
-		}
-
 		if !r.logs.has(msg) {
 			r.logs.add(msg)
 			r.messageCh.Send(contracts.MessageItem{
-				Msg:  msg,
-				Type: contracts.MessageText,
+				Msg:        msg,
+				Containers: containers,
+				Type:       contracts.MessageText,
 			})
 		}
 	}

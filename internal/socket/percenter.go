@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -47,7 +46,7 @@ func (pp *processPercent) Add() {
 
 	if pp.percent < 100 {
 		pp.percent++
-		pp.SendProcessPercent(fmt.Sprintf("%d", pp.percent))
+		pp.SendProcessPercent(pp.percent)
 	}
 }
 
@@ -62,6 +61,6 @@ func (pp *processPercent) To(percent int64) {
 		if sleepTime > 50*time.Millisecond {
 			sleepTime = sleepTime / 2
 		}
-		pp.SendProcessPercent(fmt.Sprintf("%d", pp.percent))
+		pp.SendProcessPercent(pp.percent)
 	}
 }

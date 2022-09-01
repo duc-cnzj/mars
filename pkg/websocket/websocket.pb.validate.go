@@ -1064,6 +1064,8 @@ func (m *Metadata) validate(all bool) error {
 
 	// no validation rules for Message
 
+	// no validation rules for Percent
+
 	if len(errors) > 0 {
 		return MetadataMultiError(errors)
 	}
@@ -1620,3 +1622,169 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WsHandleClusterResponseValidationError{}
+
+// Validate checks the field values on WsWithContainerMessageResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WsWithContainerMessageResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WsWithContainerMessageResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// WsWithContainerMessageResponseMultiError, or nil if none found.
+func (m *WsWithContainerMessageResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WsWithContainerMessageResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetMetadata()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WsWithContainerMessageResponseValidationError{
+					field:  "Metadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WsWithContainerMessageResponseValidationError{
+					field:  "Metadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetadata()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WsWithContainerMessageResponseValidationError{
+				field:  "Metadata",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetContainers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, WsWithContainerMessageResponseValidationError{
+						field:  fmt.Sprintf("Containers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, WsWithContainerMessageResponseValidationError{
+						field:  fmt.Sprintf("Containers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return WsWithContainerMessageResponseValidationError{
+					field:  fmt.Sprintf("Containers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return WsWithContainerMessageResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WsWithContainerMessageResponseMultiError is an error wrapping multiple
+// validation errors returned by WsWithContainerMessageResponse.ValidateAll()
+// if the designated constraints aren't met.
+type WsWithContainerMessageResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WsWithContainerMessageResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WsWithContainerMessageResponseMultiError) AllErrors() []error { return m }
+
+// WsWithContainerMessageResponseValidationError is the validation error
+// returned by WsWithContainerMessageResponse.Validate if the designated
+// constraints aren't met.
+type WsWithContainerMessageResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WsWithContainerMessageResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WsWithContainerMessageResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WsWithContainerMessageResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WsWithContainerMessageResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WsWithContainerMessageResponseValidationError) ErrorName() string {
+	return "WsWithContainerMessageResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WsWithContainerMessageResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWsWithContainerMessageResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WsWithContainerMessageResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WsWithContainerMessageResponseValidationError{}

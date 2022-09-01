@@ -9,8 +9,8 @@ import (
 	reflect "reflect"
 
 	types "github.com/duc-cnzj/mars-client/v4/types"
+	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
-	action "helm.sh/helm/v3/pkg/action"
 	chart "helm.sh/helm/v3/pkg/chart"
 	values "helm.sh/helm/v3/pkg/cli/values"
 	release "helm.sh/helm/v3/pkg/release"
@@ -69,7 +69,7 @@ func (mr *MockHelmerMockRecorder) ReleaseStatus(arg0, arg1 any) *gomock.Call {
 }
 
 // Rollback mocks base method.
-func (m *MockHelmer) Rollback(arg0, arg1 string, arg2 bool, arg3 action.DebugLog, arg4 bool) error {
+func (m *MockHelmer) Rollback(arg0, arg1 string, arg2 bool, arg3 contracts.LogFn, arg4 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Rollback", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
@@ -83,7 +83,7 @@ func (mr *MockHelmerMockRecorder) Rollback(arg0, arg1, arg2, arg3, arg4 any) *go
 }
 
 // Uninstall mocks base method.
-func (m *MockHelmer) Uninstall(arg0, arg1 string, arg2 action.DebugLog) error {
+func (m *MockHelmer) Uninstall(arg0, arg1 string, arg2 contracts.LogFn) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Uninstall", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -97,16 +97,16 @@ func (mr *MockHelmerMockRecorder) Uninstall(arg0, arg1, arg2 any) *gomock.Call {
 }
 
 // UpgradeOrInstall mocks base method.
-func (m *MockHelmer) UpgradeOrInstall(arg0 context.Context, arg1, arg2 string, arg3 *chart.Chart, arg4 *values.Options, arg5 func(string, ...any), arg6 bool, arg7 int64, arg8 bool) (*release.Release, error) {
+func (m *MockHelmer) UpgradeOrInstall(arg0 context.Context, arg1, arg2 string, arg3 *chart.Chart, arg4 *values.Options, arg5 contracts.LogFn, arg6 bool, arg7 int64, arg8 bool, arg9 []string) (*release.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpgradeOrInstall", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	ret := m.ctrl.Call(m, "UpgradeOrInstall", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 	ret0, _ := ret[0].(*release.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpgradeOrInstall indicates an expected call of UpgradeOrInstall.
-func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeOrInstall", reflect.TypeOf((*MockHelmer)(nil).UpgradeOrInstall), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeOrInstall", reflect.TypeOf((*MockHelmer)(nil).UpgradeOrInstall), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 }

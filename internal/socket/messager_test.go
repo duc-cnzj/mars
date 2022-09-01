@@ -150,7 +150,7 @@ func Test_messager_SendProcessPercent(t *testing.T) {
 			},
 		},
 	})
-	sender.SendProcessPercent("10")
+	sender.SendProcessPercent(10)
 }
 
 func Test_messager_SendProtoMsg(t *testing.T) {

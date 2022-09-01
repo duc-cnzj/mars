@@ -22,7 +22,7 @@ type ppm struct {
 	calledTimes int
 }
 
-func (p *ppm) SendProcessPercent(s string) {
+func (p *ppm) SendProcessPercent(int64) {
 	p.calledTimes++
 }
 

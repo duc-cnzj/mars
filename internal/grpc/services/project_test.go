@@ -552,10 +552,10 @@ func Test_messager_SendMsg(t *testing.T) {
 
 func Test_messager_SendProcessPercent(t *testing.T) {
 	m := &messager{server: &mockApplyServer{}, sendPercent: false}
-	m.SendProcessPercent("10")
+	m.SendProcessPercent(10)
 	assert.Equal(t, 0, m.server.(*mockApplyServer).send)
 	m.sendPercent = true
-	m.SendProcessPercent("10")
+	m.SendProcessPercent(10)
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 	assert.Equal(t, websocket.Type_ProcessPercent, m.server.(*mockApplyServer).ar.Metadata.Type)
 	assert.Equal(t, websocket.ResultType_Success, m.server.(*mockApplyServer).ar.Metadata.Result)
@@ -612,7 +612,7 @@ func TestEmptyMessager(t *testing.T) {
 	em.SendEndError(nil)
 	em.SendError(nil)
 	em.SendDeployedResult(0, "", nil)
-	em.SendProcessPercent("10")
+	em.SendProcessPercent(10)
 	em.SendMsg("")
 	em.SendProtoMsg(nil)
 	em.Stop(nil)

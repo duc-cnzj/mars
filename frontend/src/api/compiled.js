@@ -19749,6 +19749,7 @@ export const websocket = $root.websocket = (() => {
      * @property {number} Deployed=3 Deployed value
      * @property {number} DeployedFailed=4 DeployedFailed value
      * @property {number} DeployedCanceled=5 DeployedCanceled value
+     * @property {number} LogWithContainers=6 LogWithContainers value
      */
     websocket.ResultType = (function() {
         const valuesById = {}, values = Object.create(valuesById);
@@ -19758,6 +19759,7 @@ export const websocket = $root.websocket = (() => {
         values[valuesById[3] = "Deployed"] = 3;
         values[valuesById[4] = "DeployedFailed"] = 4;
         values[valuesById[5] = "DeployedCanceled"] = 5;
+        values[valuesById[6] = "LogWithContainers"] = 6;
         return values;
     })();
 
@@ -20769,6 +20771,7 @@ export const websocket = $root.websocket = (() => {
          * @property {websocket.ResultType|null} [result] Metadata result
          * @property {websocket.To|null} [to] Metadata to
          * @property {string|null} [message] Metadata message
+         * @property {number|null} [percent] Metadata percent
          */
 
         /**
@@ -20851,6 +20854,14 @@ export const websocket = $root.websocket = (() => {
         Metadata.prototype.message = "";
 
         /**
+         * Metadata percent.
+         * @member {number} percent
+         * @memberof websocket.Metadata
+         * @instance
+         */
+        Metadata.prototype.percent = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
          * Encodes the specified Metadata message. Does not implicitly {@link websocket.Metadata.verify|verify} messages.
          * @function encode
          * @memberof websocket.Metadata
@@ -20878,6 +20889,8 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 7, wireType 0 =*/56).int32(message.to);
             if (message.message != null && Object.hasOwnProperty.call(message, "message"))
                 writer.uint32(/* id 8, wireType 2 =*/66).string(message.message);
+            if (message.percent != null && Object.hasOwnProperty.call(message, "percent"))
+                writer.uint32(/* id 9, wireType 0 =*/72).int64(message.percent);
             return writer;
         };
 
@@ -20922,6 +20935,9 @@ export const websocket = $root.websocket = (() => {
                     break;
                 case 8:
                     message.message = reader.string();
+                    break;
+                case 9:
+                    message.percent = reader.int64();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -21217,6 +21233,105 @@ export const websocket = $root.websocket = (() => {
         };
 
         return WsHandleClusterResponse;
+    })();
+
+    websocket.WsWithContainerMessageResponse = (function() {
+
+        /**
+         * Properties of a WsWithContainerMessageResponse.
+         * @memberof websocket
+         * @interface IWsWithContainerMessageResponse
+         * @property {websocket.Metadata|null} [metadata] WsWithContainerMessageResponse metadata
+         * @property {Array.<types.Container>|null} [containers] WsWithContainerMessageResponse containers
+         */
+
+        /**
+         * Constructs a new WsWithContainerMessageResponse.
+         * @memberof websocket
+         * @classdesc Represents a WsWithContainerMessageResponse.
+         * @implements IWsWithContainerMessageResponse
+         * @constructor
+         * @param {websocket.IWsWithContainerMessageResponse=} [properties] Properties to set
+         */
+        function WsWithContainerMessageResponse(properties) {
+            this.containers = [];
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * WsWithContainerMessageResponse metadata.
+         * @member {websocket.Metadata|null|undefined} metadata
+         * @memberof websocket.WsWithContainerMessageResponse
+         * @instance
+         */
+        WsWithContainerMessageResponse.prototype.metadata = null;
+
+        /**
+         * WsWithContainerMessageResponse containers.
+         * @member {Array.<types.Container>} containers
+         * @memberof websocket.WsWithContainerMessageResponse
+         * @instance
+         */
+        WsWithContainerMessageResponse.prototype.containers = $util.emptyArray;
+
+        /**
+         * Encodes the specified WsWithContainerMessageResponse message. Does not implicitly {@link websocket.WsWithContainerMessageResponse.verify|verify} messages.
+         * @function encode
+         * @memberof websocket.WsWithContainerMessageResponse
+         * @static
+         * @param {websocket.WsWithContainerMessageResponse} message WsWithContainerMessageResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        WsWithContainerMessageResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            if (message.containers != null && message.containers.length)
+                for (let i = 0; i < message.containers.length; ++i)
+                    $root.types.Container.encode(message.containers[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Decodes a WsWithContainerMessageResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof websocket.WsWithContainerMessageResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {websocket.WsWithContainerMessageResponse} WsWithContainerMessageResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        WsWithContainerMessageResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsWithContainerMessageResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                    break;
+                case 2:
+                    if (!(message.containers && message.containers.length))
+                        message.containers = [];
+                    message.containers.push($root.types.Container.decode(reader, reader.uint32()));
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return WsWithContainerMessageResponse;
     })();
 
     return websocket;

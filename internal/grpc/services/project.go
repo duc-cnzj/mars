@@ -164,7 +164,9 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
+	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, func(container []*types.Container, format string, v ...any) {
+		mlog.Debugf(format, v...)
+	}); err != nil {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
@@ -261,24 +263,13 @@ func newEmptyMessager() *emptyMessager {
 	return &emptyMessager{}
 }
 
-func (e *emptyMessager) SendEndError(err error) {
-}
-
-func (e *emptyMessager) SendError(err error) {
-}
-
-func (e *emptyMessager) SendMsg(s string) {
-}
-
-func (e *emptyMessager) SendProtoMsg(message contracts.WebsocketMessage) {
-}
-
-func (e *emptyMessager) SendProcessPercent(s string) {
-}
-
-func (e *emptyMessager) Stop(err error) {
-}
-
+func (e *emptyMessager) SendEndError(err error)                                            {}
+func (e *emptyMessager) SendError(err error)                                               {}
+func (e *emptyMessager) SendMsg(s string)                                                  {}
+func (e *emptyMessager) SendProtoMsg(message contracts.WebsocketMessage)                   {}
+func (e *emptyMessager) SendProcessPercent(int64)                                          {}
+func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*types.Container) {}
+func (e *emptyMessager) Stop(err error)                                                    {}
 func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
@@ -326,14 +317,14 @@ func (m *messager) SendError(err error) {
 	}})
 }
 
-func (m *messager) SendProcessPercent(s string) {
+func (m *messager) SendProcessPercent(p int64) {
 	if m.sendPercent {
 		res := &websocket.Metadata{
 			Slug:    m.slugName,
 			Type:    websocket.Type_ProcessPercent,
 			Result:  websocket.ResultType_Success,
 			End:     false,
-			Message: s,
+			Percent: p,
 		}
 		m.send(&project.ApplyResponse{Metadata: res})
 	}
@@ -351,6 +342,16 @@ func (m *messager) SendMsg(s string) {
 
 func (m *messager) SendProtoMsg(message contracts.WebsocketMessage) {
 	m.send(&project.ApplyResponse{Metadata: message.GetMetadata()})
+}
+
+func (m *messager) SendMsgWithContainerLog(msg string, containers []*types.Container) {
+	m.send(&project.ApplyResponse{Metadata: &websocket.Metadata{
+		Slug:    m.slugName,
+		Type:    m.t,
+		Result:  websocket.ResultType_LogWithContainers,
+		End:     false,
+		Message: msg,
+	}})
 }
 
 func (m *messager) send(res *project.ApplyResponse) {

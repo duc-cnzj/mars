@@ -32,6 +32,7 @@ enum ResultType {
   Deployed = 3;
   DeployedFailed = 4;
   DeployedCanceled = 5;
+  LogWithContainers = 6;
 }
 
 enum To {
@@ -122,6 +123,7 @@ message Metadata {
   ResultType result = 6;
   To to = 7;
   string message = 8;
+  int64 percent = 9;
 }
 
 message WsMetadataResponse {
@@ -139,4 +141,11 @@ message WsHandleClusterResponse {
   Metadata metadata = 1;
 
   cluster.InfoResponse info = 2;
+}
+
+// WsWithContainerMessageResponse 部署时容器起不来，需要查看带容器信息的日志时使用
+message WsWithContainerMessageResponse {
+  Metadata metadata = 1;
+
+  repeated types.Container containers = 2;
 }

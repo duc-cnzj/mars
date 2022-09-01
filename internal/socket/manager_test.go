@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -157,7 +158,8 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 		percenter: &emptyPercenter{},
 		config:    &mars.Config{},
 	})
-	assert.Equal(t, "不允许自定义字段 app->config", err.Error())
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(strings.Join(em.msgs, " "), "不允许自定义字段 app->config"))
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {

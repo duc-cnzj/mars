@@ -9271,7 +9271,8 @@ export namespace websocket {
         Success = 2,
         Deployed = 3,
         DeployedFailed = 4,
-        DeployedCanceled = 5
+        DeployedCanceled = 5,
+        LogWithContainers = 6
     }
 
     /** To enum. */
@@ -9749,6 +9750,9 @@ export namespace websocket {
 
         /** Metadata message */
         message?: (string|null);
+
+        /** Metadata percent */
+        percent?: (number|null);
     }
 
     /** Represents a Metadata. */
@@ -9783,6 +9787,9 @@ export namespace websocket {
 
         /** Metadata message. */
         public message: string;
+
+        /** Metadata percent. */
+        public percent: number;
 
         /**
          * Encodes the specified Metadata message. Does not implicitly {@link websocket.Metadata.verify|verify} messages.
@@ -9933,5 +9940,49 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsHandleClusterResponse;
+    }
+
+    /** Properties of a WsWithContainerMessageResponse. */
+    interface IWsWithContainerMessageResponse {
+
+        /** WsWithContainerMessageResponse metadata */
+        metadata?: (websocket.Metadata|null);
+
+        /** WsWithContainerMessageResponse containers */
+        containers?: (types.Container[]|null);
+    }
+
+    /** Represents a WsWithContainerMessageResponse. */
+    class WsWithContainerMessageResponse implements IWsWithContainerMessageResponse {
+
+        /**
+         * Constructs a new WsWithContainerMessageResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: websocket.IWsWithContainerMessageResponse);
+
+        /** WsWithContainerMessageResponse metadata. */
+        public metadata?: (websocket.Metadata|null);
+
+        /** WsWithContainerMessageResponse containers. */
+        public containers: types.Container[];
+
+        /**
+         * Encodes the specified WsWithContainerMessageResponse message. Does not implicitly {@link websocket.WsWithContainerMessageResponse.verify|verify} messages.
+         * @param message WsWithContainerMessageResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: websocket.WsWithContainerMessageResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a WsWithContainerMessageResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns WsWithContainerMessageResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsWithContainerMessageResponse;
     }
 }
