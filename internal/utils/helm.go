@@ -75,18 +75,10 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 	}), nil
 }
 
-type LogFn contracts.LogFn
-
-func (l LogFn) UnWrap() func(format string, v ...any) {
-	return func(format string, v ...any) {
-		l(nil, format, v...)
-	}
-}
-
 // UpgradeOrInstall
 // 不会自动回滚
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.LogFn, wait bool, timeoutSeconds int64, dryRun bool, lls []string) (*release.Release, error) {
-	actionConfig, settings, err := getActionConfigAndSettings(namespace, LogFn(fn).UnWrap())
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string) (*release.Release, error) {
+	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn.UnWrap())
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +89,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.DryRun = dryRun
 	client.DisableOpenAPIValidation = true
 	var selectorList []labels.Selector
-	for _, label := range lls {
+	for _, label := range podSelectors {
 		selector, _ := metav1.ParseToLabelSelector(label)
 		asSelector, _ := metav1.LabelSelectorAsSelector(selector)
 		selectorList = append(selectorList, asSelector)
@@ -245,7 +237,7 @@ func send(obj any, releaseName string, fn func(container []*types.Container, for
 }
 
 func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, LogFn(log).UnWrap())
+	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
 	if err != nil {
 		return err
 	}
@@ -434,7 +426,7 @@ func GetSlugName(namespaceId int64, name string) string {
 }
 
 func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, LogFn(log).UnWrap())
+	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
 	if err != nil {
 		return err
 	}

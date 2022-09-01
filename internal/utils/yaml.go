@@ -35,7 +35,7 @@ a:
 
 a->b->c
 */
-func deepGet(key string, data any) (any, bool) {
+func deepGet(key string, data map[any]any) (any, bool) {
 	var item any = data
 	s := strings.Split(key, separator)
 	i := 0

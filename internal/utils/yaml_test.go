@@ -95,16 +95,16 @@ func TestYamlDeepSetKey(t *testing.T) {
 
 func Test_deepGet(t *testing.T) {
 	var tests = []struct {
-		input   any
+		input   map[any]any
 		key     string
 		wants   bool
 		wantRes any
 	}{
 		{
-			input: map[string]any{
-				"a": map[string]any{
-					"b": map[string]any{
-						"c": map[string]any{
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{
+						"c": map[any]any{
 							"d": "d",
 						},
 					},
@@ -112,14 +112,14 @@ func Test_deepGet(t *testing.T) {
 			},
 			key:   "a->b->c",
 			wants: true,
-			wantRes: map[string]any{
+			wantRes: map[any]any{
 				"d": "d",
 			},
 		},
 		{
-			input: map[string]any{
-				"a": map[string]any{
-					"b": map[string]any{},
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{},
 				},
 			},
 			key:     "a->b->c",
@@ -127,9 +127,9 @@ func Test_deepGet(t *testing.T) {
 			wantRes: nil,
 		},
 		{
-			input: map[string]any{
-				"a": map[string]any{
-					"b": map[string]any{},
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{},
 				},
 			},
 			key:     "",

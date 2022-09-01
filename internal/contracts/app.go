@@ -6,6 +6,9 @@ package contracts
 import (
 	"context"
 
+	v1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
@@ -34,6 +37,11 @@ type K8sClient struct {
 	Client        kubernetes.Interface
 	MetricsClient versioned.Interface
 	RestConfig    *restclient.Config
+
+	PodInformer cache.SharedIndexInformer
+	PodLister   v1.PodLister
+
+	EventInformer cache.SharedIndexInformer
 }
 
 type OidcConfigItem struct {

@@ -146,7 +146,7 @@ func Test_messager_SendProcessPercent(t *testing.T) {
 				End:     false,
 				Uid:     "2",
 				Id:      "1",
-				Message: "10",
+				Percent: 10,
 			},
 		},
 	})

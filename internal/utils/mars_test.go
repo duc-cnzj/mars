@@ -115,8 +115,8 @@ func TestParseInputConfig(t *testing.T) {
 			wants: dedent.Dedent(`
 					conf:
 					  config:
-						age: 18
-						name: duc
+					    age: 18
+					    name: duc
 				`),
 		},
 		{
@@ -125,10 +125,10 @@ func TestParseInputConfig(t *testing.T) {
 			input:       "name: duc\nage: 18",
 			// 这里缩进有问题
 			wants: dedent.Dedent(`
-conf:
-  config: |-
-    name: duc
-    age: 18
+				conf:
+				  config: |-
+				    name: duc
+				    age: 18
 				`),
 		},
 		{

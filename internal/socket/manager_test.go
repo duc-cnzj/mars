@@ -419,11 +419,18 @@ func TestJober_HandleMessage_TextMessage(t *testing.T) {
 			ch: ch,
 		},
 	}
+	cs := []*types.Container{
+		{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "c",
+		},
+	}
 	go func() {
-		ch <- contracts.MessageItem{Msg: "aa", Type: contracts.MessageText}
+		ch <- contracts.MessageItem{Msg: "aa", Type: contracts.MessageText, Containers: cs}
 		close(ch)
 	}()
-	msger.EXPECT().SendMsg("aa").Times(1)
+	msger.EXPECT().SendMsgWithContainerLog("aa", cs).Times(1)
 	j.HandleMessage()
 }
 

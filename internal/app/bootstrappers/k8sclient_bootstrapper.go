@@ -4,6 +4,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -53,10 +54,19 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		return err
 	}
 
+	inf := informers.NewSharedInformerFactory(clientset, 0)
+	podInf := inf.Core().V1().Pods().Informer()
+	podLister := inf.Core().V1().Pods().Lister()
+	eventInf := inf.Events().V1().Events().Informer()
+	inf.Start(app.Done())
+
 	app.SetK8sClient(&contracts.K8sClient{
 		Client:        clientset,
 		MetricsClient: metrics,
 		RestConfig:    config,
+		PodInformer:   podInf,
+		PodLister:     podLister,
+		EventInformer: eventInf,
 	})
 
 	return nil

@@ -17,8 +17,18 @@ import (
 
 type DefaultHelmer struct{}
 
-func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.LogFn, wait bool, timeoutSeconds int64, dryRun bool, lls []string) (*release.Release, error) {
-	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, lls)
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
+	var podSelectors []string
+	if !dryRun {
+		re, err := utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, true, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		podSelectors = getPodSelectorsInDeploymentAndStatefulSetByManifest(utils.SplitManifests(re.Manifest))
+	}
+
+	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors)
 }
 
 func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
@@ -76,18 +86,8 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
-	var lls []string
-	if !r.dryRun {
-		re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, func(container []*types.Container, format string, v ...any) {
 
-		}, r.wait, r.timeoutSeconds, true, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		lls = getPodSelectorsInDeploymentAndStatefulSetByManifest(utils.SplitManifests(re.Manifest))
-	}
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun, lls)
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun)
 	if err == nil {
 		return re, nil
 	}
@@ -95,13 +95,13 @@ func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.Safe
 	if !r.dryRun && !isNew {
 		// 失败了，需要手动回滚
 		mlog.Debug("rollback project")
-		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.logger(), r.dryRun); err != nil {
+		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.logger().UnWrap(), r.dryRun); err != nil {
 			mlog.Debug(err)
 		}
 	}
 	if !r.dryRun && isNew {
 		mlog.Debug("uninstall project")
-		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.logger()); err != nil {
+		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.logger().UnWrap()); err != nil {
 			mlog.Debug(err)
 		}
 	}
@@ -112,7 +112,7 @@ func (r *releaseInstaller) Logs() []string {
 	return r.logs.sortedItems()
 }
 
-func (r *releaseInstaller) logger() func(containers []*types.Container, format string, v ...any) {
+func (r *releaseInstaller) logger() contracts.WrapLogFn {
 	return func(containers []*types.Container, format string, v ...any) {
 		if r.percenter.Current() < 99 {
 			r.percenter.Add()

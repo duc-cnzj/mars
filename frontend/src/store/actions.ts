@@ -129,7 +129,7 @@ export const handleEvents = (
         break;
       case pb.websocket.Type.UpdateProject:
         let containers: pb.types.Container[] = [];
-        if (data.result === pb.websocket.ResultType.WithContainerLog) {
+        if (data.result === pb.websocket.ResultType.LogWithContainers) {
           containers = pb.websocket.WsWithContainerMessageResponse.decode(input).containers
         }
 
@@ -159,7 +159,7 @@ export const handleEvents = (
         break;
       case pb.websocket.Type.CreateProject:
         let createContainers: pb.types.Container[] = [];
-        if (data.result === pb.websocket.ResultType.WithContainerLog) {
+        if (data.result === pb.websocket.ResultType.LogWithContainers) {
           createContainers = pb.websocket.WsWithContainerMessageResponse.decode(input).containers
         }
         dispatch(appendCreateProjectLog(id, data.message, data.result, createContainers));

@@ -164,9 +164,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, func(container []*types.Container, format string, v ...any) {
-		mlog.Debugf(format, v...)
-	}); err != nil {
+	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
