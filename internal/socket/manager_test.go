@@ -145,21 +145,35 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
 
-	err = (&ExtraValuesLoader{}).Load(&Jober{
+	j := &Jober{
 		input: &websocket_pb.CreateProjectInput{
 			ExtraValues: []*types.ExtraValue{
 				{
 					Path:  "app->config",
 					Value: "4",
 				},
+				{
+					Path:  "duc",
+					Value: "xxx",
+				},
 			},
 		},
 		messager:  em,
 		percenter: &emptyPercenter{},
-		config:    &mars.Config{},
-	})
+		config: &mars.Config{
+			Elements: []*mars.Element{
+				{
+					Path:    "duc",
+					Type:    mars.ElementType_ElementTypeInput,
+					Default: "input",
+				},
+			},
+		},
+	}
+	err = (&ExtraValuesLoader{}).Load(j)
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(strings.Join(em.msgs, " "), "不允许自定义字段 app->config"))
+	assert.Equal(t, []string{"duc: xxx\n"}, j.extraValues)
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {
