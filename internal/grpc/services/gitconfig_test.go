@@ -303,12 +303,14 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config: &mars.Config{
+			ConfigField:      "",
 			ConfigFileValues: " aa ",
 			ValuesYaml:       " bb ",
 		},
 	})
 	assert.Equal(t, " aa", update.Config.ConfigFileValues)
 	assert.Equal(t, " bb", update.Config.ValuesYaml)
+	assert.Equal(t, true, update.Config.IsSimpleEnv)
 }
 
 func Test_getDefaultBranch(t *testing.T) {

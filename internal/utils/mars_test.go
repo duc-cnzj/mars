@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/testutil"
 
 	"github.com/golang/mock/gomock"
+	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -100,29 +101,150 @@ func TestIsRemoteConfigFile(t *testing.T) {
 }
 
 func TestParseInputConfig(t *testing.T) {
-	inputConfig, err := ParseInputConfig(nil, "")
-	assert.Nil(t, err)
-	assert.Empty(t, inputConfig)
-	v, _ := ParseInputConfig(&mars.Config{
-		IsSimpleEnv: false,
-		ConfigField: "conf->config",
-	}, `{"name": "duc", "age": 18}`)
-	wants := `conf:
-  config:
-    age: 18
-    name: duc
-`
-	assert.Equal(t, wants, v)
-	v, _ = ParseInputConfig(&mars.Config{
-		IsSimpleEnv: true,
-		ConfigField: "conf->config",
-	}, "name: duc\nage: 18")
-	wants = `conf:
+	var tests = []struct {
+		IsSimpleEnv bool
+		ConfigField string
+		input       string
+		wants       string
+		ValuesYaml  string
+	}{
+		{
+			IsSimpleEnv: false,
+			ConfigField: "conf->config",
+			input:       `{"name": "duc", "age": 18}`,
+			wants: dedent.Dedent(`
+					conf:
+					  config:
+						age: 18
+						name: duc
+				`),
+		},
+		{
+			IsSimpleEnv: true,
+			ConfigField: "conf->config",
+			input:       "name: duc\nage: 18",
+			// 这里缩进有问题
+			wants: dedent.Dedent(`
+conf:
   config: |-
     name: duc
     age: 18
-`
-	assert.Equal(t, wants, v)
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "command",
+			input: dedent.Dedent(`
+					command:
+					- sh
+					- -c
+					- "sleep 3600;exit"
+				`),
+			wants: dedent.Dedent(`
+					command:
+					- sh
+					- -c
+					- sleep 3600;exit
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "command",
+			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
+			wants: dedent.Dedent(`
+					command:
+					- sh
+					- -c
+					- sleep 3600;exit
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "conf->command",
+			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
+			wants: dedent.Dedent(`
+					conf:
+					  command:
+					  - sh
+					  - -c
+					  - sleep 3600;exit
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "",
+			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
+			wants: dedent.Dedent(`
+					"":
+					  command:
+					  - sh
+					  - -c
+					  - sleep 3600;exit
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "command",
+			input: dedent.Dedent(`
+					command:
+					  a: b
+				`),
+			wants: dedent.Dedent(`
+					command:
+					  command:
+					    a: b
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "command",
+			ValuesYaml: dedent.Dedent(`
+					command:
+					  command: []
+				`),
+			input: dedent.Dedent(`
+				   command:
+				   - a
+				   - b
+				`),
+			wants: dedent.Dedent(`
+					command:
+					  command:
+					  - a
+					  - b
+				`),
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "command",
+			ValuesYaml: dedent.Dedent(`
+					command: []
+				`),
+			input: dedent.Dedent(`
+				   command:
+				   - a
+				   - b
+				`),
+			wants: dedent.Dedent(`
+					command:
+					- a
+					- b
+				`),
+		},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.ConfigField, func(t *testing.T) {
+			res, err := ParseInputConfig(&mars.Config{
+				IsSimpleEnv: tt.IsSimpleEnv,
+				ValuesYaml:  tt.ValuesYaml,
+				ConfigField: tt.ConfigField,
+			}, strings.Trim(tt.input, "\n"))
+			assert.Nil(t, err)
+			assert.Equal(t, strings.Trim(tt.wants, "\n"), strings.Trim(res, "\n"))
+		})
+	}
 }
 
 func Test_intPid(t *testing.T) {

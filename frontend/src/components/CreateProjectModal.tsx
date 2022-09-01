@@ -137,6 +137,7 @@ const CreateProjectModal: React.FC<{
           atomic: !values.debug,
           extra_values: values.extra_values,
         }).finish();
+        console.log(values.config)
 
         dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 

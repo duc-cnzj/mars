@@ -89,7 +89,7 @@ func main()  {
 
 ## TODO
 
+- [ ] 部署的时候，如果启动失败是否可以有个选项查看日志？
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] namespace all -> list
-- [x] 增加 display name (因为有些是中文，显示之后是拼音很难看懂)
