@@ -56,6 +56,18 @@ func (a DockerAuth) String() string {
 	return fmt.Sprintf("username='%s' password='%s' email='%s' server='%s'", a.Username, a.Password, a.Email, a.Server)
 }
 
+type ExcludeServerTags string
+
+func (est ExcludeServerTags) List() (res []string) {
+	for _, s := range strings.Split(string(est), ",") {
+		trims := strings.TrimSpace(s)
+		if trims != "" {
+			res = append(res, trims)
+		}
+	}
+	return
+}
+
 type Config struct {
 	AppPort         string `mapstructure:"app_port"`
 	GrpcPort        string `mapstructure:"grpc_port"`
@@ -63,6 +75,8 @@ type Config struct {
 	LogChannel      string `mapstructure:"log_channel"`
 	GitServerCached bool   `mapstructure:"git_server_cached"`
 	CacheDriver     string `mapstructure:"cache_driver"`
+	// 启动时排除这些服务，用 ',' 隔开
+	ExcludeServer ExcludeServerTags `mapstructure:"exclude_server"`
 
 	MetricsPort string `mapstructure:"metrics_port"`
 

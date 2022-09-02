@@ -144,6 +144,9 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 	if request.Config != nil && request.Config.DisplayName != project.GlobalMarsConfig().DisplayName {
 		app.Cache().Clear(cache.NewKey(ProjectOptionsCacheKey))
 	}
+	if request.Config.ConfigField == "" {
+		request.Config.IsSimpleEnv = true
+	}
 	request.Config.ConfigFileValues = strings.TrimRight(request.Config.ConfigFileValues, " ")
 	request.Config.ValuesYaml = strings.TrimRight(request.Config.ValuesYaml, " ")
 	marshal, err := json.Marshal(request.Config)

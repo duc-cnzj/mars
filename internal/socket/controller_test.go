@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils"
+
 	"github.com/duc-cnzj/mars/internal/cache_lock"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -65,16 +67,24 @@ func TestHandleWsCancel(t *testing.T) {
 
 	pubsub := mock.NewMockPubSub(m)
 	pubsub.EXPECT().ToSelf(gomock.Any()).Times(1)
+
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	ns := &models.Namespace{
+		Name: "ns",
+	}
+	db.Create(ns)
 	marshal, _ := proto.Marshal(&websocket.CancelInput{
 		Type:        websocket.Type_CancelProject,
-		NamespaceId: 1,
+		NamespaceId: int64(ns.ID),
 		Name:        "app",
 	})
-
 	cs := mock.NewMockCancelSignaler(m)
-	slug := getSlugName(1, "app")
+	slug := utils.GetSlugName(ns.ID, "app")
 	cs.EXPECT().Has(slug).Return(true).Times(1)
 	cs.EXPECT().Cancel(slug).Times(1)
+	testutil.AssertAuditLogFired(m, app)
 	conn := &WsConn{pubSub: pubsub, cancelSignaler: cs}
 	HandleWsCancel(conn, websocket.Type_CancelProject, []byte("1:"))
 	HandleWsCancel(conn, websocket.Type_CancelProject, marshal)

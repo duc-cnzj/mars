@@ -6,6 +6,7 @@ replace github.com/duc-cnzj/mars-client/v4 => ./pkg
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/duc-cnzj/mars-client/v4 v4.0.0
 	github.com/dustin/go-humanize v1.0.0
@@ -22,6 +23,7 @@ require (
 	github.com/gosimple/slug v1.12.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0
+	github.com/lithammer/dedent v1.1.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/minio/minio-go/v7 v7.0.34
 	github.com/nsqio/go-nsq v1.1.0

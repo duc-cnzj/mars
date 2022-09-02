@@ -63,7 +63,8 @@
               "Download",
               "DryRun",
               "Shell",
-              "Login"
+              "Login",
+              "CancelDeploy"
             ],
             "default": "Unknown"
           },
@@ -183,7 +184,8 @@
         "Download",
         "DryRun",
         "Shell",
-        "Login"
+        "Login",
+        "CancelDeploy"
       ],
       "default": "Unknown"
     },

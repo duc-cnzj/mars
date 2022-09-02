@@ -75,7 +75,7 @@ func (ms *messager) SendError(err error) {
 	ms.send(res)
 }
 
-func (ms *messager) SendProcessPercent(percent string) {
+func (ms *messager) SendProcessPercent(percent int64) {
 	res := &WsResponse{
 		Metadata: &websocket_pb.Metadata{
 			Slug:    ms.slugName,
@@ -84,7 +84,7 @@ func (ms *messager) SendProcessPercent(percent string) {
 			End:     false,
 			Uid:     ms.conn.uid,
 			Id:      ms.conn.id,
-			Message: percent,
+			Percent: percent,
 		},
 	}
 	ms.send(res)
@@ -101,6 +101,22 @@ func (ms *messager) SendMsg(msg string) {
 			Id:      ms.conn.id,
 			Message: msg,
 		},
+	}
+	ms.send(res)
+}
+
+func (ms *messager) SendMsgWithContainerLog(msg string, containers []*types.Container) {
+	res := &websocket_pb.WsWithContainerMessageResponse{
+		Metadata: &websocket_pb.Metadata{
+			Slug:    ms.slugName,
+			Type:    ms.wsType,
+			Result:  ResultLogWithContainers,
+			End:     false,
+			Uid:     ms.conn.uid,
+			Id:      ms.conn.id,
+			Message: msg,
+		},
+		Containers: containers,
 	}
 	ms.send(res)
 }

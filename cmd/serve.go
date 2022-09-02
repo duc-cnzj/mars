@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/duc-cnzj/mars/internal/app"
 	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
@@ -41,7 +40,6 @@ var apiGatewayCmd = &cobra.Command{
 		app := app.NewApplication(
 			config.Init(cfgFile),
 			app.WithBootstrappers(ServerBootstrappers...),
-			app.WithExcludeTags(strings.Split(viper.GetString("exclude_server"), ",")...),
 		)
 		if err := app.Bootstrap(); err != nil {
 			mlog.Fatal(err)

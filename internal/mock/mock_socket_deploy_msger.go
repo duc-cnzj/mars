@@ -84,8 +84,20 @@ func (mr *MockDeployMsgerMockRecorder) SendMsg(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDeployMsger)(nil).SendMsg), arg0)
 }
 
+// SendMsgWithContainerLog mocks base method.
+func (m *MockDeployMsger) SendMsgWithContainerLog(arg0 string, arg1 []*types.Container) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SendMsgWithContainerLog", arg0, arg1)
+}
+
+// SendMsgWithContainerLog indicates an expected call of SendMsgWithContainerLog.
+func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), arg0, arg1)
+}
+
 // SendProcessPercent mocks base method.
-func (m *MockDeployMsger) SendProcessPercent(arg0 string) {
+func (m *MockDeployMsger) SendProcessPercent(arg0 int64) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SendProcessPercent", arg0)
 }

@@ -24,6 +24,8 @@ import (
 type MessageItem struct {
 	Msg  string
 	Type MessageType
+
+	Containers []*types.Container
 }
 
 type MessageType uint8
@@ -85,10 +87,11 @@ type Msger interface {
 	SendError(error)
 	SendMsg(string)
 	SendProtoMsg(WebsocketMessage)
+	SendMsgWithContainerLog(msg string, containers []*types.Container)
 }
 
 type ProcessPercentMsger interface {
-	SendProcessPercent(string)
+	SendProcessPercent(int64)
 }
 
 type SafeWriteMessageChInterface interface {

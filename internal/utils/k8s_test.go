@@ -8,6 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	v13 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -127,63 +130,77 @@ func TestCreateDockerSecret_EmptyServer(t *testing.T) {
 	}, secret)
 }
 
+func NewPodLister(pods ...*corev1.Pod) v13.PodLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	for _, po := range pods {
+		idxer.Add(po)
+	}
+	return v13.NewPodLister(idxer)
+}
+
 func TestIsPodRunning(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	fk := fake.NewSimpleClientset(
-		&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod1",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase: corev1.PodRunning,
-			},
+	pod1 := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "duc",
 		},
-		&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod2",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase: corev1.PodFailed,
-			},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
 		},
-		&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod3",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase: corev1.PodFailed,
-				ContainerStatuses: []corev1.ContainerStatus{
-					{
-						State: corev1.ContainerState{
-							Waiting: &corev1.ContainerStateWaiting{
-								Reason:  "Reason",
-								Message: "Message",
-							},
+	}
+	pod2 := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "pod2",
+			Namespace: "duc",
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodFailed,
+		},
+	}
+	pod3 := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "pod3",
+			Namespace: "duc",
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodFailed,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					State: corev1.ContainerState{
+						Waiting: &corev1.ContainerStateWaiting{
+							Reason:  "Reason",
+							Message: "Message",
 						},
 					},
 				},
 			},
 		},
-		&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "pod4",
-				Namespace: "duc",
-			},
-			Status: corev1.PodStatus{
-				Phase:  corev1.PodFailed,
-				Reason: "Evicted",
-			},
-		})
+	}
+	pod4 := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "pod4",
+			Namespace: "duc",
+		},
+		Status: corev1.PodStatus{
+			Phase:  corev1.PodFailed,
+			Reason: "Evicted",
+		},
+	}
+	fk := fake.NewSimpleClientset(
+		pod1,
+		pod2,
+		pod3,
+		pod4,
+	)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
+		Client:    fk,
+		PodLister: NewPodLister(pod1, pod2, pod3, pod4),
 	})
 	_, e := IsPodRunning("duc", "pod_not_exists")
-	assert.Equal(t, "pods \"pod_not_exists\" not found", e)
+	assert.Equal(t, "pod \"pod_not_exists\" not found", e)
 
 	running, _ := IsPodRunning("duc", "pod1")
 	assert.True(t, running)

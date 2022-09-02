@@ -1,10 +1,20 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
+	v12 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/testutil"
@@ -105,7 +115,7 @@ func Test_send(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "po",
 			Namespace: "ns",
@@ -115,20 +125,257 @@ func Test_send(t *testing.T) {
 		},
 		Spec:   v1.PodSpec{},
 		Status: v1.PodStatus{},
-	})})
+	}
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	idxer.Add(pod)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(pod), PodLister: v12.NewPodLister(idxer)})
 	called := 0
 	var str string
-	send(&eventv1.Event{
+	var obj any = &eventv1.Event{
 		Note: "aaa",
 		Regarding: v1.ObjectReference{
 			Name:            "po",
 			Namespace:       "ns",
 			ResourceVersion: "1",
 		},
-	}, "app", func(format string, v ...any) {
-		called++
-		str = format
-	})
+	}
+	event := obj.(*eventv1.Event)
+	p := event.Regarding
+	get, _ := app.K8sClient().PodLister.Pods(p.Namespace).Get(p.Name)
+
+	for _, value := range get.Labels {
+		if value == ("app") {
+			func(cs []*types.Container, format string, v ...any) {
+				called++
+				str = format
+			}(nil, event.Note)
+			break
+		}
+	}
 	assert.Equal(t, 1, called)
 	assert.Equal(t, "aaa", str)
+}
+
+func Test_watchEvent(t *testing.T) {
+	t.Parallel()
+	ctx, cancelFn := context.WithCancel(context.TODO())
+	ch := make(chan *eventv1.Event, 10)
+	go func() {
+		ch <- &eventv1.Event{
+			Regarding: v1.ObjectReference{
+				Namespace: "ns",
+				Name:      "app",
+			},
+		}
+		time.Sleep(2 * time.Second)
+		cancelFn()
+	}()
+	var called int64
+	watchEvent(ctx, ch, "release", func(container []*types.Container, format string, v ...any) {
+		atomic.AddInt64(&called, 1)
+	}, testutil.NewPodLister(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "app",
+			Labels: map[string]string{
+				"xxx":          "xxx",
+				"release-name": "release",
+			},
+		},
+	}))
+
+	assert.Equal(t, int64(1), atomic.LoadInt64(&called))
+}
+
+func Test_watchEvent_Error1(t *testing.T) {
+	t.Parallel()
+	ctx, cancelFn := context.WithCancel(context.TODO())
+	ch := make(chan *eventv1.Event, 10)
+	go func() {
+		close(ch)
+		time.Sleep(2 * time.Second)
+		cancelFn()
+	}()
+	var called int64
+	watchEvent(ctx, ch, "release", func(container []*types.Container, format string, v ...any) {
+		atomic.AddInt64(&called, 1)
+	}, testutil.NewPodLister(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "app",
+			Labels: map[string]string{
+				"xxx":          "xxx",
+				"release-name": "release",
+			},
+		},
+	}))
+
+	assert.Equal(t, int64(0), atomic.LoadInt64(&called))
+}
+
+func Test_watchEvent_Error2(t *testing.T) {
+	t.Parallel()
+	ctx, cancelFn := context.WithCancel(context.TODO())
+	ch := make(chan *eventv1.Event, 10)
+	go func() {
+		ch <- &eventv1.Event{
+			Regarding: v1.ObjectReference{
+				Namespace: "ns",
+				Name:      "app1",
+			},
+		}
+		ch <- &eventv1.Event{
+			Regarding: v1.ObjectReference{
+				Namespace: "ns",
+				Name:      "app",
+			},
+		}
+		time.Sleep(2 * time.Second)
+		cancelFn()
+	}()
+	var called int64
+	watchEvent(ctx, ch, "release", func(container []*types.Container, format string, v ...any) {
+		atomic.AddInt64(&called, 1)
+	}, testutil.NewPodLister(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "app",
+			Labels: map[string]string{
+				"xxx":          "xxx",
+				"release-name": "release",
+			},
+		},
+	}))
+
+	assert.Equal(t, int64(1), atomic.LoadInt64(&called))
+}
+
+func Test_watchPodStatus(t *testing.T) {
+	t.Parallel()
+	var called int64
+	var cs = &ContainerGetterSetter{}
+	podCh := make(chan *v1.Pod, 10)
+	ctx, cancelFn := context.WithCancel(context.TODO())
+	go func() {
+		podCh <- &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				Name:      "app",
+				Labels: map[string]string{
+					"name": "app",
+				},
+			},
+			Status: v1.PodStatus{
+				ContainerStatuses: []v1.ContainerStatus{
+					{
+						Name:         "one",
+						Ready:        false,
+						RestartCount: 1,
+					},
+					{
+						Name:         "two",
+						Ready:        false,
+						RestartCount: 1,
+					},
+					{
+						Name:         "three",
+						Ready:        false,
+						RestartCount: 0,
+					},
+					{
+						Name:         "four",
+						Ready:        true,
+						RestartCount: 4,
+					},
+				},
+			},
+		}
+		time.Sleep(2 * time.Second)
+		cancelFn()
+	}()
+	selectorLists := []labels.Selector{
+		labels.SelectorFromSet(map[string]string{
+			"name": "app",
+		}),
+		labels.SelectorFromSet(map[string]string{
+			"release": "v1",
+		}),
+	}
+	watchPodStatus(ctx, podCh, selectorLists, func(container []*types.Container, format string, v ...any) {
+		cs.Set(container)
+		atomic.AddInt64(&called, 1)
+	})
+	assert.Len(t, cs.Get(), 2)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&called))
+	assert.Equal(t, "one", cs.Get()[0].Container)
+	assert.Equal(t, "two", cs.Get()[1].Container)
+}
+
+func Test_watchPodStatus_Error1(t *testing.T) {
+	t.Parallel()
+	var called int64
+	var cs = &ContainerGetterSetter{}
+	podCh := make(chan *v1.Pod, 10)
+	ctx, cancelFn := context.WithCancel(context.TODO())
+	go func() {
+		podCh <- &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				Name:      "app-not-match",
+				Labels: map[string]string{
+					"name": "app-not-match",
+				},
+			},
+		}
+		podCh <- &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				Name:      "app",
+				Labels: map[string]string{
+					"name": "app",
+				},
+			},
+			Status: v1.PodStatus{
+				ContainerStatuses: []v1.ContainerStatus{
+					{
+						Name:         "three",
+						Ready:        false,
+						RestartCount: 0,
+					},
+				},
+			},
+		}
+		time.Sleep(2 * time.Second)
+		cancelFn()
+	}()
+	selectorLists := []labels.Selector{
+		labels.SelectorFromSet(map[string]string{
+			"name": "app",
+		}),
+		labels.SelectorFromSet(map[string]string{
+			"release": "v1",
+		}),
+	}
+	watchPodStatus(ctx, podCh, selectorLists, func(container []*types.Container, format string, v ...any) {
+		cs.Set(container)
+		atomic.AddInt64(&called, 1)
+	})
+	assert.Len(t, cs.Get(), 0)
+	assert.Equal(t, int64(0), atomic.LoadInt64(&called))
+}
+
+type ContainerGetterSetter struct {
+	sync.Mutex
+	cs []*types.Container
+}
+
+func (c *ContainerGetterSetter) Set(cs []*types.Container) {
+	c.Lock()
+	defer c.Unlock()
+	c.cs = cs
+}
+func (c *ContainerGetterSetter) Get() []*types.Container {
+	c.Lock()
+	defer c.Unlock()
+	return c.cs
 }

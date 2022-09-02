@@ -28,6 +28,34 @@ func deepSet(key string, data any) map[string]any {
 	return res
 }
 
+/*
+a:
+ b:
+  c: d
+
+a->b->c
+*/
+func deepGet(key string, data map[any]any) (any, bool) {
+	var item any = data
+	s := strings.Split(key, separator)
+	i := 0
+	for i < len(s) {
+		ii, ok := item.(map[any]any)
+		if ok {
+			ii, ok := ii[s[i]]
+			if ok {
+				item = ii
+				i++
+				continue
+			}
+		}
+		item = nil
+		break
+	}
+
+	return item, i == len(s)
+}
+
 // YamlDeepSetKey 把 'user->name: duc' 设置成
 // user:
 //   name: duc

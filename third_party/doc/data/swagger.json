@@ -438,7 +438,8 @@
               "Download",
               "DryRun",
               "Shell",
-              "Login"
+              "Login",
+              "CancelDeploy"
             ],
             "type": "string",
             "default": "Unknown",
@@ -2775,7 +2776,8 @@
         "Download",
         "DryRun",
         "Shell",
-        "Login"
+        "Login",
+        "CancelDeploy"
       ]
     },
     "typesEventModel": {
@@ -3131,6 +3133,10 @@
         "message": {
           "type": "string"
         },
+        "percent": {
+          "type": "string",
+          "format": "int64"
+        },
         "result": {
           "$ref": "#/definitions/websocketResultType"
         },
@@ -3157,7 +3163,8 @@
         "Success",
         "Deployed",
         "DeployedFailed",
-        "DeployedCanceled"
+        "DeployedCanceled",
+        "LogWithContainers"
       ]
     },
     "websocketTo": {

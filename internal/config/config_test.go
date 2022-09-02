@@ -73,3 +73,38 @@ func TestDockerAuths_String(t *testing.T) {
 	}
 	assert.Equal(t, "[username='u' password='p' email='e' server='s']", auths.String())
 }
+
+func TestExcludeServerTags_List(t *testing.T) {
+	var tests = []struct {
+		wants []string
+		input string
+	}{
+		{
+			wants: []string{"a", "b", "c"},
+			input: "a,b,c",
+		},
+		{
+			wants: []string{"a", "b", "c"},
+			input: "a,b, c",
+		},
+		{
+			wants: []string{"a", "b", "c"},
+			input: " a, b, c",
+		},
+		{
+			wants: []string{"a"},
+			input: " a ",
+		},
+		{
+			wants: []string{"a"},
+			input: " ,a ",
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wants, ExcludeServerTags(tt.input).List())
+		})
+	}
+}

@@ -92,3 +92,58 @@ func TestYamlDeepSetKey(t *testing.T) {
 		})
 	}
 }
+
+func Test_deepGet(t *testing.T) {
+	var tests = []struct {
+		input   map[any]any
+		key     string
+		wants   bool
+		wantRes any
+	}{
+		{
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{
+						"c": map[any]any{
+							"d": "d",
+						},
+					},
+				},
+			},
+			key:   "a->b->c",
+			wants: true,
+			wantRes: map[any]any{
+				"d": "d",
+			},
+		},
+		{
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{},
+				},
+			},
+			key:     "a->b->c",
+			wants:   false,
+			wantRes: nil,
+		},
+		{
+			input: map[any]any{
+				"a": map[any]any{
+					"b": map[any]any{},
+				},
+			},
+			key:     "",
+			wants:   false,
+			wantRes: nil,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.key, func(t *testing.T) {
+			t.Parallel()
+			res, b := deepGet(tt.key, tt.input)
+			assert.Equal(t, tt.wants, b)
+			assert.Equal(t, tt.wantRes, res)
+		})
+	}
+}

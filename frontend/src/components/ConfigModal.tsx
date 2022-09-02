@@ -50,7 +50,7 @@ const initConfig = {
   config_file: "",
   config_file_values: "",
   config_field: "",
-  is_simple_env: false,
+  is_simple_env: true,
   config_file_type: "yaml",
   local_chart_path: "",
   branches: [],

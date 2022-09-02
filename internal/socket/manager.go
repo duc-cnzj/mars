@@ -42,11 +42,12 @@ import (
 )
 
 const (
-	ResultError          = websocket_pb.ResultType_Error
-	ResultSuccess        = websocket_pb.ResultType_Success
-	ResultDeployed       = websocket_pb.ResultType_Deployed
-	ResultDeployFailed   = websocket_pb.ResultType_DeployedFailed
-	ResultDeployCanceled = websocket_pb.ResultType_DeployedCanceled
+	ResultError             = websocket_pb.ResultType_Error
+	ResultSuccess           = websocket_pb.ResultType_Success
+	ResultDeployed          = websocket_pb.ResultType_Deployed
+	ResultDeployFailed      = websocket_pb.ResultType_DeployedFailed
+	ResultDeployCanceled    = websocket_pb.ResultType_DeployedCanceled
+	ResultLogWithContainers = websocket_pb.ResultType_LogWithContainers
 
 	WsSetUid             = websocket_pb.Type_SetUid
 	WsReloadProjects     = websocket_pb.Type_ReloadProjects
@@ -300,7 +301,7 @@ func (j *Jober) HandleMessage() {
 			}
 			switch s.Type {
 			case contracts.MessageText:
-				j.Messager().SendMsg(s.Msg)
+				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
 			case contracts.MessageError:
 				if j.IsNew() && !j.IsDryRun() {
 					app.DB().Delete(&j.project)
@@ -436,7 +437,8 @@ func (j *Jober) Run() error {
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
 			j.project.OverrideValues, _ = coalesceValues.YAML()
-			j.manifests = utils.Filter[string](strings.Split(result.Manifest, "---"), func(item string, index int) bool { return len(item) > 0 })
+
+			j.manifests = utils.SplitManifests(result.Manifest)
 			j.project.Manifest = result.Manifest
 			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
@@ -834,7 +836,7 @@ func (d *ExtraValuesLoader) Load(j *Jober) error {
 			validValuesMap[value.Path] = typeValue
 		}
 		if !fieldValid {
-			return fmt.Errorf("不允许自定义字段 %s", value.Path)
+			j.Messager().SendMsg(fmt.Sprintf("不允许自定义字段 %s", value.Path))
 		}
 	}
 
@@ -1076,7 +1078,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 type ReleaseInstallerLoader struct{}
 
 func (r *ReleaseInstallerLoader) Load(j *Jober) error {
-	const loaderName = "ReleaseInstallerLoader"
+	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
 	j.installer = newReleaseInstaller(j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)

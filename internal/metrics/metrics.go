@@ -147,6 +147,13 @@ var (
 		ConstLabels: prometheus.Labels{"version": appVersion},
 		Buckets:     append(prometheus.ExponentialBucketsRange(500, 20*1000*1000, 15), math.Inf(+1)),
 	}, []string{"path"})
+
+	K8sInformerFanOutListenerCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Subsystem:   system,
+		Name:        "fanout_listener_count",
+		Help:        "k8s fanout listener count",
+		ConstLabels: prometheus.Labels{"version": appVersion},
+	}, []string{"type"})
 )
 
 func init() {
@@ -170,4 +177,6 @@ func init() {
 	prometheus.MustRegister(CronErrorCount)
 
 	prometheus.MustRegister(HttpResponseSize)
+
+	prometheus.MustRegister(K8sInformerFanOutListenerCount)
 }

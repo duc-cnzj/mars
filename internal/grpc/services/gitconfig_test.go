@@ -278,7 +278,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, mc.String(), update.Config.String())
 	mc.Branches = nil
-	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(1)
+	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
 	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,
@@ -286,7 +286,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Equal(t, []string{"*"}, update.Config.Branches)
 
 	cache := mock.NewMockCacheInterface(m)
-	app.EXPECT().Cache().Return(cache).Times(2)
+	app.EXPECT().Cache().Return(cache).AnyTimes()
 	mc.DisplayName = "app"
 	cache.EXPECT().Clear(cache2.NewKey("ProjectOptions")).Times(2)
 	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
@@ -303,12 +303,23 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config: &mars.Config{
+			ConfigField:      "",
 			ConfigFileValues: " aa ",
 			ValuesYaml:       " bb ",
+			IsSimpleEnv:      false,
 		},
 	})
 	assert.Equal(t, " aa", update.Config.ConfigFileValues)
 	assert.Equal(t, " bb", update.Config.ValuesYaml)
+	assert.Equal(t, true, update.Config.IsSimpleEnv)
+	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+		GitProjectId: 11,
+		Config: &mars.Config{
+			ConfigField: "xxxx",
+			IsSimpleEnv: true,
+		},
+	})
+	assert.Equal(t, true, update.Config.IsSimpleEnv)
 }
 
 func Test_getDefaultBranch(t *testing.T) {

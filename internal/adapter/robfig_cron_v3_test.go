@@ -101,6 +101,7 @@ func Test_formatString(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.wants, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, formatString(tt.num))
 		})
 	}

@@ -187,16 +187,16 @@ func WithExcludeTags(tags ...string) Option {
 
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
-
 	app := &Application{
-		mustBooted: MustBooted,
-		config:     config,
-		done:       doneCtx,
-		doneFunc:   cancelFunc,
-		hooks:      map[Hook][]contracts.Callback{},
-		servers:    []contracts.Server{},
-		sf:         &singleflight.Group{},
-		cache:      &cache.NoCache{},
+		mustBooted:  MustBooted,
+		config:      config,
+		done:        doneCtx,
+		doneFunc:    cancelFunc,
+		hooks:       map[Hook][]contracts.Callback{},
+		servers:     []contracts.Server{},
+		sf:          &singleflight.Group{},
+		cache:       &cache.NoCache{},
+		excludeTags: config.ExcludeServer.List(),
 	}
 
 	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)

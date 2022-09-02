@@ -184,7 +184,11 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 
 	defer wsconn.Shutdown()
 
-	go write(wsconn)
+	go func() {
+		defer recovery.HandlePanic("Websocket: Write")
+
+		write(wsconn)
+	}()
 
 	NewMessageSender(wsconn, "", WsSetUid).SendMsg(wsconn.uid)
 
@@ -208,8 +212,6 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
-	defer recovery.HandlePanic("Websocket: Write")
-
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		mlog.Debugf("[Websocket]: go write exit")
@@ -235,7 +237,6 @@ func write(wsconn *WsConn) error {
 				return err
 			}
 		case <-ticker.C:
-			mlog.Debugf("[Websocket]: tick ping/pong uid: %s, id: %s", wsconn.uid, wsconn.id)
 			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return err
@@ -249,7 +250,6 @@ func read(wsconn *WsConn) error {
 	wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.conn.SetPongHandler(func(string) error {
 		wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
-		mlog.Debugf("[Websocket]: 收到心跳 id: %s, uid %s", wsconn.id, wsconn.uid)
 		return nil
 	})
 	for {
@@ -374,8 +374,11 @@ func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 	}
 
 	// cancel
-	var slugName = getSlugName(input.NamespaceId, input.Name)
+	var slugName = utils.GetSlugName(input.NamespaceId, input.Name)
 	if c.cancelSignaler.Has(slugName) {
+		var ns models.Namespace
+		app.DB().Select("name").First(&ns, input.NamespaceId)
+		AuditLogWithChange(c.GetUser().Name, types.EventActionType_CancelDeploy, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
 		c.cancelSignaler.Cancel(slugName)
 	}
 }
@@ -387,7 +390,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	slug := getSlugName(input.NamespaceId, input.Name)
+	slug := utils.GetSlugName(input.NamespaceId, input.Name)
 	job := c.NewJobFunc(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -396,8 +399,6 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer c.cancelSignaler.Remove(job.ID())
 	InstallProject(job)
 }
-
-var getSlugName = utils.GetSlugName
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.UpdateProjectInput
@@ -411,7 +412,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	slug := getSlugName(int64(p.NamespaceId), p.Name)
+	slug := utils.GetSlugName(p.NamespaceId, p.Name)
 	job := c.NewJobFunc(&websocket_pb.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),

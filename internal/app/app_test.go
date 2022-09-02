@@ -417,3 +417,32 @@ func Test_bootShortName(t *testing.T) {
 	assert.Equal(t, "EventBootstrapper", bootShortName(&bootstrappers.EventBootstrapper{}))
 	assert.Equal(t, "CustomBoot", bootShortName(CustomBoot{}))
 }
+
+type cacheLock struct {
+	contracts.Locker
+}
+
+func TestApplication_CacheLock(t *testing.T) {
+	a := NewApplication(&config.Config{})
+	assert.Nil(t, a.CacheLock())
+	cl := &cacheLock{}
+	a.SetCacheLock(cl)
+	assert.NotNil(t, a.CacheLock())
+}
+
+type cm struct {
+	contracts.CronManager
+}
+
+func TestApplication_CronManager(t *testing.T) {
+	a := NewApplication(&config.Config{})
+	assert.NotNil(t, a.CronManager())
+	c := &cm{}
+	a.SetCronManager(c)
+	assert.Same(t, c, a.CronManager())
+}
+
+func TestApplication_DB(t *testing.T) {
+	a := NewApplication(&config.Config{}).(*Application)
+	assert.Same(t, a.dbManager.DB(), a.DB())
+}

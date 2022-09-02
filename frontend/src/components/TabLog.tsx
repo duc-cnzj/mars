@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, useCallback } from "react";
+import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
 import { allPodContainers } from "../api/project";
 import { Radio, Skeleton, Button, Tag, message } from "antd";
 import pb from "../api/compiled";
@@ -10,7 +10,7 @@ const ProjectContainerLogs: React.FC<{
   id: number;
   namespace: string;
 }> = ({ id, namespace, updatedAt }) => {
-  const [value, setValue] = useState<string>();
+  const [value, setValue] = useState<string>("");
   const [list, setList] = useState<pb.types.StateContainer[]>();
 
   const listContainer = useCallback(async () => {
@@ -30,15 +30,7 @@ const ProjectContainerLogs: React.FC<{
   }, [setList, id, namespace, updatedAt, listContainer]);
 
   const [timestamp, setTimestamp] = useState(new Date().getTime());
-
-  const getUrl = useCallback(() => {
-    if (value) {
-      let [pod, container] = (value as string).split("|");
-
-      return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${timestamp}`;
-    }
-    return "";
-  }, [value, namespace, timestamp]);
+  let [pod, container] = useMemo(() => (value as string).split("|"), [value]);
 
   const reloadLog = useCallback((e: any) => {
     setValue(e.target.value);
@@ -54,7 +46,12 @@ const ProjectContainerLogs: React.FC<{
             key={item.pod + "|" + item.container}
             value={item.pod + "|" + item.container}
           >
-            {item.container}{item.is_old && <span style={{marginLeft: 2, fontSize: 10, color: "#ef4444"}}>(old)</span>}
+            {item.container}
+            {item.is_old && (
+              <span style={{ marginLeft: 2, fontSize: 10, color: "#ef4444" }}>
+                (old)
+              </span>
+            )}
             <Tag color="magenta" style={{ marginLeft: 10 }}>
               {item.pod}
             </Tag>
@@ -70,18 +67,14 @@ const ProjectContainerLogs: React.FC<{
           height: "100%",
         }}
       >
-        <Skeleton active loading={!value}>
-          <LazyLog
-            renderErrLineFunc={(e: any) => {
-              return JSON.parse(e.body).error.message;
-            }}
-            fetchOptions={{ headers: { Authorization: getToken() } }}
-            enableSearch
-            selectableLines
-            captureHotkeys
-            formatPart={(text: string) => {
-              let res = JSON.parse(text);
-              if (res.error) {
+        <Skeleton active loading={!(pod && container)}>
+          <MyLogUtil
+            namespace={namespace}
+            freshTime={timestamp}
+            pod={pod}
+            container={container}
+            onError={{
+              praseJsonError: () => {
                 return (
                   <span style={{ textAlign: "center" }}>
                     <Button
@@ -94,23 +87,16 @@ const ProjectContainerLogs: React.FC<{
                     </Button>
                   </span>
                 );
-              }
-              return res.result.log;
-            }}
-            stream
-            onError={(e: any) => {
-              if (e.status === 404) {
-                message.error(JSON.parse(e.body).error.message);
+              },
+              on404Error: (e) => {
                 listContainer().then((res) => {
                   if (res.data.items.length > 0) {
                     let first = res.data.items[0];
                     setValue(first.pod + "|" + first.container);
                   }
                 });
-              }
+              },
             }}
-            follow={true}
-            url={getUrl()}
           />
         </Skeleton>
       </div>
@@ -118,4 +104,51 @@ const ProjectContainerLogs: React.FC<{
   );
 };
 
+const MyLogUtil: React.FC<{
+  namespace: string;
+  pod: string;
+  container: string;
+  freshTime: number;
+  onError?: {
+    praseJsonError: (e: any) => any;
+    on404Error: (e: any) => void;
+  };
+}> = ({ namespace, pod, container, onError, freshTime }) => {
+  const getUrl = useCallback(() => {
+    return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${freshTime}`;
+  }, [namespace, pod, container, freshTime]);
+
+  return (
+    <LazyLog
+      renderErrLineFunc={(e: any) => {
+        return JSON.parse(e.body).error.message;
+      }}
+      fetchOptions={{ headers: { Authorization: getToken() } }}
+      enableSearch
+      selectableLines
+      captureHotkeys
+      formatPart={(text: string) => {
+        let res = JSON.parse(text);
+        if (res.error) {
+          if (onError?.praseJsonError) {
+            return onError?.praseJsonError(res.error);
+          }
+          return ""
+        }
+        return res.result.log;
+      }}
+      stream
+      onError={(e: any) => {
+        if (e.status === 404) {
+          message.error(JSON.parse(e.body).error.message);
+          onError?.on404Error(e);
+        }
+      }}
+      follow={true}
+      url={getUrl()}
+    />
+  );
+};
+
+export const LogUtil = memo(MyLogUtil);
 export default memo(ProjectContainerLogs);

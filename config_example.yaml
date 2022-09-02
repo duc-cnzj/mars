@@ -2,6 +2,10 @@ app_port: 6000
 #grpc_port: 50000
 debug: false
 
+# use app show tags
+# eg: cron,api,metrics
+#exclude_server: ""
+
 # 'logrus' | 'zap'
 #log_channel: "logrus"
 

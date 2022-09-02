@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 
@@ -69,6 +70,47 @@ func GetProjectMarsConfig(projectId any, branch string) (*mars.Config, error) {
 	return &marsC, nil
 }
 
+/*
+	  values.yaml:
+	   ```
+	   command:
+	     command:
+	       - sleep 3600
+	   ```
+
+	   config_field: command
+
+	   input:
+	   ```
+	   command:
+	    - app
+	   ```
+
+	   wants:
+	   ```
+	    command:
+	      command:
+	      - app
+	   ```
+------------------------------------
+	   values.yaml:
+	   command:
+	   - sleep 3600
+
+	   config_field: command
+
+	   input:
+	   ```
+	   command:
+		- app
+	   ```
+
+	   wants:
+	   ```
+		command:
+	    - app
+	   ```
+*/
 func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 	var (
 		err      error
@@ -80,6 +122,7 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 
 	if mars.IsSimpleEnv {
 		if yamlData, err = YamlDeepSetKey(mars.ConfigField, input); err != nil {
+			mlog.Error(err, mars.ConfigField, input)
 			return "", err
 		}
 	} else {
@@ -89,7 +132,28 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 			return "", err
 		}
 
-		if yamlData, err = YamlDeepSetKey(mars.ConfigField, data); err != nil {
+		split := strings.Split(mars.ConfigField, separator)
+		var key = mars.ConfigField
+		if len(split) > 0 {
+			key = split[len(split)-1]
+		}
+		var newData any = data
+		if len(data) == 1 {
+			cdata, ok := data[key]
+			if ok {
+				value, ok := cdata.([]any)
+				if ok {
+					m := make(map[any]any)
+					yaml.Unmarshal([]byte(mars.ValuesYaml), m)
+					_, hasKey := deepGet(mars.ConfigField+separator+key, m)
+					if !hasKey {
+						newData = value
+					}
+				}
+			}
+		}
+
+		if yamlData, err = YamlDeepSetKey(mars.ConfigField, newData); err != nil {
 			return "", err
 		}
 	}
