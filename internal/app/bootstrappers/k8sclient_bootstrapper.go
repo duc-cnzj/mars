@@ -199,6 +199,8 @@ func (f *fanOut[T]) Distribute(done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
+			mlog.Infof("[FANOUT]: '%s' exited!", f.name)
+			return
 		case obj, ok := <-f.ch:
 			if !ok {
 				mlog.Warningf("[FANOUT]: '%s' Exit!", f.name)

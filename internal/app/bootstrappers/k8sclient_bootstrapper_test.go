@@ -1,7 +1,10 @@
 package bootstrappers
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
@@ -104,4 +107,86 @@ func Test_filterPod(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_fanOut_AddListener(t *testing.T) {
+	ch := make(chan *v1.Pod, 10)
+	ch2 := make(chan *v1.Pod, 10)
+	fo := &fanOut[*v1.Pod]{
+		name:      "test-pod",
+		ch:        ch,
+		listeners: make(map[string]chan<- *v1.Pod),
+	}
+	fo.AddListener("aa", ch2)
+	fo.AddListener("aa", ch2)
+	fo.AddListener("bb", ch2)
+	assert.Len(t, fo.listeners, 2)
+}
+
+func Test_fanOut_RemoveListener(t *testing.T) {
+	ch := make(chan *v1.Pod, 10)
+	ch2 := make(chan *v1.Pod, 10)
+	fo := &fanOut[*v1.Pod]{
+		name:      "test-pod",
+		ch:        ch,
+		listeners: make(map[string]chan<- *v1.Pod),
+	}
+	fo.AddListener("aa", ch2)
+	fo.AddListener("aa", ch2)
+	fo.AddListener("bb", ch2)
+	fo.RemoveListener("aa")
+	fo.RemoveListener("aa")
+	fo.RemoveListener("bb")
+	fo.RemoveListener("bb")
+	assert.Len(t, fo.listeners, 0)
+}
+
+func Test_fanOut_Distribute(t *testing.T) {
+	ch := make(chan *v1.Pod, 10)
+	ch2 := make(chan *v1.Pod, 10)
+	fo := &fanOut[*v1.Pod]{
+		name:      "test-pod",
+		ch:        ch,
+		listeners: make(map[string]chan<- *v1.Pod),
+	}
+	fo.AddListener("aa", ch2)
+	ctx := make(chan struct{}, 1)
+	go func() {
+		pod := &v1.Pod{}
+		ch <- pod
+		p := <-ch2
+		assert.Len(t, ch2, 0)
+		assert.Len(t, ch, 0)
+		assert.Same(t, pod, p)
+		time.Sleep(2 * time.Second)
+		close(ctx)
+	}()
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		fo.Distribute(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		fo.Distribute(ctx)
+	}()
+	wg.Wait()
+}
+
+func TestStartable_start(t *testing.T) {
+	var s Startable
+	var num int64
+	wg := sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if s.start() {
+				atomic.AddInt64(&num, 1)
+			}
+		}()
+	}
+	wg.Wait()
+	assert.Equal(t, int64(1), atomic.LoadInt64(&num))
 }
