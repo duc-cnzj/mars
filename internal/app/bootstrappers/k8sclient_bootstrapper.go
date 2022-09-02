@@ -2,9 +2,10 @@ package bootstrappers
 
 import (
 	"fmt"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	"strings"
 	"sync"
+
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/metrics"

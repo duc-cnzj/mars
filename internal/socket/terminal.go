@@ -2,11 +2,12 @@ package socket
 
 import (
 	"fmt"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
