@@ -103,6 +103,7 @@ func TestExcludeServerTags_List(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.wants, ExcludeServerTags(tt.input).List())
 		})
 	}

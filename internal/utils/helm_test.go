@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	v12 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -106,7 +109,7 @@ func Test_send(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "po",
 			Namespace: "ns",
@@ -116,7 +119,10 @@ func Test_send(t *testing.T) {
 		},
 		Spec:   v1.PodSpec{},
 		Status: v1.PodStatus{},
-	})})
+	}
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	idxer.Add(pod)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(pod), PodLister: v12.NewPodLister(idxer)})
 	called := 0
 	var str string
 	var obj any = &eventv1.Event{

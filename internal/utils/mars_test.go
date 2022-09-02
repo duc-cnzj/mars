@@ -236,6 +236,7 @@ func TestParseInputConfig(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.ConfigField, func(t *testing.T) {
+			t.Parallel()
 			res, err := ParseInputConfig(&mars.Config{
 				IsSimpleEnv: tt.IsSimpleEnv,
 				ValuesYaml:  tt.ValuesYaml,

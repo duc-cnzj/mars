@@ -241,7 +241,11 @@ func watchEvent(fanOutCtx context.Context, evCh chan *v1.Event, releaseName stri
 			var obj any = ev
 			event := obj.(*v1.Event)
 			p := event.Regarding
-			get, _ := lister.Pods(p.Namespace).Get(p.Name)
+			get, err := lister.Pods(p.Namespace).Get(p.Name)
+			if err != nil {
+				mlog.Warningf("can't get pod ns: '%s', name: '%s'", p.Namespace, p.Name)
+				continue
+			}
 
 			for _, value := range get.Labels {
 				if value == releaseName {

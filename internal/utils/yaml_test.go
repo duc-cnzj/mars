@@ -140,6 +140,7 @@ func Test_deepGet(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.key, func(t *testing.T) {
+			t.Parallel()
 			res, b := deepGet(tt.key, tt.input)
 			assert.Equal(t, tt.wants, b)
 			assert.Equal(t, tt.wantRes, res)

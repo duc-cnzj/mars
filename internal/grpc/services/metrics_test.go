@@ -277,7 +277,7 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 	app := mock.NewMockApplicationInterface(m)
 	app.EXPECT().Done().Return(nil).AnyTimes()
 	instance.SetInstance(app)
-	fk := fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "pod",
@@ -285,7 +285,8 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 		Status: v1.PodStatus{
 			Phase: v1.PodFailed,
 		},
-	})
+	}
+	fk := fake.NewSimpleClientset(pod)
 	mk := &fake2.Clientset{}
 	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, errors.New("xxx")
@@ -293,6 +294,7 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(pod),
 	}).AnyTimes()
 	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
 		Namespace: "ns",
@@ -321,7 +323,7 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 	close(ch)
 	app.EXPECT().Done().Return(ch).Times(1)
 	instance.SetInstance(app)
-	fk := fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "pod",
@@ -330,7 +332,8 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 		Status: v1.PodStatus{
 			Phase: v1.PodRunning,
 		},
-	})
+	}
+	fk := fake.NewSimpleClientset(pod)
 	mk := &fake2.Clientset{}
 	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &v1beta1.PodMetrics{
@@ -355,6 +358,7 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(pod),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -400,6 +404,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -462,6 +467,7 @@ func TestMetricsSvc_StreamTopPod_Error2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -493,6 +499,7 @@ func TestMetricsSvc_TopPod(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
@@ -500,14 +507,14 @@ func TestMetricsSvc_TopPod(t *testing.T) {
 		Pod:       "pod",
 	})
 	fromError, _ := status.FromError(err)
-	assert.Equal(t, `pods "pod" not found`, fromError.Message())
+	assert.Equal(t, `pod "pod" not found`, fromError.Message())
 }
 
 func TestMetricsSvc_TopPod2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	fk := fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "pod",
@@ -516,7 +523,8 @@ func TestMetricsSvc_TopPod2(t *testing.T) {
 		Status: v1.PodStatus{
 			Phase: v1.PodRunning,
 		},
-	})
+	}
+	fk := fake.NewSimpleClientset(pod)
 	mk := &fake2.Clientset{}
 	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, errors.New("xx")
@@ -524,6 +532,7 @@ func TestMetricsSvc_TopPod2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(pod),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
@@ -544,7 +553,7 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	fk := fake.NewSimpleClientset(&v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "pod",
@@ -553,7 +562,8 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 		Status: v1.PodStatus{
 			Phase: v1.PodRunning,
 		},
-	})
+	}
+	fk := fake.NewSimpleClientset(pod)
 	mk := &fake2.Clientset{}
 	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &v1beta1.PodMetrics{
@@ -578,6 +588,7 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
+		PodLister:     NewPodLister(pod),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	res, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
