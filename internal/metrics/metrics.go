@@ -150,7 +150,7 @@ var (
 
 	K8sInformerFanOutListenerCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Subsystem:   system,
-		Name:        "fanout_listener_connections",
+		Name:        "fanout_listener_count",
 		Help:        "k8s fanout listener count",
 		ConstLabels: prometheus.Labels{"version": appVersion},
 	}, []string{"type"})
