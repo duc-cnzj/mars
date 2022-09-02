@@ -101,14 +101,16 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
 		key := fmt.Sprintf("%s-%s", namespace, releaseName)
 		k8sClient := app.K8sClient()
+		podCh := make(chan *corev1.Pod, 100)
+		evCh := make(chan *eventsv1.Event, 100)
 		defer func() {
 			cancelFn()
 			k8sClient.PodFanOut.RemoveListener(key)
 			k8sClient.EventFanOut.RemoveListener(key)
+			close(podCh)
+			close(evCh)
 		}()
-		podCh := make(chan *corev1.Pod, 100)
 		k8sClient.PodFanOut.AddListener(key, podCh)
-		evCh := make(chan *eventsv1.Event, 100)
 		k8sClient.EventFanOut.AddListener(key, evCh)
 		go func() {
 			defer recovery.HandlePanic("UpgradeOrInstall pod-fan-out")
@@ -183,11 +185,11 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
-func watchPodStatus(fanOutCtx context.Context, podCh chan *corev1.Pod, selectorList []labels.Selector, fn contracts.WrapLogFn) {
+func watchPodStatus(ctx context.Context, podCh chan *corev1.Pod, selectorList []labels.Selector, fn contracts.WrapLogFn) {
 	for {
 		select {
-		case <-fanOutCtx.Done():
-			mlog.Debug("fanOutCtx.Done pod")
+		case <-ctx.Done():
+			mlog.Debug("ctx.Done pod")
 			return
 		case p, ok := <-podCh:
 			if !ok {
@@ -201,7 +203,7 @@ func watchPodStatus(fanOutCtx context.Context, podCh chan *corev1.Pod, selectorL
 				}
 			}
 			if !matched {
-				return
+				continue
 			}
 
 			var (
@@ -228,11 +230,11 @@ func watchPodStatus(fanOutCtx context.Context, podCh chan *corev1.Pod, selectorL
 	}
 }
 
-func watchEvent(fanOutCtx context.Context, evCh chan *v1.Event, releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
+func watchEvent(ctx context.Context, evCh chan *v1.Event, releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
 	for {
 		select {
-		case <-fanOutCtx.Done():
-			mlog.Debug("fanOutCtx.Done event")
+		case <-ctx.Done():
+			mlog.Debug("ctx.Done event")
 			return
 		case ev, ok := <-evCh:
 			if !ok {
