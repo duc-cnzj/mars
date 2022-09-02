@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+
 	"github.com/duc-cnzj/mars/internal/contracts"
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
@@ -50,6 +52,23 @@ func (m *matcher) Matches(x any) bool {
 }
 
 func (m *matcher) String() string {
+	return ""
+}
+
+type containerLogResponseMatcher struct {
+	response *websocket.WsWithContainerMessageResponse
+}
+
+func (m *containerLogResponseMatcher) Matches(x any) bool {
+	response, ok := x.(*websocket.WsWithContainerMessageResponse)
+	if !ok {
+		return false
+	}
+	return m.response.String() == response.String()
+
+}
+
+func (m *containerLogResponseMatcher) String() string {
 	return ""
 }
 
@@ -177,4 +196,42 @@ func Test_messager_SendProtoMsg(t *testing.T) {
 		response: pmsg,
 	})
 	sender.SendProtoMsg(pmsg)
+}
+
+func Test_messager_SendMsgWithContainerLog(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+	ps := mock.NewMockPubSub(c)
+	sender := NewMessageSender(&WsConn{
+		id:     "1",
+		uid:    "2",
+		pubSub: ps,
+	}, "aa", websocket.Type_ApplyProject)
+	ps.EXPECT().ToSelf(&containerLogResponseMatcher{
+		response: &websocket.WsWithContainerMessageResponse{
+			Metadata: &websocket.Metadata{
+				Slug:    "aa",
+				Type:    websocket.Type_ApplyProject,
+				Result:  ResultLogWithContainers,
+				End:     false,
+				Uid:     "2",
+				Id:      "1",
+				Message: "aaa",
+			},
+			Containers: []*types.Container{
+				{
+					Namespace: "a",
+					Pod:       "b",
+					Container: "c",
+				},
+			},
+		},
+	})
+	sender.SendMsgWithContainerLog("aaa", []*types.Container{
+		{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+	})
 }
