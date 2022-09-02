@@ -1,9 +1,10 @@
 package contracts
 
 import (
+	"testing"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestWrapLogFn_UnWrap(t *testing.T) {

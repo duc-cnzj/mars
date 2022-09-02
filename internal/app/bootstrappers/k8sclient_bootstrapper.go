@@ -31,8 +31,9 @@ func (k *K8sClientBootstrapper) Tags() []string {
 
 func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	var (
-		config *restclient.Config
-		err    error
+		config   *restclient.Config
+		err      error
+		nsPrefix = app.Config().NsPrefix
 
 		eventFanOutObj = &fanOut[*eventsv1.Event]{
 			name:      "event",
@@ -85,10 +86,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	podInf := inf.Core().V1().Pods().Informer()
 	podLister := inf.Core().V1().Pods().Lister()
 	podInf.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj any) bool {
-			pod := obj.(*corev1.Pod)
-			return strings.HasPrefix(pod.Namespace, app.Config().NsPrefix)
-		},
+		FilterFunc: filterPod(nsPrefix),
 		Handler: cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(oldObj, newObj any) {
 				old := oldObj.(*corev1.Pod)
@@ -105,10 +103,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	})
 	eventInf := inf.Events().V1().Events().Informer()
 	eventInf.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj any) bool {
-			e := obj.(*eventsv1.Event)
-			return strings.HasPrefix(e.Namespace, app.Config().NsPrefix) && e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
-		},
+		FilterFunc: filterEvent(nsPrefix),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				event := obj.(*eventsv1.Event)
@@ -138,6 +133,20 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	return nil
 }
 
+func filterEvent(nsPrefix string) func(obj any) bool {
+	return func(obj any) bool {
+		e := obj.(*eventsv1.Event)
+		return strings.HasPrefix(e.Namespace, nsPrefix) && e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
+	}
+}
+
+func filterPod(nsPrefix string) func(obj any) bool {
+	return func(obj any) bool {
+		pod := obj.(*corev1.Pod)
+		return strings.HasPrefix(pod.Namespace, nsPrefix)
+	}
+}
+
 type Startable struct {
 	c utils.Closeable
 }
@@ -161,7 +170,7 @@ func (f *fanOut[T]) AddListener(key string, ch chan<- T) {
 	defer f.listenerMu.Unlock()
 	_, ok := f.listeners[key]
 	if ok {
-		mlog.Warningf("[INFORMER]: FanOut already exists %s", key)
+		mlog.Warningf("[FANOUT]: FanOut already exists %s", key)
 		return
 	}
 	mlog.Infof("%s add fanOut listener: %v", f.name, key)
@@ -172,7 +181,7 @@ func (f *fanOut[T]) AddListener(key string, ch chan<- T) {
 func (f *fanOut[T]) RemoveListener(key string) {
 	f.listenerMu.Lock()
 	defer f.listenerMu.Unlock()
-	mlog.Infof("remove listener %s", key)
+	mlog.Infof("[FANOUT]: remove listener %s", key)
 	_, ok := f.listeners[key]
 	if ok {
 		delete(f.listeners, key)
