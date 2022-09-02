@@ -2,9 +2,12 @@ package picture
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/cenkalti/backoff/v4"
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/cache"
@@ -18,7 +21,6 @@ var (
 	urls        []string = []string{
 		"https://api.btstu.cn/sjbz/?lx=dongman",
 		"https://www.dmoe.cc/random.php",
-		"https://api.ixiaowai.cn/api/api.php",
 	}
 )
 
@@ -44,13 +46,27 @@ func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, err
 		seconds = 24 * 60 * 60
 	}
 	bg, _ := app.Cache().Remember(cache.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
-		weburl := urls[rand.Intn(len(urls))]
-		response, err := client.Get(weburl)
-		if err != nil {
+		var (
+			response *http.Response
+			err      error
+		)
+		if err := backoff.Retry(func() error {
+			weburl := urls[rand.Intn(len(urls))]
+			mlog.Debugf("[Picture]: request %s", weburl)
+			response, err = client.Get(weburl)
+			if err != nil {
+				return err
+			}
+			defer response.Body.Close()
+			if response.StatusCode > 400 {
+				mlog.Debug(errors.New(weburl + ": status code > 400"))
+				return errors.New(weburl + ": status code > 400")
+			}
+			return nil
+		}, backoff.NewExponentialBackOff()); err != nil {
 			return nil, err
 		}
-		defer response.Body.Close()
-		mlog.Debugf("[Picture]: request %s", weburl)
+
 		return []byte(response.Header.Get("Location")), nil
 	})
 
