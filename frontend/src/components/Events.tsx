@@ -148,7 +148,7 @@ const EventList: React.FC = () => {
           );
         case pb.types.EventActionType.Upload:
           return (
-            <Tag color="#fcd34d" style={style}>
+            <Tag color="#fb7185" style={style}>
               上传文件
             </Tag>
           );
