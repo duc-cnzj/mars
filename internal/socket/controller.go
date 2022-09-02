@@ -184,7 +184,11 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 
 	defer wsconn.Shutdown()
 
-	go write(wsconn)
+	go func() {
+		defer recovery.HandlePanic("Websocket: Write")
+
+		write(wsconn)
+	}()
 
 	NewMessageSender(wsconn, "", WsSetUid).SendMsg(wsconn.uid)
 
@@ -208,8 +212,6 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 }
 
 func write(wsconn *WsConn) error {
-	defer recovery.HandlePanic("Websocket: Write")
-
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		mlog.Debugf("[Websocket]: go write exit")

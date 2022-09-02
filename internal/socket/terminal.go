@@ -2,6 +2,7 @@ package socket
 
 import (
 	"fmt"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	"runtime"
 	"strings"
 	"sync"
@@ -13,8 +14,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
-
 	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -331,7 +330,6 @@ func silence(err error) bool {
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleMyPtyHandler
 func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
 	defer func() {
-		recovery.HandlePanic("Websocket: WaitForTerminal")
 		mlog.Debugf("[Websocket]: WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
 	var err error
@@ -397,11 +395,14 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 	r.t = pty
 	conn.terminalSessions.Set(sessionID, pty)
 
-	go WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
-		Namespace: input.Container.Namespace,
-		Pod:       input.Container.Pod,
-		Container: input.Container.Container,
-	}, "", sessionID)
+	go func() {
+		defer recovery.HandlePanic("Websocket: WaitForTerminal")
+		WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
+			Namespace: input.Container.Namespace,
+			Pod:       input.Container.Pod,
+			Container: input.Container.Container,
+		}, "", sessionID)
+	}()
 
 	return sessionID, nil
 }

@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"fmt"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	"strings"
 	"sync"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
@@ -48,8 +48,16 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		}
 	)
 
-	go eventFanOutObj.Distribute(app.Done())
-	go podFanOutObj.Distribute(app.Done())
+	go func() {
+		defer recovery.HandlePanic(fmt.Sprintf("[FANOUT]: '%s' Distribute", eventFanOutObj.name))
+
+		eventFanOutObj.Distribute(app.Done())
+	}()
+	go func() {
+		defer recovery.HandlePanic(fmt.Sprintf("[FANOUT]: '%s' Distribute", podFanOutObj.name))
+
+		podFanOutObj.Distribute(app.Done())
+	}()
 
 	runtime.ErrorHandlers = []func(err error){
 		func(err error) {
@@ -190,7 +198,6 @@ func (f *fanOut[T]) RemoveListener(key string) {
 }
 
 func (f *fanOut[T]) Distribute(done <-chan struct{}) {
-	defer recovery.HandlePanic(fmt.Sprintf("[FANOUT]: '%s' Distribute", f.name))
 	defer mlog.Debug(fmt.Sprintf("[FANOUT]: '%s' Exit", f.name))
 	if !f.started.start() {
 		return
