@@ -6,8 +6,12 @@ package contracts
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+
+	eventsv1 "k8s.io/api/events/v1"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/otel/trace"
@@ -33,6 +37,12 @@ type Bootstrapper interface {
 	Tags() []string
 }
 
+type FanOutInterface[T runtime.Object] interface {
+	RemoveListener(key string)
+	AddListener(key string, ch chan<- T)
+	Distribute(done <-chan struct{})
+}
+
 type K8sClient struct {
 	Client        kubernetes.Interface
 	MetricsClient versioned.Interface
@@ -42,6 +52,9 @@ type K8sClient struct {
 	PodLister   v1.PodLister
 
 	EventInformer cache.SharedIndexInformer
+
+	EventFanOut FanOutInterface[*eventsv1.Event]
+	PodFanOut   FanOutInterface[*corev1.Pod]
 }
 
 type OidcConfigItem struct {

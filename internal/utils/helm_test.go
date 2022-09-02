@@ -119,17 +119,27 @@ func Test_send(t *testing.T) {
 	})})
 	called := 0
 	var str string
-	send(&eventv1.Event{
+	var obj any = &eventv1.Event{
 		Note: "aaa",
 		Regarding: v1.ObjectReference{
 			Name:            "po",
 			Namespace:       "ns",
 			ResourceVersion: "1",
 		},
-	}, "app", func(cs []*types.Container, format string, v ...any) {
-		called++
-		str = format
-	})
+	}
+	event := obj.(*eventv1.Event)
+	p := event.Regarding
+	get, _ := app.K8sClient().PodLister.Pods(p.Namespace).Get(p.Name)
+
+	for _, value := range get.Labels {
+		if value == ("app") {
+			func(cs []*types.Container, format string, v ...any) {
+				called++
+				str = format
+			}(nil, event.Note)
+			break
+		}
+	}
 	assert.Equal(t, 1, called)
 	assert.Equal(t, "aaa", str)
 }

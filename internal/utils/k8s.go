@@ -221,7 +221,7 @@ func GetIngressMappingByProjects(namespace string, projects ...models.Project) m
 }
 
 func IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, err := app.K8sClientSet().CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	podInfo, err := app.K8sClient().PodLister.Pods(namespace).Get(podName)
 	if err != nil {
 		return false, err.Error()
 	}

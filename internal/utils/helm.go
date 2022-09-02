@@ -7,7 +7,12 @@ import (
 	"io"
 	"io/ioutil"
 
-	v13 "k8s.io/api/core/v1"
+	v12 "k8s.io/client-go/listers/core/v1"
+
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
+	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -33,10 +38,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
 	v1 "k8s.io/api/events/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/tools/cache"
 )
 
 func init() {
@@ -96,76 +98,34 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	}
 
 	if wait && !dryRun {
-		stopch := make(chan struct{}, 1)
-		inf := informers.NewSharedInformerFactoryWithOptions(
-			app.K8sClientSet(), 0, informers.WithNamespace(namespace))
-		inf.Core().V1().Pods().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(oldObj, newObj any) {
-				p := newObj.(*v13.Pod)
-				var matched bool
-				for _, selector := range selectorList {
-					if selector.Matches(labels.Set(p.Labels)) {
-						matched = true
-						break
-					}
-				}
-				if !matched {
-					return
-				}
+		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
+		key := fmt.Sprintf("%s-%s", namespace, releaseName)
+		k8sClient := app.K8sClient()
+		defer func() {
+			cancelFn()
+			k8sClient.PodFanOut.RemoveListener(key)
+			k8sClient.EventFanOut.RemoveListener(key)
+		}()
+		podCh := make(chan *corev1.Pod, 100)
+		k8sClient.PodFanOut.AddListener(key, podCh)
+		evCh := make(chan *eventsv1.Event, 100)
+		k8sClient.EventFanOut.AddListener(key, evCh)
+		go func() {
+			defer recovery.HandlePanic("UpgradeOrInstall pod-fan-out")
+			watchPodStatus(fanOutCtx, podCh, selectorList, fn)
+		}()
+		go func() {
+			defer recovery.HandlePanic("UpgradeOrInstall event-fan-out")
+			watchEvent(fanOutCtx, evCh, releaseName, fn, k8sClient.PodLister)
+		}()
+	}
 
-				var (
-					containerNames []string
-					contaniners    []*types.Container
-				)
-				for _, status := range p.Status.ContainerStatuses {
-					if !status.Ready && status.RestartCount > 0 {
-						containerNames = append(containerNames, status.Name)
-					}
-				}
-				for _, name := range containerNames {
-					//查看日志
-					contaniners = append(contaniners, &types.Container{
-						Namespace: p.Namespace,
-						Pod:       p.Name,
-						Container: name,
-					})
-				}
-				if len(contaniners) > 0 {
-					fn(contaniners, "容器多次异常重启")
-				}
-			},
-		})
-		inf.Events().V1().Events().Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj any) bool {
-				e := obj.(*v1.Event)
-				return e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {
-					send(obj, releaseName, fn)
-				},
-				UpdateFunc: func(oldObj, newObj any) {
-					o := oldObj.(*v1.Event)
-					n := oldObj.(*v1.Event)
-					if o.ResourceVersion != n.ResourceVersion {
-						send(newObj, releaseName, fn)
-					}
-				},
-				DeleteFunc: func(obj any) {
-					send(obj, releaseName, fn)
-				},
-			},
-		})
-		inf.Start(stopch)
-		defer close(stopch)
-
-		if timeoutSeconds != 0 {
-			client.Timeout = time.Duration(timeoutSeconds) * time.Second
-		} else if app.Config().InstallTimeout != 0 {
-			client.Timeout = app.Config().InstallTimeout
-		} else {
-			client.Timeout = 5 * 60 * time.Second
-		}
+	if timeoutSeconds != 0 {
+		client.Timeout = time.Duration(timeoutSeconds) * time.Second
+	} else if app.Config().InstallTimeout != 0 {
+		client.Timeout = app.Config().InstallTimeout
+	} else {
+		client.Timeout = 5 * 60 * time.Second
 	}
 
 	client.Namespace = namespace
@@ -223,15 +183,72 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
-func send(obj any, releaseName string, fn func(container []*types.Container, format string, v ...any)) {
-	event := obj.(*v1.Event)
-	p := event.Regarding
-	get, _ := app.K8sClientSet().CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, v12.GetOptions{ResourceVersion: p.ResourceVersion})
+func watchPodStatus(fanOutCtx context.Context, podCh chan *corev1.Pod, selectorList []labels.Selector, fn contracts.WrapLogFn) {
+	for {
+		select {
+		case <-fanOutCtx.Done():
+			mlog.Debug("fanOutCtx.Done pod")
+			return
+		case p, ok := <-podCh:
+			if !ok {
+				return
+			}
+			var matched bool
+			for _, selector := range selectorList {
+				if selector.Matches(labels.Set(p.Labels)) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return
+			}
 
-	for _, value := range get.Labels {
-		if value == releaseName {
-			fn(nil, event.Note)
-			break
+			var (
+				containerNames []string
+				contaniners    []*types.Container
+			)
+			for _, status := range p.Status.ContainerStatuses {
+				if !status.Ready && status.RestartCount > 0 {
+					containerNames = append(containerNames, status.Name)
+				}
+			}
+			for _, name := range containerNames {
+				//查看日志
+				contaniners = append(contaniners, &types.Container{
+					Namespace: p.Namespace,
+					Pod:       p.Name,
+					Container: name,
+				})
+			}
+			if len(contaniners) > 0 {
+				fn(contaniners, "容器多次异常重启")
+			}
+		}
+	}
+}
+
+func watchEvent(fanOutCtx context.Context, evCh chan *v1.Event, releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
+	for {
+		select {
+		case <-fanOutCtx.Done():
+			mlog.Debug("fanOutCtx.Done event")
+			return
+		case ev, ok := <-evCh:
+			if !ok {
+				return
+			}
+			var obj any = ev
+			event := obj.(*v1.Event)
+			p := event.Regarding
+			get, _ := lister.Pods(p.Namespace).Get(p.Name)
+
+			for _, value := range get.Labels {
+				if value == releaseName {
+					fn(nil, event.Note)
+					break
+				}
+			}
 		}
 	}
 }
