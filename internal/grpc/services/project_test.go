@@ -583,6 +583,14 @@ func Test_messager_send(t *testing.T) {
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
 
+func Test_messager_SendMsgWithContainerLog(t *testing.T) {
+	m := &messager{server: &mockApplyServer{}, sendPercent: false}
+	m.SendMsgWithContainerLog("", nil)
+	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
+	assert.Equal(t, websocket.ResultType_LogWithContainers, m.server.(*mockApplyServer).ar.Metadata.Result)
+	assert.Equal(t, false, m.server.(*mockApplyServer).ar.Metadata.End)
+}
+
 func Test_newEmptyMessager(t *testing.T) {
 	assert.Implements(t, (*contracts.DeployMsger)(nil), newEmptyMessager())
 }
@@ -616,6 +624,7 @@ func TestEmptyMessager(t *testing.T) {
 	em.SendMsg("")
 	em.SendProtoMsg(nil)
 	em.Stop(nil)
+	em.SendMsgWithContainerLog("", nil)
 	assert.True(t, true)
 }
 
