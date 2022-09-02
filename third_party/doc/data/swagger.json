@@ -438,7 +438,8 @@
               "Download",
               "DryRun",
               "Shell",
-              "Login"
+              "Login",
+              "CancelDeploy"
             ],
             "type": "string",
             "default": "Unknown",
@@ -2775,7 +2776,8 @@
         "Download",
         "DryRun",
         "Shell",
-        "Login"
+        "Login",
+        "CancelDeploy"
       ]
     },
     "typesEventModel": {

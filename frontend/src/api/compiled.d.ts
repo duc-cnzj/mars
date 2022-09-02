@@ -8023,7 +8023,8 @@ export namespace types {
         Download = 5,
         DryRun = 6,
         Shell = 7,
-        Login = 8
+        Login = 8,
+        CancelDeploy = 9
     }
 
     /** Properties of a Pod. */

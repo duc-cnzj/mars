@@ -14,6 +14,7 @@ enum EventActionType {
   DryRun = 6;
   Shell = 7;
   Login = 8;
+  CancelDeploy = 9;
 }
 
 

@@ -374,8 +374,11 @@ func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
 	}
 
 	// cancel
-	var slugName = getSlugName(input.NamespaceId, input.Name)
+	var slugName = utils.GetSlugName(input.NamespaceId, input.Name)
 	if c.cancelSignaler.Has(slugName) {
+		var ns models.Namespace
+		app.DB().Select("name").First(&ns, input.NamespaceId)
+		AuditLogWithChange(c.GetUser().Name, types.EventActionType_CancelDeploy, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
 		c.cancelSignaler.Cancel(slugName)
 	}
 }
@@ -387,7 +390,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	slug := getSlugName(input.NamespaceId, input.Name)
+	slug := utils.GetSlugName(input.NamespaceId, input.Name)
 	job := c.NewJobFunc(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
@@ -396,8 +399,6 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	defer c.cancelSignaler.Remove(job.ID())
 	InstallProject(job)
 }
-
-var getSlugName = utils.GetSlugName
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.UpdateProjectInput
@@ -411,7 +412,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	slug := getSlugName(int64(p.NamespaceId), p.Name)
+	slug := utils.GetSlugName(p.NamespaceId, p.Name)
 	job := c.NewJobFunc(&websocket_pb.CreateProjectInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),

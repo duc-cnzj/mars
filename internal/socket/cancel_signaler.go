@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var ErrCancel = errors.New("用户取消，自动回滚到上一个版本！")
+var ErrCancel = errors.New("取消本次部署，自动回滚到上一个版本！")
 
 type CancelSignals struct {
 	cs map[string]func(error)

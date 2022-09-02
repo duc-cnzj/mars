@@ -1078,7 +1078,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 type ReleaseInstallerLoader struct{}
 
 func (r *ReleaseInstallerLoader) Load(j *Jober) error {
-	const loaderName = "ReleaseInstallerLoader"
+	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
 	j.installer = newReleaseInstaller(j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)

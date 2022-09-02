@@ -118,7 +118,7 @@ func (r *releaseInstaller) logger() contracts.WrapLogFn {
 			r.percenter.Add()
 		}
 
-		msg := fmt.Sprintf(format, v...)
+		msg := fmt.Sprintf("[Log]: "+format, v...)
 
 		if !r.logs.has(msg) {
 			r.logs.add(msg)

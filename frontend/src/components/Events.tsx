@@ -164,6 +164,12 @@ const EventList: React.FC = () => {
               登录
             </Tag>
           );
+        case pb.types.EventActionType.CancelDeploy:
+          return (
+            <Tag color="#facc15" style={style}>
+              取消部署
+            </Tag>
+          );
         case pb.types.EventActionType.DryRun:
           return (
             <Tag color="#818cf8" style={style}>
@@ -243,6 +249,7 @@ const EventList: React.FC = () => {
               <Option value={pb.types.EventActionType.Update}>更新</Option>
               <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
               <Option value={pb.types.EventActionType.Login}>登录</Option>
+              <Option value={pb.types.EventActionType.CancelDeploy}>取消部署</Option>
             </Select>
             <Input
               size="small"
