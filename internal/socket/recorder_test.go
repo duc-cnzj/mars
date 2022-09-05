@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"bufio"
 	"errors"
 	"io/fs"
 	"sync"
@@ -65,6 +66,7 @@ func TestRecorder_Close(t *testing.T) {
 			Container: "c",
 		},
 		f:         f,
+		buffer:    bufio.NewWriter(f),
 		startTime: time.Time{},
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
@@ -132,9 +134,9 @@ func TestRecorder_Write(t *testing.T) {
 	up.EXPECT().Disk("shell").Times(1).Return(up)
 	ff := mock.NewMockFile(m)
 	ff.EXPECT().Name().Return("name")
-	ff.EXPECT().Write(gomock.Any()).Times(1)
+	ff.EXPECT().Write(gomock.Any()).Times(0)
 	up.EXPECT().NewFile(gomock.Any()).Times(1).Return(ff, nil)
-	ff.EXPECT().WriteString(gomock.Any()).Times(2)
+	ff.EXPECT().WriteString(gomock.Any()).Times(0)
 	app.EXPECT().Uploader().Return(up)
 	r.Write("aaa")
 	r.Write("bbb")

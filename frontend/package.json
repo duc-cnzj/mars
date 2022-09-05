@@ -101,7 +101,7 @@
     "@types/prismjs": "^1.16.6",
     "@types/react-router-dom": "^5.1.7",
     "@types/react-syntax-highlighter": "^13.5.0",
-    "asciinema-player": "3.0.0-rc.3",
+    "asciinema-player": "^3.0.1",
     "babel-plugin-transform-remove-console": "^6.9.4"
   }
 }

@@ -3,6 +3,7 @@ package socket
 //go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/socket RecorderInterface
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -32,6 +33,8 @@ type Recorder struct {
 
 	t    *MyPtyHandler
 	once sync.Once
+
+	buffer *bufio.Writer
 
 	shellMu sync.RWMutex
 	shell   string
@@ -67,15 +70,16 @@ func (r *Recorder) Write(data string) (err error) {
 			return
 		}
 		r.f = file
+		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
 		r.filepath = file.Name()
 		r.startTime = time.Now()
-		r.f.Write([]byte(fmt.Sprintf(startLine, r.startTime.Unix(), r.shell)))
+		r.buffer.Write([]byte(fmt.Sprintf(startLine, r.startTime.Unix(), r.shell)))
 	})
 	if err != nil {
 		return err
 	}
 	marshal, _ := json.Marshal(data)
-	_, err = r.f.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
+	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
 	return err
 }
 
@@ -86,9 +90,10 @@ func (r *Recorder) Close() error {
 		err      error
 		uploader = app.Uploader()
 	)
-	if r.f == nil || r.startTime.IsZero() {
+	if r.buffer == nil || r.startTime.IsZero() {
 		return nil
 	}
+	r.buffer.Flush()
 	stat, _ := r.f.Stat()
 	var emptyFile bool = true
 	if stat.Size() > 0 {

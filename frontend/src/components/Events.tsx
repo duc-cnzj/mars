@@ -438,11 +438,11 @@ const EventList: React.FC = () => {
                   headers: { Authorization: getToken() },
                 },
               }}
-              cols={120}
-              rows={36}
+              cols={106}
+              rows={24}
               idleTimeLimit={3}
               fit={"width"}
-              terminalLineHeight={1.2}
+              terminalLineHeight={1.5}
               preload
               theme="tango"
             />
