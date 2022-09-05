@@ -41,7 +41,7 @@ type Recorder struct {
 }
 
 var (
-	startLine = "{\"version\": 2, \"width\": 204, \"height\": 54, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
+	startLine = "{\"version\": 2, \"width\": 106, \"height\": 25, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 

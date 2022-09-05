@@ -127,6 +127,7 @@ const TabShell: React.FC<{
 
   const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
     return ({ cols, rows }: { cols: number; rows: number }) => {
+      console.log(cols, rows);
       let s = pb.websocket.TerminalMessageInput.encode({
         type: pb.websocket.Type.HandleExecShellMsg,
         message: new pb.websocket.TerminalMessage({
@@ -175,15 +176,16 @@ const TabShell: React.FC<{
         fontFamily: '"Fira code", "Fira Mono", monospace',
         bellStyle: "sound",
         cursorBlink: true,
-        cols: 106,
         rows: 25,
       });
+
       myterm.loadAddon(fitAddon);
       myterm.onResize(onTerminalResize(id, ws));
       myterm.onData(onTerminalSendString(id, ws));
       ref.current !== null && myterm.open(ref.current);
       debouncedFit_();
       myterm.focus();
+
       return myterm;
     },
     [onTerminalResize, onTerminalSendString, debouncedFit_, fitAddon]

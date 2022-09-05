@@ -439,7 +439,7 @@ const EventList: React.FC = () => {
                 },
               }}
               cols={106}
-              rows={24}
+              rows={25}
               idleTimeLimit={3}
               fit={"width"}
               terminalLineHeight={1.5}
