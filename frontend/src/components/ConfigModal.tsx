@@ -644,6 +644,7 @@ const ConfigModal: React.FC<{
                         name={"config_file_values"}
                       >
                         <CodeMirror
+                          disabled={!editMode || !globalEnabled}
                           mode={mode}
                           onChange={(v) => {
                             form.setFieldsValue({ config_file_values: v });

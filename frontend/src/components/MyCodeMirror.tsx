@@ -16,8 +16,9 @@ import { linter } from "@codemirror/lint";
 const myCodeMirror: React.FC<{
   mode: string;
   value?: string;
+  disabled?: boolean;
   onChange?: (v: string) => void;
-}> = ({ mode, value, onChange }) => {
+}> = ({ mode, value, onChange, disabled }) => {
   const langeExt = getLangs(mode);
   const extensions = [
     color,
@@ -36,6 +37,7 @@ const myCodeMirror: React.FC<{
 
   return (
     <CodeMirror
+      readOnly={ disabled }
       style={{ height: "100%" }}
       value={value}
       onChange={onChange}
