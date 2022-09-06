@@ -462,7 +462,7 @@ const EventList: React.FC = () => {
               speed={1.5}
               src={{ data: records[key] }}
               idleTimeLimit={3}
-              fit={"width"}
+              fit={false}
               terminalLineHeight={1.5}
               preload
               theme="tango"
