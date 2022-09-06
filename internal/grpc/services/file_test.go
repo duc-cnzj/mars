@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/file"
@@ -148,4 +150,104 @@ func TestFile_MaxUploadSize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "10 MB", size.HumanizeSize)
 	assert.Equal(t, uint64(10*1000*1000), size.Bytes)
+}
+
+func TestFile_Show(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	_, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+		Id: 1,
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, fromError.Code())
+	db.AutoMigrate(&models.File{})
+	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+		Id: 1000,
+	})
+	fromError, _ = status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	f := &models.File{
+		UploadType: "local",
+		Path:       "/tmp/x.txt",
+		Size:       10,
+	}
+	db.Create(f)
+	up := mock.NewMockUploader(m)
+	localUp := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.S3)
+	localUp.EXPECT().Type().Return(contracts.Local)
+	app.EXPECT().Uploader().Return(up).Times(1)
+	app.EXPECT().LocalUploader().Return(localUp).Times(2)
+	localUp.EXPECT().Read("/tmp/x.txt").Return(nil, errors.New("xxx"))
+	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+		Id: int64(f.ID),
+	})
+	assert.Equal(t, "xxx", err.Error())
+
+	up.EXPECT().Type().Return(contracts.S3)
+	localUp.EXPECT().Type().Return(contracts.Local)
+	app.EXPECT().Uploader().Return(up).Times(1)
+	app.EXPECT().LocalUploader().Return(localUp).Times(2)
+	localUp.EXPECT().Read("/tmp/x.txt").Return(&rc{Reader: strings.NewReader("abc")}, nil)
+
+	res, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+		Id: int64(f.ID),
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"abc"}, res.Items)
+}
+
+type rc struct {
+	io.Reader
+}
+
+func (r *rc) Read(p []byte) (n int, err error) {
+	return r.Reader.Read(p)
+}
+
+func (r *rc) Close() error {
+	return nil
+}
+
+func Test_transformToRecords(t *testing.T) {
+	var tests = []struct {
+		reader io.Reader
+		wants  []string
+	}{
+		{
+			reader: strings.NewReader(`aaaaa`),
+			wants:  []string{"aaaaa"},
+		},
+		{
+			reader: strings.NewReader(strings.TrimSpace(`
+{"version": 2, }
+[aaa]
+[bbb]
+{"version": 2, }
+[ccc]
+[ddd]
+`)),
+			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb]", "{\"version\": 2, }\n[ccc]\n[ddd]"},
+		},
+		{
+			reader: strings.NewReader(strings.TrimSpace(`
+{"version": 2, }
+[aaa]
+[bbb]{"version": 2, }
+[ccc]
+[ddd]
+`)),
+			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb]{\"version\": 2, }\n[ccc]\n[ddd]"},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wants, transformToRecords(tt.reader))
+		})
+	}
 }

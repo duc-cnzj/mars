@@ -91,7 +91,7 @@ func Test_handFile(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	auth := mock.NewMockAuthInterface(m)
-	auth.EXPECT().VerifyToken(gomock.Any()).Return(nil, false).Times(3)
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(nil, false).Times(2)
 	app.EXPECT().Auth().Return(auth).AnyTimes()
 	r := runtime.NewServeMux()
 	handFile(r)
@@ -110,11 +110,6 @@ func Test_handFile(t *testing.T) {
 	rr2 := httptest.NewRecorder()
 	r.ServeHTTP(rr2, req2)
 	assert.Equal(t, 401, rr2.Code)
-
-	req3, _ := http.NewRequest("GET", "/api/raw_file/1", nil)
-	rr3 := httptest.NewRecorder()
-	r.ServeHTTP(rr3, req3)
-	assert.Equal(t, 401, rr3.Code)
 }
 
 type filepathEqual struct {
@@ -192,18 +187,4 @@ func Test_serveWs(t *testing.T) {}
 
 func TestApiGatewayBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"api", "gateway"}, (&ApiGatewayBootstrapper{}).Tags())
-}
-
-func Test_getUploaderByFile(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	u1 := mock.NewMockUploader(m)
-	u2 := mock.NewMockUploader(m)
-	app.EXPECT().Uploader().Return(u1).AnyTimes()
-	u1.EXPECT().Type().Return(contracts.S3).AnyTimes()
-	app.EXPECT().LocalUploader().Return(u2).AnyTimes()
-	u2.EXPECT().Type().Return(contracts.Local).AnyTimes()
-	assert.Equal(t, u1, getUploaderByFile(&models.File{UploadType: contracts.S3}))
-	assert.Equal(t, u2, getUploaderByFile(&models.File{UploadType: contracts.Local}))
 }

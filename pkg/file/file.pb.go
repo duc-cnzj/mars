@@ -439,6 +439,100 @@ func (x *MaxUploadSizeResponse) GetBytes() uint64 {
 	return 0
 }
 
+type ShowRecordsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *ShowRecordsRequest) Reset() {
+	*x = ShowRecordsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_file_file_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ShowRecordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowRecordsRequest) ProtoMessage() {}
+
+func (x *ShowRecordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_file_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowRecordsRequest.ProtoReflect.Descriptor instead.
+func (*ShowRecordsRequest) Descriptor() ([]byte, []int) {
+	return file_file_file_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ShowRecordsRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type ShowRecordsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Items []string `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+}
+
+func (x *ShowRecordsResponse) Reset() {
+	*x = ShowRecordsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_file_file_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ShowRecordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowRecordsResponse) ProtoMessage() {}
+
+func (x *ShowRecordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_file_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowRecordsResponse.ProtoReflect.Descriptor instead.
+func (*ShowRecordsResponse) Descriptor() ([]byte, []int) {
+	return file_file_file_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ShowRecordsResponse) GetItems() []string {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_file_file_proto protoreflect.FileDescriptor
 
 var file_file_file_proto_rawDesc = []byte{
@@ -485,12 +579,24 @@ var file_file_file_proto_rawDesc = []byte{
 	0x73, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x68, 0x75, 0x6d, 0x61, 0x6e, 0x69, 0x7a, 0x65, 0x5f, 0x73,
 	0x69, 0x7a, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x68, 0x75, 0x6d, 0x61, 0x6e,
 	0x69, 0x7a, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x62, 0x79, 0x74, 0x65, 0x73,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x62, 0x79, 0x74, 0x65, 0x73, 0x32, 0xe3, 0x02,
-	0x0a, 0x04, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x41, 0x0a, 0x04, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x11,
-	0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x12, 0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x12, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0c, 0x12, 0x0a, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x12, 0x4c, 0x0a, 0x06, 0x44, 0x65, 0x6c,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x62, 0x79, 0x74, 0x65, 0x73, 0x22, 0x2d, 0x0a,
+	0x12, 0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x42,
+	0x07, 0xfa, 0x42, 0x04, 0x22, 0x02, 0x20, 0x00, 0x52, 0x02, 0x69, 0x64, 0x22, 0x2b, 0x0a, 0x13,
+	0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x09, 0x52, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x32, 0xc7, 0x03, 0x0a, 0x04, 0x46, 0x69,
+	0x6c, 0x65, 0x12, 0x41, 0x0a, 0x04, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x11, 0x2e, 0x66, 0x69, 0x6c,
+	0x65, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x12, 0x2e,
+	0x66, 0x69, 0x6c, 0x65, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x12, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0c, 0x12, 0x0a, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x66, 0x69, 0x6c, 0x65, 0x73, 0x12, 0x62, 0x0a, 0x0b, 0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x63,
+	0x6f, 0x72, 0x64, 0x73, 0x12, 0x18, 0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e, 0x53, 0x68, 0x6f, 0x77,
+	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19,
+	0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e, 0x53, 0x68, 0x6f, 0x77, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1e, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x18, 0x12, 0x16, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x5f, 0x66,
+	0x69, 0x6c, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x4c, 0x0a, 0x06, 0x44, 0x65, 0x6c,
 	0x65, 0x74, 0x65, 0x12, 0x13, 0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74,
 	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x66, 0x69, 0x6c, 0x65, 0x2e,
 	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17,
@@ -526,7 +632,7 @@ func file_file_file_proto_rawDescGZIP() []byte {
 	return file_file_file_proto_rawDescData
 }
 
-var file_file_file_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_file_file_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_file_file_proto_goTypes = []interface{}{
 	(*DeleteRequest)(nil),         // 0: file.DeleteRequest
 	(*DeleteResponse)(nil),        // 1: file.DeleteResponse
@@ -536,24 +642,28 @@ var file_file_file_proto_goTypes = []interface{}{
 	(*ListResponse)(nil),          // 5: file.ListResponse
 	(*MaxUploadSizeRequest)(nil),  // 6: file.MaxUploadSizeRequest
 	(*MaxUploadSizeResponse)(nil), // 7: file.MaxUploadSizeResponse
-	(*types.FileModel)(nil),       // 8: types.FileModel
+	(*ShowRecordsRequest)(nil),    // 8: file.ShowRecordsRequest
+	(*ShowRecordsResponse)(nil),   // 9: file.ShowRecordsResponse
+	(*types.FileModel)(nil),       // 10: types.FileModel
 }
 var file_file_file_proto_depIdxs = []int32{
-	8, // 0: file.DeleteResponse.file:type_name -> types.FileModel
-	8, // 1: file.ListResponse.items:type_name -> types.FileModel
-	4, // 2: file.File.List:input_type -> file.ListRequest
-	0, // 3: file.File.Delete:input_type -> file.DeleteRequest
-	2, // 4: file.File.DiskInfo:input_type -> file.DiskInfoRequest
-	6, // 5: file.File.MaxUploadSize:input_type -> file.MaxUploadSizeRequest
-	5, // 6: file.File.List:output_type -> file.ListResponse
-	1, // 7: file.File.Delete:output_type -> file.DeleteResponse
-	3, // 8: file.File.DiskInfo:output_type -> file.DiskInfoResponse
-	7, // 9: file.File.MaxUploadSize:output_type -> file.MaxUploadSizeResponse
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	10, // 0: file.DeleteResponse.file:type_name -> types.FileModel
+	10, // 1: file.ListResponse.items:type_name -> types.FileModel
+	4,  // 2: file.File.List:input_type -> file.ListRequest
+	8,  // 3: file.File.ShowRecords:input_type -> file.ShowRecordsRequest
+	0,  // 4: file.File.Delete:input_type -> file.DeleteRequest
+	2,  // 5: file.File.DiskInfo:input_type -> file.DiskInfoRequest
+	6,  // 6: file.File.MaxUploadSize:input_type -> file.MaxUploadSizeRequest
+	5,  // 7: file.File.List:output_type -> file.ListResponse
+	9,  // 8: file.File.ShowRecords:output_type -> file.ShowRecordsResponse
+	1,  // 9: file.File.Delete:output_type -> file.DeleteResponse
+	3,  // 10: file.File.DiskInfo:output_type -> file.DiskInfoResponse
+	7,  // 11: file.File.MaxUploadSize:output_type -> file.MaxUploadSizeResponse
+	7,  // [7:12] is the sub-list for method output_type
+	2,  // [2:7] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_file_file_proto_init() }
@@ -658,6 +768,30 @@ func file_file_file_proto_init() {
 				return nil
 			}
 		}
+		file_file_file_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ShowRecordsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_file_file_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ShowRecordsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -665,7 +799,7 @@ func file_file_file_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_file_file_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

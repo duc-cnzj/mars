@@ -1648,6 +1648,38 @@
         }
       }
     },
+    "/api/record_files/{id}": {
+      "get": {
+        "tags": [
+          "File"
+        ],
+        "summary": "records 文件信息",
+        "operationId": "File_ShowRecords",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileShowRecordsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/version": {
       "get": {
         "security": [],
@@ -2068,6 +2100,17 @@
         },
         "humanize_size": {
           "type": "string"
+        }
+      }
+    },
+    "fileShowRecordsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

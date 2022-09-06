@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	websocket "github.com/duc-cnzj/mars-client/v4/websocket"
+	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
 	remotecommand "k8s.io/client-go/tools/remotecommand"
 )
@@ -36,15 +37,45 @@ func (m *MockPtyHandler) EXPECT() *MockPtyHandlerMockRecorder {
 }
 
 // Close mocks base method.
-func (m *MockPtyHandler) Close(arg0 string) {
+func (m *MockPtyHandler) Close(arg0 string) bool {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close", arg0)
+	ret := m.ctrl.Call(m, "Close", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
 }
 
 // Close indicates an expected call of Close.
 func (mr *MockPtyHandlerMockRecorder) Close(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPtyHandler)(nil).Close), arg0)
+}
+
+// Cols mocks base method.
+func (m *MockPtyHandler) Cols() uint16 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Cols")
+	ret0, _ := ret[0].(uint16)
+	return ret0
+}
+
+// Cols indicates an expected call of Cols.
+func (mr *MockPtyHandlerMockRecorder) Cols() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cols", reflect.TypeOf((*MockPtyHandler)(nil).Cols))
+}
+
+// Container mocks base method.
+func (m *MockPtyHandler) Container() contracts.Container {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Container")
+	ret0, _ := ret[0].(contracts.Container)
+	return ret0
+}
+
+// Container indicates an expected call of Container.
+func (mr *MockPtyHandlerMockRecorder) Container() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Container", reflect.TypeOf((*MockPtyHandler)(nil).Container))
 }
 
 // IsClosed mocks base method.
@@ -88,6 +119,46 @@ func (m *MockPtyHandler) Read(arg0 []byte) (int, error) {
 func (mr *MockPtyHandlerMockRecorder) Read(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockPtyHandler)(nil).Read), arg0)
+}
+
+// Recorder mocks base method.
+func (m *MockPtyHandler) Recorder() contracts.RecorderInterface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recorder")
+	ret0, _ := ret[0].(contracts.RecorderInterface)
+	return ret0
+}
+
+// Recorder indicates an expected call of Recorder.
+func (mr *MockPtyHandlerMockRecorder) Recorder() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recorder", reflect.TypeOf((*MockPtyHandler)(nil).Recorder))
+}
+
+// ResetTerminalRowCol mocks base method.
+func (m *MockPtyHandler) ResetTerminalRowCol(arg0 bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ResetTerminalRowCol", arg0)
+}
+
+// ResetTerminalRowCol indicates an expected call of ResetTerminalRowCol.
+func (mr *MockPtyHandlerMockRecorder) ResetTerminalRowCol(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetTerminalRowCol", reflect.TypeOf((*MockPtyHandler)(nil).ResetTerminalRowCol), arg0)
+}
+
+// Rows mocks base method.
+func (m *MockPtyHandler) Rows() uint16 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Rows")
+	ret0, _ := ret[0].(uint16)
+	return ret0
+}
+
+// Rows indicates an expected call of Rows.
+func (mr *MockPtyHandlerMockRecorder) Rows() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rows", reflect.TypeOf((*MockPtyHandler)(nil).Rows))
 }
 
 // SetShell mocks base method.

@@ -1,7 +1,5 @@
 package socket
 
-//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/socket RecorderInterface
-
 import (
 	"bufio"
 	"encoding/json"
@@ -12,24 +10,52 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
-type RecorderInterface interface {
-	Write(data string) (err error)
-	Close() error
-	SetShell(string)
-	GetShell() string
+var (
+	startLine = "{\"version\": 2, \"width\": %d, \"height\": %d, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
+	writeLine = "[%.6f, \"o\", %s]\n"
+)
+
+type currentStart struct {
+	sync.RWMutex
+	t time.Time
+}
+
+func (c *currentStart) Set(t time.Time) {
+	c.Lock()
+	defer c.Unlock()
+	c.t = t
+}
+
+func (c *currentStart) Get() (t time.Time) {
+	c.RLock()
+	defer c.RUnlock()
+	return c.t
+}
+
+type timer interface {
+	Now() time.Time
+}
+
+type realTimer struct{}
+
+func (r realTimer) Now() time.Time {
+	return time.Now()
 }
 
 type Recorder struct {
 	sync.RWMutex
-	filepath  string
-	container Container
-	f         contracts.File
-	startTime time.Time
+	timer            timer
+	filepath         string
+	container        contracts.Container
+	f                contracts.File
+	currentStartTime currentStart
+	startTime        time.Time
 
 	t    *MyPtyHandler
 	once sync.Once
@@ -39,11 +65,6 @@ type Recorder struct {
 	shellMu sync.RWMutex
 	shell   string
 }
-
-var (
-	startLine = "{\"version\": 2, \"width\": 106, \"height\": 25, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
-	writeLine = "[%.6f, \"o\", %s]\n"
-)
 
 func (r *Recorder) GetShell() string {
 	r.shellMu.RLock()
@@ -57,6 +78,17 @@ func (r *Recorder) SetShell(sh string) {
 	r.shell = sh
 }
 
+func (r *Recorder) Resize(cols, rows uint16) (err error) {
+	t := r.timer.Now()
+	// 防抖，5 秒内如果频繁 resize，则不分片
+	if t.Sub(r.currentStartTime.Get()).Seconds() <= 5 {
+		return
+	}
+	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
+	r.currentStartTime.Set(t)
+	return
+}
+
 func (r *Recorder) Write(data string) (err error) {
 	r.Lock()
 	defer r.Unlock()
@@ -64,22 +96,23 @@ func (r *Recorder) Write(data string) (err error) {
 		var file contracts.File
 		file, err = app.Uploader().Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
 			r.t.conn.GetUser().Name,
-			time.Now().Format("2006-01-02"),
-			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Namespace, r.t.Pod, r.t.Container.Container, utils.RandomString(20))))
+			r.timer.Now().Format("2006-01-02"),
+			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
 		if err != nil {
 			return
 		}
 		r.f = file
 		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
 		r.filepath = file.Name()
-		r.startTime = time.Now()
-		r.buffer.Write([]byte(fmt.Sprintf(startLine, r.startTime.Unix(), r.shell)))
+		r.startTime = r.timer.Now()
+		r.currentStartTime = currentStart{t: r.startTime}
+		r.buffer.Write([]byte(fmt.Sprintf(startLine, 106, 25, r.startTime.Unix(), r.shell)))
 	})
 	if err != nil {
 		return err
 	}
 	marshal, _ := json.Marshal(data)
-	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
+	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.currentStartTime.Get()).Microseconds())/1000000, string(marshal)))
 	return err
 }
 
@@ -94,7 +127,11 @@ func (r *Recorder) Close() error {
 		return nil
 	}
 	r.buffer.Flush()
-	stat, _ := r.f.Stat()
+	stat, e := r.f.Stat()
+	if e != nil {
+		mlog.Error(e)
+		return e
+	}
 	var emptyFile bool = true
 	if stat.Size() > 0 {
 		file := &models.File{

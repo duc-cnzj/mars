@@ -7,6 +7,7 @@ package contracts
 //go:generate mockgen -destination ../mock/mock_socket_job.go -package mock github.com/duc-cnzj/mars/internal/contracts Job
 //go:generate mockgen -destination ../mock/mock_socket_session_mapper.go -package mock github.com/duc-cnzj/mars/internal/contracts SessionMapper
 //go:generate mockgen -destination ../mock/mock_release_installer.go -package mock github.com/duc-cnzj/mars/internal/contracts ReleaseInstaller
+//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/contracts RecorderInterface
 
 import (
 	"context"
@@ -37,17 +38,39 @@ const (
 	MessageText
 )
 
+type Container struct {
+	Namespace string `json:"namespace"`
+	Pod       string `json:"pod"`
+	Container string `json:"container"`
+}
+
+type RecorderInterface interface {
+	Resize(cols, rows uint16) (err error)
+	Write(data string) (err error)
+	Close() error
+	SetShell(string)
+	GetShell() string
+}
+
 // PtyHandler is what remotecommand expects from a pty
 type PtyHandler interface {
 	io.Reader
 	io.Writer
 	remotecommand.TerminalSizeQueue
 
-	TerminalMessageChan() chan *websocket.TerminalMessage
+	Container() Container
 	SetShell(string)
-	Close(string)
-	IsClosed() bool
+	TerminalMessageChan() chan *websocket.TerminalMessage
 	Toast(string) error
+
+	Recorder() RecorderInterface
+
+	ResetTerminalRowCol(bool)
+	Rows() uint16
+	Cols() uint16
+
+	Close(string) bool
+	IsClosed() bool
 }
 
 type WebsocketConn interface {

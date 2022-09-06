@@ -2,7 +2,9 @@ package socket
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"sync"
 	"testing"
@@ -59,15 +61,15 @@ func TestRecorder_Close(t *testing.T) {
 
 	f := mock.NewMockFile(m)
 	r := &Recorder{
+		timer:    realTimer{},
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",
 		},
-		f:         f,
-		buffer:    bufio.NewWriter(f),
-		startTime: time.Time{},
+		f:      f,
+		buffer: bufio.NewWriter(f),
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
 				OpenIDClaims: contracts.OpenIDClaims{
@@ -78,16 +80,25 @@ func TestRecorder_Close(t *testing.T) {
 	}
 	f.EXPECT().Stat().Times(0)
 	r.Close()
-	r.startTime = time.Now()
+	r.startTime = time.Now().Add(-2 * time.Second)
+	r.currentStartTime = currentStart{t: r.startTime}
 
 	f.EXPECT().Stat().Times(1).Return(&mockFileInfo{size: 1}, nil)
 	f.EXPECT().Close().Times(1)
+	r.timer = &fakeTimer{t: time.Now()}
+	f.EXPECT().Write(gomock.Any()).Times(0)
+	r.Resize(100, 100)
+	r.timer = &fakeTimer{t: time.Now().Add(4 * time.Second)}
+	f.EXPECT().Write(gomock.Any()).Times(1)
+	r.Resize(100, 100)
 	r.Close()
 	fmodel := models.File{}
 	db.First(&fmodel)
 	emodel := models.Event{}
 	db.First(&emodel)
-	t.Log(emodel, fmodel)
+
+	duration, _ := time.ParseDuration(emodel.Duration)
+	assert.GreaterOrEqual(t, duration.Seconds(), float64(2))
 	assert.Equal(t, "", emodel.New)
 	assert.Equal(t, "duc", emodel.Username)
 	assert.Equal(t, int(fmodel.ID), *emodel.FileID)
@@ -105,6 +116,9 @@ func TestRecorder_Close(t *testing.T) {
 	f.EXPECT().Stat().Return(&mockFileInfo{size: 0}, nil).Times(1)
 	f.EXPECT().Close().Times(1)
 	r.Close()
+
+	f.EXPECT().Stat().Return(nil, errors.New("xxx")).Times(1)
+	assert.Equal(t, "xxx", r.Close().Error())
 }
 
 func TestRecorder_Write(t *testing.T) {
@@ -112,8 +126,9 @@ func TestRecorder_Write(t *testing.T) {
 	defer m.Finish()
 	f := mock.NewMockFile(m)
 	r := &Recorder{
+		timer:    realTimer{},
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",
@@ -147,8 +162,9 @@ func TestRecorder_Write_Error(t *testing.T) {
 	defer m.Finish()
 	f := mock.NewMockFile(m)
 	r := &Recorder{
+		timer:    realTimer{},
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",
@@ -172,4 +188,40 @@ func TestRecorder_Write_Error(t *testing.T) {
 
 	err := r.Write("bbb")
 	assert.Equal(t, "xxx", err.Error())
+}
+
+func Test_currentStart(t *testing.T) {
+	var c = currentStart{}
+	t1 := time.Now()
+	c.Set(t1)
+	assert.Equal(t, t1.String(), c.Get().String())
+}
+
+func TestRecorder_Resize(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	bf := &bytes.Buffer{}
+	writer := bufio.NewWriter(bf)
+	tnow := time.Date(2022, 9, 1, 1, 0, 0, 0, time.Local)
+	r := &Recorder{
+		timer:  &fakeTimer{t: tnow},
+		shell:  "mock_bash",
+		buffer: writer,
+	}
+	r.Resize(100, 100)
+	writer.Flush()
+	assert.Equal(t, fmt.Sprintf(startLine, 100, 100, tnow.Unix(), r.shell), bf.String())
+	assert.NotZero(t, r.currentStartTime.Get())
+}
+
+type fakeTimer struct {
+	t time.Time
+}
+
+func (f *fakeTimer) Now() time.Time {
+	return f.t
+}
+
+func Test_realTimer_Now(t *testing.T) {
+	assert.Equal(t, time.Now().Format("2006-01-02 15:04"), realTimer{}.Now().Format("2006-01-02 15:04"))
 }

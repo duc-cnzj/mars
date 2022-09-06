@@ -138,6 +138,38 @@
           "File"
         ]
       }
+    },
+    "/api/record_files/{id}": {
+      "get": {
+        "summary": "records 文件信息",
+        "operationId": "File_ShowRecords",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileShowRecordsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "File"
+        ]
+      }
     }
   },
   "definitions": {
@@ -193,6 +225,17 @@
         "bytes": {
           "type": "string",
           "format": "uint64"
+        }
+      }
+    },
+    "fileShowRecordsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

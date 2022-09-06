@@ -948,3 +948,218 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MaxUploadSizeResponseValidationError{}
+
+// Validate checks the field values on ShowRecordsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ShowRecordsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShowRecordsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ShowRecordsRequestMultiError, or nil if none found.
+func (m *ShowRecordsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ShowRecordsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetId() <= 0 {
+		err := ShowRecordsRequestValidationError{
+			field:  "Id",
+			reason: "value must be greater than 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ShowRecordsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ShowRecordsRequestMultiError is an error wrapping multiple validation errors
+// returned by ShowRecordsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ShowRecordsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ShowRecordsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ShowRecordsRequestMultiError) AllErrors() []error { return m }
+
+// ShowRecordsRequestValidationError is the validation error returned by
+// ShowRecordsRequest.Validate if the designated constraints aren't met.
+type ShowRecordsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ShowRecordsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ShowRecordsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ShowRecordsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ShowRecordsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ShowRecordsRequestValidationError) ErrorName() string {
+	return "ShowRecordsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ShowRecordsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sShowRecordsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ShowRecordsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ShowRecordsRequestValidationError{}
+
+// Validate checks the field values on ShowRecordsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ShowRecordsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShowRecordsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ShowRecordsResponseMultiError, or nil if none found.
+func (m *ShowRecordsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ShowRecordsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ShowRecordsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ShowRecordsResponseMultiError is an error wrapping multiple validation
+// errors returned by ShowRecordsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ShowRecordsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ShowRecordsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ShowRecordsResponseMultiError) AllErrors() []error { return m }
+
+// ShowRecordsResponseValidationError is the validation error returned by
+// ShowRecordsResponse.Validate if the designated constraints aren't met.
+type ShowRecordsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ShowRecordsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ShowRecordsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ShowRecordsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ShowRecordsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ShowRecordsResponseValidationError) ErrorName() string {
+	return "ShowRecordsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ShowRecordsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sShowRecordsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ShowRecordsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ShowRecordsResponseValidationError{}

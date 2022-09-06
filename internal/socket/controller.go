@@ -115,8 +115,8 @@ func NewWebsocketManager(healthTickDuration time.Duration) *WebsocketManager {
 	return &WebsocketManager{healthTickDuration: healthTickDuration}
 }
 
-func (w *WebsocketManager) TickClusterHealth() {
-	ticker := time.NewTicker(w.healthTickDuration)
+func (wc *WebsocketManager) TickClusterHealth() {
+	ticker := time.NewTicker(wc.healthTickDuration)
 	done := app.App().Done()
 	sub := plugins.GetWsSender().New("", "")
 	lock := app.CacheLock()

@@ -31,6 +31,16 @@ type File struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+func (f *File) Uploader() (up contracts.Uploader) {
+	switch f.UploadType {
+	case app.Uploader().Type():
+		up = app.Uploader()
+	case app.LocalUploader().Type():
+		up = app.LocalUploader()
+	}
+	return
+}
+
 func (f *File) DeleteFile() {
 	if f.Path == "" {
 		return

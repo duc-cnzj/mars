@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/app/instance"
@@ -79,4 +82,82 @@ func TestFile_ProtoTransform(t *testing.T) {
 		UpdatedAt:      date.ToRFC3339DatetimeString(&m.UpdatedAt),
 		DeletedAt:      date.ToRFC3339DatetimeString(&m.DeletedAt.Time),
 	}, m.ProtoTransform())
+}
+
+func TestFile_Uploader(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	local := mock.NewMockUploader(m)
+	up := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.S3).AnyTimes()
+	local.EXPECT().Type().Return(contracts.Local).AnyTimes()
+	app.EXPECT().LocalUploader().Return(local).AnyTimes()
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	var tests = []struct {
+		up contracts.Uploader
+		f  File
+	}{
+		{
+			up: local,
+			f: File{
+				UploadType: contracts.Local,
+			},
+		},
+		{
+			up: up,
+			f: File{
+				UploadType: contracts.S3,
+			},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			assert.Same(t, tt.up, tt.f.Uploader())
+		})
+	}
+}
+
+func TestFile_Uploader1(t *testing.T) {
+	type fields struct {
+		ID            int
+		UploadType    contracts.UploadType
+		Path          string
+		Size          uint64
+		Username      string
+		Namespace     string
+		Pod           string
+		Container     string
+		ContainerPath string
+		CreatedAt     time.Time
+		UpdatedAt     time.Time
+		DeletedAt     gorm.DeletedAt
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		wantUp contracts.Uploader
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &File{
+				ID:            tt.fields.ID,
+				UploadType:    tt.fields.UploadType,
+				Path:          tt.fields.Path,
+				Size:          tt.fields.Size,
+				Username:      tt.fields.Username,
+				Namespace:     tt.fields.Namespace,
+				Pod:           tt.fields.Pod,
+				Container:     tt.fields.Container,
+				ContainerPath: tt.fields.ContainerPath,
+				CreatedAt:     tt.fields.CreatedAt,
+				UpdatedAt:     tt.fields.UpdatedAt,
+				DeletedAt:     tt.fields.DeletedAt,
+			}
+			assert.Equalf(t, tt.wantUp, f.Uploader(), "Uploader()")
+		})
+	}
 }
