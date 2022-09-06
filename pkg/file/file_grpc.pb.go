@@ -25,7 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type FileClient interface {
 	//  文件列表
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	//  文件列表
+	//  文件信息
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 	//  删除文件
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
@@ -93,7 +93,7 @@ func (c *fileClient) MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest
 type FileServer interface {
 	//  文件列表
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	//  文件列表
+	//  文件信息
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	//  删除文件
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)

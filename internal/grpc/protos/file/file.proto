@@ -60,7 +60,7 @@ service File {
     };
   }
 
-  //  文件列表
+  //  文件信息
   rpc Show(ShowRequest) returns (ShowResponse) {
     option (google.api.http) = {
       get: "/api/files/{id}",

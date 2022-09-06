@@ -594,7 +594,7 @@
         "tags": [
           "File"
         ],
-        "summary": "文件列表",
+        "summary": "文件信息",
         "operationId": "File_Show",
         "parameters": [
           {

@@ -109,7 +109,7 @@
     },
     "/api/files/{id}": {
       "get": {
-        "summary": "文件列表",
+        "summary": "文件信息",
         "operationId": "File_Show",
         "responses": {
           "200": {
