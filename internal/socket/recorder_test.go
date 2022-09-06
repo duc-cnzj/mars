@@ -80,11 +80,15 @@ func TestRecorder_Close(t *testing.T) {
 	}
 	f.EXPECT().Stat().Times(0)
 	r.Close()
-	r.startTime = time.Now()
+	r.startTime = time.Now().Add(-2 * time.Second)
+	r.currentStartTime = currentStart{t: r.startTime}
 
 	f.EXPECT().Stat().Times(1).Return(&mockFileInfo{size: 1}, nil)
 	f.EXPECT().Close().Times(1)
-	time.Sleep(2 * time.Second)
+	r.timer = &fakeTimer{t: time.Now()}
+	f.EXPECT().Write(gomock.Any()).Times(0)
+	r.Resize(100, 100)
+	r.timer = &fakeTimer{t: time.Now().Add(4 * time.Second)}
 	f.EXPECT().Write(gomock.Any()).Times(1)
 	r.Resize(100, 100)
 	r.Close()

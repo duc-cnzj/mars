@@ -80,6 +80,10 @@ func (r *Recorder) SetShell(sh string) {
 
 func (r *Recorder) Resize(cols, rows uint16) (err error) {
 	t := r.timer.Now()
+	// 防抖，5 秒内如果频繁 resize，则不分片
+	if t.Sub(r.currentStartTime.Get()).Seconds() <= 5 {
+		return
+	}
 	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
 	r.currentStartTime.Set(t)
 	return
