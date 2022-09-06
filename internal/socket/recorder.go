@@ -38,8 +38,19 @@ func (c *currentStart) Get() (t time.Time) {
 	return c.t
 }
 
+type timer interface {
+	Now() time.Time
+}
+
+type realTimer struct{}
+
+func (r realTimer) Now() time.Time {
+	return time.Now()
+}
+
 type Recorder struct {
 	sync.RWMutex
+	timer            timer
 	filepath         string
 	container        contracts.Container
 	f                contracts.File
@@ -68,7 +79,7 @@ func (r *Recorder) SetShell(sh string) {
 }
 
 func (r *Recorder) Resize(cols, rows uint16) (err error) {
-	t := time.Now()
+	t := r.timer.Now()
 	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
 	r.currentStartTime.Set(t)
 	return
@@ -81,7 +92,7 @@ func (r *Recorder) Write(data string) (err error) {
 		var file contracts.File
 		file, err = app.Uploader().Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
 			r.t.conn.GetUser().Name,
-			time.Now().Format("2006-01-02"),
+			r.timer.Now().Format("2006-01-02"),
 			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
 		if err != nil {
 			return
@@ -89,8 +100,8 @@ func (r *Recorder) Write(data string) (err error) {
 		r.f = file
 		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
 		r.filepath = file.Name()
-		r.startTime = time.Now()
-		r.currentStartTime = currentStart{t: time.Now()}
+		r.startTime = r.timer.Now()
+		r.currentStartTime = currentStart{t: r.startTime}
 		r.buffer.Write([]byte(fmt.Sprintf(startLine, 106, 25, r.startTime.Unix(), r.shell)))
 	})
 	if err != nil {

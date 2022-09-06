@@ -63,8 +63,8 @@ func (s *sizeStore) Set(cols, rows uint16) {
 }
 
 func (s *sizeStore) Changed(cols, rows uint16) bool {
-	s.rwMu.Lock()
-	defer s.rwMu.Unlock()
+	s.rwMu.RLock()
+	defer s.rwMu.RUnlock()
 	if s.rows == 0 || s.cols == 0 {
 		return false
 	}
@@ -97,7 +97,7 @@ type MyPtyHandler struct {
 	conn      *WsConn
 	sizeChan  chan remotecommand.TerminalSize
 	doneChan  chan struct{}
-	sizeStore *sizeStore
+	sizeStore sizeStore
 
 	shellCh chan *websocket_pb.TerminalMessage
 
@@ -437,42 +437,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 			}
 			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
 			// 通过 sizeStore 记录上次用户的 rows, cols, 当 bash 回退时，在用户输入时应用到新的 sh 中
-			var cols, rows uint16 = 106, 25
-			func() {
-				ticker := time.NewTicker(100 * time.Millisecond)
-				af := time.NewTimer(3 * time.Second)
-				defer ticker.Stop()
-				defer af.Stop()
-				for session.Cols() == 0 {
-					select {
-					case <-ticker.C:
-						mlog.Debug("sleep....")
-						break
-					case <-af.C:
-						mlog.Warningf("can't get previous cols,rows, use default rows: 25, cols: 106.")
-						return
-					}
-				}
-				cols = session.Cols()
-				rows = session.Rows()
-			}()
-			mlog.Debug("done....")
-
-			spty := session.(*MyPtyHandler)
-			session = &MyPtyHandler{
-				container: spty.container,
-				recorder:  spty.recorder,
-				id:        spty.id,
-				conn:      spty.conn,
-				doneChan:  spty.doneChan,
-				sizeChan:  make(chan remotecommand.TerminalSize, 1),
-				shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
-				sizeStore: &sizeStore{
-					cols:  cols,
-					rows:  rows,
-					reset: true,
-				},
-			}
+			session = resetSession(session)
 			conn.terminalSessions.Set(sessionId, session)
 		}
 	}
@@ -489,6 +454,46 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	conn.terminalSessions.Close(sessionId, 1, "Process exited")
 }
 
+func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
+	var cols, rows uint16 = 106, 25
+	func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		af := time.NewTimer(3 * time.Second)
+		defer ticker.Stop()
+		defer af.Stop()
+		for session.Cols() == 0 {
+			select {
+			case <-ticker.C:
+				mlog.Debug("sleep....")
+				break
+			case <-af.C:
+				mlog.Warningf("can't get previous cols,rows, use default rows: 25, cols: 106.")
+				return
+			}
+		}
+		cols = session.Cols()
+		rows = session.Rows()
+	}()
+	mlog.Debug("done....")
+
+	spty := session.(*MyPtyHandler)
+	session = &MyPtyHandler{
+		container: spty.container,
+		recorder:  spty.recorder,
+		id:        spty.id,
+		conn:      spty.conn,
+		doneChan:  spty.doneChan,
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+		sizeStore: sizeStore{
+			cols:  cols,
+			rows:  rows,
+			reset: true,
+		},
+	}
+	return session
+}
+
 type TerminalResponse struct {
 	ID string `json:"id"`
 }
@@ -502,10 +507,10 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 
 	sessionID := GenMyPtyHandlerId()
 	r := &Recorder{
+		timer:     realTimer{},
 		container: c,
 	}
 	pty := &MyPtyHandler{
-		sizeStore: &sizeStore{},
 		container: c,
 		id:        sessionID,
 		conn:      conn,
