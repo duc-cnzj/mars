@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/file"
@@ -148,4 +150,64 @@ func TestFile_MaxUploadSize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "10 MB", size.HumanizeSize)
 	assert.Equal(t, uint64(10*1000*1000), size.Bytes)
+}
+
+func TestFile_Show(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	_, err := new(File).Show(context.TODO(), &file.ShowRequest{
+		Id: 1,
+	})
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, fromError.Code())
+	db.AutoMigrate(&models.File{})
+	_, err = new(File).Show(context.TODO(), &file.ShowRequest{
+		Id: 1000,
+	})
+	fromError, _ = status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	f := &models.File{
+		UploadType: "local",
+		Path:       "/tmp/x.txt",
+		Size:       10,
+	}
+	db.Create(f)
+	up := mock.NewMockUploader(m)
+	localUp := mock.NewMockUploader(m)
+	up.EXPECT().Type().Return(contracts.S3)
+	localUp.EXPECT().Type().Return(contracts.Local)
+	app.EXPECT().Uploader().Return(up).Times(1)
+	app.EXPECT().LocalUploader().Return(localUp).Times(2)
+	localUp.EXPECT().Read("/tmp/x.txt").Return(nil, errors.New("xxx"))
+	_, err = new(File).Show(context.TODO(), &file.ShowRequest{
+		Id: int64(f.ID),
+	})
+	assert.Equal(t, "xxx", err.Error())
+
+	up.EXPECT().Type().Return(contracts.S3)
+	localUp.EXPECT().Type().Return(contracts.Local)
+	app.EXPECT().Uploader().Return(up).Times(1)
+	app.EXPECT().LocalUploader().Return(localUp).Times(2)
+	localUp.EXPECT().Read("/tmp/x.txt").Return(&rc{Reader: strings.NewReader("abc")}, nil)
+
+	res, err := new(File).Show(context.TODO(), &file.ShowRequest{
+		Id: int64(f.ID),
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "abc", res.Content)
+}
+
+type rc struct {
+	io.Reader
+}
+
+func (r *rc) Read(p []byte) (n int, err error) {
+	return r.Reader.Read(p)
+}
+
+func (r *rc) Close() error {
+	return nil
 }
