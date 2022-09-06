@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/scopes"
 )
@@ -76,7 +78,7 @@ func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*fi
 	}, nil
 }
 
-func (m *File) Show(ctx context.Context, request *file.ShowRequest) (*file.ShowResponse, error) {
+func (m *File) ShowRecords(ctx context.Context, request *file.ShowRecordsRequest) (*file.ShowRecordsResponse, error) {
 	var f models.File
 	if err := app.DB().First(&f, request.Id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -89,8 +91,35 @@ func (m *File) Show(ctx context.Context, request *file.ShowRequest) (*file.ShowR
 		return nil, err
 	}
 	defer rc.Close()
-	all, _ := io.ReadAll(rc)
-	return &file.ShowResponse{Content: string(all)}, nil
+
+	return &file.ShowRecordsResponse{Items: transformToRecords(rc)}, nil
+}
+
+func transformToRecords(rd io.Reader) []string {
+	var (
+		data   []string
+		lists  []string
+		reader = bufio.NewReader(rd)
+	)
+	for {
+		line, _, err := reader.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				lists = append(lists, strings.Join(data, "\n"))
+			}
+			mlog.Debug(err)
+			break
+		}
+		if strings.HasPrefix(string(line), `{"version": 2,`) {
+			if len(data) > 0 {
+				lists = append(lists, strings.Join(data, "\n"))
+			}
+			data = []string{string(line)}
+		} else {
+			data = append(data, string(line))
+		}
+	}
+	return lists
 }
 
 func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {

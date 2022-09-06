@@ -4157,80 +4157,80 @@ export namespace file {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.MaxUploadSizeResponse;
     }
 
-    /** Properties of a ShowRequest. */
-    interface IShowRequest {
+    /** Properties of a ShowRecordsRequest. */
+    interface IShowRecordsRequest {
 
-        /** ShowRequest id */
+        /** ShowRecordsRequest id */
         id?: (number|null);
     }
 
-    /** Represents a ShowRequest. */
-    class ShowRequest implements IShowRequest {
+    /** Represents a ShowRecordsRequest. */
+    class ShowRecordsRequest implements IShowRecordsRequest {
 
         /**
-         * Constructs a new ShowRequest.
+         * Constructs a new ShowRecordsRequest.
          * @param [properties] Properties to set
          */
-        constructor(properties?: file.IShowRequest);
+        constructor(properties?: file.IShowRecordsRequest);
 
-        /** ShowRequest id. */
+        /** ShowRecordsRequest id. */
         public id: number;
 
         /**
-         * Encodes the specified ShowRequest message. Does not implicitly {@link file.ShowRequest.verify|verify} messages.
-         * @param message ShowRequest message or plain object to encode
+         * Encodes the specified ShowRecordsRequest message. Does not implicitly {@link file.ShowRecordsRequest.verify|verify} messages.
+         * @param message ShowRecordsRequest message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: file.ShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: file.ShowRecordsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes a ShowRequest message from the specified reader or buffer.
+         * Decodes a ShowRecordsRequest message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns ShowRequest
+         * @returns ShowRecordsRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRequest;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRecordsRequest;
     }
 
-    /** Properties of a ShowResponse. */
-    interface IShowResponse {
+    /** Properties of a ShowRecordsResponse. */
+    interface IShowRecordsResponse {
 
-        /** ShowResponse content */
-        content?: (string|null);
+        /** ShowRecordsResponse items */
+        items?: (string[]|null);
     }
 
-    /** Represents a ShowResponse. */
-    class ShowResponse implements IShowResponse {
+    /** Represents a ShowRecordsResponse. */
+    class ShowRecordsResponse implements IShowRecordsResponse {
 
         /**
-         * Constructs a new ShowResponse.
+         * Constructs a new ShowRecordsResponse.
          * @param [properties] Properties to set
          */
-        constructor(properties?: file.IShowResponse);
+        constructor(properties?: file.IShowRecordsResponse);
 
-        /** ShowResponse content. */
-        public content: string;
+        /** ShowRecordsResponse items. */
+        public items: string[];
 
         /**
-         * Encodes the specified ShowResponse message. Does not implicitly {@link file.ShowResponse.verify|verify} messages.
-         * @param message ShowResponse message or plain object to encode
+         * Encodes the specified ShowRecordsResponse message. Does not implicitly {@link file.ShowRecordsResponse.verify|verify} messages.
+         * @param message ShowRecordsResponse message or plain object to encode
          * @param [writer] Writer to encode to
          * @returns Writer
          */
-        public static encode(message: file.ShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+        public static encode(message: file.ShowRecordsResponse, writer?: $protobuf.Writer): $protobuf.Writer;
 
         /**
-         * Decodes a ShowResponse message from the specified reader or buffer.
+         * Decodes a ShowRecordsResponse message from the specified reader or buffer.
          * @param reader Reader or buffer to decode from
          * @param [length] Message length if known beforehand
-         * @returns ShowResponse
+         * @returns ShowRecordsResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowResponse;
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRecordsResponse;
     }
 
     /** Represents a File */
@@ -4259,18 +4259,18 @@ export namespace file {
         public list(request: file.ListRequest): Promise<file.ListResponse>;
 
         /**
-         * Calls Show.
-         * @param request ShowRequest message or plain object
-         * @param callback Node-style callback called with the error, if any, and ShowResponse
+         * Calls ShowRecords.
+         * @param request ShowRecordsRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and ShowRecordsResponse
          */
-        public show(request: file.ShowRequest, callback: file.File.ShowCallback): void;
+        public showRecords(request: file.ShowRecordsRequest, callback: file.File.ShowRecordsCallback): void;
 
         /**
-         * Calls Show.
-         * @param request ShowRequest message or plain object
+         * Calls ShowRecords.
+         * @param request ShowRecordsRequest message or plain object
          * @returns Promise
          */
-        public show(request: file.ShowRequest): Promise<file.ShowResponse>;
+        public showRecords(request: file.ShowRecordsRequest): Promise<file.ShowRecordsResponse>;
 
         /**
          * Calls Delete.
@@ -4325,11 +4325,11 @@ export namespace file {
         type ListCallback = (error: (Error|null), response?: file.ListResponse) => void;
 
         /**
-         * Callback as used by {@link file.File#show}.
+         * Callback as used by {@link file.File#showRecords}.
          * @param error Error, if any
-         * @param [response] ShowResponse
+         * @param [response] ShowRecordsResponse
          */
-        type ShowCallback = (error: (Error|null), response?: file.ShowResponse) => void;
+        type ShowRecordsCallback = (error: (Error|null), response?: file.ShowRecordsResponse) => void;
 
         /**
          * Callback as used by {@link file.File#delete_}.

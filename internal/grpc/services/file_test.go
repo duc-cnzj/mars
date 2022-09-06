@@ -158,13 +158,13 @@ func TestFile_Show(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
-	_, err := new(File).Show(context.TODO(), &file.ShowRequest{
+	_, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: 1,
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
 	db.AutoMigrate(&models.File{})
-	_, err = new(File).Show(context.TODO(), &file.ShowRequest{
+	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: 1000,
 	})
 	fromError, _ = status.FromError(err)
@@ -182,7 +182,7 @@ func TestFile_Show(t *testing.T) {
 	app.EXPECT().Uploader().Return(up).Times(1)
 	app.EXPECT().LocalUploader().Return(localUp).Times(2)
 	localUp.EXPECT().Read("/tmp/x.txt").Return(nil, errors.New("xxx"))
-	_, err = new(File).Show(context.TODO(), &file.ShowRequest{
+	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: int64(f.ID),
 	})
 	assert.Equal(t, "xxx", err.Error())
@@ -193,11 +193,11 @@ func TestFile_Show(t *testing.T) {
 	app.EXPECT().LocalUploader().Return(localUp).Times(2)
 	localUp.EXPECT().Read("/tmp/x.txt").Return(&rc{Reader: strings.NewReader("abc")}, nil)
 
-	res, err := new(File).Show(context.TODO(), &file.ShowRequest{
+	res, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: int64(f.ID),
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, "abc", res.Content)
+	assert.Equal(t, []string{"abc"}, res.Items)
 }
 
 type rc struct {
@@ -210,4 +210,44 @@ func (r *rc) Read(p []byte) (n int, err error) {
 
 func (r *rc) Close() error {
 	return nil
+}
+
+func Test_transformToRecords(t *testing.T) {
+	var tests = []struct {
+		reader io.Reader
+		wants  []string
+	}{
+		{
+			reader: strings.NewReader(`aaaaa`),
+			wants:  []string{"aaaaa"},
+		},
+		{
+			reader: strings.NewReader(strings.TrimSpace(`
+{"version": 2, }
+[aaa]
+[bbb]
+{"version": 2, }
+[ccc]
+[ddd]
+`)),
+			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb]", "{\"version\": 2, }\n[ccc]\n[ddd]"},
+		},
+		{
+			reader: strings.NewReader(strings.TrimSpace(`
+{"version": 2, }
+[aaa]
+[bbb]{"version": 2, }
+[ccc]
+[ddd]
+`)),
+			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb]{\"version\": 2, }\n[ccc]\n[ddd]"},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wants, transformToRecords(tt.reader))
+		})
+	}
 }

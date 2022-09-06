@@ -44,12 +44,12 @@ message MaxUploadSizeResponse{
   uint64 bytes = 2;
 }
 
-message ShowRequest {
+message ShowRecordsRequest {
   int64 id = 1 [(validate.rules).int64.gt = 0];
 }
 
-message ShowResponse {
-  string content = 1;
+message ShowRecordsResponse {
+  repeated string items = 1;
 }
 
 service File {
@@ -60,10 +60,10 @@ service File {
     };
   }
 
-  //  文件信息
-  rpc Show(ShowRequest) returns (ShowResponse) {
+  //  records 文件信息
+  rpc ShowRecords(ShowRecordsRequest) returns (ShowRecordsResponse) {
     option (google.api.http) = {
-      get: "/api/files/{id}",
+      get: "/api/record_files/{id}",
     };
   }
 

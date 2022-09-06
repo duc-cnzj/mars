@@ -16,8 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
-const recordSeparator = "---"
-
 var (
 	startLine = "{\"version\": 2, \"width\": %d, \"height\": %d, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
 	writeLine = "[%.6f, \"o\", %s]\n"
@@ -53,7 +51,6 @@ func (r *Recorder) SetShell(sh string) {
 }
 
 func (r *Recorder) Resize(cols, rows uint16) (err error) {
-	r.buffer.WriteString(recordSeparator)
 	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, time.Now().Unix(), r.shell))
 	r.startTimeMu.Lock()
 	defer r.startTimeMu.Unlock()

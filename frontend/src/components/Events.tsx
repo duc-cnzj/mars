@@ -26,7 +26,7 @@ import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events, showEvent } from "../api/event";
-import { raw } from "../api/file";
+import { showRecords } from "../api/file";
 import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "./DiffViewer";
@@ -223,9 +223,8 @@ const EventList: React.FC = () => {
   const [key, setKey] = useState(0);
 
   const fetchFileRaw = useCallback((id: number) => {
-    raw(id).then(({ data }) => {
-      console.log(data.content.split("---"));
-      setRecords(data.content.split("---"));
+    showRecords(id).then(({ data }) => {
+      setRecords(data.items);
     });
   }, []);
 
@@ -450,7 +449,7 @@ const EventList: React.FC = () => {
                 value={key}
               >
                 {records.map((_, index) => (
-                  <Radio value={index}>
+                  <Radio value={index} key={index}>
                     <Tag color={key === index ? "success" : "default"} icon={key === index ? <PlayCircleOutlined /> : <ClockCircleOutlined />}>片段 {index + 1}</Tag>
                   </Radio>
                 ))}

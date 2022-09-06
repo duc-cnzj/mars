@@ -25,8 +25,8 @@ const _ = grpc.SupportPackageIsVersion7
 type FileClient interface {
 	//  文件列表
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	//  文件信息
-	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
+	//  records 文件信息
+	ShowRecords(ctx context.Context, in *ShowRecordsRequest, opts ...grpc.CallOption) (*ShowRecordsResponse, error)
 	//  删除文件
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// DiskInfo 查看上传文件目录大小
@@ -51,9 +51,9 @@ func (c *fileClient) List(ctx context.Context, in *ListRequest, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *fileClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error) {
-	out := new(ShowResponse)
-	err := c.cc.Invoke(ctx, "/file.File/Show", in, out, opts...)
+func (c *fileClient) ShowRecords(ctx context.Context, in *ShowRecordsRequest, opts ...grpc.CallOption) (*ShowRecordsResponse, error) {
+	out := new(ShowRecordsResponse)
+	err := c.cc.Invoke(ctx, "/file.File/ShowRecords", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +93,8 @@ func (c *fileClient) MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest
 type FileServer interface {
 	//  文件列表
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	//  文件信息
-	Show(context.Context, *ShowRequest) (*ShowResponse, error)
+	//  records 文件信息
+	ShowRecords(context.Context, *ShowRecordsRequest) (*ShowRecordsResponse, error)
 	//  删除文件
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// DiskInfo 查看上传文件目录大小
@@ -110,8 +110,8 @@ type UnimplementedFileServer struct {
 func (UnimplementedFileServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedFileServer) Show(context.Context, *ShowRequest) (*ShowResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Show not implemented")
+func (UnimplementedFileServer) ShowRecords(context.Context, *ShowRecordsRequest) (*ShowRecordsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShowRecords not implemented")
 }
 func (UnimplementedFileServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -153,20 +153,20 @@ func _File_List_Handler(srv interface{}, ctx context.Context, dec func(interface
 	return interceptor(ctx, in, info, handler)
 }
 
-func _File_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ShowRequest)
+func _File_ShowRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowRecordsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileServer).Show(ctx, in)
+		return srv.(FileServer).ShowRecords(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/file.File/Show",
+		FullMethod: "/file.File/ShowRecords",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServer).Show(ctx, req.(*ShowRequest))
+		return srv.(FileServer).ShowRecords(ctx, req.(*ShowRecordsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -237,8 +237,8 @@ var File_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _File_List_Handler,
 		},
 		{
-			MethodName: "Show",
-			Handler:    _File_Show_Handler,
+			MethodName: "ShowRecords",
+			Handler:    _File_ShowRecords_Handler,
 		},
 		{
 			MethodName: "Delete",

@@ -9001,24 +9001,24 @@ export const file = $root.file = (() => {
         return MaxUploadSizeResponse;
     })();
 
-    file.ShowRequest = (function() {
+    file.ShowRecordsRequest = (function() {
 
         /**
-         * Properties of a ShowRequest.
+         * Properties of a ShowRecordsRequest.
          * @memberof file
-         * @interface IShowRequest
-         * @property {number|null} [id] ShowRequest id
+         * @interface IShowRecordsRequest
+         * @property {number|null} [id] ShowRecordsRequest id
          */
 
         /**
-         * Constructs a new ShowRequest.
+         * Constructs a new ShowRecordsRequest.
          * @memberof file
-         * @classdesc Represents a ShowRequest.
-         * @implements IShowRequest
+         * @classdesc Represents a ShowRecordsRequest.
+         * @implements IShowRecordsRequest
          * @constructor
-         * @param {file.IShowRequest=} [properties] Properties to set
+         * @param {file.IShowRecordsRequest=} [properties] Properties to set
          */
-        function ShowRequest(properties) {
+        function ShowRecordsRequest(properties) {
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -9026,23 +9026,23 @@ export const file = $root.file = (() => {
         }
 
         /**
-         * ShowRequest id.
+         * ShowRecordsRequest id.
          * @member {number} id
-         * @memberof file.ShowRequest
+         * @memberof file.ShowRecordsRequest
          * @instance
          */
-        ShowRequest.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+        ShowRecordsRequest.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
 
         /**
-         * Encodes the specified ShowRequest message. Does not implicitly {@link file.ShowRequest.verify|verify} messages.
+         * Encodes the specified ShowRecordsRequest message. Does not implicitly {@link file.ShowRecordsRequest.verify|verify} messages.
          * @function encode
-         * @memberof file.ShowRequest
+         * @memberof file.ShowRecordsRequest
          * @static
-         * @param {file.ShowRequest} message ShowRequest message or plain object to encode
+         * @param {file.ShowRecordsRequest} message ShowRecordsRequest message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ShowRequest.encode = function encode(message, writer) {
+        ShowRecordsRequest.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
             if (message.id != null && Object.hasOwnProperty.call(message, "id"))
@@ -9051,20 +9051,20 @@ export const file = $root.file = (() => {
         };
 
         /**
-         * Decodes a ShowRequest message from the specified reader or buffer.
+         * Decodes a ShowRecordsRequest message from the specified reader or buffer.
          * @function decode
-         * @memberof file.ShowRequest
+         * @memberof file.ShowRecordsRequest
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {file.ShowRequest} ShowRequest
+         * @returns {file.ShowRecordsRequest} ShowRecordsRequest
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ShowRequest.decode = function decode(reader, length) {
+        ShowRecordsRequest.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.ShowRequest();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.ShowRecordsRequest();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
@@ -9079,27 +9079,28 @@ export const file = $root.file = (() => {
             return message;
         };
 
-        return ShowRequest;
+        return ShowRecordsRequest;
     })();
 
-    file.ShowResponse = (function() {
+    file.ShowRecordsResponse = (function() {
 
         /**
-         * Properties of a ShowResponse.
+         * Properties of a ShowRecordsResponse.
          * @memberof file
-         * @interface IShowResponse
-         * @property {string|null} [content] ShowResponse content
+         * @interface IShowRecordsResponse
+         * @property {Array.<string>|null} [items] ShowRecordsResponse items
          */
 
         /**
-         * Constructs a new ShowResponse.
+         * Constructs a new ShowRecordsResponse.
          * @memberof file
-         * @classdesc Represents a ShowResponse.
-         * @implements IShowResponse
+         * @classdesc Represents a ShowRecordsResponse.
+         * @implements IShowRecordsResponse
          * @constructor
-         * @param {file.IShowResponse=} [properties] Properties to set
+         * @param {file.IShowRecordsResponse=} [properties] Properties to set
          */
-        function ShowResponse(properties) {
+        function ShowRecordsResponse(properties) {
+            this.items = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -9107,50 +9108,53 @@ export const file = $root.file = (() => {
         }
 
         /**
-         * ShowResponse content.
-         * @member {string} content
-         * @memberof file.ShowResponse
+         * ShowRecordsResponse items.
+         * @member {Array.<string>} items
+         * @memberof file.ShowRecordsResponse
          * @instance
          */
-        ShowResponse.prototype.content = "";
+        ShowRecordsResponse.prototype.items = $util.emptyArray;
 
         /**
-         * Encodes the specified ShowResponse message. Does not implicitly {@link file.ShowResponse.verify|verify} messages.
+         * Encodes the specified ShowRecordsResponse message. Does not implicitly {@link file.ShowRecordsResponse.verify|verify} messages.
          * @function encode
-         * @memberof file.ShowResponse
+         * @memberof file.ShowRecordsResponse
          * @static
-         * @param {file.ShowResponse} message ShowResponse message or plain object to encode
+         * @param {file.ShowRecordsResponse} message ShowRecordsResponse message or plain object to encode
          * @param {$protobuf.Writer} [writer] Writer to encode to
          * @returns {$protobuf.Writer} Writer
          */
-        ShowResponse.encode = function encode(message, writer) {
+        ShowRecordsResponse.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.content != null && Object.hasOwnProperty.call(message, "content"))
-                writer.uint32(/* id 1, wireType 2 =*/10).string(message.content);
+            if (message.items != null && message.items.length)
+                for (let i = 0; i < message.items.length; ++i)
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.items[i]);
             return writer;
         };
 
         /**
-         * Decodes a ShowResponse message from the specified reader or buffer.
+         * Decodes a ShowRecordsResponse message from the specified reader or buffer.
          * @function decode
-         * @memberof file.ShowResponse
+         * @memberof file.ShowRecordsResponse
          * @static
          * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
          * @param {number} [length] Message length if known beforehand
-         * @returns {file.ShowResponse} ShowResponse
+         * @returns {file.ShowRecordsResponse} ShowRecordsResponse
          * @throws {Error} If the payload is not a reader or valid buffer
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
-        ShowResponse.decode = function decode(reader, length) {
+        ShowRecordsResponse.decode = function decode(reader, length) {
             if (!(reader instanceof $Reader))
                 reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.ShowResponse();
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.file.ShowRecordsResponse();
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
                 case 1:
-                    message.content = reader.string();
+                    if (!(message.items && message.items.length))
+                        message.items = [];
+                    message.items.push(reader.string());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -9160,7 +9164,7 @@ export const file = $root.file = (() => {
             return message;
         };
 
-        return ShowResponse;
+        return ShowRecordsResponse;
     })();
 
     file.File = (function() {
@@ -9215,35 +9219,35 @@ export const file = $root.file = (() => {
          */
 
         /**
-         * Callback as used by {@link file.File#show}.
+         * Callback as used by {@link file.File#showRecords}.
          * @memberof file.File
-         * @typedef ShowCallback
+         * @typedef ShowRecordsCallback
          * @type {function}
          * @param {Error|null} error Error, if any
-         * @param {file.ShowResponse} [response] ShowResponse
+         * @param {file.ShowRecordsResponse} [response] ShowRecordsResponse
          */
 
         /**
-         * Calls Show.
-         * @function show
+         * Calls ShowRecords.
+         * @function showRecords
          * @memberof file.File
          * @instance
-         * @param {file.ShowRequest} request ShowRequest message or plain object
-         * @param {file.File.ShowCallback} callback Node-style callback called with the error, if any, and ShowResponse
+         * @param {file.ShowRecordsRequest} request ShowRecordsRequest message or plain object
+         * @param {file.File.ShowRecordsCallback} callback Node-style callback called with the error, if any, and ShowRecordsResponse
          * @returns {undefined}
          * @variation 1
          */
-        Object.defineProperty(File.prototype.show = function show(request, callback) {
-            return this.rpcCall(show, $root.file.ShowRequest, $root.file.ShowResponse, request, callback);
-        }, "name", { value: "Show" });
+        Object.defineProperty(File.prototype.showRecords = function showRecords(request, callback) {
+            return this.rpcCall(showRecords, $root.file.ShowRecordsRequest, $root.file.ShowRecordsResponse, request, callback);
+        }, "name", { value: "ShowRecords" });
 
         /**
-         * Calls Show.
-         * @function show
+         * Calls ShowRecords.
+         * @function showRecords
          * @memberof file.File
          * @instance
-         * @param {file.ShowRequest} request ShowRequest message or plain object
-         * @returns {Promise<file.ShowResponse>} Promise
+         * @param {file.ShowRecordsRequest} request ShowRecordsRequest message or plain object
+         * @returns {Promise<file.ShowRecordsResponse>} Promise
          * @variation 2
          */
 

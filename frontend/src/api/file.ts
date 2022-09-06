@@ -6,8 +6,8 @@ export function deleteFile({ id }: pb.file.DeleteRequest) {
   return ajax.delete<pb.file.DeleteResponse>(`/api/files/${id}`);
 }
 
-export function raw(id: number) {
-  return ajax.get<pb.file.ShowResponse>(`/api/files/${id}`);
+export function showRecords(id: number) {
+  return ajax.get<pb.file.ShowRecordsResponse>(`/api/record_files/${id}`);
 }
 
 export function diskInfo() {
