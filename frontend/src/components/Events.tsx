@@ -19,15 +19,18 @@ import {
   Modal,
   message,
   Input,
+  Radio,
+  RadioChangeEvent,
 } from "antd";
 import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { events, showEvent } from "../api/event";
+import { raw } from "../api/file";
 import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { getToken } from "../utils/token";
 import DiffViewer from "./DiffViewer";
+import { ClockCircleOutlined, PlayCircleOutlined } from "@ant-design/icons";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -116,7 +119,6 @@ const EventList: React.FC = () => {
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
   const [shellModalVisible, setShellModalVisible] = useState(false);
-  const [fileID, setFileID] = useState(0);
 
   const getActionStyle = useCallback(
     (type: pb.types.EventActionType): React.ReactNode => {
@@ -217,6 +219,16 @@ const EventList: React.FC = () => {
     return h;
   };
 
+  const [records, setRecords] = useState<string[]>([]);
+  const [key, setKey] = useState(0);
+
+  const fetchFileRaw = useCallback((id: number) => {
+    raw(id).then(({ data }) => {
+      console.log(data.content.split("---"));
+      setRecords(data.content.split("---"));
+    });
+  }, []);
+
   return (
     <Card
       title={
@@ -249,7 +261,9 @@ const EventList: React.FC = () => {
               <Option value={pb.types.EventActionType.Update}>更新</Option>
               <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
               <Option value={pb.types.EventActionType.Login}>登录</Option>
-              <Option value={pb.types.EventActionType.CancelDeploy}>取消部署</Option>
+              <Option value={pb.types.EventActionType.CancelDeploy}>
+                取消部署
+              </Option>
             </Select>
             <Input
               size="small"
@@ -320,7 +334,7 @@ const EventList: React.FC = () => {
                       style={{ marginRight: 5 }}
                       onClick={() => {
                         setShellModalVisible(true);
-                        setFileID(item.file_id);
+                        fetchFileRaw(item.file_id);
                       }}
                     >
                       查看操作记录{" "}
@@ -424,22 +438,30 @@ const EventList: React.FC = () => {
         footer={null}
         onCancel={() => {
           setShellModalVisible(false);
-          setFileID(0);
+          setRecords([]);
+          setKey(0);
         }}
       >
         <div style={{ width: "100%" }}>
-          {fileID > 0 && (
+          {records.length > 1 && (
+            <>
+              <Radio.Group
+                onChange={(e: RadioChangeEvent) => setKey(e.target.value)}
+                value={key}
+              >
+                {records.map((_, index) => (
+                  <Radio value={index}>
+                    <Tag color={key === index ? "success" : "default"} icon={key === index ? <PlayCircleOutlined /> : <ClockCircleOutlined />}>片段 {index + 1}</Tag>
+                  </Radio>
+                ))}
+              </Radio.Group>
+              <Divider plain />
+            </>
+          )}
+          {records.length > 0 && (
             <AsciinemaPlayer
               speed={1.5}
-              src={{
-                url: `${process.env.REACT_APP_BASE_URL}/api/raw_file/${fileID}`,
-                fetchOpts: {
-                  method: "GET",
-                  headers: { Authorization: getToken() },
-                },
-              }}
-              cols={106}
-              rows={25}
+              src={{ data: records[key] }}
               idleTimeLimit={3}
               fit={"width"}
               terminalLineHeight={1.5}
@@ -467,4 +489,5 @@ const DeleteFile: React.FC<{ onDelete: () => void }> = ({ onDelete }) => {
     </Popconfirm>
   );
 };
+
 export default memo(EventList);

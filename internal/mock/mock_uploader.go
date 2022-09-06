@@ -44,7 +44,7 @@ func (m *MockUploader) AbsolutePath(arg0 string) string {
 }
 
 // AbsolutePath indicates an expected call of AbsolutePath.
-func (mr *MockUploaderMockRecorder) AbsolutePath(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) AbsolutePath(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AbsolutePath", reflect.TypeOf((*MockUploader)(nil).AbsolutePath), arg0)
 }
@@ -59,7 +59,7 @@ func (m *MockUploader) AllDirectoryFiles(arg0 string) ([]contracts.FileInfo, err
 }
 
 // AllDirectoryFiles indicates an expected call of AllDirectoryFiles.
-func (mr *MockUploaderMockRecorder) AllDirectoryFiles(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) AllDirectoryFiles(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllDirectoryFiles", reflect.TypeOf((*MockUploader)(nil).AllDirectoryFiles), arg0)
 }
@@ -73,7 +73,7 @@ func (m *MockUploader) Delete(arg0 string) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUploaderMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Delete(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUploader)(nil).Delete), arg0)
 }
@@ -87,7 +87,7 @@ func (m *MockUploader) DeleteDir(arg0 string) error {
 }
 
 // DeleteDir indicates an expected call of DeleteDir.
-func (mr *MockUploaderMockRecorder) DeleteDir(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) DeleteDir(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDir", reflect.TypeOf((*MockUploader)(nil).DeleteDir), arg0)
 }
@@ -116,7 +116,7 @@ func (m *MockUploader) Disk(arg0 string) contracts.Uploader {
 }
 
 // Disk indicates an expected call of Disk.
-func (mr *MockUploaderMockRecorder) Disk(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Disk(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Disk", reflect.TypeOf((*MockUploader)(nil).Disk), arg0)
 }
@@ -130,7 +130,7 @@ func (m *MockUploader) Exists(arg0 string) bool {
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockUploaderMockRecorder) Exists(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Exists(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockUploader)(nil).Exists), arg0)
 }
@@ -144,7 +144,7 @@ func (m *MockUploader) MkDir(arg0 string, arg1 bool) error {
 }
 
 // MkDir indicates an expected call of MkDir.
-func (mr *MockUploaderMockRecorder) MkDir(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) MkDir(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MkDir", reflect.TypeOf((*MockUploader)(nil).MkDir), arg0, arg1)
 }
@@ -159,7 +159,7 @@ func (m *MockUploader) NewFile(arg0 string) (contracts.File, error) {
 }
 
 // NewFile indicates an expected call of NewFile.
-func (mr *MockUploaderMockRecorder) NewFile(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) NewFile(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFile", reflect.TypeOf((*MockUploader)(nil).NewFile), arg0)
 }
@@ -174,7 +174,7 @@ func (m *MockUploader) Put(arg0 string, arg1 io.Reader) (contracts.FileInfo, err
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockUploaderMockRecorder) Put(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Put(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockUploader)(nil).Put), arg0, arg1)
 }
@@ -189,7 +189,7 @@ func (m *MockUploader) Read(arg0 string) (io.ReadCloser, error) {
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockUploaderMockRecorder) Read(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Read(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockUploader)(nil).Read), arg0)
 }
@@ -218,7 +218,7 @@ func (m *MockUploader) Stat(arg0 string) (contracts.FileInfo, error) {
 }
 
 // Stat indicates an expected call of Stat.
-func (mr *MockUploaderMockRecorder) Stat(arg0 interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) Stat(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stat", reflect.TypeOf((*MockUploader)(nil).Stat), arg0)
 }

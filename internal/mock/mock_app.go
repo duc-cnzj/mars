@@ -46,7 +46,7 @@ func (m *MockApplicationInterface) AddServer(arg0 contracts.Server) {
 }
 
 // AddServer indicates an expected call of AddServer.
-func (mr *MockApplicationInterfaceMockRecorder) AddServer(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) AddServer(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddServer", reflect.TypeOf((*MockApplicationInterface)(nil).AddServer), arg0)
 }
@@ -72,7 +72,7 @@ func (m *MockApplicationInterface) BeforeServerRunHooks(arg0 contracts.Callback)
 }
 
 // BeforeServerRunHooks indicates an expected call of BeforeServerRunHooks.
-func (mr *MockApplicationInterfaceMockRecorder) BeforeServerRunHooks(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) BeforeServerRunHooks(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeforeServerRunHooks", reflect.TypeOf((*MockApplicationInterface)(nil).BeforeServerRunHooks), arg0)
 }
@@ -212,7 +212,7 @@ func (m *MockApplicationInterface) GetPluginByName(arg0 string) contracts.Plugin
 }
 
 // GetPluginByName indicates an expected call of GetPluginByName.
-func (mr *MockApplicationInterfaceMockRecorder) GetPluginByName(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) GetPluginByName(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPluginByName", reflect.TypeOf((*MockApplicationInterface)(nil).GetPluginByName), arg0)
 }
@@ -308,7 +308,7 @@ func (m *MockApplicationInterface) RegisterAfterShutdownFunc(arg0 contracts.Call
 }
 
 // RegisterAfterShutdownFunc indicates an expected call of RegisterAfterShutdownFunc.
-func (mr *MockApplicationInterfaceMockRecorder) RegisterAfterShutdownFunc(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) RegisterAfterShutdownFunc(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAfterShutdownFunc", reflect.TypeOf((*MockApplicationInterface)(nil).RegisterAfterShutdownFunc), arg0)
 }
@@ -320,7 +320,7 @@ func (m *MockApplicationInterface) RegisterBeforeShutdownFunc(arg0 contracts.Cal
 }
 
 // RegisterBeforeShutdownFunc indicates an expected call of RegisterBeforeShutdownFunc.
-func (mr *MockApplicationInterfaceMockRecorder) RegisterBeforeShutdownFunc(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) RegisterBeforeShutdownFunc(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterBeforeShutdownFunc", reflect.TypeOf((*MockApplicationInterface)(nil).RegisterBeforeShutdownFunc), arg0)
 }
@@ -346,7 +346,7 @@ func (m *MockApplicationInterface) SetAuth(arg0 contracts.AuthInterface) {
 }
 
 // SetAuth indicates an expected call of SetAuth.
-func (mr *MockApplicationInterfaceMockRecorder) SetAuth(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetAuth(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAuth", reflect.TypeOf((*MockApplicationInterface)(nil).SetAuth), arg0)
 }
@@ -358,7 +358,7 @@ func (m *MockApplicationInterface) SetCache(arg0 contracts.CacheInterface) {
 }
 
 // SetCache indicates an expected call of SetCache.
-func (mr *MockApplicationInterfaceMockRecorder) SetCache(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetCache(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCache", reflect.TypeOf((*MockApplicationInterface)(nil).SetCache), arg0)
 }
@@ -370,7 +370,7 @@ func (m *MockApplicationInterface) SetCacheLock(arg0 contracts.Locker) {
 }
 
 // SetCacheLock indicates an expected call of SetCacheLock.
-func (mr *MockApplicationInterfaceMockRecorder) SetCacheLock(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetCacheLock(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCacheLock", reflect.TypeOf((*MockApplicationInterface)(nil).SetCacheLock), arg0)
 }
@@ -382,7 +382,7 @@ func (m *MockApplicationInterface) SetCronManager(arg0 contracts.CronManager) {
 }
 
 // SetCronManager indicates an expected call of SetCronManager.
-func (mr *MockApplicationInterfaceMockRecorder) SetCronManager(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetCronManager(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCronManager", reflect.TypeOf((*MockApplicationInterface)(nil).SetCronManager), arg0)
 }
@@ -394,7 +394,7 @@ func (m *MockApplicationInterface) SetEventDispatcher(arg0 contracts.DispatcherI
 }
 
 // SetEventDispatcher indicates an expected call of SetEventDispatcher.
-func (mr *MockApplicationInterfaceMockRecorder) SetEventDispatcher(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetEventDispatcher(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEventDispatcher", reflect.TypeOf((*MockApplicationInterface)(nil).SetEventDispatcher), arg0)
 }
@@ -406,7 +406,7 @@ func (m *MockApplicationInterface) SetK8sClient(arg0 *contracts.K8sClient) {
 }
 
 // SetK8sClient indicates an expected call of SetK8sClient.
-func (mr *MockApplicationInterfaceMockRecorder) SetK8sClient(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetK8sClient(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetK8sClient", reflect.TypeOf((*MockApplicationInterface)(nil).SetK8sClient), arg0)
 }
@@ -418,7 +418,7 @@ func (m *MockApplicationInterface) SetLocalUploader(arg0 contracts.Uploader) {
 }
 
 // SetLocalUploader indicates an expected call of SetLocalUploader.
-func (mr *MockApplicationInterfaceMockRecorder) SetLocalUploader(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetLocalUploader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLocalUploader", reflect.TypeOf((*MockApplicationInterface)(nil).SetLocalUploader), arg0)
 }
@@ -430,7 +430,7 @@ func (m *MockApplicationInterface) SetOidc(arg0 contracts.OidcConfig) {
 }
 
 // SetOidc indicates an expected call of SetOidc.
-func (mr *MockApplicationInterfaceMockRecorder) SetOidc(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetOidc(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOidc", reflect.TypeOf((*MockApplicationInterface)(nil).SetOidc), arg0)
 }
@@ -442,7 +442,7 @@ func (m *MockApplicationInterface) SetPlugins(arg0 map[string]contracts.PluginIn
 }
 
 // SetPlugins indicates an expected call of SetPlugins.
-func (mr *MockApplicationInterfaceMockRecorder) SetPlugins(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetPlugins(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPlugins", reflect.TypeOf((*MockApplicationInterface)(nil).SetPlugins), arg0)
 }
@@ -454,7 +454,7 @@ func (m *MockApplicationInterface) SetTracer(arg0 trace.Tracer) {
 }
 
 // SetTracer indicates an expected call of SetTracer.
-func (mr *MockApplicationInterfaceMockRecorder) SetTracer(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetTracer(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTracer", reflect.TypeOf((*MockApplicationInterface)(nil).SetTracer), arg0)
 }
@@ -466,7 +466,7 @@ func (m *MockApplicationInterface) SetUploader(arg0 contracts.Uploader) {
 }
 
 // SetUploader indicates an expected call of SetUploader.
-func (mr *MockApplicationInterfaceMockRecorder) SetUploader(arg0 interface{}) *gomock.Call {
+func (mr *MockApplicationInterfaceMockRecorder) SetUploader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUploader", reflect.TypeOf((*MockApplicationInterface)(nil).SetUploader), arg0)
 }

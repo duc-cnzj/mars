@@ -48,7 +48,7 @@ func (mr *MockPluginInterfaceMockRecorder) Destroy() *gomock.Call {
 }
 
 // Initialize mocks base method.
-func (m *MockPluginInterface) Initialize(arg0 map[string]interface{}) error {
+func (m *MockPluginInterface) Initialize(arg0 map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0)
 	ret0, _ := ret[0].(error)
@@ -56,7 +56,7 @@ func (m *MockPluginInterface) Initialize(arg0 map[string]interface{}) error {
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockPluginInterfaceMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
+func (mr *MockPluginInterfaceMockRecorder) Initialize(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockPluginInterface)(nil).Initialize), arg0)
 }

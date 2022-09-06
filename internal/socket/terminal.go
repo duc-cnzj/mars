@@ -62,6 +62,22 @@ func (s *sizeStore) Set(cols, rows uint16) {
 	s.cols = cols
 }
 
+func (s *sizeStore) Changed(cols, rows uint16) bool {
+	s.rwMu.Lock()
+	defer s.rwMu.Unlock()
+	if s.rows == 0 || s.cols == 0 {
+		return false
+	}
+	if s.rows != rows {
+		return true
+	}
+	if s.cols != cols {
+		return true
+	}
+
+	return false
+}
+
 func (s *sizeStore) Cols() uint16 {
 	s.rwMu.RLock()
 	defer s.rwMu.RUnlock()
@@ -230,6 +246,9 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 			return nil
 		}
 		if size.Width != 0 && size.Height != 0 {
+			if t.sizeStore.Changed(size.Width, size.Height) {
+				t.recorder.Resize(size.Width, size.Height)
+			}
 			t.sizeStore.Set(size.Width, size.Height)
 		}
 		return &size

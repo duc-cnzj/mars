@@ -108,6 +108,36 @@
       }
     },
     "/api/files/{id}": {
+      "get": {
+        "summary": "文件列表",
+        "operationId": "File_Show",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/fileShowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "File"
+        ]
+      },
       "delete": {
         "summary": "删除文件",
         "operationId": "File_Delete",
@@ -193,6 +223,14 @@
         "bytes": {
           "type": "string",
           "format": "uint64"
+        }
+      }
+    },
+    "fileShowResponse": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
         }
       }
     },

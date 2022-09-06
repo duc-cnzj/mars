@@ -4157,6 +4157,82 @@ export namespace file {
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.MaxUploadSizeResponse;
     }
 
+    /** Properties of a ShowRequest. */
+    interface IShowRequest {
+
+        /** ShowRequest id */
+        id?: (number|null);
+    }
+
+    /** Represents a ShowRequest. */
+    class ShowRequest implements IShowRequest {
+
+        /**
+         * Constructs a new ShowRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: file.IShowRequest);
+
+        /** ShowRequest id. */
+        public id: number;
+
+        /**
+         * Encodes the specified ShowRequest message. Does not implicitly {@link file.ShowRequest.verify|verify} messages.
+         * @param message ShowRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: file.ShowRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ShowRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ShowRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRequest;
+    }
+
+    /** Properties of a ShowResponse. */
+    interface IShowResponse {
+
+        /** ShowResponse content */
+        content?: (string|null);
+    }
+
+    /** Represents a ShowResponse. */
+    class ShowResponse implements IShowResponse {
+
+        /**
+         * Constructs a new ShowResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: file.IShowResponse);
+
+        /** ShowResponse content. */
+        public content: string;
+
+        /**
+         * Encodes the specified ShowResponse message. Does not implicitly {@link file.ShowResponse.verify|verify} messages.
+         * @param message ShowResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: file.ShowResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ShowResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ShowResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowResponse;
+    }
+
     /** Represents a File */
     class File extends $protobuf.rpc.Service {
 
@@ -4181,6 +4257,20 @@ export namespace file {
          * @returns Promise
          */
         public list(request: file.ListRequest): Promise<file.ListResponse>;
+
+        /**
+         * Calls Show.
+         * @param request ShowRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and ShowResponse
+         */
+        public show(request: file.ShowRequest, callback: file.File.ShowCallback): void;
+
+        /**
+         * Calls Show.
+         * @param request ShowRequest message or plain object
+         * @returns Promise
+         */
+        public show(request: file.ShowRequest): Promise<file.ShowResponse>;
 
         /**
          * Calls Delete.
@@ -4233,6 +4323,13 @@ export namespace file {
          * @param [response] ListResponse
          */
         type ListCallback = (error: (Error|null), response?: file.ListResponse) => void;
+
+        /**
+         * Callback as used by {@link file.File#show}.
+         * @param error Error, if any
+         * @param [response] ShowResponse
+         */
+        type ShowCallback = (error: (Error|null), response?: file.ShowResponse) => void;
 
         /**
          * Callback as used by {@link file.File#delete_}.

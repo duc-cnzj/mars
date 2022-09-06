@@ -38,7 +38,7 @@ func (m *MockTracer) EXPECT() *MockTracerMockRecorder {
 // Start mocks base method.
 func (m *MockTracer) Start(arg0 context.Context, arg1 string, arg2 ...trace.SpanStartOption) (context.Context, trace.Span) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
+	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
@@ -49,8 +49,8 @@ func (m *MockTracer) Start(arg0 context.Context, arg1 string, arg2 ...trace.Span
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockTracerMockRecorder) Start(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockTracerMockRecorder) Start(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockTracer)(nil).Start), varargs...)
 }

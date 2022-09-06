@@ -49,7 +49,7 @@ func (mr *MockWsSenderMockRecorder) Destroy() *gomock.Call {
 }
 
 // Initialize mocks base method.
-func (m *MockWsSender) Initialize(arg0 map[string]interface{}) error {
+func (m *MockWsSender) Initialize(arg0 map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0)
 	ret0, _ := ret[0].(error)
@@ -57,7 +57,7 @@ func (m *MockWsSender) Initialize(arg0 map[string]interface{}) error {
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockWsSenderMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
+func (mr *MockWsSenderMockRecorder) Initialize(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockWsSender)(nil).Initialize), arg0)
 }
@@ -85,7 +85,7 @@ func (m *MockWsSender) New(arg0, arg1 string) contracts.PubSub {
 }
 
 // New indicates an expected call of New.
-func (mr *MockWsSenderMockRecorder) New(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockWsSenderMockRecorder) New(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockWsSender)(nil).New), arg0, arg1)
 }

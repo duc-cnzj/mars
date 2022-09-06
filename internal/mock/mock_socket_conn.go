@@ -59,7 +59,7 @@ func (m *MockWebsocketConn) NextWriter(arg0 int) (io.WriteCloser, error) {
 }
 
 // NextWriter indicates an expected call of NextWriter.
-func (mr *MockWebsocketConnMockRecorder) NextWriter(arg0 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) NextWriter(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextWriter", reflect.TypeOf((*MockWebsocketConn)(nil).NextWriter), arg0)
 }
@@ -87,7 +87,7 @@ func (m *MockWebsocketConn) SetPongHandler(arg0 func(string) error) {
 }
 
 // SetPongHandler indicates an expected call of SetPongHandler.
-func (mr *MockWebsocketConnMockRecorder) SetPongHandler(arg0 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) SetPongHandler(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPongHandler", reflect.TypeOf((*MockWebsocketConn)(nil).SetPongHandler), arg0)
 }
@@ -101,7 +101,7 @@ func (m *MockWebsocketConn) SetReadDeadline(arg0 time.Time) error {
 }
 
 // SetReadDeadline indicates an expected call of SetReadDeadline.
-func (mr *MockWebsocketConnMockRecorder) SetReadDeadline(arg0 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) SetReadDeadline(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadDeadline", reflect.TypeOf((*MockWebsocketConn)(nil).SetReadDeadline), arg0)
 }
@@ -113,7 +113,7 @@ func (m *MockWebsocketConn) SetReadLimit(arg0 int64) {
 }
 
 // SetReadLimit indicates an expected call of SetReadLimit.
-func (mr *MockWebsocketConnMockRecorder) SetReadLimit(arg0 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) SetReadLimit(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetReadLimit", reflect.TypeOf((*MockWebsocketConn)(nil).SetReadLimit), arg0)
 }
@@ -127,7 +127,7 @@ func (m *MockWebsocketConn) SetWriteDeadline(arg0 time.Time) error {
 }
 
 // SetWriteDeadline indicates an expected call of SetWriteDeadline.
-func (mr *MockWebsocketConnMockRecorder) SetWriteDeadline(arg0 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) SetWriteDeadline(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWriteDeadline", reflect.TypeOf((*MockWebsocketConn)(nil).SetWriteDeadline), arg0)
 }
@@ -141,7 +141,7 @@ func (m *MockWebsocketConn) WriteMessage(arg0 int, arg1 []byte) error {
 }
 
 // WriteMessage indicates an expected call of WriteMessage.
-func (mr *MockWebsocketConnMockRecorder) WriteMessage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockWebsocketConnMockRecorder) WriteMessage(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessage", reflect.TypeOf((*MockWebsocketConn)(nil).WriteMessage), arg0, arg1)
 }

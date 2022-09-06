@@ -7,6 +7,7 @@ package contracts
 //go:generate mockgen -destination ../mock/mock_socket_job.go -package mock github.com/duc-cnzj/mars/internal/contracts Job
 //go:generate mockgen -destination ../mock/mock_socket_session_mapper.go -package mock github.com/duc-cnzj/mars/internal/contracts SessionMapper
 //go:generate mockgen -destination ../mock/mock_release_installer.go -package mock github.com/duc-cnzj/mars/internal/contracts ReleaseInstaller
+//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/contracts RecorderInterface
 
 import (
 	"context"
@@ -44,6 +45,7 @@ type Container struct {
 }
 
 type RecorderInterface interface {
+	Resize(cols, rows uint16) (err error)
 	Write(data string) (err error)
 	Close() error
 	SetShell(string)

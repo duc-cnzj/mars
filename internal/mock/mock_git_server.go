@@ -44,7 +44,7 @@ func (m *MockGitServer) AllBranches(arg0 string) ([]contracts.BranchInterface, e
 }
 
 // AllBranches indicates an expected call of AllBranches.
-func (mr *MockGitServerMockRecorder) AllBranches(arg0 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) AllBranches(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBranches", reflect.TypeOf((*MockGitServer)(nil).AllBranches), arg0)
 }
@@ -88,7 +88,7 @@ func (m *MockGitServer) GetCommit(arg0, arg1 string) (contracts.CommitInterface,
 }
 
 // GetCommit indicates an expected call of GetCommit.
-func (mr *MockGitServerMockRecorder) GetCommit(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetCommit(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockGitServer)(nil).GetCommit), arg0, arg1)
 }
@@ -103,7 +103,7 @@ func (m *MockGitServer) GetCommitPipeline(arg0, arg1 string) (contracts.Pipeline
 }
 
 // GetCommitPipeline indicates an expected call of GetCommitPipeline.
-func (mr *MockGitServerMockRecorder) GetCommitPipeline(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetCommitPipeline(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitServer)(nil).GetCommitPipeline), arg0, arg1)
 }
@@ -118,7 +118,7 @@ func (m *MockGitServer) GetDirectoryFilesWithBranch(arg0, arg1, arg2 string, arg
 }
 
 // GetDirectoryFilesWithBranch indicates an expected call of GetDirectoryFilesWithBranch.
-func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithBranch(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithBranch(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithBranch), arg0, arg1, arg2, arg3)
 }
@@ -133,7 +133,7 @@ func (m *MockGitServer) GetDirectoryFilesWithSha(arg0, arg1, arg2 string, arg3 b
 }
 
 // GetDirectoryFilesWithSha indicates an expected call of GetDirectoryFilesWithSha.
-func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithSha(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetDirectoryFilesWithSha(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryFilesWithSha", reflect.TypeOf((*MockGitServer)(nil).GetDirectoryFilesWithSha), arg0, arg1, arg2, arg3)
 }
@@ -148,7 +148,7 @@ func (m *MockGitServer) GetFileContentWithBranch(arg0, arg1, arg2 string) (strin
 }
 
 // GetFileContentWithBranch indicates an expected call of GetFileContentWithBranch.
-func (mr *MockGitServerMockRecorder) GetFileContentWithBranch(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetFileContentWithBranch(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithBranch", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithBranch), arg0, arg1, arg2)
 }
@@ -163,7 +163,7 @@ func (m *MockGitServer) GetFileContentWithSha(arg0, arg1, arg2 string) (string, 
 }
 
 // GetFileContentWithSha indicates an expected call of GetFileContentWithSha.
-func (mr *MockGitServerMockRecorder) GetFileContentWithSha(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetFileContentWithSha(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileContentWithSha", reflect.TypeOf((*MockGitServer)(nil).GetFileContentWithSha), arg0, arg1, arg2)
 }
@@ -178,13 +178,13 @@ func (m *MockGitServer) GetProject(arg0 string) (contracts.ProjectInterface, err
 }
 
 // GetProject indicates an expected call of GetProject.
-func (mr *MockGitServerMockRecorder) GetProject(arg0 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetProject(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockGitServer)(nil).GetProject), arg0)
 }
 
 // Initialize mocks base method.
-func (m *MockGitServer) Initialize(arg0 map[string]interface{}) error {
+func (m *MockGitServer) Initialize(arg0 map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0)
 	ret0, _ := ret[0].(error)
@@ -192,7 +192,7 @@ func (m *MockGitServer) Initialize(arg0 map[string]interface{}) error {
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockGitServerMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) Initialize(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockGitServer)(nil).Initialize), arg0)
 }
@@ -207,7 +207,7 @@ func (m *MockGitServer) ListBranches(arg0 string, arg1, arg2 int) (contracts.Lis
 }
 
 // ListBranches indicates an expected call of ListBranches.
-func (mr *MockGitServerMockRecorder) ListBranches(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) ListBranches(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockGitServer)(nil).ListBranches), arg0, arg1, arg2)
 }
@@ -222,7 +222,7 @@ func (m *MockGitServer) ListCommits(arg0, arg1 string) ([]contracts.CommitInterf
 }
 
 // ListCommits indicates an expected call of ListCommits.
-func (mr *MockGitServerMockRecorder) ListCommits(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) ListCommits(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockGitServer)(nil).ListCommits), arg0, arg1)
 }
@@ -237,7 +237,7 @@ func (m *MockGitServer) ListProjects(arg0, arg1 int) (contracts.ListProjectRespo
 }
 
 // ListProjects indicates an expected call of ListProjects.
-func (mr *MockGitServerMockRecorder) ListProjects(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockGitServerMockRecorder) ListProjects(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjects", reflect.TypeOf((*MockGitServer)(nil).ListProjects), arg0, arg1)
 }

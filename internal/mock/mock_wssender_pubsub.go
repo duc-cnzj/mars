@@ -63,10 +63,10 @@ func (mr *MockPubSubMockRecorder) ID() *gomock.Call {
 }
 
 // Info mocks base method.
-func (m *MockPubSub) Info() interface{} {
+func (m *MockPubSub) Info() any {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Info")
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
@@ -99,7 +99,7 @@ func (m *MockPubSub) ToAll(arg0 contracts.WebsocketMessage) error {
 }
 
 // ToAll indicates an expected call of ToAll.
-func (mr *MockPubSubMockRecorder) ToAll(arg0 interface{}) *gomock.Call {
+func (mr *MockPubSubMockRecorder) ToAll(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToAll", reflect.TypeOf((*MockPubSub)(nil).ToAll), arg0)
 }
@@ -113,7 +113,7 @@ func (m *MockPubSub) ToOthers(arg0 contracts.WebsocketMessage) error {
 }
 
 // ToOthers indicates an expected call of ToOthers.
-func (mr *MockPubSubMockRecorder) ToOthers(arg0 interface{}) *gomock.Call {
+func (mr *MockPubSubMockRecorder) ToOthers(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToOthers", reflect.TypeOf((*MockPubSub)(nil).ToOthers), arg0)
 }
@@ -127,7 +127,7 @@ func (m *MockPubSub) ToSelf(arg0 contracts.WebsocketMessage) error {
 }
 
 // ToSelf indicates an expected call of ToSelf.
-func (mr *MockPubSubMockRecorder) ToSelf(arg0 interface{}) *gomock.Call {
+func (mr *MockPubSubMockRecorder) ToSelf(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToSelf", reflect.TypeOf((*MockPubSub)(nil).ToSelf), arg0)
 }

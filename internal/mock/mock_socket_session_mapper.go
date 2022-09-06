@@ -42,7 +42,7 @@ func (m *MockSessionMapper) Close(arg0 string, arg1 uint32, arg2 string) {
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockSessionMapperMockRecorder) Close(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Close(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSessionMapper)(nil).Close), arg0, arg1, arg2)
 }
@@ -69,7 +69,7 @@ func (m *MockSessionMapper) Get(arg0 string) (contracts.PtyHandler, bool) {
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockSessionMapperMockRecorder) Get(arg0 interface{}) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Get(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSessionMapper)(nil).Get), arg0)
 }
@@ -81,7 +81,7 @@ func (m *MockSessionMapper) Send(arg0 *websocket.TerminalMessage) {
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockSessionMapperMockRecorder) Send(arg0 interface{}) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Send(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSessionMapper)(nil).Send), arg0)
 }
@@ -93,7 +93,7 @@ func (m *MockSessionMapper) Set(arg0 string, arg1 contracts.PtyHandler) {
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockSessionMapperMockRecorder) Set(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionMapperMockRecorder) Set(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockSessionMapper)(nil).Set), arg0, arg1)
 }

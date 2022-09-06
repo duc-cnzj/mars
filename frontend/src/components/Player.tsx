@@ -4,7 +4,7 @@ import * as AsciinemaPlayerLibrary from "asciinema-player";
 import "asciinema-player/dist/bundle/asciinema-player.css";
 import { Radio } from "antd";
 interface AsciinemaPlayerProps {
-  src: string | { url: string; fetchOpts: RequestInit };
+  src: {data: string} | { url: string; fetchOpts: RequestInit };
   // START asciinemaOptions
   cols?: number;
   rows?: number;

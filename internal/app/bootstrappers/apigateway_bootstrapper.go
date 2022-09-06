@@ -194,48 +194,6 @@ func handFile(gmux *runtime.ServeMux) {
 		}
 		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 	})
-	gmux.HandlePath("GET", "/api/raw_file/{id}", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		idstr, ok := pathParams["id"]
-		if !ok {
-			http.Error(w, "missing id", http.StatusBadRequest)
-			return
-		}
-		if _, ok := authenticated(r); ok {
-			var f models.File
-			if err := app.DB().First(&f, idstr).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					http.Error(w, "not found", http.StatusNotFound)
-					return
-				}
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			var up contracts.Uploader = getUploaderByFile(&f)
-			read, err := up.Read(f.Path)
-			if err == nil {
-				all, _ := io.ReadAll(read)
-				w.Write(all)
-				return
-			}
-			if errors.Is(err, os.ErrNotExist) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-	})
-}
-
-func getUploaderByFile(file *models.File) (up contracts.Uploader) {
-	switch file.UploadType {
-	case app.Uploader().Type():
-		up = app.Uploader()
-	case app.LocalUploader().Type():
-		up = app.LocalUploader()
-	}
-	return
 }
 
 func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
@@ -255,8 +213,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
 			fil.Path, humanize.Bytes(fil.Size)), nil, nil)
-	var up contracts.Uploader = getUploaderByFile(fil)
-	read, err := up.Read(fil.Path)
+	read, err := fil.Uploader().Read(fil.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "file not found", http.StatusNotFound)

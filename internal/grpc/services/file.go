@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -73,6 +74,23 @@ func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*fi
 		Usage:         size,
 		HumanizeUsage: humanize.Bytes(uint64(size)),
 	}, nil
+}
+
+func (m *File) Show(ctx context.Context, request *file.ShowRequest) (*file.ShowResponse, error) {
+	var f models.File
+	if err := app.DB().First(&f, request.Id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	rc, err := f.Uploader().Read(f.Path)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	all, _ := io.ReadAll(rc)
+	return &file.ShowResponse{Content: string(all)}, nil
 }
 
 func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {

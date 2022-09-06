@@ -44,11 +44,26 @@ message MaxUploadSizeResponse{
   uint64 bytes = 2;
 }
 
+message ShowRequest {
+  int64 id = 1;
+}
+
+message ShowResponse {
+  string content = 1;
+}
+
 service File {
   //  文件列表
   rpc List(ListRequest) returns (ListResponse) {
     option (google.api.http) = {
       get: "/api/files",
+    };
+  }
+
+  //  文件列表
+  rpc Show(ShowRequest) returns (ShowResponse) {
+    option (google.api.http) = {
+      get: "/api/files/{id}",
     };
   }
 

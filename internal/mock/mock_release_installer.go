@@ -75,7 +75,7 @@ func (m *MockReleaseInstaller) Run(arg0 context.Context, arg1 contracts.SafeWrit
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), arg0, arg1, arg2, arg3)
 }

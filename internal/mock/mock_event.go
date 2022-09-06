@@ -35,7 +35,7 @@ func (m *MockDispatcherInterface) EXPECT() *MockDispatcherInterfaceMockRecorder 
 }
 
 // Dispatch mocks base method.
-func (m *MockDispatcherInterface) Dispatch(arg0 contracts.Event, arg1 interface{}) error {
+func (m *MockDispatcherInterface) Dispatch(arg0 contracts.Event, arg1 any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Dispatch", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -43,7 +43,7 @@ func (m *MockDispatcherInterface) Dispatch(arg0 contracts.Event, arg1 interface{
 }
 
 // Dispatch indicates an expected call of Dispatch.
-func (mr *MockDispatcherInterfaceMockRecorder) Dispatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockDispatcherInterfaceMockRecorder) Dispatch(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dispatch", reflect.TypeOf((*MockDispatcherInterface)(nil).Dispatch), arg0, arg1)
 }
@@ -55,7 +55,7 @@ func (m *MockDispatcherInterface) Forget(arg0 contracts.Event) {
 }
 
 // Forget indicates an expected call of Forget.
-func (mr *MockDispatcherInterfaceMockRecorder) Forget(arg0 interface{}) *gomock.Call {
+func (mr *MockDispatcherInterfaceMockRecorder) Forget(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Forget", reflect.TypeOf((*MockDispatcherInterface)(nil).Forget), arg0)
 }
@@ -69,7 +69,7 @@ func (m *MockDispatcherInterface) GetListeners(arg0 contracts.Event) []contracts
 }
 
 // GetListeners indicates an expected call of GetListeners.
-func (mr *MockDispatcherInterfaceMockRecorder) GetListeners(arg0 interface{}) *gomock.Call {
+func (mr *MockDispatcherInterfaceMockRecorder) GetListeners(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListeners", reflect.TypeOf((*MockDispatcherInterface)(nil).GetListeners), arg0)
 }
@@ -83,7 +83,7 @@ func (m *MockDispatcherInterface) HasListeners(arg0 contracts.Event) bool {
 }
 
 // HasListeners indicates an expected call of HasListeners.
-func (mr *MockDispatcherInterfaceMockRecorder) HasListeners(arg0 interface{}) *gomock.Call {
+func (mr *MockDispatcherInterfaceMockRecorder) HasListeners(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasListeners", reflect.TypeOf((*MockDispatcherInterface)(nil).HasListeners), arg0)
 }
@@ -95,7 +95,7 @@ func (m *MockDispatcherInterface) Listen(arg0 contracts.Event, arg1 contracts.Li
 }
 
 // Listen indicates an expected call of Listen.
-func (mr *MockDispatcherInterfaceMockRecorder) Listen(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockDispatcherInterfaceMockRecorder) Listen(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Listen", reflect.TypeOf((*MockDispatcherInterface)(nil).Listen), arg0, arg1)
 }

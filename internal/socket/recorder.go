@@ -1,7 +1,5 @@
 package socket
 
-//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/socket RecorderInterface
-
 import (
 	"bufio"
 	"encoding/json"
@@ -18,12 +16,20 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
+const recordSeparator = "---"
+
+var (
+	startLine = "{\"version\": 2, \"width\": %d, \"height\": %d, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
+	writeLine = "[%.6f, \"o\", %s]\n"
+)
+
 type Recorder struct {
 	sync.RWMutex
-	filepath  string
-	container contracts.Container
-	f         contracts.File
-	startTime time.Time
+	filepath    string
+	container   contracts.Container
+	f           contracts.File
+	startTimeMu sync.Mutex
+	startTime   time.Time
 
 	t    *MyPtyHandler
 	once sync.Once
@@ -33,11 +39,6 @@ type Recorder struct {
 	shellMu sync.RWMutex
 	shell   string
 }
-
-var (
-	startLine = "{\"version\": 2, \"width\": 106, \"height\": 25, \"timestamp\": %d, \"env\": {\"SHELL\": \"%s\", \"TERM\": \"xterm-256color\"}}\n"
-	writeLine = "[%.6f, \"o\", %s]\n"
-)
 
 func (r *Recorder) GetShell() string {
 	r.shellMu.RLock()
@@ -49,6 +50,15 @@ func (r *Recorder) SetShell(sh string) {
 	r.shellMu.Lock()
 	defer r.shellMu.Unlock()
 	r.shell = sh
+}
+
+func (r *Recorder) Resize(cols, rows uint16) (err error) {
+	r.buffer.WriteString(recordSeparator)
+	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, time.Now().Unix(), r.shell))
+	r.startTimeMu.Lock()
+	defer r.startTimeMu.Unlock()
+	r.startTime = time.Now()
+	return
 }
 
 func (r *Recorder) Write(data string) (err error) {
@@ -66,8 +76,10 @@ func (r *Recorder) Write(data string) (err error) {
 		r.f = file
 		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
 		r.filepath = file.Name()
+		r.startTimeMu.Lock()
+		defer r.startTimeMu.Unlock()
 		r.startTime = time.Now()
-		r.buffer.Write([]byte(fmt.Sprintf(startLine, r.startTime.Unix(), r.shell)))
+		r.buffer.Write([]byte(fmt.Sprintf(startLine, 106, 25, r.startTime.Unix(), r.shell)))
 	})
 	if err != nil {
 		return err

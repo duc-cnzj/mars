@@ -45,7 +45,7 @@ func (m *MockPtyHandler) Close(arg0 string) bool {
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockPtyHandlerMockRecorder) Close(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Close(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPtyHandler)(nil).Close), arg0)
 }
@@ -116,7 +116,7 @@ func (m *MockPtyHandler) Read(arg0 []byte) (int, error) {
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockPtyHandlerMockRecorder) Read(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Read(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockPtyHandler)(nil).Read), arg0)
 }
@@ -142,7 +142,7 @@ func (m *MockPtyHandler) ResetTerminalRowCol(arg0 bool) {
 }
 
 // ResetTerminalRowCol indicates an expected call of ResetTerminalRowCol.
-func (mr *MockPtyHandlerMockRecorder) ResetTerminalRowCol(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) ResetTerminalRowCol(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetTerminalRowCol", reflect.TypeOf((*MockPtyHandler)(nil).ResetTerminalRowCol), arg0)
 }
@@ -168,7 +168,7 @@ func (m *MockPtyHandler) SetShell(arg0 string) {
 }
 
 // SetShell indicates an expected call of SetShell.
-func (mr *MockPtyHandlerMockRecorder) SetShell(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) SetShell(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetShell", reflect.TypeOf((*MockPtyHandler)(nil).SetShell), arg0)
 }
@@ -196,7 +196,7 @@ func (m *MockPtyHandler) Toast(arg0 string) error {
 }
 
 // Toast indicates an expected call of Toast.
-func (mr *MockPtyHandlerMockRecorder) Toast(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Toast(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Toast", reflect.TypeOf((*MockPtyHandler)(nil).Toast), arg0)
 }
@@ -211,7 +211,7 @@ func (m *MockPtyHandler) Write(arg0 []byte) (int, error) {
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockPtyHandlerMockRecorder) Write(arg0 interface{}) *gomock.Call {
+func (mr *MockPtyHandlerMockRecorder) Write(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockPtyHandler)(nil).Write), arg0)
 }
