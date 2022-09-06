@@ -450,24 +450,37 @@ const EventList: React.FC = () => {
               >
                 {records.map((_, index) => (
                   <Radio value={index} key={index}>
-                    <Tag color={key === index ? "success" : "default"} icon={key === index ? <PlayCircleOutlined /> : <ClockCircleOutlined />}>片段 {index + 1}</Tag>
+                    <Tag
+                      color={key === index ? "success" : "default"}
+                      icon={
+                        key === index ? (
+                          <PlayCircleOutlined />
+                        ) : (
+                          <ClockCircleOutlined />
+                        )
+                      }
+                    >
+                      片段 {index + 1}
+                    </Tag>
                   </Radio>
                 ))}
               </Radio.Group>
               <Divider plain />
             </>
           )}
-          {records.length > 0 && (
-            <AsciinemaPlayer
-              speed={1.5}
-              src={{ data: records[key] }}
-              idleTimeLimit={3}
-              fit={false}
-              terminalLineHeight={1.5}
-              preload
-              theme="tango"
-            />
-          )}
+          {records.map((v, index) => (
+            <div style={{ display: index === key ? "block" : "none" }}>
+              <AsciinemaPlayer
+                speed={1.5}
+                src={{ data: records[key] }}
+                idleTimeLimit={3}
+                fit={false}
+                terminalLineHeight={1.5}
+                preload
+                theme="tango"
+              />
+            </div>
+          ))}
         </div>
       </Modal>
     </Card>

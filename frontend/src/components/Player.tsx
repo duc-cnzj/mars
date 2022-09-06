@@ -75,6 +75,7 @@ const AsciinemaPlayer: React.FC<AsciinemaPlayerProps> = ({
     });
 
     return () => {
+      console.log("dispose");
       p.dispose();
     };
   }, [
