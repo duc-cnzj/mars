@@ -173,3 +173,5 @@ func TestRecorder_Write_Error(t *testing.T) {
 	err := r.Write("bbb")
 	assert.Equal(t, "xxx", err.Error())
 }
+
+// TODO test duration

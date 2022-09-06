@@ -21,13 +21,30 @@ var (
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 
+type currentStart struct {
+	sync.RWMutex
+	t time.Time
+}
+
+func (c *currentStart) Set(t time.Time) {
+	c.Lock()
+	defer c.Unlock()
+	c.t = t
+}
+
+func (c *currentStart) Get() (t time.Time) {
+	c.RLock()
+	defer c.RUnlock()
+	return c.t
+}
+
 type Recorder struct {
 	sync.RWMutex
-	filepath    string
-	container   contracts.Container
-	f           contracts.File
-	startTimeMu sync.Mutex
-	startTime   time.Time
+	filepath         string
+	container        contracts.Container
+	f                contracts.File
+	currentStartTime currentStart
+	startTime        time.Time
 
 	t    *MyPtyHandler
 	once sync.Once
@@ -51,10 +68,9 @@ func (r *Recorder) SetShell(sh string) {
 }
 
 func (r *Recorder) Resize(cols, rows uint16) (err error) {
-	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, time.Now().Unix(), r.shell))
-	r.startTimeMu.Lock()
-	defer r.startTimeMu.Unlock()
-	r.startTime = time.Now()
+	t := time.Now()
+	_, err = r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
+	r.currentStartTime.Set(t)
 	return
 }
 
@@ -73,16 +89,15 @@ func (r *Recorder) Write(data string) (err error) {
 		r.f = file
 		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
 		r.filepath = file.Name()
-		r.startTimeMu.Lock()
-		defer r.startTimeMu.Unlock()
 		r.startTime = time.Now()
+		r.currentStartTime = currentStart{t: time.Now()}
 		r.buffer.Write([]byte(fmt.Sprintf(startLine, 106, 25, r.startTime.Unix(), r.shell)))
 	})
 	if err != nil {
 		return err
 	}
 	marshal, _ := json.Marshal(data)
-	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
+	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.currentStartTime.Get()).Microseconds())/1000000, string(marshal)))
 	return err
 }
 
