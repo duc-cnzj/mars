@@ -405,3 +405,11 @@ func Test_resetSession2(t *testing.T) {
 	assert.Equal(t, uint16(106), session.sizeStore.Cols())
 	assert.Equal(t, uint16(25), session.sizeStore.Rows())
 }
+
+func TestMyPtyHandler_ResetTerminalRowCol(t *testing.T) {
+	pty := &MyPtyHandler{}
+	pty.ResetTerminalRowCol(true)
+	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
+	pty.ResetTerminalRowCol(false)
+	assert.False(t, pty.sizeStore.TerminalRowColNeedReset())
+}
