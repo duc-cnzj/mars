@@ -22,7 +22,7 @@ build_tools:
 
 .PHONY: gen_proto
 gen_proto:
-	cd hack && ./gen_proto.sh
+	cd hack && ./gen_proto.sh && cd ../ && make fmt
 
 .PHONY: gen
 gen:
