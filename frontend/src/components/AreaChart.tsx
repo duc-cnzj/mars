@@ -1,17 +1,5 @@
-import React, {memo} from "react";
-import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
-
-const MyTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ fontSize: 12, fontWeight: "normal" }}>
-        {payload[0].payload["name"]}
-      </div>
-    );
-  }
-
-  return null;
-};
+import React, { memo } from "react";
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 const MyArea: React.FC<{
   data: any[];
@@ -23,8 +11,7 @@ const MyArea: React.FC<{
     start: string;
     end: string;
   };
-  tooltip: React.ReactElement;
-}> = ({ data, dataKey, stroke, fill, tooltip, ekey }) => {
+}> = ({ data, dataKey, stroke, fill, ekey }) => {
   return data.length > 1 ? (
     <ResponsiveContainer
       id={"ResponsiveContainer-" + ekey}
@@ -38,7 +25,6 @@ const MyArea: React.FC<{
             <stop offset="100%" stopColor={fill.end} />
           </linearGradient>
         </defs>
-        <Tooltip content={tooltip} />
         <Area
           type="monotone"
           dataKey={dataKey}
@@ -75,7 +61,6 @@ const Memory: React.FC<{
         stroke="#3B82F6"
         fill={{ end: "#DBEAFE", start: "#60A5FA" }}
         ekey={uniqueKey + "-memory"}
-        tooltip={<MyTooltip />}
         data={data}
       />
     </div>
@@ -105,15 +90,14 @@ const Cpu: React.FC<{
         stroke="#059669"
         fill={{ end: "#6EE7B7", start: "#10B981" }}
         ekey={uniqueKey + "-cpu"}
-        tooltip={<MyTooltip />}
         data={data}
       />
     </div>
   );
 };
 
-const CpuArea = memo(Cpu)
-const MemoryArea = memo(Memory)
+const CpuArea = memo(Cpu);
+const MemoryArea = memo(Memory);
 const MarsArea = { CpuArea, MemoryArea };
 
 export default MarsArea;
