@@ -683,7 +683,7 @@ const ConfigModal: React.FC<{
                         }
                         tooltip="等同于 helm 的 values.yaml, 特别注意: 不能出现特殊的用 '<>' 包裹的变量, go 模板会解析失败!"
                       >
-                        <CodeMirror mode={getMode("yaml")} />
+                        <CodeMirror disabled={!editMode || !globalEnabled} mode={getMode("yaml")} />
                       </Form.Item>
                     </div>
                   </Col>
