@@ -43,7 +43,7 @@ func (m *MockCacheInterface) Clear(arg0 contracts.CacheKeyInterface) error {
 }
 
 // Clear indicates an expected call of Clear.
-func (mr *MockCacheInterfaceMockRecorder) Clear(arg0 any) *gomock.Call {
+func (mr *MockCacheInterfaceMockRecorder) Clear(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockCacheInterface)(nil).Clear), arg0)
 }
@@ -58,7 +58,7 @@ func (m *MockCacheInterface) Remember(arg0 contracts.CacheKeyInterface, arg1 int
 }
 
 // Remember indicates an expected call of Remember.
-func (mr *MockCacheInterfaceMockRecorder) Remember(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockCacheInterfaceMockRecorder) Remember(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCacheInterface)(nil).Remember), arg0, arg1, arg2)
 }

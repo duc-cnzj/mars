@@ -42,7 +42,7 @@ func (m *MockCancelSignaler) Add(arg0 string, arg1 func(error)) error {
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockCancelSignalerMockRecorder) Add(arg0, arg1 any) *gomock.Call {
+func (mr *MockCancelSignalerMockRecorder) Add(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockCancelSignaler)(nil).Add), arg0, arg1)
 }
@@ -54,7 +54,7 @@ func (m *MockCancelSignaler) Cancel(arg0 string) {
 }
 
 // Cancel indicates an expected call of Cancel.
-func (mr *MockCancelSignalerMockRecorder) Cancel(arg0 any) *gomock.Call {
+func (mr *MockCancelSignalerMockRecorder) Cancel(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cancel", reflect.TypeOf((*MockCancelSignaler)(nil).Cancel), arg0)
 }
@@ -80,7 +80,7 @@ func (m *MockCancelSignaler) Has(arg0 string) bool {
 }
 
 // Has indicates an expected call of Has.
-func (mr *MockCancelSignalerMockRecorder) Has(arg0 any) *gomock.Call {
+func (mr *MockCancelSignalerMockRecorder) Has(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockCancelSignaler)(nil).Has), arg0)
 }
@@ -92,7 +92,7 @@ func (m *MockCancelSignaler) Remove(arg0 string) {
 }
 
 // Remove indicates an expected call of Remove.
-func (mr *MockCancelSignalerMockRecorder) Remove(arg0 any) *gomock.Call {
+func (mr *MockCancelSignalerMockRecorder) Remove(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockCancelSignaler)(nil).Remove), arg0)
 }

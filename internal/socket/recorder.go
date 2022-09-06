@@ -12,22 +12,16 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/date"
 )
 
-type RecorderInterface interface {
-	Write(data string) (err error)
-	Close() error
-	SetShell(string)
-	GetShell() string
-}
-
 type Recorder struct {
 	sync.RWMutex
 	filepath  string
-	container Container
+	container contracts.Container
 	f         contracts.File
 	startTime time.Time
 
@@ -65,7 +59,7 @@ func (r *Recorder) Write(data string) (err error) {
 		file, err = app.Uploader().Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
 			r.t.conn.GetUser().Name,
 			time.Now().Format("2006-01-02"),
-			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Namespace, r.t.Pod, r.t.Container.Container, utils.RandomString(20))))
+			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
 		if err != nil {
 			return
 		}
@@ -94,7 +88,11 @@ func (r *Recorder) Close() error {
 		return nil
 	}
 	r.buffer.Flush()
-	stat, _ := r.f.Stat()
+	stat, e := r.f.Stat()
+	if e != nil {
+		mlog.Error(e)
+		return e
+	}
 	var emptyFile bool = true
 	if stat.Size() > 0 {
 		file := &models.File{

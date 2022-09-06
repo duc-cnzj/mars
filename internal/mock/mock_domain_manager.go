@@ -56,7 +56,7 @@ func (m *MockDomainManager) GetCertSecretName(arg0 string, arg1 int) string {
 }
 
 // GetCertSecretName indicates an expected call of GetCertSecretName.
-func (mr *MockDomainManagerMockRecorder) GetCertSecretName(arg0, arg1 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) GetCertSecretName(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCertSecretName", reflect.TypeOf((*MockDomainManager)(nil).GetCertSecretName), arg0, arg1)
 }
@@ -100,7 +100,7 @@ func (m *MockDomainManager) GetDomain(arg0, arg1 string, arg2 int) string {
 }
 
 // GetDomain indicates an expected call of GetDomain.
-func (mr *MockDomainManagerMockRecorder) GetDomain(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) GetDomain(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomain", reflect.TypeOf((*MockDomainManager)(nil).GetDomain), arg0, arg1, arg2)
 }
@@ -114,13 +114,13 @@ func (m *MockDomainManager) GetDomainByIndex(arg0, arg1 string, arg2, arg3 int) 
 }
 
 // GetDomainByIndex indicates an expected call of GetDomainByIndex.
-func (mr *MockDomainManagerMockRecorder) GetDomainByIndex(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) GetDomainByIndex(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDomainByIndex", reflect.TypeOf((*MockDomainManager)(nil).GetDomainByIndex), arg0, arg1, arg2, arg3)
 }
 
 // Initialize mocks base method.
-func (m *MockDomainManager) Initialize(arg0 map[string]any) error {
+func (m *MockDomainManager) Initialize(arg0 map[string]interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0)
 	ret0, _ := ret[0].(error)
@@ -128,7 +128,7 @@ func (m *MockDomainManager) Initialize(arg0 map[string]any) error {
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockDomainManagerMockRecorder) Initialize(arg0 any) *gomock.Call {
+func (mr *MockDomainManagerMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockDomainManager)(nil).Initialize), arg0)
 }

@@ -35,9 +35,9 @@ func (m *MockDBManager) EXPECT() *MockDBManagerMockRecorder {
 }
 
 // AutoMigrate mocks base method.
-func (m *MockDBManager) AutoMigrate(arg0 ...any) error {
+func (m *MockDBManager) AutoMigrate(arg0 ...interface{}) error {
 	m.ctrl.T.Helper()
-	varargs := []any{}
+	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
 	}
@@ -47,7 +47,7 @@ func (m *MockDBManager) AutoMigrate(arg0 ...any) error {
 }
 
 // AutoMigrate indicates an expected call of AutoMigrate.
-func (mr *MockDBManagerMockRecorder) AutoMigrate(arg0 ...any) *gomock.Call {
+func (mr *MockDBManagerMockRecorder) AutoMigrate(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutoMigrate", reflect.TypeOf((*MockDBManager)(nil).AutoMigrate), arg0...)
 }
@@ -73,7 +73,7 @@ func (m *MockDBManager) SetDB(arg0 *gorm.DB) {
 }
 
 // SetDB indicates an expected call of SetDB.
-func (mr *MockDBManagerMockRecorder) SetDB(arg0 any) *gomock.Call {
+func (mr *MockDBManagerMockRecorder) SetDB(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDB", reflect.TypeOf((*MockDBManager)(nil).SetDB), arg0)
 }

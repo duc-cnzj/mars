@@ -44,7 +44,7 @@ func (m *MockAuthInterface) Sign(arg0 contracts.UserInfo) (*contracts.SignData, 
 }
 
 // Sign indicates an expected call of Sign.
-func (mr *MockAuthInterfaceMockRecorder) Sign(arg0 any) *gomock.Call {
+func (mr *MockAuthInterfaceMockRecorder) Sign(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*MockAuthInterface)(nil).Sign), arg0)
 }
@@ -59,7 +59,7 @@ func (m *MockAuthInterface) VerifyToken(arg0 string) (*contracts.JwtClaims, bool
 }
 
 // VerifyToken indicates an expected call of VerifyToken.
-func (mr *MockAuthInterfaceMockRecorder) VerifyToken(arg0 any) *gomock.Call {
+func (mr *MockAuthInterfaceMockRecorder) VerifyToken(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockAuthInterface)(nil).VerifyToken), arg0)
 }

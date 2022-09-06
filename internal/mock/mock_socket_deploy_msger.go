@@ -43,7 +43,7 @@ func (m *MockDeployMsger) SendDeployedResult(arg0 websocket.ResultType, arg1 str
 }
 
 // SendDeployedResult indicates an expected call of SendDeployedResult.
-func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendDeployedResult(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeployedResult", reflect.TypeOf((*MockDeployMsger)(nil).SendDeployedResult), arg0, arg1, arg2)
 }
@@ -55,7 +55,7 @@ func (m *MockDeployMsger) SendEndError(arg0 error) {
 }
 
 // SendEndError indicates an expected call of SendEndError.
-func (mr *MockDeployMsgerMockRecorder) SendEndError(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendEndError(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEndError", reflect.TypeOf((*MockDeployMsger)(nil).SendEndError), arg0)
 }
@@ -67,7 +67,7 @@ func (m *MockDeployMsger) SendError(arg0 error) {
 }
 
 // SendError indicates an expected call of SendError.
-func (mr *MockDeployMsgerMockRecorder) SendError(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendError(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendError", reflect.TypeOf((*MockDeployMsger)(nil).SendError), arg0)
 }
@@ -79,7 +79,7 @@ func (m *MockDeployMsger) SendMsg(arg0 string) {
 }
 
 // SendMsg indicates an expected call of SendMsg.
-func (mr *MockDeployMsgerMockRecorder) SendMsg(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendMsg(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDeployMsger)(nil).SendMsg), arg0)
 }
@@ -91,7 +91,7 @@ func (m *MockDeployMsger) SendMsgWithContainerLog(arg0 string, arg1 []*types.Con
 }
 
 // SendMsgWithContainerLog indicates an expected call of SendMsgWithContainerLog.
-func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(arg0, arg1 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendMsgWithContainerLog(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsgWithContainerLog", reflect.TypeOf((*MockDeployMsger)(nil).SendMsgWithContainerLog), arg0, arg1)
 }
@@ -103,7 +103,7 @@ func (m *MockDeployMsger) SendProcessPercent(arg0 int64) {
 }
 
 // SendProcessPercent indicates an expected call of SendProcessPercent.
-func (mr *MockDeployMsgerMockRecorder) SendProcessPercent(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendProcessPercent(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendProcessPercent", reflect.TypeOf((*MockDeployMsger)(nil).SendProcessPercent), arg0)
 }
@@ -115,7 +115,7 @@ func (m *MockDeployMsger) SendProtoMsg(arg0 contracts.WebsocketMessage) {
 }
 
 // SendProtoMsg indicates an expected call of SendProtoMsg.
-func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendProtoMsg", reflect.TypeOf((*MockDeployMsger)(nil).SendProtoMsg), arg0)
 }
@@ -127,7 +127,7 @@ func (m *MockDeployMsger) Stop(arg0 error) {
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockDeployMsgerMockRecorder) Stop(arg0 any) *gomock.Call {
+func (mr *MockDeployMsgerMockRecorder) Stop(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockDeployMsger)(nil).Stop), arg0)
 }

@@ -60,7 +60,7 @@ func TestRecorder_Close(t *testing.T) {
 	f := mock.NewMockFile(m)
 	r := &Recorder{
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",
@@ -113,7 +113,7 @@ func TestRecorder_Write(t *testing.T) {
 	f := mock.NewMockFile(m)
 	r := &Recorder{
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",
@@ -148,7 +148,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 	f := mock.NewMockFile(m)
 	r := &Recorder{
 		filepath: "/tmp/path",
-		container: Container{
+		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
 			Container: "c",

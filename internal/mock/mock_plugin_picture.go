@@ -59,13 +59,13 @@ func (m *MockPictureInterface) Get(arg0 context.Context, arg1 bool) (*contracts.
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockPictureInterfaceMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+func (mr *MockPictureInterfaceMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPictureInterface)(nil).Get), arg0, arg1)
 }
 
 // Initialize mocks base method.
-func (m *MockPictureInterface) Initialize(arg0 map[string]any) error {
+func (m *MockPictureInterface) Initialize(arg0 map[string]interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0)
 	ret0, _ := ret[0].(error)
@@ -73,7 +73,7 @@ func (m *MockPictureInterface) Initialize(arg0 map[string]any) error {
 }
 
 // Initialize indicates an expected call of Initialize.
-func (mr *MockPictureInterfaceMockRecorder) Initialize(arg0 any) *gomock.Call {
+func (mr *MockPictureInterfaceMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockPictureInterface)(nil).Initialize), arg0)
 }

@@ -49,7 +49,7 @@ func (m *MockHelmer) PackageChart(arg0, arg1 string) (string, error) {
 }
 
 // PackageChart indicates an expected call of PackageChart.
-func (mr *MockHelmerMockRecorder) PackageChart(arg0, arg1 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) PackageChart(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PackageChart", reflect.TypeOf((*MockHelmer)(nil).PackageChart), arg0, arg1)
 }
@@ -63,7 +63,7 @@ func (m *MockHelmer) ReleaseStatus(arg0, arg1 string) types.Deploy {
 }
 
 // ReleaseStatus indicates an expected call of ReleaseStatus.
-func (mr *MockHelmerMockRecorder) ReleaseStatus(arg0, arg1 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) ReleaseStatus(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseStatus", reflect.TypeOf((*MockHelmer)(nil).ReleaseStatus), arg0, arg1)
 }
@@ -77,7 +77,7 @@ func (m *MockHelmer) Rollback(arg0, arg1 string, arg2 bool, arg3 contracts.LogFn
 }
 
 // Rollback indicates an expected call of Rollback.
-func (mr *MockHelmerMockRecorder) Rollback(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) Rollback(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockHelmer)(nil).Rollback), arg0, arg1, arg2, arg3, arg4)
 }
@@ -91,7 +91,7 @@ func (m *MockHelmer) Uninstall(arg0, arg1 string, arg2 contracts.LogFn) error {
 }
 
 // Uninstall indicates an expected call of Uninstall.
-func (mr *MockHelmerMockRecorder) Uninstall(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) Uninstall(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Uninstall", reflect.TypeOf((*MockHelmer)(nil).Uninstall), arg0, arg1, arg2)
 }
@@ -106,7 +106,7 @@ func (m *MockHelmer) UpgradeOrInstall(arg0 context.Context, arg1, arg2 string, a
 }
 
 // UpgradeOrInstall indicates an expected call of UpgradeOrInstall.
-func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeOrInstall", reflect.TypeOf((*MockHelmer)(nil).UpgradeOrInstall), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 }

@@ -60,9 +60,10 @@ func TestMyPtyHandler_Close(t *testing.T) {
 
 func TestMyPtyHandler_Next(t *testing.T) {
 	p := &MyPtyHandler{
-		recorder: &Recorder{},
-		sizeChan: make(chan remotecommand.TerminalSize, 1),
-		doneChan: make(chan struct{}),
+		sizeStore: &sizeStore{},
+		recorder:  &Recorder{},
+		sizeChan:  make(chan remotecommand.TerminalSize, 1),
+		doneChan:  make(chan struct{}),
 	}
 	p.sizeChan <- remotecommand.TerminalSize{
 		Width:  10,
@@ -74,6 +75,8 @@ func TestMyPtyHandler_Next(t *testing.T) {
 
 	close(p.sizeChan)
 	assert.Nil(t, p.Next())
+	assert.Equal(t, uint16(10), p.sizeStore.Cols())
+	assert.Equal(t, uint16(20), p.sizeStore.Rows())
 }
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
@@ -129,7 +132,7 @@ func TestMyPtyHandler_Recorder(t *testing.T) {
 	p := &MyPtyHandler{
 		recorder: &Recorder{},
 	}
-	assert.Implements(t, (*RecorderInterface)(nil), p.Recorder())
+	assert.Implements(t, (*contracts.RecorderInterface)(nil), p.Recorder())
 }
 
 func TestMyPtyHandler_SetShell(t *testing.T) {
@@ -165,6 +168,12 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	ps := mock.NewMockPubSub(m)
 	r := mock.NewMockRecorderInterface(m)
 	p := &MyPtyHandler{
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		sizeStore: &sizeStore{
+			cols:  106,
+			rows:  25,
+			reset: true,
+		},
 		id:       "duc",
 		conn:     &WsConn{pubSub: ps},
 		recorder: r,
@@ -184,6 +193,10 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())
 	assert.Equal(t, 3, n)
+	sch := <-p.sizeChan
+	assert.Equal(t, uint16(106), sch.Width)
+	assert.Equal(t, uint16(25), sch.Height)
+	assert.False(t, p.sizeStore.TerminalRowColNeedReset())
 }
 
 func TestSessionMap_Close(t *testing.T) {

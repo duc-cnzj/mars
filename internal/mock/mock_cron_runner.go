@@ -43,7 +43,7 @@ func (m *MockCronRunner) AddCommand(arg0, arg1 string, arg2 func()) error {
 }
 
 // AddCommand indicates an expected call of AddCommand.
-func (mr *MockCronRunnerMockRecorder) AddCommand(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockCronRunnerMockRecorder) AddCommand(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommand", reflect.TypeOf((*MockCronRunner)(nil).AddCommand), arg0, arg1, arg2)
 }
@@ -57,7 +57,7 @@ func (m *MockCronRunner) Run(arg0 context.Context) error {
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockCronRunnerMockRecorder) Run(arg0 any) *gomock.Call {
+func (mr *MockCronRunnerMockRecorder) Run(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockCronRunner)(nil).Run), arg0)
 }
@@ -71,7 +71,7 @@ func (m *MockCronRunner) Shutdown(arg0 context.Context) error {
 }
 
 // Shutdown indicates an expected call of Shutdown.
-func (mr *MockCronRunnerMockRecorder) Shutdown(arg0 any) *gomock.Call {
+func (mr *MockCronRunnerMockRecorder) Shutdown(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockCronRunner)(nil).Shutdown), arg0)
 }

@@ -42,7 +42,7 @@ func (m *MockJob) AddDestroyFunc(arg0 func()) {
 }
 
 // AddDestroyFunc indicates an expected call of AddDestroyFunc.
-func (mr *MockJobMockRecorder) AddDestroyFunc(arg0 any) *gomock.Call {
+func (mr *MockJobMockRecorder) AddDestroyFunc(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDestroyFunc", reflect.TypeOf((*MockJob)(nil).AddDestroyFunc), arg0)
 }
@@ -326,7 +326,7 @@ func (m *MockJob) Stop(arg0 error) {
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockJobMockRecorder) Stop(arg0 any) *gomock.Call {
+func (mr *MockJobMockRecorder) Stop(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockJob)(nil).Stop), arg0)
 }

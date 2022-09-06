@@ -72,7 +72,7 @@ func (m *MockFile) Read(arg0 []byte) (int, error) {
 }
 
 // Read indicates an expected call of Read.
-func (mr *MockFileMockRecorder) Read(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) Read(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockFile)(nil).Read), arg0)
 }
@@ -102,7 +102,7 @@ func (m *MockFile) Write(arg0 []byte) (int, error) {
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockFileMockRecorder) Write(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) Write(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockFile)(nil).Write), arg0)
 }
@@ -117,7 +117,7 @@ func (m *MockFile) WriteString(arg0 string) (int, error) {
 }
 
 // WriteString indicates an expected call of WriteString.
-func (mr *MockFileMockRecorder) WriteString(arg0 any) *gomock.Call {
+func (mr *MockFileMockRecorder) WriteString(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteString", reflect.TypeOf((*MockFile)(nil).WriteString), arg0)
 }

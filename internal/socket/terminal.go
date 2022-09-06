@@ -35,19 +35,53 @@ const (
 	OpToast  = "toast"
 )
 
-type Container struct {
-	Namespace string `json:"namespace"`
-	Pod       string `json:"pod"`
-	Container string `json:"container"`
+type sizeStore struct {
+	rwMu       sync.RWMutex
+	cols, rows uint16
+
+	resetMu sync.RWMutex
+	reset   bool
+}
+
+func (s *sizeStore) ResetTerminalRowCol(reset bool) {
+	s.resetMu.Lock()
+	defer s.resetMu.Unlock()
+	s.reset = reset
+}
+
+func (s *sizeStore) TerminalRowColNeedReset() bool {
+	s.resetMu.RLock()
+	defer s.resetMu.RUnlock()
+	return s.reset
+}
+
+func (s *sizeStore) Set(cols, rows uint16) {
+	s.rwMu.Lock()
+	defer s.rwMu.Unlock()
+	s.rows = rows
+	s.cols = cols
+}
+
+func (s *sizeStore) Cols() uint16 {
+	s.rwMu.RLock()
+	defer s.rwMu.RUnlock()
+	return s.cols
+}
+
+func (s *sizeStore) Rows() uint16 {
+	s.rwMu.RLock()
+	defer s.rwMu.RUnlock()
+	return s.rows
 }
 
 type MyPtyHandler struct {
-	Container
-	recorder RecorderInterface
-	id       string
-	conn     *WsConn
-	sizeChan chan remotecommand.TerminalSize
-	doneChan chan struct{}
+	container contracts.Container
+	recorder  contracts.RecorderInterface
+	id        string
+	conn      *WsConn
+	sizeChan  chan remotecommand.TerminalSize
+	doneChan  chan struct{}
+	sizeStore *sizeStore
 
 	shellCh chan *websocket_pb.TerminalMessage
 
@@ -58,11 +92,27 @@ func (t *MyPtyHandler) SetShell(shell string) {
 	t.recorder.SetShell(shell)
 }
 
+func (t *MyPtyHandler) Container() contracts.Container {
+	return t.container
+}
+
+func (t *MyPtyHandler) Rows() uint16 {
+	return t.sizeStore.Rows()
+}
+
+func (t *MyPtyHandler) Cols() uint16 {
+	return t.sizeStore.Cols()
+}
+
+func (t *MyPtyHandler) ResetTerminalRowCol(reset bool) {
+	t.sizeStore.ResetTerminalRowCol(reset)
+}
+
 func (t *MyPtyHandler) TerminalMessageChan() chan *websocket_pb.TerminalMessage {
 	return t.shellCh
 }
 
-func (t *MyPtyHandler) Recorder() RecorderInterface {
+func (t *MyPtyHandler) Recorder() contracts.RecorderInterface {
 	return t.recorder
 }
 
@@ -70,9 +120,9 @@ func (t *MyPtyHandler) IsClosed() bool {
 	return t.closeable.IsClosed()
 }
 
-func (t *MyPtyHandler) Close(reason string) {
+func (t *MyPtyHandler) Close(reason string) bool {
 	if !t.closeable.Close() {
-		return
+		return false
 	}
 
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
@@ -89,9 +139,9 @@ func (t *MyPtyHandler) Close(reason string) {
 			Data:      reason,
 		},
 		Container: &types.Container{
-			Namespace: t.Container.Namespace,
-			Pod:       t.Container.Pod,
-			Container: t.Container.Container,
+			Namespace: t.Container().Namespace,
+			Pod:       t.Container().Pod,
+			Container: t.Container().Container,
 		},
 	})
 
@@ -106,10 +156,11 @@ func (t *MyPtyHandler) Close(reason string) {
 		Data:      END_OF_TRANSMISSION,
 		SessionId: t.id,
 	}
-	t.recorder.Close()
+	t.Recorder().Close()
 	close(t.shellCh)
 	close(t.sizeChan)
 	close(t.doneChan)
+	return true
 }
 
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
@@ -144,6 +195,11 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.id)
 	}
 	t.recorder.Write(string(p))
+	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Cols() != 0 {
+		mlog.Debugf("reset shell size rows: %d, cols: %d", t.sizeStore.Rows(), t.sizeStore.Cols())
+		t.sizeStore.ResetTerminalRowCol(false)
+		t.sizeChan <- remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()}
+	}
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
@@ -158,9 +214,9 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 			SessionId: t.id,
 		},
 		Container: &types.Container{
-			Namespace: t.Container.Namespace,
-			Pod:       t.Container.Pod,
-			Container: t.Container.Container,
+			Namespace: t.Container().Namespace,
+			Pod:       t.Container().Pod,
+			Container: t.Container().Container,
 		},
 	})
 
@@ -172,6 +228,9 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	case size, ok := <-t.sizeChan:
 		if !ok {
 			return nil
+		}
+		if size.Width != 0 && size.Height != 0 {
+			t.sizeStore.Set(size.Width, size.Height)
 		}
 		return &size
 	case <-t.doneChan:
@@ -196,9 +255,9 @@ func (t *MyPtyHandler) Toast(p string) error {
 			SessionId: t.id,
 		},
 		Container: &types.Container{
-			Container: t.Container.Container,
-			Namespace: t.Container.Namespace,
-			Pod:       t.Container.Pod,
+			Container: t.Container().Container,
+			Namespace: t.Container().Namespace,
+			Pod:       t.Container().Pod,
 		},
 	})
 	return nil
@@ -216,10 +275,12 @@ func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionId]; ok {
-		select {
-		case h.TerminalMessageChan() <- m:
-		default:
-			mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionId, len(h.TerminalMessageChan()))
+		if !h.IsClosed() {
+			select {
+			case h.TerminalMessageChan() <- m:
+			default:
+				mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionId, len(h.TerminalMessageChan()))
+			}
 		}
 	}
 }
@@ -264,8 +325,8 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 }
 
 // startProcess is called by handleAttach
-// Executed cmd in the Container specified in request and connects it up with the ptyHandler (a session)
-func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, cmd []string, ptyHandler contracts.PtyHandler) error {
+// Executed cmd in the contracts.Container specified in request and connects it up with the ptyHandler (a session)
+func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
 	namespace := container.Namespace
 	podName := container.Pod
 	containerName := container.Container
@@ -329,7 +390,7 @@ func silence(err error) bool {
 
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the SockJS connection to be opened by the client the session to be bound in handleMyPtyHandler
-func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *Container, shell, sessionId string) {
+func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Config, container *contracts.Container, shell, sessionId string) {
 	defer func() {
 		mlog.Debugf("[Websocket]: WaitForTerminal EXIT: total go: %v", runtime.NumGoroutine())
 	}()
@@ -345,15 +406,55 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
 		for idx, testShell := range validShells {
-			if session.IsClosed() {
-				mlog.Warningf("session 已关闭，不会继续尝试连接其他 shell: '%s'", strings.Join(validShells[idx:], ", "))
-				break
-			}
+			mlog.Debug("try" + testShell)
 			cmd := []string{testShell}
 			session.SetShell(testShell)
 			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {
 				break
 			}
+			if session.IsClosed() {
+				mlog.Debugf("session 已关闭，不会继续尝试连接其他 shell: '%s'", strings.Join(validShells[idx:], ", "))
+				break
+			}
+			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
+			// 通过 sizeStore 记录上次用户的 rows, cols, 当 bash 回退时，在用户输入时应用到新的 sh 中
+			var cols, rows uint16 = 106, 25
+			func() {
+				ticker := time.NewTicker(100 * time.Millisecond)
+				af := time.NewTimer(3 * time.Second)
+				defer ticker.Stop()
+				defer af.Stop()
+				for session.Cols() == 0 {
+					select {
+					case <-ticker.C:
+						mlog.Debug("sleep....")
+						break
+					case <-af.C:
+						mlog.Warningf("can't get previous cols,rows, use default rows: 25, cols: 106.")
+						return
+					}
+				}
+				cols = session.Cols()
+				rows = session.Rows()
+			}()
+			mlog.Debug("done....")
+
+			spty := session.(*MyPtyHandler)
+			session = &MyPtyHandler{
+				container: spty.container,
+				recorder:  spty.recorder,
+				id:        spty.id,
+				conn:      spty.conn,
+				doneChan:  spty.doneChan,
+				sizeChan:  make(chan remotecommand.TerminalSize, 1),
+				shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
+				sizeStore: &sizeStore{
+					cols:  cols,
+					rows:  rows,
+					reset: true,
+				},
+			}
+			conn.terminalSessions.Set(sessionId, session)
 		}
 	}
 
@@ -374,7 +475,7 @@ type TerminalResponse struct {
 }
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
-	var c = Container{
+	var c = contracts.Container{
 		Namespace: input.Container.Namespace,
 		Pod:       input.Container.Pod,
 		Container: input.Container.Container,
@@ -385,7 +486,8 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		container: c,
 	}
 	pty := &MyPtyHandler{
-		Container: c,
+		sizeStore: &sizeStore{},
+		container: c,
 		id:        sessionID,
 		conn:      conn,
 		sizeChan:  make(chan remotecommand.TerminalSize, 1),
@@ -398,7 +500,7 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 
 	go func() {
 		defer recovery.HandlePanic("Websocket: WaitForTerminal")
-		WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &Container{
+		WaitForTerminal(conn, app.K8sClientSet(), app.K8sClient().RestConfig, &contracts.Container{
 			Namespace: input.Container.Namespace,
 			Pod:       input.Container.Pod,
 			Container: input.Container.Container,
