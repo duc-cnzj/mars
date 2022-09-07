@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { memo, useCallback } from "react";
 import ReactDiffViewer, {
   ReactDiffViewerStylesOverride,
 } from "react-diff-viewer";
@@ -24,7 +24,8 @@ const DiffViewer: React.FC<{
 }> = ({ mode, oldValue, newValue, splitView, showDiffOnly, styles }) => {
   const highlightSyntax = useCallback(
     (str: string) => (
-      <code
+      <pre
+        style={{ display: 'inline' }}
         dangerouslySetInnerHTML={{
           __html: getHighlightSyntax(str, mode),
         }}
@@ -46,4 +47,4 @@ const DiffViewer: React.FC<{
   );
 };
 
-export default DiffViewer;
+export default memo(DiffViewer);
