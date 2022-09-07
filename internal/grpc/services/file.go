@@ -102,7 +102,7 @@ func transformToRecords(rd io.Reader) []string {
 		reader = bufio.NewReader(rd)
 	)
 	for {
-		line, _, err := reader.ReadLine()
+		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
 				lists = append(lists, strings.Join(data, "\n"))
