@@ -242,6 +242,24 @@ func Test_transformToRecords(t *testing.T) {
 `)),
 			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb]{\"version\": 2, }\n[ccc]\n[ddd]"},
 		},
+		{
+			reader: strings.NewReader(strings.TrimSpace(`
+{"version": 2, }
+[aaa]
+[bbb\n]{"version": 2, }
+[ccc]
+[ddd]
+`)),
+			wants: []string{"{\"version\": 2, }\n[aaa]\n[bbb\\n]{\"version\": 2, }\n[ccc]\n[ddd]"},
+		},
+		{
+			reader: strings.NewReader("{\"version\": 2, }\n\n\n\n\n[aaa]"),
+			wants:  []string{"{\"version\": 2, }\n[aaa]"},
+		},
+		{
+			reader: strings.NewReader("{\"version\": 2, }\na\na\nb\n\n[aaa]"),
+			wants:  []string{"{\"version\": 2, }\na\na\nb\n[aaa]"},
+		},
 	}
 	for _, test := range tests {
 		tt := test

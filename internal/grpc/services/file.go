@@ -103,20 +103,24 @@ func transformToRecords(rd io.Reader) []string {
 	)
 	for {
 		line, err := reader.ReadString('\n')
+		line = strings.Trim(line, "\n")
 		if err != nil {
 			if err == io.EOF {
+				data = append(data, line)
 				lists = append(lists, strings.Join(data, "\n"))
 			}
 			mlog.Debug(err)
 			break
 		}
-		if strings.HasPrefix(string(line), `{"version": 2,`) {
-			if len(data) > 0 {
-				lists = append(lists, strings.Join(data, "\n"))
+		if line != "" {
+			if strings.HasPrefix(line, `{"version": 2,`) {
+				if len(data) > 0 {
+					lists = append(lists, strings.Join(data, "\n"))
+				}
+				data = []string{line}
+			} else {
+				data = append(data, line)
 			}
-			data = []string{string(line)}
-		} else {
-			data = append(data, string(line))
 		}
 	}
 	return lists
