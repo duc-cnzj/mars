@@ -123,6 +123,12 @@ func TestMyPtyHandler_Read(t *testing.T) {
 		Cols: 20,
 	}
 	n, _ = p.Read(b)
+	p.shellCh <- &websocket_pb.TerminalMessage{
+		Op:   OpResize,
+		Rows: 10,
+		Cols: 20,
+	}
+	n, _ = p.Read(b)
 	assert.Equal(t, 0, n)
 	assert.Len(t, p.sizeChan, 1)
 	p.shellCh <- &websocket_pb.TerminalMessage{
@@ -136,7 +142,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Equal(t, "[Websocket]: duc channel closed", err.Error())
 	close(p.doneChan)
 	n, err = p.Read(b)
-	assert.Equal(t, "[Websocket]: duc doneChan closed", err.Error())
+	assert.Error(t, err)
 	assert.Greater(t, n, 0)
 }
 
@@ -209,6 +215,32 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	assert.Equal(t, uint16(106), sch.Width)
 	assert.Equal(t, uint16(25), sch.Height)
 	assert.False(t, p.sizeStore.TerminalRowColNeedReset())
+}
+
+func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	r := mock.NewMockRecorderInterface(m)
+	p := &MyPtyHandler{
+		sizeChan: make(chan remotecommand.TerminalSize, 0),
+		sizeStore: sizeStore{
+			cols:  106,
+			rows:  25,
+			reset: true,
+		},
+		id:       "duc",
+		conn:     &WsConn{pubSub: ps},
+		recorder: r,
+		doneChan: make(chan struct{}),
+	}
+	r.EXPECT().Write("aaa").Times(1)
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	// 会走 default，没有 select 会卡住
+	n, err := p.Write([]byte("aaa"))
+	assert.True(t, true)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, n)
 }
 
 func TestSessionMap_Close(t *testing.T) {
@@ -353,7 +385,29 @@ func Test_resetSession(t *testing.T) {
 
 	assert.NotEqual(t, old.shellCh, session.shellCh)
 	assert.NotEqual(t, old.sizeChan, session.sizeChan)
-	assert.Equal(t, old.doneChan, session.doneChan)
+	assert.NotEqual(t, old.doneChan, session.doneChan)
+}
+func Test_resetSession4(t *testing.T) {
+	t.Parallel()
+	old := &MyPtyHandler{
+		container: contracts.Container{
+			Namespace: "a",
+			Pod:       "b",
+			Container: "c",
+		},
+		recorder:  &Recorder{},
+		id:        "id",
+		conn:      &WsConn{},
+		doneChan:  make(chan struct{}, 1),
+		sizeChan:  make(chan remotecommand.TerminalSize, 10),
+		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
+		sizeStore: sizeStore{cols: 10, rows: 10},
+	}
+	session := resetSession(old).(*MyPtyHandler)
+	assert.NotSame(t, session, old)
+	old.ClosePreviousChannels()
+	session = resetSession(old).(*MyPtyHandler)
+	assert.Same(t, session, old)
 }
 
 func Test_resetSession1(t *testing.T) {
@@ -412,4 +466,21 @@ func TestMyPtyHandler_ResetTerminalRowCol(t *testing.T) {
 	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
 	pty.ResetTerminalRowCol(false)
 	assert.False(t, pty.sizeStore.TerminalRowColNeedReset())
+}
+
+func TestMyPtyHandler_ClosePreviousChannels(t *testing.T) {
+	pty := &MyPtyHandler{
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}, 1),
+		shellCh:  make(chan *websocket_pb.TerminalMessage),
+	}
+	assert.True(t, pty.ClosePreviousChannels())
+	assert.False(t, pty.ClosePreviousChannels())
+	assert.True(t, pty.IsClosed())
+	_, ok := <-pty.shellCh
+	assert.False(t, ok)
+	_, ok = <-pty.doneChan
+	assert.False(t, ok)
+	_, ok = <-pty.sizeChan
+	assert.False(t, ok)
 }
