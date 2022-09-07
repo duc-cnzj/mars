@@ -469,7 +469,7 @@ const EventList: React.FC = () => {
             </>
           )}
           {records.map((v, index) => (
-            <div style={{ display: index === key ? "block" : "none" }}>
+            <div key={index} style={{ display: index === key ? "block" : "none" }}>
               <AsciinemaPlayer
                 speed={1.5}
                 src={{ data: records[key] }}
