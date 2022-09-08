@@ -3,6 +3,7 @@ package wssender
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -56,6 +57,7 @@ func TestMain(t *testing.M) {
 		DB:       rdbNum,
 	})
 	if err := rdb.Ping(context.TODO()).Err(); err != nil {
+		log.Fatal(err)
 		skip = true
 	}
 	code := t.Run()
