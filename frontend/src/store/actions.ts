@@ -108,7 +108,7 @@ export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
 });
 export const setPodEventPID = (pid: number) => ({
   type: PROJECT_POD_EVENT,
-  projectID: `${(new Date()).getTime()}-${pid}`,
+  projectIDWithTimestamp: `${(new Date()).getTime()}-${pid}`,
 });
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
