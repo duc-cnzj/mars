@@ -108,7 +108,7 @@ export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
 });
 export const setPodEventPID = (pid: number) => ({
   type: PROJECT_POD_EVENT,
-  projectID: `${new Date()}-${pid}`,
+  projectID: `${(new Date()).getTime()}-${pid}`,
 });
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
@@ -125,7 +125,6 @@ export const handleEvents = (
       case pb.websocket.Type.ProjectPodEvent:
         let nsEvent = pb.websocket.WsProjectPodEventResponse.decode(input);
         dispatch(setPodEventPID(nsEvent.project_id))
-        console.log("setPodEventPID", nsEvent.project_id)
         break;
       case pb.websocket.Type.SetUid:
         setUid(data.message);

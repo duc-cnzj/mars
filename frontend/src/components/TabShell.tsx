@@ -8,20 +8,20 @@ import React, {
 } from "react";
 import { useSelector } from "react-redux";
 import { allPodContainers, isPodRunning } from "../api/project";
-import { message, Radio, Tag, Upload, Button, Empty } from "antd";
+import { message, Radio, Upload, Button, Empty } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { UploadOutlined, SyncOutlined } from "@ant-design/icons";
+import { UploadOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
 import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
 import { maxUploadSize } from "../api/file";
-import { selectPodEventProjectID } from "../store/reducers/namespaceWatcher";
+import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 
 const TabShell: React.FC<{
@@ -48,8 +48,6 @@ const TabShell: React.FC<{
   const wsReady = useWsReady();
 
   let sname = useMemo(() => namespace + "|" + value, [namespace, value]);
-
-  // useProjectRoom(namespaceID, id, ws);
 
   const listContainer = useCallback(
     () =>

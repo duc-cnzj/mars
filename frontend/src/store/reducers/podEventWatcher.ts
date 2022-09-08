@@ -3,9 +3,9 @@ const initialState = {
   projectID: "",
 };
 
-export const selectPodEventProjectID = (state:{namespaceWatcher: {projectID:string}}) => state.namespaceWatcher.projectID;
+export const selectPodEventProjectID = (state:{podEventWatcher: {projectID:string}}) => state.podEventWatcher.projectID;
 
-export default function namespaceWatcher(
+export default function podEventWatcher(
   state = initialState,
   action: { type: string; projectID: string }
 ) {

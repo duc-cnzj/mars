@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
 import { allPodContainers } from "../api/project";
-import { Radio, Skeleton, Button, Tag, message, Empty } from "antd";
+import { Radio, Skeleton, Button, message, Empty } from "antd";
 import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
@@ -71,7 +71,7 @@ const ProjectContainerLogs: React.FC<{
       {list.length > 0 ? (
         <>
           <Radio.Group value={value} style={{ marginBottom: 10 }}>
-            {list?.map((item) => (
+            {list.map((item) => (
               <Radio
                 onClick={reloadLog}
                 key={item.pod + "|" + item.container}

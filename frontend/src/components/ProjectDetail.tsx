@@ -100,7 +100,7 @@ const ItemDetailModal: React.FC<{
         }
       >
         {detail && detail.project && (
-          <MyTab
+          <MarsTabs
             namespaceId={namespaceId}
             projectID={detail.project.id}
             detail={detail}
@@ -115,7 +115,7 @@ const ItemDetailModal: React.FC<{
   );
 };
 
-const MyTab: React.FC<{
+const MyTabs: React.FC<{
   detail: pb.project.ShowResponse;
   item: pb.types.ProjectModel;
   resizeAt: any;
@@ -206,4 +206,5 @@ const MyTab: React.FC<{
   );
 };
 
+const MarsTabs = memo(MyTabs);
 export default memo(ItemDetailModal);
