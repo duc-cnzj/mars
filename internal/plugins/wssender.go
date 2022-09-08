@@ -90,8 +90,7 @@ func (e *EmptyPubSub) Run(ctx context.Context) error {
 }
 
 func (e *EmptyPubSub) Publish(nsID int64, pod *v1.Pod) error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (e *EmptyPubSub) Info() any {

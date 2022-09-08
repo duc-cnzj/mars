@@ -82,7 +82,7 @@ func ProjectPodEventListener(app contracts.ApplicationInterface) {
 	go func() {
 		defer recovery.HandlePanic(listener)
 		defer func() {
-			mlog.Debug("pod-watcher exit")
+			mlog.Debug("[PodEventListener]: pod-watcher exit")
 			podFanOut.RemoveListener(listener)
 			close(ch)
 		}()
@@ -101,9 +101,9 @@ func ProjectPodEventListener(app contracts.ApplicationInterface) {
 				case contracts.Delete:
 					var ns models.Namespace
 					if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
-						mlog.Debugf("pod '%v': '%s' '%s' '%d'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID)
+						mlog.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID)
 						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
-							mlog.Warning(err)
+							mlog.Errorf("[PodEventListener]: %v", err)
 						}
 					}
 				default:
