@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -120,7 +121,12 @@ func TestProjectPodEventListener(t *testing.T) {
 		PodFanOut: podFanOutObj,
 	}
 	ch := make(chan struct{})
-	go podFanOutObj.Distribute(ch)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		podFanOutObj.Distribute(ch)
+	}()
 
 	app.EXPECT().K8sClient().Return(client).AnyTimes()
 	app.EXPECT().Done().Return(ch).AnyTimes()
@@ -167,4 +173,5 @@ func TestProjectPodEventListener(t *testing.T) {
 	}, contracts.Update)
 	time.Sleep(1 * time.Second)
 	close(ch)
+	wg.Wait()
 }

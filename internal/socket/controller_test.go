@@ -520,7 +520,11 @@ func TestWsConn_Shutdown(t *testing.T) {
 	ps.EXPECT().Close().Times(1)
 	conn := mock.NewMockWebsocketConn(m)
 	conn.EXPECT().Close().Times(1)
+	var doneCalled bool
 	c := &WsConn{
+		doneFunc: func() {
+			doneCalled = true
+		},
 		conn:             conn,
 		cancelSignaler:   cs,
 		pubSub:           ps,
@@ -531,6 +535,7 @@ func TestWsConn_Shutdown(t *testing.T) {
 		Wait = NewWaitSocketExit()
 	}()
 	c.Shutdown()
+	assert.True(t, doneCalled)
 	assert.Equal(t, -1, Wait.Count())
 }
 
