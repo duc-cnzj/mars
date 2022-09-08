@@ -167,6 +167,18 @@ func Test_watchEvent(t *testing.T) {
 				Name:      "app",
 			},
 		}, contracts.Add)
+		ch <- contracts.NewObj(nil, &eventv1.Event{
+			Regarding: v1.ObjectReference{
+				Namespace: "ns",
+				Name:      "app1",
+			},
+		}, contracts.Update)
+		ch <- contracts.NewObj(nil, &eventv1.Event{
+			Regarding: v1.ObjectReference{
+				Namespace: "ns",
+				Name:      "app2",
+			},
+		}, contracts.Delete)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()
@@ -253,14 +265,13 @@ func Test_watchEvent_Error2(t *testing.T) {
 func Test_watchPodStatus(t *testing.T) {
 	t.Parallel()
 	var called int64
-	var cs = &ContainerGetterSetter{}
 	podCh := make(chan contracts.Obj[*v1.Pod], 10)
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	go func() {
 		podCh <- contracts.NewObj(nil, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
-				Name:      "app",
+				Name:      "app1",
 				Labels: map[string]string{
 					"name": "app",
 				},
@@ -268,28 +279,34 @@ func Test_watchPodStatus(t *testing.T) {
 			Status: v1.PodStatus{
 				ContainerStatuses: []v1.ContainerStatus{
 					{
-						Name:         "one",
+						Name:         "aaa",
 						Ready:        false,
-						RestartCount: 1,
-					},
-					{
-						Name:         "two",
-						Ready:        false,
-						RestartCount: 1,
-					},
-					{
-						Name:         "three",
-						Ready:        false,
-						RestartCount: 0,
-					},
-					{
-						Name:         "four",
-						Ready:        true,
-						RestartCount: 4,
+						RestartCount: 6,
 					},
 				},
 			},
 		}, contracts.Add)
+		podCh <- contracts.NewObj(nil, &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "ns",
+				Name:      "app2",
+				Labels: map[string]string{
+					"name": "app",
+				},
+			},
+			Status: v1.PodStatus{
+				ContainerStatuses: []v1.ContainerStatus{
+					{
+						Name:         "bbb",
+						Ready:        false,
+						RestartCount: 5,
+					},
+				},
+			},
+		}, contracts.Delete)
+		podCh <- contracts.NewObj[*v1.Pod](nil, nil, contracts.Update)
+		podCh <- contracts.NewObj[*v1.Pod](nil, nil, contracts.Update)
+		podCh <- contracts.NewObj[*v1.Pod](nil, nil, contracts.Update)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()
@@ -302,13 +319,9 @@ func Test_watchPodStatus(t *testing.T) {
 		}),
 	}
 	watchPodStatus(ctx, podCh, selectorLists, func(container []*types.Container, format string, v ...any) {
-		cs.Set(container)
 		atomic.AddInt64(&called, 1)
 	})
-	assert.Len(t, cs.Get(), 2)
-	assert.Equal(t, int64(1), atomic.LoadInt64(&called))
-	assert.Equal(t, "one", cs.Get()[0].Container)
-	assert.Equal(t, "two", cs.Get()[1].Container)
+	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
 }
 
 func Test_watchPodStatus_Error1(t *testing.T) {
@@ -344,7 +357,7 @@ func Test_watchPodStatus_Error1(t *testing.T) {
 					},
 				},
 			},
-		}, contracts.Add)
+		}, contracts.Delete)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()

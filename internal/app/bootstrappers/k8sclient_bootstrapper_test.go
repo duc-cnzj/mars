@@ -75,6 +75,10 @@ func Test_filterEvent(t *testing.T) {
 	}
 }
 
+func Test_filter_Error(t *testing.T) {
+	assert.Equal(t, false, filterPod("xxx")(struct{}{}))
+	assert.Equal(t, false, filterEvent("xxx")(struct{}{}))
+}
 func Test_filterPod(t *testing.T) {
 	var tests = []struct {
 		nsPrefix string
@@ -143,15 +147,29 @@ func Test_fanOut_RemoveListener(t *testing.T) {
 	assert.Len(t, fo.listeners, 0)
 }
 
+func Test_fanOut_Distribute_ClosedChan(t *testing.T) {
+	ch := make(chan contracts.Obj[*v1.Pod], 10)
+	fo := &fanOut[*v1.Pod]{
+		name:      "test-pod",
+		ch:        ch,
+		listeners: make(map[string]chan<- contracts.Obj[*v1.Pod]),
+	}
+	ch2 := make(chan struct{})
+	close(ch)
+	fo.Distribute(ch2)
+	assert.True(t, true)
+}
 func Test_fanOut_Distribute(t *testing.T) {
 	ch := make(chan contracts.Obj[*v1.Pod], 10)
 	ch2 := make(chan contracts.Obj[*v1.Pod], 10)
+	ch3 := make(chan contracts.Obj[*v1.Pod])
 	fo := &fanOut[*v1.Pod]{
 		name:      "test-pod",
 		ch:        ch,
 		listeners: make(map[string]chan<- contracts.Obj[*v1.Pod]),
 	}
 	fo.AddListener("aa", ch2)
+	fo.AddListener("aa3", ch3)
 	ctx := make(chan struct{}, 1)
 	go func() {
 		pod := &v1.Pod{}

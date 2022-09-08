@@ -1,6 +1,7 @@
 package wssender
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -85,6 +86,10 @@ type memoryPubSub struct {
 	manager *memorySender
 	uid     string
 	id      string
+}
+
+func (p *memoryPubSub) Run(ctx context.Context) error {
+	return nil
 }
 
 func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {

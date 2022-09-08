@@ -109,11 +109,12 @@ type rdsPubSub struct {
 }
 
 type projectEventObj struct {
+	Channel     string  `json:"channel"`
 	NamespaceID int64   `json:"namespace_id"`
 	Pod         *v1.Pod `json:"pod"`
 }
 
-func getProjectEventRoom[T int64 | int](nsID T) string {
+func getRedisProjectEventRoom[T int64 | int](nsID T) string {
 	return fmt.Sprintf("project-pod-events-%d", nsID)
 }
 
@@ -129,11 +130,13 @@ type podEventManagers struct {
 }
 
 func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
+	channel := getRedisProjectEventRoom(nsID)
 	marshal, _ := json.Marshal(&projectEventObj{
+		Channel:     channel,
 		NamespaceID: nsID,
 		Pod:         pod,
 	})
-	p.rds.Publish(context.TODO(), getProjectEventRoom(nsID), marshal)
+	p.rds.Publish(context.TODO(), channel, marshal)
 	return nil
 }
 
@@ -142,7 +145,7 @@ func (p *podEventManagers) Join(projectID int64) error {
 	if err := app.DB().First(&pmodel, projectID).Error; err != nil {
 		return err
 	}
-	channel := getProjectEventRoom(pmodel.NamespaceId)
+	channel := getRedisProjectEventRoom(pmodel.NamespaceId)
 	if err := p.pubSub.Subscribe(context.TODO(), channel); err != nil {
 		return err
 	}
@@ -153,8 +156,8 @@ func (p *podEventManagers) Join(projectID int64) error {
 }
 
 func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
-	channel := getProjectEventRoom(nsID)
-	if err := p.pubSub.Unsubscribe(context.TODO(), getProjectEventRoom(nsID)); err != nil {
+	channel := getRedisProjectEventRoom(nsID)
+	if err := p.pubSub.Unsubscribe(context.TODO(), channel); err != nil {
 		return err
 	}
 	p.mu.Lock()

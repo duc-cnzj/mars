@@ -615,3 +615,30 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 func Test_Upgrader(t *testing.T) {
 	assert.True(t, upgrader.CheckOrigin(nil))
 }
+
+func TestHandleWsProjectPodEvent(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	c := &WsConn{
+		id:     "id",
+		uid:    "uid",
+		pubSub: ps,
+	}
+	marshal, _ := proto.Marshal(&websocket.ProjectPodEventJoinInput{
+		Type:        websocket.Type_ProjectPodEvent,
+		Join:        false,
+		ProjectId:   1,
+		NamespaceId: 1,
+	})
+	ps.EXPECT().Leave(int64(1), int64(1)).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, marshal)
+	marshal2, _ := proto.Marshal(&websocket.ProjectPodEventJoinInput{
+		Type:        websocket.Type_ProjectPodEvent,
+		Join:        true,
+		ProjectId:   2,
+		NamespaceId: 2,
+	})
+	ps.EXPECT().Join(int64(2)).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, marshal2)
+}

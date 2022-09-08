@@ -3,8 +3,8 @@ package bootstrappers
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -31,10 +31,9 @@ func (r *runHooksEqual) String() string {
 }
 
 func TestAppBootstrapper_Bootstrap(t *testing.T) {
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-	app := mock.NewMockApplicationInterface(controller)
-	instance.SetInstance(app)
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
 	h := &runHooksEqual{}
 	app.EXPECT().BeforeServerRunHooks(h).Times(2)
 
@@ -45,22 +44,22 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 		WsSenderPlugin:      config.Plugin{Name: "test_wssender"},
 	}).AnyTimes()
 
-	gits := mock.NewMockGitServer(controller)
+	gits := mock.NewMockGitServer(m)
 	app.EXPECT().GetPluginByName("test_git_server").Return(gits).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.All()).AnyTimes()
 
-	pictrure := mock.NewMockPictureInterface(controller)
+	pictrure := mock.NewMockPictureInterface(m)
 	app.EXPECT().GetPluginByName("test_picture").Return(pictrure).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	pictrure.EXPECT().Initialize(gomock.All()).AnyTimes()
 
-	d := mock.NewMockDomainManager(controller)
+	d := mock.NewMockDomainManager(m)
 	app.EXPECT().GetPluginByName("test_domain").Return(d).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	d.EXPECT().Initialize(gomock.All()).AnyTimes()
 
-	ws := mock.NewMockWsSender(controller)
+	ws := mock.NewMockWsSender(m)
 	app.EXPECT().GetPluginByName("test_wssender").Return(ws).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	ws.EXPECT().Initialize(gomock.All()).AnyTimes()
@@ -68,7 +67,7 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 	assert.Nil(t, (&AppBootstrapper{}).Bootstrap(app))
 	assert.NotNil(t, h.hook)
 	d.EXPECT().GetCerts().Return("cert", "key", "crt")
-	db, fn := testutil.SetGormDB(controller, app)
+	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
 	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
 
@@ -102,4 +101,70 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 
 func TestAppBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{}, (&AppBootstrapper{}).Tags())
+}
+
+func TestProjectPodEventListener(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+
+	podFanOutObj := &fanOut[*corev1.Pod]{
+		name:      "pod",
+		ch:        make(chan contracts.Obj[*corev1.Pod], 100),
+		listeners: make(map[string]chan<- contracts.Obj[*corev1.Pod]),
+	}
+
+	client := &contracts.K8sClient{
+		PodFanOut: podFanOutObj,
+	}
+	ch := make(chan struct{})
+	go podFanOutObj.Distribute(ch)
+
+	app.EXPECT().K8sClient().Return(client).AnyTimes()
+	app.EXPECT().Done().Return(ch).AnyTimes()
+
+	app.EXPECT().Config().Return(&config.Config{
+		NsPrefix:       "devtest-",
+		WsSenderPlugin: config.Plugin{Name: "test_wssender"},
+	}).AnyTimes()
+
+	ws := mock.NewMockWsSender(m)
+	app.EXPECT().GetPluginByName("test_wssender").Return(ws).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	ws.EXPECT().Initialize(gomock.All()).AnyTimes()
+
+	nsModel := &models.Namespace{Name: "devtest-ns"}
+	db.AutoMigrate(&models.Namespace{})
+	db.Create(nsModel)
+
+	pubsub := mock.NewMockPubSub(m)
+	ws.EXPECT().New("", "").Return(pubsub).Times(1)
+
+	ProjectPodEventListener(app)
+
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	podFanOutObj.ch <- contracts.NewObj(nil, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p1",
+		},
+	}, contracts.Add)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	podFanOutObj.ch <- contracts.NewObj(nil, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p2",
+		},
+	}, contracts.Delete)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(0)
+	podFanOutObj.ch <- contracts.NewObj(nil, &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "devtest-ns",
+			Name:      "p3",
+		},
+	}, contracts.Update)
+	time.Sleep(1 * time.Second)
+	close(ch)
 }

@@ -16,6 +16,9 @@ type WebsocketMessage interface {
 }
 
 type PubSub interface {
+	ProjectPodEventSubscriber
+	ProjectPodEventPublisher
+
 	Info() any
 	Uid() string
 	ID() string

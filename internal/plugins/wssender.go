@@ -3,8 +3,11 @@ package plugins
 //go:generate mockgen -destination ../mock/mock_wssender.go -package mock github.com/duc-cnzj/mars/internal/plugins WsSender
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
+
+	v1 "k8s.io/api/core/v1"
 
 	"google.golang.org/protobuf/proto"
 
@@ -73,6 +76,23 @@ func GetWsSender() WsSender {
 }
 
 type EmptyPubSub struct{}
+
+func (e *EmptyPubSub) Join(projectID int64) error {
+	return nil
+}
+
+func (e *EmptyPubSub) Leave(nsID int64, projectID int64) error {
+	return nil
+}
+
+func (e *EmptyPubSub) Run(ctx context.Context) error {
+	return nil
+}
+
+func (e *EmptyPubSub) Publish(nsID int64, pod *v1.Pod) error {
+	//TODO implement me
+	panic("implement me")
+}
 
 func (e *EmptyPubSub) Info() any {
 	return nil
