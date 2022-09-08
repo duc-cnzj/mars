@@ -186,6 +186,7 @@ func Test_podEventManagers_Publish(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		<-ch
+		cancelFunc()
 		assert.True(t, true)
 	}()
 
