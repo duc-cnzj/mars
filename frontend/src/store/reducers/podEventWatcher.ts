@@ -11,7 +11,6 @@ export default function podEventWatcher(
 ) {
   switch (action.type) {
     case PROJECT_POD_EVENT:
-      console.log("action.projectID", action.projectID)
       return { projectID: action.projectID };
     default:
       return state;
