@@ -39,6 +39,15 @@ jobs:
     name: unittest
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
       mysql:
         image: mysql:5.7
         env:
@@ -75,6 +84,8 @@ jobs:
           DB_USERNAME: root
           DB_DATABASE: test
           S3_ENDPOINT: localhost:9000
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
         run: |
           make test
 

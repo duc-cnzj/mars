@@ -133,7 +133,7 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 
 func (p *memoryPubSub) Join(projectID int64) error {
 	var pmodel models.Project
-	app.DB().First(&pmodel, projectID)
+	app.DB().Select("id", "namespace_id", "pod_selectors").First(&pmodel, projectID)
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
 	mlog.Warningf("Join to: (%d---%d)", pmodel.NamespaceId, projectID)

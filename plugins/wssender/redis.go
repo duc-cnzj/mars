@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
 	"google.golang.org/protobuf/proto"
@@ -116,7 +118,7 @@ type projectEventObj struct {
 }
 
 func getRedisProjectEventRoom[T int64 | int](nsID T) string {
-	return fmt.Sprintf("project-pod-events-%d", nsID)
+	return fmt.Sprintf("project-pod-events:%d", nsID)
 }
 
 type podEventManagers struct {
@@ -284,10 +286,13 @@ func (p *rdsPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
 }
 
 func (p *rdsPubSub) Subscribe() <-chan []byte {
-	p.wsPubSub.Subscribe(context.TODO(), p.id, BroadcastRoom)
+	if err := p.wsPubSub.Subscribe(context.TODO(), p.id, BroadcastRoom); err != nil {
+		mlog.Fatal(err)
+	}
 	channel := p.wsPubSub.Channel()
 	mlog.Debugf("[Websocket]: Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
 	go func() {
+		defer recovery.HandlePanic("[PubSub]: Subscribe")
 		for {
 			select {
 			case msg, ok := <-channel:
