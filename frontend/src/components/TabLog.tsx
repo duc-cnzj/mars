@@ -5,7 +5,7 @@ import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
 import { useSelector } from "react-redux";
-import { selectPodEventProjectID } from "../store/reducers/namespaceWatcher";
+import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import { debounce } from "lodash";
 import PodStateTag from "./PodStateTag";
 
