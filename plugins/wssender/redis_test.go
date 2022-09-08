@@ -59,6 +59,7 @@ func TestMain(t *testing.M) {
 		skip = true
 	}
 	code := t.Run()
+	rdb.Close()
 	os.Exit(code)
 }
 
@@ -246,6 +247,7 @@ func Test_rdsPubSub_ToAll(t *testing.T) {
 		t.Skip()
 	}
 	rs := &redisSender{rds: NewRdb(10)}
+	defer rs.rds.Close()
 	ps1 := rs.New("bbb", "b-1")
 	ps2 := rs.New("bbb", "b-2")
 
@@ -281,6 +283,7 @@ func Test_rdsPubSub_ToOthers(t *testing.T) {
 		t.Skip()
 	}
 	rs := &redisSender{rds: NewRdb(2)}
+	defer rs.rds.Close()
 	ps1 := rs.New("aaa", "a-1")
 	ps2 := rs.New("aaa", "a-2")
 	ch := ps2.Subscribe()
@@ -311,6 +314,7 @@ func Test_rdsPubSub_ToSelf(t *testing.T) {
 		t.Skip()
 	}
 	rs := &redisSender{rds: NewRdb(3)}
+	defer rs.rds.Close()
 	ps1 := rs.New("aaa", "a-1")
 	ch := ps1.Subscribe()
 
