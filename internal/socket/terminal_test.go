@@ -50,12 +50,33 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	assert.Equal(t, ETX, a.Data)
 	b := <-p.shellCh
 	assert.Equal(t, END_OF_TRANSMISSION, b.Data)
-	_, ok := <-p.shellCh
+	defaultTimes := 0
+	select {
+	case <-p.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-p.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
+	_, ok := <-p.doneChan
 	assert.False(t, ok)
-	_, ok = <-p.sizeChan
-	assert.False(t, ok)
-	_, ok = <-p.doneChan
-	assert.False(t, ok)
+	p.Send(nil)
+	p.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
+	select {
+	case <-p.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-p.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
 }
 
 func TestMyPtyHandler_Next(t *testing.T) {
@@ -67,17 +88,17 @@ func TestMyPtyHandler_Next(t *testing.T) {
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
-	p.sizeChan <- remotecommand.TerminalSize{
+	p.Resize(remotecommand.TerminalSize{
 		Width:  10,
 		Height: 20,
-	}
+	})
 	next := p.Next()
 	assert.Equal(t, uint16(10), next.Width)
 	assert.Equal(t, uint16(20), next.Height)
-	p.sizeChan <- remotecommand.TerminalSize{
+	p.Resize(remotecommand.TerminalSize{
 		Width:  100,
 		Height: 200,
-	}
+	})
 	r.EXPECT().Resize(uint16(100), uint16(200)).Times(1)
 	next = p.Next()
 	assert.Equal(t, uint16(100), next.Width)
@@ -111,29 +132,29 @@ func TestMyPtyHandler_Read(t *testing.T) {
 		doneChan: make(chan struct{}),
 	}
 	b := make([]byte, 1024)
-	p.shellCh <- &websocket_pb.TerminalMessage{
+	p.Send(&websocket_pb.TerminalMessage{
 		Op:   OpStdin,
 		Data: "hello duc",
-	}
+	})
 	n, _ := p.Read(b)
 	assert.Equal(t, "hello duc", string(b[0:n]))
-	p.shellCh <- &websocket_pb.TerminalMessage{
+	p.Send(&websocket_pb.TerminalMessage{
 		Op:   OpResize,
 		Rows: 10,
 		Cols: 20,
-	}
-	n, _ = p.Read(b)
-	p.shellCh <- &websocket_pb.TerminalMessage{
+	})
+	p.Read(b)
+	p.Send(&websocket_pb.TerminalMessage{
 		Op:   OpResize,
 		Rows: 10,
 		Cols: 20,
-	}
+	})
 	n, _ = p.Read(b)
 	assert.Equal(t, 0, n)
 	assert.Len(t, p.sizeChan, 1)
-	p.shellCh <- &websocket_pb.TerminalMessage{
+	p.Send(&websocket_pb.TerminalMessage{
 		Op: "xxxx",
-	}
+	})
 	n, err := p.Read(b)
 	assert.Greater(t, n, 0)
 	assert.Error(t, err)
@@ -159,13 +180,6 @@ func TestMyPtyHandler_SetShell(t *testing.T) {
 	}
 	p.SetShell("xxx")
 	assert.Equal(t, "xxx", p.recorder.GetShell())
-}
-
-func TestMyPtyHandler_TerminalMessageChan(t *testing.T) {
-	p := &MyPtyHandler{
-		shellCh: make(chan *websocket_pb.TerminalMessage),
-	}
-	assert.Equal(t, p.shellCh, p.TerminalMessageChan())
 }
 
 func TestMyPtyHandler_Toast(t *testing.T) {
@@ -202,7 +216,9 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	n, err := p.Write([]byte("aaa"))
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
-	p.closeable.Close()
+	p.closeMu.Lock()
+	p.closed = true
+	p.closeMu.Unlock()
 	n, err = p.Write([]byte("aaa"))
 	assert.Equal(t, "[Websocket]: duc ws already closed", err.Error())
 	assert.Equal(t, 3, n)
@@ -223,7 +239,7 @@ func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 	ps := mock.NewMockPubSub(m)
 	r := mock.NewMockRecorderInterface(m)
 	p := &MyPtyHandler{
-		sizeChan: make(chan remotecommand.TerminalSize, 0),
+		sizeChan: make(chan remotecommand.TerminalSize),
 		sizeStore: sizeStore{
 			cols:  106,
 			rows:  25,
@@ -405,7 +421,7 @@ func Test_resetSession4(t *testing.T) {
 	}
 	session := resetSession(old).(*MyPtyHandler)
 	assert.NotSame(t, session, old)
-	old.ClosePreviousChannels()
+	old.CloseDoneChan()
 	session = resetSession(old).(*MyPtyHandler)
 	assert.Same(t, session, old)
 }
@@ -474,13 +490,34 @@ func TestMyPtyHandler_ClosePreviousChannels(t *testing.T) {
 		doneChan: make(chan struct{}, 1),
 		shellCh:  make(chan *websocket_pb.TerminalMessage),
 	}
-	assert.True(t, pty.ClosePreviousChannels())
-	assert.False(t, pty.ClosePreviousChannels())
+	assert.True(t, pty.CloseDoneChan())
+	assert.False(t, pty.CloseDoneChan())
 	assert.True(t, pty.IsClosed())
-	_, ok := <-pty.shellCh
+	defaultTimes := 0
+	select {
+	case <-pty.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-pty.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
+	_, ok := <-pty.doneChan
 	assert.False(t, ok)
-	_, ok = <-pty.doneChan
-	assert.False(t, ok)
-	_, ok = <-pty.sizeChan
-	assert.False(t, ok)
+	pty.Send(nil)
+	pty.Resize(remotecommand.TerminalSize{Width: 1, Height: 1})
+	select {
+	case <-pty.shellCh:
+	default:
+		defaultTimes++
+	}
+	select {
+	case <-pty.sizeChan:
+	default:
+		defaultTimes++
+	}
+	assert.Equal(t, 2, defaultTimes)
 }

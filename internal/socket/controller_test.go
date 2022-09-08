@@ -493,24 +493,6 @@ func TestWebsocketManager_initConn2(t *testing.T) {
 	assert.NotEmpty(t, conn.uid)
 }
 
-func TestWsConn_GetShellChannel(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	sm := mock.NewMockSessionMapper(m)
-	sm.EXPECT().Get("sid").Return(nil, false).Times(1)
-	ws := &WsConn{
-		terminalSessions: sm,
-	}
-	_, err := ws.GetShellChannel("sid")
-	assert.Error(t, err)
-	pty := mock.NewMockPtyHandler(m)
-	ch := make(chan *websocket.TerminalMessage)
-	pty.EXPECT().TerminalMessageChan().Return(ch)
-	sm.EXPECT().Get("sid").Return(pty, true).Times(1)
-	chres, _ := ws.GetShellChannel("sid")
-	assert.Equal(t, ch, chres)
-}
-
 func TestWsConn_GetUser(t *testing.T) {
 	c := &WsConn{}
 	assert.IsType(t, contracts.UserInfo{}, c.GetUser())

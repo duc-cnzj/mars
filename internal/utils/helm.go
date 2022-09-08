@@ -101,8 +101,8 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
 		key := fmt.Sprintf("%s-%s", namespace, releaseName)
 		k8sClient := app.K8sClient()
-		podCh := make(chan *corev1.Pod, 100)
-		evCh := make(chan *eventsv1.Event, 100)
+		podCh := make(chan contracts.Obj[*corev1.Pod], 100)
+		evCh := make(chan contracts.Obj[*eventsv1.Event], 100)
 		defer func() {
 			cancelFn()
 			k8sClient.PodFanOut.RemoveListener(key)
@@ -185,16 +185,20 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	return client.RunWithContext(ctx, releaseName, ch, vals)
 }
 
-func watchPodStatus(ctx context.Context, podCh chan *corev1.Pod, selectorList []labels.Selector, fn contracts.WrapLogFn) {
+func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], selectorList []labels.Selector, fn contracts.WrapLogFn) {
 	for {
 		select {
 		case <-ctx.Done():
 			mlog.Debug("ctx.Done pod")
 			return
-		case p, ok := <-podCh:
+		case obj, ok := <-podCh:
 			if !ok {
 				return
 			}
+			if obj.Type() == contracts.Update {
+				continue
+			}
+			p := obj.Current()
 			var matched bool
 			for _, selector := range selectorList {
 				if selector.Matches(labels.Set(p.Labels)) {
@@ -230,17 +234,21 @@ func watchPodStatus(ctx context.Context, podCh chan *corev1.Pod, selectorList []
 	}
 }
 
-func watchEvent(ctx context.Context, evCh chan *v1.Event, releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
+func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
 	for {
 		select {
 		case <-ctx.Done():
 			mlog.Debug("ctx.Done event")
 			return
-		case ev, ok := <-evCh:
+		case evobj, ok := <-evCh:
 			if !ok {
 				return
 			}
-			var obj any = ev
+			if evobj.Type() != contracts.Add {
+				continue
+			}
+
+			var obj any = evobj.Current()
 			event := obj.(*v1.Event)
 			p := event.Regarding
 			get, err := lister.Pods(p.Namespace).Get(p.Name)

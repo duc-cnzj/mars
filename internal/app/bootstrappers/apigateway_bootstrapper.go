@@ -51,10 +51,10 @@ func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) e
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 		t := time.NewTimer(5 * time.Second)
 		defer t.Stop()
-		ch := make(chan struct{}, 1)
+		ch := make(chan struct{})
 		go func() {
 			socket.Wait.Wait()
-			ch <- struct{}{}
+			close(ch)
 		}()
 		select {
 		case <-ch:

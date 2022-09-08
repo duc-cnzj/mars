@@ -1,17 +1,22 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
 import { allPodContainers } from "../api/project";
-import { Radio, Skeleton, Button, Tag, message } from "antd";
+import { Radio, Skeleton, Button, Tag, message, Empty } from "antd";
 import pb from "../api/compiled";
 import LazyLog from "../pkg/lazylog/components/LazyLog";
 import { getToken } from "./../utils/token";
+import { useSelector } from "react-redux";
+import { selectPodEventProjectID } from "../store/reducers/namespaceWatcher";
+import { debounce } from "lodash";
+import PodStateTag from "./PodStateTag";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
   id: number;
   namespace: string;
-}> = ({ id, namespace, updatedAt }) => {
+  namespaceID: number;
+}> = ({ id, namespace, updatedAt, namespaceID }) => {
   const [value, setValue] = useState<string>("");
-  const [list, setList] = useState<pb.types.StateContainer[]>();
+  const [list, setList] = useState<pb.types.StateContainer[]>([]);
 
   const listContainer = useCallback(async () => {
     return allPodContainers({ project_id: id }).then((res) => {
@@ -19,6 +24,30 @@ const ProjectContainerLogs: React.FC<{
       return res;
     });
   }, [id]);
+  useEffect(() => {
+    if (
+      list.length > 0 &&
+      !list.map((v) => v.pod + "|" + v.container).includes(value)
+    ) {
+      setValue(list[0].pod + "|" + list[0].container);
+    }
+  }, [list, value]);
+  const projectIDStr = useSelector(selectPodEventProjectID);
+  useEffect(() => {
+    let d = debounce(() => {
+      listContainer();
+    }, 3000);
+    console.log("ns event: ", projectIDStr);
+    if (projectIDStr.split("-").length === 2) {
+      let pid = Number(projectIDStr.split("-")[1]);
+      if (pid === Number(id)) {
+        d();
+      }
+    }
+    return () => {
+      d.cancel();
+    };
+  }, [projectIDStr, listContainer, id]);
 
   useEffect(() => {
     listContainer().then((res) => {
@@ -39,67 +68,76 @@ const ProjectContainerLogs: React.FC<{
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Radio.Group value={value} style={{ marginBottom: 10 }}>
-        {list?.map((item) => (
-          <Radio
-            onClick={reloadLog}
-            key={item.pod + "|" + item.container}
-            value={item.pod + "|" + item.container}
-          >
-            {item.container}
-            {item.is_old && (
-              <span style={{ marginLeft: 2, fontSize: 10, color: "#ef4444" }}>
-                (old)
-              </span>
-            )}
-            <Tag color="magenta" style={{ marginLeft: 10 }}>
-              {item.pod}
-            </Tag>
-          </Radio>
-        ))}
-      </Radio.Group>
+      {list.length > 0 ? (
+        <>
+          <Radio.Group value={value} style={{ marginBottom: 10 }}>
+            {list?.map((item) => (
+              <Radio
+                onClick={reloadLog}
+                key={item.pod + "|" + item.container}
+                value={item.pod + "|" + item.container}
+              >
+                {item.container}
+                <PodStateTag pod={item} />
+              </Radio>
+            ))}
+          </Radio.Group>
 
-      <div
-        className="project-container-logs"
-        style={{
-          fontFamily: '"Fira code", "Fira Mono", monospace',
-          fontSize: 12,
-          height: "100%",
-        }}
-      >
-        <Skeleton active loading={!(pod && container)}>
-          <MyLogUtil
-            namespace={namespace}
-            freshTime={timestamp}
-            pod={pod}
-            container={container}
-            onError={{
-              praseJsonError: () => {
-                return (
-                  <span style={{ textAlign: "center" }}>
-                    <Button
-                      type="text"
-                      style={{ color: "red", fontSize: 12 }}
-                      size="small"
-                      onClick={() => setTimestamp(new Date().getTime())}
-                    >
-                      点击重新加载
-                    </Button>
-                  </span>
-                );
-              },
-              on404Error: (e) => {
-                listContainer().then((res) => {
-                  if (res.data.items.length > 0) {
-                    let first = res.data.items[0];
-                    setValue(first.pod + "|" + first.container);
-                  }
-                });
-              },
+          <div
+            className="project-container-logs"
+            style={{
+              fontFamily: '"Fira code", "Fira Mono", monospace',
+              fontSize: 12,
+              height: "100%",
             }}
-          />
-        </Skeleton>
-      </div>
+          >
+            <Skeleton active loading={!(pod && container)}>
+              <MyLogUtil
+                namespace={namespace}
+                freshTime={timestamp}
+                pod={pod}
+                container={container}
+                onError={{
+                  praseJsonError: () => {
+                    return (
+                      <span style={{ textAlign: "center" }}>
+                        <Button
+                          type="text"
+                          style={{ color: "red", fontSize: 12 }}
+                          size="small"
+                          onClick={() => setTimestamp(new Date().getTime())}
+                        >
+                          点击重新加载
+                        </Button>
+                      </span>
+                    );
+                  },
+                  on404Error: (e) => {
+                    listContainer().then((res) => {
+                      if (res.data.items.length > 0) {
+                        let first = res.data.items[0];
+                        setValue(first.pod + "|" + first.container);
+                      }
+                    });
+                  },
+                }}
+              />
+            </Skeleton>
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Empty description="列表还没有任何容器" />
+        </div>
+      )}
     </div>
   );
 };
@@ -133,7 +171,7 @@ const MyLogUtil: React.FC<{
           if (onError?.praseJsonError) {
             return onError?.praseJsonError(res.error);
           }
-          return ""
+          return "";
         }
         return res.result.log;
       }}

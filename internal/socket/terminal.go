@@ -14,7 +14,6 @@ import (
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -95,13 +94,17 @@ type MyPtyHandler struct {
 	recorder  contracts.RecorderInterface
 	id        string
 	conn      *WsConn
-	sizeChan  chan remotecommand.TerminalSize
 	doneChan  chan struct{}
 	sizeStore sizeStore
 
+	shellMu sync.RWMutex
 	shellCh chan *websocket_pb.TerminalMessage
 
-	closeable utils.Closeable
+	sizeMu   sync.RWMutex
+	sizeChan chan remotecommand.TerminalSize
+
+	closeMu sync.RWMutex
+	closed  bool
 }
 
 func (t *MyPtyHandler) SetShell(shell string) {
@@ -118,76 +121,6 @@ func (t *MyPtyHandler) Rows() uint16 {
 
 func (t *MyPtyHandler) Cols() uint16 {
 	return t.sizeStore.Cols()
-}
-
-func (t *MyPtyHandler) ResetTerminalRowCol(reset bool) {
-	t.sizeStore.ResetTerminalRowCol(reset)
-}
-
-func (t *MyPtyHandler) TerminalMessageChan() chan *websocket_pb.TerminalMessage {
-	return t.shellCh
-}
-
-func (t *MyPtyHandler) Recorder() contracts.RecorderInterface {
-	return t.recorder
-}
-
-func (t *MyPtyHandler) IsClosed() bool {
-	return t.closeable.IsClosed()
-}
-
-func (t *MyPtyHandler) ClosePreviousChannels() bool {
-	if !t.closeable.Close() {
-		return false
-	}
-	mlog.Debug("close prev chan")
-	close(t.shellCh)
-	close(t.sizeChan)
-	close(t.doneChan)
-	return true
-
-}
-func (t *MyPtyHandler) Close(reason string) bool {
-	if !t.closeable.Close() {
-		return false
-	}
-
-	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
-		Metadata: &websocket_pb.Metadata{
-			Id:     t.conn.id,
-			Uid:    t.conn.uid,
-			Slug:   t.id,
-			Type:   WsHandleExecShellMsg,
-			Result: ResultSuccess,
-		},
-		TerminalMessage: &websocket_pb.TerminalMessage{
-			SessionId: t.id,
-			Op:        OpStdout,
-			Data:      reason,
-		},
-		Container: &types.Container{
-			Namespace: t.Container().Namespace,
-			Pod:       t.Container().Pod,
-			Container: t.Container().Container,
-		},
-	})
-
-	t.shellCh <- &websocket_pb.TerminalMessage{
-		Op:        OpStdin,
-		Data:      ETX,
-		SessionId: t.id,
-	}
-	time.Sleep(200 * time.Millisecond)
-	t.shellCh <- &websocket_pb.TerminalMessage{
-		Op:        OpStdin,
-		Data:      END_OF_TRANSMISSION,
-		SessionId: t.id,
-	}
-	t.Recorder().Close()
-	close(t.shellCh)
-	close(t.sizeChan)
-	close(t.doneChan)
-	return true
 }
 
 func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
@@ -209,11 +142,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 		return copy(p, msg.Data), nil
 	case OpResize:
 		mlog.Debugf("[Websocket]: resize cols: %v  rows: %v", msg.Cols, msg.Rows)
-		select {
-		case t.sizeChan <- remotecommand.TerminalSize{Width: uint16(msg.Cols), Height: uint16(msg.Rows)}:
-		default:
-			mlog.Debug("[Websocket]: drop resize event")
-		}
+		t.Resize(remotecommand.TerminalSize{Width: uint16(msg.Cols), Height: uint16(msg.Rows)})
 		return 0, nil
 	default:
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
@@ -226,18 +155,14 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 		return len(p), fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
 	default:
 	}
-	if t.closeable.IsClosed() {
+	if t.IsClosed() {
 		return len(p), fmt.Errorf("[Websocket]: %v ws already closed", t.id)
 	}
 	t.recorder.Write(string(p))
 	if t.sizeStore.TerminalRowColNeedReset() && t.sizeStore.Cols() != 0 {
 		mlog.Debugf("reset shell size rows: %d, cols: %d", t.sizeStore.Rows(), t.sizeStore.Cols())
 		t.sizeStore.ResetTerminalRowCol(false)
-		select {
-		case t.sizeChan <- remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()}:
-		default:
-			mlog.Debug("[Websocket]: drop resize event")
-		}
+		t.Resize(remotecommand.TerminalSize{Width: t.sizeStore.Cols(), Height: t.sizeStore.Rows()})
 	}
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
@@ -262,6 +187,14 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (t *MyPtyHandler) ResetTerminalRowCol(reset bool) {
+	t.sizeStore.ResetTerminalRowCol(reset)
+}
+
+func (t *MyPtyHandler) Recorder() contracts.RecorderInterface {
+	return t.recorder
+}
+
 func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	select {
 	case size, ok := <-t.sizeChan:
@@ -278,6 +211,96 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	case <-t.doneChan:
 		return nil
 	}
+}
+
+func (t *MyPtyHandler) Send(m *websocket_pb.TerminalMessage) {
+	t.shellMu.Lock()
+	defer t.shellMu.Unlock()
+
+	select {
+	case <-t.doneChan:
+		close(t.shellCh)
+		mlog.Warning("shell chan closed")
+		return
+	case t.shellCh <- m:
+	default:
+		mlog.Warning("shell chan full")
+	}
+}
+
+func (t *MyPtyHandler) Resize(size remotecommand.TerminalSize) {
+	t.sizeMu.Lock()
+	defer t.sizeMu.Unlock()
+	select {
+	case <-t.doneChan:
+		close(t.sizeChan)
+		return
+	case t.sizeChan <- size:
+	default:
+		mlog.Warning("size chan full")
+	}
+}
+
+func (t *MyPtyHandler) IsClosed() bool {
+	t.closeMu.RLock()
+	defer t.closeMu.RUnlock()
+	return t.closed
+}
+
+func (t *MyPtyHandler) CloseDoneChan() bool {
+	t.closeMu.Lock()
+	defer t.closeMu.Unlock()
+	if t.closed {
+		return false
+	}
+	t.closed = true
+	mlog.Debug("close prev chan")
+	close(t.doneChan)
+	return true
+
+}
+
+func (t *MyPtyHandler) Close(reason string) bool {
+	t.closeMu.Lock()
+	defer t.closeMu.Unlock()
+	if t.closed {
+		return false
+	}
+	t.closed = true
+	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+		Metadata: &websocket_pb.Metadata{
+			Id:     t.conn.id,
+			Uid:    t.conn.uid,
+			Slug:   t.id,
+			Type:   WsHandleExecShellMsg,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket_pb.TerminalMessage{
+			SessionId: t.id,
+			Op:        OpStdout,
+			Data:      reason,
+		},
+		Container: &types.Container{
+			Namespace: t.Container().Namespace,
+			Pod:       t.Container().Pod,
+			Container: t.Container().Container,
+		},
+	})
+
+	t.Send(&websocket_pb.TerminalMessage{
+		Op:        OpStdin,
+		Data:      ETX,
+		SessionId: t.id,
+	})
+	time.Sleep(200 * time.Millisecond)
+	t.Send(&websocket_pb.TerminalMessage{
+		Op:        OpStdin,
+		Data:      END_OF_TRANSMISSION,
+		SessionId: t.id,
+	})
+	t.Recorder().Close()
+	close(t.doneChan)
+	return true
 }
 
 // Toast can be used to send the user any OOB messages
@@ -317,13 +340,7 @@ func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionId]; ok {
-		if !h.IsClosed() {
-			select {
-			case h.TerminalMessageChan() <- m:
-			default:
-				mlog.Warningf("[Websocket]: sessionId %v 的 shellCh 满了: %d", m.SessionId, len(h.TerminalMessageChan()))
-			}
-		}
+		h.Send(m)
 	}
 }
 
@@ -500,13 +517,14 @@ func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
 	mlog.Debug("done....")
 
 	spty := session.(*MyPtyHandler)
-	if spty.ClosePreviousChannels() {
-		session = &MyPtyHandler{
+	var newSession contracts.PtyHandler = session
+	if spty.CloseDoneChan() {
+		newSession = &MyPtyHandler{
 			container: spty.container,
 			recorder:  spty.recorder,
 			id:        spty.id,
 			conn:      spty.conn,
-			doneChan:  make(chan struct{}, 1),
+			doneChan:  make(chan struct{}),
 			sizeChan:  make(chan remotecommand.TerminalSize, 1),
 			shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 			sizeStore: sizeStore{
@@ -516,7 +534,7 @@ func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
 			},
 		}
 	}
-	return session
+	return newSession
 }
 
 type TerminalResponse struct {
@@ -540,7 +558,7 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		id:        sessionID,
 		conn:      conn,
 		sizeChan:  make(chan remotecommand.TerminalSize, 1),
-		doneChan:  make(chan struct{}, 1),
+		doneChan:  make(chan struct{}),
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 		recorder:  r,
 	}

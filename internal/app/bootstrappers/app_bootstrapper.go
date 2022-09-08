@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,46 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetPicture()
 	plugins.GetGitServer()
 	plugins.GetDomainManager()
+
+	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) {
+		ch := make(chan contracts.Obj[*v1.Pod], 100)
+		listener := "pod-watcher"
+		namespacePublisher := plugins.GetWsSender().New("", "").(contracts.ProjectPodEventPublisher)
+		app.K8sClient().PodFanOut.AddListener(listener, ch)
+
+		go func() {
+			defer recovery.HandlePanic(listener)
+			defer func() {
+				mlog.Debug("pod-watcher exit")
+				app.K8sClient().PodFanOut.RemoveListener(listener)
+				close(ch)
+			}()
+
+			for {
+				select {
+				case <-app.Done():
+					return
+				case obj, ok := <-ch:
+					if !ok {
+						return
+					}
+					switch obj.Type() {
+					case contracts.Add:
+						fallthrough
+					case contracts.Delete:
+						var ns models.Namespace
+						if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
+							mlog.Debugf("pod '%v': '%s' '%s' '%d'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID)
+							if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+								mlog.Warning(err)
+							}
+						}
+					default:
+					}
+				}
+			}
+		}()
+	})
 
 	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) {
 		// 需要更新 tls 证书

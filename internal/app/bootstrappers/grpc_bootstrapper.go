@@ -44,10 +44,10 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	done := make(chan struct{}, 1)
+	done := make(chan struct{})
 	go func() {
 		g.server.GracefulStop()
-		done <- struct{}{}
+		close(done)
 	}()
 
 	select {

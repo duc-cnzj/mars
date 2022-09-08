@@ -36,6 +36,7 @@ var handlers map[websocket_pb.Type]HandleRequestFunc = map[websocket_pb.Type]Han
 	WsCancel:             HandleWsCancel,
 	WsCreateProject:      HandleWsCreateProject,
 	WsUpdateProject:      HandleWsUpdateProject,
+	ProjectPodEvent:      HandleWsProjectPodEvent,
 }
 
 type WsConn struct {
@@ -97,14 +98,6 @@ func (c *WsConn) GetUser() contracts.UserInfo {
 	c.userMu.RLock()
 	defer c.userMu.RUnlock()
 	return c.user
-}
-
-func (c *WsConn) GetShellChannel(sessionID string) (chan *websocket_pb.TerminalMessage, error) {
-	if handler, ok := c.terminalSessions.Get(sessionID); ok {
-		return handler.TerminalMessageChan(), nil
-	}
-
-	return nil, fmt.Errorf("%v not found channel", sessionID)
 }
 
 type WebsocketManager struct {
@@ -192,7 +185,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 
 	NewMessageSender(wsconn, "", WsSetUid).SendMsg(wsconn.uid)
 
-	ch := make(chan struct{}, 1)
+	ch := make(chan struct{})
 	go func() {
 		var err error
 		defer func() {
@@ -200,7 +193,7 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 		}()
 		defer recovery.HandlePanic("[Websocket]: read recovery")
 		err = read(wsconn)
-		ch <- struct{}{}
+		close(ch)
 	}()
 
 	select {
@@ -304,6 +297,21 @@ func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
 	if claims, b := app.Auth().VerifyToken(input.Token); b {
 		c.SetUser(claims.UserInfo)
 		metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": claims.UserInfo.Name}).Inc()
+	}
+}
+
+func HandleWsProjectPodEvent(c *WsConn, t websocket_pb.Type, message []byte) {
+	var input websocket_pb.ProjectPodEventJoinInput
+	if err := proto.Unmarshal(message, &input); err != nil {
+		mlog.Error("[Websocket]: " + err.Error())
+		NewMessageSender(c, "", t).SendEndError(err)
+
+		return
+	}
+	if input.Join {
+		c.pubSub.(contracts.ProjectPodEventSubscriber).Join(input.GetProjectId())
+	} else {
+		c.pubSub.(contracts.ProjectPodEventSubscriber).Leave(input.GetNamespaceId(), input.GetProjectId())
 	}
 }
 

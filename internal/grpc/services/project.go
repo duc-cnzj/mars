@@ -85,7 +85,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		ExtraValues:  input.ExtraValues,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
 
-	ch := make(chan struct{}, 1)
+	ch := make(chan struct{})
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -94,7 +94,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		}
 	}()
 	err := socket.InstallProject(job)
-	ch <- struct{}{}
+	close(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		return err
 	}
 	user := MustGetUser(server.Context())
-	ch := make(chan struct{}, 1)
+	ch := make(chan struct{})
 
 	job := p.NewJobFunc(&websocket.CreateProjectInput{
 		Type:         t,
@@ -141,7 +141,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		}
 	}()
 	err := socket.InstallProject(job)
-	ch <- struct{}{}
+	close(ch)
 
 	return err
 }
@@ -224,10 +224,11 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 		for _, c := range item.Pod.Spec.Containers {
 			containerList = append(containerList,
 				&types.StateContainer{
-					Namespace: projectModel.Namespace.Name,
-					Pod:       item.Pod.Name,
-					Container: c.Name,
-					IsOld:     item.IsOld,
+					Namespace:   projectModel.Namespace.Name,
+					Pod:         item.Pod.Name,
+					Container:   c.Name,
+					IsOld:       item.IsOld,
+					Terminating: item.Pod.DeletionTimestamp != nil,
 				},
 			)
 		}

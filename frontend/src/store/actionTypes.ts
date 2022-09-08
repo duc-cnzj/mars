@@ -14,3 +14,5 @@ export const SET_SHELL_LOG = "SET_SHELL_LOG";
 
 export const SET_TIMER_START = "SET_TIMER_START";
 export const SET_TIMER_START_AT = "SET_TIMER_START_AT";
+
+export const PROJECT_POD_EVENT = "PROJECT_POD_EVENT";

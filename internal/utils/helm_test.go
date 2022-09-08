@@ -159,14 +159,14 @@ func Test_send(t *testing.T) {
 func Test_watchEvent(t *testing.T) {
 	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
-	ch := make(chan *eventv1.Event, 10)
+	ch := make(chan contracts.Obj[*eventv1.Event], 10)
 	go func() {
-		ch <- &eventv1.Event{
+		ch <- contracts.NewObj(nil, &eventv1.Event{
 			Regarding: v1.ObjectReference{
 				Namespace: "ns",
 				Name:      "app",
 			},
-		}
+		}, contracts.Add)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()
@@ -190,7 +190,7 @@ func Test_watchEvent(t *testing.T) {
 func Test_watchEvent_Error1(t *testing.T) {
 	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
-	ch := make(chan *eventv1.Event, 10)
+	ch := make(chan contracts.Obj[*eventv1.Event], 10)
 	go func() {
 		close(ch)
 		time.Sleep(2 * time.Second)
@@ -216,20 +216,20 @@ func Test_watchEvent_Error1(t *testing.T) {
 func Test_watchEvent_Error2(t *testing.T) {
 	t.Parallel()
 	ctx, cancelFn := context.WithCancel(context.TODO())
-	ch := make(chan *eventv1.Event, 10)
+	ch := make(chan contracts.Obj[*eventv1.Event], 10)
 	go func() {
-		ch <- &eventv1.Event{
+		ch <- contracts.NewObj(nil, &eventv1.Event{
 			Regarding: v1.ObjectReference{
 				Namespace: "ns",
 				Name:      "app1",
 			},
-		}
-		ch <- &eventv1.Event{
+		}, contracts.Add)
+		ch <- contracts.NewObj(nil, &eventv1.Event{
 			Regarding: v1.ObjectReference{
 				Namespace: "ns",
 				Name:      "app",
 			},
-		}
+		}, contracts.Add)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()
@@ -254,10 +254,10 @@ func Test_watchPodStatus(t *testing.T) {
 	t.Parallel()
 	var called int64
 	var cs = &ContainerGetterSetter{}
-	podCh := make(chan *v1.Pod, 10)
+	podCh := make(chan contracts.Obj[*v1.Pod], 10)
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	go func() {
-		podCh <- &v1.Pod{
+		podCh <- contracts.NewObj(nil, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 				Name:      "app",
@@ -289,7 +289,7 @@ func Test_watchPodStatus(t *testing.T) {
 					},
 				},
 			},
-		}
+		}, contracts.Add)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()
@@ -315,10 +315,10 @@ func Test_watchPodStatus_Error1(t *testing.T) {
 	t.Parallel()
 	var called int64
 	var cs = &ContainerGetterSetter{}
-	podCh := make(chan *v1.Pod, 10)
+	podCh := make(chan contracts.Obj[*v1.Pod], 10)
 	ctx, cancelFn := context.WithCancel(context.TODO())
 	go func() {
-		podCh <- &v1.Pod{
+		podCh <- contracts.NewObj[*v1.Pod](nil, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 				Name:      "app-not-match",
@@ -326,8 +326,8 @@ func Test_watchPodStatus_Error1(t *testing.T) {
 					"name": "app-not-match",
 				},
 			},
-		}
-		podCh <- &v1.Pod{
+		}, contracts.Add)
+		podCh <- contracts.NewObj[*v1.Pod](nil, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "ns",
 				Name:      "app",
@@ -344,7 +344,7 @@ func Test_watchPodStatus_Error1(t *testing.T) {
 					},
 				},
 			},
-		}
+		}, contracts.Add)
 		time.Sleep(2 * time.Second)
 		cancelFn()
 	}()

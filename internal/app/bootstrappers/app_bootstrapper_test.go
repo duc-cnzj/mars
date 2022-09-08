@@ -36,7 +36,7 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 	app := mock.NewMockApplicationInterface(controller)
 	instance.SetInstance(app)
 	h := &runHooksEqual{}
-	app.EXPECT().BeforeServerRunHooks(h).Times(1)
+	app.EXPECT().BeforeServerRunHooks(h).Times(2)
 
 	app.EXPECT().Config().Return(&config.Config{
 		GitServerPlugin:     config.Plugin{Name: "test_git_server"},

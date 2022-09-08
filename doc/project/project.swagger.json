@@ -541,6 +541,9 @@
         "is_old": {
           "type": "boolean",
           "title": "在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod"
+        },
+        "terminating": {
+          "type": "boolean"
         }
       }
     },
@@ -613,6 +616,7 @@
         "ClusterInfoSync",
         "InternalError",
         "ApplyProject",
+        "ProjectPodEvent",
         "HandleExecShell",
         "HandleExecShellMsg",
         "HandleCloseShell",

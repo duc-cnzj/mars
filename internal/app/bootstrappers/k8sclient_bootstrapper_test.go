@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
+
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,12 +112,12 @@ func Test_filterPod(t *testing.T) {
 }
 
 func Test_fanOut_AddListener(t *testing.T) {
-	ch := make(chan *v1.Pod, 10)
-	ch2 := make(chan *v1.Pod, 10)
+	ch := make(chan contracts.Obj[*v1.Pod], 10)
+	ch2 := make(chan contracts.Obj[*v1.Pod], 10)
 	fo := &fanOut[*v1.Pod]{
 		name:      "test-pod",
 		ch:        ch,
-		listeners: make(map[string]chan<- *v1.Pod),
+		listeners: make(map[string]chan<- contracts.Obj[*v1.Pod]),
 	}
 	fo.AddListener("aa", ch2)
 	fo.AddListener("aa", ch2)
@@ -124,12 +126,12 @@ func Test_fanOut_AddListener(t *testing.T) {
 }
 
 func Test_fanOut_RemoveListener(t *testing.T) {
-	ch := make(chan *v1.Pod, 10)
-	ch2 := make(chan *v1.Pod, 10)
+	ch := make(chan contracts.Obj[*v1.Pod], 10)
+	ch2 := make(chan contracts.Obj[*v1.Pod], 10)
 	fo := &fanOut[*v1.Pod]{
 		name:      "test-pod",
 		ch:        ch,
-		listeners: make(map[string]chan<- *v1.Pod),
+		listeners: make(map[string]chan<- contracts.Obj[*v1.Pod]),
 	}
 	fo.AddListener("aa", ch2)
 	fo.AddListener("aa", ch2)
@@ -142,22 +144,22 @@ func Test_fanOut_RemoveListener(t *testing.T) {
 }
 
 func Test_fanOut_Distribute(t *testing.T) {
-	ch := make(chan *v1.Pod, 10)
-	ch2 := make(chan *v1.Pod, 10)
+	ch := make(chan contracts.Obj[*v1.Pod], 10)
+	ch2 := make(chan contracts.Obj[*v1.Pod], 10)
 	fo := &fanOut[*v1.Pod]{
 		name:      "test-pod",
 		ch:        ch,
-		listeners: make(map[string]chan<- *v1.Pod),
+		listeners: make(map[string]chan<- contracts.Obj[*v1.Pod]),
 	}
 	fo.AddListener("aa", ch2)
 	ctx := make(chan struct{}, 1)
 	go func() {
 		pod := &v1.Pod{}
-		ch <- pod
+		ch <- contracts.NewObj(nil, pod, contracts.Add)
 		p := <-ch2
 		assert.Len(t, ch2, 0)
 		assert.Len(t, ch, 0)
-		assert.Same(t, pod, p)
+		assert.Same(t, pod, p.Current())
 		time.Sleep(2 * time.Second)
 		close(ctx)
 	}()

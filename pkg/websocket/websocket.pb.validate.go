@@ -355,6 +355,116 @@ var _ interface {
 	ErrorName() string
 } = TerminalMessageValidationError{}
 
+// Validate checks the field values on ProjectPodEventJoinInput with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectPodEventJoinInput) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectPodEventJoinInput with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectPodEventJoinInputMultiError, or nil if none found.
+func (m *ProjectPodEventJoinInput) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectPodEventJoinInput) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Type
+
+	// no validation rules for Join
+
+	// no validation rules for ProjectId
+
+	// no validation rules for NamespaceId
+
+	if len(errors) > 0 {
+		return ProjectPodEventJoinInputMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectPodEventJoinInputMultiError is an error wrapping multiple validation
+// errors returned by ProjectPodEventJoinInput.ValidateAll() if the designated
+// constraints aren't met.
+type ProjectPodEventJoinInputMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectPodEventJoinInputMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectPodEventJoinInputMultiError) AllErrors() []error { return m }
+
+// ProjectPodEventJoinInputValidationError is the validation error returned by
+// ProjectPodEventJoinInput.Validate if the designated constraints aren't met.
+type ProjectPodEventJoinInputValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectPodEventJoinInputValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectPodEventJoinInputValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectPodEventJoinInputValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectPodEventJoinInputValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectPodEventJoinInputValidationError) ErrorName() string {
+	return "ProjectPodEventJoinInputValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectPodEventJoinInputValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectPodEventJoinInput.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectPodEventJoinInputValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectPodEventJoinInputValidationError{}
+
 // Validate checks the field values on TerminalMessageInput with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -1788,3 +1898,136 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WsWithContainerMessageResponseValidationError{}
+
+// Validate checks the field values on WsProjectPodEventResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WsProjectPodEventResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WsProjectPodEventResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WsProjectPodEventResponseMultiError, or nil if none found.
+func (m *WsProjectPodEventResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WsProjectPodEventResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetMetadata()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WsProjectPodEventResponseValidationError{
+					field:  "Metadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WsProjectPodEventResponseValidationError{
+					field:  "Metadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetadata()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WsProjectPodEventResponseValidationError{
+				field:  "Metadata",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ProjectId
+
+	if len(errors) > 0 {
+		return WsProjectPodEventResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WsProjectPodEventResponseMultiError is an error wrapping multiple validation
+// errors returned by WsProjectPodEventResponse.ValidateAll() if the
+// designated constraints aren't met.
+type WsProjectPodEventResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WsProjectPodEventResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WsProjectPodEventResponseMultiError) AllErrors() []error { return m }
+
+// WsProjectPodEventResponseValidationError is the validation error returned by
+// WsProjectPodEventResponse.Validate if the designated constraints aren't met.
+type WsProjectPodEventResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WsProjectPodEventResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WsProjectPodEventResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WsProjectPodEventResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WsProjectPodEventResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WsProjectPodEventResponseValidationError) ErrorName() string {
+	return "WsProjectPodEventResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WsProjectPodEventResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWsProjectPodEventResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WsProjectPodEventResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WsProjectPodEventResponseValidationError{}

@@ -61,6 +61,7 @@ const (
 	WsHandleExecShellMsg = websocket_pb.Type_HandleExecShellMsg
 	WsHandleCloseShell   = websocket_pb.Type_HandleCloseShell
 	WsAuthorize          = websocket_pb.Type_HandleAuthorize
+	ProjectPodEvent      = websocket_pb.Type_ProjectPodEvent
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 1024 * 50

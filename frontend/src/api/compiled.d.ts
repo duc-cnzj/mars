@@ -8232,6 +8232,9 @@ export namespace types {
 
         /** StateContainer is_old */
         is_old?: (boolean|null);
+
+        /** StateContainer terminating */
+        terminating?: (boolean|null);
     }
 
     /** Represents a StateContainer. */
@@ -8254,6 +8257,9 @@ export namespace types {
 
         /** StateContainer is_old. */
         public is_old: boolean;
+
+        /** StateContainer terminating. */
+        public terminating: boolean;
 
         /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
@@ -9356,6 +9362,7 @@ export namespace websocket {
         ClusterInfoSync = 7,
         InternalError = 8,
         ApplyProject = 9,
+        ProjectPodEvent = 10,
         HandleExecShell = 50,
         HandleExecShellMsg = 51,
         HandleCloseShell = 52,
@@ -9522,6 +9529,62 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.TerminalMessage;
+    }
+
+    /** Properties of a ProjectPodEventJoinInput. */
+    interface IProjectPodEventJoinInput {
+
+        /** ProjectPodEventJoinInput type */
+        type?: (websocket.Type|null);
+
+        /** ProjectPodEventJoinInput join */
+        join?: (boolean|null);
+
+        /** ProjectPodEventJoinInput project_id */
+        project_id?: (number|null);
+
+        /** ProjectPodEventJoinInput namespace_id */
+        namespace_id?: (number|null);
+    }
+
+    /** Represents a ProjectPodEventJoinInput. */
+    class ProjectPodEventJoinInput implements IProjectPodEventJoinInput {
+
+        /**
+         * Constructs a new ProjectPodEventJoinInput.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: websocket.IProjectPodEventJoinInput);
+
+        /** ProjectPodEventJoinInput type. */
+        public type: websocket.Type;
+
+        /** ProjectPodEventJoinInput join. */
+        public join: boolean;
+
+        /** ProjectPodEventJoinInput project_id. */
+        public project_id: number;
+
+        /** ProjectPodEventJoinInput namespace_id. */
+        public namespace_id: number;
+
+        /**
+         * Encodes the specified ProjectPodEventJoinInput message. Does not implicitly {@link websocket.ProjectPodEventJoinInput.verify|verify} messages.
+         * @param message ProjectPodEventJoinInput message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: websocket.ProjectPodEventJoinInput, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ProjectPodEventJoinInput message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ProjectPodEventJoinInput
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.ProjectPodEventJoinInput;
     }
 
     /** Properties of a TerminalMessageInput. */
@@ -10082,5 +10145,49 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsWithContainerMessageResponse;
+    }
+
+    /** Properties of a WsProjectPodEventResponse. */
+    interface IWsProjectPodEventResponse {
+
+        /** WsProjectPodEventResponse metadata */
+        metadata?: (websocket.Metadata|null);
+
+        /** WsProjectPodEventResponse project_id */
+        project_id?: (number|null);
+    }
+
+    /** Represents a WsProjectPodEventResponse. */
+    class WsProjectPodEventResponse implements IWsProjectPodEventResponse {
+
+        /**
+         * Constructs a new WsProjectPodEventResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: websocket.IWsProjectPodEventResponse);
+
+        /** WsProjectPodEventResponse metadata. */
+        public metadata?: (websocket.Metadata|null);
+
+        /** WsProjectPodEventResponse project_id. */
+        public project_id: number;
+
+        /**
+         * Encodes the specified WsProjectPodEventResponse message. Does not implicitly {@link websocket.WsProjectPodEventResponse.verify|verify} messages.
+         * @param message WsProjectPodEventResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: websocket.WsProjectPodEventResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a WsProjectPodEventResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns WsProjectPodEventResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsProjectPodEventResponse;
     }
 }

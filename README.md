@@ -89,6 +89,12 @@ func main()  {
 
 ## TODO
 
+- [ ] pod 热更新
+  - 用户监听他打开的 ns 频道，当有 pod 发生变化时，发布变更，用户订阅变化，重新获取容器
+  - [ ] tabLog
+  - [ ] tabShell
+  - [ ] 超过一定数量数量，进行折叠
+  - [ ] channel 谁发谁关
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] namespace all -> list
