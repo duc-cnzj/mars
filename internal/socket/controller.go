@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,6 +41,8 @@ var handlers map[websocket_pb.Type]HandleRequestFunc = map[websocket_pb.Type]Han
 }
 
 type WsConn struct {
+	doneFunc func()
+
 	id   string
 	uid  string
 	conn contracts.WebsocketConn
@@ -62,7 +65,13 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 	id := uuid.New().String()
 
 	ps := plugins.GetWsSender().New(uid, id)
+	ctx, cancelFunc := context.WithCancel(context.TODO())
+	go func() {
+		defer recovery.HandlePanic("[ProjectPodEventSubscriber]: Run")
+		ps.(contracts.ProjectPodEventSubscriber).Run(ctx)
+	}()
 	var wsconn = &WsConn{
+		doneFunc:       cancelFunc,
 		pubSub:         ps,
 		id:             id,
 		uid:            uid,
@@ -80,6 +89,7 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 func (c *WsConn) Shutdown() {
 	mlog.Debug("[Websocket]: Ws exit ")
 
+	c.doneFunc()
 	c.cancelSignaler.CancelAll()
 	c.terminalSessions.CloseAll()
 	c.pubSub.Close()

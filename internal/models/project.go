@@ -75,8 +75,9 @@ func (project *Project) GetPodSelectors() []string {
 }
 
 type StatePod struct {
-	IsOld bool
-	Pod   corev1.Pod
+	IsOld       bool
+	Terminating bool
+	Pod         corev1.Pod
 }
 
 type SortStatePod []StatePod
@@ -86,6 +87,10 @@ func (s SortStatePod) Len() int {
 }
 
 func (s SortStatePod) Less(i, j int) bool {
+	if !s[i].Terminating && s[j].Terminating {
+		return true
+	}
+
 	if !s[i].IsOld && s[j].IsOld {
 		return true
 	}
@@ -182,8 +187,9 @@ func (project *Project) GetAllPods() SortStatePod {
 		}
 
 		newList = append(newList, StatePod{
-			IsOld: isOld,
-			Pod:   pod,
+			IsOld:       isOld,
+			Pod:         pod,
+			Terminating: pod.DeletionTimestamp != nil,
 		})
 	}
 	sort.Sort(newList)

@@ -1,6 +1,8 @@
 package contracts
 
 import (
+	"context"
+
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +29,7 @@ type PubSub interface {
 type ProjectPodEventSubscriber interface {
 	Join(projectID int64) error
 	Leave(nsID int64, projectID int64) error
+	Run(ctx context.Context) error
 }
 
 type ProjectPodEventPublisher interface {
