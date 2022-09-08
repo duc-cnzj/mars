@@ -167,4 +167,5 @@ func TestProjectPodEventListener(t *testing.T) {
 	}, contracts.Update)
 	time.Sleep(1 * time.Second)
 	close(ch)
+	time.Sleep(2 * time.Second)
 }
