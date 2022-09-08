@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -157,7 +158,7 @@ func TestProjectPodEventListener(t *testing.T) {
 			Name:      "p1",
 		},
 	}, contracts.Add)
-	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
 	podFanOutObj.ch <- contracts.NewObj(nil, &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "devtest-ns",
@@ -174,4 +175,14 @@ func TestProjectPodEventListener(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	close(ch)
 	wg.Wait()
+
+	podFanOutObj2 := &fanOut[*corev1.Pod]{
+		name:      "pod-2",
+		ch:        make(chan contracts.Obj[*corev1.Pod], 100),
+		listeners: make(map[string]chan<- contracts.Obj[*corev1.Pod]),
+	}
+
+	close(podFanOutObj2.ch)
+	podFanOutObj2.Distribute(nil)
+	assert.True(t, true)
 }

@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"testing"
@@ -99,4 +100,20 @@ func TestGetWsSender(t *testing.T) {
 	GetWsSender()
 	assert.Equal(t, 1, ma.callback)
 	assert.True(t, p.called)
+}
+
+func TestEmptyPubSub_Join(t *testing.T) {
+	assert.Nil(t, (&EmptyPubSub{}).Join(1))
+}
+
+func TestEmptyPubSub_Leave(t *testing.T) {
+	assert.Nil(t, (&EmptyPubSub{}).Leave(1, 1))
+}
+
+func TestEmptyPubSub_Run(t *testing.T) {
+	assert.Nil(t, (&EmptyPubSub{}).Run(context.TODO()))
+}
+
+func TestEmptyPubSub_Publish(t *testing.T) {
+	assert.Nil(t, (&EmptyPubSub{}).Publish(1, nil))
 }

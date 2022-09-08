@@ -646,4 +646,7 @@ func TestHandleWsProjectPodEvent(t *testing.T) {
 	})
 	ps.EXPECT().Join(int64(2)).Times(1)
 	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, marshal2)
+
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, []byte("xxxxx"))
 }
