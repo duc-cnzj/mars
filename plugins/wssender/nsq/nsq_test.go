@@ -432,13 +432,11 @@ func Test_nsq_Publish(t *testing.T) {
 		addr:     addr,
 	}
 	sub := ns.New("a", "a")
-	cancel, cancelFunc := context.WithCancel(context.TODO())
-	defer cancelFunc()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		sub.Run(cancel)
+		sub.Run(context.TODO())
 	}()
 	assert.Nil(t, sub.Join(int64(pmodel.ID)))
 	ch := sub.Subscribe()
@@ -449,9 +447,17 @@ func Test_nsq_Publish(t *testing.T) {
 			},
 		},
 	}))
+	assert.Nil(t, sub.Publish(int64(namespace.ID+1), &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"name": "app",
+			},
+		},
+	}))
 	<-ch
-	cancelFunc()
+	close(sub.(*nsq).eventMsgCh)
 	wg.Wait()
+	assert.Len(t, sub.(*nsq).eventMsgCh, 0)
 	assert.True(t, true)
 	ns.Destroy()
 }
