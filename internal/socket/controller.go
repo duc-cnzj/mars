@@ -54,6 +54,7 @@ type WsConn struct {
 	pubSub           contracts.PubSub
 	cancelSignaler   contracts.CancelSignaler
 	terminalSessions contracts.SessionMapper
+	doneCtx          context.Context
 }
 
 func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn {
@@ -66,11 +67,8 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 
 	ps := plugins.GetWsSender().New(uid, id)
 	ctx, cancelFunc := context.WithCancel(context.TODO())
-	go func() {
-		defer recovery.HandlePanic("[ProjectPodEventSubscriber]: Run")
-		ps.(contracts.ProjectPodEventSubscriber).Run(ctx)
-	}()
 	var wsconn = &WsConn{
+		doneCtx:        ctx,
 		doneFunc:       cancelFunc,
 		pubSub:         ps,
 		id:             id,
@@ -184,8 +182,12 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wsconn := wc.initConn(r, c)
-
 	defer wsconn.Shutdown()
+
+	go func() {
+		defer recovery.HandlePanic("[ProjectPodEventSubscriber]: Run")
+		wsconn.pubSub.Run(wsconn.doneCtx)
+	}()
 
 	go func() {
 		defer recovery.HandlePanic("Websocket: Write")
