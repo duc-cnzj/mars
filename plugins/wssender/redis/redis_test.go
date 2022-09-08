@@ -165,7 +165,7 @@ func Test_podEventManagers_Publish(t *testing.T) {
 
 	ps := rs.New("uid", "id")
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		ps.Run(cancel)
 	}()
 

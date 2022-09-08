@@ -255,14 +255,11 @@ func (n *nsq) Run(ctx context.Context) error {
 
 func (n *nsq) Publish(nsID int64, pod *v1.Pod) error {
 	room := getNsqProjectEventRoom(nsID)
-	marshal, err := json.Marshal(&projectEventObj{
+	marshal, _ := json.Marshal(&projectEventObj{
 		NamespaceID: nsID,
 		Pod:         pod,
 		Channel:     room,
 	})
-	if err != nil {
-		mlog.Error(err)
-	}
 	return n.producer.Publish(room, marshal)
 }
 

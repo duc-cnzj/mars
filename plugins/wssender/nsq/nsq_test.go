@@ -6,6 +6,9 @@ import (
 	"sync"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
@@ -401,4 +404,54 @@ func Test_setLogLevel(t *testing.T) {
 	setLogLevel(c)
 	c.Stop()
 	p.Stop()
+}
+
+func Test_nsq_Publish(t *testing.T) {
+	if skip {
+		t.Skip()
+	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	namespace := &models.Namespace{
+		Name: "ns",
+	}
+	db.Create(namespace)
+	pmodel := &models.Project{
+		Name:         "app",
+		PodSelectors: "name=app",
+		NamespaceId:  namespace.ID,
+	}
+	assert.Nil(t, db.Create(pmodel).Error)
+	ns := NsqSender{
+		producer: NewNsqProducer(),
+		cfg:      gonsq.NewConfig(),
+		addr:     addr,
+	}
+	sub := ns.New("a", "a")
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	defer cancelFunc()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		sub.Run(cancel)
+	}()
+	assert.Nil(t, sub.Join(int64(pmodel.ID)))
+	ch := sub.Subscribe()
+	assert.Nil(t, sub.Publish(int64(namespace.ID), &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"name": "app",
+			},
+		},
+	}))
+	<-ch
+	cancelFunc()
+	wg.Wait()
+	assert.True(t, true)
+	ns.Destroy()
 }
