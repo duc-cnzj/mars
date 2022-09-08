@@ -3,7 +3,9 @@ const initialState = {
   projectIDWithTimestamp: "",
 };
 
-export const selectPodEventProjectID = (state:{podEventWatcher: {projectIDWithTimestamp:string}}) => state.podEventWatcher.projectIDWithTimestamp;
+export const selectPodEventProjectID = (state: {
+  podEventWatcher: { projectIDWithTimestamp: string };
+}) => state.podEventWatcher.projectIDWithTimestamp;
 
 export default function podEventWatcher(
   state = initialState,

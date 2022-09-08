@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
-	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -77,16 +78,17 @@ func (n *NsqSender) Destroy() error {
 
 func (n *NsqSender) New(uid, id string) contracts.PubSub {
 	return &nsq{
-		addr:        n.addr,
-		lookupdAddr: n.lookupdAddr,
-		cfg:         n.cfg,
-		uid:         uid,
-		id:          id,
-		consumers:   map[string]*gonsq.Consumer{},
-		producer:    n.producer,
-		msgCh:       make(chan []byte, messageChSize),
-		eventMsgCh:  make(chan []byte, messageChSize),
-		channels:    map[string]struct{}{},
+		addr:         n.addr,
+		lookupdAddr:  n.lookupdAddr,
+		cfg:          n.cfg,
+		uid:          uid,
+		id:           id,
+		consumers:    map[string]*gonsq.Consumer{},
+		producer:     n.producer,
+		msgCh:        make(chan []byte, messageChSize),
+		eventMsgCh:   make(chan []byte, messageChSize),
+		channels:     map[string]struct{}{},
+		pidSelectors: map[int64][]labels.Selector{},
 	}
 }
 
@@ -104,6 +106,9 @@ type nsq struct {
 
 	mu       sync.RWMutex
 	channels map[string]struct{}
+
+	pMu          sync.RWMutex
+	pidSelectors map[int64][]labels.Selector
 }
 
 type jsonHandler struct {
@@ -147,6 +152,17 @@ func (n *nsq) Join(projectID int64) error {
 		defer n.mu.Unlock()
 		n.channels[channel] = struct{}{}
 	}()
+
+	func() {
+		n.pMu.Lock()
+		defer n.pMu.Unlock()
+		var selectors []labels.Selector
+		for _, s := range pmodel.GetPodSelectors() {
+			parse, _ := labels.Parse(s)
+			selectors = append(selectors, parse)
+		}
+		n.pidSelectors[projectID] = selectors
+	}()
 	return nil
 }
 
@@ -163,9 +179,16 @@ func (n *nsq) Leave(nsID int64, projectID int64) error {
 		}
 	}()
 
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	delete(n.channels, channel)
+	func() {
+		n.mu.Lock()
+		defer n.mu.Unlock()
+		delete(n.channels, channel)
+	}()
+	func() {
+		n.pMu.Lock()
+		defer n.pMu.Unlock()
+		delete(n.pidSelectors, projectID)
+	}()
 	return nil
 }
 
@@ -193,30 +216,31 @@ func (n *nsq) Run(ctx context.Context) error {
 				continue
 			}
 
-			var projects []models.Project
-			if err := app.DB().Select("id", "namespace_id", "pod_selectors").Where("`namespace_id` = ?", obj.NamespaceID).Find(&projects).Error; err != nil {
-				mlog.Error(err)
-			}
-			for _, project := range projects {
-				func() {
-					for _, s := range project.GetPodSelectors() {
-						parse, _ := labels.Parse(s)
-						if parse.Matches(labels.Set(obj.Pod.Labels)) {
-							marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
-								Metadata: &websocket_pb.Metadata{
-									Type:   websocket_pb.Type_ProjectPodEvent,
-									End:    true,
-									Result: websocket_pb.ResultType_Success,
-									To:     plugins.ToSelf,
-								},
-								ProjectId: int64(project.ID),
-							})
-							n.msgCh <- marshal
-							return
+			func() {
+				n.pMu.RLock()
+				defer n.pMu.RUnlock()
+				for pid, selectors := range n.pidSelectors {
+					func() {
+						for _, selector := range selectors {
+							if selector.Matches(labels.Set(obj.Pod.Labels)) {
+								marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
+									Metadata: &websocket_pb.Metadata{
+										Id:     n.id,
+										Uid:    n.uid,
+										Type:   websocket_pb.Type_ProjectPodEvent,
+										End:    true,
+										Result: websocket_pb.ResultType_Success,
+										To:     plugins.ToSelf,
+									},
+									ProjectId: pid,
+								})
+								n.msgCh <- marshal
+								return
+							}
 						}
-					}
-				}()
-			}
+					}()
+				}
+			}()
 		}
 	}
 }

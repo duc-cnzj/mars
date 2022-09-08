@@ -73,12 +73,12 @@ func (p *redisSender) New(uid, id string) contracts.PubSub {
 	ch := make(chan []byte, messageChSize)
 
 	pem := &podEventManagers{
-		ch:       ch,
-		done:     ctx,
-		id:       id,
-		rds:      p.rds,
-		channels: make(map[string]struct{}),
-		pubSub:   p.rds.Subscribe(context.TODO()),
+		ch:           ch,
+		id:           id,
+		rds:          p.rds,
+		channels:     make(map[string]struct{}),
+		pubSub:       p.rds.Subscribe(context.TODO()),
+		pidSelectors: make(map[int64][]labels.Selector),
 	}
 
 	return &rdsPubSub{
@@ -95,10 +95,11 @@ func (p *redisSender) New(uid, id string) contracts.PubSub {
 }
 
 type rdsPubSub struct {
-	ch       chan []byte
-	rds      *redis.Client
-	uid      string
-	id       string
+	rds *redis.Client
+	uid string
+	id  string
+	ch  chan []byte
+
 	wsPubSub *redis.PubSub
 
 	done     context.Context
@@ -120,13 +121,17 @@ func getRedisProjectEventRoom[T int64 | int](nsID T) string {
 
 type podEventManagers struct {
 	id     string
+	uid    string
 	rds    *redis.Client
 	pubSub *redis.PubSub
 
+	ch chan []byte
+
 	mu       sync.RWMutex
 	channels map[string]struct{}
-	ch       chan []byte
-	done     context.Context
+
+	pmu          sync.RWMutex
+	pidSelectors map[int64][]labels.Selector
 }
 
 func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
@@ -145,13 +150,28 @@ func (p *podEventManagers) Join(projectID int64) error {
 	if err := app.DB().First(&pmodel, projectID).Error; err != nil {
 		return err
 	}
+
 	channel := getRedisProjectEventRoom(pmodel.NamespaceId)
 	if err := p.pubSub.Subscribe(context.TODO(), channel); err != nil {
 		return err
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.channels[channel] = struct{}{}
+	func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		p.channels[channel] = struct{}{}
+	}()
+
+	func() {
+		p.pmu.Lock()
+		defer p.pmu.Unlock()
+		var selectors []labels.Selector
+		for _, s := range pmodel.GetPodSelectors() {
+			parse, _ := labels.Parse(s)
+			selectors = append(selectors, parse)
+		}
+		p.pidSelectors[projectID] = selectors
+	}()
+
 	return nil
 }
 
@@ -160,9 +180,17 @@ func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
 	if err := p.pubSub.Unsubscribe(context.TODO(), channel); err != nil {
 		return err
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	delete(p.channels, channel)
+	func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		delete(p.channels, channel)
+	}()
+	func() {
+		p.pmu.Lock()
+		defer p.pmu.Unlock()
+		delete(p.pidSelectors, projectID)
+	}()
+
 	return nil
 }
 
@@ -172,14 +200,11 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			mlog.Warning("podEventManagers exit")
-			return nil
-		case <-p.done.Done():
-			mlog.Warning("podEventManagers done")
+			mlog.Debug("podEventManagers exit")
 			return nil
 		case data, ok := <-ch:
 			if !ok {
-				mlog.Warning("podEventManagers ch closed")
+				mlog.Debug("podEventManagers ch closed")
 				return nil
 			}
 			fn := func() bool {
@@ -196,49 +221,51 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 			if err := json.Unmarshal([]byte(data.Payload), &obj); err != nil {
 				mlog.Error(err)
 			}
-			var projects []models.Project
-			if err := app.DB().Select("id", "namespace_id", "pod_selectors").Where("`namespace_id` = ?", obj.NamespaceID).Find(&projects).Error; err != nil {
-				mlog.Error(err)
-			}
-			for _, project := range projects {
-				func() {
-					for _, s := range project.GetPodSelectors() {
-						parse, _ := labels.Parse(s)
-						if parse.Matches(labels.Set(obj.Pod.Labels)) {
-							marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
-								Metadata: &websocket_pb.Metadata{
-									Type:   websocket_pb.Type_ProjectPodEvent,
-									End:    true,
-									Result: websocket_pb.ResultType_Success,
-									To:     plugins.ToSelf,
-								},
-								ProjectId: int64(project.ID),
-							})
-							p.ch <- marshal
-							return
+			func() {
+				p.pmu.RLock()
+				defer p.pmu.RUnlock()
+				for pid, selectors := range p.pidSelectors {
+					func() {
+						for _, selector := range selectors {
+							if selector.Matches(labels.Set(obj.Pod.Labels)) {
+								marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
+									Metadata: &websocket_pb.Metadata{
+										Id:     p.id,
+										Uid:    p.uid,
+										Type:   websocket_pb.Type_ProjectPodEvent,
+										End:    true,
+										Result: websocket_pb.ResultType_Success,
+										To:     plugins.ToSelf,
+									},
+									ProjectId: pid,
+								})
+								p.ch <- marshal
+								return
+							}
 						}
-					}
-				}()
-			}
+					}()
+				}
+			}()
 		}
 	}
+}
+
+func (p *rdsPubSub) ID() string {
+	return p.id
+}
+
+func (p *rdsPubSub) Uid() string {
+	return p.uid
+}
+
+func (p *rdsPubSub) Info() any {
+	return "<unknown>"
 }
 
 func (p *rdsPubSub) Close() error {
 	mlog.Debugf("[Websocket]: Closed, uid: %v id: %v", p.uid, p.id)
 	p.doneFunc()
 	return nil
-}
-
-func (p *rdsPubSub) Info() any {
-	return "<unknown>"
-}
-func (p *rdsPubSub) Uid() string {
-	return p.uid
-}
-
-func (p *rdsPubSub) ID() string {
-	return p.id
 }
 
 func (p *rdsPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
@@ -282,6 +309,7 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 				}
 			case <-p.done.Done():
 				p.wsPubSub.Close()
+				p.doneFunc()
 				mlog.Debugf("[Websocket]: redis channel closed, uid: %s, id: %v", p.uid, p.id)
 				return
 			}
