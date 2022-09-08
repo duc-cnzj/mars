@@ -1,3 +1,4 @@
 package wssender
 
-const messageChSize = 100
+const MessageChSize = 100
+const BroadcastRoom = "all"

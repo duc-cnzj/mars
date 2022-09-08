@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useSelector } from "react-redux";
 import { allPodContainers, isPodRunning } from "../api/project";
-import { message, Radio, Tag, Upload, Button } from "antd";
+import { message, Radio, Upload, Button, Empty } from "antd";
 import { selectSessions } from "../store/reducers/shell";
 import { debounce } from "lodash";
 import { Terminal } from "xterm";
@@ -21,13 +21,16 @@ import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
 import { maxUploadSize } from "../api/file";
+import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
+import PodStateTag from "./PodStateTag";
 
 const TabShell: React.FC<{
+  namespaceID: number;
   namespace: string;
   id: number;
   resizeAt: number;
   updatedAt: any;
-}> = ({ namespace, id, resizeAt, updatedAt }) => {
+}> = ({ namespaceID, namespace, id, resizeAt, updatedAt }) => {
   const [list, setList] = useState<pb.types.StateContainer[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [value, setValue] = useState<string>("");
@@ -46,15 +49,6 @@ const TabShell: React.FC<{
 
   let sname = useMemo(() => namespace + "|" + value, [namespace, value]);
 
-  useEffect(() => {
-    maxUploadSize().then(({ data }) => {
-      setMaxUploadInfo({
-        bytes: data.bytes,
-        humanizeSize: data.humanize_size,
-      });
-    });
-  }, []);
-
   const listContainer = useCallback(
     () =>
       allPodContainers({
@@ -65,6 +59,41 @@ const TabShell: React.FC<{
       }),
     [id]
   );
+
+  const projectIDStr = useSelector(selectPodEventProjectID);
+
+  useEffect(() => {
+    let d = debounce(() => {
+      listContainer();
+    }, 3000);
+    console.log("ns event: ", projectIDStr);
+    if (projectIDStr.split("-").length === 2) {
+      let pid = Number(projectIDStr.split("-")[1]);
+      if (pid === Number(id)) {
+        d();
+      }
+    }
+    return () => {
+      d.cancel();
+    };
+  }, [projectIDStr, listContainer, id]);
+  useEffect(() => {
+    if (
+      list.length > 0 &&
+      !list.map((v) => v.pod + "|" + v.container).includes(value)
+    ) {
+      setValue(list[0].pod + "|" + list[0].container);
+    }
+  }, [list, value]);
+
+  useEffect(() => {
+    maxUploadSize().then(({ data }) => {
+      setMaxUploadInfo({
+        bytes: data.bytes,
+        humanizeSize: data.humanize_size,
+      });
+    });
+  }, []);
 
   const sendMsg = useCallback(
     (msg: any) => {
@@ -117,8 +146,10 @@ const TabShell: React.FC<{
       if (frame.op === "toast") {
         message.error(frame.data);
         listContainer().then((res) => {
-          let first = res.data.items[0];
-          setValue(first.pod + "|" + first.container);
+          if (res.data.items.length> 0) {
+            let first = res.data.items[0];
+            setValue(first.pod + "|" + first.container);
+          }
         });
       }
     },
@@ -329,49 +360,59 @@ const TabShell: React.FC<{
         overflowY: "auto",
       }}
     >
-      <Radio.Group value={value} style={{ marginBottom: 5 }}>
-        {list.map((item) => (
-          <Radio
-            onClick={reconnect}
-            key={item.pod + "|" + item.container}
-            value={item.pod + "|" + item.container}
-          >
-            {item.container}
-            {item.is_old && (
-              <span style={{ marginLeft: 2, fontSize: 10, color: "#ef4444" }}>
-                (old)
-              </span>
-            )}
-            <Tag color="magenta" style={{ marginLeft: 10 }}>
-              {item.pod}
-            </Tag>
-          </Radio>
-        ))}
-      </Radio.Group>
+      {list.length > 0 ? (
+        <>
+          <Radio.Group value={value} style={{ marginBottom: 5 }}>
+            {list.map((item) => (
+              <Radio
+                onClick={reconnect}
+                key={item.pod + "|" + item.container}
+                value={item.pod + "|" + item.container}
+              >
+                {item.container}
+                <PodStateTag pod={item} />
+              </Radio>
+            ))}
+          </Radio.Group>
 
-      {value.length > 0 && term ? (
-        <div style={{ display: "flex", justifyContent: "start" }}>
-          <Upload {...props}>
-            <Button
-              disabled={loading}
-              loading={loading}
-              size="small"
-              style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
-              icon={<UploadOutlined />}
-            >
-              {loading ? "上传中" : "上传到容器"}
-            </Button>
-          </Upload>
-          <PodMetrics
-            namespace={namespace}
-            pod={value.split("|")[0]}
-            timestamp={timestamp}
-          />
-        </div>
+          {value.length > 0 && term && (
+            <>
+              <div style={{ display: "flex", justifyContent: "start" }}>
+                <Upload {...props}>
+                  <Button
+                    disabled={loading}
+                    loading={loading}
+                    size="small"
+                    style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
+                    icon={<UploadOutlined />}
+                  >
+                    {loading ? "上传中" : "上传到容器"}
+                  </Button>
+                </Upload>
+                <PodMetrics
+                  namespace={namespace}
+                  pod={value.split("|")[0]}
+                  timestamp={timestamp}
+                />
+              </div>
+            </>
+          )}
+
+          <div ref={ref} id="terminal" style={{ height: "100%" }} />
+        </>
       ) : (
-        <></>
+        <div
+          style={{
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Empty description="列表还没有任何容器" />
+        </div>
       )}
-      <div ref={ref} id="terminal" style={{ height: "100%" }}></div>
     </div>
   );
 };

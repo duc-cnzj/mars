@@ -319,7 +319,18 @@ func TestProject_ProtoTransform(t *testing.T) {
 func TestSortStatePod(t *testing.T) {
 	s := SortStatePod{
 		{
-			IsOld: false,
+			IsOld:       false,
+			Terminating: true,
+			Pod: v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "f"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+		},
+		{
+			IsOld:       false,
+			Terminating: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "a"},
 				Status: v1.PodStatus{
@@ -328,7 +339,8 @@ func TestSortStatePod(t *testing.T) {
 			},
 		},
 		{
-			IsOld: false,
+			IsOld:       false,
+			Terminating: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "e"},
 				Status: v1.PodStatus{
@@ -337,7 +349,8 @@ func TestSortStatePod(t *testing.T) {
 			},
 		},
 		{
-			IsOld: true,
+			IsOld:       true,
+			Terminating: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "b"},
 				Status: v1.PodStatus{
@@ -346,7 +359,8 @@ func TestSortStatePod(t *testing.T) {
 			},
 		},
 		{
-			IsOld: false,
+			IsOld:       false,
+			Terminating: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "c"},
 				Status: v1.PodStatus{
@@ -355,7 +369,8 @@ func TestSortStatePod(t *testing.T) {
 			},
 		},
 		{
-			IsOld: true,
+			IsOld:       true,
+			Terminating: false,
 			Pod: v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "d"},
 				Status: v1.PodStatus{
@@ -370,6 +385,7 @@ func TestSortStatePod(t *testing.T) {
 	assert.Equal(t, s[2].Pod.Name, "a")
 	assert.Equal(t, s[3].Pod.Name, "d")
 	assert.Equal(t, s[4].Pod.Name, "b")
+	assert.Equal(t, s[5].Pod.Name, "f")
 }
 
 func TestProject_SetPodSelectors(t *testing.T) {

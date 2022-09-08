@@ -5,10 +5,12 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
+	v1 "k8s.io/api/core/v1"
 )
 
 // MockPubSub is a mock of PubSub interface.
@@ -74,6 +76,62 @@ func (m *MockPubSub) Info() any {
 func (mr *MockPubSubMockRecorder) Info() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockPubSub)(nil).Info))
+}
+
+// Join mocks base method.
+func (m *MockPubSub) Join(arg0 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Join", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Join indicates an expected call of Join.
+func (mr *MockPubSubMockRecorder) Join(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Join", reflect.TypeOf((*MockPubSub)(nil).Join), arg0)
+}
+
+// Leave mocks base method.
+func (m *MockPubSub) Leave(arg0, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Leave", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Leave indicates an expected call of Leave.
+func (mr *MockPubSubMockRecorder) Leave(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Leave", reflect.TypeOf((*MockPubSub)(nil).Leave), arg0, arg1)
+}
+
+// Publish mocks base method.
+func (m *MockPubSub) Publish(arg0 int64, arg1 *v1.Pod) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Publish", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Publish indicates an expected call of Publish.
+func (mr *MockPubSubMockRecorder) Publish(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockPubSub)(nil).Publish), arg0, arg1)
+}
+
+// Run mocks base method.
+func (m *MockPubSub) Run(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Run", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Run indicates an expected call of Run.
+func (mr *MockPubSubMockRecorder) Run(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockPubSub)(nil).Run), arg0)
 }
 
 // Subscribe mocks base method.

@@ -60,8 +60,10 @@ type PtyHandler interface {
 
 	Container() Container
 	SetShell(string)
-	TerminalMessageChan() chan *websocket.TerminalMessage
 	Toast(string) error
+
+	Send(*websocket.TerminalMessage)
+	Resize(remotecommand.TerminalSize)
 
 	Recorder() RecorderInterface
 

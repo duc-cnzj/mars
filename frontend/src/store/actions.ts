@@ -10,6 +10,7 @@ import {
   SET_SHELL_LOG,
   SET_TIMER_START_AT,
   SET_TIMER_START,
+  PROJECT_POD_EVENT,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -105,6 +106,10 @@ export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
+export const setPodEventPID = (pid: number) => ({
+  type: PROJECT_POD_EVENT,
+  projectIDWithTimestamp: `${(new Date()).getTime()}-${pid}`,
+});
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
   dispatch(setNamespaceReload(true));
@@ -117,6 +122,10 @@ export const handleEvents = (
 ) => {
   return function (dispatch: Dispatch) {
     switch (data.type.valueOf()) {
+      case pb.websocket.Type.ProjectPodEvent:
+        let nsEvent = pb.websocket.WsProjectPodEventResponse.decode(input);
+        dispatch(setPodEventPID(nsEvent.project_id))
+        break;
       case pb.websocket.Type.SetUid:
         setUid(data.message);
         break;

@@ -493,24 +493,6 @@ func TestWebsocketManager_initConn2(t *testing.T) {
 	assert.NotEmpty(t, conn.uid)
 }
 
-func TestWsConn_GetShellChannel(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	sm := mock.NewMockSessionMapper(m)
-	sm.EXPECT().Get("sid").Return(nil, false).Times(1)
-	ws := &WsConn{
-		terminalSessions: sm,
-	}
-	_, err := ws.GetShellChannel("sid")
-	assert.Error(t, err)
-	pty := mock.NewMockPtyHandler(m)
-	ch := make(chan *websocket.TerminalMessage)
-	pty.EXPECT().TerminalMessageChan().Return(ch)
-	sm.EXPECT().Get("sid").Return(pty, true).Times(1)
-	chres, _ := ws.GetShellChannel("sid")
-	assert.Equal(t, ch, chres)
-}
-
 func TestWsConn_GetUser(t *testing.T) {
 	c := &WsConn{}
 	assert.IsType(t, contracts.UserInfo{}, c.GetUser())
@@ -538,7 +520,11 @@ func TestWsConn_Shutdown(t *testing.T) {
 	ps.EXPECT().Close().Times(1)
 	conn := mock.NewMockWebsocketConn(m)
 	conn.EXPECT().Close().Times(1)
+	var doneCalled bool
 	c := &WsConn{
+		doneFunc: func() {
+			doneCalled = true
+		},
 		conn:             conn,
 		cancelSignaler:   cs,
 		pubSub:           ps,
@@ -549,6 +535,7 @@ func TestWsConn_Shutdown(t *testing.T) {
 		Wait = NewWaitSocketExit()
 	}()
 	c.Shutdown()
+	assert.True(t, doneCalled)
 	assert.Equal(t, -1, Wait.Count())
 }
 
@@ -632,4 +619,34 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 
 func Test_Upgrader(t *testing.T) {
 	assert.True(t, upgrader.CheckOrigin(nil))
+}
+
+func TestHandleWsProjectPodEvent(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	c := &WsConn{
+		id:     "id",
+		uid:    "uid",
+		pubSub: ps,
+	}
+	marshal, _ := proto.Marshal(&websocket.ProjectPodEventJoinInput{
+		Type:        websocket.Type_ProjectPodEvent,
+		Join:        false,
+		ProjectId:   1,
+		NamespaceId: 1,
+	})
+	ps.EXPECT().Leave(int64(1), int64(1)).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, marshal)
+	marshal2, _ := proto.Marshal(&websocket.ProjectPodEventJoinInput{
+		Type:        websocket.Type_ProjectPodEvent,
+		Join:        true,
+		ProjectId:   2,
+		NamespaceId: 2,
+	})
+	ps.EXPECT().Join(int64(2)).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, marshal2)
+
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, []byte("xxxxx"))
 }

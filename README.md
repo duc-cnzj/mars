@@ -93,3 +93,4 @@ func main()  {
 - [ ] ratelimiter
 - [ ] namespace all -> list
 - [x] 部署的时候，如果启动失败是否可以有个选项查看日志？
+- [x] pod 热更新

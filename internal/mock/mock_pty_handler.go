@@ -147,6 +147,18 @@ func (mr *MockPtyHandlerMockRecorder) ResetTerminalRowCol(arg0 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetTerminalRowCol", reflect.TypeOf((*MockPtyHandler)(nil).ResetTerminalRowCol), arg0)
 }
 
+// Resize mocks base method.
+func (m *MockPtyHandler) Resize(arg0 remotecommand.TerminalSize) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Resize", arg0)
+}
+
+// Resize indicates an expected call of Resize.
+func (mr *MockPtyHandlerMockRecorder) Resize(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resize", reflect.TypeOf((*MockPtyHandler)(nil).Resize), arg0)
+}
+
 // Rows mocks base method.
 func (m *MockPtyHandler) Rows() uint16 {
 	m.ctrl.T.Helper()
@@ -161,6 +173,18 @@ func (mr *MockPtyHandlerMockRecorder) Rows() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rows", reflect.TypeOf((*MockPtyHandler)(nil).Rows))
 }
 
+// Send mocks base method.
+func (m *MockPtyHandler) Send(arg0 *websocket.TerminalMessage) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Send", arg0)
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockPtyHandlerMockRecorder) Send(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockPtyHandler)(nil).Send), arg0)
+}
+
 // SetShell mocks base method.
 func (m *MockPtyHandler) SetShell(arg0 string) {
 	m.ctrl.T.Helper()
@@ -171,20 +195,6 @@ func (m *MockPtyHandler) SetShell(arg0 string) {
 func (mr *MockPtyHandlerMockRecorder) SetShell(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetShell", reflect.TypeOf((*MockPtyHandler)(nil).SetShell), arg0)
-}
-
-// TerminalMessageChan mocks base method.
-func (m *MockPtyHandler) TerminalMessageChan() chan *websocket.TerminalMessage {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TerminalMessageChan")
-	ret0, _ := ret[0].(chan *websocket.TerminalMessage)
-	return ret0
-}
-
-// TerminalMessageChan indicates an expected call of TerminalMessageChan.
-func (mr *MockPtyHandlerMockRecorder) TerminalMessageChan() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TerminalMessageChan", reflect.TypeOf((*MockPtyHandler)(nil).TerminalMessageChan))
 }
 
 // Toast mocks base method.

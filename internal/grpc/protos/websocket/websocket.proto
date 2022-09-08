@@ -18,6 +18,7 @@ enum Type {
   ClusterInfoSync = 7;
   InternalError = 8;
   ApplyProject = 9;
+  ProjectPodEvent = 10;
 
   HandleExecShell = 50;
   HandleExecShellMsg = 51;
@@ -67,6 +68,14 @@ message TerminalMessage {
   string session_id = 3;
   uint32 rows = 4;
   uint32 cols = 5;
+}
+
+message ProjectPodEventJoinInput {
+  Type type = 1;
+
+  bool join = 2;
+  int64 project_id = 3;
+  int64 namespace_id = 4;
 }
 
 message TerminalMessageInput {
@@ -148,4 +157,10 @@ message WsWithContainerMessageResponse {
   Metadata metadata = 1;
 
   repeated types.Container containers = 2;
+}
+
+message WsProjectPodEventResponse {
+  Metadata metadata = 1;
+
+  int64 project_id = 2;
 }

@@ -38,14 +38,14 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 
 		eventFanOutObj = &fanOut[*eventsv1.Event]{
 			name:      "event",
-			ch:        make(chan *eventsv1.Event, 100),
-			listeners: make(map[string]chan<- *eventsv1.Event),
+			ch:        make(chan contracts.Obj[*eventsv1.Event], 100),
+			listeners: make(map[string]chan<- contracts.Obj[*eventsv1.Event]),
 		}
 
 		podFanOutObj = &fanOut[*corev1.Pod]{
 			name:      "pod",
-			ch:        make(chan *corev1.Pod, 100),
-			listeners: make(map[string]chan<- *corev1.Pod),
+			ch:        make(chan contracts.Obj[*corev1.Pod], 100),
+			listeners: make(map[string]chan<- contracts.Obj[*corev1.Pod]),
 		}
 	)
 
@@ -97,16 +97,22 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	podInf.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterPod(nsPrefix),
 		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj any) {
+				podFanOutObj.ch <- contracts.NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), contracts.Add)
+			},
 			UpdateFunc: func(oldObj, newObj any) {
 				old := oldObj.(*corev1.Pod)
 				curr := newObj.(*corev1.Pod)
 				if old.ResourceVersion != curr.ResourceVersion {
 					select {
-					case podFanOutObj.ch <- curr:
+					case podFanOutObj.ch <- contracts.NewObj[*corev1.Pod](old, curr, contracts.Update):
 					default:
 						mlog.Warningf("[INFORMER]: podFanOutObj full")
 					}
 				}
+			},
+			DeleteFunc: func(obj any) {
+				podFanOutObj.ch <- contracts.NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), contracts.Delete)
 			},
 		},
 	})
@@ -114,11 +120,10 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	eventInf.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterEvent(nsPrefix),
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-				event := obj.(*eventsv1.Event)
-				//mlog.Warningf("%s\t%s", event.Name, event.Note)
+			AddFunc: func(current any) {
+				event := current.(*eventsv1.Event)
 				select {
-				case eventFanOutObj.ch <- event:
+				case eventFanOutObj.ch <- contracts.NewObj[*eventsv1.Event](nil, event, contracts.Add):
 				default:
 					mlog.Warningf("[INFORMER]: eventFanOutObj full")
 				}
@@ -144,14 +149,20 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 
 func filterEvent(nsPrefix string) func(obj any) bool {
 	return func(obj any) bool {
-		e := obj.(*eventsv1.Event)
+		e, ok := obj.(*eventsv1.Event)
+		if !ok {
+			return false
+		}
 		return strings.HasPrefix(e.Namespace, nsPrefix) && e.Regarding.Kind == "Pod" && e.Reason != "Unhealthy"
 	}
 }
 
 func filterPod(nsPrefix string) func(obj any) bool {
 	return func(obj any) bool {
-		pod := obj.(*corev1.Pod)
+		pod, ok := obj.(*corev1.Pod)
+		if !ok {
+			return false
+		}
 		return strings.HasPrefix(pod.Namespace, nsPrefix)
 	}
 }
@@ -166,15 +177,15 @@ func (s *Startable) start() bool {
 
 type fanOut[T runtime2.Object] struct {
 	name string
-	ch   chan T
+	ch   chan contracts.Obj[T]
 
 	started Startable
 
 	listenerMu sync.Mutex
-	listeners  map[string]chan<- T
+	listeners  map[string]chan<- contracts.Obj[T]
 }
 
-func (f *fanOut[T]) AddListener(key string, ch chan<- T) {
+func (f *fanOut[T]) AddListener(key string, ch chan<- contracts.Obj[T]) {
 	f.listenerMu.Lock()
 	defer f.listenerMu.Unlock()
 	_, ok := f.listeners[key]

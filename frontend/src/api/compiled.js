@@ -17390,6 +17390,7 @@ export const types = $root.types = (() => {
          * @property {string|null} [pod] StateContainer pod
          * @property {string|null} [container] StateContainer container
          * @property {boolean|null} [is_old] StateContainer is_old
+         * @property {boolean|null} [terminating] StateContainer terminating
          */
 
         /**
@@ -17440,6 +17441,14 @@ export const types = $root.types = (() => {
         StateContainer.prototype.is_old = false;
 
         /**
+         * StateContainer terminating.
+         * @member {boolean} terminating
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.terminating = false;
+
+        /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
          * @function encode
          * @memberof types.StateContainer
@@ -17459,6 +17468,8 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.container);
             if (message.is_old != null && Object.hasOwnProperty.call(message, "is_old"))
                 writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_old);
+            if (message.terminating != null && Object.hasOwnProperty.call(message, "terminating"))
+                writer.uint32(/* id 5, wireType 0 =*/40).bool(message.terminating);
             return writer;
         };
 
@@ -17491,6 +17502,9 @@ export const types = $root.types = (() => {
                     break;
                 case 4:
                     message.is_old = reader.bool();
+                    break;
+                case 5:
+                    message.terminating = reader.bool();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -19916,6 +19930,7 @@ export const websocket = $root.websocket = (() => {
      * @property {number} ClusterInfoSync=7 ClusterInfoSync value
      * @property {number} InternalError=8 InternalError value
      * @property {number} ApplyProject=9 ApplyProject value
+     * @property {number} ProjectPodEvent=10 ProjectPodEvent value
      * @property {number} HandleExecShell=50 HandleExecShell value
      * @property {number} HandleExecShellMsg=51 HandleExecShellMsg value
      * @property {number} HandleCloseShell=52 HandleCloseShell value
@@ -19933,6 +19948,7 @@ export const websocket = $root.websocket = (() => {
         values[valuesById[7] = "ClusterInfoSync"] = 7;
         values[valuesById[8] = "InternalError"] = 8;
         values[valuesById[9] = "ApplyProject"] = 9;
+        values[valuesById[10] = "ProjectPodEvent"] = 10;
         values[valuesById[50] = "HandleExecShell"] = 50;
         values[valuesById[51] = "HandleExecShellMsg"] = 51;
         values[valuesById[52] = "HandleCloseShell"] = 52;
@@ -20291,6 +20307,129 @@ export const websocket = $root.websocket = (() => {
         };
 
         return TerminalMessage;
+    })();
+
+    websocket.ProjectPodEventJoinInput = (function() {
+
+        /**
+         * Properties of a ProjectPodEventJoinInput.
+         * @memberof websocket
+         * @interface IProjectPodEventJoinInput
+         * @property {websocket.Type|null} [type] ProjectPodEventJoinInput type
+         * @property {boolean|null} [join] ProjectPodEventJoinInput join
+         * @property {number|null} [project_id] ProjectPodEventJoinInput project_id
+         * @property {number|null} [namespace_id] ProjectPodEventJoinInput namespace_id
+         */
+
+        /**
+         * Constructs a new ProjectPodEventJoinInput.
+         * @memberof websocket
+         * @classdesc Represents a ProjectPodEventJoinInput.
+         * @implements IProjectPodEventJoinInput
+         * @constructor
+         * @param {websocket.IProjectPodEventJoinInput=} [properties] Properties to set
+         */
+        function ProjectPodEventJoinInput(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ProjectPodEventJoinInput type.
+         * @member {websocket.Type} type
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @instance
+         */
+        ProjectPodEventJoinInput.prototype.type = 0;
+
+        /**
+         * ProjectPodEventJoinInput join.
+         * @member {boolean} join
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @instance
+         */
+        ProjectPodEventJoinInput.prototype.join = false;
+
+        /**
+         * ProjectPodEventJoinInput project_id.
+         * @member {number} project_id
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @instance
+         */
+        ProjectPodEventJoinInput.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * ProjectPodEventJoinInput namespace_id.
+         * @member {number} namespace_id
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @instance
+         */
+        ProjectPodEventJoinInput.prototype.namespace_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified ProjectPodEventJoinInput message. Does not implicitly {@link websocket.ProjectPodEventJoinInput.verify|verify} messages.
+         * @function encode
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @static
+         * @param {websocket.ProjectPodEventJoinInput} message ProjectPodEventJoinInput message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ProjectPodEventJoinInput.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.type != null && Object.hasOwnProperty.call(message, "type"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
+            if (message.join != null && Object.hasOwnProperty.call(message, "join"))
+                writer.uint32(/* id 2, wireType 0 =*/16).bool(message.join);
+            if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+                writer.uint32(/* id 3, wireType 0 =*/24).int64(message.project_id);
+            if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
+                writer.uint32(/* id 4, wireType 0 =*/32).int64(message.namespace_id);
+            return writer;
+        };
+
+        /**
+         * Decodes a ProjectPodEventJoinInput message from the specified reader or buffer.
+         * @function decode
+         * @memberof websocket.ProjectPodEventJoinInput
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {websocket.ProjectPodEventJoinInput} ProjectPodEventJoinInput
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ProjectPodEventJoinInput.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.ProjectPodEventJoinInput();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.type = reader.int32();
+                    break;
+                case 2:
+                    message.join = reader.bool();
+                    break;
+                case 3:
+                    message.project_id = reader.int64();
+                    break;
+                case 4:
+                    message.namespace_id = reader.int64();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return ProjectPodEventJoinInput;
     })();
 
     websocket.TerminalMessageInput = (function() {
@@ -21533,6 +21672,101 @@ export const websocket = $root.websocket = (() => {
         };
 
         return WsWithContainerMessageResponse;
+    })();
+
+    websocket.WsProjectPodEventResponse = (function() {
+
+        /**
+         * Properties of a WsProjectPodEventResponse.
+         * @memberof websocket
+         * @interface IWsProjectPodEventResponse
+         * @property {websocket.Metadata|null} [metadata] WsProjectPodEventResponse metadata
+         * @property {number|null} [project_id] WsProjectPodEventResponse project_id
+         */
+
+        /**
+         * Constructs a new WsProjectPodEventResponse.
+         * @memberof websocket
+         * @classdesc Represents a WsProjectPodEventResponse.
+         * @implements IWsProjectPodEventResponse
+         * @constructor
+         * @param {websocket.IWsProjectPodEventResponse=} [properties] Properties to set
+         */
+        function WsProjectPodEventResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * WsProjectPodEventResponse metadata.
+         * @member {websocket.Metadata|null|undefined} metadata
+         * @memberof websocket.WsProjectPodEventResponse
+         * @instance
+         */
+        WsProjectPodEventResponse.prototype.metadata = null;
+
+        /**
+         * WsProjectPodEventResponse project_id.
+         * @member {number} project_id
+         * @memberof websocket.WsProjectPodEventResponse
+         * @instance
+         */
+        WsProjectPodEventResponse.prototype.project_id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified WsProjectPodEventResponse message. Does not implicitly {@link websocket.WsProjectPodEventResponse.verify|verify} messages.
+         * @function encode
+         * @memberof websocket.WsProjectPodEventResponse
+         * @static
+         * @param {websocket.WsProjectPodEventResponse} message WsProjectPodEventResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        WsProjectPodEventResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.metadata != null && Object.hasOwnProperty.call(message, "metadata"))
+                $root.websocket.Metadata.encode(message.metadata, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            if (message.project_id != null && Object.hasOwnProperty.call(message, "project_id"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int64(message.project_id);
+            return writer;
+        };
+
+        /**
+         * Decodes a WsProjectPodEventResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof websocket.WsProjectPodEventResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {websocket.WsProjectPodEventResponse} WsProjectPodEventResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        WsProjectPodEventResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.websocket.WsProjectPodEventResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    message.metadata = $root.websocket.Metadata.decode(reader, reader.uint32());
+                    break;
+                case 2:
+                    message.project_id = reader.int64();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        return WsProjectPodEventResponse;
     })();
 
     return websocket;

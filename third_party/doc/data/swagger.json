@@ -3122,6 +3122,9 @@
         },
         "pod": {
           "type": "string"
+        },
+        "terminating": {
+          "type": "boolean"
         }
       }
     },
@@ -3233,6 +3236,7 @@
         "ClusterInfoSync",
         "InternalError",
         "ApplyProject",
+        "ProjectPodEvent",
         "HandleExecShell",
         "HandleExecShellMsg",
         "HandleCloseShell",

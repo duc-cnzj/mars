@@ -272,6 +272,8 @@ func (m *StateContainer) validate(all bool) error {
 
 	// no validation rules for IsOld
 
+	// no validation rules for Terminating
+
 	if len(errors) > 0 {
 		return StateContainerMultiError(errors)
 	}
