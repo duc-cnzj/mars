@@ -33,7 +33,7 @@ func TestMain(t *testing.M) {
 		}
 	}
 	setDefault(&addr, "127.0.0.1:4150")
-	setDefault(&lookupdAddr, "127.0.0.1:4160")
+	setDefault(&lookupdAddr, "127.0.0.1:4161")
 	config := gonsq.NewConfig()
 	p, err := gonsq.NewProducer(addr, config)
 	if err != nil {
@@ -123,7 +123,7 @@ func Test_connect(t *testing.T) {
 	consumer, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
 	assert.Nil(t, connect(consumer, addr, "", nil))
 	consumer2, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
-	assert.Nil(t, connect(consumer2, "", lookupdAddr, nil))
+	assert.Nil(t, connect(consumer2, addr, lookupdAddr, nil))
 	consumer.Stop()
 	consumer2.Stop()
 }
@@ -305,6 +305,7 @@ func Test_nsq_Run(t *testing.T) {
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	assert.Nil(t, n.Run(cancel))
+	ns.Destroy()
 }
 
 func Test_nsq_Subscribe(t *testing.T) {
