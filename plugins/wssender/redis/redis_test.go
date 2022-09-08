@@ -1,4 +1,4 @@
-package wssender
+package redis
 
 import (
 	"context"
@@ -108,6 +108,7 @@ func Test_podEventManagers_Join(t *testing.T) {
 	}
 	assert.Nil(t, db.Create(pmodel).Error)
 	assert.Nil(t, ps.Join(int64(pmodel.ID)))
+	assert.Error(t, ps.Join(int64(999999)))
 
 	var selectors []labels.Selector
 	for _, s := range pmodel.GetPodSelectors() {

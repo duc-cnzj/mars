@@ -1,9 +1,11 @@
-package wssender
+package memory
 
 import (
 	"context"
 	"fmt"
 	"sync"
+
+	"github.com/duc-cnzj/mars/plugins/wssender"
 
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
@@ -48,7 +50,7 @@ func (ms *memorySender) Add(uid, id string) {
 
 	ms.Lock()
 	defer ms.Unlock()
-	st := &Conn{id: id, uid: uid, ch: make(chan []byte, messageChSize)}
+	st := &Conn{id: id, uid: uid, ch: make(chan []byte, wssender.MessageChSize)}
 	if _, ok := ms.conns[id]; !ok {
 		ms.conns[id] = st
 	}

@@ -11,7 +11,9 @@ import (
 	_ "github.com/duc-cnzj/mars/plugins/git_server/github"
 	_ "github.com/duc-cnzj/mars/plugins/git_server/gitlab"
 	_ "github.com/duc-cnzj/mars/plugins/picture"
-	_ "github.com/duc-cnzj/mars/plugins/wssender"
+	_ "github.com/duc-cnzj/mars/plugins/wssender/memory"
+	_ "github.com/duc-cnzj/mars/plugins/wssender/nsq"
+	_ "github.com/duc-cnzj/mars/plugins/wssender/redis"
 )
 
 //go:embed config_example.yaml

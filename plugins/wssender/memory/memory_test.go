@@ -1,8 +1,10 @@
-package wssender
+package memory
 
 import (
 	"context"
 	"testing"
+
+	"github.com/duc-cnzj/mars/plugins/wssender"
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -71,9 +73,13 @@ func Test_memorySender_Add(t *testing.T) {
 	assert.Nil(t, ps.Close())
 	ms.Add(ps.uid, ps.id)
 	assert.NotNil(t, ms.conns["2"])
-	assert.Equal(t, messageChSize, cap(ms.conns["2"].ch))
+	assert.Equal(t, wssender.MessageChSize, cap(ms.conns["2"].ch))
 	assert.Equal(t, "1", ms.conns["2"].uid)
 	assert.Equal(t, "2", ms.conns["2"].id)
+
+	assert.Len(t, ms.conns, 1)
+	ms.Add("", "")
+	assert.Len(t, ms.conns, 1)
 }
 
 func Test_memorySender_Delete(t *testing.T) {
@@ -129,6 +135,7 @@ func Test_memoryPubSub_Join(t *testing.T) {
 		NamespaceId:  ns.ID,
 	}
 	assert.Nil(t, db.Create(pmodel).Error)
+	assert.Nil(t, ps.Join(int64(pmodel.ID)))
 	assert.Nil(t, ps.Join(int64(pmodel.ID)))
 
 	var selectors []labels.Selector

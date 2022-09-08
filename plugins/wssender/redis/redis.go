@@ -1,4 +1,4 @@
-package wssender
+package redis
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/duc-cnzj/mars/plugins/wssender"
 
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
@@ -25,8 +27,6 @@ import (
 )
 
 var redisSenderName = "ws_sender_redis"
-
-const BroadcastRoom = "all"
 
 func init() {
 	dr := &redisSender{}
@@ -72,7 +72,7 @@ func (p *redisSender) Destroy() error {
 func (p *redisSender) New(uid, id string) contracts.PubSub {
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 
-	ch := make(chan []byte, messageChSize)
+	ch := make(chan []byte, wssender.MessageChSize)
 
 	pem := &podEventManagers{
 		ch:           ch,
@@ -276,21 +276,21 @@ func (p *rdsPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 }
 
 func (p *rdsPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
+	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
 	return nil
 }
 
 func (p *rdsPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
+	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
 	return nil
 }
 
 func (p *rdsPubSub) Subscribe() <-chan []byte {
-	if err := p.wsPubSub.Subscribe(context.TODO(), p.id, BroadcastRoom); err != nil {
+	if err := p.wsPubSub.Subscribe(context.TODO(), p.id, wssender.BroadcastRoom); err != nil {
 		mlog.Fatal(err)
 	}
 	channel := p.wsPubSub.Channel()
-	mlog.Debugf("[Websocket]: Subscribe Start id: %v channels: %v %s", p.id, p.id, BroadcastRoom)
+	mlog.Debugf("[Websocket]: Subscribe Start id: %v channels: %v %s", p.id, p.id, wssender.BroadcastRoom)
 	go func() {
 		defer recovery.HandlePanic("[PubSub]: Subscribe")
 		for {

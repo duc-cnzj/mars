@@ -1,4 +1,4 @@
-package wssender
+package nsq
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/duc-cnzj/mars/plugins/wssender"
 
 	"google.golang.org/protobuf/proto"
 
@@ -24,7 +26,7 @@ import (
 	gonsq "github.com/nsqio/go-nsq"
 )
 
-const ephemeralBroadroom = BroadcastRoom + "#ephemeral"
+const ephemeralBroadroom = wssender.BroadcastRoom + "#ephemeral"
 
 var nsqSenderName = "ws_sender_nsq"
 
@@ -85,8 +87,8 @@ func (n *NsqSender) New(uid, id string) contracts.PubSub {
 		id:           id,
 		consumers:    map[string]*gonsq.Consumer{},
 		producer:     n.producer,
-		msgCh:        make(chan []byte, messageChSize),
-		eventMsgCh:   make(chan []byte, messageChSize),
+		msgCh:        make(chan []byte, wssender.MessageChSize),
+		eventMsgCh:   make(chan []byte, wssender.MessageChSize),
 		channels:     map[string]struct{}{},
 		pidSelectors: map[int64][]labels.Selector{},
 	}
@@ -116,7 +118,7 @@ type jsonHandler struct {
 }
 
 func (j *jsonHandler) HandleMessage(m *gonsq.Message) error {
-	if len(m.Body) == 0 {
+	if m == nil || len(m.Body) == 0 {
 		return nil
 	}
 	j.ch <- m.Body
@@ -190,6 +192,12 @@ func (n *nsq) Leave(nsID int64, projectID int64) error {
 		delete(n.pidSelectors, projectID)
 	}()
 	return nil
+}
+
+type projectEventObj struct {
+	Channel     string  `json:"channel"`
+	NamespaceID int64   `json:"namespace_id"`
+	Pod         *v1.Pod `json:"pod"`
 }
 
 func (n *nsq) Run(ctx context.Context) error {
@@ -335,7 +343,7 @@ type handler struct {
 }
 
 func (h *handler) HandleMessage(m *gonsq.Message) error {
-	if len(m.Body) == 0 {
+	if m == nil || len(m.Body) == 0 {
 		return nil
 	}
 	message, _ := plugins.DecodeMessage(m.Body)
