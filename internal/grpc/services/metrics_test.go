@@ -294,7 +294,7 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(pod),
+		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
 	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
 		Namespace: "ns",
@@ -358,7 +358,7 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(pod),
+		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -404,7 +404,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(),
+		PodLister:     testutil.NewPodLister(),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -467,7 +467,7 @@ func TestMetricsSvc_StreamTopPod_Error2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(),
+		PodLister:     testutil.NewPodLister(),
 	}).AnyTimes()
 	ctx, cancel := context.WithCancel(context.TODO())
 	done := make(chan struct{})
@@ -499,7 +499,7 @@ func TestMetricsSvc_TopPod(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(),
+		PodLister:     testutil.NewPodLister(),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
@@ -532,7 +532,7 @@ func TestMetricsSvc_TopPod2(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(pod),
+		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
@@ -588,7 +588,7 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:        fk,
 		MetricsClient: mk,
-		PodLister:     NewPodLister(pod),
+		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
 	ms := new(MetricsSvc)
 	res, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{

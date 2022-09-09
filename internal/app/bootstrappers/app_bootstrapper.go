@@ -96,12 +96,22 @@ func ProjectPodEventListener(app contracts.ApplicationInterface) {
 					return
 				}
 				switch obj.Type() {
+				case contracts.Update:
+					if obj.Old().Status.Phase != obj.Current().Status.Phase {
+						mlog.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
+						var ns models.Namespace
+						if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
+							if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
+								mlog.Errorf("[PodEventListener]: %v", err)
+							}
+						}
+					}
 				case contracts.Add:
 					fallthrough
 				case contracts.Delete:
 					var ns models.Namespace
 					if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
-						mlog.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID)
+						mlog.Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
 						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {
 							mlog.Errorf("[PodEventListener]: %v", err)
 						}

@@ -10,9 +10,6 @@ import (
 	"testing"
 	"time"
 
-	v12 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-
 	"github.com/duc-cnzj/mars-client/v4/container"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -65,7 +62,7 @@ func TestContainer_ContainerLog(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	_, err := new(Container).ContainerLog(context.TODO(), &container.LogRequest{
@@ -105,7 +102,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 		},
 	}
 	fk := fake.NewSimpleClientset(pod)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, PodLister: NewPodLister(pod)}).AnyTimes()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, PodLister: testutil.NewPodLister(pod)}).AnyTimes()
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.File{})
@@ -207,7 +204,7 @@ func TestContainer_Exec(t *testing.T) {
 
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	err := (&Container{}).Exec(&container.ExecRequest{
@@ -265,7 +262,7 @@ func TestContainer_Exec_Success(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	var mu sync.Mutex
@@ -313,7 +310,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	var result []*container.ExecResponse
@@ -380,7 +377,7 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	var (
@@ -418,14 +415,16 @@ func TestContainer_IsPodExists(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 
-	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(
-		&v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod",
-				Namespace: "ns",
-			},
+	pod1 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod",
+			Namespace: "ns",
 		},
-	)})
+	}
+	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{
+		Client:    fake.NewSimpleClientset(pod1),
+		PodLister: testutil.NewPodLister(pod1),
+	})
 	exist, _ := new(Container).IsPodExists(context.TODO(), &container.IsPodExistsRequest{
 		Namespace: "nsxx",
 		Pod:       "podxxx",
@@ -453,7 +452,7 @@ func TestContainer_IsPodRunning(t *testing.T) {
 			Phase: "Running",
 		},
 	}
-	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(pod), PodLister: NewPodLister(pod)})
+	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(pod), PodLister: testutil.NewPodLister(pod)})
 	running, _ := new(Container).IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
 		Namespace: "nsxx",
 		Pod:       "podxxx",
@@ -464,14 +463,6 @@ func TestContainer_IsPodRunning(t *testing.T) {
 		Pod:       "pod",
 	})
 	assert.Equal(t, true, running.Running)
-}
-
-func NewPodLister(pods ...*v1.Pod) v12.PodLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
-	for _, po := range pods {
-		idxer.Add(po)
-	}
-	return v12.NewPodLister(idxer)
 }
 
 type streamLogServer struct {
@@ -546,7 +537,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	err := (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
@@ -599,7 +590,7 @@ func TestContainer_StreamContainerLog_AppDone(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	done := make(chan struct{})
@@ -638,7 +629,7 @@ func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod),
 	})
 
 	app.EXPECT().Done().Return(nil).AnyTimes()
@@ -776,7 +767,7 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 		},
 	}
 	fk := fake.NewSimpleClientset(pod)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, PodLister: NewPodLister(pod)}).AnyTimes()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, PodLister: testutil.NewPodLister(pod)}).AnyTimes()
 
 	up := mock.NewMockUploader(m)
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()

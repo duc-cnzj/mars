@@ -17391,6 +17391,7 @@ export const types = $root.types = (() => {
          * @property {string|null} [container] StateContainer container
          * @property {boolean|null} [is_old] StateContainer is_old
          * @property {boolean|null} [terminating] StateContainer terminating
+         * @property {boolean|null} [pending] StateContainer pending
          */
 
         /**
@@ -17449,6 +17450,14 @@ export const types = $root.types = (() => {
         StateContainer.prototype.terminating = false;
 
         /**
+         * StateContainer pending.
+         * @member {boolean} pending
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.pending = false;
+
+        /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
          * @function encode
          * @memberof types.StateContainer
@@ -17470,6 +17479,8 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 4, wireType 0 =*/32).bool(message.is_old);
             if (message.terminating != null && Object.hasOwnProperty.call(message, "terminating"))
                 writer.uint32(/* id 5, wireType 0 =*/40).bool(message.terminating);
+            if (message.pending != null && Object.hasOwnProperty.call(message, "pending"))
+                writer.uint32(/* id 6, wireType 0 =*/48).bool(message.pending);
             return writer;
         };
 
@@ -17505,6 +17516,9 @@ export const types = $root.types = (() => {
                     break;
                 case 5:
                     message.terminating = reader.bool();
+                    break;
+                case 6:
+                    message.pending = reader.bool();
                     break;
                 default:
                     reader.skipType(tag & 7);

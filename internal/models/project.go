@@ -17,7 +17,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
@@ -77,7 +76,8 @@ func (project *Project) GetPodSelectors() []string {
 type StatePod struct {
 	IsOld       bool
 	Terminating bool
-	Pod         corev1.Pod
+	Pending     bool
+	Pod         *corev1.Pod
 }
 
 type SortStatePod []StatePod
@@ -101,6 +101,14 @@ func (s SortStatePod) Less(i, j int) bool {
 		}
 	}
 
+	if !s[i].Pending && s[j].Pending {
+		return true
+	}
+
+	if s[i].IsOld == s[j].IsOld && s[i].Pending == s[j].Pending && s[i].Terminating == s[j].Terminating && s[i].Pod.Status.Phase == s[j].Pod.Status.Phase {
+		return s[i].Pod.CreationTimestamp.Time.Before(s[j].Pod.CreationTimestamp.Time)
+	}
+
 	return false
 }
 
@@ -111,7 +119,7 @@ func (s SortStatePod) Swap(i, j int) {
 const RevisionAnnotation = "deployment.kubernetes.io/revision"
 
 func (project *Project) GetAllPods() SortStatePod {
-	var list []corev1.Pod
+	var list []*corev1.Pod
 	var newList SortStatePod
 	var split []string
 	if len(project.PodSelectors) > 0 {
@@ -120,14 +128,16 @@ func (project *Project) GetAllPods() SortStatePod {
 	if len(split) == 0 {
 		return nil
 	}
-	notEqualSelector := fields.OneTermNotEqualSelector("status.phase", string(corev1.PodFailed))
-	for _, labels := range split {
-		l, _ := app.K8sClientSet().CoreV1().Pods(project.Namespace.Name).List(context.Background(), metav1.ListOptions{
-			LabelSelector: labels,
-			FieldSelector: notEqualSelector.String(),
-		})
+	for _, ls := range split {
+		selector, _ := metav1.ParseToLabelSelector(ls)
+		asSelector, _ := metav1.LabelSelectorAsSelector(selector)
 
-		list = append(list, l.Items...)
+		l, _ := app.K8sClient().PodLister.Pods(project.Namespace.Name).List(asSelector)
+		for _, pod := range l {
+			if pod.Status.Phase != corev1.PodFailed {
+				list = append(list, pod)
+			}
+		}
 	}
 
 	var m = make(map[string]*appsv1.ReplicaSet)
@@ -144,7 +154,7 @@ func (project *Project) GetAllPods() SortStatePod {
 					ok  bool
 				)
 				if _, ok = m[string(reference.UID)]; !ok {
-					rs, err = app.K8sClientSet().AppsV1().ReplicaSets(pod.Namespace).Get(context.TODO(), reference.Name, metav1.GetOptions{})
+					rs, err = app.K8sClient().ReplicaSetLister.ReplicaSets(pod.Namespace).Get(reference.Name)
 					if err != nil {
 						mlog.Debug(err)
 						continue
@@ -188,8 +198,9 @@ func (project *Project) GetAllPods() SortStatePod {
 
 		newList = append(newList, StatePod{
 			IsOld:       isOld,
-			Pod:         pod,
+			Pod:         pod.DeepCopy(),
 			Terminating: pod.DeletionTimestamp != nil,
+			Pending:     pod.Status.Phase == corev1.PodPending,
 		})
 	}
 	sort.Sort(newList)

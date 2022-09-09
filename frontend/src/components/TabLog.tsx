@@ -36,7 +36,7 @@ const ProjectContainerLogs: React.FC<{
   useEffect(() => {
     let d = debounce(() => {
       listContainer();
-    }, 3000);
+    }, 2000);
     console.log("ns event: ", projectIDStr);
     if (projectIDStr.split("-").length === 2) {
       let pid = Number(projectIDStr.split("-")[1]);

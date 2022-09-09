@@ -7,8 +7,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	v1 "k8s.io/api/core/v1"
-	v12 "k8s.io/client-go/listers/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	appsv1lister "k8s.io/client-go/listers/apps/v1"
+	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -39,10 +41,18 @@ func AssertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterfac
 	return e
 }
 
-func NewPodLister(pods ...*v1.Pod) v12.PodLister {
+func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 	for _, po := range pods {
 		idxer.Add(po)
 	}
-	return v12.NewPodLister(idxer)
+	return corev1lister.NewPodLister(idxer)
+}
+
+func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	for _, po := range rs {
+		idxer.Add(po)
+	}
+	return appsv1lister.NewReplicaSetLister(idxer)
 }

@@ -5,6 +5,7 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	appsv1 "k8s.io/client-go/listers/apps/v1"
 	v1 "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -59,6 +60,9 @@ type K8sClient struct {
 
 	PodInformer cache.SharedIndexInformer
 	PodLister   v1.PodLister
+
+	ReplicaSetInformer cache.SharedIndexInformer
+	ReplicaSetLister   appsv1.ReplicaSetLister
 
 	EventInformer cache.SharedIndexInformer
 

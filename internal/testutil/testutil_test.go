@@ -3,6 +3,7 @@ package testutil
 import (
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -59,5 +60,25 @@ func TestNewPodLister(t *testing.T) {
 	_, err = lister.Pods("ns").Get("app2")
 	assert.Nil(t, err)
 	_, err = lister.Pods("ns").Get("app3")
+	assert.Error(t, err)
+}
+
+func TestNewRsLister(t *testing.T) {
+	lister := NewRsLister(&appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "rs1",
+		},
+	}, &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "rs2",
+		},
+	})
+	_, err := lister.ReplicaSets("ns").Get("rs1")
+	assert.Nil(t, err)
+	_, err = lister.ReplicaSets("ns").Get("rs2")
+	assert.Nil(t, err)
+	_, err = lister.ReplicaSets("ns").Get("rs3")
 	assert.Error(t, err)
 }

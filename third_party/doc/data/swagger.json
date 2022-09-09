@@ -3120,6 +3120,9 @@
         "namespace": {
           "type": "string"
         },
+        "pending": {
+          "type": "boolean"
+        },
         "pod": {
           "type": "string"
         },

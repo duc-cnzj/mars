@@ -1,7 +1,7 @@
 import React from "react";
 import pb from "../api/compiled";
 import { Tag } from "antd";
-import { SyncOutlined } from "@ant-design/icons";
+import { SyncOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
   if (pod.terminating) {
@@ -12,6 +12,18 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
         style={{ marginLeft: 5 }}
       >
         {pod.pod} 停止中
+      </Tag>
+    );
+  }
+
+  if (pod.pending) {
+    return (
+      <Tag
+        icon={<LoadingOutlined spin />}
+        color="#93c5fd"
+        style={{ marginLeft: 5 }}
+      >
+        {pod.pod} 未就绪
       </Tag>
     );
   }

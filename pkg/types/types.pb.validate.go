@@ -274,6 +274,8 @@ func (m *StateContainer) validate(all bool) error {
 
 	// no validation rules for Terminating
 
+	// no validation rules for Pending
+
 	if len(errors) > 0 {
 		return StateContainerMultiError(errors)
 	}

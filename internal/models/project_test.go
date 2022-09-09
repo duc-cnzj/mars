@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/testutil"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/app/instance"
@@ -135,71 +137,72 @@ func TestProject_GetAllPods(t *testing.T) {
 			},
 		},
 	}
-	fk := fake2.NewSimpleClientset(
-		rs,
-		rs2,
-		rs3,
-		&v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod1",
-				Namespace: "test",
-				Labels: map[string]string{
-					"a": "a",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "ReplicaSet",
-						Name:       "rs",
-						UID:        "aaaa",
-					},
+	pod1 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "test",
+			Labels: map[string]string{
+				"a": "a",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "rs",
+					UID:        "aaaa",
 				},
 			},
 		},
-		&v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod4",
-				Namespace: "test",
-				Labels: map[string]string{
-					"b": "b",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "ReplicaSet",
-						Name:       "rs3",
-						UID:        "cccc",
-					},
+	}
+	pod2 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod4",
+			Namespace: "test",
+			Labels: map[string]string{
+				"b": "b",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "rs3",
+					UID:        "cccc",
 				},
 			},
 		},
-		&v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod3",
-				Namespace: "test",
-				Labels: map[string]string{
-					"c": "c",
+	}
+	pod3 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod3",
+			Namespace: "test",
+			Labels: map[string]string{
+				"c": "c",
+			},
+		},
+	}
+	pod4 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod2",
+			Namespace: "test",
+			Labels: map[string]string{
+				"b": "b",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "rs2",
+					UID:        "bbbb",
 				},
 			},
 		},
-		&v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod2",
-				Namespace: "test",
-				Labels: map[string]string{
-					"b": "b",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "ReplicaSet",
-						Name:       "rs2",
-						UID:        "bbbb",
-					},
-				},
-			},
-		})
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
+	}
+	fk := fake2.NewSimpleClientset(rs, rs2, rs3, pod1, pod2, pod3, pod4)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:           fk,
+		PodLister:        testutil.NewPodLister(pod1, pod2, pod3, pod4),
+		ReplicaSetLister: testutil.NewRsLister(rs, rs2, rs3),
+	}).AnyTimes()
 	m := Project{
 		ID:           1,
 		Namespace:    Namespace{Name: "test"},
@@ -321,8 +324,8 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: true,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "f"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "Terminating-PodRunning"},
 				Status: v1.PodStatus{
 					Phase: v1.PodRunning,
 				},
@@ -331,8 +334,8 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: false,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "a"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-1"},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},
@@ -341,18 +344,48 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: false,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "e"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "PodRunning-a", CreationTimestamp: metav1.Time{Time: time.Now()}},
 				Status: v1.PodStatus{
 					Phase: v1.PodRunning,
 				},
 			},
 		},
 		{
+			IsOld:       false,
+			Terminating: false,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-2"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
 			IsOld:       true,
 			Terminating: false,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "b"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "old-PodPending-a", CreationTimestamp: metav1.Time{Time: time.Now().Add(2 * time.Hour)}},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
+			IsOld:       false,
+			Terminating: true,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "Terminating-PodPending"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
+			IsOld:       true,
+			Terminating: false,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "old-PodPending-b", CreationTimestamp: metav1.Time{Time: time.Now()}},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},
@@ -361,8 +394,8 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: false,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "c"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "PodRunning-b", CreationTimestamp: metav1.Time{Time: time.Now().Add(2 * time.Hour)}},
 				Status: v1.PodStatus{
 					Phase: v1.PodRunning,
 				},
@@ -371,8 +404,8 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       true,
 			Terminating: false,
-			Pod: v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "d"},
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "old-PodRunning"},
 				Status: v1.PodStatus{
 					Phase: v1.PodRunning,
 				},
@@ -380,12 +413,21 @@ func TestSortStatePod(t *testing.T) {
 		},
 	}
 	sort.Sort(s)
-	assert.Equal(t, s[0].Pod.Name, "e")
-	assert.Equal(t, s[1].Pod.Name, "c")
-	assert.Equal(t, s[2].Pod.Name, "a")
-	assert.Equal(t, s[3].Pod.Name, "d")
-	assert.Equal(t, s[4].Pod.Name, "b")
-	assert.Equal(t, s[5].Pod.Name, "f")
+	var names []string
+	for _, pod := range s {
+		names = append(names, pod.Pod.Name)
+	}
+	assert.Equal(t, []string{
+		"PodRunning-a",
+		"PodRunning-b",
+		"Terminating-PodRunning",
+		"PodPending-2",
+		"PodPending-1",
+		"old-PodRunning",
+		"Terminating-PodPending",
+		"old-PodPending-b",
+		"old-PodPending-a",
+	}, names)
 }
 
 func TestProject_SetPodSelectors(t *testing.T) {

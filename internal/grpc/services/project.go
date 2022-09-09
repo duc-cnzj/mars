@@ -228,7 +228,8 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 					Pod:         item.Pod.Name,
 					Container:   c.Name,
 					IsOld:       item.IsOld,
-					Terminating: item.Pod.DeletionTimestamp != nil,
+					Terminating: item.Terminating,
+					Pending:     item.Pending,
 				},
 			)
 		}

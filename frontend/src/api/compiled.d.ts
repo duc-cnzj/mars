@@ -8235,6 +8235,9 @@ export namespace types {
 
         /** StateContainer terminating */
         terminating?: (boolean|null);
+
+        /** StateContainer pending */
+        pending?: (boolean|null);
     }
 
     /** Represents a StateContainer. */
@@ -8260,6 +8263,9 @@ export namespace types {
 
         /** StateContainer terminating. */
         public terminating: boolean;
+
+        /** StateContainer pending. */
+        public pending: boolean;
 
         /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.

@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -59,7 +58,7 @@ func (c *Container) IsPodRunning(_ context.Context, request *container.IsPodRunn
 }
 
 func (c *Container) IsPodExists(_ context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
-	_, err := app.K8sClientSet().CoreV1().Pods(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
+	_, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if err != nil && apierrors.IsNotFound(err) {
 		return &container.IsPodExistsResponse{Exists: false}, nil
 	}
@@ -79,7 +78,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 	}
 
 	if request.Container == "" {
-		pod, _ := app.K8sClientSet().CoreV1().Pods(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
+		pod, _ := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 		request.Container = FindDefaultContainer(pod)
 		mlog.Debug("使用默认的容器: ", request.Container)
 	}
@@ -260,7 +259,7 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 			pod = recv.Pod
 			namespace = recv.Namespace
 			if recv.Container == "" {
-				pod, err := app.K8sClientSet().CoreV1().Pods(recv.Namespace).Get(context.TODO(), recv.Pod, metav1.GetOptions{})
+				pod, err := app.K8sClient().PodLister.Pods(recv.Namespace).Get(recv.Pod)
 				if err != nil {
 					return err
 				}

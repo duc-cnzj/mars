@@ -544,6 +544,9 @@
         },
         "terminating": {
           "type": "boolean"
+        },
+        "pending": {
+          "type": "boolean"
         }
       }
     },

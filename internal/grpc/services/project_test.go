@@ -50,56 +50,73 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 		PodSelectors: "c=c",
 	}
 	db.Create(p)
-	fk := fake.NewSimpleClientset(
-		&v1.PodList{
-			Items: []v1.Pod{
+	pod1 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "test",
+			Labels: map[string]string{
+				"c": "c",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod3",
-						Namespace: "test",
-						Labels: map[string]string{
-							"c": "c",
-						},
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name: "c1",
-							},
-						},
-					},
-					// FIXME: kubeclient 不能做 fieldSelector 过滤
-					//Status: v1.PodStatus{
-					//	Phase: v1.PodFailed,
-					//},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod2",
-						Namespace: "test",
-						Labels: map[string]string{
-							"b": "b",
-						},
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name: "c3",
-							},
-							{
-								Name: "c4",
-							},
-						},
-					},
+					Name: "c5",
 				},
 			},
-		})
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk}).AnyTimes()
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+	pod2 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod2",
+			Namespace: "test",
+			Labels: map[string]string{
+				"c": "c",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: "c1",
+				},
+			},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodFailed,
+		},
+	}
+	pod3 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod3",
+			Namespace: "test",
+			Labels: map[string]string{
+				"b": "b",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: "c3",
+				},
+				{
+					Name: "c4",
+				},
+			},
+		},
+	}
+	fk := fake.NewSimpleClientset(pod1, pod2, pod3)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:    fk,
+		PodLister: testutil.NewPodLister(pod1, pod2, pod3),
+	}).AnyTimes()
 	containers, err := new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	assert.Len(t, containers.Items, 1)
-	assert.Equal(t, "pod3", containers.Items[0].Pod)
-	assert.Equal(t, "c1", containers.Items[0].Container)
+	assert.Equal(t, "pod1", containers.Items[0].Pod)
+	assert.Equal(t, "c5", containers.Items[0].Container)
 	_, err = new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
 	assert.Equal(t, "record not found", err.Error())
 }

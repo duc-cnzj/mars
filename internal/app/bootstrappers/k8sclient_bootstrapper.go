@@ -92,6 +92,8 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	}
 
 	inf := informers.NewSharedInformerFactory(clientset, 0)
+	rsInf := inf.Apps().V1().ReplicaSets().Informer()
+	rsLister := inf.Apps().V1().ReplicaSets().Lister()
 	podInf := inf.Core().V1().Pods().Informer()
 	podLister := inf.Core().V1().Pods().Lister()
 	podInf.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -131,17 +133,19 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		},
 	})
 	inf.Start(app.Done())
-	cache.WaitForCacheSync(nil, eventInf.HasSynced, podInf.HasSynced)
+	cache.WaitForCacheSync(nil, eventInf.HasSynced, podInf.HasSynced, rsInf.HasSynced)
 
 	app.SetK8sClient(&contracts.K8sClient{
-		Client:        clientset,
-		MetricsClient: metrics,
-		RestConfig:    config,
-		PodInformer:   podInf,
-		PodLister:     podLister,
-		EventInformer: eventInf,
-		EventFanOut:   eventFanOutObj,
-		PodFanOut:     podFanOutObj,
+		Client:             clientset,
+		MetricsClient:      metrics,
+		RestConfig:         config,
+		PodInformer:        podInf,
+		PodLister:          podLister,
+		ReplicaSetInformer: rsInf,
+		ReplicaSetLister:   rsLister,
+		EventInformer:      eventInf,
+		EventFanOut:        eventFanOutObj,
+		PodFanOut:          podFanOutObj,
 	})
 
 	return nil
