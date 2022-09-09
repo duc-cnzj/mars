@@ -204,14 +204,27 @@ func TestRecorder_Resize(t *testing.T) {
 	writer := bufio.NewWriter(bf)
 	tnow := time.Date(2022, 9, 1, 1, 0, 0, 0, time.Local)
 	r := &Recorder{
-		timer:  &fakeTimer{t: tnow},
-		shell:  "mock_bash",
-		buffer: writer,
+		startTime: tnow,
+		timer:     &fakeTimer{t: tnow},
+		shell:     "mock_bash",
+		buffer:    writer,
 	}
-	r.Resize(100, 100)
+	t0 := tnow.Add(1 * time.Second)
+	r.timer = &fakeTimer{t: t0}
+	assert.Nil(t, r.Resize(100, 100))
 	writer.Flush()
-	assert.Equal(t, fmt.Sprintf(startLine, 100, 100, tnow.Unix(), r.shell), bf.String())
+	assert.Equal(t, fmt.Sprintf(startLine, 100, 100, t0.Unix(), r.shell), bf.String())
 	assert.NotZero(t, r.currentStartTime.Get())
+	t1 := t0.Add(1 * time.Second)
+	r.timer = &fakeTimer{t: t1}
+	assert.Equal(t, ErrResizeTooFrequently, r.Resize(200, 200))
+	t3 := t0.Add(4 * time.Second)
+	r.timer = &fakeTimer{t: t3}
+	assert.Equal(t, ErrResizeTooFrequently, r.Resize(200, 200))
+	assert.True(t, t0.Equal(r.currentStartTime.Get()))
+	t4 := t0.Add(6 * time.Second)
+	r.timer = &fakeTimer{t: t4}
+	assert.Nil(t, r.Resize(200, 200))
 }
 
 type fakeTimer struct {
