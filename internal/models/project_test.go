@@ -334,6 +334,7 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: false,
+			Pending:     true,
 			Pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-1"},
 				Status: v1.PodStatus{
@@ -354,6 +355,7 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: false,
+			Pending:     true,
 			Pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-2"},
 				Status: v1.PodStatus{
@@ -362,8 +364,20 @@ func TestSortStatePod(t *testing.T) {
 			},
 		},
 		{
+			IsOld:       false,
+			Terminating: false,
+			Pending:     false,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "PodRunning-3"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+		},
+		{
 			IsOld:       true,
 			Terminating: false,
+			Pending:     true,
 			Pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "old-PodPending-a", CreationTimestamp: metav1.Time{Time: time.Now().Add(2 * time.Hour)}},
 				Status: v1.PodStatus{
@@ -374,6 +388,7 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       false,
 			Terminating: true,
+			Pending:     true,
 			Pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "Terminating-PodPending"},
 				Status: v1.PodStatus{
@@ -384,6 +399,7 @@ func TestSortStatePod(t *testing.T) {
 		{
 			IsOld:       true,
 			Terminating: false,
+			Pending:     true,
 			Pod: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "old-PodPending-b", CreationTimestamp: metav1.Time{Time: time.Now()}},
 				Status: v1.PodStatus{
@@ -411,20 +427,33 @@ func TestSortStatePod(t *testing.T) {
 				},
 			},
 		},
+		{
+			IsOld:       true,
+			Terminating: true,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "old-Terminating-PodRunning"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+		},
 	}
 	sort.Sort(s)
 	var names []string
 	for _, pod := range s {
 		names = append(names, pod.Pod.Name)
 	}
+
 	assert.Equal(t, []string{
+		"PodRunning-3",
 		"PodRunning-a",
 		"PodRunning-b",
-		"Terminating-PodRunning",
-		"PodPending-2",
 		"PodPending-1",
-		"old-PodRunning",
+		"PodPending-2",
+		"Terminating-PodRunning",
 		"Terminating-PodPending",
+		"old-PodRunning",
+		"old-Terminating-PodRunning",
 		"old-PodPending-b",
 		"old-PodPending-a",
 	}, names)

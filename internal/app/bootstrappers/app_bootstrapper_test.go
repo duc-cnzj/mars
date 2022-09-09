@@ -165,7 +165,7 @@ func TestProjectPodEventListener(t *testing.T) {
 			Name:      "p2",
 		},
 	}, contracts.Delete)
-	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1)
+	pubsub.EXPECT().Publish(int64(nsModel.ID), gomock.Any()).Times(1).Return(errors.New("xxx"))
 	podFanOutObj.ch <- contracts.NewObj(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "devtest-ns",
@@ -183,6 +183,8 @@ func TestProjectPodEventListener(t *testing.T) {
 			Phase: corev1.PodRunning,
 		},
 	}, contracts.Update)
+
+	podFanOutObj.ch <- contracts.NewObj[*corev1.Pod](nil, nil, contracts.FanOutType(999))
 	time.Sleep(1 * time.Second)
 	close(ch)
 	wg.Wait()
