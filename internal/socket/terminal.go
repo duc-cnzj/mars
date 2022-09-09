@@ -497,7 +497,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
 	var cols, rows uint16 = 106, 25
 	func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
+		ticker := time.NewTicker(200 * time.Millisecond)
 		af := time.NewTimer(3 * time.Second)
 		defer ticker.Stop()
 		defer af.Stop()

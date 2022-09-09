@@ -157,8 +157,8 @@ const TabShell: React.FC<{
   );
 
   const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
-    return ({ cols, rows }: { cols: number; rows: number }) => {
-      console.log(cols, rows);
+    return debounce(({ cols, rows }: { cols: number; rows: number }) => {
+      console.log("cols, rows. onTerminalResize");
       let s = pb.websocket.TerminalMessageInput.encode({
         type: pb.websocket.Type.HandleExecShellMsg,
         message: new pb.websocket.TerminalMessage({
@@ -169,7 +169,7 @@ const TabShell: React.FC<{
         }),
       }).finish();
       ws?.send(s);
-    };
+    }, 200);
   }, []);
 
   const handleCloseShell = useCallback(

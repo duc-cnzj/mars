@@ -217,13 +217,6 @@ func TestRecorder_Resize(t *testing.T) {
 	assert.NotZero(t, r.currentStartTime.Get())
 	t1 := t0.Add(1 * time.Second)
 	r.timer = &fakeTimer{t: t1}
-	assert.Equal(t, ErrResizeTooFrequently, r.Resize(200, 200))
-	t3 := t0.Add(4 * time.Second)
-	r.timer = &fakeTimer{t: t3}
-	assert.Equal(t, ErrResizeTooFrequently, r.Resize(200, 200))
-	assert.True(t, t0.Equal(r.currentStartTime.Get()))
-	t4 := t0.Add(6 * time.Second)
-	r.timer = &fakeTimer{t: t4}
 	assert.Nil(t, r.Resize(200, 200))
 }
 

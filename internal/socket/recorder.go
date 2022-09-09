@@ -3,7 +3,6 @@ package socket
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -79,15 +78,9 @@ func (r *Recorder) SetShell(sh string) {
 	r.shell = sh
 }
 
-var ErrResizeTooFrequently = errors.New("resize too frequently")
-
 func (r *Recorder) Resize(cols, rows uint16) error {
 	t := r.timer.Now()
 
-	// 防抖，5 秒内如果频繁 resize，则不分片, 允许在初始化不到 5 秒的时候改一次
-	if t.Sub(r.currentStartTime.Get()).Seconds() <= 5 && !r.startTime.Equal(r.currentStartTime.Get()) {
-		return ErrResizeTooFrequently
-	}
 	_, err := r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
 	r.currentStartTime.Set(t)
 	return err
