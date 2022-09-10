@@ -133,6 +133,12 @@ const TabShell: React.FC<{
       }, 300)(),
     [fitAddon]
   );
+  const setValuesByResult = useCallback((items: pb.types.StateContainer[]) => {
+    if (items.length > 0) {
+      let first = items[0];
+      setValue(first.pod + "|" + first.container);
+    }
+  }, []);
 
   const handleConnectionMessage = useCallback(
     (frame: pb.websocket.TerminalMessage, term: Terminal) => {
@@ -146,14 +152,11 @@ const TabShell: React.FC<{
       if (frame.op === "toast") {
         message.error(frame.data);
         listContainer().then((res) => {
-          if (res.data.items.length> 0) {
-            let first = res.data.items[0];
-            setValue(first.pod + "|" + first.container);
-          }
+          setValuesByResult(res.data.items);
         });
       }
     },
-    [listContainer]
+    [listContainer, setValuesByResult]
   );
 
   const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
@@ -195,10 +198,9 @@ const TabShell: React.FC<{
 
   useEffect(() => {
     listContainer().then((res) => {
-      let first = res.data.items[0];
-      setValue(first.pod + "|" + first.container);
+      setValuesByResult(res.data.items);
     });
-  }, [updatedAt, listContainer]);
+  }, [updatedAt, listContainer, setValuesByResult]);
 
   const getTerm = useCallback(
     (id: string, ws: WebSocket) => {
@@ -229,6 +231,12 @@ const TabShell: React.FC<{
       setSessionId(sid);
     }
   }, [sid]);
+
+  useEffect(() => {
+    if (list.length === 0 && term) {
+      term.dispose();
+    }
+  }, [list, term]);
 
   useEffect(() => {
     if (wsReady && sessionId && ws) {
@@ -281,8 +289,7 @@ const TabShell: React.FC<{
             } else {
               // message.error(res.data.reason);
               listContainer().then((res) => {
-                let first = res.data.items[0];
-                setValue(first.pod + "|" + first.container);
+                setValuesByResult(res.data.items);
               });
             }
           });
@@ -290,7 +297,7 @@ const TabShell: React.FC<{
         return e.target.value;
       });
     },
-    [namespace, initShell, listContainer]
+    [namespace, initShell, listContainer, setValuesByResult]
   );
 
   const beforeUpload = useCallback(
@@ -361,7 +368,7 @@ const TabShell: React.FC<{
       }}
     >
       {list.length > 0 ? (
-        <>
+        <div>
           <Radio.Group value={value} style={{ marginBottom: 5 }}>
             {list.map((item) => (
               <Radio
@@ -397,9 +404,7 @@ const TabShell: React.FC<{
               </div>
             </>
           )}
-
-          <div ref={ref} id="terminal" style={{ height: "100%" }} />
-        </>
+        </div>
       ) : (
         <div
           style={{
@@ -413,6 +418,11 @@ const TabShell: React.FC<{
           <Empty description="列表还没有任何容器" />
         </div>
       )}
+      <div
+        ref={ref}
+        id="terminal"
+        style={{ height: "100%", display: list.length > 0 ? "block" : "none" }}
+      />
     </div>
   );
 };

@@ -14,6 +14,13 @@ import (
 
 func TestStreamServerInterceptor(t *testing.T) {
 	assert.IsType(t, (grpc.StreamServerInterceptor)(nil), StreamServerInterceptor())
+	called := false
+	StreamServerInterceptor()("", nil, nil, func(srv any, stream grpc.ServerStream) error {
+		assert.IsType(t, (*recvWrapper)(nil), stream)
+		called = true
+		return nil
+	})
+	assert.True(t, called)
 }
 
 type mockValidator struct {
@@ -69,12 +76,13 @@ func (s *ss) RecvMsg(m any) error {
 }
 
 type v struct {
+	err    error
 	called bool
 }
 
 func (v *v) Validate() error {
 	v.called = true
-	return nil
+	return v.err
 }
 
 func Test_recvWrapper_RecvMsg(t *testing.T) {
@@ -82,4 +90,11 @@ func Test_recvWrapper_RecvMsg(t *testing.T) {
 	vv := &v{}
 	r.RecvMsg(vv)
 	assert.True(t, vv.called)
+
+	r1 := recvWrapper{ServerStream: &ss{}}
+	vv1 := &v{
+		err: errors.New("xxx"),
+	}
+	assert.Equal(t, "xxx", r1.RecvMsg(vv1).Error())
+	assert.True(t, vv1.called)
 }
