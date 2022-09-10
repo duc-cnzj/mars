@@ -227,8 +227,14 @@ const TabShell: React.FC<{
       term.open(ref.current);
       debouncedFit_();
       term.focus();
+
+      return () => {
+        term.dispose();
+        handleCloseShell(sessionId);
+        console.log("close id: ", sessionId);
+      };
     }
-  }, [ref, term, debouncedFit_]);
+  }, [ref, term, debouncedFit_, sessionId, handleCloseShell]);
 
   let sid = useMemo(() => sessions[sname]?.sessionID, [sessions, sname]);
   useEffect(() => {
@@ -247,14 +253,8 @@ const TabShell: React.FC<{
     if (wsReady && sessionId && ws) {
       const t = getTerm(sessionId, ws);
       setTerm(t);
-
-      return () => {
-        t.dispose();
-        handleCloseShell(sessionId);
-        console.log("close id: ", sessionId);
-      };
     }
-  }, [wsReady, sessionId, handleCloseShell, setTerm, ws, getTerm]);
+  }, [wsReady, sessionId, setTerm, ws, getTerm]);
 
   useEffect(() => {
     debouncedFit_();
