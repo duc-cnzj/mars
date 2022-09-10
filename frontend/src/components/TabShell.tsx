@@ -216,14 +216,19 @@ const TabShell: React.FC<{
       myterm.loadAddon(fitAddon);
       myterm.onResize(onTerminalResize(id, ws));
       myterm.onData(onTerminalSendString(id, ws));
-      ref.current !== null && myterm.open(ref.current);
-      debouncedFit_();
-      myterm.focus();
 
       return myterm;
     },
-    [onTerminalResize, onTerminalSendString, debouncedFit_, fitAddon]
+    [onTerminalResize, onTerminalSendString, fitAddon]
   );
+
+  useEffect(() => {
+    if (ref.current && term) {
+      term.open(ref.current);
+      debouncedFit_();
+      term.focus();
+    }
+  }, [ref, term, debouncedFit_]);
 
   let sid = useMemo(() => sessions[sname]?.sessionID, [sessions, sname]);
   useEffect(() => {
