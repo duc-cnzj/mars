@@ -372,7 +372,7 @@ const TabShell: React.FC<{
         overflowY: "auto",
       }}
     >
-      {list.length > 0 && value.length > 0 && term ? (
+      {list.length > 0 ? (
         <>
           <Radio.Group value={value} style={{ marginBottom: 5 }}>
             {list.map((item) => (
@@ -387,6 +387,7 @@ const TabShell: React.FC<{
             ))}
           </Radio.Group>
 
+          { value.length > 0 && term && 
           <div style={{ display: "flex", justifyContent: "start" }}>
             <Upload {...props}>
               <Button
@@ -404,7 +405,7 @@ const TabShell: React.FC<{
               pod={value.split("|")[0]}
               timestamp={timestamp}
             />
-          </div>
+          </div>}
         </>
       ) : (
         <div
