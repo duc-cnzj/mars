@@ -183,8 +183,18 @@ func Test_handleDownload(t *testing.T) {}
 
 func Test_handleDownloadConfig(t *testing.T) {}
 
-func Test_serveWs(t *testing.T) {}
-
 func TestApiGatewayBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"api", "gateway"}, (&ApiGatewayBootstrapper{}).Tags())
+}
+
+func Test_serveWs(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
+	r := mux.NewRouter()
+	serveWs(r)
+	assert.NotNil(t, r.Get("ws"))
+	assert.NotNil(t, r.Get("ws_info"))
+	assert.Nil(t, r.Get("xxx"))
 }

@@ -110,6 +110,15 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	assert.Nil(t, p.Next())
 	assert.Equal(t, uint16(100), p.sizeStore.Cols())
 	assert.Equal(t, uint16(200), p.sizeStore.Rows())
+
+	p2 := &MyPtyHandler{
+		recorder: r,
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}),
+	}
+	close(p2.doneChan)
+	p2.Resize(remotecommand.TerminalSize{})
+	assert.Len(t, p2.sizeChan, 0)
 }
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
@@ -165,6 +174,19 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	n, err = p.Read(b)
 	assert.Error(t, err)
 	assert.Greater(t, n, 0)
+
+	p2 := &MyPtyHandler{
+		id:       "duc",
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan: make(chan struct{}),
+	}
+	close(p2.doneChan)
+	bv := make([]byte, 100)
+	i, err := p2.Read(bv)
+	assert.Error(t, err)
+	assert.Equal(t, END_OF_TRANSMISSION, string(bv[:i]))
 }
 
 func TestMyPtyHandler_Recorder(t *testing.T) {

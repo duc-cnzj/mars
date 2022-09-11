@@ -296,8 +296,8 @@ func serveWs(mux *mux.Router) {
 	app.App().BeforeServerRunHooks(func(contracts.ApplicationInterface) {
 		ws.TickClusterHealth()
 	})
-	mux.HandleFunc("/api/ws_info", ws.Info)
-	mux.HandleFunc("/ws", ws.Ws)
+	mux.HandleFunc("/api/ws_info", ws.Info).Name("ws_info")
+	mux.HandleFunc("/ws", ws.Ws).Name("ws")
 }
 
 type ExportProject struct {
