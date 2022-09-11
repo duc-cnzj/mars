@@ -35,6 +35,10 @@ func TestNamespace_ImagePullSecretsArray(t *testing.T) {
 }
 
 func TestNamespace_ProtoTransform(t *testing.T) {
+	p := Project{
+		ID:   1,
+		Name: "proj",
+	}
 	m := &Namespace{
 		ID:               1,
 		Name:             "ns",
@@ -45,13 +49,13 @@ func TestNamespace_ProtoTransform(t *testing.T) {
 			Time:  time.Now().Add(-10 * time.Second),
 			Valid: true,
 		},
-		Projects: nil,
+		Projects: []Project{p},
 	}
 	assert.Equal(t, &types.NamespaceModel{
 		Id:               int64(m.ID),
 		Name:             m.Name,
 		ImagePullSecrets: []*types.ImagePullSecret{{Name: "a"}, {Name: "b"}},
-		Projects:         nil,
+		Projects:         []*types.ProjectModel{p.ProtoTransform()},
 		CreatedAt:        date.ToRFC3339DatetimeString(&m.CreatedAt),
 		UpdatedAt:        date.ToRFC3339DatetimeString(&m.UpdatedAt),
 		DeletedAt:        date.ToRFC3339DatetimeString(&m.DeletedAt.Time),

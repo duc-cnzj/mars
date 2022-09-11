@@ -50,6 +50,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 }
 
 type ss struct {
+	recvErr error
 }
 
 func (s *ss) SetHeader(md metadata.MD) error {
@@ -72,7 +73,7 @@ func (s *ss) SendMsg(m any) error {
 }
 
 func (s *ss) RecvMsg(m any) error {
-	return nil
+	return s.recvErr
 }
 
 type v struct {
@@ -97,4 +98,11 @@ func Test_recvWrapper_RecvMsg(t *testing.T) {
 	}
 	assert.Equal(t, "xxx", r1.RecvMsg(vv1).Error())
 	assert.True(t, vv1.called)
+
+	r2 := recvWrapper{ServerStream: &ss{
+		recvErr: errors.New("xxx"),
+	}}
+	vv2 := &v{}
+	assert.Equal(t, "xxx", r2.RecvMsg(vv2).Error())
+	assert.False(t, vv2.called)
 }

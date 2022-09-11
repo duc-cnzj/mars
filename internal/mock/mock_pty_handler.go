@@ -148,9 +148,11 @@ func (mr *MockPtyHandlerMockRecorder) ResetTerminalRowCol(arg0 any) *gomock.Call
 }
 
 // Resize mocks base method.
-func (m *MockPtyHandler) Resize(arg0 remotecommand.TerminalSize) {
+func (m *MockPtyHandler) Resize(arg0 remotecommand.TerminalSize) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Resize", arg0)
+	ret := m.ctrl.Call(m, "Resize", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Resize indicates an expected call of Resize.
@@ -174,9 +176,11 @@ func (mr *MockPtyHandlerMockRecorder) Rows() *gomock.Call {
 }
 
 // Send mocks base method.
-func (m *MockPtyHandler) Send(arg0 *websocket.TerminalMessage) {
+func (m *MockPtyHandler) Send(arg0 *websocket.TerminalMessage) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Send", arg0)
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Send indicates an expected call of Send.

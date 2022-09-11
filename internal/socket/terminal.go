@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -213,32 +214,41 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	}
 }
 
-func (t *MyPtyHandler) Send(m *websocket_pb.TerminalMessage) {
+func (t *MyPtyHandler) Send(m *websocket_pb.TerminalMessage) error {
 	t.shellMu.Lock()
 	defer t.shellMu.Unlock()
 
 	select {
 	case <-t.doneChan:
 		close(t.shellCh)
-		mlog.Warning("shell chan closed")
-		return
+		return errors.New("doneChan closed")
+	default:
+	}
+
+	select {
 	case t.shellCh <- m:
 	default:
-		mlog.Warning("shell chan full")
+		return errors.New("shellCh chan full")
 	}
+	return nil
 }
 
-func (t *MyPtyHandler) Resize(size remotecommand.TerminalSize) {
+func (t *MyPtyHandler) Resize(size remotecommand.TerminalSize) error {
 	t.sizeMu.Lock()
 	defer t.sizeMu.Unlock()
 	select {
 	case <-t.doneChan:
 		close(t.sizeChan)
-		return
+		return errors.New("doneChan closed")
+	default:
+	}
+
+	select {
 	case t.sizeChan <- size:
 	default:
-		mlog.Warning("size chan full")
+		return errors.New("sizeChan chan full")
 	}
+	return nil
 }
 
 func (t *MyPtyHandler) IsClosed() bool {

@@ -17,6 +17,8 @@ func TestNsqLoggerAdapter_Output(t *testing.T) {
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Error(gomock.Any()).Times(1)
+	l.EXPECT().Debug(gomock.Any()).Times(1)
 	nsql := &NsqLoggerAdapter{}
 	nsql.Output(1, "")
+	nsql.Output(1, "TOPIC_NOT_FOUND")
 }

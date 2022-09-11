@@ -110,6 +110,24 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	assert.Nil(t, p.Next())
 	assert.Equal(t, uint16(100), p.sizeStore.Cols())
 	assert.Equal(t, uint16(200), p.sizeStore.Rows())
+
+	p2 := &MyPtyHandler{
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}),
+	}
+	close(p2.doneChan)
+	p2.Resize(remotecommand.TerminalSize{})
+	assert.Len(t, p2.sizeChan, 0)
+
+	p3 := &MyPtyHandler{
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		doneChan: make(chan struct{}),
+	}
+	assert.Nil(t, p3.Resize(remotecommand.TerminalSize{}))
+	assert.Equal(t, "sizeChan chan full", p3.Resize(remotecommand.TerminalSize{}).Error())
+	close(p3.doneChan)
+	assert.Equal(t, "doneChan closed", p3.Resize(remotecommand.TerminalSize{}).Error())
+	assert.Len(t, p3.sizeChan, 1)
 }
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
@@ -165,6 +183,32 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	n, err = p.Read(b)
 	assert.Error(t, err)
 	assert.Greater(t, n, 0)
+
+	p2 := &MyPtyHandler{
+		id:       "duc",
+		recorder: &Recorder{},
+		sizeChan: make(chan remotecommand.TerminalSize, 1),
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan: make(chan struct{}),
+	}
+	close(p2.doneChan)
+	bv := make([]byte, 100)
+	i, err := p2.Read(bv)
+	assert.Error(t, err)
+	assert.Equal(t, END_OF_TRANSMISSION, string(bv[:i]))
+
+	p3 := &MyPtyHandler{
+		id:       "duc",
+		recorder: &Recorder{},
+		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
+		doneChan: make(chan struct{}),
+	}
+	assert.Len(t, p3.shellCh, 0)
+	assert.Nil(t, p3.Send(nil))
+	assert.Equal(t, "shellCh chan full", p3.Send(nil).Error())
+	close(p3.doneChan)
+	assert.Equal(t, "doneChan closed", p3.Send(nil).Error())
+	assert.Len(t, p3.shellCh, 1)
 }
 
 func TestMyPtyHandler_Recorder(t *testing.T) {

@@ -78,11 +78,18 @@ const TabShell: React.FC<{
     };
   }, [projectIDStr, listContainer, id]);
   useEffect(() => {
-    if (
-      list.length > 0 &&
-      !list.map((v) => v.pod + "|" + v.container).includes(value)
-    ) {
-      setValue(list[0].pod + "|" + list[0].container);
+    if (list.length > 0) {
+      if (value === "") {
+        setValue(list[0].pod + "|" + list[0].container);
+        return
+      }
+       if (!list.map((v) => v.pod + "|" + v.container).includes(value)) {
+        setValue(list[0].pod + "|" + list[0].container);
+        return
+      }
+    }
+    if (list.length === 0 && value.length !== 0) {
+      setValue("")
     }
   }, [list, value]);
 
@@ -137,6 +144,8 @@ const TabShell: React.FC<{
     if (items.length > 0) {
       let first = items[0];
       setValue(first.pod + "|" + first.container);
+    } else {
+      setValue("");
     }
   }, []);
 
@@ -216,13 +225,13 @@ const TabShell: React.FC<{
       myterm.loadAddon(fitAddon);
       myterm.onResize(onTerminalResize(id, ws));
       myterm.onData(onTerminalSendString(id, ws));
-      ref.current !== null && myterm.open(ref.current);
+      ref.current && myterm.open(ref.current);
       debouncedFit_();
       myterm.focus();
 
       return myterm;
     },
-    [onTerminalResize, onTerminalSendString, debouncedFit_, fitAddon]
+    [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_]
   );
 
   let sid = useMemo(() => sessions[sname]?.sessionID, [sessions, sname]);
@@ -249,7 +258,7 @@ const TabShell: React.FC<{
         console.log("close id: ", sessionId);
       };
     }
-  }, [wsReady, sessionId, handleCloseShell, setTerm, ws, getTerm]);
+  }, [wsReady, sessionId, setTerm, ws, getTerm, handleCloseShell]);
 
   useEffect(() => {
     debouncedFit_();
@@ -368,7 +377,7 @@ const TabShell: React.FC<{
       }}
     >
       {list.length > 0 ? (
-        <div>
+        <>
           <Radio.Group value={value} style={{ marginBottom: 5 }}>
             {list.map((item) => (
               <Radio
@@ -383,28 +392,26 @@ const TabShell: React.FC<{
           </Radio.Group>
 
           {value.length > 0 && term && (
-            <>
-              <div style={{ display: "flex", justifyContent: "start" }}>
-                <Upload {...props}>
-                  <Button
-                    disabled={loading}
-                    loading={loading}
-                    size="small"
-                    style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
-                    icon={<UploadOutlined />}
-                  >
-                    {loading ? "上传中" : "上传到容器"}
-                  </Button>
-                </Upload>
-                <PodMetrics
-                  namespace={namespace}
-                  pod={value.split("|")[0]}
-                  timestamp={timestamp}
-                />
-              </div>
-            </>
+            <div style={{ display: "flex", justifyContent: "start" }}>
+              <Upload {...props}>
+                <Button
+                  disabled={loading}
+                  loading={loading}
+                  size="small"
+                  style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
+                  icon={<UploadOutlined />}
+                >
+                  {loading ? "上传中" : "上传到容器"}
+                </Button>
+              </Upload>
+              <PodMetrics
+                namespace={namespace}
+                pod={value.split("|")[0]}
+                timestamp={timestamp}
+              />
+            </div>
           )}
-        </div>
+        </>
       ) : (
         <div
           style={{
@@ -421,8 +428,8 @@ const TabShell: React.FC<{
       <div
         ref={ref}
         id="terminal"
-        style={{ height: "100%", display: list.length > 0 ? "block" : "none" }}
-      />
+        style={{ height: "100%", display: value.length > 0 ? "block" : "none" }}
+      ></div>
     </div>
   );
 };

@@ -74,9 +74,11 @@ func TestNsqSender_Initialize(t *testing.T) {
 	}
 	ns := &NsqSender{}
 	assert.Nil(t, ns.Initialize(map[string]any{
-		"addr":        addr,
-		"lookupdAddr": lookupdAddr,
+		"addr":         addr,
+		"lookupd_addr": lookupdAddr,
 	}))
+	assert.Equal(t, ns.lookupdAddr, lookupdAddr)
+	assert.Equal(t, ns.addr, addr)
 	assert.NotNil(t, ns.producer)
 	ns.producer.Stop()
 
@@ -124,11 +126,17 @@ func Test_connect(t *testing.T) {
 		t.Skip()
 	}
 	consumer, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
-	assert.Nil(t, connect(consumer, addr, "", nil))
+	assert.Nil(t, connect(consumer, addr, "", &noneHandler{}))
 	consumer2, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
-	assert.Nil(t, connect(consumer2, addr, lookupdAddr, nil))
+	assert.Nil(t, connect(consumer2, addr, lookupdAddr, &noneHandler{}))
 	consumer.Stop()
 	consumer2.Stop()
+}
+
+type noneHandler struct{}
+
+func (n *noneHandler) HandleMessage(message *gonsq.Message) error {
+	return nil
 }
 
 func Test_getNsqProjectEventRoom(t *testing.T) {
@@ -136,9 +144,9 @@ func Test_getNsqProjectEventRoom(t *testing.T) {
 		t.Skip()
 	}
 	consumer, _ := gonsq.NewConsumer("test", "duc1", gonsq.NewConfig())
-	connect(consumer, addr, "", nil)
+	connect(consumer, addr, "", &noneHandler{})
 	consumer2, _ := gonsq.NewConsumer("test", "duc2", gonsq.NewConfig())
-	connect(consumer2, addr, "", nil)
+	connect(consumer2, addr, "", &noneHandler{})
 	n := &nsq{
 		addr: addr,
 		consumers: map[string]*gonsq.Consumer{
@@ -150,9 +158,9 @@ func Test_getNsqProjectEventRoom(t *testing.T) {
 	_, ok := <-consumer.StopChan
 	assert.False(t, ok)
 	consumer3, _ := gonsq.NewConsumer("test", "duc3", gonsq.NewConfig())
-	connect(consumer3, addr, "", nil)
+	connect(consumer3, addr, "", &noneHandler{})
 	consumer4, _ := gonsq.NewConsumer("test", "duc4", gonsq.NewConfig())
-	connect(consumer4, addr, "", nil)
+	connect(consumer4, addr, "", &noneHandler{})
 	n2 := &nsq{
 		addr:        addr,
 		lookupdAddr: lookupdAddr,
@@ -186,11 +194,11 @@ func Test_handler_HandleMessage(t *testing.T) {
 	assert.Len(t, h.msgCh, 1)
 }
 
-func Test_jsonHandler_HandleMessage(t *testing.T) {
+func Test_directHandler_HandleMessage(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	h := &jsonHandler{
+	h := &directHandler{
 		ch: make(chan []byte, 10),
 	}
 	assert.Nil(t, h.HandleMessage(nil))

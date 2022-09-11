@@ -7,23 +7,19 @@ import (
 	"fmt"
 	"sync"
 
+	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/adapter"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/plugins/wssender"
 
+	gonsq "github.com/nsqio/go-nsq"
 	"google.golang.org/protobuf/proto"
-
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/models"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/duc-cnzj/mars/internal/contracts"
-
-	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-
-	"github.com/duc-cnzj/mars/internal/adapter"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/plugins"
-	gonsq "github.com/nsqio/go-nsq"
 )
 
 const ephemeralBroadroom = wssender.BroadcastRoom + "#ephemeral"
@@ -52,13 +48,20 @@ func (n *NsqSender) Name() string {
 
 func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	n.cfg = gonsq.NewConfig()
+	// 坑:
+	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
+	// 本地 k8s 搭建 nsq 集群时，访问 lookupd 返回的是集群内部的 ip，不通的
+	n.cfg.MaxInFlight = 1000
+
 	if s, ok := args["addr"]; ok {
+		mlog.Debugf("[NSQ]: addr '%v'", s)
 		n.addr = s.(string)
 	} else {
 		err = errors.New("[nsq]: add not exits")
 		return
 	}
-	if s, ok := args["lookupdAddr"]; ok {
+	if s, ok := args["lookupd_addr"]; ok {
+		mlog.Debugf("[NSQ]: lookupd_addr '%v'", s)
 		n.lookupdAddr = s.(string)
 	}
 	p, err := gonsq.NewProducer(n.addr, n.cfg)
@@ -67,6 +70,9 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	}
 	setLogLevel(p)
 	err = p.Ping()
+	if err != nil {
+		return err
+	}
 	n.producer = p
 	mlog.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
 	return
@@ -113,11 +119,11 @@ type nsq struct {
 	pidSelectors map[int64][]labels.Selector
 }
 
-type jsonHandler struct {
+type directHandler struct {
 	ch chan []byte
 }
 
-func (j *jsonHandler) HandleMessage(m *gonsq.Message) error {
+func (j *directHandler) HandleMessage(m *gonsq.Message) error {
 	if m == nil || len(m.Body) == 0 {
 		return nil
 	}
@@ -138,7 +144,7 @@ func (n *nsq) Join(projectID int64) error {
 		mlog.Error(err)
 		return err
 	}
-	if err := connect(consumer, n.addr, n.lookupdAddr, &jsonHandler{ch: n.eventMsgCh}); err != nil {
+	if err := connect(consumer, n.addr, n.lookupdAddr, &directHandler{ch: n.eventMsgCh}); err != nil {
 		mlog.Error(err)
 		return err
 	}
@@ -318,11 +324,14 @@ func connect(consumer *gonsq.Consumer, addr, lookupdAddr string, h gonsq.Handler
 	} else {
 		err = consumer.ConnectToNSQD(addr)
 	}
+
 	return err
 }
 
 func (n *nsq) Close() error {
 	defer mlog.Debugf("[nsq]: id: %v closed", n.ID())
+	n.consumersMu.Lock()
+	defer n.consumersMu.Unlock()
 	for _, c := range n.consumers {
 		c.Stop()
 		if n.lookupdAddr != "" {
