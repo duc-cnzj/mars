@@ -6,24 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"github.com/duc-cnzj/mars/plugins/wssender"
-
-	"google.golang.org/protobuf/proto"
-
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/models"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-
 	"github.com/duc-cnzj/mars/internal/adapter"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/plugins/wssender"
+
 	gonsq "github.com/nsqio/go-nsq"
+	"google.golang.org/protobuf/proto"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const ephemeralBroadroom = wssender.BroadcastRoom + "#ephemeral"
@@ -52,6 +49,9 @@ func (n *NsqSender) Name() string {
 
 func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	n.cfg = gonsq.NewConfig()
+	n.cfg.MaxInFlight = 1000
+	n.cfg.LookupdPollInterval = time.Second
+
 	if s, ok := args["addr"]; ok {
 		n.addr = s.(string)
 	} else {
@@ -67,6 +67,9 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	}
 	setLogLevel(p)
 	err = p.Ping()
+	if err != nil {
+		return err
+	}
 	n.producer = p
 	mlog.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
 	return
@@ -318,11 +321,14 @@ func connect(consumer *gonsq.Consumer, addr, lookupdAddr string, h gonsq.Handler
 	} else {
 		err = consumer.ConnectToNSQD(addr)
 	}
+
 	return err
 }
 
 func (n *nsq) Close() error {
 	defer mlog.Debugf("[nsq]: id: %v closed", n.ID())
+	n.consumersMu.Lock()
+	defer n.consumersMu.Unlock()
 	for _, c := range n.consumers {
 		c.Stop()
 		if n.lookupdAddr != "" {
