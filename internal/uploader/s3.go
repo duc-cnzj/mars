@@ -76,11 +76,8 @@ func (s *S3) Delete(path string) error {
 
 func (s *S3) Exists(path string) bool {
 	path = s.getPath(path)
-	obj, err := s.client.GetObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
-	if err != nil {
-		return false
-	}
-	_, err = obj.Stat()
+	_, err := s.client.StatObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
+
 	return err == nil
 }
 
