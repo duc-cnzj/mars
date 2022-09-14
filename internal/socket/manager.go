@@ -659,10 +659,14 @@ func defaultLoaders() []Loader {
 }
 
 func (j *Jober) LoadConfigs() error {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	ch := make(chan error)
 	go func() {
 		defer recovery.HandlePanic("LoadConfigs")
-		ch <- func() error {
+		defer wg.Done()
+		defer close(ch)
+		fn := func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 
 			for _, defaultLoader := range j.loaders {
@@ -675,15 +679,22 @@ func (j *Jober) LoadConfigs() error {
 			}
 
 			return nil
-		}()
+		}
+		select {
+		case ch <- fn():
+		default:
+		}
 	}()
 
+	var err error
 	select {
-	case err := <-ch:
-		return err
+	case err = <-ch:
 	case <-j.stopCtx.Done():
-		return j.stopCtx.Err()
+		err = j.stopCtx.Err()
 	}
+	wg.Wait()
+
+	return err
 }
 
 type Loader interface {

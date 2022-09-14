@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -349,11 +350,15 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 	}
 	bf := bufio.NewReader(stream)
 
-	ch := make(chan []byte)
+	ch := make(chan []byte, 10)
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+	wg.Add(1)
 	go func() {
 		defer func() {
 			mlog.Debug("[Stream]:  read exit!")
 			close(ch)
+			wg.Done()
 		}()
 		defer recovery.HandlePanic("StreamContainerLog")
 
@@ -363,7 +368,11 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 				mlog.Debugf("[Stream]: %v", err)
 				return
 			}
-			ch <- bytes
+			select {
+			case ch <- bytes:
+			default:
+				mlog.Debug("[Stream]:  drop line!")
+			}
 		}
 	}()
 

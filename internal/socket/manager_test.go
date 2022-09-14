@@ -579,11 +579,33 @@ func TestJober_IsStopped(t *testing.T) {
 type emptyLoader struct {
 	err    error
 	called bool
+	sync.Mutex
 }
 
 func (e *emptyLoader) Load(jober *Jober) error {
+	e.Lock()
+	defer e.Unlock()
 	e.called = true
 	return e.err
+}
+
+func (e *emptyLoader) GetCalled() bool {
+	e.Lock()
+	defer e.Unlock()
+
+	return e.called
+}
+
+func TestJober_LoadConfigs1(t *testing.T) {
+	ctx, fn := context.WithCancel(context.TODO())
+	fn()
+	l := &emptyLoader{}
+	assert.Equal(t, "context canceled", (&Jober{
+		messager: &emptyMsger{},
+		stopCtx:  ctx,
+		loaders:  []Loader{l},
+	}).LoadConfigs().Error())
+	assert.False(t, l.GetCalled())
 }
 
 func TestJober_LoadConfigs(t *testing.T) {
@@ -593,7 +615,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l},
 	}).LoadConfigs())
-	assert.True(t, l.called)
+	assert.True(t, l.GetCalled())
 
 	l2 := &emptyLoader{}
 	cancel, cancelFunc := context.WithCancel(context.TODO())
@@ -603,7 +625,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		stopCtx:  cancel,
 		loaders:  []Loader{l2},
 	}).LoadConfigs().Error())
-	assert.False(t, l2.called)
+	assert.False(t, l2.GetCalled())
 
 	l3 := &emptyLoader{
 		err: errors.New("xxx"),
@@ -613,7 +635,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l3},
 	}).LoadConfigs().Error())
-	assert.True(t, l3.called)
+	assert.True(t, l3.GetCalled())
 }
 
 func TestJober_Logs(t *testing.T) {

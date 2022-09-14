@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/duc-cnzj/mars/plugins/wssender"
-
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -17,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/plugins/wssender"
 )
 
 var memorySenderName = "ws_sender_memory"
@@ -173,9 +172,15 @@ func (p *memoryPubSub) Leave(nsID, projectID int64) error {
 	if ok {
 		delete(rooms, nsID)
 	}
+	if len(p.manager.idRooms[p.id]) == 0 {
+		delete(p.manager.idRooms, p.id)
+	}
 	mm, ok := p.manager.roomIDs[nsID]
 	if ok {
 		delete(mm, projectID)
+	}
+	if len(p.manager.roomIDs[nsID]) == 0 {
+		delete(p.manager.roomIDs, nsID)
 	}
 	return nil
 }
