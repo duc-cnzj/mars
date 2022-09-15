@@ -661,7 +661,7 @@ func defaultLoaders() []Loader {
 func (j *Jober) LoadConfigs() error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	ch := make(chan error)
+	ch := make(chan error, 1)
 	go func() {
 		defer recovery.HandlePanic("LoadConfigs")
 		defer wg.Done()
@@ -680,10 +680,7 @@ func (j *Jober) LoadConfigs() error {
 
 			return nil
 		}()
-		select {
-		case ch <- err:
-		default:
-		}
+		ch <- err
 	}()
 
 	var err error

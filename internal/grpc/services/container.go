@@ -320,7 +320,7 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 	}
 	bf := bufio.NewReader(stream)
 
-	ch := make(chan []byte, 10)
+	ch := make(chan []byte, 100)
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 	wg.Add(1)
