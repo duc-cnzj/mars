@@ -64,7 +64,7 @@ message AuthorizeTokenInput {
 // toast   be->fe     Data           OOB message to be shown to the user
 message TerminalMessage {
   string op = 1;
-  string data = 2;
+  bytes data = 2;
   string session_id = 3;
   uint32 rows = 4;
   uint32 cols = 5;

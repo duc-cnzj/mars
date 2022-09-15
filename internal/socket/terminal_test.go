@@ -152,7 +152,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	b := make([]byte, 1024)
 	p.Send(&websocket_pb.TerminalMessage{
 		Op:   OpStdin,
-		Data: "hello duc",
+		Data: []byte("hello duc"),
 	})
 	n, _ := p.Read(b)
 	assert.Equal(t, "hello duc", string(b[0:n]))
@@ -195,7 +195,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	bv := make([]byte, 100)
 	i, err := p2.Read(bv)
 	assert.Error(t, err)
-	assert.Equal(t, END_OF_TRANSMISSION, string(bv[:i]))
+	assert.Equal(t, END_OF_TRANSMISSION, bv[:i])
 
 	p3 := &MyPtyHandler{
 		id:       "duc",
@@ -351,12 +351,12 @@ func TestSessionMap_Send(t *testing.T) {
 	})
 	assert.Len(t, ch, 0)
 	sm.Send(&websocket_pb.TerminalMessage{
-		Data:      "aa",
+		Data:      []byte("aa"),
 		SessionId: "a",
 	})
 	assert.Len(t, ch, 1)
 	sm.Send(&websocket_pb.TerminalMessage{
-		Data:      "aa",
+		Data:      []byte("aa"),
 		SessionId: "a",
 	})
 	assert.Len(t, ch, 1)

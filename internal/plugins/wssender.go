@@ -4,12 +4,9 @@ package plugins
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
-
-	"google.golang.org/protobuf/proto"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -23,32 +20,6 @@ const (
 	ToAll    = websocket_pb.To_ToAll
 	ToOthers = websocket_pb.To_ToOthers
 )
-
-type Message struct {
-	Data []byte
-	To   websocket_pb.To
-	ID   string
-}
-
-func (m Message) Marshal() []byte {
-	marshal, _ := json.Marshal(&m)
-	return marshal
-}
-
-func DecodeMessage(data []byte) (msg Message, err error) {
-	err = json.Unmarshal(data, &msg)
-	return
-}
-
-func ProtoToMessage(m proto.Message, to websocket_pb.To, id string) Message {
-	marshal, _ := proto.Marshal(m)
-
-	return Message{
-		Data: marshal,
-		To:   to,
-		ID:   id,
-	}
-}
 
 type WsMetadataResponse = websocket_pb.WsMetadataResponse
 

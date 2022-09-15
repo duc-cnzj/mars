@@ -12,10 +12,10 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/plugins/wssender"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -262,7 +262,7 @@ func Test_rdsPubSub_ToAll(t *testing.T) {
 		},
 	}
 
-	marshal, _ := proto.Marshal(msg)
+	marshal := wssender.TransformToResponse(msg)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -296,7 +296,6 @@ func Test_rdsPubSub_ToOthers(t *testing.T) {
 		},
 	}
 
-	marshal, _ := proto.Marshal(msg)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -306,7 +305,7 @@ func Test_rdsPubSub_ToOthers(t *testing.T) {
 	wg.Wait()
 	res := <-ch
 	assert.True(t, true)
-	assert.Equal(t, marshal, res)
+	assert.Equal(t, wssender.TransformToResponse(msg), res)
 	ps1.Close()
 	ps2.Close()
 }
@@ -326,7 +325,6 @@ func Test_rdsPubSub_ToSelf(t *testing.T) {
 		},
 	}
 
-	marshal, _ := proto.Marshal(msg)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -336,7 +334,7 @@ func Test_rdsPubSub_ToSelf(t *testing.T) {
 	wg.Wait()
 	res2 := <-ch
 	assert.True(t, true)
-	assert.Equal(t, marshal, res2)
+	assert.Equal(t, wssender.TransformToResponse(msg), res2)
 	ps1.Close()
 }
 

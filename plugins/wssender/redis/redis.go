@@ -13,7 +13,6 @@ import (
 
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/models"
-	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -230,7 +229,7 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 					func() {
 						for _, selector := range selectors {
 							if selector.Matches(labels.Set(obj.Pod.Labels)) {
-								marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
+								p.ch <- wssender.TransformToResponse(&websocket_pb.WsProjectPodEventResponse{
 									Metadata: &websocket_pb.Metadata{
 										Id:     p.id,
 										Uid:    p.uid,
@@ -241,7 +240,6 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 									},
 									ProjectId: pid,
 								})
-								p.ch <- marshal
 								return
 							}
 						}
@@ -271,17 +269,17 @@ func (p *rdsPubSub) Close() error {
 }
 
 func (p *rdsPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), p.id, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
+	p.rds.Publish(context.TODO(), p.id, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
 	return nil
 }
 
 func (p *rdsPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
+	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
 	return nil
 }
 
 func (p *rdsPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, plugins.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
+	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
 	return nil
 }
 
@@ -301,7 +299,7 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 					p.doneFunc()
 					return
 				}
-				message, _ := plugins.DecodeMessage([]byte(msg.Payload))
+				message, _ := wssender.DecodeMessage([]byte(msg.Payload))
 				switch message.To {
 				case plugins.ToSelf:
 					fallthrough

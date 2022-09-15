@@ -11,12 +11,11 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/plugins/wssender"
 	"github.com/golang/mock/gomock"
 	gonsq "github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -183,14 +182,14 @@ func Test_handler_HandleMessage(t *testing.T) {
 	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: nil}))
 
 	item := &websocket.WsMetadataResponse{}
-	marshal, _ := proto.Marshal(item)
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: plugins.ProtoToMessage(item, websocket.To_ToOthers, "xxx").Marshal()}))
+	marshal := wssender.TransformToResponse(item)
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "xxx").Marshal()}))
 	data := <-h.msgCh
 	assert.Equal(t, marshal, data)
 
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: plugins.ProtoToMessage(item, websocket.To_ToOthers, "id").Marshal()}))
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "id").Marshal()}))
 	assert.Len(t, h.msgCh, 0)
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: plugins.ProtoToMessage(item, websocket.To_ToOthers, "ccc").Marshal()}))
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "ccc").Marshal()}))
 	assert.Len(t, h.msgCh, 1)
 }
 

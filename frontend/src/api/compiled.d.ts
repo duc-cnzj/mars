@@ -1,4 +1,5 @@
 import * as $protobuf from "protobufjs";
+import Long = require("long");
 /** Namespace auth. */
 export namespace auth {
 
@@ -44,6 +45,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.LoginRequest;
+
+        /**
+         * Gets the default type url for LoginRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a LoginResponse. */
@@ -88,6 +96,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.LoginResponse;
+
+        /**
+         * Gets the default type url for LoginResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExchangeRequest. */
@@ -126,6 +141,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.ExchangeRequest;
+
+        /**
+         * Gets the default type url for ExchangeRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExchangeResponse. */
@@ -170,6 +192,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.ExchangeResponse;
+
+        /**
+         * Gets the default type url for ExchangeResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InfoRequest. */
@@ -202,6 +231,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.InfoRequest;
+
+        /**
+         * Gets the default type url for InfoRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InfoResponse. */
@@ -270,6 +306,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.InfoResponse;
+
+        /**
+         * Gets the default type url for InfoResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a SettingsRequest. */
@@ -302,6 +345,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.SettingsRequest;
+
+        /**
+         * Gets the default type url for SettingsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a SettingsResponse. */
@@ -340,6 +390,13 @@ export namespace auth {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.SettingsResponse;
+
+        /**
+         * Gets the default type url for SettingsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     namespace SettingsResponse {
@@ -404,6 +461,13 @@ export namespace auth {
              * @throws {$protobuf.util.ProtocolError} If required fields are missing
              */
             public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): auth.SettingsResponse.OidcSetting;
+
+            /**
+             * Gets the default type url for OidcSetting
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
         }
     }
 
@@ -507,1729 +571,6 @@ export namespace auth {
     }
 }
 
-/** Namespace google. */
-export namespace google {
-
-    /** Namespace api. */
-    namespace api {
-
-        /** Properties of a Http. */
-        interface IHttp {
-
-            /** Http rules */
-            rules?: (google.api.HttpRule[]|null);
-        }
-
-        /** Represents a Http. */
-        class Http implements IHttp {
-
-            /**
-             * Constructs a new Http.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.api.IHttp);
-
-            /** Http rules. */
-            public rules: google.api.HttpRule[];
-
-            /**
-             * Encodes the specified Http message. Does not implicitly {@link google.api.Http.verify|verify} messages.
-             * @param message Http message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.api.Http, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a Http message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns Http
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.Http;
-        }
-
-        /** Properties of a HttpRule. */
-        interface IHttpRule {
-
-            /** HttpRule get */
-            get?: (string|null);
-
-            /** HttpRule put */
-            put?: (string|null);
-
-            /** HttpRule post */
-            post?: (string|null);
-
-            /** HttpRule delete */
-            "delete"?: (string|null);
-
-            /** HttpRule patch */
-            patch?: (string|null);
-
-            /** HttpRule custom */
-            custom?: (google.api.CustomHttpPattern|null);
-
-            /** HttpRule selector */
-            selector?: (string|null);
-
-            /** HttpRule body */
-            body?: (string|null);
-
-            /** HttpRule additional_bindings */
-            additional_bindings?: (google.api.HttpRule[]|null);
-        }
-
-        /** Represents a HttpRule. */
-        class HttpRule implements IHttpRule {
-
-            /**
-             * Constructs a new HttpRule.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.api.IHttpRule);
-
-            /** HttpRule get. */
-            public get?: (string|null);
-
-            /** HttpRule put. */
-            public put?: (string|null);
-
-            /** HttpRule post. */
-            public post?: (string|null);
-
-            /** HttpRule delete. */
-            public delete?: (string|null);
-
-            /** HttpRule patch. */
-            public patch?: (string|null);
-
-            /** HttpRule custom. */
-            public custom?: (google.api.CustomHttpPattern|null);
-
-            /** HttpRule selector. */
-            public selector: string;
-
-            /** HttpRule body. */
-            public body: string;
-
-            /** HttpRule additional_bindings. */
-            public additional_bindings: google.api.HttpRule[];
-
-            /** HttpRule pattern. */
-            public pattern?: ("get"|"put"|"post"|"delete"|"patch"|"custom");
-
-            /**
-             * Encodes the specified HttpRule message. Does not implicitly {@link google.api.HttpRule.verify|verify} messages.
-             * @param message HttpRule message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.api.HttpRule, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a HttpRule message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns HttpRule
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.HttpRule;
-        }
-
-        /** Properties of a CustomHttpPattern. */
-        interface ICustomHttpPattern {
-
-            /** CustomHttpPattern kind */
-            kind?: (string|null);
-
-            /** CustomHttpPattern path */
-            path?: (string|null);
-        }
-
-        /** Represents a CustomHttpPattern. */
-        class CustomHttpPattern implements ICustomHttpPattern {
-
-            /**
-             * Constructs a new CustomHttpPattern.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.api.ICustomHttpPattern);
-
-            /** CustomHttpPattern kind. */
-            public kind: string;
-
-            /** CustomHttpPattern path. */
-            public path: string;
-
-            /**
-             * Encodes the specified CustomHttpPattern message. Does not implicitly {@link google.api.CustomHttpPattern.verify|verify} messages.
-             * @param message CustomHttpPattern message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.api.CustomHttpPattern, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a CustomHttpPattern message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns CustomHttpPattern
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.api.CustomHttpPattern;
-        }
-    }
-
-    /** Namespace protobuf. */
-    namespace protobuf {
-
-        /** Properties of a FileDescriptorSet. */
-        interface IFileDescriptorSet {
-
-            /** FileDescriptorSet file */
-            file?: (google.protobuf.FileDescriptorProto[]|null);
-        }
-
-        /** Represents a FileDescriptorSet. */
-        class FileDescriptorSet implements IFileDescriptorSet {
-
-            /**
-             * Constructs a new FileDescriptorSet.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IFileDescriptorSet);
-
-            /** FileDescriptorSet file. */
-            public file: google.protobuf.FileDescriptorProto[];
-
-            /**
-             * Encodes the specified FileDescriptorSet message. Does not implicitly {@link google.protobuf.FileDescriptorSet.verify|verify} messages.
-             * @param message FileDescriptorSet message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.FileDescriptorSet, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a FileDescriptorSet message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns FileDescriptorSet
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileDescriptorSet;
-        }
-
-        /** Properties of a FileDescriptorProto. */
-        interface IFileDescriptorProto {
-
-            /** FileDescriptorProto name */
-            name?: (string|null);
-
-            /** FileDescriptorProto package */
-            "package"?: (string|null);
-
-            /** FileDescriptorProto dependency */
-            dependency?: (string[]|null);
-
-            /** FileDescriptorProto public_dependency */
-            public_dependency?: (number[]|null);
-
-            /** FileDescriptorProto weak_dependency */
-            weak_dependency?: (number[]|null);
-
-            /** FileDescriptorProto message_type */
-            message_type?: (google.protobuf.DescriptorProto[]|null);
-
-            /** FileDescriptorProto enum_type */
-            enum_type?: (google.protobuf.EnumDescriptorProto[]|null);
-
-            /** FileDescriptorProto service */
-            service?: (google.protobuf.ServiceDescriptorProto[]|null);
-
-            /** FileDescriptorProto extension */
-            extension?: (google.protobuf.FieldDescriptorProto[]|null);
-
-            /** FileDescriptorProto options */
-            options?: (google.protobuf.FileOptions|null);
-
-            /** FileDescriptorProto source_code_info */
-            source_code_info?: (google.protobuf.SourceCodeInfo|null);
-
-            /** FileDescriptorProto syntax */
-            syntax?: (string|null);
-        }
-
-        /** Represents a FileDescriptorProto. */
-        class FileDescriptorProto implements IFileDescriptorProto {
-
-            /**
-             * Constructs a new FileDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IFileDescriptorProto);
-
-            /** FileDescriptorProto name. */
-            public name: string;
-
-            /** FileDescriptorProto package. */
-            public package: string;
-
-            /** FileDescriptorProto dependency. */
-            public dependency: string[];
-
-            /** FileDescriptorProto public_dependency. */
-            public public_dependency: number[];
-
-            /** FileDescriptorProto weak_dependency. */
-            public weak_dependency: number[];
-
-            /** FileDescriptorProto message_type. */
-            public message_type: google.protobuf.DescriptorProto[];
-
-            /** FileDescriptorProto enum_type. */
-            public enum_type: google.protobuf.EnumDescriptorProto[];
-
-            /** FileDescriptorProto service. */
-            public service: google.protobuf.ServiceDescriptorProto[];
-
-            /** FileDescriptorProto extension. */
-            public extension: google.protobuf.FieldDescriptorProto[];
-
-            /** FileDescriptorProto options. */
-            public options?: (google.protobuf.FileOptions|null);
-
-            /** FileDescriptorProto source_code_info. */
-            public source_code_info?: (google.protobuf.SourceCodeInfo|null);
-
-            /** FileDescriptorProto syntax. */
-            public syntax: string;
-
-            /**
-             * Encodes the specified FileDescriptorProto message. Does not implicitly {@link google.protobuf.FileDescriptorProto.verify|verify} messages.
-             * @param message FileDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.FileDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a FileDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns FileDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileDescriptorProto;
-        }
-
-        /** Properties of a DescriptorProto. */
-        interface IDescriptorProto {
-
-            /** DescriptorProto name */
-            name?: (string|null);
-
-            /** DescriptorProto field */
-            field?: (google.protobuf.FieldDescriptorProto[]|null);
-
-            /** DescriptorProto extension */
-            extension?: (google.protobuf.FieldDescriptorProto[]|null);
-
-            /** DescriptorProto nested_type */
-            nested_type?: (google.protobuf.DescriptorProto[]|null);
-
-            /** DescriptorProto enum_type */
-            enum_type?: (google.protobuf.EnumDescriptorProto[]|null);
-
-            /** DescriptorProto extension_range */
-            extension_range?: (google.protobuf.DescriptorProto.ExtensionRange[]|null);
-
-            /** DescriptorProto oneof_decl */
-            oneof_decl?: (google.protobuf.OneofDescriptorProto[]|null);
-
-            /** DescriptorProto options */
-            options?: (google.protobuf.MessageOptions|null);
-
-            /** DescriptorProto reserved_range */
-            reserved_range?: (google.protobuf.DescriptorProto.ReservedRange[]|null);
-
-            /** DescriptorProto reserved_name */
-            reserved_name?: (string[]|null);
-        }
-
-        /** Represents a DescriptorProto. */
-        class DescriptorProto implements IDescriptorProto {
-
-            /**
-             * Constructs a new DescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IDescriptorProto);
-
-            /** DescriptorProto name. */
-            public name: string;
-
-            /** DescriptorProto field. */
-            public field: google.protobuf.FieldDescriptorProto[];
-
-            /** DescriptorProto extension. */
-            public extension: google.protobuf.FieldDescriptorProto[];
-
-            /** DescriptorProto nested_type. */
-            public nested_type: google.protobuf.DescriptorProto[];
-
-            /** DescriptorProto enum_type. */
-            public enum_type: google.protobuf.EnumDescriptorProto[];
-
-            /** DescriptorProto extension_range. */
-            public extension_range: google.protobuf.DescriptorProto.ExtensionRange[];
-
-            /** DescriptorProto oneof_decl. */
-            public oneof_decl: google.protobuf.OneofDescriptorProto[];
-
-            /** DescriptorProto options. */
-            public options?: (google.protobuf.MessageOptions|null);
-
-            /** DescriptorProto reserved_range. */
-            public reserved_range: google.protobuf.DescriptorProto.ReservedRange[];
-
-            /** DescriptorProto reserved_name. */
-            public reserved_name: string[];
-
-            /**
-             * Encodes the specified DescriptorProto message. Does not implicitly {@link google.protobuf.DescriptorProto.verify|verify} messages.
-             * @param message DescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.DescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a DescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns DescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto;
-        }
-
-        namespace DescriptorProto {
-
-            /** Properties of an ExtensionRange. */
-            interface IExtensionRange {
-
-                /** ExtensionRange start */
-                start?: (number|null);
-
-                /** ExtensionRange end */
-                end?: (number|null);
-            }
-
-            /** Represents an ExtensionRange. */
-            class ExtensionRange implements IExtensionRange {
-
-                /**
-                 * Constructs a new ExtensionRange.
-                 * @param [properties] Properties to set
-                 */
-                constructor(properties?: google.protobuf.DescriptorProto.IExtensionRange);
-
-                /** ExtensionRange start. */
-                public start: number;
-
-                /** ExtensionRange end. */
-                public end: number;
-
-                /**
-                 * Encodes the specified ExtensionRange message. Does not implicitly {@link google.protobuf.DescriptorProto.ExtensionRange.verify|verify} messages.
-                 * @param message ExtensionRange message or plain object to encode
-                 * @param [writer] Writer to encode to
-                 * @returns Writer
-                 */
-                public static encode(message: google.protobuf.DescriptorProto.ExtensionRange, writer?: $protobuf.Writer): $protobuf.Writer;
-
-                /**
-                 * Decodes an ExtensionRange message from the specified reader or buffer.
-                 * @param reader Reader or buffer to decode from
-                 * @param [length] Message length if known beforehand
-                 * @returns ExtensionRange
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto.ExtensionRange;
-            }
-
-            /** Properties of a ReservedRange. */
-            interface IReservedRange {
-
-                /** ReservedRange start */
-                start?: (number|null);
-
-                /** ReservedRange end */
-                end?: (number|null);
-            }
-
-            /** Represents a ReservedRange. */
-            class ReservedRange implements IReservedRange {
-
-                /**
-                 * Constructs a new ReservedRange.
-                 * @param [properties] Properties to set
-                 */
-                constructor(properties?: google.protobuf.DescriptorProto.IReservedRange);
-
-                /** ReservedRange start. */
-                public start: number;
-
-                /** ReservedRange end. */
-                public end: number;
-
-                /**
-                 * Encodes the specified ReservedRange message. Does not implicitly {@link google.protobuf.DescriptorProto.ReservedRange.verify|verify} messages.
-                 * @param message ReservedRange message or plain object to encode
-                 * @param [writer] Writer to encode to
-                 * @returns Writer
-                 */
-                public static encode(message: google.protobuf.DescriptorProto.ReservedRange, writer?: $protobuf.Writer): $protobuf.Writer;
-
-                /**
-                 * Decodes a ReservedRange message from the specified reader or buffer.
-                 * @param reader Reader or buffer to decode from
-                 * @param [length] Message length if known beforehand
-                 * @returns ReservedRange
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.DescriptorProto.ReservedRange;
-            }
-        }
-
-        /** Properties of a FieldDescriptorProto. */
-        interface IFieldDescriptorProto {
-
-            /** FieldDescriptorProto name */
-            name?: (string|null);
-
-            /** FieldDescriptorProto number */
-            number?: (number|null);
-
-            /** FieldDescriptorProto label */
-            label?: (google.protobuf.FieldDescriptorProto.Label|null);
-
-            /** FieldDescriptorProto type */
-            type?: (google.protobuf.FieldDescriptorProto.Type|null);
-
-            /** FieldDescriptorProto type_name */
-            type_name?: (string|null);
-
-            /** FieldDescriptorProto extendee */
-            extendee?: (string|null);
-
-            /** FieldDescriptorProto default_value */
-            default_value?: (string|null);
-
-            /** FieldDescriptorProto oneof_index */
-            oneof_index?: (number|null);
-
-            /** FieldDescriptorProto json_name */
-            json_name?: (string|null);
-
-            /** FieldDescriptorProto options */
-            options?: (google.protobuf.FieldOptions|null);
-        }
-
-        /** Represents a FieldDescriptorProto. */
-        class FieldDescriptorProto implements IFieldDescriptorProto {
-
-            /**
-             * Constructs a new FieldDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IFieldDescriptorProto);
-
-            /** FieldDescriptorProto name. */
-            public name: string;
-
-            /** FieldDescriptorProto number. */
-            public number: number;
-
-            /** FieldDescriptorProto label. */
-            public label: google.protobuf.FieldDescriptorProto.Label;
-
-            /** FieldDescriptorProto type. */
-            public type: google.protobuf.FieldDescriptorProto.Type;
-
-            /** FieldDescriptorProto type_name. */
-            public type_name: string;
-
-            /** FieldDescriptorProto extendee. */
-            public extendee: string;
-
-            /** FieldDescriptorProto default_value. */
-            public default_value: string;
-
-            /** FieldDescriptorProto oneof_index. */
-            public oneof_index: number;
-
-            /** FieldDescriptorProto json_name. */
-            public json_name: string;
-
-            /** FieldDescriptorProto options. */
-            public options?: (google.protobuf.FieldOptions|null);
-
-            /**
-             * Encodes the specified FieldDescriptorProto message. Does not implicitly {@link google.protobuf.FieldDescriptorProto.verify|verify} messages.
-             * @param message FieldDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.FieldDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a FieldDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns FieldDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FieldDescriptorProto;
-        }
-
-        namespace FieldDescriptorProto {
-
-            /** Type enum. */
-            enum Type {
-                TYPE_DOUBLE = 1,
-                TYPE_FLOAT = 2,
-                TYPE_INT64 = 3,
-                TYPE_UINT64 = 4,
-                TYPE_INT32 = 5,
-                TYPE_FIXED64 = 6,
-                TYPE_FIXED32 = 7,
-                TYPE_BOOL = 8,
-                TYPE_STRING = 9,
-                TYPE_GROUP = 10,
-                TYPE_MESSAGE = 11,
-                TYPE_BYTES = 12,
-                TYPE_UINT32 = 13,
-                TYPE_ENUM = 14,
-                TYPE_SFIXED32 = 15,
-                TYPE_SFIXED64 = 16,
-                TYPE_SINT32 = 17,
-                TYPE_SINT64 = 18
-            }
-
-            /** Label enum. */
-            enum Label {
-                LABEL_OPTIONAL = 1,
-                LABEL_REQUIRED = 2,
-                LABEL_REPEATED = 3
-            }
-        }
-
-        /** Properties of an OneofDescriptorProto. */
-        interface IOneofDescriptorProto {
-
-            /** OneofDescriptorProto name */
-            name?: (string|null);
-
-            /** OneofDescriptorProto options */
-            options?: (google.protobuf.OneofOptions|null);
-        }
-
-        /** Represents an OneofDescriptorProto. */
-        class OneofDescriptorProto implements IOneofDescriptorProto {
-
-            /**
-             * Constructs a new OneofDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IOneofDescriptorProto);
-
-            /** OneofDescriptorProto name. */
-            public name: string;
-
-            /** OneofDescriptorProto options. */
-            public options?: (google.protobuf.OneofOptions|null);
-
-            /**
-             * Encodes the specified OneofDescriptorProto message. Does not implicitly {@link google.protobuf.OneofDescriptorProto.verify|verify} messages.
-             * @param message OneofDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.OneofDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an OneofDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns OneofDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.OneofDescriptorProto;
-        }
-
-        /** Properties of an EnumDescriptorProto. */
-        interface IEnumDescriptorProto {
-
-            /** EnumDescriptorProto name */
-            name?: (string|null);
-
-            /** EnumDescriptorProto value */
-            value?: (google.protobuf.EnumValueDescriptorProto[]|null);
-
-            /** EnumDescriptorProto options */
-            options?: (google.protobuf.EnumOptions|null);
-        }
-
-        /** Represents an EnumDescriptorProto. */
-        class EnumDescriptorProto implements IEnumDescriptorProto {
-
-            /**
-             * Constructs a new EnumDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IEnumDescriptorProto);
-
-            /** EnumDescriptorProto name. */
-            public name: string;
-
-            /** EnumDescriptorProto value. */
-            public value: google.protobuf.EnumValueDescriptorProto[];
-
-            /** EnumDescriptorProto options. */
-            public options?: (google.protobuf.EnumOptions|null);
-
-            /**
-             * Encodes the specified EnumDescriptorProto message. Does not implicitly {@link google.protobuf.EnumDescriptorProto.verify|verify} messages.
-             * @param message EnumDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.EnumDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an EnumDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns EnumDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumDescriptorProto;
-        }
-
-        /** Properties of an EnumValueDescriptorProto. */
-        interface IEnumValueDescriptorProto {
-
-            /** EnumValueDescriptorProto name */
-            name?: (string|null);
-
-            /** EnumValueDescriptorProto number */
-            number?: (number|null);
-
-            /** EnumValueDescriptorProto options */
-            options?: (google.protobuf.EnumValueOptions|null);
-        }
-
-        /** Represents an EnumValueDescriptorProto. */
-        class EnumValueDescriptorProto implements IEnumValueDescriptorProto {
-
-            /**
-             * Constructs a new EnumValueDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IEnumValueDescriptorProto);
-
-            /** EnumValueDescriptorProto name. */
-            public name: string;
-
-            /** EnumValueDescriptorProto number. */
-            public number: number;
-
-            /** EnumValueDescriptorProto options. */
-            public options?: (google.protobuf.EnumValueOptions|null);
-
-            /**
-             * Encodes the specified EnumValueDescriptorProto message. Does not implicitly {@link google.protobuf.EnumValueDescriptorProto.verify|verify} messages.
-             * @param message EnumValueDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.EnumValueDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an EnumValueDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns EnumValueDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumValueDescriptorProto;
-        }
-
-        /** Properties of a ServiceDescriptorProto. */
-        interface IServiceDescriptorProto {
-
-            /** ServiceDescriptorProto name */
-            name?: (string|null);
-
-            /** ServiceDescriptorProto method */
-            method?: (google.protobuf.MethodDescriptorProto[]|null);
-
-            /** ServiceDescriptorProto options */
-            options?: (google.protobuf.ServiceOptions|null);
-        }
-
-        /** Represents a ServiceDescriptorProto. */
-        class ServiceDescriptorProto implements IServiceDescriptorProto {
-
-            /**
-             * Constructs a new ServiceDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IServiceDescriptorProto);
-
-            /** ServiceDescriptorProto name. */
-            public name: string;
-
-            /** ServiceDescriptorProto method. */
-            public method: google.protobuf.MethodDescriptorProto[];
-
-            /** ServiceDescriptorProto options. */
-            public options?: (google.protobuf.ServiceOptions|null);
-
-            /**
-             * Encodes the specified ServiceDescriptorProto message. Does not implicitly {@link google.protobuf.ServiceDescriptorProto.verify|verify} messages.
-             * @param message ServiceDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.ServiceDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a ServiceDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns ServiceDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.ServiceDescriptorProto;
-        }
-
-        /** Properties of a MethodDescriptorProto. */
-        interface IMethodDescriptorProto {
-
-            /** MethodDescriptorProto name */
-            name?: (string|null);
-
-            /** MethodDescriptorProto input_type */
-            input_type?: (string|null);
-
-            /** MethodDescriptorProto output_type */
-            output_type?: (string|null);
-
-            /** MethodDescriptorProto options */
-            options?: (google.protobuf.MethodOptions|null);
-
-            /** MethodDescriptorProto client_streaming */
-            client_streaming?: (boolean|null);
-
-            /** MethodDescriptorProto server_streaming */
-            server_streaming?: (boolean|null);
-        }
-
-        /** Represents a MethodDescriptorProto. */
-        class MethodDescriptorProto implements IMethodDescriptorProto {
-
-            /**
-             * Constructs a new MethodDescriptorProto.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IMethodDescriptorProto);
-
-            /** MethodDescriptorProto name. */
-            public name: string;
-
-            /** MethodDescriptorProto input_type. */
-            public input_type: string;
-
-            /** MethodDescriptorProto output_type. */
-            public output_type: string;
-
-            /** MethodDescriptorProto options. */
-            public options?: (google.protobuf.MethodOptions|null);
-
-            /** MethodDescriptorProto client_streaming. */
-            public client_streaming: boolean;
-
-            /** MethodDescriptorProto server_streaming. */
-            public server_streaming: boolean;
-
-            /**
-             * Encodes the specified MethodDescriptorProto message. Does not implicitly {@link google.protobuf.MethodDescriptorProto.verify|verify} messages.
-             * @param message MethodDescriptorProto message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.MethodDescriptorProto, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a MethodDescriptorProto message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns MethodDescriptorProto
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MethodDescriptorProto;
-        }
-
-        /** Properties of a FileOptions. */
-        interface IFileOptions {
-
-            /** FileOptions java_package */
-            java_package?: (string|null);
-
-            /** FileOptions java_outer_classname */
-            java_outer_classname?: (string|null);
-
-            /** FileOptions java_multiple_files */
-            java_multiple_files?: (boolean|null);
-
-            /** FileOptions java_generate_equals_and_hash */
-            java_generate_equals_and_hash?: (boolean|null);
-
-            /** FileOptions java_string_check_utf8 */
-            java_string_check_utf8?: (boolean|null);
-
-            /** FileOptions optimize_for */
-            optimize_for?: (google.protobuf.FileOptions.OptimizeMode|null);
-
-            /** FileOptions go_package */
-            go_package?: (string|null);
-
-            /** FileOptions cc_generic_services */
-            cc_generic_services?: (boolean|null);
-
-            /** FileOptions java_generic_services */
-            java_generic_services?: (boolean|null);
-
-            /** FileOptions py_generic_services */
-            py_generic_services?: (boolean|null);
-
-            /** FileOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** FileOptions cc_enable_arenas */
-            cc_enable_arenas?: (boolean|null);
-
-            /** FileOptions objc_class_prefix */
-            objc_class_prefix?: (string|null);
-
-            /** FileOptions csharp_namespace */
-            csharp_namespace?: (string|null);
-
-            /** FileOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents a FileOptions. */
-        class FileOptions implements IFileOptions {
-
-            /**
-             * Constructs a new FileOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IFileOptions);
-
-            /** FileOptions java_package. */
-            public java_package: string;
-
-            /** FileOptions java_outer_classname. */
-            public java_outer_classname: string;
-
-            /** FileOptions java_multiple_files. */
-            public java_multiple_files: boolean;
-
-            /** FileOptions java_generate_equals_and_hash. */
-            public java_generate_equals_and_hash: boolean;
-
-            /** FileOptions java_string_check_utf8. */
-            public java_string_check_utf8: boolean;
-
-            /** FileOptions optimize_for. */
-            public optimize_for: google.protobuf.FileOptions.OptimizeMode;
-
-            /** FileOptions go_package. */
-            public go_package: string;
-
-            /** FileOptions cc_generic_services. */
-            public cc_generic_services: boolean;
-
-            /** FileOptions java_generic_services. */
-            public java_generic_services: boolean;
-
-            /** FileOptions py_generic_services. */
-            public py_generic_services: boolean;
-
-            /** FileOptions deprecated. */
-            public deprecated: boolean;
-
-            /** FileOptions cc_enable_arenas. */
-            public cc_enable_arenas: boolean;
-
-            /** FileOptions objc_class_prefix. */
-            public objc_class_prefix: string;
-
-            /** FileOptions csharp_namespace. */
-            public csharp_namespace: string;
-
-            /** FileOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified FileOptions message. Does not implicitly {@link google.protobuf.FileOptions.verify|verify} messages.
-             * @param message FileOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.FileOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a FileOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns FileOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FileOptions;
-        }
-
-        namespace FileOptions {
-
-            /** OptimizeMode enum. */
-            enum OptimizeMode {
-                SPEED = 1,
-                CODE_SIZE = 2,
-                LITE_RUNTIME = 3
-            }
-        }
-
-        /** Properties of a MessageOptions. */
-        interface IMessageOptions {
-
-            /** MessageOptions message_set_wire_format */
-            message_set_wire_format?: (boolean|null);
-
-            /** MessageOptions no_standard_descriptor_accessor */
-            no_standard_descriptor_accessor?: (boolean|null);
-
-            /** MessageOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** MessageOptions map_entry */
-            map_entry?: (boolean|null);
-
-            /** MessageOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents a MessageOptions. */
-        class MessageOptions implements IMessageOptions {
-
-            /**
-             * Constructs a new MessageOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IMessageOptions);
-
-            /** MessageOptions message_set_wire_format. */
-            public message_set_wire_format: boolean;
-
-            /** MessageOptions no_standard_descriptor_accessor. */
-            public no_standard_descriptor_accessor: boolean;
-
-            /** MessageOptions deprecated. */
-            public deprecated: boolean;
-
-            /** MessageOptions map_entry. */
-            public map_entry: boolean;
-
-            /** MessageOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified MessageOptions message. Does not implicitly {@link google.protobuf.MessageOptions.verify|verify} messages.
-             * @param message MessageOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.MessageOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a MessageOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns MessageOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MessageOptions;
-        }
-
-        /** Properties of a FieldOptions. */
-        interface IFieldOptions {
-
-            /** FieldOptions ctype */
-            ctype?: (google.protobuf.FieldOptions.CType|null);
-
-            /** FieldOptions packed */
-            packed?: (boolean|null);
-
-            /** FieldOptions jstype */
-            jstype?: (google.protobuf.FieldOptions.JSType|null);
-
-            /** FieldOptions lazy */
-            lazy?: (boolean|null);
-
-            /** FieldOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** FieldOptions weak */
-            weak?: (boolean|null);
-
-            /** FieldOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents a FieldOptions. */
-        class FieldOptions implements IFieldOptions {
-
-            /**
-             * Constructs a new FieldOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IFieldOptions);
-
-            /** FieldOptions ctype. */
-            public ctype: google.protobuf.FieldOptions.CType;
-
-            /** FieldOptions packed. */
-            public packed: boolean;
-
-            /** FieldOptions jstype. */
-            public jstype: google.protobuf.FieldOptions.JSType;
-
-            /** FieldOptions lazy. */
-            public lazy: boolean;
-
-            /** FieldOptions deprecated. */
-            public deprecated: boolean;
-
-            /** FieldOptions weak. */
-            public weak: boolean;
-
-            /** FieldOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified FieldOptions message. Does not implicitly {@link google.protobuf.FieldOptions.verify|verify} messages.
-             * @param message FieldOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.FieldOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a FieldOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns FieldOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.FieldOptions;
-        }
-
-        namespace FieldOptions {
-
-            /** CType enum. */
-            enum CType {
-                STRING = 0,
-                CORD = 1,
-                STRING_PIECE = 2
-            }
-
-            /** JSType enum. */
-            enum JSType {
-                JS_NORMAL = 0,
-                JS_STRING = 1,
-                JS_NUMBER = 2
-            }
-        }
-
-        /** Properties of an OneofOptions. */
-        interface IOneofOptions {
-
-            /** OneofOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents an OneofOptions. */
-        class OneofOptions implements IOneofOptions {
-
-            /**
-             * Constructs a new OneofOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IOneofOptions);
-
-            /** OneofOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified OneofOptions message. Does not implicitly {@link google.protobuf.OneofOptions.verify|verify} messages.
-             * @param message OneofOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.OneofOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an OneofOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns OneofOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.OneofOptions;
-        }
-
-        /** Properties of an EnumOptions. */
-        interface IEnumOptions {
-
-            /** EnumOptions allow_alias */
-            allow_alias?: (boolean|null);
-
-            /** EnumOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** EnumOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents an EnumOptions. */
-        class EnumOptions implements IEnumOptions {
-
-            /**
-             * Constructs a new EnumOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IEnumOptions);
-
-            /** EnumOptions allow_alias. */
-            public allow_alias: boolean;
-
-            /** EnumOptions deprecated. */
-            public deprecated: boolean;
-
-            /** EnumOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified EnumOptions message. Does not implicitly {@link google.protobuf.EnumOptions.verify|verify} messages.
-             * @param message EnumOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.EnumOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an EnumOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns EnumOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumOptions;
-        }
-
-        /** Properties of an EnumValueOptions. */
-        interface IEnumValueOptions {
-
-            /** EnumValueOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** EnumValueOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents an EnumValueOptions. */
-        class EnumValueOptions implements IEnumValueOptions {
-
-            /**
-             * Constructs a new EnumValueOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IEnumValueOptions);
-
-            /** EnumValueOptions deprecated. */
-            public deprecated: boolean;
-
-            /** EnumValueOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified EnumValueOptions message. Does not implicitly {@link google.protobuf.EnumValueOptions.verify|verify} messages.
-             * @param message EnumValueOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.EnumValueOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an EnumValueOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns EnumValueOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.EnumValueOptions;
-        }
-
-        /** Properties of a ServiceOptions. */
-        interface IServiceOptions {
-
-            /** ServiceOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** ServiceOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-        }
-
-        /** Represents a ServiceOptions. */
-        class ServiceOptions implements IServiceOptions {
-
-            /**
-             * Constructs a new ServiceOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IServiceOptions);
-
-            /** ServiceOptions deprecated. */
-            public deprecated: boolean;
-
-            /** ServiceOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified ServiceOptions message. Does not implicitly {@link google.protobuf.ServiceOptions.verify|verify} messages.
-             * @param message ServiceOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.ServiceOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a ServiceOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns ServiceOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.ServiceOptions;
-        }
-
-        /** Properties of a MethodOptions. */
-        interface IMethodOptions {
-
-            /** MethodOptions deprecated */
-            deprecated?: (boolean|null);
-
-            /** MethodOptions uninterpreted_option */
-            uninterpreted_option?: (google.protobuf.UninterpretedOption[]|null);
-
-            /** MethodOptions .google.api.http */
-            ".google.api.http"?: (google.api.HttpRule|null);
-        }
-
-        /** Represents a MethodOptions. */
-        class MethodOptions implements IMethodOptions {
-
-            /**
-             * Constructs a new MethodOptions.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IMethodOptions);
-
-            /** MethodOptions deprecated. */
-            public deprecated: boolean;
-
-            /** MethodOptions uninterpreted_option. */
-            public uninterpreted_option: google.protobuf.UninterpretedOption[];
-
-            /**
-             * Encodes the specified MethodOptions message. Does not implicitly {@link google.protobuf.MethodOptions.verify|verify} messages.
-             * @param message MethodOptions message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.MethodOptions, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a MethodOptions message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns MethodOptions
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.MethodOptions;
-        }
-
-        /** Properties of an UninterpretedOption. */
-        interface IUninterpretedOption {
-
-            /** UninterpretedOption name */
-            name?: (google.protobuf.UninterpretedOption.NamePart[]|null);
-
-            /** UninterpretedOption identifier_value */
-            identifier_value?: (string|null);
-
-            /** UninterpretedOption positive_int_value */
-            positive_int_value?: (number|null);
-
-            /** UninterpretedOption negative_int_value */
-            negative_int_value?: (number|null);
-
-            /** UninterpretedOption double_value */
-            double_value?: (number|null);
-
-            /** UninterpretedOption string_value */
-            string_value?: (Uint8Array|null);
-
-            /** UninterpretedOption aggregate_value */
-            aggregate_value?: (string|null);
-        }
-
-        /** Represents an UninterpretedOption. */
-        class UninterpretedOption implements IUninterpretedOption {
-
-            /**
-             * Constructs a new UninterpretedOption.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IUninterpretedOption);
-
-            /** UninterpretedOption name. */
-            public name: google.protobuf.UninterpretedOption.NamePart[];
-
-            /** UninterpretedOption identifier_value. */
-            public identifier_value: string;
-
-            /** UninterpretedOption positive_int_value. */
-            public positive_int_value: number;
-
-            /** UninterpretedOption negative_int_value. */
-            public negative_int_value: number;
-
-            /** UninterpretedOption double_value. */
-            public double_value: number;
-
-            /** UninterpretedOption string_value. */
-            public string_value: Uint8Array;
-
-            /** UninterpretedOption aggregate_value. */
-            public aggregate_value: string;
-
-            /**
-             * Encodes the specified UninterpretedOption message. Does not implicitly {@link google.protobuf.UninterpretedOption.verify|verify} messages.
-             * @param message UninterpretedOption message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.UninterpretedOption, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an UninterpretedOption message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns UninterpretedOption
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.UninterpretedOption;
-        }
-
-        namespace UninterpretedOption {
-
-            /** Properties of a NamePart. */
-            interface INamePart {
-
-                /** NamePart name_part */
-                name_part: string;
-
-                /** NamePart is_extension */
-                is_extension: boolean;
-            }
-
-            /** Represents a NamePart. */
-            class NamePart implements INamePart {
-
-                /**
-                 * Constructs a new NamePart.
-                 * @param [properties] Properties to set
-                 */
-                constructor(properties?: google.protobuf.UninterpretedOption.INamePart);
-
-                /** NamePart name_part. */
-                public name_part: string;
-
-                /** NamePart is_extension. */
-                public is_extension: boolean;
-
-                /**
-                 * Encodes the specified NamePart message. Does not implicitly {@link google.protobuf.UninterpretedOption.NamePart.verify|verify} messages.
-                 * @param message NamePart message or plain object to encode
-                 * @param [writer] Writer to encode to
-                 * @returns Writer
-                 */
-                public static encode(message: google.protobuf.UninterpretedOption.NamePart, writer?: $protobuf.Writer): $protobuf.Writer;
-
-                /**
-                 * Decodes a NamePart message from the specified reader or buffer.
-                 * @param reader Reader or buffer to decode from
-                 * @param [length] Message length if known beforehand
-                 * @returns NamePart
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.UninterpretedOption.NamePart;
-            }
-        }
-
-        /** Properties of a SourceCodeInfo. */
-        interface ISourceCodeInfo {
-
-            /** SourceCodeInfo location */
-            location?: (google.protobuf.SourceCodeInfo.Location[]|null);
-        }
-
-        /** Represents a SourceCodeInfo. */
-        class SourceCodeInfo implements ISourceCodeInfo {
-
-            /**
-             * Constructs a new SourceCodeInfo.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.ISourceCodeInfo);
-
-            /** SourceCodeInfo location. */
-            public location: google.protobuf.SourceCodeInfo.Location[];
-
-            /**
-             * Encodes the specified SourceCodeInfo message. Does not implicitly {@link google.protobuf.SourceCodeInfo.verify|verify} messages.
-             * @param message SourceCodeInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.SourceCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a SourceCodeInfo message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns SourceCodeInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.SourceCodeInfo;
-        }
-
-        namespace SourceCodeInfo {
-
-            /** Properties of a Location. */
-            interface ILocation {
-
-                /** Location path */
-                path?: (number[]|null);
-
-                /** Location span */
-                span?: (number[]|null);
-
-                /** Location leading_comments */
-                leading_comments?: (string|null);
-
-                /** Location trailing_comments */
-                trailing_comments?: (string|null);
-
-                /** Location leading_detached_comments */
-                leading_detached_comments?: (string[]|null);
-            }
-
-            /** Represents a Location. */
-            class Location implements ILocation {
-
-                /**
-                 * Constructs a new Location.
-                 * @param [properties] Properties to set
-                 */
-                constructor(properties?: google.protobuf.SourceCodeInfo.ILocation);
-
-                /** Location path. */
-                public path: number[];
-
-                /** Location span. */
-                public span: number[];
-
-                /** Location leading_comments. */
-                public leading_comments: string;
-
-                /** Location trailing_comments. */
-                public trailing_comments: string;
-
-                /** Location leading_detached_comments. */
-                public leading_detached_comments: string[];
-
-                /**
-                 * Encodes the specified Location message. Does not implicitly {@link google.protobuf.SourceCodeInfo.Location.verify|verify} messages.
-                 * @param message Location message or plain object to encode
-                 * @param [writer] Writer to encode to
-                 * @returns Writer
-                 */
-                public static encode(message: google.protobuf.SourceCodeInfo.Location, writer?: $protobuf.Writer): $protobuf.Writer;
-
-                /**
-                 * Decodes a Location message from the specified reader or buffer.
-                 * @param reader Reader or buffer to decode from
-                 * @param [length] Message length if known beforehand
-                 * @returns Location
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.SourceCodeInfo.Location;
-            }
-        }
-
-        /** Properties of a GeneratedCodeInfo. */
-        interface IGeneratedCodeInfo {
-
-            /** GeneratedCodeInfo annotation */
-            annotation?: (google.protobuf.GeneratedCodeInfo.Annotation[]|null);
-        }
-
-        /** Represents a GeneratedCodeInfo. */
-        class GeneratedCodeInfo implements IGeneratedCodeInfo {
-
-            /**
-             * Constructs a new GeneratedCodeInfo.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: google.protobuf.IGeneratedCodeInfo);
-
-            /** GeneratedCodeInfo annotation. */
-            public annotation: google.protobuf.GeneratedCodeInfo.Annotation[];
-
-            /**
-             * Encodes the specified GeneratedCodeInfo message. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.verify|verify} messages.
-             * @param message GeneratedCodeInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: google.protobuf.GeneratedCodeInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a GeneratedCodeInfo message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns GeneratedCodeInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.GeneratedCodeInfo;
-        }
-
-        namespace GeneratedCodeInfo {
-
-            /** Properties of an Annotation. */
-            interface IAnnotation {
-
-                /** Annotation path */
-                path?: (number[]|null);
-
-                /** Annotation source_file */
-                source_file?: (string|null);
-
-                /** Annotation begin */
-                begin?: (number|null);
-
-                /** Annotation end */
-                end?: (number|null);
-            }
-
-            /** Represents an Annotation. */
-            class Annotation implements IAnnotation {
-
-                /**
-                 * Constructs a new Annotation.
-                 * @param [properties] Properties to set
-                 */
-                constructor(properties?: google.protobuf.GeneratedCodeInfo.IAnnotation);
-
-                /** Annotation path. */
-                public path: number[];
-
-                /** Annotation source_file. */
-                public source_file: string;
-
-                /** Annotation begin. */
-                public begin: number;
-
-                /** Annotation end. */
-                public end: number;
-
-                /**
-                 * Encodes the specified Annotation message. Does not implicitly {@link google.protobuf.GeneratedCodeInfo.Annotation.verify|verify} messages.
-                 * @param message Annotation message or plain object to encode
-                 * @param [writer] Writer to encode to
-                 * @returns Writer
-                 */
-                public static encode(message: google.protobuf.GeneratedCodeInfo.Annotation, writer?: $protobuf.Writer): $protobuf.Writer;
-
-                /**
-                 * Decodes an Annotation message from the specified reader or buffer.
-                 * @param reader Reader or buffer to decode from
-                 * @param [length] Message length if known beforehand
-                 * @returns Annotation
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): google.protobuf.GeneratedCodeInfo.Annotation;
-            }
-        }
-    }
-}
-
 /** Namespace changelog. */
 export namespace changelog {
 
@@ -2275,6 +616,13 @@ export namespace changelog {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): changelog.ShowRequest;
+
+        /**
+         * Gets the default type url for ShowRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowResponse. */
@@ -2313,6 +661,13 @@ export namespace changelog {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): changelog.ShowResponse;
+
+        /**
+         * Gets the default type url for ShowResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Changelog */
@@ -2459,6 +814,13 @@ export namespace cluster {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cluster.InfoResponse;
+
+        /**
+         * Gets the default type url for InfoResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InfoRequest. */
@@ -2491,6 +853,13 @@ export namespace cluster {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cluster.InfoRequest;
+
+        /**
+         * Gets the default type url for InfoRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Cluster */
@@ -2587,6 +956,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.CopyToPodRequest;
+
+        /**
+         * Gets the default type url for CopyToPodRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CopyToPodResponse. */
@@ -2637,6 +1013,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.CopyToPodResponse;
+
+        /**
+         * Gets the default type url for CopyToPodResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExecRequest. */
@@ -2693,6 +1076,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.ExecRequest;
+
+        /**
+         * Gets the default type url for ExecRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExecError. */
@@ -2737,6 +1127,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.ExecError;
+
+        /**
+         * Gets the default type url for ExecError
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExecResponse. */
@@ -2781,6 +1178,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.ExecResponse;
+
+        /**
+         * Gets the default type url for ExecResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a StreamCopyToPodRequest. */
@@ -2843,6 +1247,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.StreamCopyToPodRequest;
+
+        /**
+         * Gets the default type url for StreamCopyToPodRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a StreamCopyToPodResponse. */
@@ -2917,6 +1328,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.StreamCopyToPodResponse;
+
+        /**
+         * Gets the default type url for StreamCopyToPodResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsPodRunningRequest. */
@@ -2961,6 +1379,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.IsPodRunningRequest;
+
+        /**
+         * Gets the default type url for IsPodRunningRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsPodRunningResponse. */
@@ -3005,6 +1430,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.IsPodRunningResponse;
+
+        /**
+         * Gets the default type url for IsPodRunningResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsPodExistsRequest. */
@@ -3049,6 +1481,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.IsPodExistsRequest;
+
+        /**
+         * Gets the default type url for IsPodExistsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsPodExistsResponse. */
@@ -3087,6 +1526,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.IsPodExistsResponse;
+
+        /**
+         * Gets the default type url for IsPodExistsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a LogRequest. */
@@ -3137,6 +1583,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.LogRequest;
+
+        /**
+         * Gets the default type url for LogRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a LogResponse. */
@@ -3193,6 +1646,13 @@ export namespace container {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): container.LogResponse;
+
+        /**
+         * Gets the default type url for LogResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Container */
@@ -3397,6 +1857,13 @@ export namespace endpoint {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): endpoint.InNamespaceRequest;
+
+        /**
+         * Gets the default type url for InNamespaceRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InNamespaceResponse. */
@@ -3435,6 +1902,13 @@ export namespace endpoint {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): endpoint.InNamespaceResponse;
+
+        /**
+         * Gets the default type url for InNamespaceResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InProjectRequest. */
@@ -3473,6 +1947,13 @@ export namespace endpoint {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): endpoint.InProjectRequest;
+
+        /**
+         * Gets the default type url for InProjectRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an InProjectResponse. */
@@ -3511,6 +1992,13 @@ export namespace endpoint {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): endpoint.InProjectResponse;
+
+        /**
+         * Gets the default type url for InProjectResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents an Endpoint */
@@ -3628,6 +2116,13 @@ export namespace event {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ListRequest;
+
+        /**
+         * Gets the default type url for ListRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ListResponse. */
@@ -3684,6 +2179,13 @@ export namespace event {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ListResponse;
+
+        /**
+         * Gets the default type url for ListResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRequest. */
@@ -3722,6 +2224,13 @@ export namespace event {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ShowRequest;
+
+        /**
+         * Gets the default type url for ShowRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowResponse. */
@@ -3760,6 +2269,13 @@ export namespace event {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): event.ShowResponse;
+
+        /**
+         * Gets the default type url for ShowResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents an Event */
@@ -3859,6 +2375,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DeleteRequest;
+
+        /**
+         * Gets the default type url for DeleteRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DeleteResponse. */
@@ -3897,6 +2420,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DeleteResponse;
+
+        /**
+         * Gets the default type url for DeleteResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DiskInfoRequest. */
@@ -3929,6 +2459,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DiskInfoRequest;
+
+        /**
+         * Gets the default type url for DiskInfoRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DiskInfoResponse. */
@@ -3973,6 +2510,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.DiskInfoResponse;
+
+        /**
+         * Gets the default type url for DiskInfoResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ListRequest. */
@@ -4023,6 +2567,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ListRequest;
+
+        /**
+         * Gets the default type url for ListRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ListResponse. */
@@ -4079,6 +2630,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ListResponse;
+
+        /**
+         * Gets the default type url for ListResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a MaxUploadSizeRequest. */
@@ -4111,6 +2669,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.MaxUploadSizeRequest;
+
+        /**
+         * Gets the default type url for MaxUploadSizeRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a MaxUploadSizeResponse. */
@@ -4155,6 +2720,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.MaxUploadSizeResponse;
+
+        /**
+         * Gets the default type url for MaxUploadSizeResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRecordsRequest. */
@@ -4193,6 +2765,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRecordsRequest;
+
+        /**
+         * Gets the default type url for ShowRecordsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRecordsResponse. */
@@ -4231,6 +2810,13 @@ export namespace file {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): file.ShowRecordsResponse;
+
+        /**
+         * Gets the default type url for ShowRecordsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a File */
@@ -4393,6 +2979,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.EnableProjectRequest;
+
+        /**
+         * Gets the default type url for EnableProjectRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DisableProjectRequest. */
@@ -4431,6 +3024,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.DisableProjectRequest;
+
+        /**
+         * Gets the default type url for DisableProjectRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ProjectItem. */
@@ -4511,6 +3111,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ProjectItem;
+
+        /**
+         * Gets the default type url for ProjectItem
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllResponse. */
@@ -4549,6 +3156,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllResponse;
+
+        /**
+         * Gets the default type url for AllResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an Option. */
@@ -4623,6 +3237,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.Option;
+
+        /**
+         * Gets the default type url for Option
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ProjectOptionsResponse. */
@@ -4661,6 +3282,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ProjectOptionsResponse;
+
+        /**
+         * Gets the default type url for ProjectOptionsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a BranchOptionsRequest. */
@@ -4705,6 +3333,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.BranchOptionsRequest;
+
+        /**
+         * Gets the default type url for BranchOptionsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a BranchOptionsResponse. */
@@ -4743,6 +3378,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.BranchOptionsResponse;
+
+        /**
+         * Gets the default type url for BranchOptionsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CommitOptionsRequest. */
@@ -4787,6 +3429,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.CommitOptionsRequest;
+
+        /**
+         * Gets the default type url for CommitOptionsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CommitOptionsResponse. */
@@ -4825,6 +3474,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.CommitOptionsResponse;
+
+        /**
+         * Gets the default type url for CommitOptionsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CommitRequest. */
@@ -4875,6 +3531,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.CommitRequest;
+
+        /**
+         * Gets the default type url for CommitRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CommitResponse. */
@@ -4991,6 +3654,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.CommitResponse;
+
+        /**
+         * Gets the default type url for CommitResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a PipelineInfoRequest. */
@@ -5041,6 +3711,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.PipelineInfoRequest;
+
+        /**
+         * Gets the default type url for PipelineInfoRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a PipelineInfoResponse. */
@@ -5085,6 +3762,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.PipelineInfoResponse;
+
+        /**
+         * Gets the default type url for PipelineInfoResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a MarsConfigFileRequest. */
@@ -5129,6 +3813,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.MarsConfigFileRequest;
+
+        /**
+         * Gets the default type url for MarsConfigFileRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a MarsConfigFileResponse. */
@@ -5179,6 +3870,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.MarsConfigFileResponse;
+
+        /**
+         * Gets the default type url for MarsConfigFileResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an EnableProjectResponse. */
@@ -5211,6 +3909,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.EnableProjectResponse;
+
+        /**
+         * Gets the default type url for EnableProjectResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DisableProjectResponse. */
@@ -5243,6 +3948,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.DisableProjectResponse;
+
+        /**
+         * Gets the default type url for DisableProjectResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllRequest. */
@@ -5275,6 +3987,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.AllRequest;
+
+        /**
+         * Gets the default type url for AllRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ProjectOptionsRequest. */
@@ -5307,6 +4026,13 @@ export namespace git {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): git.ProjectOptionsRequest;
+
+        /**
+         * Gets the default type url for ProjectOptionsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Git */
@@ -5559,6 +4285,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.FileRequest;
+
+        /**
+         * Gets the default type url for FileRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a FileResponse. */
@@ -5609,6 +4342,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.FileResponse;
+
+        /**
+         * Gets the default type url for FileResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRequest. */
@@ -5653,6 +4393,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.ShowRequest;
+
+        /**
+         * Gets the default type url for ShowRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowResponse. */
@@ -5697,6 +4444,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.ShowResponse;
+
+        /**
+         * Gets the default type url for ShowResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a GlobalConfigRequest. */
@@ -5735,6 +4489,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.GlobalConfigRequest;
+
+        /**
+         * Gets the default type url for GlobalConfigRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a GlobalConfigResponse. */
@@ -5779,6 +4540,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.GlobalConfigResponse;
+
+        /**
+         * Gets the default type url for GlobalConfigResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an UpdateRequest. */
@@ -5823,6 +4591,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.UpdateRequest;
+
+        /**
+         * Gets the default type url for UpdateRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an UpdateResponse. */
@@ -5861,6 +4636,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.UpdateResponse;
+
+        /**
+         * Gets the default type url for UpdateResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ToggleGlobalStatusRequest. */
@@ -5905,6 +4687,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.ToggleGlobalStatusRequest;
+
+        /**
+         * Gets the default type url for ToggleGlobalStatusRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DefaultChartValuesRequest. */
@@ -5949,6 +4738,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.DefaultChartValuesRequest;
+
+        /**
+         * Gets the default type url for DefaultChartValuesRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DefaultChartValuesResponse. */
@@ -5987,6 +4783,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.DefaultChartValuesResponse;
+
+        /**
+         * Gets the default type url for DefaultChartValuesResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ToggleGlobalStatusResponse. */
@@ -6019,6 +4822,13 @@ export namespace gitconfig {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): gitconfig.ToggleGlobalStatusResponse;
+
+        /**
+         * Gets the default type url for ToggleGlobalStatusResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a GitConfig */
@@ -6235,6 +5045,13 @@ export namespace mars {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): mars.Config;
+
+        /**
+         * Gets the default type url for Config
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** ElementType enum. */
@@ -6307,6 +5124,13 @@ export namespace mars {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): mars.Element;
+
+        /**
+         * Gets the default type url for Element
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 }
 
@@ -6355,6 +5179,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.TopPodRequest;
+
+        /**
+         * Gets the default type url for TopPodRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a TopPodResponse. */
@@ -6423,6 +5254,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.TopPodResponse;
+
+        /**
+         * Gets the default type url for TopPodResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CpuMemoryInNamespaceRequest. */
@@ -6461,6 +5299,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.CpuMemoryInNamespaceRequest;
+
+        /**
+         * Gets the default type url for CpuMemoryInNamespaceRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CpuMemoryInNamespaceResponse. */
@@ -6505,6 +5350,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.CpuMemoryInNamespaceResponse;
+
+        /**
+         * Gets the default type url for CpuMemoryInNamespaceResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CpuMemoryInProjectRequest. */
@@ -6543,6 +5395,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.CpuMemoryInProjectRequest;
+
+        /**
+         * Gets the default type url for CpuMemoryInProjectRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CpuMemoryInProjectResponse. */
@@ -6587,6 +5446,13 @@ export namespace metrics {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): metrics.CpuMemoryInProjectResponse;
+
+        /**
+         * Gets the default type url for CpuMemoryInProjectResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Metrics */
@@ -6734,6 +5600,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.CreateRequest;
+
+        /**
+         * Gets the default type url for CreateRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRequest. */
@@ -6772,6 +5645,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.ShowRequest;
+
+        /**
+         * Gets the default type url for ShowRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DeleteRequest. */
@@ -6810,6 +5690,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.DeleteRequest;
+
+        /**
+         * Gets the default type url for DeleteRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsExistsRequest. */
@@ -6848,6 +5735,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.IsExistsRequest;
+
+        /**
+         * Gets the default type url for IsExistsRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllResponse. */
@@ -6886,6 +5780,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.AllResponse;
+
+        /**
+         * Gets the default type url for AllResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CreateResponse. */
@@ -6930,6 +5831,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.CreateResponse;
+
+        /**
+         * Gets the default type url for CreateResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowResponse. */
@@ -6968,6 +5876,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.ShowResponse;
+
+        /**
+         * Gets the default type url for ShowResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an IsExistsResponse. */
@@ -7012,6 +5927,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.IsExistsResponse;
+
+        /**
+         * Gets the default type url for IsExistsResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllRequest. */
@@ -7044,6 +5966,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.AllRequest;
+
+        /**
+         * Gets the default type url for AllRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DeleteResponse. */
@@ -7076,6 +6005,13 @@ export namespace namespace {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): namespace.DeleteResponse;
+
+        /**
+         * Gets the default type url for DeleteResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Namespace */
@@ -7238,6 +6174,13 @@ export namespace picture {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): picture.BackgroundRequest;
+
+        /**
+         * Gets the default type url for BackgroundRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a BackgroundResponse. */
@@ -7282,6 +6225,13 @@ export namespace picture {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): picture.BackgroundResponse;
+
+        /**
+         * Gets the default type url for BackgroundResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Picture */
@@ -7360,6 +6310,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.DeleteRequest;
+
+        /**
+         * Gets the default type url for DeleteRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowRequest. */
@@ -7398,6 +6355,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ShowRequest;
+
+        /**
+         * Gets the default type url for ShowRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ShowResponse. */
@@ -7460,6 +6424,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ShowResponse;
+
+        /**
+         * Gets the default type url for ShowResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllContainersRequest. */
@@ -7498,6 +6469,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.AllContainersRequest;
+
+        /**
+         * Gets the default type url for AllContainersRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AllContainersResponse. */
@@ -7536,6 +6514,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.AllContainersResponse;
+
+        /**
+         * Gets the default type url for AllContainersResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ApplyResponse. */
@@ -7580,6 +6565,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ApplyResponse;
+
+        /**
+         * Gets the default type url for ApplyResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DryRunApplyResponse. */
@@ -7618,6 +6610,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.DryRunApplyResponse;
+
+        /**
+         * Gets the default type url for DryRunApplyResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ApplyRequest. */
@@ -7716,6 +6715,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ApplyRequest;
+
+        /**
+         * Gets the default type url for ApplyRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a DeleteResponse. */
@@ -7748,6 +6754,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.DeleteResponse;
+
+        /**
+         * Gets the default type url for DeleteResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ListRequest. */
@@ -7792,6 +6805,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ListRequest;
+
+        /**
+         * Gets the default type url for ListRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ListResponse. */
@@ -7848,6 +6868,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.ListResponse;
+
+        /**
+         * Gets the default type url for ListResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a HostVariablesRequest. */
@@ -7904,6 +6931,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.HostVariablesRequest;
+
+        /**
+         * Gets the default type url for HostVariablesRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a HostVariablesResponse. */
@@ -7942,6 +6976,13 @@ export namespace project {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): project.HostVariablesResponse;
+
+        /**
+         * Gets the default type url for HostVariablesResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Project */
@@ -8166,6 +7207,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.Pod;
+
+        /**
+         * Gets the default type url for Pod
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a Container. */
@@ -8216,6 +7264,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.Container;
+
+        /**
+         * Gets the default type url for Container
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a StateContainer. */
@@ -8284,6 +7339,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.StateContainer;
+
+        /**
+         * Gets the default type url for StateContainer
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ExtraValue. */
@@ -8328,6 +7390,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.ExtraValue;
+
+        /**
+         * Gets the default type url for ExtraValue
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ServiceEndpoint. */
@@ -8378,6 +7447,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.ServiceEndpoint;
+
+        /**
+         * Gets the default type url for ServiceEndpoint
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ChangelogModel. */
@@ -8560,6 +7636,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.ChangelogModel;
+
+        /**
+         * Gets the default type url for ChangelogModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an EventModel. */
@@ -8676,6 +7759,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.EventModel;
+
+        /**
+         * Gets the default type url for EventModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a FileModel. */
@@ -8780,6 +7870,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.FileModel;
+
+        /**
+         * Gets the default type url for FileModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a GitProjectModel. */
@@ -8872,6 +7969,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.GitProjectModel;
+
+        /**
+         * Gets the default type url for GitProjectModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an ImagePullSecret. */
@@ -8910,6 +8014,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.ImagePullSecret;
+
+        /**
+         * Gets the default type url for ImagePullSecret
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a NamespaceModel. */
@@ -8984,6 +8095,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.NamespaceModel;
+
+        /**
+         * Gets the default type url for NamespaceModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Deploy enum. */
@@ -9180,6 +8298,13 @@ export namespace types {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.ProjectModel;
+
+        /**
+         * Gets the default type url for ProjectModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 }
 
@@ -9216,6 +8341,13 @@ export namespace version {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): version.Request;
+
+        /**
+         * Gets the default type url for Request
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a Response. */
@@ -9314,6 +8446,13 @@ export namespace version {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): version.Response;
+
+        /**
+         * Gets the default type url for Response
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Represents a Version */
@@ -9429,6 +8568,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsRequestMetadata;
+
+        /**
+         * Gets the default type url for WsRequestMetadata
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an AuthorizeTokenInput. */
@@ -9473,6 +8619,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.AuthorizeTokenInput;
+
+        /**
+         * Gets the default type url for AuthorizeTokenInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a TerminalMessage. */
@@ -9482,7 +8635,7 @@ export namespace websocket {
         op?: (string|null);
 
         /** TerminalMessage data */
-        data?: (string|null);
+        data?: (Uint8Array|null);
 
         /** TerminalMessage session_id */
         session_id?: (string|null);
@@ -9507,7 +8660,7 @@ export namespace websocket {
         public op: string;
 
         /** TerminalMessage data. */
-        public data: string;
+        public data: Uint8Array;
 
         /** TerminalMessage session_id. */
         public session_id: string;
@@ -9535,6 +8688,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.TerminalMessage;
+
+        /**
+         * Gets the default type url for TerminalMessage
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a ProjectPodEventJoinInput. */
@@ -9591,6 +8751,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.ProjectPodEventJoinInput;
+
+        /**
+         * Gets the default type url for ProjectPodEventJoinInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a TerminalMessageInput. */
@@ -9635,6 +8802,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.TerminalMessageInput;
+
+        /**
+         * Gets the default type url for TerminalMessageInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsHandleExecShellInput. */
@@ -9679,6 +8853,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsHandleExecShellInput;
+
+        /**
+         * Gets the default type url for WsHandleExecShellInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CancelInput. */
@@ -9729,6 +8910,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.CancelInput;
+
+        /**
+         * Gets the default type url for CancelInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a CreateProjectInput. */
@@ -9815,6 +9003,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.CreateProjectInput;
+
+        /**
+         * Gets the default type url for CreateProjectInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of an UpdateProjectInput. */
@@ -9889,6 +9084,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.UpdateProjectInput;
+
+        /**
+         * Gets the default type url for UpdateProjectInput
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a Metadata. */
@@ -9975,6 +9177,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.Metadata;
+
+        /**
+         * Gets the default type url for Metadata
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsMetadataResponse. */
@@ -10013,6 +9222,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsMetadataResponse;
+
+        /**
+         * Gets the default type url for WsMetadataResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsHandleShellResponse. */
@@ -10063,6 +9279,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsHandleShellResponse;
+
+        /**
+         * Gets the default type url for WsHandleShellResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsHandleClusterResponse. */
@@ -10107,6 +9330,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsHandleClusterResponse;
+
+        /**
+         * Gets the default type url for WsHandleClusterResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsWithContainerMessageResponse. */
@@ -10151,6 +9381,13 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsWithContainerMessageResponse;
+
+        /**
+         * Gets the default type url for WsWithContainerMessageResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
     /** Properties of a WsProjectPodEventResponse. */
@@ -10195,5 +9432,12 @@ export namespace websocket {
          * @throws {$protobuf.util.ProtocolError} If required fields are missing
          */
         public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): websocket.WsProjectPodEventResponse;
+
+        /**
+         * Gets the default type url for WsProjectPodEventResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 }
