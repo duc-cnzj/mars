@@ -210,10 +210,36 @@ func Test_podEventManagers_Run(t *testing.T) {
 	}
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	assert.Nil(t, pem.Run(cancel))
+	assert.Equal(t, "context canceled", pem.Run(cancel).Error())
+
+	pem2 := &podEventManagers{
+		pubSub: rdb.Subscribe(context.TODO()),
+	}
+	cancel2, cancelFunc2 := context.WithCancel(context.TODO())
+	defer cancelFunc2()
+	assert.Nil(t, pem2.pubSub.Close())
+	assert.Equal(t, "podEventManagers ch closed", pem2.Run(cancel2).Error())
 }
 
-func Test_rdsPubSub_Subscribe(t *testing.T) {}
+func Test_rdsPubSub_Subscribe(t *testing.T) {
+	if skip {
+		t.Skip()
+	}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+
+	r := rdsPubSub{
+		wsPubSub: rdb.Subscribe(context.TODO()),
+		done:     cancel,
+		doneFunc: cancelFunc,
+	}
+	r.Subscribe()
+	channel := r.wsPubSub.Channel()
+	assert.Nil(t, r.wsPubSub.Close())
+	_, ok := <-channel
+	assert.False(t, ok)
+	_, ok = <-r.done.Done()
+	assert.False(t, ok)
+}
 
 func Test_rdsPubSub_Close(t *testing.T) {
 	if skip {

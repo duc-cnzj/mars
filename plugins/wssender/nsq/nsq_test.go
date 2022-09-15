@@ -6,6 +6,8 @@ import (
 	"sync"
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -36,7 +38,7 @@ func TestMain(t *testing.M) {
 	}
 	setDefault(&addr, "127.0.0.1:4150")
 	setDefault(&lookupdAddr, "127.0.0.1:4161")
-	config := gonsq.NewConfig()
+	config := newNsqConfig()
 	p, err := gonsq.NewProducer(addr, config)
 	if err != nil {
 		skip = true
@@ -51,7 +53,7 @@ func TestMain(t *testing.M) {
 }
 
 func NewNsqProducer() *gonsq.Producer {
-	config := gonsq.NewConfig()
+	config := newNsqConfig()
 	p, _ := gonsq.NewProducer(addr, config)
 	setLogLevel(p)
 	return p
@@ -98,7 +100,7 @@ func TestNsqSender_New(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	cfg := gonsq.NewConfig()
+	cfg := newNsqConfig()
 	sub := (&NsqSender{
 		addr:        "xxx",
 		lookupdAddr: "yyy",
@@ -124,9 +126,9 @@ func Test_connect(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	consumer, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
+	consumer, _ := gonsq.NewConsumer("test", "duc", newNsqConfig())
 	assert.Nil(t, connect(consumer, addr, "", &noneHandler{}))
-	consumer2, _ := gonsq.NewConsumer("test", "duc", gonsq.NewConfig())
+	consumer2, _ := gonsq.NewConsumer("test", "duc", newNsqConfig())
 	assert.Nil(t, connect(consumer2, addr, lookupdAddr, &noneHandler{}))
 	consumer.Stop()
 	consumer2.Stop()
@@ -142,9 +144,9 @@ func Test_getNsqProjectEventRoom(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	consumer, _ := gonsq.NewConsumer("test", "duc1", gonsq.NewConfig())
+	consumer, _ := gonsq.NewConsumer("test", "duc1", newNsqConfig())
 	connect(consumer, addr, "", &noneHandler{})
-	consumer2, _ := gonsq.NewConsumer("test", "duc2", gonsq.NewConfig())
+	consumer2, _ := gonsq.NewConsumer("test", "duc2", newNsqConfig())
 	connect(consumer2, addr, "", &noneHandler{})
 	n := &nsq{
 		addr: addr,
@@ -156,9 +158,9 @@ func Test_getNsqProjectEventRoom(t *testing.T) {
 	n.Close()
 	_, ok := <-consumer.StopChan
 	assert.False(t, ok)
-	consumer3, _ := gonsq.NewConsumer("test", "duc3", gonsq.NewConfig())
+	consumer3, _ := gonsq.NewConsumer("test", "duc3", newNsqConfig())
 	connect(consumer3, addr, "", &noneHandler{})
-	consumer4, _ := gonsq.NewConsumer("test", "duc4", gonsq.NewConfig())
+	consumer4, _ := gonsq.NewConsumer("test", "duc4", newNsqConfig())
 	connect(consumer4, addr, "", &noneHandler{})
 	n2 := &nsq{
 		addr:        addr,
@@ -245,7 +247,7 @@ func Test_nsq_Join(t *testing.T) {
 	assert.Nil(t, db.Create(pmodel).Error)
 	n := &nsq{
 		addr:         addr,
-		cfg:          gonsq.NewConfig(),
+		cfg:          newNsqConfig(),
 		uid:          "uid",
 		id:           "id",
 		consumers:    map[string]*gonsq.Consumer{},
@@ -284,7 +286,7 @@ func Test_nsq_Leave(t *testing.T) {
 	assert.Nil(t, db.Create(pmodel).Error)
 	n := &nsq{
 		addr:         addr,
-		cfg:          gonsq.NewConfig(),
+		cfg:          newNsqConfig(),
 		uid:          "uid",
 		id:           "id",
 		consumers:    map[string]*gonsq.Consumer{},
@@ -308,7 +310,7 @@ func Test_nsq_Run(t *testing.T) {
 	}
 	ns := &NsqSender{
 		producer: NewNsqProducer(),
-		cfg:      gonsq.NewConfig(),
+		cfg:      newNsqConfig(),
 		addr:     addr,
 	}
 	n := ns.New("uid", "id").(*nsq)
@@ -324,7 +326,7 @@ func Test_nsq_Subscribe(t *testing.T) {
 	}
 	ns := &NsqSender{
 		producer: NewNsqProducer(),
-		cfg:      gonsq.NewConfig(),
+		cfg:      newNsqConfig(),
 		addr:     addr,
 	}
 	defer ns.Destroy()
@@ -336,7 +338,7 @@ func Test_nsq_Subscribe(t *testing.T) {
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	defer cancelFunc()
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		n.Run(cancel)
 	}()
 	assert.Nil(t, p.Publish(n.ephemeralID(), []byte("aa")))
@@ -374,16 +376,58 @@ func Test_nsq_ToOthers(t *testing.T) {
 	n.producer.Stop()
 }
 
+func newNsqConfig() *gonsq.Config {
+	config := gonsq.NewConfig()
+	config.MaxInFlight = 1000
+	return config
+}
+
 func Test_nsq_ToSelf(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	n := &nsq{
-		id:       "id",
+	nss := &NsqSender{
 		producer: NewNsqProducer(),
+		cfg:      newNsqConfig(),
+		addr:     addr,
 	}
-	assert.Nil(t, n.ToSelf(&websocket.WsMetadataResponse{}))
-	n.producer.Stop()
+	n := nss.New("uid", "id").(*nsq)
+	defer n.producer.Stop()
+	m := &websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Id:      n.id,
+			Uid:     n.uid,
+			Slug:    "slug",
+			Type:    1,
+			End:     true,
+			Result:  1,
+			Message: "xxx",
+			Percent: 0,
+		},
+	}
+	m2 := &websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Id:      n.id,
+			Uid:     n.uid,
+			Slug:    "slug",
+			Type:    2,
+			End:     true,
+			Result:  1,
+			Message: "xxx",
+			Percent: 0,
+		},
+	}
+
+	subscribe := n.Subscribe()
+	assert.Nil(t, n.ToSelf(m))
+
+	data := <-subscribe
+	marshal, _ := proto.Marshal(m)
+	marshal2, _ := proto.Marshal(m2)
+	assert.Equal(t, marshal, data)
+	assert.NotEqual(t, marshal2, data)
+	assert.Nil(t, n.Close())
+	assert.Nil(t, nss.Destroy())
 }
 
 func Test_nsq_Uid(t *testing.T) {
@@ -407,7 +451,7 @@ func Test_setLogLevel(t *testing.T) {
 	}
 	p := NewNsqProducer()
 	setLogLevel(p)
-	c, _ := gonsq.NewConsumer("test", "duc3", gonsq.NewConfig())
+	c, _ := gonsq.NewConsumer("test", "duc3", newNsqConfig())
 	setLogLevel(c)
 	c.Stop()
 	p.Stop()
@@ -435,7 +479,7 @@ func Test_nsq_Publish(t *testing.T) {
 	assert.Nil(t, db.Create(pmodel).Error)
 	ns := NsqSender{
 		producer: NewNsqProducer(),
-		cfg:      gonsq.NewConfig(),
+		cfg:      newNsqConfig(),
 		addr:     addr,
 	}
 	sub := ns.New("a", "a")

@@ -201,12 +201,10 @@ func (p *podEventManagers) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			mlog.Debug("podEventManagers exit")
-			return nil
+			return ctx.Err()
 		case data, ok := <-ch:
 			if !ok {
-				mlog.Debug("podEventManagers ch closed")
-				return nil
+				return errors.New("podEventManagers ch closed")
 			}
 			fn := func() bool {
 				p.mu.RLock()

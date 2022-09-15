@@ -63,10 +63,7 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 		mlog.Debugf("[NSQ]: lookupd_addr '%v'", s)
 		n.lookupdAddr = s.(string)
 	}
-	p, err := gonsq.NewProducer(n.addr, n.cfg)
-	if err != nil {
-		return err
-	}
+	p, _ := gonsq.NewProducer(n.addr, n.cfg)
 	setLogLevel(p)
 	err = p.Ping()
 	if err != nil {
