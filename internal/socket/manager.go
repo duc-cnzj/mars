@@ -666,7 +666,7 @@ func (j *Jober) LoadConfigs() error {
 		defer recovery.HandlePanic("LoadConfigs")
 		defer wg.Done()
 		defer close(ch)
-		fn := func() error {
+		err := func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 
 			for _, defaultLoader := range j.loaders {
@@ -679,9 +679,9 @@ func (j *Jober) LoadConfigs() error {
 			}
 
 			return nil
-		}
+		}()
 		select {
-		case ch <- fn():
+		case ch <- err:
 		default:
 		}
 	}()
