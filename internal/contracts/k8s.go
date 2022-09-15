@@ -1,6 +1,13 @@
 package contracts
 
+//go:generate mockgen -destination ../mock/mock_remote_executor.go -package mock github.com/duc-cnzj/mars/internal/contracts RemoteExecutor
+//go:generate mockgen -destination ../mock/mock_pod_copier.go -package mock github.com/duc-cnzj/mars/internal/contracts PodFileCopier
+//go:generate mockgen -destination ../mock/mock_archiver.go -package mock github.com/duc-cnzj/mars/internal/contracts Archiver
+
 import (
+	"io"
+	"net/url"
+
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -9,6 +16,7 @@ import (
 	v1 "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
@@ -68,4 +76,38 @@ type K8sClient struct {
 
 	EventFanOut FanOutInterface[*eventsv1.Event]
 	PodFanOut   FanOutInterface[*corev1.Pod]
+}
+
+type ExecUrlBuilder interface {
+	URL() *url.URL
+}
+
+type ExecRequestBuilder interface {
+	BuildExecRequest(namespace, pod string, peo *corev1.PodExecOptions) ExecUrlBuilder
+}
+
+type RemoteExecutor interface {
+	WithMethod(method string) RemoteExecutor
+	WithContainer(namespace, pod, container string) RemoteExecutor
+	WithCommand(cmd []string) RemoteExecutor
+	Execute(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
+}
+
+type CopyFileToPodResult struct {
+	TargetDir     string
+	ErrOut        string
+	StdOut        string
+	ContainerPath string
+	FileName      string
+}
+
+type PodFileCopier interface {
+	Copy(namespace, pod, container, fpath, targetContainerDir string, clientSet kubernetes.Interface, config *restclient.Config) (*CopyFileToPodResult, error)
+}
+
+// Archiver 不是很合理，但暂时这样
+type Archiver interface {
+	Archive(sources []string, destination string) error
+	Open(path string) (io.ReadCloser, error)
+	Remove(path string) error
 }

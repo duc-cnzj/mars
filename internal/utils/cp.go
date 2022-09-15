@@ -6,6 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
+
+	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
 
@@ -16,22 +20,36 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
 )
 
-type CopyFileToPodResult struct {
-	TargetDir     string
-	ErrOut        string
-	StdOut        string
-	ContainerPath string
-	FileName      string
+type defaultArchiver struct{}
+
+func NewDefaultArchiver() *defaultArchiver {
+	return &defaultArchiver{}
 }
 
-type CopyFileToPodFunc func(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error)
+func (m *defaultArchiver) Archive(sources []string, destination string) error {
+	return archiver.Archive(sources, destination)
+}
 
-func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) (*CopyFileToPodResult, error) {
+func (m *defaultArchiver) Open(path string) (io.ReadCloser, error) {
+	return os.Open(path)
+}
+
+func (m *defaultArchiver) Remove(path string) error {
+	return os.Remove(path)
+}
+
+type fileCopier struct {
+	archiver contracts.Archiver
+	executor contracts.RemoteExecutor
+}
+
+func NewFileCopier(executor contracts.RemoteExecutor, archiver contracts.Archiver) *fileCopier {
+	return &fileCopier{executor: executor, archiver: archiver}
+}
+
+func (fc *fileCopier) Copy(namespace, pod, container, fpath, targetContainerDir string, clientSet kubernetes.Interface, config *restclient.Config) (*contracts.CopyFileToPodResult, error) {
 	var (
 		errbf, outbf      = bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 		reader, outStream = io.Pipe()
@@ -70,19 +88,23 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		localPath = put.Path()
 		defer localUploader.Delete(localPath)
 	}
-	if err := archiver.Archive([]string{localPath}, path); err != nil {
+	if err := fc.archiver.Archive([]string{localPath}, path); err != nil {
 		return nil, err
 	}
-	defer os.Remove(path)
-	src, err := os.Open(path)
+	defer fc.archiver.Remove(path)
+	src, err := fc.archiver.Open(path)
 	if err != nil {
 		return nil, err
 	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	defer wg.Wait()
 	go func(reader *io.PipeReader, outStream *io.PipeWriter, src io.ReadCloser) {
 		defer func() {
 			reader.Close()
 			outStream.Close()
 			src.Close()
+			wg.Done()
 		}()
 		defer recovery.HandlePanic("CopyFileToPod")
 
@@ -91,35 +113,13 @@ func CopyFileToPod(namespace, pod, container, fpath, targetContainerDir string) 
 		}
 	}(reader, outStream, src)
 
-	peo := &v1.PodExecOptions{
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		Container: container,
-		Command:   []string{"tar", "-zmxf", "-", "-C", targetContainerDir},
-	}
+	err = fc.executor.
+		WithCommand([]string{"tar", "-zmxf", "-", "-C", targetContainerDir}).
+		WithMethod("POST").
+		WithContainer(namespace, pod, container).
+		Execute(clientSet, config, reader, outbf, errbf, false, nil)
 
-	req := app.K8sClientSet().CoreV1().
-		RESTClient().
-		Post().
-		Namespace(namespace).
-		Resource("pods").
-		SubResource("exec").
-		Name(pod)
-	params := req.VersionedParams(peo, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(app.K8sClient().RestConfig, "POST", params.URL())
-	if err != nil {
-		mlog.Error(err)
-		return nil, err
-	}
-
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  reader,
-		Stdout: outbf,
-		Stderr: errbf,
-	})
-
-	return &CopyFileToPodResult{
+	return &contracts.CopyFileToPodResult{
 		TargetDir:     targetContainerDir,
 		ErrOut:        errbf.String(),
 		StdOut:        outbf.String(),
