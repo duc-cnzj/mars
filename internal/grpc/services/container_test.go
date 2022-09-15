@@ -5,10 +5,11 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"k8s.io/client-go/kubernetes"
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
 	"github.com/duc-cnzj/mars/internal/contracts"

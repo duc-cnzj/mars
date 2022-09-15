@@ -39,14 +39,7 @@ func (e *defaultRemoteExecutor) WithCommand(cmd []string) contracts.RemoteExecut
 }
 
 func (e *defaultRemoteExecutor) Execute(clientSet kubernetes.Interface, cfg *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
-	peo := &v1.PodExecOptions{
-		Stdin:     stdin != nil,
-		Stdout:    stdout != nil,
-		Stderr:    stderr != nil,
-		TTY:       tty,
-		Container: e.container,
-		Command:   e.cmd,
-	}
+	peo := e.newOption(stdin, stdout, stderr, tty)
 
 	req := clientSet.CoreV1().
 		RESTClient().
@@ -68,4 +61,15 @@ func (e *defaultRemoteExecutor) Execute(clientSet kubernetes.Interface, cfg *res
 		Tty:               tty,
 		TerminalSizeQueue: terminalSizeQueue,
 	})
+}
+
+func (e *defaultRemoteExecutor) newOption(stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) *v1.PodExecOptions {
+	return &v1.PodExecOptions{
+		Stdin:     stdin != nil,
+		Stdout:    stdout != nil,
+		Stderr:    stderr != nil,
+		TTY:       tty,
+		Container: e.container,
+		Command:   e.cmd,
+	}
 }
