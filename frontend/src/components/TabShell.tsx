@@ -25,6 +25,7 @@ import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 
 const encoder = new TextEncoder()
+const decoder = new TextDecoder()
 
 const TabShell: React.FC<{
   namespaceID: number;
@@ -161,7 +162,7 @@ const TabShell: React.FC<{
       }
 
       if (frame.op === "toast") {
-        message.error(frame.data);
+        message.error(decoder.decode(frame.data));
         listContainer().then((res) => {
           setValuesByResult(res.data.items);
         });
