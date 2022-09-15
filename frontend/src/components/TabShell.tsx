@@ -24,6 +24,8 @@ import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 
+const encoder = new TextEncoder()
+
 const TabShell: React.FC<{
   namespaceID: number;
   namespace: string;
@@ -120,7 +122,7 @@ const TabShell: React.FC<{
         message: {
           session_id: id,
           op: "stdin",
-          data: str,
+          data: encoder.encode(str),
           cols: 0,
           rows: 0,
         },
