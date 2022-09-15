@@ -5,18 +5,17 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"net/url"
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
-	"github.com/duc-cnzj/mars/internal/utils"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -28,22 +27,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	clientgoexec "k8s.io/client-go/util/exec"
 )
-
-type fakeRemoteExecutor struct {
-	funcBeforeReturn func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue)
-	method           string
-	url              *url.URL
-	execErr          error
-}
-
-func (f *fakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
-	f.method = method
-	f.url = url
-	if f.funcBeforeReturn != nil {
-		f.funcBeforeReturn(method, url, config, stdin, stdout, stderr, tty, terminalSizeQueue)
-	}
-	return f.execErr
-}
 
 func TestContainer_ContainerLog(t *testing.T) {
 	m := gomock.NewController(t)
@@ -109,14 +92,14 @@ func TestContainer_CopyToPod(t *testing.T) {
 	file := &models.File{}
 	db.Create(file)
 	testutil.AssertAuditLogFired(m, app)
+	pfc := mock.NewMockPodFileCopier(m)
+	pfc.EXPECT().Copy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&contracts.CopyFileToPodResult{
+		TargetDir:     "/tmp",
+		ContainerPath: "/tmp/aa.txt",
+		FileName:      "aa.txt",
+	}, nil)
 	res, err := (&Container{
-		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
-			return &utils.CopyFileToPodResult{
-				TargetDir:     "/tmp",
-				ContainerPath: "/tmp/aa.txt",
-				FileName:      "aa.txt",
-			}, nil
-		},
+		PodFileCopier: pfc,
 	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    int64(file.ID),
 		Namespace: "dev",
@@ -143,10 +126,9 @@ func TestContainer_CopyToPod(t *testing.T) {
 	})
 	assert.Error(t, err)
 
+	pfc.EXPECT().Copy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 	_, err = (&Container{
-		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
-			return nil, errors.New("xxx")
-		},
+		PodFileCopier: pfc,
 	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    int64(file.ID),
 		Namespace: "dev",
@@ -171,18 +153,6 @@ func (e *execServer) Context() context.Context {
 
 func (e *execServer) Send(res *container.ExecResponse) error {
 	return e.send(res)
-}
-
-type fakeExecRequestBuilder struct{}
-
-type fakeExecUrlBuilder struct{}
-
-func (f *fakeExecUrlBuilder) URL() *url.URL {
-	return &url.URL{}
-}
-
-func (f *fakeExecRequestBuilder) BuildExecRequest(namespace, pod string, peo *v1.PodExecOptions) ExecUrlBuilder {
-	return &fakeExecUrlBuilder{}
 }
 
 func TestContainer_Exec(t *testing.T) {
@@ -217,9 +187,13 @@ func TestContainer_Exec(t *testing.T) {
 
 	var mu sync.Mutex
 	var result []*container.ExecResponse
+	re := mock.NewMockRemoteExecutor(m)
+	re.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return(re)
+	re.EXPECT().WithCommand(gomock.Any()).Return(re)
+	re.EXPECT().WithMethod(gomock.Any()).Return(re)
+	re.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("xxx"))
 	err = (&Container{
-		Executor:    &fakeRemoteExecutor{execErr: errors.New("xxx")},
-		ExecBuilder: &fakeExecRequestBuilder{},
+		Executor: re,
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
@@ -245,6 +219,26 @@ func TestContainer_Exec(t *testing.T) {
 	}).String(), result[0].String())
 }
 
+type fakeRemoteExecutor struct {
+	execute func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
+}
+
+func (f *fakeRemoteExecutor) WithMethod(method string) contracts.RemoteExecutor {
+	return f
+}
+
+func (f *fakeRemoteExecutor) WithContainer(namespace, pod, container string) contracts.RemoteExecutor {
+	return f
+}
+
+func (f *fakeRemoteExecutor) WithCommand(cmd []string) contracts.RemoteExecutor {
+	return f
+}
+
+func (f *fakeRemoteExecutor) Execute(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return f.execute(clientSet, config, stdin, stdout, stderr, tty, terminalSizeQueue)
+}
+
 func TestContainer_Exec_Success(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -268,10 +262,12 @@ func TestContainer_Exec_Success(t *testing.T) {
 	var mu sync.Mutex
 	var result []*container.ExecResponse
 	err := (&Container{
-		Executor: &fakeRemoteExecutor{execErr: nil, funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
-			stdout.Write([]byte("aaa"))
-		}},
-		ExecBuilder: &fakeExecRequestBuilder{},
+		Executor: &fakeRemoteExecutor{
+			execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+				stdout.Write([]byte("aaa"))
+				return nil
+			},
+		},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
@@ -315,11 +311,12 @@ func TestContainer_Exec_Error(t *testing.T) {
 
 	var result []*container.ExecResponse
 	err := (&Container{
-		Executor: &fakeRemoteExecutor{execErr: &clientgoexec.CodeExitError{
-			Err:  errors.New("aaa"),
-			Code: 100,
+		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+			return &clientgoexec.CodeExitError{
+				Err:  errors.New("aaa"),
+				Code: 100,
+			}
 		}},
-		ExecBuilder: &fakeExecRequestBuilder{},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
@@ -342,10 +339,10 @@ func TestContainer_Exec_Error(t *testing.T) {
 	}).String(), result[0].String())
 
 	err = (&Container{
-		Executor: &fakeRemoteExecutor{execErr: nil, funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
+		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 			stdout.Write([]byte("aaa"))
+			return nil
 		}},
-		ExecBuilder: &fakeExecRequestBuilder{},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
@@ -388,11 +385,11 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	cancelFunc()
 	err := (&Container{
 		Executor: &fakeRemoteExecutor{
-			funcBeforeReturn: func(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) {
+			execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 				time.Sleep(1 * time.Second)
+				return nil
 			},
 		},
-		ExecBuilder: &fakeExecRequestBuilder{},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
@@ -793,14 +790,14 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 	up.EXPECT().Delete(gomock.Any()).Times(0)
 
 	s := &streamCopyToPodServer{ctx: adminCtx(), totalWrite: 2}
+	pfc := mock.NewMockPodFileCopier(m)
+	pfc.EXPECT().Copy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&contracts.CopyFileToPodResult{
+		TargetDir:     "/tmp",
+		ContainerPath: "/tmp/aa.txt",
+		FileName:      "aa.txt",
+	}, nil)
 	err := (&Container{
-		CopyFileToPodFunc: func(namespace, pod, container, fpath, targetContainerDir string) (*utils.CopyFileToPodResult, error) {
-			return &utils.CopyFileToPodResult{
-				TargetDir:     "/tmp",
-				ContainerPath: "/tmp/aa.txt",
-				FileName:      "aa.txt",
-			}, nil
-		},
+		PodFileCopier: pfc,
 	}).StreamCopyToPod(s)
 	assert.Nil(t, err)
 	assert.Equal(t, (&container.StreamCopyToPodResponse{

@@ -2,51 +2,13 @@ package plugins
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"testing"
 
-	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
 )
-
-func TestDecodeMessage(t *testing.T) {
-	m := Message{
-		Data: []byte("111"),
-		To:   1,
-		ID:   "id",
-	}
-
-	s, _ := json.Marshal(&m)
-	message, _ := DecodeMessage(s)
-	assert.Equal(t, m, message)
-}
-
-func TestMessage_Marshal(t *testing.T) {
-	m := Message{
-		Data: []byte("111"),
-		To:   1,
-		ID:   "id",
-	}
-
-	s, _ := json.Marshal(&m)
-	assert.Equal(t, s, m.Marshal())
-}
-
-func TestProtoToMessage(t *testing.T) {
-	m := websocket.Metadata{
-		Message: "aa",
-	}
-	marshal, _ := proto.Marshal(&m)
-	assert.Equal(t, Message{
-		Data: marshal,
-		To:   1,
-		ID:   "idx",
-	}, ProtoToMessage(&m, 1, "idx"))
-}
 
 func TestEmptyPubSub_Close(t *testing.T) {
 	assert.Nil(t, (&EmptyPubSub{}).Close())

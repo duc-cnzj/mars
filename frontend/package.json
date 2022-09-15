@@ -40,7 +40,7 @@
     "prism-themes": "^1.9.0",
     "prismjs": "^1.28.0",
     "prop-types": "^15.8.1",
-    "protobufjs": "^6.11.3",
+    "protobufjs": "^7.1.1",
     "react": "^17.0.0",
     "react-diff-viewer": "^3.1.1",
     "react-dom": "^17.0.0",
@@ -102,6 +102,7 @@
     "@types/react-router-dom": "^5.1.7",
     "@types/react-syntax-highlighter": "^13.5.0",
     "asciinema-player": "^3.0.1",
-    "babel-plugin-transform-remove-console": "^6.9.4"
+    "babel-plugin-transform-remove-console": "^6.9.4",
+    "protobufjs-cli": "^1.0.2"
   }
 }

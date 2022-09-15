@@ -166,6 +166,18 @@ func TestHandleWsHandleCloseShell(t *testing.T) {
 func TestHandleWsHandleExecShell(t *testing.T) {
 }
 
+type protoMatcher struct {
+	wants proto.Message
+}
+
+func (m *protoMatcher) Matches(x any) bool {
+	return proto.Equal(x.(proto.Message), m.wants)
+}
+
+func (m *protoMatcher) String() string {
+	return ""
+}
+
 func TestHandleWsHandleExecShellMsg(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -176,15 +188,14 @@ func TestHandleWsHandleExecShellMsg(t *testing.T) {
 		pubSub:           ps,
 	}
 	message := &websocket.TerminalMessage{
-		Data:      "data",
+		Data:      []byte("data"),
 		SessionId: "sid",
 	}
 	marshal, _ := proto.Marshal(&websocket.TerminalMessageInput{
 		Type:    websocket.Type_HandleExecShellMsg,
 		Message: message,
 	})
-	clone := proto.Clone(message)
-	sm.EXPECT().Send(clone).Times(1)
+	sm.EXPECT().Send(&protoMatcher{wants: proto.Clone(message)}).Times(1)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, []byte("1:"))
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, marshal)

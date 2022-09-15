@@ -24,6 +24,9 @@ import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
 const TabShell: React.FC<{
   namespaceID: number;
   namespace: string;
@@ -120,7 +123,7 @@ const TabShell: React.FC<{
         message: {
           session_id: id,
           op: "stdin",
-          data: str,
+          data: encoder.encode(str),
           cols: 0,
           rows: 0,
         },
@@ -159,7 +162,7 @@ const TabShell: React.FC<{
       }
 
       if (frame.op === "toast") {
-        message.error(frame.data);
+        message.error(decoder.decode(frame.data));
         listContainer().then((res) => {
           setValuesByResult(res.data.items);
         });

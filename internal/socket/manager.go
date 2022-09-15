@@ -64,7 +64,7 @@ const (
 	ProjectPodEvent      = websocket_pb.Type_ProjectPodEvent
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 1024 * 50
+	maxMessageSize = 1024 * 1024 * 10 // 10MB
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
 	// Time allowed to read the next pong message from the peer.
@@ -661,12 +661,12 @@ func defaultLoaders() []Loader {
 func (j *Jober) LoadConfigs() error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	ch := make(chan error)
+	ch := make(chan error, 1)
 	go func() {
 		defer recovery.HandlePanic("LoadConfigs")
 		defer wg.Done()
 		defer close(ch)
-		fn := func() error {
+		err := func() error {
 			j.Messager().SendMsg("[Check]: 加载项目文件")
 
 			for _, defaultLoader := range j.loaders {
@@ -679,11 +679,8 @@ func (j *Jober) LoadConfigs() error {
 			}
 
 			return nil
-		}
-		select {
-		case ch <- fn():
-		default:
-		}
+		}()
+		ch <- err
 	}()
 
 	var err error

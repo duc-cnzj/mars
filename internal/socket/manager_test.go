@@ -72,6 +72,16 @@ func TestDynamicLoader_Load(t *testing.T) {
     age: 17
     name: duc
 `, job2.dynamicConfigYaml)
+
+	em.msgs = []string{}
+	job3 := &Jober{
+		input:     &websocket_pb.CreateProjectInput{},
+		messager:  em,
+		percenter: &emptyPercenter{},
+	}
+	assert.Nil(t, (&DynamicLoader{}).Load(job3))
+	assert.Len(t, em.msgs, 2)
+	assert.Equal(t, "[DynamicLoader]: 未发现用户自定义配置", em.msgs[1])
 }
 
 func TestExtraValuesLoader_Load(t *testing.T) {
@@ -174,6 +184,17 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(strings.Join(em.msgs, " "), "不允许自定义字段 app->config"))
 	assert.Equal(t, []string{"duc: xxx\n"}, j.extraValues)
+
+	j2 := &Jober{
+		input:     &websocket_pb.CreateProjectInput{},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config:    &mars.Config{},
+	}
+	em.msgs = []string{}
+	assert.Nil(t, (&ExtraValuesLoader{}).Load(j2))
+	assert.Len(t, em.msgs, 2)
+	assert.Equal(t, "[ExtraValuesLoader]: 未发现项目额外的配置", em.msgs[1])
 }
 
 func TestExtraValuesLoader_deepSetItems(t *testing.T) {

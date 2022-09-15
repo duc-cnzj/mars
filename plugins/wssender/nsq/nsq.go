@@ -17,7 +17,6 @@ import (
 	"github.com/duc-cnzj/mars/plugins/wssender"
 
 	gonsq "github.com/nsqio/go-nsq"
-	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -64,10 +63,7 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 		mlog.Debugf("[NSQ]: lookupd_addr '%v'", s)
 		n.lookupdAddr = s.(string)
 	}
-	p, err := gonsq.NewProducer(n.addr, n.cfg)
-	if err != nil {
-		return err
-	}
+	p, _ := gonsq.NewProducer(n.addr, n.cfg)
 	setLogLevel(p)
 	err = p.Ping()
 	if err != nil {
@@ -237,7 +233,7 @@ func (n *nsq) Run(ctx context.Context) error {
 					func() {
 						for _, selector := range selectors {
 							if selector.Matches(labels.Set(obj.Pod.Labels)) {
-								marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
+								n.msgCh <- wssender.TransformToResponse(&websocket_pb.WsProjectPodEventResponse{
 									Metadata: &websocket_pb.Metadata{
 										Id:     n.id,
 										Uid:    n.uid,
@@ -248,7 +244,6 @@ func (n *nsq) Run(ctx context.Context) error {
 									},
 									ProjectId: pid,
 								})
-								n.msgCh <- marshal
 								return
 							}
 						}
@@ -282,15 +277,15 @@ func (n *nsq) ID() string {
 }
 
 func (n *nsq) ToSelf(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(n.ephemeralID(), plugins.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
+	return n.producer.Publish(n.ephemeralID(), wssender.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
 }
 
 func (n *nsq) ToAll(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
+	return n.producer.Publish(ephemeralBroadroom, wssender.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
 }
 
 func (n *nsq) ToOthers(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(ephemeralBroadroom, plugins.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
+	return n.producer.Publish(ephemeralBroadroom, wssender.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
 }
 
 func (n *nsq) ephemeralID() string {
@@ -352,7 +347,7 @@ func (h *handler) HandleMessage(m *gonsq.Message) error {
 	if m == nil || len(m.Body) == 0 {
 		return nil
 	}
-	message, _ := plugins.DecodeMessage(m.Body)
+	message, _ := wssender.DecodeMessage(m.Body)
 	switch message.To {
 	case plugins.ToSelf:
 		fallthrough

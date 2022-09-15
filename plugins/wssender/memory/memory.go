@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -108,7 +107,8 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 					if ok {
 						for _, selector := range selectors {
 							if selector.Matches(labels.Set(pod.Labels)) {
-								marshal, _ := proto.Marshal(&websocket_pb.WsProjectPodEventResponse{
+								mlog.Debugf("publish to: (%d---%d)", nsID, pid)
+								conn.ch <- wssender.TransformToResponse(&websocket_pb.WsProjectPodEventResponse{
 									Metadata: &websocket_pb.Metadata{
 										Id:     socketID,
 										Type:   websocket_pb.Type_ProjectPodEvent,
@@ -118,8 +118,6 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 									},
 									ProjectId: pid,
 								})
-								mlog.Debugf("publish to: (%d---%d)", nsID, pid)
-								conn.ch <- marshal
 								return
 							}
 						}
@@ -202,10 +200,9 @@ func (p *memoryPubSub) ID() string {
 func (p *memoryPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	marshal, _ := proto.Marshal(wsResponse)
 	conn, ok := p.manager.conns[p.id]
 	if ok {
-		conn.ch <- marshal
+		conn.ch <- wssender.TransformToResponse(wsResponse)
 	}
 	return nil
 }
@@ -213,10 +210,9 @@ func (p *memoryPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 func (p *memoryPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	marshal, _ := proto.Marshal(wsResponse)
 
 	for _, s := range p.manager.conns {
-		s.ch <- marshal
+		s.ch <- wssender.TransformToResponse(wsResponse)
 	}
 	return nil
 }
@@ -224,11 +220,10 @@ func (p *memoryPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
 func (p *memoryPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
-	marshal, _ := proto.Marshal(wsResponse)
 
 	for _, s := range p.manager.conns {
 		if s.id != p.id {
-			s.ch <- marshal
+			s.ch <- wssender.TransformToResponse(wsResponse)
 		}
 	}
 	return nil

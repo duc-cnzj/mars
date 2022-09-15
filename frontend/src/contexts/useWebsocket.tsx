@@ -32,7 +32,9 @@ export function useWsReady(): boolean {
   return false;
 }
 
-export const ProvideWebsocket: React.FC<{children: React.ReactNode;}> = ({ children }) => {
+export const ProvideWebsocket: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const dispatch = useDispatch();
   const [ws, setWs] = useState<any>();
 
@@ -55,7 +57,7 @@ export const ProvideWebsocket: React.FC<{children: React.ReactNode;}> = ({ child
       url += "?uid=" + uid;
     }
     let conn = new WebSocket(url);
-    conn.binaryType = "arraybuffer"
+    conn.binaryType = "arraybuffer";
     conn.onopen = function (evt) {
       setWs({ ws: conn, ready: true });
       conn.send(
@@ -70,8 +72,16 @@ export const ProvideWebsocket: React.FC<{children: React.ReactNode;}> = ({ child
       console.log("ws closed");
     };
     conn.onmessage = function (evt) {
-      let data: pb.websocket.WsMetadataResponse = pb.websocket.WsMetadataResponse.decode(new Uint8Array(evt.data))
-      data.metadata && dispatch(handleEvents(data.metadata.slug, data.metadata, new Uint8Array(evt.data)));
+      let data: pb.websocket.WsMetadataResponse =
+        pb.websocket.WsMetadataResponse.decode(new Uint8Array(evt.data));
+      data.metadata &&
+        dispatch(
+          handleEvents(
+            data.metadata.slug,
+            data.metadata,
+            new Uint8Array(evt.data)
+          )
+        );
     };
   }, [dispatch]);
 

@@ -20,7 +20,7 @@ protoc \
     $i
 done
 
-pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../internal/grpc/protos/**/*.proto \
+../frontend/node_modules/.bin/pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../internal/grpc/protos/**/*.proto \
   --keep-case \
   --no-verify \
   --no-convert \
@@ -31,7 +31,7 @@ pbjs -t static-module -o ../frontend/src/api/compiled.js -w es6  ../internal/grp
 #  --no-encode \
 #  --no-decode \
 
-pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep-case
+../frontend/node_modules/.bin/pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep-case
 
 # https://github.com/protobufjs/protobuf.js/blob/master/cli/README.md#reflection-vs-static-code
 #  Static targets only:
