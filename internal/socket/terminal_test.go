@@ -30,6 +30,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Uploader().Return(nil).AnyTimes()
+	app.EXPECT().LocalUploader().Return(nil).AnyTimes()
 	ps := mock.NewMockPubSub(m)
 	p := &MyPtyHandler{
 		id:       "duc",

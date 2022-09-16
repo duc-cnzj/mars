@@ -2,6 +2,7 @@ package bootstrappers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,6 +76,12 @@ func Test_authenticated(t *testing.T) {
 	assert.Equal(t, "duc", value.(*contracts.UserInfo).Name)
 }
 
+type closedReader struct{}
+
+func (c closedReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("xxx")
+}
+
 func Test_download(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	download(recorder, "f.txt", strings.NewReader("aaa"))
@@ -84,6 +91,11 @@ func Test_download(t *testing.T) {
 	assert.Equal(t, "binary", recorder.Header().Get("Content-Transfer-Encoding"))
 	assert.Equal(t, "*", recorder.Header().Get("Access-Control-Expose-Headers"))
 	assert.Equal(t, "aaa", recorder.Body.String())
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	recorder2 := httptest.NewRecorder()
+	download(recorder2, "f.txt", closedReader{})
+	assert.Equal(t, http.StatusOK, recorder2.Code)
 }
 
 func Test_handFile(t *testing.T) {
@@ -197,4 +209,38 @@ func Test_serveWs(t *testing.T) {
 	assert.NotNil(t, r.Get("ws"))
 	assert.NotNil(t, r.Get("ws_info"))
 	assert.Nil(t, r.Get("xxx"))
+}
+
+func TestHeaderMatcher(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  func() string
+	}{
+		{
+			input: "a",
+			want: func() string {
+				matcher, _ := runtime.DefaultHeaderMatcher("a")
+				return matcher
+			},
+		},
+		{
+			input: "tracestate",
+			want: func() string {
+				return "tracestate"
+			},
+		},
+		{
+			input: "traceparent",
+			want: func() string {
+				return "traceparent"
+			},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.input, func(t *testing.T) {
+			matcher, _ := HeaderMatcher(tt.input)
+			assert.Equal(t, tt.want(), matcher)
+		})
+	}
 }

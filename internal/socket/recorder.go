@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -21,23 +22,6 @@ var (
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 
-type currentStart struct {
-	sync.RWMutex
-	t time.Time
-}
-
-func (c *currentStart) Set(t time.Time) {
-	c.Lock()
-	defer c.Unlock()
-	c.t = t
-}
-
-func (c *currentStart) Get() (t time.Time) {
-	c.RLock()
-	defer c.RUnlock()
-	return c.t
-}
-
 type timer interface {
 	Now() time.Time
 }
@@ -50,12 +34,10 @@ func (r realTimer) Now() time.Time {
 
 type Recorder struct {
 	sync.RWMutex
-	timer            timer
-	filepath         string
-	container        contracts.Container
-	f                contracts.File
-	currentStartTime currentStart
-	startTime        time.Time
+	timer     timer
+	container contracts.Container
+	f         contracts.File
+	startTime time.Time
 
 	t    *MyPtyHandler
 	once sync.Once
@@ -64,6 +46,16 @@ type Recorder struct {
 
 	shellMu sync.RWMutex
 	shell   string
+
+	rcMu       sync.RWMutex
+	cols, rows uint16
+}
+
+func max[T int | uint16 | uint64](a, b T) T {
+	if a < b {
+		return b
+	}
+	return a
 }
 
 func (r *Recorder) GetShell() string {
@@ -78,12 +70,15 @@ func (r *Recorder) SetShell(sh string) {
 	r.shell = sh
 }
 
-func (r *Recorder) Resize(cols, rows uint16) error {
-	t := r.timer.Now()
+func (r *Recorder) Resize(cols, rows uint16) {
+	r.HeadLineColRow(cols, rows)
+}
 
-	_, err := r.buffer.WriteString(fmt.Sprintf(startLine, cols, rows, t.Unix(), r.shell))
-	r.currentStartTime.Set(t)
-	return err
+func (r *Recorder) HeadLineColRow(cols, rows uint16) {
+	r.rcMu.Lock()
+	defer r.rcMu.Unlock()
+	r.cols = max(r.cols, cols)
+	r.rows = max(r.rows, rows)
 }
 
 func (r *Recorder) Write(data string) (err error) {
@@ -91,25 +86,23 @@ func (r *Recorder) Write(data string) (err error) {
 	defer r.Unlock()
 	r.once.Do(func() {
 		var file contracts.File
-		file, err = app.Uploader().Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
+		file, err = app.LocalUploader().Disk("tmp").NewFile(fmt.Sprintf("%s/%s/%s",
 			r.t.conn.GetUser().Name,
 			r.timer.Now().Format("2006-01-02"),
-			fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+			fmt.Sprintf("recorder-%s-%s-%s-%s.cast.tmp", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
 		if err != nil {
 			return
 		}
 		r.f = file
 		r.buffer = bufio.NewWriterSize(r.f, 1024*20)
-		r.filepath = file.Name()
 		r.startTime = r.timer.Now()
-		r.currentStartTime = currentStart{t: r.startTime}
-		r.buffer.Write([]byte(fmt.Sprintf(startLine, 106, 25, r.startTime.Unix(), r.shell)))
+		r.HeadLineColRow(106, 25)
 	})
 	if err != nil {
 		return err
 	}
 	marshal, _ := json.Marshal(data)
-	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.currentStartTime.Get()).Microseconds())/1000000, string(marshal)))
+	_, err = r.buffer.WriteString(fmt.Sprintf(writeLine, float64(time.Since(r.startTime).Microseconds())/1000000, string(marshal)))
 	return err
 }
 
@@ -117,15 +110,38 @@ func (r *Recorder) Close() error {
 	r.RLock()
 	defer r.RUnlock()
 	var (
-		err      error
-		uploader = app.Uploader()
+		err           error
+		localUploader = app.LocalUploader()
+		uploader      = app.Uploader()
 	)
 	if r.buffer == nil || r.startTime.IsZero() {
 		return nil
 	}
 	r.buffer.Flush()
-	stat, e := r.f.Stat()
+
+	upFile, _ := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
+		r.t.conn.GetUser().Name,
+		r.timer.Now().Format("2006-01-02"),
+		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+
+	func() {
+		defer func() {
+			r.f.Close()
+			localUploader.Delete(r.f.Name())
+		}()
+		r.f.Seek(0, 0)
+		func() {
+			r.rcMu.RLock()
+			defer r.rcMu.RUnlock()
+			upFile.WriteString(fmt.Sprintf(startLine, r.cols, r.rows, r.startTime.Unix(), r.shell))
+		}()
+		io.Copy(upFile, r.f)
+	}()
+
+	stat, e := upFile.Stat()
 	if e != nil {
+		upFile.Close()
+		uploader.Delete(upFile.Name())
 		mlog.Error(e)
 		return e
 	}
@@ -133,7 +149,7 @@ func (r *Recorder) Close() error {
 	if stat.Size() > 0 {
 		file := &models.File{
 			UploadType: uploader.Type(),
-			Path:       r.filepath,
+			Path:       upFile.Name(),
 			Size:       uint64(stat.Size()),
 			Username:   r.t.conn.GetUser().Name,
 			Namespace:  r.container.Namespace,
@@ -152,9 +168,9 @@ func (r *Recorder) Close() error {
 		app.DB().Create(&emodal)
 		emptyFile = false
 	}
-	err = r.f.Close()
+	err = upFile.Close()
 	if emptyFile {
-		uploader.Delete(r.f.Name())
+		uploader.Delete(upFile.Name())
 	}
 	return err
 }

@@ -178,6 +178,10 @@ func (s *s3OsFileInfo) Name() string {
 	return s.name
 }
 
+func (s *s3File) Seek(offset int64, whence int) (ret int64, err error) {
+	return s.File.Seek(offset, whence)
+}
+
 func (s *s3File) Stat() (os.FileInfo, error) {
 	stat, err := s.File.Stat()
 	if err != nil {

@@ -235,9 +235,9 @@ func download(w http.ResponseWriter, filename string, reader io.Reader) {
 	w.Header().Set("Content-Transfer-Encoding", "binary")
 	w.Header().Set("Access-Control-Expose-Headers", "*")
 
+	// 调用 Write 之后就会写入 200 code
 	if _, err := io.Copy(w, bufio.NewReaderSize(reader, 1024*1024*5)); err != nil {
 		mlog.Error(err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 

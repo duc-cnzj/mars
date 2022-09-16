@@ -77,6 +77,21 @@ func (mr *MockFileMockRecorder) Read(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockFile)(nil).Read), arg0)
 }
 
+// Seek mocks base method.
+func (m *MockFile) Seek(arg0 int64, arg1 int) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Seek", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Seek indicates an expected call of Seek.
+func (mr *MockFileMockRecorder) Seek(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Seek", reflect.TypeOf((*MockFile)(nil).Seek), arg0, arg1)
+}
+
 // Stat mocks base method.
 func (m *MockFile) Stat() (fs.FileInfo, error) {
 	m.ctrl.T.Helper()

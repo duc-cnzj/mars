@@ -62,11 +62,9 @@ func (mr *MockRecorderInterfaceMockRecorder) GetShell() *gomock.Call {
 }
 
 // Resize mocks base method.
-func (m *MockRecorderInterface) Resize(arg0, arg1 uint16) error {
+func (m *MockRecorderInterface) Resize(arg0, arg1 uint16) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Resize", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Resize", arg0, arg1)
 }
 
 // Resize indicates an expected call of Resize.

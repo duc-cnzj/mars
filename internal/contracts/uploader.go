@@ -22,6 +22,7 @@ type File interface {
 	io.StringWriter
 	Name() string
 	Stat() (os.FileInfo, error)
+	Seek(offset int64, whence int) (ret int64, err error)
 }
 
 type FileInfo interface {

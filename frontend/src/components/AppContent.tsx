@@ -28,6 +28,20 @@ const AppContent: React.FC = () => {
       });
   }, [setNamespaceItems]);
 
+  useEffect(() => {
+    window.history.pushState(null, document.title, window.location.href);
+    let fn = function (event: any) {
+      console.log("first");
+      window.history.pushState(null, document.title, window.location.href);
+    };
+    console.log("add");
+    window.addEventListener("popstate", fn);
+    return () => {
+      console.log("remove");
+      window.removeEventListener("popstate", fn);
+    };
+  }, []);
+
   const onNamespaceCreated = useCallback(
     ({ id, name }: { id: number; name: string }) => {
       fetchNamespaces();

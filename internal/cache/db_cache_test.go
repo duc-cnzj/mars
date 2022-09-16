@@ -90,6 +90,30 @@ func TestDBCache_Remember(t *testing.T) {
 	assert.Equal(t, 2, nocacheCalled)
 }
 
+func TestName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	app := mock.NewMockApplicationInterface(ctrl)
+	defer ctrl.Finish()
+	instance.SetInstance(app)
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
+	sf := singleflight.Group{}
+	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
+	db.AutoMigrate(&models.DBCache{})
+	caled := 0
+	NewDBCache(app.Singleflight(), func() *gorm.DB {
+		if caled > 0 {
+			db.Migrator().DropTable(&models.DBCache{})
+			assert.False(t, db.Migrator().HasTable(&models.DBCache{}))
+			return db
+		}
+		caled++
+		return db
+	}).Remember(NewKey("aaaa-xx"), 1, func() ([]byte, error) {
+		return []byte("xxx"), nil
+	})
+}
+
 func TestNewDBCache(t *testing.T) {
 	assert.Implements(t, (*contracts.CacheInterface)(nil), NewDBCache(nil, nil))
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/internal/adapter"
@@ -51,6 +52,7 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
 	// 本地 k8s 搭建 nsq 集群时，访问 lookupd 返回的是集群内部的 ip，不通的
 	n.cfg.MaxInFlight = 1000
+	n.cfg.LookupdPollInterval = 3 * time.Second
 
 	if s, ok := args["addr"]; ok {
 		mlog.Debugf("[NSQ]: addr '%v'", s)

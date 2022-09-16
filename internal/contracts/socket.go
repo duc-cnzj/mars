@@ -45,7 +45,7 @@ type Container struct {
 }
 
 type RecorderInterface interface {
-	Resize(cols, rows uint16) (err error)
+	Resize(cols, rows uint16)
 	Write(data string) (err error)
 	Close() error
 	SetShell(string)

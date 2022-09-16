@@ -446,3 +446,9 @@ func TestApplication_DB(t *testing.T) {
 	a := NewApplication(&config.Config{}).(*Application)
 	assert.Same(t, a.dbManager.DB(), a.DB())
 }
+
+func Test_printConfig(t *testing.T) {
+	assert.NotPanics(t, func() {
+		printConfig(&Application{config: &config.Config{}, excludeBoots: []contracts.Bootstrapper{&boota{}}})
+	})
+}

@@ -197,10 +197,27 @@ func TestProject_GetAllPods(t *testing.T) {
 			},
 		},
 	}
-	fk := fake2.NewSimpleClientset(rs, rs2, rs3, pod1, pod2, pod3, pod4)
+	podWithErrorRsName := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-x-error",
+			Namespace: "test",
+			Labels: map[string]string{
+				"b": "b",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "rs-x",
+					UID:        "uid-not-exist",
+				},
+			},
+		},
+	}
+	fk := fake2.NewSimpleClientset(rs, rs2, rs3, pod1, pod2, pod3, pod4, podWithErrorRsName)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:           fk,
-		PodLister:        testutil.NewPodLister(pod1, pod2, pod3, pod4),
+		PodLister:        testutil.NewPodLister(pod1, pod2, pod3, pod4, podWithErrorRsName),
 		ReplicaSetLister: testutil.NewRsLister(rs, rs2, rs3),
 	}).AnyTimes()
 	m := Project{
@@ -211,14 +228,14 @@ func TestProject_GetAllPods(t *testing.T) {
 	}
 	assert.Nil(t, m.GetAllPods())
 	m.PodSelectors = "a=a|b=b"
-	assert.Len(t, m.GetAllPods(), 3)
+	assert.Len(t, m.GetAllPods(), 4)
 	var oldCount int
 	for _, po := range m.GetAllPods() {
 		if po.IsOld {
 			oldCount++
 			continue
 		}
-		assert.Equal(t, "pod2", po.Pod.Name)
+		assert.True(t, po.Pod.Name == "pod2" || po.Pod.Name == "pod-x-error")
 	}
 	assert.Equal(t, 2, oldCount)
 }
