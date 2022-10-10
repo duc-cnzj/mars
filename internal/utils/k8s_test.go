@@ -56,44 +56,29 @@ func TestAddTlsSecret(t *testing.T) {
 	}, sec)
 }
 
-func TestCreateDockerSecret(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	fk := fake.NewSimpleClientset()
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fk,
-	})
-	secret, _ := CreateDockerSecret("default", "name", "pwd", "1@q.c", "mars.io")
-	dockercfgAuth := DockerConfigEntry{
-		Username: "name",
-		Password: "pwd",
-		Email:    "1@q.c",
-		Auth:     base64.StdEncoding.EncodeToString([]byte("name:pwd")),
+func TestDecodeDockerConfigJSON(t *testing.T) {
+	a := DockerConfigJSON{
+		Auths: map[string]DockerConfigEntry{
+			"duc": {
+				Username: "duc",
+				Password: "pwd",
+				Email:    "em",
+				Auth:     "au:xx",
+			},
+		},
+		HttpHeaders: map[string]string{"a": "a"},
 	}
+	marshal, err := json.Marshal(&a)
+	assert.Nil(t, err)
+	configJSON, err := DecodeDockerConfigJSON(marshal)
+	assert.Nil(t, err)
+	assert.Equal(t, a, configJSON)
 
-	dockerCfgJSON := DockerConfigJSON{
-		Auths: map[string]DockerConfigEntry{"mars.io": dockercfgAuth},
-	}
-
-	marshal, _ := json.Marshal(dockerCfgJSON)
-	assert.Equal(t, &corev1.Secret{
-		TypeMeta: v1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Namespace:    "default",
-			GenerateName: "mars-",
-		},
-		Data: map[string][]byte{
-			".dockerconfigjson": marshal,
-		},
-		Type: corev1.SecretTypeDockerConfigJson,
-	}, secret)
+	_, err = DecodeDockerConfigJSON(nil)
+	assert.Error(t, err)
 }
 
-func TestCreateDockerSecret_EmptyServer(t *testing.T) {
+func TestCreateDockerSecrets(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
@@ -101,27 +86,47 @@ func TestCreateDockerSecret_EmptyServer(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client: fk,
 	})
-	secret, _ := CreateDockerSecret("default", "name", "pwd", "1@q.c", "")
-	dockercfgAuth := DockerConfigEntry{
+	secret, _ := CreateDockerSecrets("default", config.DockerAuths{
+		&config.DockerAuth{
+			Username: "name",
+			Password: "pwd",
+			Email:    "1@q.c",
+			Server:   "https://index.docker.io/v1/",
+		},
+		&config.DockerAuth{
+			Username: "mars",
+			Password: "pwd-mars",
+			Email:    "mars@q.c",
+			Server:   "mars.io",
+		},
+	})
+
+	dockercfgAuthOne := DockerConfigEntry{
 		Username: "name",
 		Password: "pwd",
 		Email:    "1@q.c",
 		Auth:     base64.StdEncoding.EncodeToString([]byte("name:pwd")),
 	}
+	dockercfgAuthTwo := DockerConfigEntry{
+		Username: "mars",
+		Password: "pwd-mars",
+		Email:    "mars@q.c",
+		Auth:     base64.StdEncoding.EncodeToString([]byte("mars:pwd-mars")),
+	}
 
 	dockerCfgJSON := DockerConfigJSON{
-		Auths: map[string]DockerConfigEntry{"https://index.docker.io/v1/": dockercfgAuth},
+		Auths: map[string]DockerConfigEntry{"https://index.docker.io/v1/": dockercfgAuthOne, "mars.io": dockercfgAuthTwo},
 	}
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
+	secret.Name = ""
 	assert.Equal(t, &corev1.Secret{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Namespace:    "default",
-			GenerateName: "mars-",
+			Namespace: "default",
 		},
 		Data: map[string][]byte{
 			".dockerconfigjson": marshal,

@@ -32,6 +32,12 @@ func TestNamespace_ImagePullSecretsArray(t *testing.T) {
 		ImagePullSecrets: `a,b`,
 	}
 	assert.Equal(t, []string{"a", "b"}, m.ImagePullSecretsArray())
+	m2 := Namespace{
+		ID:               1,
+		Name:             "test",
+		ImagePullSecrets: "",
+	}
+	assert.Equal(t, []string{}, m2.ImagePullSecretsArray())
 }
 
 func TestNamespace_ProtoTransform(t *testing.T) {

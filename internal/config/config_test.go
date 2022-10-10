@@ -52,6 +52,9 @@ func TestInit(t *testing.T) {
 	cfg := Init(filepath.Join(pwd, "../../config_example.yaml"))
 	assert.Greater(t, cfg.GrpcPort, "0")
 	assert.Equal(t, "devops-", cfg.NsPrefix)
+	assert.Len(t, cfg.ImagePullSecrets, 2)
+	assert.Equal(t, cfg.ImagePullSecrets[0].Server, "https://index.docker.io/v1/")
+	assert.Equal(t, cfg.ImagePullSecrets[1].Server, "registry.cn-hangzhou.aliyuncs.com")
 }
 
 func TestPlugin_String(t *testing.T) {
