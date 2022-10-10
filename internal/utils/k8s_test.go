@@ -76,6 +76,8 @@ func TestDecodeDockerConfigJSON(t *testing.T) {
 
 	_, err = DecodeDockerConfigJSON(nil)
 	assert.Error(t, err)
+	_, err = DecodeDockerConfigJSON([]byte{})
+	assert.Error(t, err)
 }
 
 func TestCreateDockerSecrets(t *testing.T) {

@@ -76,8 +76,8 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 				continue
 			}
 			if secret.Type == v1.SecretTypeDockerConfigJson {
-				currentSecretStr := secret.Data[v1.DockerConfigJsonKey]
-				res, err := utils.DecodeDockerConfigJSON(currentSecretStr)
+				var dockerJsonKeyData []byte = secret.Data[v1.DockerConfigJsonKey]
+				res, err := utils.DecodeDockerConfigJSON(dockerJsonKeyData)
 				if err != nil {
 					mlog.Warningf("[SyncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
 					continue

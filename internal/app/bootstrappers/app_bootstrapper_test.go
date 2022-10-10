@@ -168,7 +168,59 @@ func TestProjectPodEventListener(t *testing.T) {
 	assert.True(t, true)
 }
 
-func TestUpdateImagePullSecrets(t *testing.T) {
+func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client: fake.NewSimpleClientset(),
+	}).AnyTimes()
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	SyncImagePullSecrets(app)
+
+	// changed
+	app.EXPECT().Config().Return(&config.Config{
+		ImagePullSecrets: config.DockerAuths{
+			{
+				Username: "name",
+				Password: "new",
+				Email:    "mars@q.c",
+				Server:   "mars",
+			},
+		},
+	}).AnyTimes()
+	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
+
+	secret, err := utils.CreateDockerSecrets("test", config.DockerAuths{
+		{
+			Username: "1",
+			Password: "1",
+			Email:    "1@q.c",
+			Server:   "mars",
+		},
+	})
+	assert.Nil(t, err)
+	assert.Nil(t, db.Create(&models.Namespace{
+		Name:             "test",
+		ImagePullSecrets: secret.Name,
+	}).Error)
+	secret.Data[corev1.DockerConfigJsonKey] = nil
+	app.K8sClient().Client.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	SyncImagePullSecrets(app)
+	get, _ := app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
+	assert.Nil(t, get.Data[corev1.DockerConfigJsonKey])
+
+	secret.Data = map[string][]byte{}
+	app.K8sClient().Client.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	SyncImagePullSecrets(app)
+	get, _ = app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
+	assert.Len(t, get.Data, 0)
+}
+
+func TestSyncImagePullSecrets(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
