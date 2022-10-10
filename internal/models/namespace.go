@@ -24,6 +24,9 @@ type Namespace struct {
 }
 
 func (ns *Namespace) ImagePullSecretsArray() []string {
+	if ns.ImagePullSecrets == "" {
+		return []string{}
+	}
 	return strings.Split(ns.ImagePullSecrets, ",")
 }
 

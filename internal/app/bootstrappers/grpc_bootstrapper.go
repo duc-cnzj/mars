@@ -98,7 +98,8 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 
 func recoveryHandler(p any) error {
 	bf := make([]byte, 1024*5)
-	runtime.Stack(bf, false)
+	n := runtime.Stack(bf, false)
+	bf = bf[:n]
 	mlog.Error("[Grpc]: recovery error: ", p, string(bf))
 	return nil
 }

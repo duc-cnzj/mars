@@ -35,7 +35,7 @@ func (p Plugin) GetArgs() map[string]any {
 	return p.Args
 }
 
-type DockerAuths []DockerAuth
+type DockerAuths []*DockerAuth
 
 func (a DockerAuths) String() string {
 	var strs []string
@@ -166,6 +166,11 @@ func Init(cfgFile string) *Config {
 	cfg := &Config{NsPrefix: "devops-"}
 
 	viper.Unmarshal(&cfg)
+	for _, s := range cfg.ImagePullSecrets {
+		if s.Server == "" {
+			s.Server = "https://index.docker.io/v1/"
+		}
+	}
 	if cfg.GrpcPort == "" {
 		port, err := GetFreePort()
 		if err != nil {

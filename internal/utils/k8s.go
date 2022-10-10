@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"helm.sh/helm/v3/pkg/releaseutil"
-
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 )
@@ -37,19 +37,24 @@ type DockerConfigJSON struct {
 	HttpHeaders map[string]string `json:"HttpHeaders,omitempty"`
 }
 
-func CreateDockerSecret(namespace, username, password, email, server string) (*v1.Secret, error) {
-	if server == "" {
-		server = "https://index.docker.io/v1/"
-	}
-	dockercfgAuth := DockerConfigEntry{
-		Username: username,
-		Password: password,
-		Email:    email,
-		Auth:     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+func DecodeDockerConfigJSON(data []byte) (res DockerConfigJSON, err error) {
+	err = json.Unmarshal(data, &res)
+	return
+}
+
+func CreateDockerSecrets(namespace string, auths config.DockerAuths) (*v1.Secret, error) {
+	var entries = make(map[string]DockerConfigEntry)
+	for _, auth := range auths {
+		entries[auth.Server] = DockerConfigEntry{
+			Username: auth.Username,
+			Password: auth.Password,
+			Email:    auth.Email,
+			Auth:     base64.StdEncoding.EncodeToString([]byte(auth.Username + ":" + auth.Password)),
+		}
 	}
 
 	dockerCfgJSON := DockerConfigJSON{
-		Auths: map[string]DockerConfigEntry{server: dockercfgAuth},
+		Auths: entries,
 	}
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
@@ -60,8 +65,8 @@ func CreateDockerSecret(namespace, username, password, email, server string) (*v
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    namespace,
-			GenerateName: "mars-",
+			Namespace: namespace,
+			Name:      "mars-" + strings.ToLower(RandomString(10)),
 		},
 		Data: map[string][]byte{
 			v1.DockerConfigJsonKey: marshal,

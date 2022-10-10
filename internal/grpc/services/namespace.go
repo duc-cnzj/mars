@@ -80,17 +80,13 @@ func (n *NamespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 			return nil, status.Error(codes.AlreadyExists, "该名称空间正在删除中")
 		}
 	}
+	mlog.Debug("成功创建namespace: ", create.Name)
 
 	var imagePullSecrets []string
-	for _, secret := range app.Config().ImagePullSecrets {
-		s, err := utils.CreateDockerSecret(request.Namespace, secret.Username, secret.Password, secret.Email, secret.Server)
-		if err != nil {
-			mlog.Error(err)
-			continue
-		}
-		imagePullSecrets = append(imagePullSecrets, s.Name)
+	secret, err := utils.CreateDockerSecrets(request.Namespace, app.Config().ImagePullSecrets)
+	if err == nil {
+		imagePullSecrets = append(imagePullSecrets, secret.Name)
 	}
-	mlog.Debug("成功创建namespace: ", create.Name)
 	data := models.Namespace{Name: create.Name, ImagePullSecrets: strings.Join(imagePullSecrets, ",")}
 
 	app.DB().Create(&data)

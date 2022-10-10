@@ -72,7 +72,7 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	db.AutoMigrate(&models.Namespace{})
-	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-", ImagePullSecrets: []config.DockerAuth{
+	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-", ImagePullSecrets: []*config.DockerAuth{
 		{
 			Username: "duc",
 			Password: "pwd",
@@ -117,7 +117,9 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	assert.NotNil(t, res)
 	list, _ := clientset.CoreV1().Secrets("dev-bbb").List(context.TODO(), v1.ListOptions{})
 	assert.Len(t, list.Items, 1)
-	assert.Equal(t, "mars-", list.Items[0].GenerateName)
+	assert.Equal(t, "", list.Items[0].GenerateName)
+	assert.NotEmpty(t, list.Items[0].Name)
+	assert.Len(t, list.Items[0].Name, 15)
 
 	_, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace: "terminating-ns",
