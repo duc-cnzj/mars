@@ -25,4 +25,4 @@ jobs:
         run: |
           docker login registry.cn-hangzhou.aliyuncs.com -u ${{ secrets.ALIYUN_DOCKER_USERNAME }} --password ${{ secrets.ALIYUN_DOCKER_PASSWORD }}
           docker login -u ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
-          docker build --platform linux/arm64,linux/amd64 -t duccnzj/mars -t duccnzj/mars:${{ steps.vars.outputs.tag }} -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:${{ steps.vars.outputs.tag }} -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars --push .
+          docker build --platform linux/arm64,linux/amd64 -t duccnzj/mars -t duccnzj/mars:${{ env.tag }} -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars:${{ env.tag }} -t registry.cn-hangzhou.aliyuncs.com/duc-cnzj/mars --push .
