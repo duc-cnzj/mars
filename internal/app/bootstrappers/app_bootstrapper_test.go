@@ -386,6 +386,7 @@ func TestUpdateCertTls(t *testing.T) {
 
 	assert.Nil(t, db.Create(&models.Namespace{Name: "ns"}).Error)
 	assert.Nil(t, db.Create(&models.Namespace{Name: "ns-2"}).Error)
+	assert.Nil(t, db.Create(&models.Namespace{Name: "ns-3"}).Error)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client: fake.NewSimpleClientset(
 			&corev1.Secret{
@@ -410,4 +411,7 @@ func TestUpdateCertTls(t *testing.T) {
 	s2, _ := app.K8sClient().Client.CoreV1().Secrets("ns-2").Get(context.TODO(), "cert", v1.GetOptions{})
 	assert.Equal(t, "key", s2.StringData["tls.key"])
 	assert.Equal(t, "crt", s2.StringData["tls.crt"])
+	s3, _ := app.K8sClient().Client.CoreV1().Secrets("ns-3").Get(context.TODO(), "cert", v1.GetOptions{})
+	assert.Equal(t, "key", s3.StringData["tls.key"])
+	assert.Equal(t, "crt", s3.StringData["tls.crt"])
 }

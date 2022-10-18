@@ -167,7 +167,6 @@ func UpdateCertTls(app contracts.ApplicationInterface) {
 			if string(secret.Data["tls.crt"]) != crt || string(secret.Data["tls.key"]) != key {
 				changed = true
 				changedSecrets = append(changedSecrets, secret.DeepCopy())
-				break
 			}
 		}
 		if changed {
