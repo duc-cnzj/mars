@@ -339,7 +339,7 @@ const EventList: React.FC = () => {
                       查看操作记录{" "}
                       {item.duration && (
                         <span style={{ fontSize: "10px", marginLeft: 5 }}>
-                          (时长: {item.duration})
+                          (时长: {item.duration}, 大小: {item.file?.humanize_size})
                         </span>
                       )}
                     </Button>

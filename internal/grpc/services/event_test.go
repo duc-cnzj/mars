@@ -62,6 +62,8 @@ func TestEventSvc_List(t *testing.T) {
 	})
 	assert.Equal(t, int64(f.ID), list.Items[0].FileId)
 	assert.Equal(t, int64(f.ID), list.Items[0].File.Id)
+	assert.Equal(t, int64(100), list.Items[0].File.Size)
+	assert.True(t, list.Items[0].File.HumanizeSize != "")
 	db.Delete(&f)
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:       1,

@@ -50,7 +50,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	}
 
 	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
-		return db.Select("ID")
+		return db.Select("ID", "Size")
 	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Select([]string{
 		"id", "action", "username", "message", "duration", "file_id", "created_at", "updated_at",
 		"(`old` != `new`) as has_diff",
