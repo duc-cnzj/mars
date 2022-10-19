@@ -55,11 +55,9 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 		userinfo := contracts.UserInfo{
 			LogoutUrl: "",
 			Roles:     []string{"admin"},
-			OpenIDClaims: contracts.OpenIDClaims{
-				Sub:   "1",
-				Name:  "管理员",
-				Email: "1025434218@qq.com",
-			},
+			ID:        "1",
+			Name:      "管理员",
+			Email:     "1025434218@qq.com",
 		}
 		data, err := a.authsvc.Sign(userinfo)
 		if err != nil {
@@ -120,8 +118,8 @@ func (a *AuthSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (
 
 func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
 	var (
-		userinfo contracts.UserInfo
-		parsed   bool
+		oidcClaims contracts.OidcClaims
+		parsed     bool
 	)
 
 	for _, item := range a.cfg {
@@ -140,19 +138,19 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 			mlog.Error(err)
 			continue
 		}
-		if err = idtoken.Claims(&userinfo); err != nil {
+		if err = idtoken.Claims(&oidcClaims); err != nil {
 			mlog.Error(err)
 			continue
 		}
 		parsed = true
-		userinfo.LogoutUrl = item.EndSessionEndpoint
+		oidcClaims.LogoutUrl = item.EndSessionEndpoint
 	}
 
 	if !parsed {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid code: "+request.Code)
 	}
 
-	userinfo.Roles = []string{}
+	userinfo := oidcClaims.ToUserInfo()
 
 	mlog.Debug(userinfo)
 	data, err := a.authsvc.Sign(userinfo)

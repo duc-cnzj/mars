@@ -15,7 +15,7 @@ func TestGetUser(t *testing.T) {
 	assert.Error(t, err)
 
 	ctx := SetUser(context.TODO(), &contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{Name: "duc"},
+		Name: "duc",
 	})
 	user, err := GetUser(ctx)
 	assert.Nil(t, err)
@@ -26,7 +26,7 @@ func TestMustGetUser(t *testing.T) {
 	user := MustGetUser(context.TODO())
 	assert.Nil(t, user)
 	ctx := SetUser(context.TODO(), &contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{Name: "duc"},
+		Name: "duc",
 	})
 	user = MustGetUser(ctx)
 	assert.Equal(t, "duc", user.Name)

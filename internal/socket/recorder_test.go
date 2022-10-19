@@ -72,9 +72,7 @@ func TestRecorder_Close(t *testing.T) {
 		buffer: bufio.NewWriter(f),
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
-				OpenIDClaims: contracts.OpenIDClaims{
-					Name: "duc",
-				},
+				Name: "duc",
 			}},
 		},
 		rows:  25,
@@ -148,9 +146,7 @@ func TestRecorder_Close2(t *testing.T) {
 		buffer: bufio.NewWriter(f),
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
-				OpenIDClaims: contracts.OpenIDClaims{
-					Name: "duc",
-				},
+				Name: "duc",
 			}},
 		},
 		rows:  25,
@@ -203,9 +199,7 @@ func TestRecorder_Close3(t *testing.T) {
 		buffer: bufio.NewWriter(f),
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
-				OpenIDClaims: contracts.OpenIDClaims{
-					Name: "duc",
-				},
+				Name: "duc",
 			}},
 		},
 		rows:  25,
@@ -249,9 +243,7 @@ func TestRecorder_Write(t *testing.T) {
 		startTime: time.Time{},
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
-				OpenIDClaims: contracts.OpenIDClaims{
-					Name: "duc",
-				},
+				Name: "duc",
 			}},
 		},
 		once: sync.Once{},
@@ -283,9 +275,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 		startTime: time.Time{},
 		t: &MyPtyHandler{
 			conn: &WsConn{user: contracts.UserInfo{
-				OpenIDClaims: contracts.OpenIDClaims{
-					Name: "duc",
-				},
+				Name: "duc",
 			}},
 		},
 		once: sync.Once{},

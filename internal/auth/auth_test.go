@@ -19,11 +19,9 @@ func TestAuth_Sign(t *testing.T) {
 	sign, err := auth.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{"admin"},
-		OpenIDClaims: contracts.OpenIDClaims{
-			Sub:   "1",
-			Email: "1025434218@qq.com",
-			Name:  "duc",
-		},
+		ID:        "1",
+		Email:     "1025434218@qq.com",
+		Name:      "duc",
 	})
 	assert.Nil(t, err)
 	token, b := auth.VerifyToken(sign.Token)
@@ -40,10 +38,8 @@ func TestAuth_VerifyToken(t *testing.T) {
 	sign, _ := auth.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{"admin"},
-		OpenIDClaims: contracts.OpenIDClaims{
-			Sub:  "1",
-			Name: "duc",
-		},
+		ID:        "1",
+		Name:      "duc",
 	})
 	_, b := auth.VerifyToken(sign.Token)
 	assert.True(t, b)

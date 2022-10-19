@@ -899,9 +899,7 @@ spec:
 	job := &Jober{
 		percenter: &emptyPercenter{},
 		user: contracts.UserInfo{
-			OpenIDClaims: contracts.OpenIDClaims{
-				Name: "duc",
-			},
+			Name: "duc",
 		},
 		ns: &proj.Namespace,
 		input: &websocket_pb.CreateProjectInput{

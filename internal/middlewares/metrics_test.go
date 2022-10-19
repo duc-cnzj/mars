@@ -13,9 +13,7 @@ import (
 
 func TestMetricsServerInterceptor(t *testing.T) {
 	ctx := auth.SetUser(context.TODO(), &contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name: "duc",
-		},
+		Name: "duc",
 	})
 	res, err := MetricsServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{FullMethod: "/api/xxx"}, func(ctx context.Context, req any) (any, error) {
 		return "aa", nil
@@ -40,9 +38,7 @@ func (s *sstream) Context() context.Context {
 
 func TestMetricsStreamServerInterceptor(t *testing.T) {
 	ctx := auth.SetUser(context.TODO(), &contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name: "duc",
-		},
+		Name: "duc",
 	})
 	err := MetricsStreamServerInterceptor(nil, &sstream{ctx: ctx}, &grpc.StreamServerInfo{FullMethod: "/api/xx"}, func(srv any, stream grpc.ServerStream) error {
 		return nil

@@ -26,6 +26,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/event"
 	"github.com/duc-cnzj/mars/internal/metrics"
 	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 type Hook string
@@ -349,8 +350,11 @@ func (app *Application) Shutdown() {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancel()
+			serverName := reflect.TypeOf(server).String()
+			defer recovery.HandlePanic("[Shutdown]: " + serverName)
+
 			if err := server.Shutdown(ctx); err != nil {
-				mlog.Warningf("[Shutdown]: %s %s", reflect.TypeOf(server).String(), err)
+				mlog.Warningf("[Shutdown]: %s %s", serverName, err)
 			}
 		}(server)
 	}
@@ -381,6 +385,7 @@ func (app *Application) RunServerHooks(hook Hook) {
 		wg.Add(1)
 		go func(cb contracts.Callback) {
 			defer wg.Done()
+			defer recovery.HandlePanic("[RunServerHooks]: " + string(hook))
 			cb(app)
 		}(cb)
 	}

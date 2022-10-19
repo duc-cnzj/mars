@@ -60,7 +60,7 @@ func Test_authenticated(t *testing.T) {
 	auth := mock.NewMockAuthInterface(m)
 	auth.EXPECT().VerifyToken("aaa").Return(nil, false)
 	c := &contracts.JwtClaims{
-		UserInfo: contracts.UserInfo{OpenIDClaims: contracts.OpenIDClaims{Name: "duc"}},
+		UserInfo: contracts.UserInfo{Name: "duc"},
 	}
 	auth.EXPECT().VerifyToken("aaa").Return(c, true)
 	app.EXPECT().Auth().Return(auth).AnyTimes()
@@ -167,7 +167,7 @@ binary data
 	}
 
 	req2.Form = make(url.Values)
-	req2 = req2.WithContext(context.WithValue(context.TODO(), authCtx{}, &contracts.UserInfo{OpenIDClaims: contracts.OpenIDClaims{Name: "duc"}}))
+	req2 = req2.WithContext(context.WithValue(context.TODO(), authCtx{}, &contracts.UserInfo{Name: "duc"}))
 	rr2 := httptest.NewRecorder()
 
 	up := mock.NewMockUploader(m)

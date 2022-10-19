@@ -25,15 +25,34 @@ type JwtClaims struct {
 	UserInfo UserInfo `json:"user_info"`
 }
 
-type UserInfo struct {
-	LogoutUrl string   `json:"logout_url"`
-	Roles     []string `json:"roles"`
-
+type OidcClaims struct {
+	LogoutUrl string `json:"logout_url"`
 	OpenIDClaims
 }
 
+func (c OidcClaims) ToUserInfo() UserInfo {
+	return UserInfo{
+		LogoutUrl: c.LogoutUrl,
+		Roles:     []string{},
+		ID:        c.Sub,
+		Email:     c.Email,
+		Name:      c.Name,
+		Picture:   c.Picture,
+	}
+}
+
+type UserInfo struct {
+	ID      string   `json:"id"`
+	Email   string   `json:"email"`
+	Name    string   `json:"name"`
+	Picture string   `json:"picture"`
+	Roles   []string `json:"roles"`
+
+	LogoutUrl string `json:"logout_url"`
+}
+
 func (ui UserInfo) GetID() string {
-	return ui.Sub
+	return ui.ID
 }
 
 func (ui UserInfo) IsAdmin() bool {

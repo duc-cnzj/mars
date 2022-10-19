@@ -46,9 +46,7 @@ func TestHandleWsAuthorize(t *testing.T) {
 	app := testutil.MockApp(m)
 	app.EXPECT().Auth().Return(authSvc).AnyTimes()
 	sign, _ := authSvc.Sign(contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name: "duc",
-		},
+		Name: "duc",
 	})
 	marshal, _ := proto.Marshal(&websocket.AuthorizeTokenInput{Token: sign.Token})
 	pubsub := mock.NewMockPubSub(m)
@@ -512,9 +510,7 @@ func TestWsConn_GetUser(t *testing.T) {
 func TestWsConn_SetUser(t *testing.T) {
 	c := &WsConn{}
 	u := contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name: "aaa",
-		},
+		Name: "aaa",
 	}
 	c.SetUser(u)
 	assert.Equal(t, "aaa", c.user.Name)

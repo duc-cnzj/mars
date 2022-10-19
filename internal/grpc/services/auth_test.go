@@ -40,12 +40,10 @@ func TestAuthSvc_Info(t *testing.T) {
 	sign, _ := authSvc.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{"user"},
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name:    "duc",
-			Sub:     "2022",
-			Email:   "1025434218@qq.com",
-			Picture: "avatar.png",
-		},
+		Name:      "duc",
+		ID:        "2022",
+		Email:     "1025434218@qq.com",
+		Picture:   "avatar.png",
 	})
 	svc := NewAuthSvc(authSvc, nil, "", nil)
 	ctx := context.TODO()
@@ -174,7 +172,7 @@ func (m *mockIDToken) Claims(a any) error {
 	if m.err != nil {
 		return m.err
 	}
-	a.(*contracts.UserInfo).Sub = "mock"
+	a.(*contracts.OidcClaims).Name = "mock"
 	return nil
 }
 

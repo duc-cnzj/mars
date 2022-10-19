@@ -180,10 +180,8 @@ func TestTraceUnaryServerInterceptor(t *testing.T) {
 	tw := &tracerWrap{t: tracer}
 	app.EXPECT().GetTracer().Return(tw)
 	TraceUnaryServerInterceptor(marsauthorizor.SetUser(context.TODO(), &contracts.UserInfo{
-		OpenIDClaims: contracts.OpenIDClaims{
-			Name:  "duc",
-			Email: "1025434218@qq.com",
-		},
+		Name:  "duc",
+		Email: "1025434218@qq.com",
 	}), nil, &grpc.UnaryServerInfo{
 		FullMethod: "test",
 	}, func(ctx context.Context, req any) (any, error) {

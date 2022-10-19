@@ -35,7 +35,7 @@ func TestAuthenticate(t *testing.T) {
 
 	auth.EXPECT().VerifyToken("xxx").Return(&contracts.JwtClaims{
 		UserInfo: contracts.UserInfo{
-			OpenIDClaims: contracts.OpenIDClaims{Name: "duc"},
+			Name: "duc",
 		},
 	}, true)
 	ctx2, err := Authenticate(incomingContext)
