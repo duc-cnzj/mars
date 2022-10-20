@@ -89,6 +89,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
+	r.EXPECT().Resize(uint16(10), uint16(20)).Times(1)
 	p.Resize(remotecommand.TerminalSize{
 		Width:  10,
 		Height: 20,
