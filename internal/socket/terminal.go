@@ -65,9 +65,6 @@ func (s *sizeStore) Set(cols, rows uint16) {
 func (s *sizeStore) Changed(cols, rows uint16) bool {
 	s.rwMu.RLock()
 	defer s.rwMu.RUnlock()
-	if s.rows == 0 || s.cols == 0 {
-		return false
-	}
 	if s.rows != rows {
 		return true
 	}

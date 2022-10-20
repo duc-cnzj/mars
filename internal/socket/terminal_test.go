@@ -398,7 +398,7 @@ func Test_sizeStore_Changed(t *testing.T) {
 		rows:  0,
 		reset: false,
 	}
-	assert.False(t, ss.Changed(100, 100))
+	assert.True(t, ss.Changed(100, 100))
 	ss.Set(100, 100)
 	assert.False(t, ss.Changed(100, 100))
 	assert.True(t, ss.Changed(100, 0))
