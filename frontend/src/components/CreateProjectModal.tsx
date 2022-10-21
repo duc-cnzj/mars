@@ -31,7 +31,7 @@ import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 
 const initFormValues = {
-  debug: false,
+  debug: true,
   extra_values: [],
   config: "",
 };
@@ -299,7 +299,11 @@ const CreateProjectModal: React.FC<{
                 style={{ width: "100%", marginBottom: 10 }}
                 rules={[{ required: true, message: "项目必选" }]}
               >
-                <ProjectSelector isCreate onChange={onChange} />
+                <ProjectSelector
+                  disabled={isLoading}
+                  isCreate
+                  onChange={onChange}
+                />
               </Form.Item>
 
               <div
@@ -344,7 +348,7 @@ const CreateProjectModal: React.FC<{
                   )}
                 </div>
                 <Form.Item noStyle name={"debug"}>
-                  <DebugModeSwitch />
+                  <DebugModeSwitch disabled={isLoading} />
                 </Form.Item>
               </div>
 

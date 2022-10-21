@@ -7,8 +7,21 @@
   }
   &__list-item {
     padding: 14px 24px;
+    &__date {
+      display: inline;
+      font-size: 10px;
+      font-weight: normal;
+      &--active {
+        opacity: 0;
+        transition: 0.3s opacity ease-in;
+        margin-left: 5px;
+      }
+    }
     &:hover {
       background-image: @light-linear;
+      .events__list-item__date--active {
+        opacity: 1;
+      }
     }
   }
 }

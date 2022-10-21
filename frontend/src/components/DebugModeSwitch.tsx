@@ -5,7 +5,8 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 const DebugModeSwitch: React.FC<{
   value?: boolean;
   onChange?: (v: boolean) => void;
-}> = ({ value, onChange }) => {
+  disabled?: boolean;
+}> = ({ value, onChange, disabled }) => {
   return (
     <div
       style={{
@@ -40,7 +41,7 @@ const DebugModeSwitch: React.FC<{
         </div>
       </div>
 
-      <Switch checked={value} defaultChecked={true} onChange={onChange} />
+      <Switch disabled={disabled} checked={value} defaultChecked={true} onChange={onChange} />
     </div>
   );
 };

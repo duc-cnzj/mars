@@ -31,6 +31,7 @@ import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "./DiffViewer";
 import { ClockCircleOutlined, PlayCircleOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -314,14 +315,12 @@ const EventList: React.FC = () => {
                     <div>
                       {item.username}
                       {getActionStyle(item.action)}
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: "normal",
-                        }}
-                      >
+                      <div className="events__list-item__date">
                         {item.event_at}
-                      </span>
+                        <span className="events__list-item__date--active">
+                          {dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss")}
+                        </span>
+                      </div>
                     </div>
                   }
                   description={`${item.message}`}
@@ -339,7 +338,8 @@ const EventList: React.FC = () => {
                       查看操作记录{" "}
                       {item.duration && (
                         <span style={{ fontSize: "10px", marginLeft: 5 }}>
-                          (时长: {item.duration}, 大小: {item.file?.humanize_size})
+                          (时长: {item.duration}, 大小:{" "}
+                          {item.file?.humanize_size})
                         </span>
                       )}
                     </Button>
@@ -469,7 +469,10 @@ const EventList: React.FC = () => {
             </>
           )}
           {records.map((v, index) => (
-            <div key={index} style={{ display: index === key ? "block" : "none" }}>
+            <div
+              key={index}
+              style={{ display: index === key ? "block" : "none" }}
+            >
               <AsciinemaPlayer
                 speed={1.5}
                 src={{ data: records[key] }}
