@@ -31,7 +31,7 @@ func TestEventBootstrapper_Tags(t *testing.T) {
 }
 
 func TestMaxRecvSize(t *testing.T) {
-	assert.Equal(t, 10*1024*1024, MaxRecvMsgSize)
-	bytes, _ := humanize.ParseBytes("10Mib")
+	assert.Equal(t, 20*1024*1024, MaxRecvMsgSize)
+	bytes, _ := humanize.ParseBytes("20Mib")
 	assert.Equal(t, int(bytes), MaxRecvMsgSize)
 }
