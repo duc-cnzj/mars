@@ -97,16 +97,16 @@ func (mr *MockHelmerMockRecorder) Uninstall(arg0, arg1, arg2 any) *gomock.Call {
 }
 
 // UpgradeOrInstall mocks base method.
-func (m *MockHelmer) UpgradeOrInstall(arg0 context.Context, arg1, arg2 string, arg3 *chart.Chart, arg4 *values.Options, arg5 contracts.WrapLogFn, arg6 bool, arg7 int64, arg8 bool) (*release.Release, error) {
+func (m *MockHelmer) UpgradeOrInstall(arg0 context.Context, arg1, arg2 string, arg3 *chart.Chart, arg4 *values.Options, arg5 contracts.WrapLogFn, arg6 bool, arg7 int64, arg8 bool, arg9 string) (*release.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpgradeOrInstall", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	ret := m.ctrl.Call(m, "UpgradeOrInstall", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 	ret0, _ := ret[0].(*release.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpgradeOrInstall indicates an expected call of UpgradeOrInstall.
-func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 any) *gomock.Call {
+func (mr *MockHelmerMockRecorder) UpgradeOrInstall(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeOrInstall", reflect.TypeOf((*MockHelmer)(nil).UpgradeOrInstall), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeOrInstall", reflect.TypeOf((*MockHelmer)(nil).UpgradeOrInstall), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 }

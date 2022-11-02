@@ -781,7 +781,9 @@ func TestJober_Run_Fail(t *testing.T) {
 	stopCtx := context.TODO()
 	rinstaller := mock.NewMockReleaseInstaller(m)
 
-	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	commit := mock.NewMockCommitInterface(m)
+	commit.EXPECT().GetTitle().Return("xxx").Times(1)
+	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, errors.New("xxx"))
 	job := &Jober{
 		messager:  &emptyMsger{},
 		project:   proj,
@@ -790,6 +792,7 @@ func TestJober_Run_Fail(t *testing.T) {
 		installer: rinstaller,
 		stopCtx:   stopCtx,
 		messageCh: msgCh,
+		commit:    commit,
 	}
 	assert.Equal(t, "xxx", job.Run().Error())
 	assert.Equal(t, "xxx", job.messager.(*emptyMsger).msgs[0])
@@ -868,13 +871,13 @@ spec:
             cpu: 10m
             memory: 10Mi
 `
-	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&release.Release{
+	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "title").Return(&release.Release{
 		Config:   map[string]any{},
 		Manifest: manifest,
 	}, nil)
 
 	commit := mock.NewMockCommitInterface(m)
-	commit.EXPECT().GetTitle().Return("title")
+	commit.EXPECT().GetTitle().Return("title").Times(2)
 	commit.EXPECT().GetWebURL().Return("url")
 	commit.EXPECT().GetAuthorName().Return("duc")
 	date := time.Now()

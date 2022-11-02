@@ -66,16 +66,16 @@ func (mr *MockReleaseInstallerMockRecorder) Logs() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockReleaseInstaller) Run(arg0 context.Context, arg1 contracts.SafeWriteMessageChInterface, arg2 contracts.Percentable, arg3 bool) (*release.Release, error) {
+func (m *MockReleaseInstaller) Run(arg0 context.Context, arg1 contracts.SafeWriteMessageChInterface, arg2 contracts.Percentable, arg3 bool, arg4 string) (*release.Release, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*release.Release)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockReleaseInstallerMockRecorder) Run(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockReleaseInstaller)(nil).Run), arg0, arg1, arg2, arg3, arg4)
 }

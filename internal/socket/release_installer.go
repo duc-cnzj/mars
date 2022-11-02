@@ -17,10 +17,10 @@ import (
 
 type DefaultHelmer struct{}
 
-func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error) {
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
 	var podSelectors []string
 	if !dryRun {
-		re, err := utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, wait, timeoutSeconds, true, nil)
+		re, err := utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, wait, timeoutSeconds, true, nil, desc)
 		if err != nil {
 			return nil, err
 		}
@@ -28,7 +28,7 @@ func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, names
 		podSelectors = getPodSelectorsInDeploymentAndStatefulSetByManifest(utils.SplitManifests(re.Manifest))
 	}
 
-	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors)
+	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc)
 }
 
 func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
@@ -80,14 +80,14 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 	return r.chart
 }
 
-func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool) (*release.Release, error) {
+func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool, desc string) (*release.Release, error) {
 	defer mlog.Debug("releaseInstaller exit")
 
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
 
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun)
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun, desc)
 	if err == nil {
 		return re, nil
 	}

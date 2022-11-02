@@ -430,7 +430,7 @@ func (j *Jober) Run() error {
 			err    error
 		)
 
-		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew()); err != nil {
+		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
 			j.messageCh.Send(contracts.MessageItem{
 				Msg:  err.Error(),
 				Type: contracts.MessageError,

@@ -94,7 +94,7 @@ type Percentable interface {
 
 type ReleaseInstaller interface {
 	Chart() *chart.Chart
-	Run(stopCtx context.Context, messageCh SafeWriteMessageChInterface, percenter Percentable, isNew bool) (*release.Release, error)
+	Run(stopCtx context.Context, messageCh SafeWriteMessageChInterface, percenter Percentable, isNew bool, desc string) (*release.Release, error)
 
 	Logs() []string
 }

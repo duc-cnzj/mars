@@ -39,8 +39,8 @@ func Test_releaseInstaller_Run(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	h := mock.NewMockHelmer(m)
-	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, false)
+	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, nil).Times(1)
+	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, false, "xxx")
 	assert.Nil(t, err)
 }
 
@@ -48,9 +48,9 @@ func Test_releaseInstaller_Run_Rollback(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	h := mock.NewMockHelmer(m)
-	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx")).Times(1)
+	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, errors.New("xxx")).Times(1)
 	h.EXPECT().Rollback(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("aaa")).Times(1)
-	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, false)
+	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, false, "xxx")
 	assert.Equal(t, "xxx", err.Error())
 }
 
@@ -58,9 +58,9 @@ func Test_releaseInstaller_Run_Uninstall(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	h := mock.NewMockHelmer(m)
-	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx")).Times(1)
+	h.EXPECT().UpgradeOrInstall(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, errors.New("xxx")).Times(1)
 	h.EXPECT().Uninstall(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("bbb")).Times(1)
-	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, true)
+	_, err := (&releaseInstaller{helmer: h, dryRun: false}).Run(context.TODO(), nil, nil, true, "xxx")
 	assert.Equal(t, "xxx", err.Error())
 }
 

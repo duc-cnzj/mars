@@ -22,7 +22,7 @@ func (l WrapLogFn) UnWrap() func(format string, v ...any) {
 }
 
 type Helmer interface {
-	UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool) (*release.Release, error)
+	UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error)
 	Rollback(releaseName, namespace string, wait bool, log LogFn, dryRun bool) error
 	Uninstall(releaseName, namespace string, log LogFn) error
 	ReleaseStatus(releaseName, namespace string) types.Deploy

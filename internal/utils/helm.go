@@ -79,7 +79,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 
 // UpgradeOrInstall
 // 不会自动回滚
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string) (*release.Release, error) {
+func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string, desc string) (*release.Release, error) {
 	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn.UnWrap())
 	if err != nil {
 		return nil, err
@@ -88,6 +88,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Install = true
 	client.Atomic = false
 	client.Wait = wait
+	client.Description = desc
 	client.DryRun = dryRun
 	client.DisableOpenAPIValidation = true
 	var selectorList []labels.Selector
