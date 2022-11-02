@@ -12,15 +12,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
+
+	"github.com/dustin/go-humanize"
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -243,4 +244,10 @@ func TestHeaderMatcher(t *testing.T) {
 			assert.Equal(t, tt.want(), matcher)
 		})
 	}
+}
+
+func TestMaxRecvSize(t *testing.T) {
+	assert.Equal(t, 20*1024*1024, MaxRecvMsgSize)
+	bytes, _ := humanize.ParseBytes("20Mib")
+	assert.Equal(t, int(bytes), MaxRecvMsgSize)
 }

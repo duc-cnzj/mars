@@ -40,6 +40,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const MaxRecvMsgSize = 1 << 20 * 20 // 20 MiB
+
 type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Tags() []string {
