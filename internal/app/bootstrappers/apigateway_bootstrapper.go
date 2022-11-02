@@ -110,6 +110,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		}))
 
 	opts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(middlewares.TraceUnaryClientInterceptor),
 	}
