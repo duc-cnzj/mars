@@ -58,13 +58,17 @@ func (g *grpcRunner) Shutdown(ctx context.Context) error {
 	}
 }
 
+const MaxRecvMsgSize = 1 << 20 * 10 // 10 MiB
+
 func (g *grpcRunner) Run(ctx context.Context) error {
 	mlog.Infof("[Server]: start grpcRunner runner at %s.", g.endpoint)
 	listen, err := net.Listen("tcp", g.endpoint)
 	if err != nil {
 		return err
 	}
+
 	server := grpc.NewServer(
+		grpc.MaxRecvMsgSize(MaxRecvMsgSize),
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(Authenticate),
 			marsauthorizor.StreamServerInterceptor(),
