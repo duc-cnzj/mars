@@ -5,26 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
-
-	v12 "k8s.io/client-go/listers/core/v1"
-
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
-
-	corev1 "k8s.io/api/core/v1"
-	eventsv1 "k8s.io/api/events/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-
 	"net"
 	"os"
 	"time"
-
-	"github.com/duc-cnzj/mars/internal/contracts"
-
-	"github.com/duc-cnzj/mars-client/v4/types"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/mlog"
 
 	"github.com/spf13/pflag"
 	"helm.sh/helm/v3/pkg/action"
@@ -37,8 +20,19 @@ import (
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	v1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	v12 "k8s.io/client-go/listers/core/v1"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
+	app "github.com/duc-cnzj/mars/internal/app/helper"
+	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
 func init() {
@@ -404,7 +398,7 @@ func PackageChart(path string, destDir string) (string, error) {
 	if chartLocal.Metadata.Dependencies != nil && action.CheckDependencies(chartLocal, chartLocal.Metadata.Dependencies) != nil {
 		// 更新依赖 dependency, 防止没有依赖文件打包失败
 		downloadManager := &downloader.Manager{
-			Out:              ioutil.Discard,
+			Out:              io.Discard,
 			ChartPath:        path,
 			Keyring:          newPackage.Keyring,
 			Getters:          getter.All(settings),
@@ -438,7 +432,7 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	} else {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
 		server := "https://" + net.JoinHostPort(host, port)
-		token, _ := ioutil.ReadFile(tokenFile)
+		token, _ := os.ReadFile(tokenFile)
 		sets = append(sets, "--server="+server, "--token="+string(token), "--certificate-authority="+rootCAFile)
 		ssets = append(ssets, "--kube-apiserver="+server, "--kube-token="+string(token), "--kube-ca-file="+rootCAFile)
 	}

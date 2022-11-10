@@ -151,9 +151,6 @@ const MyTabs: React.FC<{
       ),
     },
     {
-      closeIcon: "",
-      disabled: false,
-      forceRender: false,
       key: "shell",
       label: "命令行",
       children: (
@@ -175,9 +172,6 @@ const MyTabs: React.FC<{
       ),
     },
     {
-      closeIcon: "",
-      disabled: false,
-      forceRender: false,
       key: "update-config",
       label: "配置更新",
       children: (
@@ -203,9 +197,6 @@ const MyTabs: React.FC<{
       ? items
       : []),
     {
-      closeIcon: "",
-      disabled: false,
-      forceRender: false,
       key: "detail",
       label: "详细信息",
       children: (
@@ -237,21 +228,7 @@ const MyTabs: React.FC<{
       centered
       items={items}
       style={{ height: "100%" }}
-    >
-      {/* {(item.deploy_status === pb.types.Deploy.StatusDeployed ||
-        item.deploy_status === pb.types.Deploy.StatusDeploying) && (
-        <>
-          <TabPane tab="容器日志" key="container-logs"></TabPane>
-          <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
-          </TabPane>
-          <TabPane tab="配置更新" key="">
-          </TabPane>
-        </>
-      )}
-      <TabPane tab="详细信息" key="detail" className="detail-tab">
-        
-      </TabPane> */}
-    </Tabs>
+    />
   );
 };
 
