@@ -2,8 +2,10 @@ import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 const Option = Select.Option;
+const { TextArea } = Input;
 
 interface st {
+  textarea?: React.CSSProperties;
   input?: React.CSSProperties;
   inputNumber?: React.CSSProperties;
   label?: React.CSSProperties;
@@ -126,6 +128,23 @@ const Element: React.FC<{
               onChange(e.target.value);
             }}
             style={style.input}
+          />
+        </Form.Item>
+      );
+    case pb.mars.ElementType.ElementTypeTextArea:
+      return (
+        <Form.Item
+          label={<div style={style.label}>{element.description}</div>}
+          style={{...style.formItem, width: "100%", margin: 0, marginTop: 3}}
+        >
+          <TextArea
+            defaultValue={element.default}
+            value={value}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setValue(e.target.value);
+              onChange(e.target.value);
+            }}
+            style={style.textarea}
           />
         </Form.Item>
       );

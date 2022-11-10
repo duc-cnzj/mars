@@ -226,6 +226,28 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-11-10-projects-extra_values-and-final_extra_values-longtext",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Migrator().HasTable(&models.Project{}) {
+					types, _ := tx.Migrator().ColumnTypes(&models.Project{})
+					for _, columnType := range types {
+						if columnType.Name() == "final_extra_values" && columnType.DatabaseTypeName() == "text" {
+							if err := tx.Migrator().AlterColumn(&models.Project{}, "FinalExtraValues"); err != nil {
+								return err
+							}
+						}
+						if columnType.Name() == "extra_values" && columnType.DatabaseTypeName() == "text" {
+							if err := tx.Migrator().AlterColumn(&models.Project{}, "ExtraValues"); err != nil {
+								return err
+							}
+						}
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

@@ -41,6 +41,7 @@ enum ElementType {
   ElementTypeSelect = 3;
   ElementTypeRadio = 4;
   ElementTypeSwitch = 5;
+  ElementTypeTextArea = 6;
 }
 
 message Element {

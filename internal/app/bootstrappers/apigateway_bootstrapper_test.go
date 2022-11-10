@@ -1,16 +1,18 @@
 package bootstrappers
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
+
+	auth2 "github.com/duc-cnzj/mars/internal/auth"
 
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -73,8 +75,7 @@ func Test_authenticated(t *testing.T) {
 	assert.False(t, b)
 	ctx, b := authenticated(r)
 	assert.True(t, b)
-	value := ctx.Context().Value(authCtx{})
-	assert.Equal(t, "duc", value.(*contracts.UserInfo).Name)
+	assert.Equal(t, "duc", auth2.MustGetUser(ctx.Context()).Name)
 }
 
 type closedReader struct{}
@@ -168,7 +169,7 @@ binary data
 	}
 
 	req2.Form = make(url.Values)
-	req2 = req2.WithContext(context.WithValue(context.TODO(), authCtx{}, &contracts.UserInfo{Name: "duc"}))
+	req2 = req2.WithContext(auth2.SetUser(req2.Context(), &contracts.UserInfo{Name: "duc"}))
 	rr2 := httptest.NewRecorder()
 
 	up := mock.NewMockUploader(m)
@@ -192,9 +193,91 @@ binary data
 	assert.Equal(t, "duc", f.Username)
 }
 
-func Test_handleDownload(t *testing.T) {}
+func Test_handleDownload(t *testing.T) {
 
-func Test_handleDownloadConfig(t *testing.T) {}
+	r := &http.Request{}
+
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	r1 := httptest.NewRecorder()
+	handleDownload(r1, r, 1)
+	assert.Equal(t, 500, r1.Code)
+
+	db.AutoMigrate(&models.File{})
+	r2 := httptest.NewRecorder()
+	handleDownload(r2, r, 1)
+	assert.Equal(t, 404, r2.Code)
+
+	r3 := httptest.NewRecorder()
+	aCtx := auth2.SetUser(r.Context(), &contracts.UserInfo{
+		ID:    "1",
+		Email: "admin@qq.com",
+		Name:  "duc",
+		Roles: []string{"admin"},
+	})
+	db.Create(&models.File{
+		UploadType:    contracts.Local,
+		Path:          "/tmp/a.txt",
+		Size:          100,
+		Username:      "duc",
+		Namespace:     "xx",
+		Pod:           "xx",
+		Container:     "xx",
+		ContainerPath: "/tmp/xx",
+	})
+	testutil.AssertAuditLogFired(m, app)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	up.EXPECT().Type().Return(contracts.Local)
+	up.EXPECT().Read("/tmp/a.txt").Return(io.NopCloser(strings.NewReader("xxx")), nil)
+	handleDownload(r3, r.WithContext(aCtx), 1)
+	assert.Equal(t, "xxx", r3.Body.String())
+}
+func Test_handleDownloadFileNotExists(t *testing.T) {
+	r := &http.Request{}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.File{})
+	r3 := httptest.NewRecorder()
+	aCtx := auth2.SetUser(r.Context(), &contracts.UserInfo{
+		ID:    "1",
+		Email: "admin@qq.com",
+		Name:  "duc",
+		Roles: []string{"admin"},
+	})
+	db.Create(&models.File{
+		UploadType:    contracts.Local,
+		Path:          "/tmp/a.txt",
+		Size:          100,
+		Username:      "duc",
+		Namespace:     "xx",
+		Pod:           "xx",
+		Container:     "xx",
+		ContainerPath: "/tmp/xx",
+	})
+	fired := testutil.AssertAuditLogFired(m, app)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().Uploader().Return(up).AnyTimes()
+	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
+	up.EXPECT().Read("/tmp/a.txt").Return(nil, errors.New("xxx"))
+	handleDownload(r3, r.WithContext(aCtx), 1)
+	assert.Equal(t, 500, r3.Code)
+	r4 := httptest.NewRecorder()
+	up.EXPECT().Read("/tmp/a.txt").Return(nil, os.ErrNotExist)
+	fired.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
+	handleDownload(r4, r.WithContext(aCtx), 1)
+	assert.Equal(t, 404, r4.Code)
+}
+
+func Test_handleDownloadConfig(t *testing.T) {
+	//handleDownloadConfig()
+}
 
 func TestApiGatewayBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"api", "gateway"}, (&ApiGatewayBootstrapper{}).Tags())
