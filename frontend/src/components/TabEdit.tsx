@@ -46,7 +46,6 @@ const ModalSub: React.FC<{
   const ws = useWs();
   const wsReady = useWsReady();
   const [form] = Form.useForm();
-  const [deployStarted, setDeployStarted] = useState(false);
   const list = useSelector(selectList);
   const dispatch = useDispatch();
 
@@ -144,7 +143,6 @@ const ModalSub: React.FC<{
       setShowLog(true);
       setStart(true);
       setStartAt(Date.now());
-      setDeployStarted(true);
       ws?.send(s);
     }
   };
@@ -168,15 +166,6 @@ const ModalSub: React.FC<{
       ws?.send(s);
     }
   }, [ws, namespaceId, wsReady, detail.name]);
-
-  useEffect(() => {
-    return () => {
-      if (deployStarted) {
-        console.log("on remove");
-        onCancel();
-      }
-    };
-  }, [deployStarted, onCancel]);
 
   const onReset = useCallback(() => {
     setShowLog(false);

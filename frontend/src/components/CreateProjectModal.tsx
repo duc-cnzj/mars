@@ -184,11 +184,11 @@ const CreateProjectModal: React.FC<{
   useEffect(() => {
     return () => {
       if (deployStarted) {
-        console.log("on remove")
-        onRemove()
+        console.log("on remove");
+        onRemove();
       }
-    }
-  }, [deployStarted, onRemove])
+    };
+  }, [deployStarted, onRemove]);
 
   const loadConfigFile = useCallback(
     (gitProjectId: string, gitBranch: string) => {
