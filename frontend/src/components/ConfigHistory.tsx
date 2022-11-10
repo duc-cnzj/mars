@@ -23,8 +23,8 @@ const ConfigHistory: React.FC<{
   return (
     <Popover
       placement="right"
-      visible={visible}
-      onVisibleChange={(v) => setVisible(v)}
+      open={visible}
+      onOpenChange={(v) => setVisible(v)}
       content={
         <Content
           onDataChange={(s) => {

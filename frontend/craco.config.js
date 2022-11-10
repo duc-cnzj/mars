@@ -1,4 +1,4 @@
-const CracoLessPlugin = require("craco-less");
+const CracoLessPlugin = require('craco-less');
 const plugins = process.env.NODE_ENV === "production" ? ["transform-remove-console"] : []
 
 module.exports = {

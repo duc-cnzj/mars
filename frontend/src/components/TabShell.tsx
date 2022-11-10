@@ -206,6 +206,7 @@ const TabShell: React.FC<{
     if (logCount && term) {
       handleConnectionMessage(log, term);
     }
+
   }, [logCount, log, handleConnectionMessage, term]);
 
   useEffect(() => {
@@ -219,7 +220,6 @@ const TabShell: React.FC<{
       let myterm = new Terminal({
         fontSize: 14,
         fontFamily: '"Fira code", "Fira Mono", monospace',
-        bellStyle: "sound",
         cursorBlink: true,
         // cols: 106,
         rows: 25,

@@ -55,12 +55,17 @@ func (pp *processPercent) To(percent int64) {
 	defer pp.percentLock.Unlock()
 
 	sleepTime := 100 * time.Millisecond
-	for pp.percent < percent {
+	var step int64 = 3
+	for pp.percent+step <= percent {
 		pp.s.Sleep(sleepTime)
-		pp.percent++
+		pp.percent += step
 		if sleepTime > 50*time.Millisecond {
 			sleepTime = sleepTime / 2
 		}
 		pp.SendProcessPercent(pp.percent)
+	}
+	if pp.percent != percent {
+		pp.SendProcessPercent(pp.percent)
+		pp.percent = percent
 	}
 }

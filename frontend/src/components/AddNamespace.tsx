@@ -45,7 +45,7 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
       </Affix>
       <Modal
         title="创建项目空间"
-        visible={isVisible}
+        open={isVisible}
         onOk={() => submit()}
         okText={"创建"}
         cancelText={"取消"}

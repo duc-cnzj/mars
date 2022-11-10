@@ -407,7 +407,7 @@ const EventList: React.FC = () => {
       <Modal
         width={"80%"}
         title={config.title}
-        visible={isModalVisible}
+        open={isModalVisible}
         okText={"确定"}
         cancelText={"取消"}
         onOk={handleOk}
@@ -433,7 +433,7 @@ const EventList: React.FC = () => {
         width={"65%"}
         title={null}
         destroyOnClose
-        visible={shellModalVisible}
+        open={shellModalVisible}
         footer={null}
         onCancel={() => {
           setShellModalVisible(false);

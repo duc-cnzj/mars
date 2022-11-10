@@ -8,7 +8,7 @@ import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { Button, Progress, message, Row, Col, Form } from "antd";
+import { Button, message, Row, Col, Form, Progress } from "antd";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCreateProjectLog,
@@ -46,6 +46,7 @@ const ModalSub: React.FC<{
   const ws = useWs();
   const wsReady = useWsReady();
   const [form] = Form.useForm();
+  const [deployStarted, setDeployStarted] = useState(false);
   const list = useSelector(selectList);
   const dispatch = useDispatch();
 
@@ -143,6 +144,7 @@ const ModalSub: React.FC<{
       setShowLog(true);
       setStart(true);
       setStartAt(Date.now());
+      setDeployStarted(true);
       ws?.send(s);
     }
   };
@@ -166,6 +168,15 @@ const ModalSub: React.FC<{
       ws?.send(s);
     }
   }, [ws, namespaceId, wsReady, detail.name]);
+
+  useEffect(() => {
+    return () => {
+      if (deployStarted) {
+        console.log("on remove");
+        onCancel();
+      }
+    };
+  }, [deployStarted, onCancel]);
 
   const onReset = useCallback(() => {
     setShowLog(false);
@@ -293,12 +304,12 @@ const ModalSub: React.FC<{
           </div>
           <div style={{ marginTop: 10, display: showLog ? "block" : "none" }}>
             <Progress
+              percent={processPercent}
               strokeColor={{
                 from: "#108ee9",
                 to: "#87d068",
               }}
               style={{ padding: "0 3px", marginBottom: 5 }}
-              percent={processPercent}
               status="active"
             />
             <LogOutput

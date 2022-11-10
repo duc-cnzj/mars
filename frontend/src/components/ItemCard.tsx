@@ -46,7 +46,7 @@ const Item: React.FC<{
             </Tooltip>
             <div className="title-cpu-memory">
               <Tooltip
-                onVisibleChange={(visible) => {
+                onOpenChange={(visible: boolean) => {
                   if (visible) {
                     getNamespaceCpuMemory({ namespace_id: item.id }).then(
                       (res) => {
