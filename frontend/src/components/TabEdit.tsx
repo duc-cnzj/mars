@@ -322,6 +322,7 @@ const ModalSub: React.FC<{
                   inputNumber: { fontSize: 10, width: "100%" },
                   input: { fontSize: 10 },
                   label: { fontSize: 10 },
+                  textarea: { fontSize: 10 },
                   formItem: {
                     marginBottom: 0,
                     marginTop: 0,

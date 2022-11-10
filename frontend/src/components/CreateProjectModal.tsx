@@ -384,6 +384,7 @@ const CreateProjectModal: React.FC<{
                       inputNumber: { fontSize: 10, width: "100%" },
                       input: { fontSize: 10 },
                       label: { fontSize: 10 },
+                      textarea: { fontSize: 10 },
                       formItem: {
                         marginBottom: 5,
                         display: "inline-block",
