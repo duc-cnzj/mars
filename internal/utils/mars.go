@@ -71,28 +71,30 @@ func GetProjectMarsConfig(projectId any, branch string) (*mars.Config, error) {
 }
 
 /*
-	  values.yaml:
-	   ```
+	values.yaml:
+	 ```
+	 command:
 	   command:
-	     command:
-	       - sleep 3600
-	   ```
+	     - sleep 3600
+	 ```
 
-	   config_field: command
+	 config_field: command
 
-	   input:
-	   ```
-	   command:
-	    - app
-	   ```
+	 input:
+	 ```
+	 command:
+	  - app
+	 ```
 
-	   wants:
-	   ```
+	 wants:
+	 ```
+	  command:
 	    command:
-	      command:
-	      - app
-	   ```
+	    - app
+	 ```
+
 ------------------------------------
+
 	   values.yaml:
 	   command:
 	   - sleep 3600

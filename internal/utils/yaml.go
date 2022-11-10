@@ -29,10 +29,13 @@ func deepSet(key string, data any) map[string]any {
 }
 
 /*
-a:
- b:
-  c: d
+```
 
+	a:
+		b:
+			c: d
+
+```
 a->b->c
 */
 func deepGet(key string, data map[any]any) (any, bool) {
@@ -57,8 +60,9 @@ func deepGet(key string, data map[any]any) (any, bool) {
 }
 
 // YamlDeepSetKey 把 'user->name: duc' 设置成
-// user:
-//   name: duc
+//
+//	user:
+//	  name: duc
 func YamlDeepSetKey(field string, data any) ([]byte, error) {
 	if strings.HasPrefix(field, separator) || strings.HasSuffix(field, separator) {
 		return nil, fmt.Errorf("%w: %s", ErrorInvalidSeparator, field)

@@ -431,6 +431,7 @@ func (j *Jober) Run() error {
 		)
 
 		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
+			mlog.Errorf("[Websocket]: %v", err)
 			j.messageCh.Send(contracts.MessageItem{
 				Msg:  err.Error(),
 				Type: contracts.MessageError,
@@ -789,7 +790,7 @@ type DynamicLoader struct{}
 func (d *DynamicLoader) Load(j *Jober) error {
 	const loaderName = "[DynamicLoader]: "
 
-	j.Percenter().To(40)
+	j.Percenter().To(50)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查到用户传入的配置"))
 
 	if j.input.Config == "" {
@@ -811,7 +812,7 @@ type ExtraValuesLoader struct{}
 func (d *ExtraValuesLoader) Load(j *Jober) error {
 	const loaderName = "[ExtraValuesLoader]: "
 
-	j.Percenter().To(50)
+	j.Percenter().To(60)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "检查项目额外的配置"))
 
 	if len(j.input.ExtraValues) <= 0 {
@@ -939,7 +940,7 @@ type VariableLoader struct {
 
 func (v *VariableLoader) Load(j *Jober) error {
 	const loaderName = "[VariableLoader]: "
-	j.Percenter().To(60)
+	j.Percenter().To(40)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
 
 	if j.config.ValuesYaml == "" {
