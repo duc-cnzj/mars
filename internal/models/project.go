@@ -36,8 +36,8 @@ type Project struct {
 	Atomic           bool   `json:"atomic"`
 	DeployStatus     uint8  `json:"deploy_status" gorm:"not null;default:0"`
 	EnvValues        string `json:"env_values" gorm:"type:text;nullable;comment:可用的环境变量值"`
-	ExtraValues      string `json:"extra_values" gorm:"type:text;nullable;comment:用户表单传入的额外值"`
-	FinalExtraValues string `json:"final_extra_values" gorm:"type:text;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`
+	ExtraValues      string `json:"extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值"`
+	FinalExtraValues string `json:"final_extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`
 
 	ConfigType string `json:"config_type" gorm:"size:255;nullable;"`
 	Manifest   string `json:"manifest" gorm:"type:longtext;"`

@@ -154,10 +154,21 @@ func TestManager_AutoMigrate(t *testing.T) {
 			assert.Equal(t, "text", columnType.DatabaseTypeName())
 		}
 	}
+	ptypes, err := db.Migrator().ColumnTypes(&Project{})
+	assert.Nil(t, err)
+	for _, columnType := range ptypes {
+		if columnType.Name() == "extra_values" {
+			assert.Equal(t, "text", columnType.DatabaseTypeName())
+		}
+		if columnType.Name() == "final_extra_values" {
+			assert.Equal(t, "text", columnType.DatabaseTypeName())
+		}
+	}
 	assert.False(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 
 	assert.Nil(t, ma.AutoMigrate())
+
 	assert.True(t, db.Migrator().HasColumn("files", "upload_type"))
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))
@@ -185,6 +196,17 @@ func TestManager_AutoMigrate(t *testing.T) {
 		if columnType.Name() == "old" || columnType.Name() == "new" {
 			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
 			break
+		}
+	}
+
+	ptypes, err = db.Migrator().ColumnTypes(&Project{})
+	assert.Nil(t, err)
+	for _, columnType := range ptypes {
+		if columnType.Name() == "extra_values" {
+			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
+		}
+		if columnType.Name() == "final_extra_values" {
+			assert.Equal(t, "longtext", columnType.DatabaseTypeName())
 		}
 	}
 }
