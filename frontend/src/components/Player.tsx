@@ -51,7 +51,6 @@ const AsciinemaPlayer: React.FC<AsciinemaPlayerProps> = ({
 
   useEffect(() => {
     const currentRef = ref.current;
-    if (!src) {return}
     const p = AsciinemaPlayerLibrary.create(src, currentRef, {
       cols,
       rows,
