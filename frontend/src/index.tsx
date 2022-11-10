@@ -18,9 +18,8 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const container = document.getElementById('root');
-const root = createRoot(container!); // createRoot(container!) if you use TypeScript
+const root = createRoot(container!);
 root.render(
-  <React.StrictMode>
     <Provider store={store}>
       <Suspense fallback={null}>
         <Router>
@@ -40,7 +39,6 @@ root.render(
         </Router>
       </Suspense>
     </Provider>
-  </React.StrictMode>
 );
 
 reportWebVitals();

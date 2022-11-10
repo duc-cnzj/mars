@@ -91,11 +91,11 @@ func (s SortStatePod) Less(i, j int) bool {
 		return true
 	}
 
-	if s[i].IsOld == s[j].IsOld && s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning {
+	if s[i].IsOld == s[j].IsOld && s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning && !s[i].Terminating {
 		return true
 	}
 
-	if s[i].IsOld == s[j].IsOld && !s[i].Pending && s[j].Pending {
+	if s[i].IsOld && s[j].IsOld && s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning {
 		return true
 	}
 

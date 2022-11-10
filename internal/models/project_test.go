@@ -353,7 +353,7 @@ func TestSortStatePod(t *testing.T) {
 			Terminating: false,
 			Pending:     true,
 			Pod: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-1"},
+				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-1", CreationTimestamp: metav1.Time{Time: time.Now().Add(-1 * time.Hour)}},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},
@@ -364,7 +364,7 @@ func TestSortStatePod(t *testing.T) {
 			Terminating: false,
 			Pending:     true,
 			Pod: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-2"},
+				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-2", CreationTimestamp: metav1.Time{Time: time.Now()}},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},
@@ -396,7 +396,7 @@ func TestSortStatePod(t *testing.T) {
 			Terminating: false,
 			Pending:     true,
 			Pod: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-3"},
+				ObjectMeta: metav1.ObjectMeta{Name: "PodPending-3", CreationTimestamp: metav1.Time{Time: time.Now().Add(1 * time.Hour)}},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 				},

@@ -82,7 +82,7 @@ const ItemDetailModal: React.FC<{
         }}
         className="draggable-modal"
         destroyOnClose
-        visible={visible}
+        open={visible}
         initialWidth={900}
         initialHeight={600}
         footer={null}
@@ -133,9 +133,6 @@ const MyTabs: React.FC<{
 }) => {
   let items: Tab[] = [
     {
-      closeIcon: "",
-      disabled: false,
-      forceRender: false,
       key: "container-logs",
       label: "容器日志",
       children: (
@@ -160,7 +157,7 @@ const MyTabs: React.FC<{
       key: "shell",
       label: "命令行",
       children: (
-        <>
+        <div style={{height: "100%"}}>
           <Suspense fallback={<Skeleton active />}>
             <ErrorBoundary>
               {detail?.project && detail.project.namespace && (
@@ -174,7 +171,7 @@ const MyTabs: React.FC<{
               )}
             </ErrorBoundary>
           </Suspense>
-        </>
+        </div>
       ),
     },
     {
@@ -199,6 +196,12 @@ const MyTabs: React.FC<{
         </>
       ),
     },
+  ];
+  items = [
+    ...(item.deploy_status === pb.types.Deploy.StatusDeployed ||
+    item.deploy_status === pb.types.Deploy.StatusDeploying
+      ? items
+      : []),
     {
       closeIcon: "",
       disabled: false,
@@ -206,7 +209,7 @@ const MyTabs: React.FC<{
       key: "detail",
       label: "详细信息",
       children: (
-        <>
+        <div className="detail-tab">
           <Suspense fallback={<Skeleton active />}>
             {detail?.project && (
               <TabInfo
@@ -222,7 +225,7 @@ const MyTabs: React.FC<{
               />
             )}
           </Suspense>
-        </>
+        </div>
       ),
     },
   ];

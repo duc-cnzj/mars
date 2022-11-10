@@ -1,12 +1,13 @@
-import { legacy_createStore, applyMiddleware } from "redux";
+import { configureStore } from '@reduxjs/toolkit'
 import rootReducer from "./reducers";
-import { composeWithDevTools } from 'redux-devtools-extension';
-import thunk from 'redux-thunk';
 
-const composeEnhancers = composeWithDevTools({});
-
-const enhancers = process.env.NODE_ENV === "production" ? applyMiddleware(thunk) : composeEnhancers(
-  applyMiddleware(thunk),
-);
-
-export default legacy_createStore(rootReducer, enhancers);
+const store = configureStore({
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+      immutableCheck: false,
+    }),
+  devTools: process.env.NODE_ENV !== "production",
+  reducer: rootReducer,
+})
+export default store;

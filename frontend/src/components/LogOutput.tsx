@@ -63,7 +63,7 @@ const LogButton: React.FC<{ c: pb.types.Container }> = ({ c }) => {
       zIndex={99999}
         className="draggable-modal"
         destroyOnClose
-        visible={visible}
+        open={visible}
         initialWidth={900}
         initialHeight={600}
         footer={null}

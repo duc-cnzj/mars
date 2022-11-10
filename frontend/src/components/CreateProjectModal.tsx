@@ -14,7 +14,7 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Progress, Button, Form } from "antd";
+import { message, Button, Form, Progress } from "antd";
 import { PlusOutlined, StopOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -181,6 +181,15 @@ const CreateProjectModal: React.FC<{
     }
   }, [wsReady, ws, namespaceId, data]);
 
+  useEffect(() => {
+    return () => {
+      if (deployStarted) {
+        console.log("on remove")
+        onRemove()
+      }
+    }
+  }, [deployStarted, onRemove])
+
   const loadConfigFile = useCallback(
     (gitProjectId: string, gitBranch: string) => {
       configFile({
@@ -255,7 +264,7 @@ const CreateProjectModal: React.FC<{
       ></Button>
       <DraggableModal
         destroyOnClose
-        visible={visible}
+        open={visible}
         okButtonProps={{
           loading: isLoading,
           danger: info.status === "bad",

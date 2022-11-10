@@ -635,7 +635,7 @@ const ConfigModal: React.FC<{
                           </div>
                         }
                         trigger="focus"
-                        visible={configFileTip && editMode}
+                        open={configFileTip && editMode}
                         onOpenChange={(v) => setConfigFileTip(v)}
                       ></Popover>
                       <Form.Item
