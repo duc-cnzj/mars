@@ -326,7 +326,7 @@ const ModalSub: React.FC<{
                     marginBottom: 0,
                     marginTop: 0,
                     display: "inline-block",
-                    width: "calc(30% - 8px)",
+                    width: "calc(33.3% - 8px)",
                     marginRight: 8,
                   },
                 }}

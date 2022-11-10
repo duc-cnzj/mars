@@ -134,8 +134,9 @@ const Element: React.FC<{
     case pb.mars.ElementType.ElementTypeTextArea:
       return (
         <Form.Item
+          className="elements__form-item-textarea"
           label={<div style={style.label}>{element.description}</div>}
-          style={{...style.formItem, width: "100%", margin: 0, marginTop: 3}}
+          style={{...style.formItem, width: "100%"}}
         >
           <TextArea
             defaultValue={element.default}
@@ -220,7 +221,7 @@ const Element: React.FC<{
           <Switch
             defaultChecked={isTrue(element.default)}
             style={style.switch}
-            checked={value}
+            checked={isTrue(value)}
             onChange={(e) => {
               setValue(e);
               onChange(e);

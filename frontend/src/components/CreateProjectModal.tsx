@@ -387,7 +387,7 @@ const CreateProjectModal: React.FC<{
                       formItem: {
                         marginBottom: 5,
                         display: "inline-block",
-                        width: "calc(33% - 8px)",
+                        width: "calc(33.3% - 8px)",
                         marginRight: 8,
                       },
                     }}
