@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/auth"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/frontend"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -211,7 +213,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request, fid int) {
 	}
 	fileName := filepath.Base(fil.Path)
 
-	user := r.Context().Value(authCtx{}).(*contracts.UserInfo)
+	user := auth.MustGetUser(r.Context())
 	e.AuditLog(user.Name,
 		types.EventActionType_Download,
 		fmt.Sprintf("下载文件 '%s', 大小 %s",
@@ -246,7 +248,7 @@ func download(w http.ResponseWriter, filename string, reader io.Reader) {
 
 func authenticated(r *http.Request) (*http.Request, bool) {
 	if verifyToken, b := app.Auth().VerifyToken(r.Header.Get("Authorization")); b {
-		return r.WithContext(context.WithValue(r.Context(), authCtx{}, &verifyToken.UserInfo)), true
+		return r.WithContext(auth.SetUser(r.Context(), &verifyToken.UserInfo)), true
 	}
 
 	return nil, false
@@ -265,7 +267,7 @@ func handleBinaryFileUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	info := r.Context().Value(authCtx{}).(*contracts.UserInfo)
+	info := auth.MustGetUser(r.Context())
 
 	var uploader contracts.Uploader = app.Uploader()
 	// 某个用户/那天/时间/文件名称
@@ -319,7 +321,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 			return
 		}
-		user := req.Context().Value(authCtx{}).(*contracts.UserInfo)
+		user := auth.MustGetUser(req.Context())
 		if !user.IsAdmin() {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
@@ -349,7 +351,7 @@ func handleDownloadConfig(gmux *runtime.ServeMux) {
 			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 			return
 		}
-		user := req.Context().Value(authCtx{}).(*contracts.UserInfo)
+		user := auth.MustGetUser(req.Context())
 		if !user.IsAdmin() {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
@@ -421,5 +423,3 @@ func LoadSwaggerUI(mux *mux.Router) {
 		http.StripPrefix("/docs/", http.FileServer(http.FS(swagger_ui.SwaggerUI))),
 	)
 }
-
-type authCtx struct{}
