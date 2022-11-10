@@ -14,8 +14,7 @@ import Shell from "./TabShell";
 import TabLog from "./TabLog";
 import useProjectRoom from "../contexts/useProjectRoom";
 import { useWs } from "../contexts/useWebsocket";
-
-const { TabPane } = Tabs;
+import { Tab } from "rc-tabs/lib/interface";
 
 const ItemDetailModal: React.FC<{
   item: pb.types.ProjectModel;
@@ -132,76 +131,123 @@ const MyTabs: React.FC<{
   onSuccess,
   onDelete,
 }) => {
+  let items: Tab[] = [
+    {
+      closeIcon: "",
+      disabled: false,
+      forceRender: false,
+      key: "container-logs",
+      label: "容器日志",
+      children: (
+        <>
+          {detail?.project && detail.project.namespace ? (
+            <TabLog
+              updatedAt={detail.project.updated_at}
+              id={detail.project.id}
+              namespace={detail.project.namespace.name}
+              namespaceID={detail.project.namespace.id}
+            />
+          ) : (
+            <Skeleton active />
+          )}
+        </>
+      ),
+    },
+    {
+      closeIcon: "",
+      disabled: false,
+      forceRender: false,
+      key: "shell",
+      label: "命令行",
+      children: (
+        <>
+          <Suspense fallback={<Skeleton active />}>
+            <ErrorBoundary>
+              {detail?.project && detail.project.namespace && (
+                <Shell
+                  namespaceID={detail.project.namespace.id}
+                  namespace={detail.project.namespace.name}
+                  id={detail.project.id}
+                  updatedAt={detail.project.updated_at}
+                  resizeAt={resizeAt}
+                />
+              )}
+            </ErrorBoundary>
+          </Suspense>
+        </>
+      ),
+    },
+    {
+      closeIcon: "",
+      disabled: false,
+      forceRender: false,
+      key: "update-config",
+      label: "配置更新",
+      children: (
+        <>
+          <Suspense fallback={<Skeleton active />}>
+            {detail?.project && detail.project.namespace && (
+              <TabEdit
+                elements={detail.elements}
+                namespaceId={detail.project.namespace.id}
+                detail={detail.project}
+                updatedAt={detail.project.updated_at}
+                onSuccess={onSuccess}
+              />
+            )}
+          </Suspense>
+        </>
+      ),
+    },
+    {
+      closeIcon: "",
+      disabled: false,
+      forceRender: false,
+      key: "detail",
+      label: "详细信息",
+      children: (
+        <>
+          <Suspense fallback={<Skeleton active />}>
+            {detail?.project && (
+              <TabInfo
+                detail={detail.project}
+                cpu={detail.cpu}
+                memory={detail.memory}
+                git_commit_web_url={detail.project.git_commit_web_url}
+                git_commit_title={detail.project.git_commit_title}
+                git_commit_author={detail.project.git_commit_author}
+                git_commit_date={detail.project.git_commit_date}
+                urls={detail.urls}
+                onDeleted={onDelete}
+              />
+            )}
+          </Suspense>
+        </>
+      ),
+    },
+  ];
   useProjectRoom(namespaceId, projectID, useWs());
   return (
     <Tabs
       destroyInactiveTabPane
       defaultActiveKey="1"
       centered
+      items={items}
       style={{ height: "100%" }}
     >
-      {(item.deploy_status === pb.types.Deploy.StatusDeployed ||
+      {/* {(item.deploy_status === pb.types.Deploy.StatusDeployed ||
         item.deploy_status === pb.types.Deploy.StatusDeploying) && (
         <>
-          <TabPane tab="容器日志" key="container-logs">
-            {detail?.project && detail.project.namespace ? (
-              <TabLog
-                updatedAt={detail.project.updated_at}
-                id={detail.project.id}
-                namespace={detail.project.namespace.name}
-                namespaceID={detail.project.namespace.id}
-              />
-            ) : (
-              <Skeleton active />
-            )}
-          </TabPane>
+          <TabPane tab="容器日志" key="container-logs"></TabPane>
           <TabPane tab="命令行" key="shell" style={{ height: "100%" }}>
-            <Suspense fallback={<Skeleton active />}>
-              <ErrorBoundary>
-                {detail?.project && detail.project.namespace && (
-                  <Shell
-                    namespaceID={detail.project.namespace.id}
-                    namespace={detail.project.namespace.name}
-                    id={detail.project.id}
-                    updatedAt={detail.project.updated_at}
-                    resizeAt={resizeAt}
-                  />
-                )}
-              </ErrorBoundary>
-            </Suspense>
           </TabPane>
-          <TabPane tab="配置更新" key="update-config">
-            <Suspense fallback={<Skeleton active />}>
-              {detail?.project && detail.project.namespace && (
-                <TabEdit
-                  elements={detail.elements}
-                  namespaceId={detail.project.namespace.id}
-                  detail={detail.project}
-                  updatedAt={detail.project.updated_at}
-                  onSuccess={onSuccess}
-                />
-              )}
-            </Suspense>
+          <TabPane tab="配置更新" key="">
           </TabPane>
         </>
       )}
       <TabPane tab="详细信息" key="detail" className="detail-tab">
-        <Suspense fallback={<Skeleton active />}>
-          {detail?.project && (
-            <TabInfo
-              detail={detail.project}
-              cpu={detail.cpu}
-              memory={detail.memory}
-              git_commit_web_url={detail.project.git_commit_web_url}
-              git_commit_title={detail.project.git_commit_title}
-              git_commit_author={detail.project.git_commit_author}
-              git_commit_date={detail.project.git_commit_date}
-              urls={detail.urls}
-              onDeleted={onDelete}
-            />
-          )}
-        </Suspense>
-      </TabPane>
+        
+      </TabPane> */}
     </Tabs>
   );
 };

@@ -6,7 +6,7 @@ import { UserOutlined } from "@ant-design/icons";
 import { useAuth } from "../contexts/auth";
 import { getToken, removeToken } from "../utils/token";
 import { useHistory } from "react-router-dom";
-import { Dropdown, Menu } from "antd";
+import { Dropdown } from "antd";
 import { copy } from "../utils/copy";
 import {
   LogoutOutlined,
@@ -15,10 +15,96 @@ import {
   KeyOutlined,
   NotificationOutlined,
 } from "@ant-design/icons";
+import { ItemType } from "rc-menu/lib/interface";
 
 const AppHeader: React.FC = () => {
   const h = useHistory();
   const { user, isAdmin } = useAuth();
+
+  let items: ItemType[] = [
+    {
+      label: (
+        <a href="/docs/index.html" target="_blank">
+          <ReadOutlined /> 接口文档
+        </a>
+      ),
+      key: "0",
+    },
+  ];
+  if (isAdmin()) {
+    items = [
+      ...items,
+      {
+        label: (
+          <a
+            href="javascript(0);"
+            onClick={(e) => {
+              e.preventDefault();
+              h.push("/git_project_manager");
+            }}
+          >
+            <SettingOutlined /> 项目配置
+          </a>
+        ),
+        key: "1",
+      },
+      {
+        label: (
+          <a
+            href="javascript(0);"
+            onClick={(e) => {
+              e.preventDefault();
+              h.push("/events");
+            }}
+          >
+            <NotificationOutlined /> 查看事件
+          </a>
+        ),
+        key: "2",
+      },
+    ];
+  }
+  items = [
+    ...items,
+    {
+      label: (
+        <a
+          href="javascript(0);"
+          onClick={(e) => {
+            e.preventDefault();
+            copy(getToken());
+          }}
+        >
+          <KeyOutlined /> 获取令牌
+        </a>
+      ),
+      key: "3",
+    },
+    {
+      type: "divider",
+    },
+    {
+      label: (
+        <a
+          href="javascript(0);"
+          onClick={(e) => {
+            e.preventDefault();
+            removeToken();
+            if (user.logout_url) {
+              window.location.href = user.logout_url;
+            } else {
+              h.push("/login");
+            }
+          }}
+        >
+          <LogoutOutlined />
+          登出
+        </a>
+      ),
+      key: "4",
+    },
+  ];
+
   return (
     <div
       style={{
@@ -43,74 +129,7 @@ const AppHeader: React.FC = () => {
       >
         <ClusterInfo />
         {user && (
-          <Dropdown
-            overlay={
-              <Menu>
-                <Menu.Item style={{ fontSize: 12 }} key="0">
-                  <a href="/docs/index.html" target="_blank">
-                    <ReadOutlined /> 接口文档
-                  </a>
-                </Menu.Item>
-                {isAdmin() && (
-                  <>
-                    <Menu.Item style={{ fontSize: 12 }} key="1">
-                      <a
-                        href="javascript(0);"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          h.push("/git_project_manager");
-                        }}
-                      >
-                        <SettingOutlined /> 项目配置
-                      </a>
-                    </Menu.Item>
-                    <Menu.Item style={{ fontSize: 12 }} key="2">
-                      <a
-                        href="javascript(0);"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          h.push("/events");
-                        }}
-                      >
-                        <NotificationOutlined /> 查看事件
-                      </a>
-                    </Menu.Item>
-                  </>
-                )}
-                <Menu.Item style={{ fontSize: 12 }} key="3">
-                  <a
-                    href="javascript(0);"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      copy(getToken());
-                    }}
-                  >
-                    <KeyOutlined /> 获取令牌
-                  </a>
-                </Menu.Item>
-
-                <Menu.Divider />
-                <Menu.Item style={{ fontSize: 12 }} key="100">
-                  <a
-                    href="javascript(0);"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      removeToken();
-                      if (user.logout_url) {
-                        window.location.href = user.logout_url;
-                      } else {
-                        h.push("/login");
-                      }
-                    }}
-                  >
-                    <LogoutOutlined />
-                    登出
-                  </a>
-                </Menu.Item>
-              </Menu>
-            }
-            trigger={["click"]}
-          >
+          <Dropdown menu={{ items }} trigger={["click"]}>
             <a
               href="javascript(0);"
               style={{ marginLeft: 20, color: "white" }}

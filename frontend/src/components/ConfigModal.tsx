@@ -323,7 +323,7 @@ const ConfigModal: React.FC<{
         </div>
       }
       className="config-modal"
-      visible={configVisible}
+      open={configVisible}
       footer={null}
       width={"100%"}
       onCancel={resetModal}
@@ -636,7 +636,7 @@ const ConfigModal: React.FC<{
                         }
                         trigger="focus"
                         visible={configFileTip && editMode}
-                        onVisibleChange={(v) => setConfigFileTip(v)}
+                        onOpenChange={(v) => setConfigFileTip(v)}
                       ></Popover>
                       <Form.Item
                         label="全局配置文件"
