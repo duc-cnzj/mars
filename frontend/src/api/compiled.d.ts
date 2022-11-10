@@ -5061,7 +5061,8 @@ export namespace mars {
         ElementTypeInputNumber = 2,
         ElementTypeSelect = 3,
         ElementTypeRadio = 4,
-        ElementTypeSwitch = 5
+        ElementTypeSwitch = 5,
+        ElementTypeTextArea = 6
     }
 
     /** Properties of an Element. */

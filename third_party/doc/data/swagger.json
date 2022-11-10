@@ -2452,7 +2452,8 @@
         "ElementTypeInputNumber",
         "ElementTypeSelect",
         "ElementTypeRadio",
-        "ElementTypeSwitch"
+        "ElementTypeSwitch",
+        "ElementTypeTextArea"
       ]
     },
     "metricsCpuMemoryInNamespaceResponse": {

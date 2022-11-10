@@ -10,6 +10,18 @@ import {
 } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import pb from "../../api/compiled";
+import TextArea from "antd/lib/input/TextArea";
+
+function isDefaultRequired(t: pb.mars.ElementType): boolean {
+  switch (t) {
+    case pb.mars.ElementType.ElementTypeInputNumber:
+    case pb.mars.ElementType.ElementTypeRadio:
+    case pb.mars.ElementType.ElementTypeSelect:
+    case pb.mars.ElementType.ElementTypeSwitch:
+      return true;
+  }
+  return false;
+}
 
 const DynamicElement: React.FC<{
   form: FormInstance;
@@ -62,7 +74,9 @@ const DynamicElement: React.FC<{
                         >
                           未设置
                         </Select.Option>
-                        <Select.Option value={pb.mars.ElementType.ElementTypeInput}>
+                        <Select.Option
+                          value={pb.mars.ElementType.ElementTypeInput}
+                        >
                           Input
                         </Select.Option>
                         <Select.Option
@@ -70,72 +84,90 @@ const DynamicElement: React.FC<{
                         >
                           InputNumber
                         </Select.Option>
-                        <Select.Option value={pb.mars.ElementType.ElementTypeRadio}>
+                        <Select.Option
+                          value={pb.mars.ElementType.ElementTypeTextArea}
+                        >
+                          TextArea
+                        </Select.Option>
+                        <Select.Option
+                          value={pb.mars.ElementType.ElementTypeRadio}
+                        >
                           Radio
                         </Select.Option>
-                        <Select.Option value={pb.mars.ElementType.ElementTypeSelect}>
+                        <Select.Option
+                          value={pb.mars.ElementType.ElementTypeSelect}
+                        >
                           Select
                         </Select.Option>
-                        <Select.Option value={pb.mars.ElementType.ElementTypeSwitch}>
+                        <Select.Option
+                          value={pb.mars.ElementType.ElementTypeSwitch}
+                        >
                           Switch
                         </Select.Option>
                       </Select>
                     </Form.Item>
-                    <Form.Item
-                      style={{ width: "100%" }}
-                      label="默认值"
-                      dependencies={[
-                        ["elements", field.name, "type"],
-                        ["elements", field.name, "select_values"],
-                      ]}
-                      name={[field.name, "default"]}
-                      rules={[
-                        { required: true, message: "默认值必填" },
-                        ({ getFieldValue }) => ({
-                          validator(_, value) {
-                            const fieldType = getFieldValue([
-                              "elements",
-                              field.name,
-                              "type",
-                            ]);
-                            const selectValues = getFieldValue([
-                              "elements",
-                              field.name,
-                              "select_values",
-                            ]);
-                            let flag = false;
 
-                            switch (fieldType) {
-                              case pb.mars.ElementType.ElementTypeSelect:
-                              case pb.mars.ElementType.ElementTypeRadio:
-                                if (Array.isArray(selectValues)) {
-                                  for (const key in selectValues) {
-                                    if (selectValues[key] === value) {
-                                      flag = true;
-                                      break;
+                    {type[field.key] !==
+                      pb.mars.ElementType.ElementTypeTextArea && (
+                      <Form.Item
+                        style={{ width: "100%" }}
+                        label="默认值"
+                        dependencies={[
+                          ["elements", field.name, "type"],
+                          ["elements", field.name, "select_values"],
+                        ]}
+                        name={[field.name, "default"]}
+                        rules={[
+                          {
+                            required: isDefaultRequired(type[field.key]),
+                            message: "默认值必填",
+                          },
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              const fieldType = getFieldValue([
+                                "elements",
+                                field.name,
+                                "type",
+                              ]);
+                              const selectValues = getFieldValue([
+                                "elements",
+                                field.name,
+                                "select_values",
+                              ]);
+                              let flag = false;
+
+                              switch (fieldType) {
+                                case pb.mars.ElementType.ElementTypeSelect:
+                                case pb.mars.ElementType.ElementTypeRadio:
+                                  if (Array.isArray(selectValues)) {
+                                    for (const key in selectValues) {
+                                      if (selectValues[key] === value) {
+                                        flag = true;
+                                        break;
+                                      }
                                     }
                                   }
-                                }
-                                break;
-                              default:
-                                flag = true;
-                                break;
-                            }
-                            if (flag) {
-                              return Promise.resolve();
-                            }
-                            return Promise.reject(
-                              new Error("default 默认值必须在选择器中")
-                            );
-                          },
-                        }),
-                      ]}
-                    >
-                      <DefaultValueElement
-                        disabled={disabled}
-                        type={type[field.key] ? type[field.key] : 0}
-                      />
-                    </Form.Item>
+                                  break;
+                                default:
+                                  flag = true;
+                                  break;
+                              }
+                              if (flag) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(
+                                new Error("default 默认值必须在选择器中")
+                              );
+                            },
+                          }),
+                        ]}
+                      >
+                        <DefaultValueElement
+                          disabled={disabled}
+                          type={type[field.key] ? type[field.key] : 0}
+                        />
+                      </Form.Item>
+                    )}
                   </div>
                   <div style={{ display: "flex" }}>
                     <Form.Item
@@ -153,7 +185,8 @@ const DynamicElement: React.FC<{
                           type[field.key] &&
                           (type[field.key] ===
                             pb.mars.ElementType.ElementTypeSelect ||
-                            type[field.key] === pb.mars.ElementType.ElementTypeRadio)
+                            type[field.key] ===
+                              pb.mars.ElementType.ElementTypeRadio)
                         )
                       }
                       style={{ width: "100%" }}
@@ -163,6 +196,25 @@ const DynamicElement: React.FC<{
                       <MySelect disabled={disabled} />
                     </Form.Item>
                   </div>
+                  {type[field.key] ===
+                    pb.mars.ElementType.ElementTypeTextArea && (
+                    <div style={{ display: "flex" }}>
+                      <Form.Item
+                        style={{ width: "100%" }}
+                        label="默认值"
+                        dependencies={[
+                          ["elements", field.name, "type"],
+                          ["elements", field.name, "select_values"],
+                        ]}
+                        name={[field.name, "default"]}
+                      >
+                        <DefaultValueElement
+                          disabled={disabled}
+                          type={type[field.key] ? type[field.key] : 0}
+                        />
+                      </Form.Item>
+                    </div>
+                  )}
                   {!disabled && (
                     <MinusCircleOutlined onClick={() => remove(field.name)} />
                   )}
@@ -252,6 +304,15 @@ const DefaultValueElement: React.FC<{
           <Select.Option value={"false"}>false</Select.Option>
           <Select.Option value={"true"}>true</Select.Option>
         </Select>
+      );
+    case pb.mars.ElementType.ElementTypeTextArea:
+      return (
+        <TextArea
+          disabled={disabled}
+          value={value}
+          onChange={onChange}
+          placeholder="默认值"
+        />
       );
     default:
       return (

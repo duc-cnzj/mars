@@ -335,7 +335,8 @@
         "ElementTypeInputNumber",
         "ElementTypeSelect",
         "ElementTypeRadio",
-        "ElementTypeSwitch"
+        "ElementTypeSwitch",
+        "ElementTypeTextArea"
       ],
       "default": "ElementTypeUnknown"
     },

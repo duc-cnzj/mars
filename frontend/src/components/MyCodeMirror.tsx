@@ -37,7 +37,7 @@ const myCodeMirror: React.FC<{
 
   return (
     <CodeMirror
-      readOnly={ disabled }
+      readOnly={disabled}
       style={{ height: "100%" }}
       value={value}
       onChange={onChange}
@@ -74,7 +74,7 @@ const theme = EditorView.theme(
       height: "100%",
     },
     ".cm-content": {
-      paddingTop: 0
+      paddingTop: 0,
     },
     "&.cm-editor.cm-focused": {
       outline: "none",
@@ -83,8 +83,8 @@ const theme = EditorView.theme(
       "&:after": { content: "''", fontSize: "50%", verticalAlign: "middle" },
     },
     ".cm-line": {
-      padding: "1px 0"
-    }
+      padding: "1px 0",
+    },
   },
   {}
 );
