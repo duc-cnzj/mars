@@ -106,7 +106,7 @@ const CreateProjectModal: React.FC<{
   const deploy = useCallback(
     (values: any) => {
       if (!wsReady) {
-        message.error("连接断开了");
+        // message.error("连接断开了");
         return;
       }
       if (values.extra_values) {

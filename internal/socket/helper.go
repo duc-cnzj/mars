@@ -8,8 +8,13 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/internal/event/events"
+	"github.com/duc-cnzj/mars/internal/mlog"
+
 	v1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -87,6 +92,26 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []s
 		case *v1.StatefulSet:
 			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
 			selectors = append(selectors, selector.String())
+		case *v1.DaemonSet:
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
+		case *batchv1.Job:
+			jobPodLabels := a.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		case *v1beta1.CronJob:
+			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		case *batchv1.CronJob:
+			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		default:
+			mlog.Warningf("未知: %#v", a)
 		}
 	}
 
