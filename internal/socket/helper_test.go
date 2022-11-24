@@ -42,17 +42,17 @@ spec:
 kind: Deployment
 metadata:
   annotations:
-	meta.helm.sh/release-name: mars
+    meta.helm.sh/release-name: mars
   generation: 56
   labels:
-	app.kubernetes.io/name: mars
+    app.kubernetes.io/name: mars
   name: mars
   namespace: default
 spec:
   selector:
-	matchLabels:
-	  app.kubernetes.io/instance: abc
-	  app.kubernetes.io/name: abc
+    matchLabels:
+      app.kubernetes.io/instance: abc
+      app.kubernetes.io/name: abc
 `,
 			out: "app.kubernetes.io/instance=abc,app.kubernetes.io/name=abc",
 		},
@@ -61,16 +61,16 @@ spec:
 kind: StatefulSet
 metadata:
   labels:
-	app.kubernetes.io/component: primary
-	app.kubernetes.io/instance: mars-db
+    app.kubernetes.io/component: primary
+    app.kubernetes.io/instance: mars-db
   name: mars-db-mysql-primary
   namespace: default
 spec:
   selector:
-	matchLabels:
-	  app.kubernetes.io/component: primary
-	  app.kubernetes.io/instance: mars-db
-	  app.kubernetes.io/name: mysql
+    matchLabels:
+      app.kubernetes.io/component: primary
+      app.kubernetes.io/instance: mars-db
+      app.kubernetes.io/name: mysql
 `,
 			out: "app.kubernetes.io/component=primary,app.kubernetes.io/instance=mars-db,app.kubernetes.io/name=mysql",
 		},
@@ -81,13 +81,13 @@ kind: Pod
 metadata:
   creationTimestamp: null
   labels:
-	run: nginx
+    run: nginx
   name: nginx
 spec:
   containers:
   - image: nginx
-	name: nginx
-	resources: {}
+    name: nginx
+    resources: {}
   dnsPolicy: ClusterFirst
   restartPolicy: Always
 status: {}
@@ -101,12 +101,12 @@ metadata:
   name: pi
 spec:
   template:
-	spec:
-	  containers:
-	  - name: pi
-		image: perl:5.34.0
-		command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-	  restartPolicy: Never
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
   backoffLimit: 4
 `,
 			out: "",
@@ -118,15 +118,15 @@ metadata:
   name: pi
 spec:
   template:
-	metadata:
-	  labels:
-		app: job-one
-	spec:
-	  containers:
-	  - name: pi
-		image: perl:5.34.0
-		command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-	  restartPolicy: Never
+    metadata:
+      labels:
+        app: job-one
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
   backoffLimit: 4
 `,
 			out: "app=job-one",
@@ -138,19 +138,19 @@ metadata:
   name: fluentd-elasticsearch
 spec:
   selector:
-	matchLabels:
-	  name: fluentd-elasticsearch
+    matchLabels:
+      name: fluentd-elasticsearch
   template:
-	metadata:
-	  labels:
-		name: fluentd-elasticsearch
-	spec:
-	  containers:
-	  - name: fluentd-elasticsearch
-		image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
-		volumeMounts:
-		- name: varlog
-		  mountPath: /var/log
+    metadata:
+      labels:
+        name: fluentd-elasticsearch
+    spec:
+      containers:
+      - name: fluentd-elasticsearch
+        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
 `,
 			out: "name=fluentd-elasticsearch",
 		},
@@ -162,21 +162,21 @@ metadata:
 spec:
   schedule: "* * * * *"
   jobTemplate:
-	spec:
-	  template:
-		metadata:
-		  labels:
-			app: cronjob
-		spec:
-		  containers:
-		  - name: hello
-			image: busybox:1.28
-			imagePullPolicy: IfNotPresent
-			command:
-			- /bin/sh
-			- -c
-			- date; echo Hello from the Kubernetes cluster
-		  restartPolicy: OnFailure
+    spec:
+      template:
+        metadata:
+          labels:
+            app: cronjob
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
 `,
 			out: "app=cronjob",
 		},
@@ -188,21 +188,21 @@ metadata:
 spec:
   schedule: "* * * * *"
   jobTemplate:
-	spec:
-	  template:
-		metadata:
-		  labels:
-			app: cronjob-v1beta1
-		spec:
-		  containers:
-		  - name: hello
-			image: busybox:1.28
-			imagePullPolicy: IfNotPresent
-			command:
-			- /bin/sh
-			- -c
-			- date; echo Hello from the Kubernetes cluster
-		  restartPolicy: OnFailure
+    spec:
+      template:
+        metadata:
+          labels:
+            app: cronjob-v1beta1
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
 `,
 			out: "app=cronjob-v1beta1",
 		},
