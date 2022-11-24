@@ -273,7 +273,7 @@ var tailLines int64 = 1000
 func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if err != nil || (podInfo.Status.Phase != v1.PodRunning && podInfo.Status.Phase != v1.PodSucceeded) {
-		return nil, status.Errorf(codes.NotFound, "pod not running: %v", err)
+		return nil, status.Errorf(codes.NotFound, "未找到日志: %v", err)
 	}
 
 	var opt = &v1.PodLogOptions{
