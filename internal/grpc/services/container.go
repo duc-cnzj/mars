@@ -268,16 +268,23 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 	}
 }
 
+var tailLines int64 = 1000
+
 func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
-	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
-		return nil, status.Errorf(codes.NotFound, reason)
+	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
+	if err != nil || (podInfo.Status.Phase != v1.PodRunning && podInfo.Status.Phase != v1.PodSucceeded) {
+		return nil, status.Errorf(codes.NotFound, "未找到日志: %v", err)
 	}
 
-	var limit int64 = 2000
-	logs := app.K8sClientSet().CoreV1().Pods(request.Namespace).GetLogs(request.Pod, &v1.PodLogOptions{
+	var opt = &v1.PodLogOptions{
 		Container: request.Container,
-		TailLines: &limit,
-	})
+	}
+
+	if podInfo.Status.Phase == v1.PodRunning {
+		opt.TailLines = &tailLines
+	}
+
+	logs := app.K8sClientSet().CoreV1().Pods(request.Namespace).GetLogs(request.Pod, opt)
 	do := logs.Do(context.Background())
 	raw, err := do.Raw()
 	if err != nil {
@@ -299,19 +306,32 @@ type Steamer interface {
 type DefaultStreamer struct{}
 
 func (d *DefaultStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
-	var limit int64 = 2000
 	logs := app.K8sClientSet().CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{
 		Follow:    true,
 		Container: container,
-		TailLines: &limit,
+		TailLines: &tailLines,
 	})
 
 	return logs.Stream(ctx)
 }
 
 func (c *Container) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
-	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
-		return status.Errorf(codes.NotFound, reason)
+	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
+	if err != nil || (podInfo.Status.Phase != v1.PodRunning && podInfo.Status.Phase != v1.PodSucceeded) {
+		return status.Errorf(codes.NotFound, "未找到日志: %v", err)
+	}
+	if podInfo.Status.Phase == v1.PodSucceeded {
+		log, err := c.ContainerLog(server.Context(), request)
+		if err != nil {
+			return err
+		}
+		server.Send(&container.LogResponse{
+			Namespace:     request.Namespace,
+			PodName:       request.Pod,
+			ContainerName: request.Container,
+			Log:           string(log.Log),
+		})
+		return nil
 	}
 
 	stream, err := c.Steamer.Stream(context.TODO(), request.Namespace, request.Pod, request.Container)

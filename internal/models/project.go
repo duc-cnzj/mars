@@ -68,7 +68,7 @@ func (project *Project) SetPodSelectors(selectors []string) {
 	project.PodSelectors = strings.Join(selectors, "|")
 }
 
-// GetPodSelectors 不仅包括 deployment 的 pod 还包括其他的 stateful sets...
+// GetPodSelectors 不仅包括 deployment 的 pod 还包括其他的: StatefulSet、DaemonSet...
 func (project *Project) GetPodSelectors() []string {
 	return strings.Split(project.PodSelectors, "|")
 }
@@ -117,7 +117,7 @@ func (s SortStatePod) Swap(i, j int) {
 const RevisionAnnotation = "deployment.kubernetes.io/revision"
 
 func (project *Project) GetAllPods() SortStatePod {
-	var list []*corev1.Pod
+	var list = make(map[string]*corev1.Pod)
 	var newList SortStatePod
 	var split []string
 	if len(project.PodSelectors) > 0 {
@@ -133,7 +133,7 @@ func (project *Project) GetAllPods() SortStatePod {
 		l, _ := app.K8sClient().PodLister.Pods(project.Namespace.Name).List(asSelector)
 		for _, pod := range l {
 			if pod.Status.Phase != corev1.PodFailed {
-				list = append(list, pod)
+				list[pod.Name] = pod
 			}
 		}
 	}

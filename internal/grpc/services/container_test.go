@@ -531,10 +531,19 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 			Phase: v1.PodRunning,
 		},
 	}
-	fk := fake.NewSimpleClientset(pod)
+	podSuccessed := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-succeeded",
+			Namespace: "duc",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodSucceeded,
+		},
+	}
+	fk := fake.NewSimpleClientset(pod, podSuccessed)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: testutil.NewPodLister(pod),
+		PodLister: testutil.NewPodLister(pod, podSuccessed),
 	})
 
 	err := (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
@@ -557,6 +566,21 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
+		Container: "app",
+	}, &streamLogServer{
+		send: func(res *container.LogResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: context.TODO(),
+	})
+	assert.Nil(t, err)
+
+	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
+		Namespace: "duc",
+		Pod:       "pod-succeeded",
 		Container: "app",
 	}, &streamLogServer{
 		send: func(res *container.LogResponse) error {
