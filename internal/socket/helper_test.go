@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,197 +14,205 @@ func TestNewTimeOrderedSetString(t *testing.T) {
 }
 
 func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
-
 	var tests = []struct {
 		in  string
 		out string
 	}{
 		{
-			in: `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  annotations:
-    meta.helm.sh/release-name: mars
-  generation: 56
-  labels:
-    app.kubernetes.io/name: mars
-  name: mars
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: mars
-      app.kubernetes.io/name: mars
-`,
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: Deployment
+				metadata:
+				  annotations:
+				    meta.helm.sh/release-name: mars
+				  generation: 56
+				  labels:
+				    app.kubernetes.io/name: mars
+				  name: mars
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/instance: mars
+				      app.kubernetes.io/name: mars
+				`),
 			out: "app.kubernetes.io/instance=mars,app.kubernetes.io/name=mars",
 		},
 		{
-			in: `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  annotations:
-    meta.helm.sh/release-name: mars
-  generation: 56
-  labels:
-    app.kubernetes.io/name: mars
-  name: mars
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: abc
-      app.kubernetes.io/name: abc
-`,
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: Deployment
+				metadata:
+				  annotations:
+				    meta.helm.sh/release-name: mars
+				  generation: 56
+				  labels:
+				    app.kubernetes.io/name: mars
+				  name: mars
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/instance: abc
+				      app.kubernetes.io/name: abc
+				`),
 			out: "app.kubernetes.io/instance=abc,app.kubernetes.io/name=abc",
 		},
 		{
-			in: `apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  labels:
-    app.kubernetes.io/component: primary
-    app.kubernetes.io/instance: mars-db
-  name: mars-db-mysql-primary
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: primary
-      app.kubernetes.io/instance: mars-db
-      app.kubernetes.io/name: mysql
-`,
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: StatefulSet
+				metadata:
+				  labels:
+				    app.kubernetes.io/component: primary
+				    app.kubernetes.io/instance: mars-db
+				  name: mars-db-mysql-primary
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/component: primary
+				      app.kubernetes.io/instance: mars-db
+				      app.kubernetes.io/name: mysql
+				`),
 			out: "app.kubernetes.io/component=primary,app.kubernetes.io/instance=mars-db,app.kubernetes.io/name=mysql",
 		},
 		{
-			in: `W0509 17:36:48.835823   98185 helpers.go:555] --dry-run is deprecated and can be replaced with --dry-run=client.
-apiVersion: v1
-kind: Pod
-metadata:
-  creationTimestamp: null
-  labels:
-    run: nginx
-  name: nginx
-spec:
-  containers:
-  - image: nginx
-    name: nginx
-    resources: {}
-  dnsPolicy: ClusterFirst
-  restartPolicy: Always
-status: {}
-`,
+			in: dedent.Dedent(`
+				W0509 17:36:48.835823   98185 helpers.go:555] --dry-run is deprecated and can be replaced with --dry-run=client.
+				apiVersion: v1
+				kind: Pod
+				metadata:
+				  creationTimestamp: null
+				  labels:
+				    run: nginx
+				  name: nginx
+				spec:
+				  containers:
+				  - image: nginx
+				    name: nginx
+				    resources: {}
+				  dnsPolicy: ClusterFirst
+				  restartPolicy: Always
+				status: {}
+				`),
 			out: "",
 		},
 		{
-			in: `apiVersion: batch/v1
-kind: Job
-metadata:
-  name: pi
-spec:
-  template:
-    spec:
-      containers:
-      - name: pi
-        image: perl:5.34.0
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-      restartPolicy: Never
-  backoffLimit: 4
-`,
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: Job
+				metadata:
+				  name: pi
+				spec:
+				  template:
+				    spec:
+				      containers:
+				      - name: pi
+				        image: perl:5.34.0
+				        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+				      restartPolicy: Never
+				  backoffLimit: 4
+				`),
 			out: "",
 		},
 		{
-			in: `apiVersion: batch/v1
-kind: Job
-metadata:
-  name: pi
-spec:
-  template:
-    metadata:
-      labels:
-        app: job-one
-    spec:
-      containers:
-      - name: pi
-        image: perl:5.34.0
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-      restartPolicy: Never
-  backoffLimit: 4
-`,
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: Job
+				metadata:
+				  name: pi
+				spec:
+				  template:
+				    metadata:
+				      labels:
+				        app: job-one
+				    spec:
+				      containers:
+				      - name: pi
+				        image: perl:5.34.0
+				        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+				      restartPolicy: Never
+				  backoffLimit: 4
+				`),
 			out: "app=job-one",
 		},
 		{
-			in: `apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: fluentd-elasticsearch
-spec:
-  selector:
-    matchLabels:
-      name: fluentd-elasticsearch
-  template:
-    metadata:
-      labels:
-        name: fluentd-elasticsearch
-    spec:
-      containers:
-      - name: fluentd-elasticsearch
-        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
-        volumeMounts:
-        - name: varlog
-          mountPath: /var/log
-`,
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: DaemonSet
+				metadata:
+				  name: fluentd-elasticsearch
+				spec:
+				  selector:
+				    matchLabels:
+				      name: fluentd-elasticsearch
+				  template:
+				    metadata:
+				      labels:
+				        name: fluentd-elasticsearch
+				    spec:
+				      containers:
+				      - name: fluentd-elasticsearch
+				        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+				        volumeMounts:
+				        - name: varlog
+				          mountPath: /var/log
+				`),
 			out: "name=fluentd-elasticsearch",
 		},
 		{
-			in: `apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: hello
-spec:
-  schedule: "* * * * *"
-  jobTemplate:
-    spec:
-      template:
-        metadata:
-          labels:
-            app: cronjob
-        spec:
-          containers:
-          - name: hello
-            image: busybox:1.28
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - date; echo Hello from the Kubernetes cluster
-          restartPolicy: OnFailure
-`,
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: CronJob
+				metadata:
+				  name: hello
+				spec:
+				  schedule: "* * * * *"
+				  jobTemplate:
+				    spec:
+				      template:
+				        metadata:
+				          labels:
+				            app: cronjob
+				        spec:
+				          containers:
+				          - name: hello
+				            image: busybox:1.28
+				            imagePullPolicy: IfNotPresent
+				            command:
+				            - /bin/sh
+				            - -c
+				            - date; echo Hello from the Kubernetes cluster
+				          restartPolicy: OnFailure
+				`),
 			out: "app=cronjob",
 		},
 		{
-			in: `apiVersion: batch/v1beta1
-kind: CronJob
-metadata:
-  name: hello
-spec:
-  schedule: "* * * * *"
-  jobTemplate:
-    spec:
-      template:
-        metadata:
-          labels:
-            app: cronjob-v1beta1
-        spec:
-          containers:
-          - name: hello
-            image: busybox:1.28
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - date; echo Hello from the Kubernetes cluster
-          restartPolicy: OnFailure
-`,
+			in: dedent.Dedent(`
+				apiVersion: batch/v1beta1
+				kind: CronJob
+				metadata:
+				  name: hello
+				spec:
+				  schedule: "* * * * *"
+				  jobTemplate:
+				    spec:
+				      template:
+				        metadata:
+				          labels:
+				            app: cronjob-v1beta1
+				        spec:
+				          containers:
+				          - name: hello
+				            image: busybox:1.28
+				            imagePullPolicy: IfNotPresent
+				            command:
+				            - /bin/sh
+				            - -c
+				            - date; echo Hello from the Kubernetes cluster
+				          restartPolicy: OnFailure
+				`),
 			out: "app=cronjob-v1beta1",
 		},
 	}
