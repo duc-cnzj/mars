@@ -1,13 +1,5 @@
 import React, { useState, useEffect, memo } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  FormInstance,
-  Select,
-  SelectProps,
-  InputNumber,
-} from "antd";
+import { Form, Input, Button, Select, SelectProps, InputNumber } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import pb from "../../api/compiled";
 import TextArea from "antd/lib/input/TextArea";
@@ -24,26 +16,16 @@ function isDefaultRequired(t: pb.mars.ElementType): boolean {
 }
 
 const DynamicElement: React.FC<{
-  form: FormInstance;
   disabled: boolean;
-}> = ({ form, disabled }) => {
-  const [type, setType] = useState<{ [key: number]: number }>({});
-  useEffect(() => {
-    if (form) {
-      (form.getFieldValue("elements") as Array<any>).forEach((e, i) => {
-        setType((t) => ({
-          ...t,
-          [i]: e.type,
-        }));
-      });
-    }
-  }, [form]);
+}> = ({ disabled }) => {
+  const form = Form.useFormInstance();
 
   return (
     <Form.List name="elements">
       {(fields, { add, remove }) => (
         <>
           {fields.map((field) => {
+            const type = Number(form.getFieldValue(["elements", field.name, "type"]));
             return (
               <div key={field.name} className="dynamic-element">
                 <div className="dynamic-element__wrapper">
@@ -65,7 +47,6 @@ const DynamicElement: React.FC<{
                       <Select
                         disabled={disabled}
                         onChange={(v) => {
-                          setType((t) => ({ ...t, [field.key]: v }));
                           form.setFieldsValue(["elements", Number(v)]);
                         }}
                       >
@@ -107,8 +88,7 @@ const DynamicElement: React.FC<{
                       </Select>
                     </Form.Item>
 
-                    {type[field.key] !==
-                      pb.mars.ElementType.ElementTypeTextArea && (
+                    {type !== pb.mars.ElementType.ElementTypeTextArea && (
                       <Form.Item
                         style={{ width: "100%" }}
                         label="默认值"
@@ -119,7 +99,7 @@ const DynamicElement: React.FC<{
                         name={[field.name, "default"]}
                         rules={[
                           {
-                            required: isDefaultRequired(type[field.key]),
+                            required: isDefaultRequired(type),
                             message: "默认值必填",
                           },
                           ({ getFieldValue }) => ({
@@ -162,10 +142,7 @@ const DynamicElement: React.FC<{
                           }),
                         ]}
                       >
-                        <DefaultValueElement
-                          disabled={disabled}
-                          type={type[field.key] ? type[field.key] : 0}
-                        />
+                        <DefaultValueElement disabled={disabled} type={type} />
                       </Form.Item>
                     )}
                   </div>
@@ -182,11 +159,9 @@ const DynamicElement: React.FC<{
                     <Form.Item
                       hidden={
                         !(
-                          type[field.key] &&
-                          (type[field.key] ===
-                            pb.mars.ElementType.ElementTypeSelect ||
-                            type[field.key] ===
-                              pb.mars.ElementType.ElementTypeRadio)
+                          type &&
+                          (type === pb.mars.ElementType.ElementTypeSelect ||
+                            type === pb.mars.ElementType.ElementTypeRadio)
                         )
                       }
                       style={{ width: "100%" }}
@@ -196,8 +171,7 @@ const DynamicElement: React.FC<{
                       <MySelect disabled={disabled} />
                     </Form.Item>
                   </div>
-                  {type[field.key] ===
-                    pb.mars.ElementType.ElementTypeTextArea && (
+                  {type === pb.mars.ElementType.ElementTypeTextArea && (
                     <div style={{ display: "flex" }}>
                       <Form.Item
                         style={{ width: "100%" }}
@@ -208,10 +182,7 @@ const DynamicElement: React.FC<{
                         ]}
                         name={[field.name, "default"]}
                       >
-                        <DefaultValueElement
-                          disabled={disabled}
-                          type={type[field.key] ? type[field.key] : 0}
-                        />
+                        <DefaultValueElement disabled={disabled} type={type} />
                       </Form.Item>
                     </div>
                   )}
@@ -281,8 +252,7 @@ const DefaultValueElement: React.FC<{
           break;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, t, value]);
+  }, [type, t, value, onChange]);
 
   switch (t) {
     case pb.mars.ElementType.ElementTypeInputNumber:
