@@ -8,7 +8,7 @@ import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { Button, message, Row, Col, Form, Progress } from "antd";
+import { Button, Row, Col, Form, Progress } from "antd";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCreateProjectLog,
@@ -116,7 +116,7 @@ const ModalSub: React.FC<{
   const updateDeploy = (values: any) => {
     console.log(values);
     if (!wsReady) {
-      message.error("连接断开了");
+      // message.error("连接断开了");
       return;
     }
     if (values.extra_values) {
@@ -154,7 +154,7 @@ const ModalSub: React.FC<{
 
   const onCancel = useCallback(() => {
     if (!wsReady) {
-      message.error("连接断开了");
+      // message.error("连接断开了");
       return;
     }
     if (Number(namespaceId) > 0 && detail.name.length > 0) {

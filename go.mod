@@ -53,13 +53,13 @@ require (
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.1
-	helm.sh/helm/v3 v3.10.1
-	k8s.io/api v0.25.2
-	k8s.io/apimachinery v0.25.2
-	k8s.io/cli-runtime v0.25.2
-	k8s.io/client-go v0.25.2
-	k8s.io/kubectl v0.25.2
-	k8s.io/metrics v0.25.2
+	helm.sh/helm/v3 v3.10.2
+	k8s.io/api v0.25.4
+	k8s.io/apimachinery v0.25.4
+	k8s.io/cli-runtime v0.25.4
+	k8s.io/client-go v0.25.4
+	k8s.io/kubectl v0.25.4
+	k8s.io/metrics v0.25.4
 )
 
 require (
@@ -321,7 +321,7 @@ require (
 	honnef.co/go/tools v0.3.3 // indirect
 	k8s.io/apiextensions-apiserver v0.25.2 // indirect
 	k8s.io/apiserver v0.25.2 // indirect
-	k8s.io/component-base v0.25.2 // indirect
+	k8s.io/component-base v0.25.4 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect

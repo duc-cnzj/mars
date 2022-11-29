@@ -167,7 +167,7 @@ const CreateProjectModal: React.FC<{
 
   const onRemove = useCallback(() => {
     if (!wsReady) {
-      message.error("连接断开了");
+      // message.error("连接断开了");
       return;
     }
     if (data && data.gitProjectId && data.gitBranch && data.gitCommit) {
