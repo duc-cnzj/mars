@@ -248,6 +248,18 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-11-29-add-idx_version_projectid_deleted_at_config_changed-to-changelogs-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Changelog{}, "idx_version_projectid_deleted_at_config_changed") {
+					if err := tx.Migrator().CreateIndex(&models.Changelog{}, "idx_version_projectid_deleted_at_config_changed"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

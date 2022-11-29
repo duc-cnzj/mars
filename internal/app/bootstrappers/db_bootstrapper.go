@@ -69,7 +69,7 @@ func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	if app.IsDebug() {
-		db.Logger.LogMode(logger.Warn)
+		db.Logger.LogMode(logger.Info)
 	} else {
 		db.Logger.LogMode(logger.Error)
 	}

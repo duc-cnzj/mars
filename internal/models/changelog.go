@@ -12,7 +12,7 @@ import (
 type Changelog struct {
 	ID int `json:"id" gorm:"primaryKey;"`
 
-	Version  int    `json:"version" gorm:"not null;default:1;type:integer;"`
+	Version  int    `json:"version" gorm:"not null;default:1;type:integer;index:idx_version_projectid_deleted_at_config_changed,priority:1;"`
 	Username string `json:"username" gorm:"size:100;not null;comment:修改人"`
 	Manifest string `json:"manifest" gorm:"type:longtext;"`
 	Config   string `json:"config" gorm:"type:text;commit:用户提交的配置"`
@@ -29,14 +29,14 @@ type Changelog struct {
 	GitCommitAuthor  string     `json:"git_commit_author" gorm:"size:255;nullable;"`
 	GitCommitDate    *time.Time `json:"git_commit_date"`
 
-	ConfigChanged bool `json:"config_changed"`
+	ConfigChanged bool `json:"config_changed" gorm:"index:idx_version_projectid_deleted_at_config_changed,priority:4;"`
 
-	ProjectID    int `json:"project_id" gorm:"not null;default:0;"`
+	ProjectID    int `json:"project_id" gorm:"not null;default:0;index:idx_version_projectid_deleted_at_config_changed,priority:2;"`
 	GitProjectID int `json:"git_project_id" gorm:"not null;default:0;"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index:idx_version_projectid_deleted_at_config_changed,priority:3;"`
 
 	Project    Project
 	GitProject GitProject
