@@ -8,7 +8,7 @@ type CacheKeyInterface interface {
 }
 
 type CacheInterface interface {
+	SetWithTTL(key CacheKeyInterface, value []byte, seconds int) error
 	Remember(key CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error)
-
 	Clear(key CacheKeyInterface) error
 }

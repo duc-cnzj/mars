@@ -117,3 +117,10 @@ func TestCache_Clear(t *testing.T) {
 	cache.Remember(NewKey("aaa"), 100, fn)
 	assert.Equal(t, 2, called)
 }
+
+func TestCache_SetWithTTL(t *testing.T) {
+	cache := NewCache(adapter.NewGoCacheAdapter(gocache.New(5*time.Minute, 10*time.Minute)), &singleflight.Group{})
+	cache.SetWithTTL(NewKey("aaa"), []byte("aa"), 100)
+	get, _ := cache.fc.Get(NewKey("aaa").String())
+	assert.Equal(t, "aa", string(get))
+}

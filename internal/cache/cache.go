@@ -38,7 +38,7 @@ func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func()
 			return nil, err
 		}
 		// 设置缓存阶段不管它有没有成功，我 fn() 都是成功的，所以需要返回
-		err = c.fc.Set(key.String(), res, seconds)
+		err = c.SetWithTTL(key, res, seconds)
 		if err != nil {
 			mlog.Errorf("[CACHE MISSING]: key %s err %v", key, err)
 		}
@@ -50,6 +50,10 @@ func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func()
 	}
 
 	return do.([]byte), err
+}
+
+func (c *Cache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
+	return c.fc.Set(key.String(), value, seconds)
 }
 
 func (c *Cache) Clear(key contracts.CacheKeyInterface) error {

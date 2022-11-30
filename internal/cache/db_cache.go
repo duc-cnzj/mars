@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/mlog"
+
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 )
 
@@ -41,16 +42,7 @@ func (c *DBCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func
 		if err != nil {
 			return nil, err
 		}
-		toString := base64.StdEncoding.EncodeToString(bytes)
-		cache = models.DBCache{
-			Key:       key.String(),
-			Value:     toString,
-			ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
-		}
-		if err = c.dbFunc().Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "key"}},
-			DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at"}),
-		}).Create(&cache).Error; err != nil {
+		if err := c.SetWithTTL(key, bytes, seconds); err != nil {
 			mlog.Error(err)
 		}
 		return bytes, nil
@@ -63,6 +55,20 @@ func (c *DBCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func
 
 func (c *DBCache) Clear(key contracts.CacheKeyInterface) error {
 	return c.dbFunc().Where("`key` = ?", key.String()).Delete(&models.DBCache{}).Error
+}
+
+func (c *DBCache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
+	toString := base64.StdEncoding.EncodeToString(value)
+	cache := models.DBCache{
+		Key:       key.String(),
+		Value:     toString,
+		ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
+	}
+
+	return c.dbFunc().Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at"}),
+	}).Create(&cache).Error
 }
 
 func (c *DBCache) cacheKey(key string) string {

@@ -442,7 +442,7 @@ func (j *Jober) Run() error {
 
 			j.manifests = utils.SplitManifests(result.Manifest)
 			j.project.Manifest = result.Manifest
-			j.project.SetPodSelectors(getPodSelectorsInDeploymentAndStatefulSetByManifest(j.manifests))
+			j.project.SetPodSelectors(getPodSelectorsByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
 				Pipeline: j.vars.MustGetString("Pipeline"),
 				Commit:   j.vars.MustGetString("Commit"),

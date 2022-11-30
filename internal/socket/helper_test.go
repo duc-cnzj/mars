@@ -220,7 +220,7 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run("", func(t *testing.T) {
-			labels := getPodSelectorsInDeploymentAndStatefulSetByManifest([]string{tt.in})
+			labels := getPodSelectorsByManifest([]string{tt.in})
 			if len(labels) > 0 {
 				assert.Equal(t, tt.out, labels[0])
 			} else {

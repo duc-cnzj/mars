@@ -77,10 +77,10 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 	return false
 }
 
-// getPodSelectorsInDeploymentAndStatefulSetByManifest
+// getPodSelectorsByManifest
 // 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
 // 参考源码
-func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []string {
+func getPodSelectorsByManifest(manifests []string) []string {
 	var selectors []string
 	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	for _, f := range manifests {
@@ -111,7 +111,7 @@ func getPodSelectorsInDeploymentAndStatefulSetByManifest(manifests []string) []s
 				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
 			}
 		default:
-			mlog.Warningf("未知: %#v", a)
+			mlog.Debugf("未知: %#v", a)
 		}
 	}
 
