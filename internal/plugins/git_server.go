@@ -109,12 +109,12 @@ func CacheKeyAllProjects() contracts.CacheKeyInterface {
 }
 
 func (g *gitServerCache) ReCacheAllProjects() error {
-	withoutCache, err := g.allProjectsWithoutCache()
+	data, err := g.allProjectsWithoutCache()
 	if err != nil {
 		return err
 	}
 
-	return app.Cache().SetWithTTL(CacheKeyAllProjects(), withoutCache, AllProjectsCacheSeconds)
+	return app.Cache().SetWithTTL(CacheKeyAllProjects(), data, AllProjectsCacheSeconds)
 }
 
 func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
@@ -161,11 +161,11 @@ func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) contracts.CacheKeyInt
 }
 
 func (g *gitServerCache) ReCacheAllBranches(pid string) error {
-	withoutCache, err := g.allBranchWithoutCache(pid)()
+	data, err := g.allBranchWithoutCache(pid)()
 	if err != nil {
 		return err
 	}
-	return app.Cache().SetWithTTL(CacheKeyAllBranches(pid), withoutCache, AllBranchesCacheSeconds)
+	return app.Cache().SetWithTTL(CacheKeyAllBranches(pid), data, AllBranchesCacheSeconds)
 }
 
 func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
