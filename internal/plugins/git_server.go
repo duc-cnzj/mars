@@ -76,10 +76,6 @@ type gitServerCache struct {
 	s GitServer
 }
 
-func (g *gitServerCache) Unwrap() GitServer {
-	return g.s
-}
-
 func (g *gitServerCache) Name() string {
 	return ""
 }

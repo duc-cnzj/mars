@@ -501,3 +501,39 @@ func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
 	return gitS
 }
+
+func Test_gitServerCache_ReCacheAllProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	c := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(c)
+	server := mockGitServer(m, app)
+	cache := newGitServerCache(server)
+	server.EXPECT().AllProjects().Return(nil, errors.New("xx"))
+	err := cache.ReCacheAllProjects()
+	assert.Equal(t, "xx", err.Error())
+
+	server.EXPECT().AllProjects().Return(nil, nil)
+	c.EXPECT().SetWithTTL(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	err = cache.ReCacheAllProjects()
+	assert.Nil(t, err)
+}
+
+func Test_gitServerCache_ReCacheAllBranches(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	c := mock.NewMockCacheInterface(m)
+	app.EXPECT().Cache().Return(c)
+	server := mockGitServer(m, app)
+	cache := newGitServerCache(server)
+	server.EXPECT().AllBranches("1").Return(nil, errors.New("xx"))
+	err := cache.ReCacheAllBranches("1")
+	assert.Equal(t, "xx", err.Error())
+
+	server.EXPECT().AllBranches("1").Return(nil, nil)
+	c.EXPECT().SetWithTTL(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	err = cache.ReCacheAllBranches("1")
+	assert.Nil(t, err)
+}
