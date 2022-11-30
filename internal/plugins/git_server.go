@@ -46,6 +46,11 @@ type GitServer interface {
 	GetDirectoryFilesWithSha(pid string, sha string, path string, recursive bool) ([]string, error)
 }
 
+type GitCacheServer interface {
+	ReCacheAllProjects() error
+	ReCacheAllBranches(pid string) error
+}
+
 func GetGitServer() GitServer {
 	pcfg := app.Config().GitServerPlugin
 	p := app.App().GetPluginByName(pcfg.Name)
@@ -99,27 +104,17 @@ func CacheKeyAllProjects() contracts.CacheKeyInterface {
 	return cache.NewKey("AllProjects")
 }
 
+func (g *gitServerCache) ReCacheAllProjects() error {
+	data, err := g.allProjectsWithoutCache()
+	if err != nil {
+		return err
+	}
+
+	return app.Cache().SetWithTTL(CacheKeyAllProjects(), data, AllProjectsCacheSeconds)
+}
+
 func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
-	remember, err := app.Cache().Remember(CacheKeyAllProjects(), AllProjectsCacheSeconds, func() ([]byte, error) {
-		projects, err := g.s.AllProjects()
-		if err != nil {
-			return nil, err
-		}
-		var all = make([]contracts.ProjectInterface, 0, len(projects))
-		for _, projectInterface := range projects {
-			all = append(all, &project{
-				ID:            projectInterface.GetID(),
-				Name:          projectInterface.GetName(),
-				DefaultBranch: projectInterface.GetDefaultBranch(),
-				Path:          projectInterface.GetPath(),
-				WebUrl:        projectInterface.GetWebURL(),
-				AvatarUrl:     projectInterface.GetAvatarURL(),
-				Description:   projectInterface.GetDescription(),
-			})
-		}
-		marshal, _ := json.Marshal(all)
-		return marshal, nil
-	})
+	remember, err := app.Cache().Remember(CacheKeyAllProjects(), AllProjectsCacheSeconds, g.allProjectsWithoutCache)
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +127,27 @@ func (g *gitServerCache) AllProjects() ([]contracts.ProjectInterface, error) {
 	return all, nil
 }
 
+func (g *gitServerCache) allProjectsWithoutCache() ([]byte, error) {
+	projects, err := g.s.AllProjects()
+	if err != nil {
+		return nil, err
+	}
+	var all = make([]contracts.ProjectInterface, 0, len(projects))
+	for _, projectInterface := range projects {
+		all = append(all, &project{
+			ID:            projectInterface.GetID(),
+			Name:          projectInterface.GetName(),
+			DefaultBranch: projectInterface.GetDefaultBranch(),
+			Path:          projectInterface.GetPath(),
+			WebUrl:        projectInterface.GetWebURL(),
+			AvatarUrl:     projectInterface.GetAvatarURL(),
+			Description:   projectInterface.GetDescription(),
+		})
+	}
+	marshal, _ := json.Marshal(all)
+	return marshal, nil
+}
+
 func (g *gitServerCache) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
 	return g.s.ListBranches(pid, page, pageSize)
 }
@@ -140,8 +156,31 @@ func CacheKeyAllBranches[T ~string | ~int | ~int64](pid T) contracts.CacheKeyInt
 	return cache.NewKey("AllBranches-%v", pid)
 }
 
+func (g *gitServerCache) ReCacheAllBranches(pid string) error {
+	data, err := g.allBranchWithoutCache(pid)()
+	if err != nil {
+		return err
+	}
+	return app.Cache().SetWithTTL(CacheKeyAllBranches(pid), data, AllBranchesCacheSeconds)
+}
+
 func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, error) {
-	remember, err := app.Cache().Remember(CacheKeyAllBranches(pid), AllBranchesCacheSeconds, func() ([]byte, error) {
+	remember, err := app.Cache().Remember(CacheKeyAllBranches(pid), AllBranchesCacheSeconds, g.allBranchWithoutCache(pid))
+	if err != nil {
+		return nil, err
+	}
+	var res []*branch
+	json.Unmarshal(remember, &res)
+	// Why? 为什么我不能直接返回 res，奇怪的 go 语法
+	var all = make([]contracts.BranchInterface, 0, len(res))
+	for _, b := range res {
+		all = append(all, b)
+	}
+	return all, nil
+}
+
+func (g *gitServerCache) allBranchWithoutCache(pid string) func() ([]byte, error) {
+	return func() ([]byte, error) {
 		b, err := g.s.AllBranches(pid)
 		if err != nil {
 			return nil, err
@@ -157,18 +196,7 @@ func (g *gitServerCache) AllBranches(pid string) ([]contracts.BranchInterface, e
 
 		marshal, _ := json.Marshal(all)
 		return marshal, nil
-	})
-	if err != nil {
-		return nil, err
 	}
-	var res []*branch
-	json.Unmarshal(remember, &res)
-	// Why? 为什么我不能直接返回 res，奇怪的 go 语法
-	var all = make([]contracts.BranchInterface, 0, len(res))
-	for _, b := range res {
-		all = append(all, b)
-	}
-	return all, nil
 }
 
 func (g *gitServerCache) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {

@@ -25,7 +25,7 @@ func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, names
 			return nil, err
 		}
 
-		podSelectors = getPodSelectorsInDeploymentAndStatefulSetByManifest(utils.SplitManifests(re.Manifest))
+		podSelectors = getPodSelectorsByManifest(utils.SplitManifests(re.Manifest))
 	}
 
 	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc)

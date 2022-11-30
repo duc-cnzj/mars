@@ -41,3 +41,12 @@ func TestNewMetricsForCache(t *testing.T) {
 	assert.Equal(t, c, cache.Cache)
 	assert.Implements(t, (*contracts.CacheInterface)(nil), cache)
 }
+
+func TestMetricsForCache_SetWithTTL(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	c := mock.NewMockCacheInterface(m)
+	c.EXPECT().SetWithTTL(NewKey("a"), []byte("aaa"), int(1)).Times(1)
+	mc := &MetricsForCache{Cache: c}
+	mc.SetWithTTL(NewKey("a"), []byte("aaa"), int(1))
+}

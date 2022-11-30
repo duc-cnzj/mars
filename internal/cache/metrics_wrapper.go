@@ -32,3 +32,7 @@ func (m *MetricsForCache) Remember(key contracts.CacheKeyInterface, seconds int,
 func (m *MetricsForCache) Clear(key contracts.CacheKeyInterface) error {
 	return m.Cache.Clear(key)
 }
+
+func (m *MetricsForCache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
+	return m.Cache.SetWithTTL(key, value, seconds)
+}

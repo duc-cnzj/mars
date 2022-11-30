@@ -34,12 +34,13 @@ func TestGitCache(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
+func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface, cache bool) *mock.MockGitServer {
 	gitS := mock.NewMockGitServer(m)
 	app.EXPECT().Config().Return(&config.Config{
 		GitServerPlugin: config.Plugin{
 			Name: "test_git_server",
 		},
+		GitServerCached: cache,
 	}).AnyTimes()
 	app.EXPECT().GetPluginByName("test_git_server").Return(gitS).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
@@ -52,12 +53,21 @@ func TestAllGitProjectCache(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
-	git := mockGitServer(m, app)
+	git := mockGitServer(m, app, true)
 	app.EXPECT().Cache().Return(c).AnyTimes()
-	c.EXPECT().Clear(plugins.CacheKeyAllProjects()).Times(2)
+	c.EXPECT().Clear(plugins.CacheKeyAllProjects()).Times(0)
 	git.EXPECT().AllProjects().Return(nil, errors.New("xx"))
 	assert.Equal(t, "xx", AllGitProjectCache().Error())
+	c.EXPECT().SetWithTTL(plugins.CacheKeyAllProjects(), []byte("[]"), plugins.AllProjectsCacheSeconds).Times(1)
 	git.EXPECT().AllProjects().Return(nil, nil)
+	assert.Nil(t, AllGitProjectCache())
+}
+
+func TestAllGitProjectCache1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	mockGitServer(m, app, false)
 	assert.Nil(t, AllGitProjectCache())
 }
 
@@ -66,7 +76,7 @@ func TestAllBranchCache(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	c := mock.NewMockCacheInterface(m)
-	git := mockGitServer(m, app)
+	git := mockGitServer(m, app, true)
 	app.EXPECT().Cache().Return(c).AnyTimes()
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
@@ -86,6 +96,17 @@ func TestAllBranchCache(t *testing.T) {
 		Enabled:      false,
 	})
 
-	c.EXPECT().Clear(gomock.Any()).Times(20)
+	c.EXPECT().SetWithTTL(gomock.Any(), []byte("[]"), plugins.AllBranchesCacheSeconds).Times(20)
 	AllBranchCache()
+}
+
+func TestAllBranchCache1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.GitProject{})
+	mockGitServer(m, app, true)
+	assert.Nil(t, AllBranchCache())
 }

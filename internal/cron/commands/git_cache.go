@@ -14,9 +14,9 @@ import (
 )
 
 var AllGitProjectCache = func() error {
-	app.Cache().Clear(plugins.CacheKeyAllProjects())
-	if _, err := plugins.GetGitServer().AllProjects(); err != nil {
-		return err
+	var gitServer plugins.GitServer = plugins.GetGitServer()
+	if cache, ok := gitServer.(plugins.GitCacheServer); ok {
+		return cache.ReCacheAllProjects()
 	}
 	return nil
 }
@@ -35,23 +35,26 @@ var AllBranchCache = func() error {
 	}
 
 	ch := make(chan *models.GitProject, goroutineNum)
-	for i := 0; i < goroutineNum; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer recovery.HandlePanic("[CRON]: all_branch_cache")
-			for gitProject := range ch {
-				app.Cache().Clear(plugins.CacheKeyAllBranches(gitProject.GitProjectId))
-				_, err := plugins.GetGitServer().AllBranches(fmt.Sprintf("%d", gitProject.GitProjectId))
-				mlog.Debugf("[CRON]: fetch AllBranches: '%s' '%d', err: '%v'", gitProject.Name, gitProject.GitProjectId, err)
-			}
-		}()
+	gitServer := plugins.GetGitServer()
+	if server, ok := gitServer.(plugins.GitCacheServer); ok {
+		for i := 0; i < goroutineNum; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				defer recovery.HandlePanic("[CRON]: all_branch_cache")
+				for gitProject := range ch {
+					err := server.ReCacheAllBranches(fmt.Sprintf("%d", gitProject.GitProjectId))
+					mlog.Debugf("[CRON]: fetch AllBranches: '%s' '%d', err: '%v'", gitProject.Name, gitProject.GitProjectId, err)
+				}
+			}()
+		}
+		for i := range enabledGitProjects {
+			ch <- enabledGitProjects[i]
+		}
+		close(ch)
+		wg.Wait()
 	}
-	for i := range enabledGitProjects {
-		ch <- enabledGitProjects[i]
-	}
-	close(ch)
-	wg.Wait()
+
 	return nil
 }
 

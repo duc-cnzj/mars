@@ -62,3 +62,17 @@ func (mr *MockCacheInterfaceMockRecorder) Remember(arg0, arg1, arg2 any) *gomock
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remember", reflect.TypeOf((*MockCacheInterface)(nil).Remember), arg0, arg1, arg2)
 }
+
+// SetWithTTL mocks base method.
+func (m *MockCacheInterface) SetWithTTL(arg0 contracts.CacheKeyInterface, arg1 []byte, arg2 int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWithTTL", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetWithTTL indicates an expected call of SetWithTTL.
+func (mr *MockCacheInterfaceMockRecorder) SetWithTTL(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithTTL", reflect.TypeOf((*MockCacheInterface)(nil).SetWithTTL), arg0, arg1, arg2)
+}

@@ -149,3 +149,37 @@ func TestDBCache_Clear(t *testing.T) {
 	assert.Len(t, caches, 1)
 	assert.Equal(t, base64.StdEncoding.EncodeToString([]byte("a-2")), caches[0].Value)
 }
+
+func TestDBCache_SetWithTTL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	app := mock.NewMockApplicationInterface(ctrl)
+	defer ctrl.Finish()
+	instance.SetInstance(app)
+	db, closeFn := testutil.SetGormDB(ctrl, app)
+	defer closeFn()
+	sf := singleflight.Group{}
+	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
+	db.AutoMigrate(&models.DBCache{})
+
+	var (
+		count  int64
+		keyOne models.DBCache
+	)
+
+	db.Model(&models.DBCache{}).Count(&count)
+	assert.Equal(t, int64(0), count)
+
+	assert.Nil(t, newCacheByApp(app).SetWithTTL(NewKey("key-1"), []byte("aa"), 100))
+	db.Model(&models.DBCache{}).Count(&count)
+	assert.Nil(t, db.First(&keyOne).Error)
+	decodeString, _ := base64.StdEncoding.DecodeString(keyOne.Value)
+	assert.Equal(t, "aa", string(decodeString))
+	assert.Equal(t, int64(1), count)
+
+	assert.Nil(t, newCacheByApp(app).SetWithTTL(NewKey("key-1"), []byte("bb"), 100))
+	db.Model(&models.DBCache{}).Count(&count)
+	assert.Equal(t, int64(1), count)
+	assert.Nil(t, db.First(&keyOne).Error)
+	decodeString, _ = base64.StdEncoding.DecodeString(keyOne.Value)
+	assert.Equal(t, "bb", string(decodeString))
+}

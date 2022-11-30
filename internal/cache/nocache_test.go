@@ -25,3 +25,8 @@ func TestNoCache_Clear(t *testing.T) {
 	cache := &NoCache{}
 	assert.Nil(t, cache.Clear(NewKey("aaa")))
 }
+
+func TestNoCache_SetWithTTL(t *testing.T) {
+	cache := &NoCache{}
+	assert.Nil(t, cache.SetWithTTL(NewKey("aaa"), []byte("x"), 1))
+}
