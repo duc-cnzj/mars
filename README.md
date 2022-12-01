@@ -89,10 +89,10 @@ func main()  {
 
 ## TODO
 
-- [ ] access token 管理
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] namespace all -> list
+- [x] access token 管理
 - [x] cronjob
 - [x] job
 - [x] ds
