@@ -12,7 +12,7 @@ import (
 )
 
 func TestRegisteredEndpoints(t *testing.T) {
-	assert.Len(t, RegisteredEndpoints(), 14)
+	assert.Len(t, RegisteredEndpoints(), 15)
 }
 
 type testServiceRegistrar struct {
@@ -24,7 +24,7 @@ func (t *testServiceRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any)
 }
 
 func TestRegisteredServers(t *testing.T) {
-	assert.Len(t, RegisteredServers(), 14)
+	assert.Len(t, RegisteredServers(), 15)
 	sr := &testServiceRegistrar{m: map[*grpc.ServiceDesc]any{}}
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -36,5 +36,5 @@ func TestRegisteredServers(t *testing.T) {
 	for _, r := range RegisteredServers() {
 		r(sr, app)
 	}
-	assert.Len(t, sr.m, 14)
+	assert.Len(t, sr.m, 15)
 }
