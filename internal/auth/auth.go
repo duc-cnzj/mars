@@ -13,16 +13,16 @@ import (
 )
 
 type Authn struct {
-	authns   []contracts.Authenticator
+	Authns   []contracts.Authenticator
 	signFunc func(info contracts.UserInfo) (*contracts.SignData, error)
 }
 
 func NewAuthn(signFunc func(info contracts.UserInfo) (*contracts.SignData, error), authns ...contracts.Authenticator) *Authn {
-	return &Authn{authns: authns, signFunc: signFunc}
+	return &Authn{Authns: authns, signFunc: signFunc}
 }
 
 func (a *Authn) VerifyToken(s string) (*contracts.JwtClaims, bool) {
-	for _, authn := range a.authns {
+	for _, authn := range a.Authns {
 		if token, ok := authn.VerifyToken(s); ok {
 			return token, true
 		}
@@ -35,16 +35,16 @@ func (a *Authn) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	return a.signFunc(info)
 }
 
-type Auth struct {
+type JwtAuth struct {
 	priKey *rsa.PrivateKey
 	pubKey *rsa.PublicKey
 }
 
-func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) *Auth {
-	return &Auth{priKey: priKey, pubKey: pubKey}
+func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) *JwtAuth {
+	return &JwtAuth{priKey: priKey, pubKey: pubKey}
 }
 
-func (a *Auth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
+func (a *JwtAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 	var token string = t
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])
@@ -61,7 +61,7 @@ func (a *Auth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 	return nil, false
 }
 
-func (a *Auth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
+func (a *JwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &contracts.JwtClaims{
 		StandardClaims: &jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(contracts.Expired).Unix(),
