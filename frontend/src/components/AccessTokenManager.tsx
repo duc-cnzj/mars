@@ -246,7 +246,7 @@ const AccessTokenManager: React.FC = () => {
                       cancelText="No"
                       onConfirm={() => {
                         Revoke({ token: item.token }).then((res) => {
-                          message.success("创建成功");
+                          message.success("撤销成功");
                           setData([]);
                           fetch();
                         });
