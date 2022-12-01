@@ -1653,3 +1653,117 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ProjectModelValidationError{}
+
+// Validate checks the field values on AccessTokenModel with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AccessTokenModel) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AccessTokenModel with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AccessTokenModelMultiError, or nil if none found.
+func (m *AccessTokenModel) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AccessTokenModel) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Token
+
+	// no validation rules for Email
+
+	// no validation rules for ExpiredAt
+
+	// no validation rules for Usage
+
+	// no validation rules for CreatedAt
+
+	// no validation rules for UpdatedAt
+
+	// no validation rules for DeletedAt
+
+	if len(errors) > 0 {
+		return AccessTokenModelMultiError(errors)
+	}
+
+	return nil
+}
+
+// AccessTokenModelMultiError is an error wrapping multiple validation errors
+// returned by AccessTokenModel.ValidateAll() if the designated constraints
+// aren't met.
+type AccessTokenModelMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AccessTokenModelMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AccessTokenModelMultiError) AllErrors() []error { return m }
+
+// AccessTokenModelValidationError is the validation error returned by
+// AccessTokenModel.Validate if the designated constraints aren't met.
+type AccessTokenModelValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AccessTokenModelValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AccessTokenModelValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AccessTokenModelValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AccessTokenModelValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AccessTokenModelValidationError) ErrorName() string { return "AccessTokenModelValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AccessTokenModelValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAccessTokenModel.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AccessTokenModelValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AccessTokenModelValidationError{}

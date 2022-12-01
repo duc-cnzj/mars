@@ -185,3 +185,14 @@ message ProjectModel {
   string updated_at = 101;
   string deleted_at = 102;
 }
+
+message AccessTokenModel {
+  string token = 1;
+  string email = 2;
+  string expired_at = 3;
+  string usage = 4;
+
+  string created_at = 100;
+  string updated_at = 101;
+  string deleted_at = 102;
+}

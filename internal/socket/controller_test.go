@@ -42,7 +42,7 @@ func TestHandleWsAuthorize(t *testing.T) {
 	privateKey, _ := x509.MarshalPKCS8PrivateKey(key)
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
-	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
+	authSvc := auth2.NewJwtAuth(key, key.Public().(*rsa.PublicKey))
 	app := testutil.MockApp(m)
 	app.EXPECT().Auth().Return(authSvc).AnyTimes()
 	sign, _ := authSvc.Sign(contracts.UserInfo{

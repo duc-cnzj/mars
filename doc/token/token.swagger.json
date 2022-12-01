@@ -1,0 +1,241 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "token/token.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AccessToken"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/access_tokens": {
+      "get": {
+        "operationId": "AccessToken_All",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tokenAllResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "AccessToken"
+        ]
+      },
+      "post": {
+        "operationId": "AccessToken_Grant",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tokenGrantResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/tokenGrantRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AccessToken"
+        ]
+      }
+    },
+    "/api/access_tokens/{token}": {
+      "delete": {
+        "operationId": "AccessToken_Revoke",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tokenRevokeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AccessToken"
+        ]
+      },
+      "put": {
+        "operationId": "AccessToken_Lease",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tokenLeaseResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "expire_seconds": {
+                  "type": "string",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "AccessToken"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "tokenAllResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesAccessTokenModel"
+          }
+        }
+      }
+    },
+    "tokenGrantRequest": {
+      "type": "object",
+      "properties": {
+        "expire_seconds": {
+          "type": "string",
+          "format": "int64"
+        },
+        "usage": {
+          "type": "string"
+        }
+      }
+    },
+    "tokenGrantResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/typesAccessTokenModel"
+        }
+      }
+    },
+    "tokenLeaseResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/typesAccessTokenModel"
+        }
+      }
+    },
+    "tokenRevokeResponse": {
+      "type": "object"
+    },
+    "typesAccessTokenModel": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "expired_at": {
+          "type": "string"
+        },
+        "usage": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

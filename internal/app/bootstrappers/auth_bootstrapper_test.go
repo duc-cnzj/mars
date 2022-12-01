@@ -27,7 +27,7 @@ func TestAuthBootstrapper_Bootstrap(t *testing.T) {
 	app.EXPECT().Config().Return(&config.Config{
 		PrivateKey: bf.String(),
 	}).Times(1)
-	app.EXPECT().SetAuth(auth.NewAuth(key, key.Public().(*rsa.PublicKey))).Times(1)
+	app.EXPECT().SetAuth(auth.NewJwtAuth(key, key.Public().(*rsa.PublicKey))).Times(1)
 	(&AuthBootstrapper{}).Bootstrap(app)
 }
 

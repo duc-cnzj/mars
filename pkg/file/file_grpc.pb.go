@@ -23,11 +23,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileClient interface {
-	//  文件列表
+	// 文件列表
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	//  records 文件信息
+	// records 文件信息
 	ShowRecords(ctx context.Context, in *ShowRecordsRequest, opts ...grpc.CallOption) (*ShowRecordsResponse, error)
-	//  删除文件
+	// 删除文件
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(ctx context.Context, in *DiskInfoRequest, opts ...grpc.CallOption) (*DiskInfoResponse, error)
@@ -91,11 +91,11 @@ func (c *fileClient) MaxUploadSize(ctx context.Context, in *MaxUploadSizeRequest
 // All implementations must embed UnimplementedFileServer
 // for forward compatibility
 type FileServer interface {
-	//  文件列表
+	// 文件列表
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	//  records 文件信息
+	// records 文件信息
 	ShowRecords(context.Context, *ShowRecordsRequest) (*ShowRecordsResponse, error)
-	//  删除文件
+	// 删除文件
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// DiskInfo 查看上传文件目录大小
 	DiskInfo(context.Context, *DiskInfoRequest) (*DiskInfoResponse, error)

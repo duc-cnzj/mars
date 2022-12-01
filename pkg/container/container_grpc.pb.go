@@ -28,49 +28,50 @@ type ContainerClient interface {
 	// Exec grpc 执行 pod 命令
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (Container_ExecClient, error)
 	// StreamCopyToPod grpc 上传文件到 pod
-	//  demo:
-	//  cp, _ := c.Container().StreamCopyToPod(context.TODO())
-	//	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
-	//	defer open.Close()
-	//	bf := bufio.NewReaderSize(open, 1024*1024*5)
-	//	var (
-	//		filename =  open.Name()
-	//		pod = "mars-demo-549f789f7d-sxvqm"
-	//		containerName = "demo"
-	//		namespace = "devops-a"
-	//	)
-	//	for {
-	//		bts := make([]byte, 1024*1024)
-	//		n, err := bf.Read(bts)
-	//		if err != nil {
-	//			if err == io.EOF {
-	//				cp.Send(&container.StreamCopyToPodRequest{
-	//					FileName:  filename,
-	//					Data:      bts[0:n],
-	//					Namespace: namespace,
-	//					Pod:       pod,
-	//					Container: containerName,
-	//				})
-	//				recv, err := cp.CloseAndRecv()
-	//				if err != nil {
-	//					log.Fatal(err)
+	//
+	//	 demo:
+	//	 cp, _ := c.Container().StreamCopyToPod(context.TODO())
+	//		open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
+	//		defer open.Close()
+	//		bf := bufio.NewReaderSize(open, 1024*1024*5)
+	//		var (
+	//			filename =  open.Name()
+	//			pod = "mars-demo-549f789f7d-sxvqm"
+	//			containerName = "demo"
+	//			namespace = "devops-a"
+	//		)
+	//		for {
+	//			bts := make([]byte, 1024*1024)
+	//			n, err := bf.Read(bts)
+	//			if err != nil {
+	//				if err == io.EOF {
+	//					cp.Send(&container.StreamCopyToPodRequest{
+	//						FileName:  filename,
+	//						Data:      bts[0:n],
+	//						Namespace: namespace,
+	//						Pod:       pod,
+	//						Container: containerName,
+	//					})
+	//					recv, err := cp.CloseAndRecv()
+	//					if err != nil {
+	//						log.Fatal(err)
+	//					}
+	//					log.Println(recv)
 	//				}
-	//				log.Println(recv)
+	//				return
 	//			}
-	//			return
+	//			 cp.Send(&container.StreamCopyToPodRequest{
+	//				FileName:  filename,
+	//				Data:      bts[0:n],
+	//				Namespace: namespace,
+	//				Pod:       pod,
+	//				Container: containerName,
+	//			 })
 	//		}
-	//		 cp.Send(&container.StreamCopyToPodRequest{
-	//			FileName:  filename,
-	//			Data:      bts[0:n],
-	//			Namespace: namespace,
-	//			Pod:       pod,
-	//			Container: containerName,
-	//		 })
-	//	}
 	StreamCopyToPod(ctx context.Context, opts ...grpc.CallOption) (Container_StreamCopyToPodClient, error)
 	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error)
-	//  IsPodExists pod 是否存在
+	// IsPodExists pod 是否存在
 	IsPodExists(ctx context.Context, in *IsPodExistsRequest, opts ...grpc.CallOption) (*IsPodExistsResponse, error)
 	// ContainerLog 查看 pod 日志
 	ContainerLog(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error)
@@ -229,49 +230,50 @@ type ContainerServer interface {
 	// Exec grpc 执行 pod 命令
 	Exec(*ExecRequest, Container_ExecServer) error
 	// StreamCopyToPod grpc 上传文件到 pod
-	//  demo:
-	//  cp, _ := c.Container().StreamCopyToPod(context.TODO())
-	//	open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
-	//	defer open.Close()
-	//	bf := bufio.NewReaderSize(open, 1024*1024*5)
-	//	var (
-	//		filename =  open.Name()
-	//		pod = "mars-demo-549f789f7d-sxvqm"
-	//		containerName = "demo"
-	//		namespace = "devops-a"
-	//	)
-	//	for {
-	//		bts := make([]byte, 1024*1024)
-	//		n, err := bf.Read(bts)
-	//		if err != nil {
-	//			if err == io.EOF {
-	//				cp.Send(&container.StreamCopyToPodRequest{
-	//					FileName:  filename,
-	//					Data:      bts[0:n],
-	//					Namespace: namespace,
-	//					Pod:       pod,
-	//					Container: containerName,
-	//				})
-	//				recv, err := cp.CloseAndRecv()
-	//				if err != nil {
-	//					log.Fatal(err)
+	//
+	//	 demo:
+	//	 cp, _ := c.Container().StreamCopyToPod(context.TODO())
+	//		open, _ := os.Open("/xxxxxx/helm-v3.8.0-rc.1-linux-arm64.tar.gz")
+	//		defer open.Close()
+	//		bf := bufio.NewReaderSize(open, 1024*1024*5)
+	//		var (
+	//			filename =  open.Name()
+	//			pod = "mars-demo-549f789f7d-sxvqm"
+	//			containerName = "demo"
+	//			namespace = "devops-a"
+	//		)
+	//		for {
+	//			bts := make([]byte, 1024*1024)
+	//			n, err := bf.Read(bts)
+	//			if err != nil {
+	//				if err == io.EOF {
+	//					cp.Send(&container.StreamCopyToPodRequest{
+	//						FileName:  filename,
+	//						Data:      bts[0:n],
+	//						Namespace: namespace,
+	//						Pod:       pod,
+	//						Container: containerName,
+	//					})
+	//					recv, err := cp.CloseAndRecv()
+	//					if err != nil {
+	//						log.Fatal(err)
+	//					}
+	//					log.Println(recv)
 	//				}
-	//				log.Println(recv)
+	//				return
 	//			}
-	//			return
+	//			 cp.Send(&container.StreamCopyToPodRequest{
+	//				FileName:  filename,
+	//				Data:      bts[0:n],
+	//				Namespace: namespace,
+	//				Pod:       pod,
+	//				Container: containerName,
+	//			 })
 	//		}
-	//		 cp.Send(&container.StreamCopyToPodRequest{
-	//			FileName:  filename,
-	//			Data:      bts[0:n],
-	//			Namespace: namespace,
-	//			Pod:       pod,
-	//			Container: containerName,
-	//		 })
-	//	}
 	StreamCopyToPod(Container_StreamCopyToPodServer) error
 	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error)
-	//  IsPodExists pod 是否存在
+	// IsPodExists pod 是否存在
 	IsPodExists(context.Context, *IsPodExistsRequest) (*IsPodExistsResponse, error)
 	// ContainerLog 查看 pod 日志
 	ContainerLog(context.Context, *LogRequest) (*LogResponse, error)

@@ -89,6 +89,7 @@ func main()  {
 
 ## TODO
 
+- [ ] access token 管理
 - [ ] 国际化
 - [ ] ratelimiter
 - [ ] namespace all -> list
