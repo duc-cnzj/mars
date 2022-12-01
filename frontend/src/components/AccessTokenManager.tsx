@@ -336,6 +336,7 @@ const AccessTokenManager: React.FC = () => {
         onCancel={() => {
           setIsModalVisible(false);
           setUnit("day");
+          form.resetFields();
         }}
       >
         <div style={{ width: "80%" }}>
