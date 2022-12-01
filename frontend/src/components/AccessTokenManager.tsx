@@ -101,7 +101,8 @@ const AccessTokenManager: React.FC = () => {
   const getSeconds = (num: number): number => {
     switch (unit) {
       case "month":
-        return 30 * 24 * 60 * 60 * num;
+        const now = new Date();
+        return dayjs(now).add(num, "months").diff(now, "seconds")
       case "day":
         return 24 * 60 * 60 * num;
       case "hour":
@@ -265,7 +266,8 @@ const AccessTokenManager: React.FC = () => {
                   description={
                     <div
                       className={classNames({
-                        "access-token__list-item--deleted-or-expired": item.is_deleted || item.is_expired,
+                        "access-token__list-item--deleted-or-expired":
+                          item.is_deleted || item.is_expired,
                       })}
                     >
                       <span
