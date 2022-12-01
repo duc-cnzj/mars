@@ -226,6 +226,9 @@
         "usage": {
           "type": "string"
         },
+        "last_used_at": {
+          "type": "string"
+        },
         "created_at": {
           "type": "string"
         },

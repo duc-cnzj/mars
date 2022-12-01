@@ -8786,6 +8786,9 @@ export namespace types {
         /** AccessTokenModel usage */
         usage?: (string|null);
 
+        /** AccessTokenModel last_used_at */
+        last_used_at?: (string|null);
+
         /** AccessTokenModel created_at */
         created_at?: (string|null);
 
@@ -8816,6 +8819,9 @@ export namespace types {
 
         /** AccessTokenModel usage. */
         public usage: string;
+
+        /** AccessTokenModel last_used_at. */
+        public last_used_at: string;
 
         /** AccessTokenModel created_at. */
         public created_at: string;

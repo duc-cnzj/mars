@@ -2,15 +2,14 @@ package models
 
 import (
 	"encoding/json"
-	"github.com/duc-cnzj/mars/internal/contracts"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/utils/date"
-
-	"gorm.io/gorm"
 )
 
 type AccessToken struct {
@@ -45,12 +44,13 @@ func (at *AccessToken) GetUserInfo() contracts.UserInfo {
 
 func (at *AccessToken) ProtoTransform() *types.AccessTokenModel {
 	return &types.AccessTokenModel{
-		Token:     at.Token,
-		Email:     at.Email,
-		ExpiredAt: date.ToRFC3339DatetimeString(&at.ExpiredAt),
-		Usage:     at.Usage,
-		CreatedAt: date.ToRFC3339DatetimeString(&at.CreatedAt),
-		UpdatedAt: date.ToRFC3339DatetimeString(&at.UpdatedAt),
-		DeletedAt: date.ToRFC3339DatetimeString(&at.DeletedAt.Time),
+		Token:      at.Token,
+		Email:      at.Email,
+		ExpiredAt:  date.ToRFC3339DatetimeString(&at.ExpiredAt),
+		Usage:      at.Usage,
+		LastUsedAt: date.ToRFC3339DatetimeString(&at.LastUsedAt),
+		CreatedAt:  date.ToRFC3339DatetimeString(&at.CreatedAt),
+		UpdatedAt:  date.ToRFC3339DatetimeString(&at.UpdatedAt),
+		DeletedAt:  date.ToRFC3339DatetimeString(&at.DeletedAt.Time),
 	}
 }

@@ -2,12 +2,13 @@ package auth
 
 import (
 	"crypto/rsa"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/models"
 	"strings"
 	"time"
 
+	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/internal/models"
+
 	"github.com/golang-jwt/jwt"
 )
 

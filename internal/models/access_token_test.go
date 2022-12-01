@@ -1,11 +1,12 @@
 package models
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/utils/date"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -23,18 +24,20 @@ func TestAccessToken_Expired(t *testing.T) {
 
 func TestAccessToken_ProtoTransform(t *testing.T) {
 	at := AccessToken{
-		Token:     "xx",
-		Usage:     "usage",
-		Email:     "a@a.com",
-		ExpiredAt: time.Now(),
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
-		DeletedAt: gorm.DeletedAt{},
+		Token:      "xx",
+		Usage:      "usage",
+		Email:      "a@a.com",
+		ExpiredAt:  time.Now(),
+		LastUsedAt: time.Now(),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+		DeletedAt:  gorm.DeletedAt{},
 	}
 	p := at.ProtoTransform()
 	assert.Equal(t, p.Token, at.Token)
 	assert.Equal(t, p.Usage, at.Usage)
 	assert.Equal(t, p.Email, at.Email)
+	assert.Equal(t, p.LastUsedAt, date.ToRFC3339DatetimeString(&at.LastUsedAt))
 	assert.Equal(t, p.ExpiredAt, date.ToRFC3339DatetimeString(&at.ExpiredAt))
 	assert.Equal(t, p.CreatedAt, date.ToRFC3339DatetimeString(&at.CreatedAt))
 	assert.Equal(t, p.UpdatedAt, date.ToRFC3339DatetimeString(&at.UpdatedAt))

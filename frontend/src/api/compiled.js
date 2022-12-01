@@ -18751,6 +18751,7 @@ export const types = $root.types = (() => {
          * @property {string|null} [email] AccessTokenModel email
          * @property {string|null} [expired_at] AccessTokenModel expired_at
          * @property {string|null} [usage] AccessTokenModel usage
+         * @property {string|null} [last_used_at] AccessTokenModel last_used_at
          * @property {string|null} [created_at] AccessTokenModel created_at
          * @property {string|null} [updated_at] AccessTokenModel updated_at
          * @property {string|null} [deleted_at] AccessTokenModel deleted_at
@@ -18804,6 +18805,14 @@ export const types = $root.types = (() => {
         AccessTokenModel.prototype.usage = "";
 
         /**
+         * AccessTokenModel last_used_at.
+         * @member {string} last_used_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.last_used_at = "";
+
+        /**
          * AccessTokenModel created_at.
          * @member {string} created_at
          * @memberof types.AccessTokenModel
@@ -18847,6 +18856,8 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.expired_at);
             if (message.usage != null && Object.hasOwnProperty.call(message, "usage"))
                 writer.uint32(/* id 4, wireType 2 =*/34).string(message.usage);
+            if (message.last_used_at != null && Object.hasOwnProperty.call(message, "last_used_at"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.last_used_at);
             if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
                 writer.uint32(/* id 100, wireType 2 =*/802).string(message.created_at);
             if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
@@ -18888,6 +18899,10 @@ export const types = $root.types = (() => {
                     }
                 case 4: {
                         message.usage = reader.string();
+                        break;
+                    }
+                case 5: {
+                        message.last_used_at = reader.string();
                         break;
                     }
                 case 100: {
