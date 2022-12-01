@@ -51,7 +51,7 @@ func (a *AccessToken) List(ctx context.Context, request *token.ListRequest) (*to
 	app.DB().
 		Unscoped().
 		Scopes(queryScope, scopes.Paginate(&page, &pageSize)).
-		Order("`created_at` DESC").
+		Order("`ID` DESC").
 		Find(&tokens)
 	app.DB().Model(&models.AccessToken{}).Unscoped().Scopes(queryScope).Count(&count)
 	var res = make([]*types.AccessTokenModel, 0, len(tokens))

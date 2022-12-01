@@ -43,7 +43,7 @@ func TestAccessToken_List(t *testing.T) {
 	assert.Equal(t, int64(2), list.Count)
 	assert.Equal(t, "token 2", list.Items[0].Usage)
 	assert.Equal(t, "token 1", list.Items[1].Usage)
-	db.Delete(&models.AccessToken{Token: list.Items[0].Token})
+	db.Where("`token`= ?", list.Items[0].Token).Delete(&models.AccessToken{})
 	list, _ = (&AccessToken{}).List(ctx, &token.ListRequest{
 		Page:     1,
 		PageSize: 10,

@@ -14,7 +14,9 @@ import (
 )
 
 type AccessToken struct {
-	Token string `json:"token" gorm:"size:255;not null;primaryKey;"`
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Token string `json:"token" gorm:"unique;size:255;not null;"`
 
 	Usage     string    `json:"usage" gorm:"size:50;"`
 	Email     string    `json:"email" gorm:"index;not null;default:'';"`
