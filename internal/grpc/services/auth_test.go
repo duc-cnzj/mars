@@ -36,7 +36,7 @@ func TestAuthSvc_Info(t *testing.T) {
 	privateKey, _ := x509.MarshalPKCS8PrivateKey(key)
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
-	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
+	authSvc := auth2.NewJwtAuth(key, key.Public().(*rsa.PublicKey))
 	sign, _ := authSvc.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
 		Roles:     []string{"user"},
@@ -68,7 +68,7 @@ func TestAuthSvc_Login(t *testing.T) {
 	privateKey, _ := x509.MarshalPKCS8PrivateKey(key)
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
-	authSvc := auth2.NewAuth(key, key.Public().(*rsa.PublicKey))
+	authSvc := auth2.NewJwtAuth(key, key.Public().(*rsa.PublicKey))
 	svc := NewAuthSvc(authSvc, nil, "admin", nil)
 	app := testutil.MockApp(m)
 	testutil.AssertAuditLogFired(m, app)

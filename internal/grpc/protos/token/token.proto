@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package token;
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+import "types/types.proto";
+
+option go_package = "github.com/duc-cnzj/mars-client/v4/token;token";
+
+message ListRequest {
+  int64 page = 1 [(validate.rules).int64.gte = 1];
+  int64 page_size = 2 [(validate.rules).int64.gte = 1];
+}
+
+message ListResponse {
+  int64 page = 1;
+  int64 page_size = 2;
+  repeated types.AccessTokenModel items = 3;
+  int64 count = 4;
+}
+
+message GrantRequest {
+  int64 expire_seconds = 1 [(validate.rules).int64.gt = 0];
+  string usage = 2 [(validate.rules).string.max_len = 30];
+}
+
+message GrantResponse {
+  types.AccessTokenModel token = 1;
+}
+
+message LeaseRequest {
+  string token = 1 [(validate.rules).string.min_bytes = 1];
+  int64 expire_seconds = 2 [(validate.rules).int64.gt = 0];
+}
+
+message LeaseResponse {
+  types.AccessTokenModel token = 1;
+}
+
+message RevokeRequest {
+  string token = 1 [(validate.rules).string.min_bytes = 1];
+}
+
+message RevokeResponse {}
+
+service AccessToken {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http) = {
+      get: "/api/access_tokens"
+    };
+  }
+
+  rpc Grant(GrantRequest) returns (GrantResponse) {
+    option (google.api.http) = {
+      post: "/api/access_tokens",
+      body: "*"
+    };
+  }
+
+  rpc Lease(LeaseRequest) returns (LeaseResponse) {
+    option (google.api.http) = {
+      put: "/api/access_tokens/{token}",
+      body: "*"
+    };
+  }
+
+  rpc Revoke(RevokeRequest) returns (RevokeResponse) {
+    option (google.api.http) = {
+      delete: "/api/access_tokens/{token}"
+    };
+  }
+}

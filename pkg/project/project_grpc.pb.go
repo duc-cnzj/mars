@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectClient interface {
-	//  List 获取项目列表
+	// List 获取项目列表
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(ctx context.Context, in *ApplyRequest, opts ...grpc.CallOption) (Project_ApplyClient, error)
@@ -137,7 +137,7 @@ func (c *projectClient) HostVariables(ctx context.Context, in *HostVariablesRequ
 // All implementations must embed UnimplementedProjectServer
 // for forward compatibility
 type ProjectServer interface {
-	//  List 获取项目列表
+	// List 获取项目列表
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	// Apply grpc 创建/更新项目
 	Apply(*ApplyRequest, Project_ApplyServer) error

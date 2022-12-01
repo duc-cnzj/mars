@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/duc-cnzj/mars-client/v4/token"
+
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -56,6 +58,8 @@ type Interface interface {
 	Project() project.ProjectClient
 	Endpoint() endpoint.EndpointClient
 	Metrics() metrics.MetricsClient
+
+	AccessToken() token.AccessTokenClient
 }
 
 type Client struct {
@@ -72,20 +76,21 @@ type Client struct {
 	dialOptions []grpc.DialOption
 	tracer      trace.Tracer
 
-	auth      auth.AuthClient
-	changelog changelog.ChangelogClient
-	cluster   cluster.ClusterClient
-	container container.ContainerClient
-	event     event.EventClient
-	git       git.GitClient
-	gitConfig gitconfig.GitConfigClient
-	metrics   metrics.MetricsClient
-	namespace namespace.NamespaceClient
-	picture   picture.PictureClient
-	project   project.ProjectClient
-	version   version.VersionClient
-	file      file.FileClient
-	endpoint  endpoint.EndpointClient
+	auth        auth.AuthClient
+	changelog   changelog.ChangelogClient
+	cluster     cluster.ClusterClient
+	container   container.ContainerClient
+	event       event.EventClient
+	git         git.GitClient
+	gitConfig   gitconfig.GitConfigClient
+	metrics     metrics.MetricsClient
+	namespace   namespace.NamespaceClient
+	picture     picture.PictureClient
+	project     project.ProjectClient
+	version     version.VersionClient
+	file        file.FileClient
+	endpoint    endpoint.EndpointClient
+	accessToken token.AccessTokenClient
 }
 
 func NewClient(addr string, opts ...Option) (Interface, error) {
@@ -116,6 +121,7 @@ func NewClient(addr string, opts ...Option) (Interface, error) {
 	c.version = version.NewVersionClient(dial)
 	c.file = file.NewFileClient(dial)
 	c.endpoint = endpoint.NewEndpointClient(dial)
+	c.accessToken = token.NewAccessTokenClient(dial)
 
 	if c.password != "" || c.username != "" {
 		if err := c.getToken(); err != nil {
@@ -160,6 +166,10 @@ func (c *Client) Container() container.ContainerClient {
 
 func (c *Client) Event() event.EventClient {
 	return c.event
+}
+
+func (c *Client) AccessToken() token.AccessTokenClient {
+	return c.accessToken
 }
 
 func (c *Client) File() file.FileClient {

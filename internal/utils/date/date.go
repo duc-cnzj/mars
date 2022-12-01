@@ -50,43 +50,43 @@ func HumanDuration(d time.Duration) string {
 	if seconds := int(d.Seconds()); seconds < -1 {
 		return "<invalid>"
 	} else if seconds < 0 {
-		return "0s"
+		return "0秒"
 	} else if seconds < 60*2 {
-		return fmt.Sprintf("%ds", seconds)
+		return fmt.Sprintf("%d秒", seconds)
 	}
 	minutes := int(d / time.Minute)
 	if minutes < 10 {
 		s := int(d/time.Second) % 60
 		if s == 0 {
-			return fmt.Sprintf("%dm", minutes)
+			return fmt.Sprintf("%d分钟", minutes)
 		}
-		return fmt.Sprintf("%dm%ds", minutes, s)
+		return fmt.Sprintf("%d分钟%d秒", minutes, s)
 	} else if minutes < 60*3 {
-		return fmt.Sprintf("%dm", minutes)
+		return fmt.Sprintf("%d分钟", minutes)
 	}
 	hours := int(d / time.Hour)
 	if hours < 8 {
 		m := int(d/time.Minute) % 60
 		if m == 0 {
-			return fmt.Sprintf("%dh", hours)
+			return fmt.Sprintf("%d小时", hours)
 		}
-		return fmt.Sprintf("%dh%dm", hours, m)
+		return fmt.Sprintf("%d小时%d分钟", hours, m)
 	} else if hours < 48 {
-		return fmt.Sprintf("%dh", hours)
+		return fmt.Sprintf("%d小时", hours)
 	} else if hours < 24*8 {
 		h := hours % 24
 		if h == 0 {
-			return fmt.Sprintf("%dd", hours/24)
+			return fmt.Sprintf("%d天", hours/24)
 		}
-		return fmt.Sprintf("%dd%dh", hours/24, h)
+		return fmt.Sprintf("%d天%d小时", hours/24, h)
 	} else if hours < 24*365*2 {
-		return fmt.Sprintf("%dd", hours/24)
+		return fmt.Sprintf("%d天", hours/24)
 	} else if hours < 24*365*8 {
 		dy := int(hours/24) % 365
 		if dy == 0 {
-			return fmt.Sprintf("%dy", hours/24/365)
+			return fmt.Sprintf("%d年", hours/24/365)
 		}
-		return fmt.Sprintf("%dy%dd", hours/24/365, dy)
+		return fmt.Sprintf("%d年%d天", hours/24/365, dy)
 	}
-	return fmt.Sprintf("%dy", int(hours/24/365))
+	return fmt.Sprintf("%d年", int(hours/24/365))
 }

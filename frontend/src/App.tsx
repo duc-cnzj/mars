@@ -13,6 +13,7 @@ const { Header, Content, Footer } = Layout;
 
 const GitProjectManager = lazy(() => import("./components/GitProjectManager"));
 const Events = lazy(() => import("./components/Events"));
+const AccessTokenManager = lazy(() => import("./components/AccessTokenManager"));
 
 const App: FC = () => {
   return (
@@ -40,6 +41,11 @@ const App: FC = () => {
             <PrivateRoute path={`/events`}>
               <Suspense fallback={null}>
                 <Events />
+              </Suspense>
+            </PrivateRoute>
+            <PrivateRoute path={`/access_token_manager`}>
+              <Suspense fallback={null}>
+                <AccessTokenManager />
               </Suspense>
             </PrivateRoute>
             <PrivateRoute path={`/`} exact>

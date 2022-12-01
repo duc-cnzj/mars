@@ -20,7 +20,8 @@ func (a *AuthBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	if err != nil {
 		return err
 	}
-	app.SetAuth(auth.NewAuth(pem, pem.Public().(*rsa.PublicKey)))
+	jwtAuth := auth.NewJwtAuth(pem, pem.Public().(*rsa.PublicKey))
+	app.SetAuth(auth.NewAuthn(jwtAuth.Sign, jwtAuth, auth.NewAccessTokenAuth(app)))
 
 	return nil
 }

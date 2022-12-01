@@ -260,6 +260,18 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-12-01-create-access_tokens-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasTable(&models.AccessToken{}) {
+					if err := tx.Migrator().CreateTable(&models.AccessToken{}); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

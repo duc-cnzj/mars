@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChangelogClient interface {
-	//  Show 查看项目修改的版本差异
+	// Show 查看项目修改的版本差异
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 }
 
@@ -48,7 +48,7 @@ func (c *changelogClient) Show(ctx context.Context, in *ShowRequest, opts ...grp
 // All implementations must embed UnimplementedChangelogServer
 // for forward compatibility
 type ChangelogServer interface {
-	//  Show 查看项目修改的版本差异
+	// Show 查看项目修改的版本差异
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	mustEmbedUnimplementedChangelogServer()
 }

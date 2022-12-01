@@ -15078,6 +15078,1026 @@ export const project = $root.project = (() => {
     return project;
 })();
 
+export const token = $root.token = (() => {
+
+    /**
+     * Namespace token.
+     * @exports token
+     * @namespace
+     */
+    const token = {};
+
+    token.ListRequest = (function() {
+
+        /**
+         * Properties of a ListRequest.
+         * @memberof token
+         * @interface IListRequest
+         * @property {number|null} [page] ListRequest page
+         * @property {number|null} [page_size] ListRequest page_size
+         */
+
+        /**
+         * Constructs a new ListRequest.
+         * @memberof token
+         * @classdesc Represents a ListRequest.
+         * @implements IListRequest
+         * @constructor
+         * @param {token.IListRequest=} [properties] Properties to set
+         */
+        function ListRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ListRequest page.
+         * @member {number} page
+         * @memberof token.ListRequest
+         * @instance
+         */
+        ListRequest.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * ListRequest page_size.
+         * @member {number} page_size
+         * @memberof token.ListRequest
+         * @instance
+         */
+        ListRequest.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified ListRequest message. Does not implicitly {@link token.ListRequest.verify|verify} messages.
+         * @function encode
+         * @memberof token.ListRequest
+         * @static
+         * @param {token.ListRequest} message ListRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ListRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+            if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+            return writer;
+        };
+
+        /**
+         * Decodes a ListRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.ListRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.ListRequest} ListRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ListRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.ListRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.page = reader.int64();
+                        break;
+                    }
+                case 2: {
+                        message.page_size = reader.int64();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for ListRequest
+         * @function getTypeUrl
+         * @memberof token.ListRequest
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        ListRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.ListRequest";
+        };
+
+        return ListRequest;
+    })();
+
+    token.ListResponse = (function() {
+
+        /**
+         * Properties of a ListResponse.
+         * @memberof token
+         * @interface IListResponse
+         * @property {number|null} [page] ListResponse page
+         * @property {number|null} [page_size] ListResponse page_size
+         * @property {Array.<types.AccessTokenModel>|null} [items] ListResponse items
+         * @property {number|null} [count] ListResponse count
+         */
+
+        /**
+         * Constructs a new ListResponse.
+         * @memberof token
+         * @classdesc Represents a ListResponse.
+         * @implements IListResponse
+         * @constructor
+         * @param {token.IListResponse=} [properties] Properties to set
+         */
+        function ListResponse(properties) {
+            this.items = [];
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ListResponse page.
+         * @member {number} page
+         * @memberof token.ListResponse
+         * @instance
+         */
+        ListResponse.prototype.page = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * ListResponse page_size.
+         * @member {number} page_size
+         * @memberof token.ListResponse
+         * @instance
+         */
+        ListResponse.prototype.page_size = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * ListResponse items.
+         * @member {Array.<types.AccessTokenModel>} items
+         * @memberof token.ListResponse
+         * @instance
+         */
+        ListResponse.prototype.items = $util.emptyArray;
+
+        /**
+         * ListResponse count.
+         * @member {number} count
+         * @memberof token.ListResponse
+         * @instance
+         */
+        ListResponse.prototype.count = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified ListResponse message. Does not implicitly {@link token.ListResponse.verify|verify} messages.
+         * @function encode
+         * @memberof token.ListResponse
+         * @static
+         * @param {token.ListResponse} message ListResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ListResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.page != null && Object.hasOwnProperty.call(message, "page"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.page);
+            if (message.page_size != null && Object.hasOwnProperty.call(message, "page_size"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int64(message.page_size);
+            if (message.items != null && message.items.length)
+                for (let i = 0; i < message.items.length; ++i)
+                    $root.types.AccessTokenModel.encode(message.items[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+            if (message.count != null && Object.hasOwnProperty.call(message, "count"))
+                writer.uint32(/* id 4, wireType 0 =*/32).int64(message.count);
+            return writer;
+        };
+
+        /**
+         * Decodes a ListResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.ListResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.ListResponse} ListResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ListResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.ListResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.page = reader.int64();
+                        break;
+                    }
+                case 2: {
+                        message.page_size = reader.int64();
+                        break;
+                    }
+                case 3: {
+                        if (!(message.items && message.items.length))
+                            message.items = [];
+                        message.items.push($root.types.AccessTokenModel.decode(reader, reader.uint32()));
+                        break;
+                    }
+                case 4: {
+                        message.count = reader.int64();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for ListResponse
+         * @function getTypeUrl
+         * @memberof token.ListResponse
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        ListResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.ListResponse";
+        };
+
+        return ListResponse;
+    })();
+
+    token.GrantRequest = (function() {
+
+        /**
+         * Properties of a GrantRequest.
+         * @memberof token
+         * @interface IGrantRequest
+         * @property {number|null} [expire_seconds] GrantRequest expire_seconds
+         * @property {string|null} [usage] GrantRequest usage
+         */
+
+        /**
+         * Constructs a new GrantRequest.
+         * @memberof token
+         * @classdesc Represents a GrantRequest.
+         * @implements IGrantRequest
+         * @constructor
+         * @param {token.IGrantRequest=} [properties] Properties to set
+         */
+        function GrantRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * GrantRequest expire_seconds.
+         * @member {number} expire_seconds
+         * @memberof token.GrantRequest
+         * @instance
+         */
+        GrantRequest.prototype.expire_seconds = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * GrantRequest usage.
+         * @member {string} usage
+         * @memberof token.GrantRequest
+         * @instance
+         */
+        GrantRequest.prototype.usage = "";
+
+        /**
+         * Encodes the specified GrantRequest message. Does not implicitly {@link token.GrantRequest.verify|verify} messages.
+         * @function encode
+         * @memberof token.GrantRequest
+         * @static
+         * @param {token.GrantRequest} message GrantRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        GrantRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.expire_seconds != null && Object.hasOwnProperty.call(message, "expire_seconds"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int64(message.expire_seconds);
+            if (message.usage != null && Object.hasOwnProperty.call(message, "usage"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.usage);
+            return writer;
+        };
+
+        /**
+         * Decodes a GrantRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.GrantRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.GrantRequest} GrantRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        GrantRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.GrantRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.expire_seconds = reader.int64();
+                        break;
+                    }
+                case 2: {
+                        message.usage = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for GrantRequest
+         * @function getTypeUrl
+         * @memberof token.GrantRequest
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        GrantRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.GrantRequest";
+        };
+
+        return GrantRequest;
+    })();
+
+    token.GrantResponse = (function() {
+
+        /**
+         * Properties of a GrantResponse.
+         * @memberof token
+         * @interface IGrantResponse
+         * @property {types.AccessTokenModel|null} [token] GrantResponse token
+         */
+
+        /**
+         * Constructs a new GrantResponse.
+         * @memberof token
+         * @classdesc Represents a GrantResponse.
+         * @implements IGrantResponse
+         * @constructor
+         * @param {token.IGrantResponse=} [properties] Properties to set
+         */
+        function GrantResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * GrantResponse token.
+         * @member {types.AccessTokenModel|null|undefined} token
+         * @memberof token.GrantResponse
+         * @instance
+         */
+        GrantResponse.prototype.token = null;
+
+        /**
+         * Encodes the specified GrantResponse message. Does not implicitly {@link token.GrantResponse.verify|verify} messages.
+         * @function encode
+         * @memberof token.GrantResponse
+         * @static
+         * @param {token.GrantResponse} message GrantResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        GrantResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+                $root.types.AccessTokenModel.encode(message.token, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Decodes a GrantResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.GrantResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.GrantResponse} GrantResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        GrantResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.GrantResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.token = $root.types.AccessTokenModel.decode(reader, reader.uint32());
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for GrantResponse
+         * @function getTypeUrl
+         * @memberof token.GrantResponse
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        GrantResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.GrantResponse";
+        };
+
+        return GrantResponse;
+    })();
+
+    token.LeaseRequest = (function() {
+
+        /**
+         * Properties of a LeaseRequest.
+         * @memberof token
+         * @interface ILeaseRequest
+         * @property {string|null} [token] LeaseRequest token
+         * @property {number|null} [expire_seconds] LeaseRequest expire_seconds
+         */
+
+        /**
+         * Constructs a new LeaseRequest.
+         * @memberof token
+         * @classdesc Represents a LeaseRequest.
+         * @implements ILeaseRequest
+         * @constructor
+         * @param {token.ILeaseRequest=} [properties] Properties to set
+         */
+        function LeaseRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * LeaseRequest token.
+         * @member {string} token
+         * @memberof token.LeaseRequest
+         * @instance
+         */
+        LeaseRequest.prototype.token = "";
+
+        /**
+         * LeaseRequest expire_seconds.
+         * @member {number} expire_seconds
+         * @memberof token.LeaseRequest
+         * @instance
+         */
+        LeaseRequest.prototype.expire_seconds = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+
+        /**
+         * Encodes the specified LeaseRequest message. Does not implicitly {@link token.LeaseRequest.verify|verify} messages.
+         * @function encode
+         * @memberof token.LeaseRequest
+         * @static
+         * @param {token.LeaseRequest} message LeaseRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        LeaseRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.token);
+            if (message.expire_seconds != null && Object.hasOwnProperty.call(message, "expire_seconds"))
+                writer.uint32(/* id 2, wireType 0 =*/16).int64(message.expire_seconds);
+            return writer;
+        };
+
+        /**
+         * Decodes a LeaseRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.LeaseRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.LeaseRequest} LeaseRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        LeaseRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.LeaseRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.token = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.expire_seconds = reader.int64();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for LeaseRequest
+         * @function getTypeUrl
+         * @memberof token.LeaseRequest
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        LeaseRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.LeaseRequest";
+        };
+
+        return LeaseRequest;
+    })();
+
+    token.LeaseResponse = (function() {
+
+        /**
+         * Properties of a LeaseResponse.
+         * @memberof token
+         * @interface ILeaseResponse
+         * @property {types.AccessTokenModel|null} [token] LeaseResponse token
+         */
+
+        /**
+         * Constructs a new LeaseResponse.
+         * @memberof token
+         * @classdesc Represents a LeaseResponse.
+         * @implements ILeaseResponse
+         * @constructor
+         * @param {token.ILeaseResponse=} [properties] Properties to set
+         */
+        function LeaseResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * LeaseResponse token.
+         * @member {types.AccessTokenModel|null|undefined} token
+         * @memberof token.LeaseResponse
+         * @instance
+         */
+        LeaseResponse.prototype.token = null;
+
+        /**
+         * Encodes the specified LeaseResponse message. Does not implicitly {@link token.LeaseResponse.verify|verify} messages.
+         * @function encode
+         * @memberof token.LeaseResponse
+         * @static
+         * @param {token.LeaseResponse} message LeaseResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        LeaseResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+                $root.types.AccessTokenModel.encode(message.token, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Decodes a LeaseResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.LeaseResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.LeaseResponse} LeaseResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        LeaseResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.LeaseResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.token = $root.types.AccessTokenModel.decode(reader, reader.uint32());
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for LeaseResponse
+         * @function getTypeUrl
+         * @memberof token.LeaseResponse
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        LeaseResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.LeaseResponse";
+        };
+
+        return LeaseResponse;
+    })();
+
+    token.RevokeRequest = (function() {
+
+        /**
+         * Properties of a RevokeRequest.
+         * @memberof token
+         * @interface IRevokeRequest
+         * @property {string|null} [token] RevokeRequest token
+         */
+
+        /**
+         * Constructs a new RevokeRequest.
+         * @memberof token
+         * @classdesc Represents a RevokeRequest.
+         * @implements IRevokeRequest
+         * @constructor
+         * @param {token.IRevokeRequest=} [properties] Properties to set
+         */
+        function RevokeRequest(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * RevokeRequest token.
+         * @member {string} token
+         * @memberof token.RevokeRequest
+         * @instance
+         */
+        RevokeRequest.prototype.token = "";
+
+        /**
+         * Encodes the specified RevokeRequest message. Does not implicitly {@link token.RevokeRequest.verify|verify} messages.
+         * @function encode
+         * @memberof token.RevokeRequest
+         * @static
+         * @param {token.RevokeRequest} message RevokeRequest message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        RevokeRequest.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.token);
+            return writer;
+        };
+
+        /**
+         * Decodes a RevokeRequest message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.RevokeRequest
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.RevokeRequest} RevokeRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        RevokeRequest.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.RevokeRequest();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.token = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for RevokeRequest
+         * @function getTypeUrl
+         * @memberof token.RevokeRequest
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        RevokeRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.RevokeRequest";
+        };
+
+        return RevokeRequest;
+    })();
+
+    token.RevokeResponse = (function() {
+
+        /**
+         * Properties of a RevokeResponse.
+         * @memberof token
+         * @interface IRevokeResponse
+         */
+
+        /**
+         * Constructs a new RevokeResponse.
+         * @memberof token
+         * @classdesc Represents a RevokeResponse.
+         * @implements IRevokeResponse
+         * @constructor
+         * @param {token.IRevokeResponse=} [properties] Properties to set
+         */
+        function RevokeResponse(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * Encodes the specified RevokeResponse message. Does not implicitly {@link token.RevokeResponse.verify|verify} messages.
+         * @function encode
+         * @memberof token.RevokeResponse
+         * @static
+         * @param {token.RevokeResponse} message RevokeResponse message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        RevokeResponse.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            return writer;
+        };
+
+        /**
+         * Decodes a RevokeResponse message from the specified reader or buffer.
+         * @function decode
+         * @memberof token.RevokeResponse
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {token.RevokeResponse} RevokeResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        RevokeResponse.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.token.RevokeResponse();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for RevokeResponse
+         * @function getTypeUrl
+         * @memberof token.RevokeResponse
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        RevokeResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/token.RevokeResponse";
+        };
+
+        return RevokeResponse;
+    })();
+
+    token.AccessToken = (function() {
+
+        /**
+         * Constructs a new AccessToken service.
+         * @memberof token
+         * @classdesc Represents an AccessToken
+         * @extends $protobuf.rpc.Service
+         * @constructor
+         * @param {$protobuf.RPCImpl} rpcImpl RPC implementation
+         * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+         * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+         */
+        function AccessToken(rpcImpl, requestDelimited, responseDelimited) {
+            $protobuf.rpc.Service.call(this, rpcImpl, requestDelimited, responseDelimited);
+        }
+
+        (AccessToken.prototype = Object.create($protobuf.rpc.Service.prototype)).constructor = AccessToken;
+
+        /**
+         * Callback as used by {@link token.AccessToken#list}.
+         * @memberof token.AccessToken
+         * @typedef ListCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {token.ListResponse} [response] ListResponse
+         */
+
+        /**
+         * Calls List.
+         * @function list
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.ListRequest} request ListRequest message or plain object
+         * @param {token.AccessToken.ListCallback} callback Node-style callback called with the error, if any, and ListResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(AccessToken.prototype.list = function list(request, callback) {
+            return this.rpcCall(list, $root.token.ListRequest, $root.token.ListResponse, request, callback);
+        }, "name", { value: "List" });
+
+        /**
+         * Calls List.
+         * @function list
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.ListRequest} request ListRequest message or plain object
+         * @returns {Promise<token.ListResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link token.AccessToken#grant}.
+         * @memberof token.AccessToken
+         * @typedef GrantCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {token.GrantResponse} [response] GrantResponse
+         */
+
+        /**
+         * Calls Grant.
+         * @function grant
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.GrantRequest} request GrantRequest message or plain object
+         * @param {token.AccessToken.GrantCallback} callback Node-style callback called with the error, if any, and GrantResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(AccessToken.prototype.grant = function grant(request, callback) {
+            return this.rpcCall(grant, $root.token.GrantRequest, $root.token.GrantResponse, request, callback);
+        }, "name", { value: "Grant" });
+
+        /**
+         * Calls Grant.
+         * @function grant
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.GrantRequest} request GrantRequest message or plain object
+         * @returns {Promise<token.GrantResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link token.AccessToken#lease}.
+         * @memberof token.AccessToken
+         * @typedef LeaseCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {token.LeaseResponse} [response] LeaseResponse
+         */
+
+        /**
+         * Calls Lease.
+         * @function lease
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.LeaseRequest} request LeaseRequest message or plain object
+         * @param {token.AccessToken.LeaseCallback} callback Node-style callback called with the error, if any, and LeaseResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(AccessToken.prototype.lease = function lease(request, callback) {
+            return this.rpcCall(lease, $root.token.LeaseRequest, $root.token.LeaseResponse, request, callback);
+        }, "name", { value: "Lease" });
+
+        /**
+         * Calls Lease.
+         * @function lease
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.LeaseRequest} request LeaseRequest message or plain object
+         * @returns {Promise<token.LeaseResponse>} Promise
+         * @variation 2
+         */
+
+        /**
+         * Callback as used by {@link token.AccessToken#revoke}.
+         * @memberof token.AccessToken
+         * @typedef RevokeCallback
+         * @type {function}
+         * @param {Error|null} error Error, if any
+         * @param {token.RevokeResponse} [response] RevokeResponse
+         */
+
+        /**
+         * Calls Revoke.
+         * @function revoke
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.RevokeRequest} request RevokeRequest message or plain object
+         * @param {token.AccessToken.RevokeCallback} callback Node-style callback called with the error, if any, and RevokeResponse
+         * @returns {undefined}
+         * @variation 1
+         */
+        Object.defineProperty(AccessToken.prototype.revoke = function revoke(request, callback) {
+            return this.rpcCall(revoke, $root.token.RevokeRequest, $root.token.RevokeResponse, request, callback);
+        }, "name", { value: "Revoke" });
+
+        /**
+         * Calls Revoke.
+         * @function revoke
+         * @memberof token.AccessToken
+         * @instance
+         * @param {token.RevokeRequest} request RevokeRequest message or plain object
+         * @returns {Promise<token.RevokeResponse>} Promise
+         * @variation 2
+         */
+
+        return AccessToken;
+    })();
+
+    return token;
+})();
+
 export const types = $root.types = (() => {
 
     /**
@@ -17794,6 +18814,238 @@ export const types = $root.types = (() => {
         };
 
         return ProjectModel;
+    })();
+
+    types.AccessTokenModel = (function() {
+
+        /**
+         * Properties of an AccessTokenModel.
+         * @memberof types
+         * @interface IAccessTokenModel
+         * @property {string|null} [token] AccessTokenModel token
+         * @property {string|null} [email] AccessTokenModel email
+         * @property {string|null} [expired_at] AccessTokenModel expired_at
+         * @property {string|null} [usage] AccessTokenModel usage
+         * @property {string|null} [last_used_at] AccessTokenModel last_used_at
+         * @property {boolean|null} [is_deleted] AccessTokenModel is_deleted
+         * @property {boolean|null} [is_expired] AccessTokenModel is_expired
+         * @property {string|null} [created_at] AccessTokenModel created_at
+         * @property {string|null} [updated_at] AccessTokenModel updated_at
+         * @property {string|null} [deleted_at] AccessTokenModel deleted_at
+         */
+
+        /**
+         * Constructs a new AccessTokenModel.
+         * @memberof types
+         * @classdesc Represents an AccessTokenModel.
+         * @implements IAccessTokenModel
+         * @constructor
+         * @param {types.IAccessTokenModel=} [properties] Properties to set
+         */
+        function AccessTokenModel(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * AccessTokenModel token.
+         * @member {string} token
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.token = "";
+
+        /**
+         * AccessTokenModel email.
+         * @member {string} email
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.email = "";
+
+        /**
+         * AccessTokenModel expired_at.
+         * @member {string} expired_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.expired_at = "";
+
+        /**
+         * AccessTokenModel usage.
+         * @member {string} usage
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.usage = "";
+
+        /**
+         * AccessTokenModel last_used_at.
+         * @member {string} last_used_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.last_used_at = "";
+
+        /**
+         * AccessTokenModel is_deleted.
+         * @member {boolean} is_deleted
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.is_deleted = false;
+
+        /**
+         * AccessTokenModel is_expired.
+         * @member {boolean} is_expired
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.is_expired = false;
+
+        /**
+         * AccessTokenModel created_at.
+         * @member {string} created_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.created_at = "";
+
+        /**
+         * AccessTokenModel updated_at.
+         * @member {string} updated_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.updated_at = "";
+
+        /**
+         * AccessTokenModel deleted_at.
+         * @member {string} deleted_at
+         * @memberof types.AccessTokenModel
+         * @instance
+         */
+        AccessTokenModel.prototype.deleted_at = "";
+
+        /**
+         * Encodes the specified AccessTokenModel message. Does not implicitly {@link types.AccessTokenModel.verify|verify} messages.
+         * @function encode
+         * @memberof types.AccessTokenModel
+         * @static
+         * @param {types.AccessTokenModel} message AccessTokenModel message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        AccessTokenModel.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.token != null && Object.hasOwnProperty.call(message, "token"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.token);
+            if (message.email != null && Object.hasOwnProperty.call(message, "email"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.email);
+            if (message.expired_at != null && Object.hasOwnProperty.call(message, "expired_at"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.expired_at);
+            if (message.usage != null && Object.hasOwnProperty.call(message, "usage"))
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.usage);
+            if (message.last_used_at != null && Object.hasOwnProperty.call(message, "last_used_at"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.last_used_at);
+            if (message.is_deleted != null && Object.hasOwnProperty.call(message, "is_deleted"))
+                writer.uint32(/* id 6, wireType 0 =*/48).bool(message.is_deleted);
+            if (message.is_expired != null && Object.hasOwnProperty.call(message, "is_expired"))
+                writer.uint32(/* id 7, wireType 0 =*/56).bool(message.is_expired);
+            if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
+                writer.uint32(/* id 100, wireType 2 =*/802).string(message.created_at);
+            if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
+                writer.uint32(/* id 101, wireType 2 =*/810).string(message.updated_at);
+            if (message.deleted_at != null && Object.hasOwnProperty.call(message, "deleted_at"))
+                writer.uint32(/* id 102, wireType 2 =*/818).string(message.deleted_at);
+            return writer;
+        };
+
+        /**
+         * Decodes an AccessTokenModel message from the specified reader or buffer.
+         * @function decode
+         * @memberof types.AccessTokenModel
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {types.AccessTokenModel} AccessTokenModel
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        AccessTokenModel.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.types.AccessTokenModel();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.token = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.email = reader.string();
+                        break;
+                    }
+                case 3: {
+                        message.expired_at = reader.string();
+                        break;
+                    }
+                case 4: {
+                        message.usage = reader.string();
+                        break;
+                    }
+                case 5: {
+                        message.last_used_at = reader.string();
+                        break;
+                    }
+                case 6: {
+                        message.is_deleted = reader.bool();
+                        break;
+                    }
+                case 7: {
+                        message.is_expired = reader.bool();
+                        break;
+                    }
+                case 100: {
+                        message.created_at = reader.string();
+                        break;
+                    }
+                case 101: {
+                        message.updated_at = reader.string();
+                        break;
+                    }
+                case 102: {
+                        message.deleted_at = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for AccessTokenModel
+         * @function getTypeUrl
+         * @memberof types.AccessTokenModel
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        AccessTokenModel.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/types.AccessTokenModel";
+        };
+
+        return AccessTokenModel;
     })();
 
     return types;

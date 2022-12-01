@@ -4,6 +4,7 @@ package contracts
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -11,8 +12,11 @@ import (
 
 const Expired = 8 * time.Hour
 
-type AuthInterface interface {
+type Authenticator interface {
 	VerifyToken(string) (*JwtClaims, bool)
+}
+type AuthInterface interface {
+	Authenticator
 	Sign(UserInfo) (*SignData, error)
 }
 
@@ -49,6 +53,11 @@ type UserInfo struct {
 	Roles   []string `json:"roles"`
 
 	LogoutUrl string `json:"logout_url"`
+}
+
+func (ui *UserInfo) Json() string {
+	marshal, _ := json.Marshal(ui)
+	return string(marshal)
 }
 
 func (ui UserInfo) GetID() string {

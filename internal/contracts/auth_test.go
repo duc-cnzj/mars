@@ -41,3 +41,15 @@ func TestOidcClaims_ToUserInfo(t *testing.T) {
 	assert.Equal(t, o.Email, o.ToUserInfo().Email)
 	assert.Equal(t, o.Name, o.ToUserInfo().Name)
 }
+
+func TestUserInfo_Json(t *testing.T) {
+	uinfo := UserInfo{
+		ID:        "1",
+		Email:     "xx@xx.com",
+		Name:      "duc",
+		Picture:   "pic",
+		Roles:     []string{"admin"},
+		LogoutUrl: "https://xx/logout",
+	}
+	assert.Equal(t, `{"id":"1","email":"xx@xx.com","name":"duc","picture":"pic","roles":["admin"],"logout_url":"https://xx/logout"}`, uinfo.Json())
+}

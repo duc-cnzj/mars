@@ -7149,6 +7149,499 @@ export namespace project {
     }
 }
 
+/** Namespace token. */
+export namespace token {
+
+    /** Properties of a ListRequest. */
+    interface IListRequest {
+
+        /** ListRequest page */
+        page?: (number|null);
+
+        /** ListRequest page_size */
+        page_size?: (number|null);
+    }
+
+    /** Represents a ListRequest. */
+    class ListRequest implements IListRequest {
+
+        /**
+         * Constructs a new ListRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IListRequest);
+
+        /** ListRequest page. */
+        public page: number;
+
+        /** ListRequest page_size. */
+        public page_size: number;
+
+        /**
+         * Encodes the specified ListRequest message. Does not implicitly {@link token.ListRequest.verify|verify} messages.
+         * @param message ListRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.ListRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ListRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ListRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.ListRequest;
+
+        /**
+         * Gets the default type url for ListRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a ListResponse. */
+    interface IListResponse {
+
+        /** ListResponse page */
+        page?: (number|null);
+
+        /** ListResponse page_size */
+        page_size?: (number|null);
+
+        /** ListResponse items */
+        items?: (types.AccessTokenModel[]|null);
+
+        /** ListResponse count */
+        count?: (number|null);
+    }
+
+    /** Represents a ListResponse. */
+    class ListResponse implements IListResponse {
+
+        /**
+         * Constructs a new ListResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IListResponse);
+
+        /** ListResponse page. */
+        public page: number;
+
+        /** ListResponse page_size. */
+        public page_size: number;
+
+        /** ListResponse items. */
+        public items: types.AccessTokenModel[];
+
+        /** ListResponse count. */
+        public count: number;
+
+        /**
+         * Encodes the specified ListResponse message. Does not implicitly {@link token.ListResponse.verify|verify} messages.
+         * @param message ListResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.ListResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ListResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ListResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.ListResponse;
+
+        /**
+         * Gets the default type url for ListResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a GrantRequest. */
+    interface IGrantRequest {
+
+        /** GrantRequest expire_seconds */
+        expire_seconds?: (number|null);
+
+        /** GrantRequest usage */
+        usage?: (string|null);
+    }
+
+    /** Represents a GrantRequest. */
+    class GrantRequest implements IGrantRequest {
+
+        /**
+         * Constructs a new GrantRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IGrantRequest);
+
+        /** GrantRequest expire_seconds. */
+        public expire_seconds: number;
+
+        /** GrantRequest usage. */
+        public usage: string;
+
+        /**
+         * Encodes the specified GrantRequest message. Does not implicitly {@link token.GrantRequest.verify|verify} messages.
+         * @param message GrantRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.GrantRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GrantRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GrantRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.GrantRequest;
+
+        /**
+         * Gets the default type url for GrantRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a GrantResponse. */
+    interface IGrantResponse {
+
+        /** GrantResponse token */
+        token?: (types.AccessTokenModel|null);
+    }
+
+    /** Represents a GrantResponse. */
+    class GrantResponse implements IGrantResponse {
+
+        /**
+         * Constructs a new GrantResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IGrantResponse);
+
+        /** GrantResponse token. */
+        public token?: (types.AccessTokenModel|null);
+
+        /**
+         * Encodes the specified GrantResponse message. Does not implicitly {@link token.GrantResponse.verify|verify} messages.
+         * @param message GrantResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.GrantResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GrantResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GrantResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.GrantResponse;
+
+        /**
+         * Gets the default type url for GrantResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a LeaseRequest. */
+    interface ILeaseRequest {
+
+        /** LeaseRequest token */
+        token?: (string|null);
+
+        /** LeaseRequest expire_seconds */
+        expire_seconds?: (number|null);
+    }
+
+    /** Represents a LeaseRequest. */
+    class LeaseRequest implements ILeaseRequest {
+
+        /**
+         * Constructs a new LeaseRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.ILeaseRequest);
+
+        /** LeaseRequest token. */
+        public token: string;
+
+        /** LeaseRequest expire_seconds. */
+        public expire_seconds: number;
+
+        /**
+         * Encodes the specified LeaseRequest message. Does not implicitly {@link token.LeaseRequest.verify|verify} messages.
+         * @param message LeaseRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.LeaseRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a LeaseRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns LeaseRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.LeaseRequest;
+
+        /**
+         * Gets the default type url for LeaseRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a LeaseResponse. */
+    interface ILeaseResponse {
+
+        /** LeaseResponse token */
+        token?: (types.AccessTokenModel|null);
+    }
+
+    /** Represents a LeaseResponse. */
+    class LeaseResponse implements ILeaseResponse {
+
+        /**
+         * Constructs a new LeaseResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.ILeaseResponse);
+
+        /** LeaseResponse token. */
+        public token?: (types.AccessTokenModel|null);
+
+        /**
+         * Encodes the specified LeaseResponse message. Does not implicitly {@link token.LeaseResponse.verify|verify} messages.
+         * @param message LeaseResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.LeaseResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a LeaseResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns LeaseResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.LeaseResponse;
+
+        /**
+         * Gets the default type url for LeaseResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a RevokeRequest. */
+    interface IRevokeRequest {
+
+        /** RevokeRequest token */
+        token?: (string|null);
+    }
+
+    /** Represents a RevokeRequest. */
+    class RevokeRequest implements IRevokeRequest {
+
+        /**
+         * Constructs a new RevokeRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IRevokeRequest);
+
+        /** RevokeRequest token. */
+        public token: string;
+
+        /**
+         * Encodes the specified RevokeRequest message. Does not implicitly {@link token.RevokeRequest.verify|verify} messages.
+         * @param message RevokeRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.RevokeRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a RevokeRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns RevokeRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.RevokeRequest;
+
+        /**
+         * Gets the default type url for RevokeRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a RevokeResponse. */
+    interface IRevokeResponse {
+    }
+
+    /** Represents a RevokeResponse. */
+    class RevokeResponse implements IRevokeResponse {
+
+        /**
+         * Constructs a new RevokeResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: token.IRevokeResponse);
+
+        /**
+         * Encodes the specified RevokeResponse message. Does not implicitly {@link token.RevokeResponse.verify|verify} messages.
+         * @param message RevokeResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: token.RevokeResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a RevokeResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns RevokeResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): token.RevokeResponse;
+
+        /**
+         * Gets the default type url for RevokeResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Represents an AccessToken */
+    class AccessToken extends $protobuf.rpc.Service {
+
+        /**
+         * Constructs a new AccessToken service.
+         * @param rpcImpl RPC implementation
+         * @param [requestDelimited=false] Whether requests are length-delimited
+         * @param [responseDelimited=false] Whether responses are length-delimited
+         */
+        constructor(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean);
+
+        /**
+         * Calls List.
+         * @param request ListRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and ListResponse
+         */
+        public list(request: token.ListRequest, callback: token.AccessToken.ListCallback): void;
+
+        /**
+         * Calls List.
+         * @param request ListRequest message or plain object
+         * @returns Promise
+         */
+        public list(request: token.ListRequest): Promise<token.ListResponse>;
+
+        /**
+         * Calls Grant.
+         * @param request GrantRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and GrantResponse
+         */
+        public grant(request: token.GrantRequest, callback: token.AccessToken.GrantCallback): void;
+
+        /**
+         * Calls Grant.
+         * @param request GrantRequest message or plain object
+         * @returns Promise
+         */
+        public grant(request: token.GrantRequest): Promise<token.GrantResponse>;
+
+        /**
+         * Calls Lease.
+         * @param request LeaseRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and LeaseResponse
+         */
+        public lease(request: token.LeaseRequest, callback: token.AccessToken.LeaseCallback): void;
+
+        /**
+         * Calls Lease.
+         * @param request LeaseRequest message or plain object
+         * @returns Promise
+         */
+        public lease(request: token.LeaseRequest): Promise<token.LeaseResponse>;
+
+        /**
+         * Calls Revoke.
+         * @param request RevokeRequest message or plain object
+         * @param callback Node-style callback called with the error, if any, and RevokeResponse
+         */
+        public revoke(request: token.RevokeRequest, callback: token.AccessToken.RevokeCallback): void;
+
+        /**
+         * Calls Revoke.
+         * @param request RevokeRequest message or plain object
+         * @returns Promise
+         */
+        public revoke(request: token.RevokeRequest): Promise<token.RevokeResponse>;
+    }
+
+    namespace AccessToken {
+
+        /**
+         * Callback as used by {@link token.AccessToken#list}.
+         * @param error Error, if any
+         * @param [response] ListResponse
+         */
+        type ListCallback = (error: (Error|null), response?: token.ListResponse) => void;
+
+        /**
+         * Callback as used by {@link token.AccessToken#grant}.
+         * @param error Error, if any
+         * @param [response] GrantResponse
+         */
+        type GrantCallback = (error: (Error|null), response?: token.GrantResponse) => void;
+
+        /**
+         * Callback as used by {@link token.AccessToken#lease}.
+         * @param error Error, if any
+         * @param [response] LeaseResponse
+         */
+        type LeaseCallback = (error: (Error|null), response?: token.LeaseResponse) => void;
+
+        /**
+         * Callback as used by {@link token.AccessToken#revoke}.
+         * @param error Error, if any
+         * @param [response] RevokeResponse
+         */
+        type RevokeCallback = (error: (Error|null), response?: token.RevokeResponse) => void;
+    }
+}
+
 /** Namespace types. */
 export namespace types {
 
@@ -8302,6 +8795,105 @@ export namespace types {
 
         /**
          * Gets the default type url for ProjectModel
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of an AccessTokenModel. */
+    interface IAccessTokenModel {
+
+        /** AccessTokenModel token */
+        token?: (string|null);
+
+        /** AccessTokenModel email */
+        email?: (string|null);
+
+        /** AccessTokenModel expired_at */
+        expired_at?: (string|null);
+
+        /** AccessTokenModel usage */
+        usage?: (string|null);
+
+        /** AccessTokenModel last_used_at */
+        last_used_at?: (string|null);
+
+        /** AccessTokenModel is_deleted */
+        is_deleted?: (boolean|null);
+
+        /** AccessTokenModel is_expired */
+        is_expired?: (boolean|null);
+
+        /** AccessTokenModel created_at */
+        created_at?: (string|null);
+
+        /** AccessTokenModel updated_at */
+        updated_at?: (string|null);
+
+        /** AccessTokenModel deleted_at */
+        deleted_at?: (string|null);
+    }
+
+    /** Represents an AccessTokenModel. */
+    class AccessTokenModel implements IAccessTokenModel {
+
+        /**
+         * Constructs a new AccessTokenModel.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: types.IAccessTokenModel);
+
+        /** AccessTokenModel token. */
+        public token: string;
+
+        /** AccessTokenModel email. */
+        public email: string;
+
+        /** AccessTokenModel expired_at. */
+        public expired_at: string;
+
+        /** AccessTokenModel usage. */
+        public usage: string;
+
+        /** AccessTokenModel last_used_at. */
+        public last_used_at: string;
+
+        /** AccessTokenModel is_deleted. */
+        public is_deleted: boolean;
+
+        /** AccessTokenModel is_expired. */
+        public is_expired: boolean;
+
+        /** AccessTokenModel created_at. */
+        public created_at: string;
+
+        /** AccessTokenModel updated_at. */
+        public updated_at: string;
+
+        /** AccessTokenModel deleted_at. */
+        public deleted_at: string;
+
+        /**
+         * Encodes the specified AccessTokenModel message. Does not implicitly {@link types.AccessTokenModel.verify|verify} messages.
+         * @param message AccessTokenModel message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: types.AccessTokenModel, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes an AccessTokenModel message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns AccessTokenModel
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.AccessTokenModel;
+
+        /**
+         * Gets the default type url for AccessTokenModel
          * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
          * @returns The default type url
          */

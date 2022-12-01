@@ -167,6 +167,9 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 	assert.False(t, db.Migrator().HasIndex(&Changelog{}, "idx_version_projectid_deleted_at_config_changed"))
+	if db.Migrator().HasTable(&models.AccessToken{}) {
+		assert.Nil(t, db.Migrator().DropTable(&models.AccessToken{}))
+	}
 
 	assert.Nil(t, ma.AutoMigrate())
 
@@ -183,7 +186,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
 	assert.True(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasColumn(&models.DBCache{}, "id"))
-
+	assert.True(t, db.Migrator().HasTable(&models.AccessToken{}))
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)
 	for _, columnType := range types {
