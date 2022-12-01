@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"regexp"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -107,8 +109,9 @@ func TestRecorder_Close(t *testing.T) {
 	emodel := models.Event{}
 	db.First(&emodel)
 
-	duration, _ := time.ParseDuration(emodel.Duration)
-	assert.GreaterOrEqual(t, duration.Seconds(), float64(2))
+	findString := regexp.MustCompile(`\d+`).FindString(emodel.Duration)
+	float, _ := strconv.ParseFloat(findString, 64)
+	assert.GreaterOrEqual(t, float, float64(2))
 	assert.Equal(t, "", emodel.New)
 	assert.Equal(t, "duc", emodel.Username)
 	assert.Equal(t, int(fmodel.ID), *emodel.FileID)
