@@ -328,10 +328,10 @@ func (m *GrantRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetUsage()) > 30 {
+	if utf8.RuneCountInString(m.GetUsage()) > 30 {
 		err := GrantRequestValidationError{
 			field:  "Usage",
-			reason: "value length must be at most 30 bytes",
+			reason: "value length must be at most 30 runes",
 		}
 		if !all {
 			return err

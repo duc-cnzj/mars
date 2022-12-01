@@ -178,6 +178,28 @@ const AccessTokenManager: React.FC = () => {
   };
 
   const [currToken, setCurrToken] = useState("");
+  const getTags = (item: pb.types.AccessTokenModel): React.ReactNode => {
+    return (
+      <>
+        {!item.is_deleted && (
+          <>
+            {dayjs(item.expired_at).isBefore(
+              dayjs(new Date()).add(1, "day")
+            ) && (
+              <Tag style={{ marginLeft: 5 }} color="#facc15">
+                即将过期
+              </Tag>
+            )}
+          </>
+        )}
+        {item.is_deleted && (
+          <Tag style={{ marginLeft: 5 }} color="red">
+            已失效
+          </Tag>
+        )}
+      </>
+    );
+  };
 
   return (
     <Card
@@ -190,14 +212,14 @@ const AccessTokenManager: React.FC = () => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div>access token 列表</div>
+            <div>访问令牌列表</div>
           </div>
           <Button
             onClick={() => setIsModalVisible(true)}
             style={{ fontSize: 12 }}
             size="small"
           >
-            创建 access token
+            创建访问令牌
           </Button>
         </div>
       }
@@ -233,11 +255,7 @@ const AccessTokenManager: React.FC = () => {
                   title={
                     <div style={{ textDecoration: "null" }}>
                       {item.usage}
-                      {item.is_deleted && (
-                        <Tag style={{ marginLeft: 5 }} color="red">
-                          已失效
-                        </Tag>
-                      )}
+                      {getTags(item)}
                     </div>
                   }
                   description={
@@ -305,12 +323,13 @@ const AccessTokenManager: React.FC = () => {
       </div>
       <Modal
         width={"50%"}
-        title={`${!currToken ? "创建" : "续租"} access token`}
+        title={`${!currToken ? "创建" : "续租"}访问令牌`}
         destroyOnClose
         open={isModalVisible}
         footer={null}
         onCancel={() => {
           setIsModalVisible(false);
+          setUnit("day")
         }}
       >
         <div style={{ width: "80%" }}>

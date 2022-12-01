@@ -22,7 +22,7 @@ message ListResponse {
 
 message GrantRequest {
   int64 expire_seconds = 1 [(validate.rules).int64.gt = 0];
-  string usage = 2 [(validate.rules).string.max_bytes = 30];
+  string usage = 2 [(validate.rules).string.max_len = 30];
 }
 
 message GrantResponse {
