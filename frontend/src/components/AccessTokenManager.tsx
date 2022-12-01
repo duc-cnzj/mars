@@ -265,7 +265,7 @@ const AccessTokenManager: React.FC = () => {
                   description={
                     <div
                       className={classNames({
-                        "access-token__list-item--deleted": item.is_deleted || item.is_expired,
+                        "access-token__list-item--deleted-or-expired": item.is_deleted || item.is_expired,
                       })}
                     >
                       <span
