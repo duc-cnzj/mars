@@ -86,7 +86,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 		LogoutUrl: "https://xxx",
 	})
 	db.Create(at)
-	assert.True(t, at.LastUsedAt.IsZero())
+	assert.True(t, at.LastUsedAt.Time.IsZero())
 	u, b := NewAccessTokenAuth(app).VerifyToken(at.Token)
 	assert.True(t, b)
 	assert.Equal(t, "xx", u.UserInfo.ID)
@@ -98,7 +98,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 
 	var at2 models.AccessToken
 	db.Where("`token` = ?", at.Token).First(&at2)
-	assert.False(t, at2.LastUsedAt.IsZero())
+	assert.False(t, at2.LastUsedAt.Time.IsZero())
 
 	_, bb := NewAccessTokenAuth(app).VerifyToken("bearer " + at.Token)
 	assert.True(t, bb)

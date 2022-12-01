@@ -16,12 +16,26 @@
         "tags": [
           "AccessToken"
         ],
-        "operationId": "AccessToken_All",
+        "operationId": "AccessToken_List",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page_size",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/tokenAllResponse"
+              "$ref": "#/definitions/tokenListResponse"
             }
           },
           "default": {
@@ -2838,17 +2852,6 @@
         }
       }
     },
-    "tokenAllResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/typesAccessTokenModel"
-          }
-        }
-      }
-    },
     "tokenGrantRequest": {
       "type": "object",
       "properties": {
@@ -2877,6 +2880,29 @@
         }
       }
     },
+    "tokenListResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesAccessTokenModel"
+          }
+        },
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "tokenRevokeResponse": {
       "type": "object"
     },
@@ -2894,6 +2920,12 @@
         },
         "expired_at": {
           "type": "string"
+        },
+        "is_deleted": {
+          "type": "boolean"
+        },
+        "is_expired": {
+          "type": "boolean"
         },
         "last_used_at": {
           "type": "string"

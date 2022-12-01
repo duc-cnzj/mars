@@ -18,12 +18,12 @@
   "paths": {
     "/api/access_tokens": {
       "get": {
-        "operationId": "AccessToken_All",
+        "operationId": "AccessToken_List",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/tokenAllResponse"
+              "$ref": "#/definitions/tokenListResponse"
             }
           },
           "default": {
@@ -33,6 +33,22 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
         "tags": [
           "AccessToken"
         ]
@@ -169,17 +185,6 @@
         }
       }
     },
-    "tokenAllResponse": {
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/typesAccessTokenModel"
-          }
-        }
-      }
-    },
     "tokenGrantRequest": {
       "type": "object",
       "properties": {
@@ -208,6 +213,29 @@
         }
       }
     },
+    "tokenListResponse": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/typesAccessTokenModel"
+          }
+        },
+        "count": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "tokenRevokeResponse": {
       "type": "object"
     },
@@ -228,6 +256,12 @@
         },
         "last_used_at": {
           "type": "string"
+        },
+        "is_deleted": {
+          "type": "boolean"
+        },
+        "is_expired": {
+          "type": "boolean"
         },
         "created_at": {
           "type": "string"

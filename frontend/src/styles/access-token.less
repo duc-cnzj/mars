@@ -1,0 +1,42 @@
+.access-token {
+  &__list-item {
+    &__token {
+      background-color: #1b1f230d;
+      padding: 3px;
+      color: #fb7185;
+      font-family: "Monaco", monospace;
+      border-radius: 5px;
+      margin-right: 5px;
+    }
+    &__token-expire-date {
+      background-color: #1b1f230d;
+      padding: 3px;
+      color: #fb7185;
+      font-family: "Monaco", monospace;
+      border-radius: 5px;
+      margin-right: 5px;
+    }
+    &--deleted {
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: black;
+    }
+    padding: 14px 24px;
+    &__date {
+      display: inline;
+      font-size: 10px;
+      font-weight: normal;
+      &--active {
+        opacity: 0;
+        transition: 0.3s opacity ease-in;
+        margin-left: 5px;
+      }
+    }
+    &:hover {
+      background-image: @light-linear;
+      .events__list-item__date--active {
+        opacity: 1;
+      }
+    }
+  }
+}

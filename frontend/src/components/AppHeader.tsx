@@ -4,10 +4,9 @@ import ClusterInfo from "./ClusterInfo";
 import { useWsReady } from "../contexts/useWebsocket";
 import { UserOutlined } from "@ant-design/icons";
 import { useAuth } from "../contexts/auth";
-import { getToken, removeToken } from "../utils/token";
+import { removeToken } from "../utils/token";
 import { useHistory } from "react-router-dom";
 import { Dropdown } from "antd";
-import { copy } from "../utils/copy";
 import {
   LogoutOutlined,
   SettingOutlined,
@@ -72,10 +71,10 @@ const AppHeader: React.FC = () => {
           href="javascript(0);"
           onClick={(e) => {
             e.preventDefault();
-            copy(getToken());
+            h.push("/access_token_manager");
           }}
         >
-          <KeyOutlined /> 获取令牌
+          <KeyOutlined /> 令牌管理
         </a>
       ),
       key: "3",

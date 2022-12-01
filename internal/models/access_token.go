@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -19,7 +20,7 @@ type AccessToken struct {
 	Email     string    `json:"email" gorm:"index;not null;default:'';"`
 	ExpiredAt time.Time `json:"expired_at"`
 
-	LastUsedAt time.Time `json:"last_used_at"`
+	LastUsedAt sql.NullTime `json:"last_used_at"`
 
 	UserInfo string `json:"-"`
 
@@ -43,12 +44,18 @@ func (at *AccessToken) GetUserInfo() contracts.UserInfo {
 }
 
 func (at *AccessToken) ProtoTransform() *types.AccessTokenModel {
+	var lastUsedAt = ""
+	if at.LastUsedAt.Valid {
+		lastUsedAt = date.ToHumanizeDatetimeString(&at.LastUsedAt.Time)
+	}
 	return &types.AccessTokenModel{
 		Token:      at.Token,
 		Email:      at.Email,
 		ExpiredAt:  date.ToRFC3339DatetimeString(&at.ExpiredAt),
 		Usage:      at.Usage,
-		LastUsedAt: date.ToRFC3339DatetimeString(&at.LastUsedAt),
+		LastUsedAt: lastUsedAt,
+		IsDeleted:  at.DeletedAt.Valid,
+		IsExpired:  at.Expired(),
 		CreatedAt:  date.ToRFC3339DatetimeString(&at.CreatedAt),
 		UpdatedAt:  date.ToRFC3339DatetimeString(&at.UpdatedAt),
 		DeletedAt:  date.ToRFC3339DatetimeString(&at.DeletedAt.Time),

@@ -31,20 +31,38 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_AccessToken_All_0(ctx context.Context, marshaler runtime.Marshaler, client AccessTokenClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllRequest
+var (
+	filter_AccessToken_List_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_AccessToken_List_0(ctx context.Context, marshaler runtime.Marshaler, client AccessTokenClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.All(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AccessToken_List_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.List(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AccessToken_All_0(ctx context.Context, marshaler runtime.Marshaler, server AccessTokenServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AllRequest
+func local_request_AccessToken_List_0(ctx context.Context, marshaler runtime.Marshaler, server AccessTokenServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.All(ctx, &protoReq)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AccessToken_List_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.List(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -209,19 +227,19 @@ func local_request_AccessToken_Revoke_0(ctx context.Context, marshaler runtime.M
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAccessTokenHandlerFromEndpoint instead.
 func RegisterAccessTokenHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AccessTokenServer) error {
 
-	mux.Handle("GET", pattern_AccessToken_All_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AccessToken_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/token.AccessToken/All", runtime.WithHTTPPathPattern("/api/access_tokens"))
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/token.AccessToken/List", runtime.WithHTTPPathPattern("/api/access_tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AccessToken_All_0(ctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AccessToken_List_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -229,7 +247,7 @@ func RegisterAccessTokenHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			return
 		}
 
-		forward_AccessToken_All_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AccessToken_List_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -346,24 +364,24 @@ func RegisterAccessTokenHandler(ctx context.Context, mux *runtime.ServeMux, conn
 // "AccessTokenClient" to call the correct interceptors.
 func RegisterAccessTokenHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AccessTokenClient) error {
 
-	mux.Handle("GET", pattern_AccessToken_All_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AccessToken_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
-		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/token.AccessToken/All", runtime.WithHTTPPathPattern("/api/access_tokens"))
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/token.AccessToken/List", runtime.WithHTTPPathPattern("/api/access_tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AccessToken_All_0(ctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AccessToken_List_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AccessToken_All_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AccessToken_List_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -434,7 +452,7 @@ func RegisterAccessTokenHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_AccessToken_All_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "access_tokens"}, ""))
+	pattern_AccessToken_List_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "access_tokens"}, ""))
 
 	pattern_AccessToken_Grant_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "access_tokens"}, ""))
 
@@ -444,7 +462,7 @@ var (
 )
 
 var (
-	forward_AccessToken_All_0 = runtime.ForwardResponseMessage
+	forward_AccessToken_List_0 = runtime.ForwardResponseMessage
 
 	forward_AccessToken_Grant_0 = runtime.ForwardResponseMessage
 

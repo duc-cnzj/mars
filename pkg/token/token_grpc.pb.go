@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccessTokenClient interface {
-	All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error)
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Grant(ctx context.Context, in *GrantRequest, opts ...grpc.CallOption) (*GrantResponse, error)
 	Lease(ctx context.Context, in *LeaseRequest, opts ...grpc.CallOption) (*LeaseResponse, error)
 	Revoke(ctx context.Context, in *RevokeRequest, opts ...grpc.CallOption) (*RevokeResponse, error)
@@ -37,9 +37,9 @@ func NewAccessTokenClient(cc grpc.ClientConnInterface) AccessTokenClient {
 	return &accessTokenClient{cc}
 }
 
-func (c *accessTokenClient) All(ctx context.Context, in *AllRequest, opts ...grpc.CallOption) (*AllResponse, error) {
-	out := new(AllResponse)
-	err := c.cc.Invoke(ctx, "/token.AccessToken/All", in, out, opts...)
+func (c *accessTokenClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
+	out := new(ListResponse)
+	err := c.cc.Invoke(ctx, "/token.AccessToken/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *accessTokenClient) Revoke(ctx context.Context, in *RevokeRequest, opts 
 // All implementations must embed UnimplementedAccessTokenServer
 // for forward compatibility
 type AccessTokenServer interface {
-	All(context.Context, *AllRequest) (*AllResponse, error)
+	List(context.Context, *ListRequest) (*ListResponse, error)
 	Grant(context.Context, *GrantRequest) (*GrantResponse, error)
 	Lease(context.Context, *LeaseRequest) (*LeaseResponse, error)
 	Revoke(context.Context, *RevokeRequest) (*RevokeResponse, error)
@@ -88,8 +88,8 @@ type AccessTokenServer interface {
 type UnimplementedAccessTokenServer struct {
 }
 
-func (UnimplementedAccessTokenServer) All(context.Context, *AllRequest) (*AllResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method All not implemented")
+func (UnimplementedAccessTokenServer) List(context.Context, *ListRequest) (*ListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedAccessTokenServer) Grant(context.Context, *GrantRequest) (*GrantResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Grant not implemented")
@@ -113,20 +113,20 @@ func RegisterAccessTokenServer(s grpc.ServiceRegistrar, srv AccessTokenServer) {
 	s.RegisterService(&AccessToken_ServiceDesc, srv)
 }
 
-func _AccessToken_All_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AllRequest)
+func _AccessToken_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccessTokenServer).All(ctx, in)
+		return srv.(AccessTokenServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/token.AccessToken/All",
+		FullMethod: "/token.AccessToken/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccessTokenServer).All(ctx, req.(*AllRequest))
+		return srv.(AccessTokenServer).List(ctx, req.(*ListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -193,8 +193,8 @@ var AccessToken_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AccessTokenServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "All",
-			Handler:    _AccessToken_All_Handler,
+			MethodName: "List",
+			Handler:    _AccessToken_List_Handler,
 		},
 		{
 			MethodName: "Grant",

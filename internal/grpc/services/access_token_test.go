@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestAccessToken_All(t *testing.T) {
+func TestAccessToken_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
@@ -34,11 +34,25 @@ func TestAccessToken_All(t *testing.T) {
 		assert.Nil(t, db.Create(accessToken).Error)
 	}
 	ctx := auth.SetUser(context.TODO(), uinfo)
-	all, err := (&AccessToken{}).All(ctx, &token.AllRequest{})
+	list, err := (&AccessToken{}).List(ctx, &token.ListRequest{
+		Page:     1,
+		PageSize: 10,
+	})
 	assert.Nil(t, err)
-	assert.Len(t, all.Items, 2)
-	assert.Equal(t, "token 2", all.Items[0].Usage)
-	assert.Equal(t, "token 1", all.Items[1].Usage)
+	assert.Len(t, list.Items, 2)
+	assert.Equal(t, int64(2), list.Count)
+	assert.Equal(t, "token 2", list.Items[0].Usage)
+	assert.Equal(t, "token 1", list.Items[1].Usage)
+	db.Delete(&models.AccessToken{Token: list.Items[0].Token})
+	list, _ = (&AccessToken{}).List(ctx, &token.ListRequest{
+		Page:     1,
+		PageSize: 10,
+	})
+	assert.Len(t, list.Items, 2)
+	assert.Equal(t, int64(2), list.Count)
+	assert.Equal(t, "token 2", list.Items[0].Usage)
+	assert.True(t, list.Items[0].IsDeleted)
+	assert.Equal(t, "token 1", list.Items[1].Usage)
 }
 
 var testTime, _ = time.Parse("2006-01-02 15:04:05", "2022-11-30 00:00:00")

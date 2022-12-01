@@ -1686,6 +1686,10 @@ func (m *AccessTokenModel) validate(all bool) error {
 
 	// no validation rules for LastUsedAt
 
+	// no validation rules for IsDeleted
+
+	// no validation rules for IsExpired
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt
