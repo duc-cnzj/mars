@@ -183,18 +183,22 @@ const AccessTokenManager: React.FC = () => {
       <>
         {!item.is_deleted && (
           <>
-            {dayjs(item.expired_at).isBefore(
-              dayjs(new Date()).add(1, "day")
-            ) && (
-              <Tag style={{ marginLeft: 5 }} color="#facc15">
-                即将过期
+            {dayjs(item.expired_at).isBefore(dayjs(new Date()).add(1, "day")) &&
+              dayjs(item.expired_at).isAfter(dayjs(new Date())) && (
+                <Tag style={{ marginLeft: 5 }} color="#facc15">
+                  即将过期
+                </Tag>
+              )}
+            {item.is_expired && (
+              <Tag style={{ marginLeft: 5 }} color="#a1a1aa">
+                已过期
               </Tag>
             )}
           </>
         )}
         {item.is_deleted && (
           <Tag style={{ marginLeft: 5 }} color="red">
-            已失效
+            已撤销
           </Tag>
         )}
       </>
@@ -261,7 +265,7 @@ const AccessTokenManager: React.FC = () => {
                   description={
                     <div
                       className={classNames({
-                        "access-token__list-item--deleted": item.is_deleted,
+                        "access-token__list-item--deleted": item.is_deleted || item.is_expired,
                       })}
                     >
                       <span
@@ -329,7 +333,7 @@ const AccessTokenManager: React.FC = () => {
         footer={null}
         onCancel={() => {
           setIsModalVisible(false);
-          setUnit("day")
+          setUnit("day");
         }}
       >
         <div style={{ width: "80%" }}>
