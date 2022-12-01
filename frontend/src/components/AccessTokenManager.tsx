@@ -17,7 +17,7 @@ import {
 } from "antd";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { List as tokenList, Grant, Revoke } from "../api/access_token";
+import { List as tokenList, Grant, Revoke, Lease } from "../api/access_token";
 import { useForm } from "antd/es/form/Form";
 import classNames from "classnames";
 import { copy } from "../utils/copy";
@@ -26,7 +26,7 @@ const defaultPageSize = 15;
 
 const { Option } = Select;
 
-type unitImp = "day" | "hour" | "minute" | "second";
+type unitImp = "day" | "hour" | "minute" | "second" | "month";
 
 const AccessTokenManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -98,9 +98,26 @@ const AccessTokenManager: React.FC = () => {
   };
 
   const [form] = useForm();
+  const getSeconds = (num: number): number => {
+    switch (unit) {
+      case "month":
+        return 30 * 24 * 60 * 60 * num;
+      case "day":
+        return 24 * 60 * 60 * num;
+      case "hour":
+        return 60 * 60 * num;
+      case "minute":
+        return 60 * num;
+      case "second":
+        return num;
+    }
+  };
 
   const onFinish = (values: any) => {
-    Grant({ usage: values.usage, expire_seconds: values.expire_seconds })
+    Grant({
+      usage: values.usage,
+      expire_seconds: getSeconds(values.unit_number),
+    })
       .then((res) => {
         message.success("创建成功");
         setIsModalVisible(false);
@@ -112,8 +129,22 @@ const AccessTokenManager: React.FC = () => {
         message.error(e.response.data.message);
       });
   };
-  const onFinishFailed = () => {
-    console.log("values");
+  const onLease = (values: any) => {
+    Lease({
+      token: currToken,
+      expire_seconds: getSeconds(values.unit_number),
+    })
+      .then((res) => {
+        message.success("续租成功");
+        setIsModalVisible(false);
+        form.resetFields();
+        setCurrToken("");
+        setData([]);
+        fetch();
+      })
+      .catch((e) => {
+        message.error(e.response.data.message);
+      });
   };
   const [unit, setUnit] = useState<unitImp>("day");
 
@@ -123,6 +154,7 @@ const AccessTokenManager: React.FC = () => {
       onChange={(v: unitImp) => setUnit(v)}
       style={{ width: 80 }}
     >
+      <Option value="month">月</Option>
       <Option value="day">天</Option>
       <Option value="hour">小时</Option>
       <Option value="minute">分钟</Option>
@@ -132,6 +164,8 @@ const AccessTokenManager: React.FC = () => {
 
   const getUnit = (unit: unitImp): string => {
     switch (unit) {
+      case "month":
+        return "月";
       case "day":
         return "天";
       case "hour":
@@ -142,6 +176,8 @@ const AccessTokenManager: React.FC = () => {
         return "秒";
     }
   };
+
+  const [currToken, setCurrToken] = useState("");
 
   return (
     <Card
@@ -236,6 +272,10 @@ const AccessTokenManager: React.FC = () => {
                         size="small"
                         type="primary"
                         style={{ marginRight: 3 }}
+                        onClick={() => {
+                          setCurrToken(item.token);
+                          setIsModalVisible(true);
+                        }}
                       >
                         续租
                       </Button>
@@ -265,7 +305,7 @@ const AccessTokenManager: React.FC = () => {
       </div>
       <Modal
         width={"50%"}
-        title={"创建 access token"}
+        title={`${!currToken ? "创建" : "续租"} access token`}
         destroyOnClose
         open={isModalVisible}
         footer={null}
@@ -279,14 +319,15 @@ const AccessTokenManager: React.FC = () => {
             form={form}
             layout="horizontal"
             autoComplete="off"
-            initialValues={{ expire_seconds: 7 }}
+            initialValues={{ unit_number: 7 }}
             labelCol={{ span: 4 }}
-            onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
+            onFinish={(values: any) => {
+              !currToken ? onFinish(values) : onLease(values);
+            }}
           >
             <Form.Item
               label="有效期"
-              name="expire_seconds"
+              name="unit_number"
               rules={[
                 {
                   required: true,
@@ -301,19 +342,21 @@ const AccessTokenManager: React.FC = () => {
             >
               <InputNumber addonAfter={selectAfter} />
             </Form.Item>
-            <Form.Item
-              label="用途"
-              name="usage"
-              rules={[
-                {
-                  required: true,
-                  max: 30,
-                  message: "请输入 token 的用途，不超过 30 字",
-                },
-              ]}
-            >
-              <Input.TextArea showCount />
-            </Form.Item>
+            {!currToken && (
+              <Form.Item
+                label="用途"
+                name="usage"
+                rules={[
+                  {
+                    required: true,
+                    max: 30,
+                    message: "请输入 token 的用途，不超过 30 字",
+                  },
+                ]}
+              >
+                <Input.TextArea showCount />
+              </Form.Item>
+            )}
 
             <Form.Item wrapperCol={{ offset: 4, span: 16 }}>
               <Button type="primary" htmlType="submit">
