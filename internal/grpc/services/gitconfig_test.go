@@ -84,6 +84,12 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	gits := mockGitServer(m, app)
+	gits.EXPECT().GetFileContentWithBranch("1", "master", "charts/values.yaml").Times(1).Return("", errors.New("xxx"))
+	_, err = new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+		GitProjectId: 11,
+		Branch:       "dev",
+	})
+	assert.Equal(t, "xxx", err.Error())
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "charts/values.yaml").Times(1).Return("xxx", nil)
 	res, _ := new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 11,
@@ -96,6 +102,14 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 		Branch:       "dev",
 	})
 	assert.Equal(t, "aaa", res.Value)
+
+	gits.EXPECT().GetFileContentWithBranch("12", "master", "charts/values.yaml").Times(1).Return("", errors.New("bbb"))
+
+	_, err = new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+		GitProjectId: 12,
+		Branch:       "",
+	})
+	assert.Equal(t, "bbb", err.Error())
 }
 
 func TestGitConfigSvc_GlobalConfig(t *testing.T) {

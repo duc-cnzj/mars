@@ -149,10 +149,7 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 	}
 	request.Config.ConfigFileValues = strings.TrimRight(request.Config.ConfigFileValues, " ")
 	request.Config.ValuesYaml = strings.TrimRight(request.Config.ValuesYaml, " ")
-	marshal, err := json.Marshal(request.Config)
-	if err != nil {
-		return nil, err
-	}
+	marshal, _ := json.Marshal(request.Config)
 
 	var oldConf models.GitProject = project
 

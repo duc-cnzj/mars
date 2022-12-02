@@ -478,7 +478,17 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  "",
 	}
-	db.CreateInBatches([]*models.GitProject{p1, p2}, 2)
+	p3 := &models.GitProject{
+		DefaultBranch: "dev2",
+		Name:          "c",
+		GitProjectId:  3,
+		Enabled:       true,
+		GlobalEnabled: false,
+		GlobalConfig:  "",
+	}
+	server := mockGitServer(m, app)
+	server.EXPECT().GetFileContentWithBranch("3", "dev2", ".mars.yaml").Return("", errors.New("xxx"))
+	db.CreateInBatches([]*models.GitProject{p1, p2, p3}, 2)
 	app.EXPECT().Cache().Return(&cache.NoCache{}).Times(1)
 	res, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Nil(t, err)

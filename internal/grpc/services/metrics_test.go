@@ -3,8 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
+
+	corev1lister "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/duc-cnzj/mars-client/v4/metrics"
 	"github.com/duc-cnzj/mars/internal/app/instance"
@@ -301,6 +305,61 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 		Pod:       "pod",
 	}, nil)
 	assert.Equal(t, "xxx", err.Error())
+}
+
+func TestMetricsSvc_StreamTopPod_error2(t *testing.T) {
+	preTickDuration := tickDuration
+	tickDuration = time.Millisecond * 500
+	defer func() {
+		tickDuration = preTickDuration
+	}()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	app.EXPECT().Done().Return(nil).AnyTimes()
+	instance.SetInstance(app)
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "pod",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+	fk := fake.NewSimpleClientset(pod)
+	mk := &fake2.Clientset{}
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	idxer.Add(pod)
+	podLister := corev1lister.NewPodLister(idxer)
+
+	count := 0
+	mu := sync.Mutex{}
+	mk.AddReactor("get", "pods", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if count == 0 {
+			count++
+
+			return true, nil, errors.New("xx1")
+		}
+		assert.Nil(t, fk.CoreV1().Pods("ns").Delete(context.TODO(), "pod", metav1.DeleteOptions{}))
+		assert.Nil(t, idxer.Delete(pod))
+		return true, nil, errors.New("xx2")
+	})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:        fk,
+		MetricsClient: mk,
+		PodLister:     podLister,
+	}).AnyTimes()
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	tsm := &topServerMock{ctx: ctx}
+	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		Namespace: "ns",
+		Pod:       "pod",
+	}, tsm)
+	assert.Equal(t, "xx2", err.Error())
 }
 
 func TestMetricsSvc_StreamTopPod2(t *testing.T) {
