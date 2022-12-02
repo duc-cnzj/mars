@@ -181,15 +181,6 @@ const CreateProjectModal: React.FC<{
     }
   }, [wsReady, ws, namespaceId, data]);
 
-  useEffect(() => {
-    return () => {
-      if (deployStarted) {
-        console.log("on remove");
-        onRemove();
-      }
-    };
-  }, [deployStarted, onRemove]);
-
   const loadConfigFile = useCallback(
     (gitProjectId: string, gitBranch: string) => {
       configFile({
