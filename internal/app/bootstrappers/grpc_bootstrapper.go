@@ -33,8 +33,12 @@ func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	return nil
 }
 
+type grpcServerImp interface {
+	GracefulStop()
+}
+
 type grpcRunner struct {
-	server   *grpc.Server
+	server   grpcServerImp
 	endpoint string
 }
 
