@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -113,6 +114,48 @@ func TestChartFileLoader_Load(t *testing.T) {
 	err = l.Load(job)
 	assert.Len(t, job.destroyFuncs, 2)
 	assert.Nil(t, err)
+}
+
+func TestChartFileLoader_Load2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := &emptyMsger{}
+	h := mock.NewMockHelmer(m)
+	job := &Jober{
+		helmer: h,
+		input: &websocket_pb.CreateProjectInput{
+			GitCommit:    "commit",
+			GitProjectId: 100,
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			LocalChartPath: "dir",
+		},
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+	gits := mock.NewMockGitServer(m)
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+
+	gits.EXPECT().GetDirectoryFilesWithSha("100", "commit", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().MkDir(gomock.Any(), false).Return(errors.New("mkdir err")).Times(1)
+
+	err := l.Load(job)
+	assert.Equal(t, "mkdir err", err.Error())
 }
 
 func TestDynamicLoader_Load(t *testing.T) {
@@ -1728,4 +1771,9 @@ env_values: {}
 func Test_vars_MustGetString(t *testing.T) {
 	assert.Equal(t, "", vars{}.MustGetString("aa"))
 	assert.Equal(t, "bb", vars{"aa": "bb"}.MustGetString("aa"))
+}
+
+func Test_defaultFileOpener_Open(t *testing.T) {
+	_, err := (&defaultFileOpener{}).Open("not exist")
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }
