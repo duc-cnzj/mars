@@ -392,12 +392,15 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 
 // startProcess is called by handleAttach
 // Executed cmd in the contracts.Container specified in request and connects it up with the ptyHandler (a session)
-func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
+func startProcess(client kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
 	namespace := container.Namespace
 	podName := container.Pod
 	containerName := container.Container
 
-	req := k8sClient.CoreV1().RESTClient().Post().
+	req := client.
+		CoreV1().
+		RESTClient().
+		Post().
 		Resource("pods").
 		Name(podName).
 		Namespace(namespace).
@@ -547,6 +550,8 @@ func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
 type TerminalResponse struct {
 	ID string `json:"id"`
 }
+
+type NewShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
 	var c = contracts.Container{
