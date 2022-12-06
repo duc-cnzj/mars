@@ -47,7 +47,8 @@ type WsConn struct {
 	uid  string
 	conn contracts.WebsocketConn
 
-	NewJobFunc NewJobFunc
+	NewJobFunc   NewJobFunc
+	NewShellFunc NewShellFunc
 
 	userMu           sync.RWMutex
 	user             contracts.UserInfo
@@ -74,6 +75,7 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 		id:             id,
 		uid:            uid,
 		NewJobFunc:     NewJober,
+		NewShellFunc:   HandleExecShell,
 		conn:           c,
 		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
 	}
@@ -176,8 +178,6 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		mlog.Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("cant Upgrade websocket connection"))
 		return
 	}
 
@@ -270,30 +270,32 @@ func read(wsconn *WsConn) error {
 			continue
 		}
 
-		go func(wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
-			if handler, ok := handlers[wsRequest.Type]; ok {
-				defer recovery.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
-					metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
-				})
-				defer func(t time.Time) {
-					metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(time.Since(t).Seconds())
-					e := recover()
-					if e == nil {
-						metrics.WebsocketRequestTotalSuccess.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
-					} else {
-						metrics.WebsocketRequestTotalFail.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
-						panic(e)
-					}
-				}(time.Now())
+		go handleWsRead(wsconn, &wsRequest, message, handlers)
+	}
+}
 
-				// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
-				if wsconn.GetUser().GetID() == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
-					NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
-					return
-				}
-				handler(wsconn, wsRequest.Type, message)
+func handleWsRead(wsconn *WsConn, wsRequest *websocket_pb.WsRequestMetadata, message []byte, handlers map[websocket_pb.Type]HandleRequestFunc) {
+	if handler, ok := handlers[wsRequest.Type]; ok {
+		defer recovery.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
+			metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+		})
+		defer func(t time.Time) {
+			metrics.WebsocketRequestLatency.With(prometheus.Labels{"method": wsRequest.Type.String()}).Observe(time.Since(t).Seconds())
+			e := recover()
+			if e == nil {
+				metrics.WebsocketRequestTotalSuccess.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+			} else {
+				metrics.WebsocketRequestTotalFail.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
+				panic(e)
 			}
-		}(&wsRequest, message)
+		}(time.Now())
+
+		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
+		if wsconn.GetUser().GetID() == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
+			NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
+			return
+		}
+		handler(wsconn, wsRequest.Type, message)
 	}
 }
 
@@ -358,7 +360,7 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	sessionID, err := HandleExecShell(&input, c)
+	sessionID, err := c.NewShellFunc(&input, c)
 	if err != nil {
 		mlog.Error(err)
 		NewMessageSender(c, "", WsHandleExecShell).SendEndError(err)

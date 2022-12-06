@@ -650,7 +650,10 @@ func (j *Jober) Validate() error {
 
 func defaultLoaders() []Loader {
 	return []Loader{
-		&ChartFileLoader{},
+		&ChartFileLoader{
+			chartLoader: &defaultChartLoader{},
+			fileOpener:  &defaultFileOpener{},
+		},
 		&VariableLoader{},
 		&DynamicLoader{},
 		&ExtraValuesLoader{},
@@ -699,7 +702,47 @@ type Loader interface {
 	Load(*Jober) error
 }
 
-type ChartFileLoader struct{}
+type helmChartLoader interface {
+	LoadDir(dir string) (*chart.Chart, error)
+	LoadArchive(in io.Reader) (*chart.Chart, error)
+}
+
+type defaultFileOpener struct {
+	f *os.File
+}
+
+func (d *defaultFileOpener) Open(name string) (io.ReadCloser, error) {
+	open, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	d.f = open
+	return open, err
+}
+
+func (d *defaultFileOpener) Close() error {
+	return d.f.Close()
+}
+
+type defaultChartLoader struct{}
+
+func (d *defaultChartLoader) LoadArchive(in io.Reader) (*chart.Chart, error) {
+	return loader.LoadArchive(in)
+}
+
+func (d *defaultChartLoader) LoadDir(dir string) (*chart.Chart, error) {
+	return loader.LoadDir(dir)
+}
+
+type fileOpener interface {
+	Open(name string) (io.ReadCloser, error)
+	Close() error
+}
+
+type ChartFileLoader struct {
+	chartLoader helmChartLoader
+	fileOpener  fileOpener
+}
 
 func (c *ChartFileLoader) Load(j *Jober) error {
 	const loaderName = "[ChartFileLoader]: "
@@ -749,7 +792,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	}
 	j.AddDestroyFunc(deleteDirFn)
 
-	loadDir, _ := loader.LoadDir(filepath.Join(tmpChartsDir, dir))
+	loadDir, _ := c.chartLoader.LoadDir(filepath.Join(tmpChartsDir, dir))
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
 		for _, dependency := range loadDir.Metadata.Dependencies {
 			if strings.HasPrefix(dependency.Repository, "file://") {
@@ -772,13 +815,13 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	if err != nil {
 		return err
 	}
-	archive, err := os.Open(chart)
+	archive, err := c.fileOpener.Open(chart)
 	if err != nil {
 		return err
 	}
 	defer archive.Close()
 
-	if j.chart, err = loader.LoadArchive(archive); err != nil {
+	if j.chart, err = c.chartLoader.LoadArchive(archive); err != nil {
 		return err
 	}
 

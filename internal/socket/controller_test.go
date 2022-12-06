@@ -9,9 +9,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
 
 	"github.com/duc-cnzj/mars/internal/utils"
 
@@ -31,8 +37,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestHandleWsAuthorize(t *testing.T) {
@@ -162,6 +166,59 @@ func TestHandleWsHandleCloseShell(t *testing.T) {
 }
 
 func TestHandleWsHandleExecShell(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	pubsub := mock.NewMockPubSub(m)
+	pubsub.EXPECT().ToSelf(&websocket.WsHandleShellResponse{
+		Metadata: &websocket.Metadata{
+			Id:     "id-x",
+			Uid:    "uid-x",
+			Type:   WsHandleExecShell,
+			Result: ResultSuccess,
+		},
+		TerminalMessage: &websocket.TerminalMessage{
+			SessionId: "id",
+		},
+		Container: &types.Container{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "app",
+		},
+	}).Times(1)
+	conn := &WsConn{
+		id:     "id-x",
+		uid:    "uid-x",
+		pubSub: pubsub,
+		NewShellFunc: func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
+			return "id", nil
+		},
+	}
+	marshal, _ := proto.Marshal(&websocket.WsHandleExecShellInput{
+		Type: websocket.Type_HandleExecShell,
+		Container: &types.Container{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "app",
+		},
+	})
+	HandleWsHandleExecShell(conn, websocket.Type_HandleExecShell, marshal)
+	conn.NewShellFunc = func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
+		return "", errors.New("xxx")
+	}
+	pubsub.EXPECT().ToSelf(&websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Slug:    "",
+			Type:    websocket.Type_HandleExecShell,
+			Result:  ResultError,
+			End:     true,
+			Uid:     "uid-x",
+			Id:      "id-x",
+			Message: "xxx",
+		},
+	}).Times(1)
+	HandleWsHandleExecShell(conn, websocket.Type_HandleExecShell, marshal)
+	pubsub.EXPECT().ToSelf(gomock.Any()).Times(1)
+	HandleWsHandleExecShell(conn, websocket.Type_HandleExecShell, []byte("1234:"))
 }
 
 type protoMatcher struct {
@@ -656,4 +713,76 @@ func TestHandleWsProjectPodEvent(t *testing.T) {
 
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsProjectPodEvent(c, websocket.Type_ProjectPodEvent, []byte("xxxxx"))
+}
+
+func TestWebsocketManager_Ws(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("POST", "/test-ws", nil)
+	NewWebsocketManager(1*time.Second).Ws(recorder, request)
+	assert.Equal(t, 400, recorder.Code)
+}
+
+func Test_handleWsRead(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+
+	ps.EXPECT().ToSelf(&websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Type:    websocket.Type_HandleAuthorize,
+			Result:  ResultSuccess,
+			End:     false,
+			Uid:     "uid",
+			Id:      "",
+			Message: "认证中，请稍等~",
+		},
+	}).Times(1)
+	handleWsRead(&WsConn{
+		uid:    "uid",
+		pubSub: ps,
+		user: contracts.UserInfo{
+			ID: "",
+		},
+	}, &websocket.WsRequestMetadata{
+		Type: websocket.Type_ApplyProject,
+	}, nil, map[websocket.Type]HandleRequestFunc{
+		websocket.Type_ApplyProject: func(c *WsConn, t websocket.Type, message []byte) {
+		},
+	})
+
+	called := false
+	handleWsRead(&WsConn{
+		id:     "id",
+		uid:    "uid",
+		pubSub: ps,
+		user: contracts.UserInfo{
+			ID: "id",
+		},
+	}, &websocket.WsRequestMetadata{
+		Type: websocket.Type_ApplyProject,
+	}, nil, map[websocket.Type]HandleRequestFunc{
+		websocket.Type_ApplyProject: func(c *WsConn, t websocket.Type, message []byte) {
+			called = true
+		},
+	})
+	assert.True(t, called)
+
+	app := testutil.MockApp(m)
+	app.EXPECT().IsDebug().Return(true).Times(1)
+	assert.PanicsWithValue(t, "errxxx", func() {
+		handleWsRead(&WsConn{
+			id:     "id",
+			uid:    "uid",
+			pubSub: ps,
+			user: contracts.UserInfo{
+				ID: "id",
+			},
+		}, &websocket.WsRequestMetadata{
+			Type: websocket.Type_ApplyProject,
+		}, nil, map[websocket.Type]HandleRequestFunc{
+			websocket.Type_ApplyProject: func(c *WsConn, t websocket.Type, message []byte) {
+				panic("errxxx")
+			},
+		})
+	})
 }

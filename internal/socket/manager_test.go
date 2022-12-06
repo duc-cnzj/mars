@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -33,7 +34,128 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 )
 
+type fakeChartLoader struct {
+	c *chart.Chart
+}
+
+func (f *fakeChartLoader) LoadArchive(in io.Reader) (*chart.Chart, error) {
+	return f.c, nil
+}
+
+func (f *fakeChartLoader) LoadDir(dir string) (*chart.Chart, error) {
+	return f.c, nil
+}
+
+type fakeOpener struct{}
+
+func (f *fakeOpener) Open(name string) (io.ReadCloser, error) {
+	return io.NopCloser(nil), nil
+}
+
+func (f *fakeOpener) Close() error {
+	return nil
+}
+
 func TestChartFileLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := &emptyMsger{}
+	h := mock.NewMockHelmer(m)
+	job := &Jober{
+		helmer: h,
+		input: &websocket_pb.CreateProjectInput{
+			GitProjectId: 100,
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			LocalChartPath: "9999|master|dir",
+		},
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{
+					Dependencies: []*chart.Dependency{
+						{
+							Repository: "file://xxxx",
+						},
+					},
+				},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+	gits := mock.NewMockGitServer(m)
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
+
+	err := l.Load(job)
+	assert.Equal(t, "charts 文件不存在", err.Error())
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("")
+	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
+	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
+
+	err = l.Load(job)
+	assert.Len(t, job.destroyFuncs, 2)
+	assert.Nil(t, err)
+}
+
+func TestChartFileLoader_Load2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := &emptyMsger{}
+	h := mock.NewMockHelmer(m)
+	job := &Jober{
+		helmer: h,
+		input: &websocket_pb.CreateProjectInput{
+			GitCommit:    "commit",
+			GitProjectId: 100,
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			LocalChartPath: "dir",
+		},
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+	gits := mock.NewMockGitServer(m)
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+
+	gits.EXPECT().GetDirectoryFilesWithSha("100", "commit", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().MkDir(gomock.Any(), false).Return(errors.New("mkdir err")).Times(1)
+
+	err := l.Load(job)
+	assert.Equal(t, "mkdir err", err.Error())
 }
 
 func TestDynamicLoader_Load(t *testing.T) {
@@ -1526,7 +1648,10 @@ func TestWithDryRun(t *testing.T) {
 
 func Test_defaultLoaders(t *testing.T) {
 	assert.Equal(t, []Loader{
-		&ChartFileLoader{},
+		&ChartFileLoader{
+			chartLoader: &defaultChartLoader{},
+			fileOpener:  &defaultFileOpener{},
+		},
 		&VariableLoader{},
 		&DynamicLoader{},
 		&ExtraValuesLoader{},
@@ -1646,4 +1771,9 @@ env_values: {}
 func Test_vars_MustGetString(t *testing.T) {
 	assert.Equal(t, "", vars{}.MustGetString("aa"))
 	assert.Equal(t, "bb", vars{"aa": "bb"}.MustGetString("aa"))
+}
+
+func Test_defaultFileOpener_Open(t *testing.T) {
+	_, err := (&defaultFileOpener{}).Open("not exist")
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }

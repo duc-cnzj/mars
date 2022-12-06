@@ -315,97 +315,101 @@ type ExportProject struct {
 }
 
 func handleDownloadConfig(gmux *runtime.ServeMux) {
-	gmux.HandlePath("GET", "/api/config/export", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		req, ok := authenticated(r)
-		if !ok {
-			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-			return
-		}
-		user := auth.MustGetUser(req.Context())
-		if !user.IsAdmin() {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		var projects []models.GitProject
-		app.DB().Find(&projects)
-		data := make([]ExportProject, 0, len(projects))
-		for _, gitProject := range projects {
-			data = append(data, ExportProject{
-				DefaultBranch: gitProject.DefaultBranch,
-				Name:          gitProject.Name,
-				GitProjectId:  gitProject.GitProjectId,
-				Enabled:       gitProject.Enabled,
-				GlobalEnabled: gitProject.GlobalEnabled,
-				GlobalConfig:  gitProject.GlobalConfig,
+	gmux.HandlePath("GET", "/api/config/export", exportMarsConfig)
+	gmux.HandlePath("POST", "/api/config/import", importMarsConfig)
+}
+
+func importMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	req, ok := authenticated(r)
+	if !ok {
+		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+		return
+	}
+	user := auth.MustGetUser(req.Context())
+	if !user.IsAdmin() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseMultipartForm(int64(app.Config().MaxUploadSize())); err != nil {
+		http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	f, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to get file 'attachment': %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+	all, err := io.ReadAll(f)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	e.AuditLog(user.Name,
+		types.EventActionType_Upload,
+		"导入配置文件", nil, &e.StringYamlPrettier{Str: string(all)})
+	var data []ExportProject
+	err = json.Unmarshal(all, &data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for _, item := range data {
+		var p models.GitProject
+		if err := app.DB().Where("`git_project_id` = ?", item.GitProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			app.DB().Create(&models.GitProject{
+				DefaultBranch: item.DefaultBranch,
+				Name:          item.Name,
+				GitProjectId:  item.GitProjectId,
+				Enabled:       item.Enabled,
+				GlobalEnabled: item.GlobalEnabled,
+				GlobalConfig:  item.GlobalConfig,
+			})
+		} else {
+			app.DB().Model(&p).Updates(map[string]any{
+				"default_branch": item.DefaultBranch,
+				"name":           item.Name,
+				"git_project_id": item.GitProjectId,
+				"enabled":        item.Enabled,
+				"global_enabled": item.GlobalEnabled,
+				"global_config":  item.GlobalConfig,
 			})
 		}
-		marshal, _ := json.MarshalIndent(&data, "", "\t")
-		e.AuditLog(user.Name,
-			types.EventActionType_Download,
-			"下载配置文件", nil, &e.StringYamlPrettier{Str: string(marshal)})
-		download(w, "mars-config.json", bytes.NewReader(marshal))
-	})
-	gmux.HandlePath("POST", "/api/config/import", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		req, ok := authenticated(r)
-		if !ok {
-			http.Error(w, "Unauthenticated", http.StatusUnauthorized)
-			return
-		}
-		user := auth.MustGetUser(req.Context())
-		if !user.IsAdmin() {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		if err := r.ParseMultipartForm(int64(app.Config().MaxUploadSize())); err != nil {
-			http.Error(w, fmt.Sprintf("failed to parse form: %s", err.Error()), http.StatusBadRequest)
-			return
-		}
+	}
+	w.WriteHeader(204)
+	w.Write([]byte(""))
+}
 
-		f, _, err := r.FormFile("file")
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to get file 'attachment': %s", err.Error()), http.StatusBadRequest)
-			return
-		}
-		defer f.Close()
-		all, err := io.ReadAll(f)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		e.AuditLog(user.Name,
-			types.EventActionType_Upload,
-			"导入配置文件", nil, &e.StringYamlPrettier{Str: string(all)})
-		var data []ExportProject
-		err = json.Unmarshal(all, &data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		for _, item := range data {
-			var p models.GitProject
-			if err := app.DB().Where("`git_project_id` = ?", item.GitProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-				app.DB().Create(&models.GitProject{
-					DefaultBranch: item.DefaultBranch,
-					Name:          item.Name,
-					GitProjectId:  item.GitProjectId,
-					Enabled:       item.Enabled,
-					GlobalEnabled: item.GlobalEnabled,
-					GlobalConfig:  item.GlobalConfig,
-				})
-			} else {
-				app.DB().Model(&p).Updates(map[string]any{
-					"default_branch": item.DefaultBranch,
-					"name":           item.Name,
-					"git_project_id": item.GitProjectId,
-					"enabled":        item.Enabled,
-					"global_enabled": item.GlobalEnabled,
-					"global_config":  item.GlobalConfig,
-				})
-			}
-		}
-		w.WriteHeader(204)
-		w.Write([]byte(""))
-	})
+func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	req, ok := authenticated(r)
+	if !ok {
+		http.Error(w, "Unauthenticated", http.StatusUnauthorized)
+		return
+	}
+	user := auth.MustGetUser(req.Context())
+	if !user.IsAdmin() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	var projects []models.GitProject
+	app.DB().Find(&projects)
+	data := make([]ExportProject, 0, len(projects))
+	for _, gitProject := range projects {
+		data = append(data, ExportProject{
+			DefaultBranch: gitProject.DefaultBranch,
+			Name:          gitProject.Name,
+			GitProjectId:  gitProject.GitProjectId,
+			Enabled:       gitProject.Enabled,
+			GlobalEnabled: gitProject.GlobalEnabled,
+			GlobalConfig:  gitProject.GlobalConfig,
+		})
+	}
+	marshal, _ := json.MarshalIndent(&data, "", "\t")
+	e.AuditLog(user.Name,
+		types.EventActionType_Download,
+		"下载配置文件", nil, &e.StringYamlPrettier{Str: string(marshal)})
+	download(w, "mars-config.json", bytes.NewReader(marshal))
 }
 
 func LoadSwaggerUI(mux *mux.Router) {

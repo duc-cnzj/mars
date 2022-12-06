@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lithammer/dedent"
+
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
 
 	"github.com/duc-cnzj/mars/internal/config"
@@ -194,9 +196,7 @@ binary data
 }
 
 func Test_handleDownload(t *testing.T) {
-
 	r := &http.Request{}
-
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
@@ -333,4 +333,155 @@ func TestMaxRecvSize(t *testing.T) {
 	assert.Equal(t, 20*1024*1024, MaxRecvMsgSize)
 	bytes, _ := humanize.ParseBytes("20Mib")
 	assert.Equal(t, int(bytes), MaxRecvMsgSize)
+}
+
+func Test_exportMarsConfig(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	auth := mock.NewMockAuthInterface(m)
+	app.EXPECT().Auth().Return(auth).AnyTimes()
+
+	r := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/config/export", nil)
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(nil, false).Times(1)
+	exportMarsConfig(r, req, map[string]string{})
+	assert.Equal(t, 401, r.Code)
+	c := &contracts.JwtClaims{
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{}},
+	}
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(c, true).Times(1)
+	r2 := httptest.NewRecorder()
+	exportMarsConfig(r2, req, map[string]string{})
+	assert.Equal(t, 403, r2.Code)
+
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+
+	db.AutoMigrate(&models.GitProject{})
+	db.Create(&models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "app",
+		GitProjectId:  1,
+		Enabled:       true,
+		GlobalEnabled: false,
+		GlobalConfig:  "xxx",
+	})
+	admin := &contracts.JwtClaims{
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+	}
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	r3 := httptest.NewRecorder()
+	testutil.AssertAuditLogFired(m, app)
+	exportMarsConfig(r3, req, map[string]string{})
+	assert.Equal(t, 200, r3.Code)
+	assert.Equal(t, dedent.Dedent(`
+			[
+				{
+					"default_branch": "dev",
+					"name": "app",
+					"git_project_id": 1,
+					"enabled": true,
+					"global_enabled": false,
+					"global_config": "xxx"
+				}
+			]
+`), fmt.Sprintf("\n%s\n", r3.Body.String()))
+}
+
+func Test_importMarsConfig(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	auth := mock.NewMockAuthInterface(m)
+	app.EXPECT().Auth().Return(auth).AnyTimes()
+
+	r := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/config/import", nil)
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(nil, false).Times(1)
+	importMarsConfig(r, req, map[string]string{})
+	assert.Equal(t, 401, r.Code)
+	c := &contracts.JwtClaims{
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{}},
+	}
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(c, true).Times(1)
+	r2 := httptest.NewRecorder()
+	importMarsConfig(r2, req, map[string]string{})
+	assert.Equal(t, 403, r2.Code)
+
+	admin := &contracts.JwtClaims{
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+	}
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	r3 := httptest.NewRecorder()
+	app.EXPECT().Config().Return(&config.Config{
+		UploadMaxSize: "5Mib",
+	})
+	importMarsConfig(r3, req, map[string]string{})
+	assert.Equal(t, 400, r3.Code)
+
+	r4 := httptest.NewRecorder()
+	req2 := newTestMultipartRequest(t)
+	app.EXPECT().Config().Return(&config.Config{
+		UploadMaxSize: "5Mib",
+	})
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	testutil.AssertAuditLogFired(m, app)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.GitProject{})
+	db.Create(&models.GitProject{
+		GitProjectId: 2,
+	})
+	importMarsConfig(r4, req2, map[string]string{})
+	assert.Equal(t, 204, r4.Code)
+	var count int64
+	db.Model(&models.GitProject{}).Count(&count)
+	assert.Equal(t, int64(2), count)
+	var gp models.GitProject
+	db.Model(&models.GitProject{}).Where("`git_project_id` = ?", 2).First(&gp)
+	assert.Equal(t, "app2", gp.Name)
+	assert.Equal(t, "master", gp.DefaultBranch)
+	assert.Equal(t, "xxx", gp.GlobalConfig)
+	assert.Equal(t, true, gp.Enabled)
+	assert.Equal(t, false, gp.GlobalEnabled)
+}
+
+func newTestMultipartRequest(t *testing.T) *http.Request {
+	postData :=
+		`
+--xxx
+Content-Disposition: form-data; name="file"; filename="file"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+
+[
+	{
+		"default_branch": "dev",
+		"name": "app",
+		"git_project_id": 1,
+		"enabled": true,
+		"global_enabled": false,
+		"global_config": "xxx"
+	},
+	{
+		"default_branch": "master",
+		"name": "app2",
+		"git_project_id": 2,
+		"enabled": true,
+		"global_enabled": false,
+		"global_config": "xxx"
+	}
+]
+--xxx--
+`
+	req := &http.Request{
+		Method: "POST",
+		Header: http.Header{"Content-Type": {`multipart/form-data; boundary=xxx`}},
+		Body:   io.NopCloser(strings.NewReader(postData)),
+	}
+
+	req.Form = make(url.Values)
+
+	return req
 }
