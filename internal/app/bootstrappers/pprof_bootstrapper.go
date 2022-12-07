@@ -25,10 +25,9 @@ type pprofRunner struct{}
 
 func (p *pprofRunner) Run(ctx context.Context) error {
 	mlog.Info("[Server]: start pprofRunner runner.")
-	mux := pprofMux()
 	go func() {
 		mlog.Info("Starting pprof server on localhost:6060.")
-		if err := http.ListenAndServe("localhost:6060", mux); err != nil && err != http.ErrServerClosed {
+		if err := http.ListenAndServe("localhost:6060", pprofMux()); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
 	}()
