@@ -71,9 +71,14 @@ func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) e
 	return nil
 }
 
+type httpServer interface {
+	Shutdown(ctx context.Context) error
+	ListenAndServe() error
+}
+
 type apiGateway struct {
 	endpoint string
-	server   *http.Server
+	server   httpServer
 }
 
 func HeaderMatcher(key string) (string, bool) {
@@ -87,7 +92,26 @@ func HeaderMatcher(key string) (string, bool) {
 		return runtime.DefaultHeaderMatcher(key)
 	}
 }
+
 func (a *apiGateway) Run(ctx context.Context) error {
+	s, err := a.initServer(ctx)
+	if err != nil {
+		return err
+	}
+
+	a.server = s
+
+	go func(s httpServer) {
+		mlog.Infof("[Server]: start apiGateway runner at :%s.", app.Config().AppPort)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			mlog.Error(err)
+		}
+	}(s)
+
+	return nil
+}
+
+func (a *apiGateway) initServer(ctx context.Context) (httpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
@@ -121,7 +145,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	for _, f := range services.RegisteredEndpoints() {
 		if err := f(ctx, gmux, a.endpoint, opts); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -153,16 +177,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		),
 	}
 
-	a.server = s
-
-	go func(s *http.Server) {
-		mlog.Infof("[Server]: start apiGateway runner at %s.", s.Addr)
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			mlog.Error(err)
-		}
-	}(s)
-
-	return nil
+	return s, nil
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {

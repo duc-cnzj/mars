@@ -54,17 +54,17 @@ func TestGrpcBootstrapper_Bootstrap(t *testing.T) {
 
 func Test_grpcRunner_Run(t *testing.T) {}
 
-type mockServer struct{}
+type mockGrpcServer struct{}
 
-func (m *mockServer) GracefulStop() {
+func (m *mockGrpcServer) GracefulStop() {
 }
 
 func Test_grpcRunner_Shutdown(t *testing.T) {
 	assert.Nil(t, (&grpcRunner{}).Shutdown(context.TODO()))
-	assert.Nil(t, (&grpcRunner{server: &mockServer{}}).Shutdown(context.TODO()))
+	assert.Nil(t, (&grpcRunner{server: &mockGrpcServer{}}).Shutdown(context.TODO()))
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	assert.Error(t, (&grpcRunner{server: &mockServer{}}).Shutdown(cancel))
+	assert.Error(t, (&grpcRunner{server: &mockGrpcServer{}}).Shutdown(cancel))
 }
 
 func Test_traceWithOpName(t *testing.T) {}
