@@ -35,6 +35,7 @@ func (g *GrpcBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 
 type grpcServerImp interface {
 	GracefulStop()
+	Serve(lis net.Listener) error
 }
 
 type grpcRunner struct {
@@ -68,7 +69,17 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	g.server = g.initServer()
+	go func(server grpcServerImp) {
+		if err := server.Serve(listen); err != nil {
+			mlog.Error(err)
+		}
+	}(g.server)
 
+	return nil
+}
+
+func (g *grpcRunner) initServer() *grpc.Server {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(Authenticate),
@@ -90,15 +101,7 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 	for _, registryFunc := range services.RegisteredServers() {
 		registryFunc(server, app.App())
 	}
-
-	g.server = server
-	go func(server *grpc.Server) {
-		if err := server.Serve(listen); err != nil {
-			mlog.Error(err)
-		}
-	}(server)
-
-	return nil
+	return server
 }
 
 func recoveryHandler(p any) error {
