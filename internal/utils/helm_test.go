@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
+
 	"github.com/duc-cnzj/mars/internal/config"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -142,22 +145,20 @@ func Test_getActionConfigAndSettings(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	settings, envSettings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
+	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.Nil(t, err)
 	assert.NotNil(t, settings)
-	assert.Equal(t, true, envSettings.Debug)
-	assert.Equal(t, "test", envSettings.Namespace())
 }
 
 func Test_getActionConfigAndSettings1(t *testing.T) {
+	getter.All(&cli.EnvSettings{PluginsDirectory: ""})
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	app.EXPECT().Config().Return(&config.Config{KubeConfig: "xxx"}).Times(3)
-	settings, envSettings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
+	app.EXPECT().Config().Return(&config.Config{KubeConfig: "xxx"}).Times(2)
+	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.Nil(t, err)
 	assert.NotNil(t, settings)
-	assert.Equal(t, true, envSettings.Debug)
 }
 
 func Test_runInstall(t *testing.T) {}
