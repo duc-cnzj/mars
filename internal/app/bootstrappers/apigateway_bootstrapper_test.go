@@ -11,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
@@ -41,12 +42,31 @@ func (e *extraInputMatcher) String() string {
 	return ""
 }
 
+type apiGWMatcher struct {
+	gw *apiGateway
+}
+
+func (a *apiGWMatcher) Matches(x any) bool {
+	gateway, ok := x.(*apiGateway)
+	if !ok {
+		return false
+	}
+	if gateway.newServerFunc == nil {
+		return false
+	}
+	return gateway.endpoint == a.gw.endpoint
+}
+
+func (a *apiGWMatcher) String() string {
+	return ""
+}
+
 func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	app := mock.NewMockApplicationInterface(controller)
 	app.EXPECT().Config().Return(&config.Config{GrpcPort: "50000"})
-	app.EXPECT().AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", "50000")}).Times(1)
+	app.EXPECT().AddServer(&apiGWMatcher{gw: &apiGateway{endpoint: fmt.Sprintf("localhost:%s", "50000")}}).Times(1)
 	ex := &extraInputMatcher{}
 	app.EXPECT().RegisterAfterShutdownFunc(ex).Times(1)
 	assert.Nil(t, (&ApiGatewayBootstrapper{}).Bootstrap(app))
@@ -76,18 +96,26 @@ func Test_apiGateway_Run(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
-	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	assert.Nil(t, (&apiGateway{server: &mockHttpServer{}}).Run(context.TODO()))
+	port, _ := config.GetFreePort()
+	app.EXPECT().Config().Return(&config.Config{AppPort: fmt.Sprintf("%v", port)}).AnyTimes()
+	s := &mockHttpServer{}
+	s.wg.Add(1)
+	assert.Nil(t, (&apiGateway{newServerFunc: func(ctx context.Context, a *apiGateway) (httpServer, error) {
+		return s, nil
+	}}).Run(context.TODO()))
+	s.wg.Wait()
 }
 
-type mockHttpServer struct{}
+type mockHttpServer struct {
+	wg sync.WaitGroup
+}
 
 func (m *mockHttpServer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
 func (m *mockHttpServer) ListenAndServe() error {
+	defer m.wg.Done()
 	return nil
 }
 
@@ -526,13 +554,13 @@ Content-Transfer-Encoding: binary
 	return req
 }
 
-func Test_apiGateway_initServer(t *testing.T) {
+func Test_initServer(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	server, err := (&apiGateway{}).initServer(context.TODO())
+	server, err := initServer(context.TODO(), &apiGateway{})
 	assert.Nil(t, err)
 	assert.NotNil(t, server)
 }

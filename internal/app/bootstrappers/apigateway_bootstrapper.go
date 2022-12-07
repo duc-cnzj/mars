@@ -51,7 +51,7 @@ func (a *ApiGatewayBootstrapper) Tags() []string {
 }
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort)})
+	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort), newServerFunc: initServer})
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 		t := time.NewTimer(5 * time.Second)
 		defer t.Stop()
@@ -79,6 +79,8 @@ type httpServer interface {
 type apiGateway struct {
 	endpoint string
 	server   httpServer
+
+	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
 func HeaderMatcher(key string) (string, bool) {
@@ -94,7 +96,7 @@ func HeaderMatcher(key string) (string, bool) {
 }
 
 func (a *apiGateway) Run(ctx context.Context) error {
-	s, err := a.initServer(ctx)
+	s, err := a.newServerFunc(ctx, a)
 	if err != nil {
 		return err
 	}
@@ -111,7 +113,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *apiGateway) initServer(ctx context.Context) (httpServer, error) {
+func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
