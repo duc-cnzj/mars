@@ -51,7 +51,7 @@ func (a *ApiGatewayBootstrapper) Tags() []string {
 }
 
 func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort)})
+	app.AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", app.Config().GrpcPort), newServerFunc: initServer})
 	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
 		t := time.NewTimer(5 * time.Second)
 		defer t.Stop()
@@ -71,9 +71,16 @@ func (a *ApiGatewayBootstrapper) Bootstrap(app contracts.ApplicationInterface) e
 	return nil
 }
 
+type httpServer interface {
+	Shutdown(ctx context.Context) error
+	ListenAndServe() error
+}
+
 type apiGateway struct {
 	endpoint string
-	server   *http.Server
+	server   httpServer
+
+	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
 func HeaderMatcher(key string) (string, bool) {
@@ -87,7 +94,26 @@ func HeaderMatcher(key string) (string, bool) {
 		return runtime.DefaultHeaderMatcher(key)
 	}
 }
+
 func (a *apiGateway) Run(ctx context.Context) error {
+	s, err := a.newServerFunc(ctx, a)
+	if err != nil {
+		return err
+	}
+
+	a.server = s
+
+	go func(s httpServer) {
+		mlog.Infof("[Server]: start apiGateway runner at :%s.", app.Config().AppPort)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			mlog.Error(err)
+		}
+	}(s)
+
+	return nil
+}
+
+func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
@@ -121,7 +147,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 
 	for _, f := range services.RegisteredEndpoints() {
 		if err := f(ctx, gmux, a.endpoint, opts); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -153,16 +179,7 @@ func (a *apiGateway) Run(ctx context.Context) error {
 		),
 	}
 
-	a.server = s
-
-	go func(s *http.Server) {
-		mlog.Infof("[Server]: start apiGateway runner at %s.", s.Addr)
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			mlog.Error(err)
-		}
-	}(s)
-
-	return nil
+	return s, nil
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {

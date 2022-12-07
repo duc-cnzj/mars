@@ -2,6 +2,8 @@ package bootstrappers
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"testing"
 
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
@@ -52,19 +54,32 @@ func TestGrpcBootstrapper_Bootstrap(t *testing.T) {
 	(&GrpcBootstrapper{}).Bootstrap(app)
 }
 
-func Test_grpcRunner_Run(t *testing.T) {}
+func Test_grpcRunner_Run(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Auth().Times(1)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	app.EXPECT().Oidc().Times(1)
+	port, _ := config.GetFreePort()
+	assert.Nil(t, (&grpcRunner{server: &mockGrpcServer{}, endpoint: fmt.Sprintf("0.0.0.0:%d", port)}).Run(context.TODO()))
+}
 
-type mockServer struct{}
+type mockGrpcServer struct{}
 
-func (m *mockServer) GracefulStop() {
+func (m *mockGrpcServer) Serve(lis net.Listener) error {
+	return lis.Close()
+}
+
+func (m *mockGrpcServer) GracefulStop() {
 }
 
 func Test_grpcRunner_Shutdown(t *testing.T) {
 	assert.Nil(t, (&grpcRunner{}).Shutdown(context.TODO()))
-	assert.Nil(t, (&grpcRunner{server: &mockServer{}}).Shutdown(context.TODO()))
+	assert.Nil(t, (&grpcRunner{server: &mockGrpcServer{}}).Shutdown(context.TODO()))
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	assert.Error(t, (&grpcRunner{server: &mockServer{}}).Shutdown(cancel))
+	assert.Error(t, (&grpcRunner{server: &mockGrpcServer{}}).Shutdown(cancel))
 }
 
 func Test_traceWithOpName(t *testing.T) {}
@@ -75,4 +90,14 @@ func TestGrpcBootstrapper_Tags(t *testing.T) {
 
 func Test_recoveryHandler(t *testing.T) {
 	assert.Nil(t, recoveryHandler(nil))
+}
+
+func Test_grpcRunner_initServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Auth().Times(1)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	app.EXPECT().Oidc().Times(1)
+	assert.NotNil(t, (&grpcRunner{}).initServer())
 }

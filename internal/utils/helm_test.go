@@ -9,6 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
+
+	"github.com/duc-cnzj/mars/internal/config"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	v12 "k8s.io/client-go/listers/core/v1"
@@ -78,7 +85,14 @@ func TestReleaseStatus(t *testing.T) {}
 
 func TestRollback(t *testing.T) {}
 
-func TestUninstallRelease(t *testing.T) {}
+func TestUninstallRelease(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	err := UninstallRelease("test", "ns", func(format string, v ...any) {})
+	assert.Error(t, err)
+}
 
 func TestUpgradeOrInstall(t *testing.T) {}
 
@@ -105,9 +119,47 @@ func TestWriteConfigYamlToTmpFile(t *testing.T) {
 	assert.Equal(t, "xx", closer.Close().Error())
 }
 
-func Test_checkIfInstallable(t *testing.T) {}
+func Test_checkIfInstallable(t *testing.T) {
+	err := checkIfInstallable(&chart.Chart{
+		Metadata: &chart.Metadata{
+			Type: "",
+		},
+	})
+	assert.Nil(t, err)
+	err = checkIfInstallable(&chart.Chart{
+		Metadata: &chart.Metadata{
+			Type: "application",
+		},
+	})
+	assert.Nil(t, err)
+	err = checkIfInstallable(&chart.Chart{
+		Metadata: &chart.Metadata{
+			Type: "xxx",
+		},
+	})
+	assert.Error(t, err)
+}
 
-func Test_getActionConfigAndSettings(t *testing.T) {}
+func Test_getActionConfigAndSettings(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
+	assert.Nil(t, err)
+	assert.NotNil(t, settings)
+}
+
+func Test_getActionConfigAndSettings1(t *testing.T) {
+	getter.All(&cli.EnvSettings{PluginsDirectory: ""})
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{KubeConfig: "xxx"}).Times(2)
+	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
+	assert.Nil(t, err)
+	assert.NotNil(t, settings)
+}
 
 func Test_runInstall(t *testing.T) {}
 
@@ -391,4 +443,82 @@ func (c *ContainerGetterSetter) Get() []*types.Container {
 	c.Lock()
 	defer c.Unlock()
 	return c.cs
+}
+
+func Test_formatStatus(t *testing.T) {
+	var tests = []struct {
+		input release.Status
+		want  types.Deploy
+	}{
+		{
+			input: release.StatusPendingUpgrade,
+			want:  types.Deploy_StatusDeploying,
+		},
+		{
+			input: release.StatusPendingInstall,
+			want:  types.Deploy_StatusDeploying,
+		},
+		{
+			input: release.StatusPendingRollback,
+			want:  types.Deploy_StatusDeploying,
+		},
+		{
+			input: release.StatusDeployed,
+			want:  types.Deploy_StatusDeployed,
+		},
+		{
+			input: release.StatusFailed,
+			want:  types.Deploy_StatusFailed,
+		},
+		{
+			input: "xxx",
+			want:  types.Deploy_StatusUnknown,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, formatStatus(tt.input))
+		})
+	}
+}
+
+func Test_fillInstall(t *testing.T) {
+	i := &action.Install{}
+	u := &action.Upgrade{
+		Install:                  true,
+		Devel:                    true,
+		Namespace:                "xxx",
+		SkipCRDs:                 true,
+		Timeout:                  10,
+		Wait:                     true,
+		WaitForJobs:              true,
+		DisableHooks:             true,
+		DryRun:                   true,
+		Force:                    true,
+		Atomic:                   true,
+		SubNotes:                 true,
+		Description:              "desc",
+		DisableOpenAPIValidation: true,
+		DependencyUpdate:         true,
+	}
+	fillInstall(i, u)
+
+	assert.Equal(t, i.CreateNamespace, true)
+	assert.Equal(t, i.ChartPathOptions, u.ChartPathOptions)
+	assert.Equal(t, i.DryRun, u.DryRun)
+	assert.Equal(t, i.DisableHooks, u.DisableHooks)
+	assert.Equal(t, i.SkipCRDs, u.SkipCRDs)
+	assert.Equal(t, i.Timeout, u.Timeout)
+	assert.Equal(t, i.Wait, u.Wait)
+	assert.Equal(t, i.WaitForJobs, u.WaitForJobs)
+	assert.Equal(t, i.Devel, u.Devel)
+	assert.Equal(t, i.Namespace, u.Namespace)
+	assert.Equal(t, i.Atomic, u.Atomic)
+	assert.Equal(t, i.PostRenderer, u.PostRenderer)
+	assert.Equal(t, i.DisableOpenAPIValidation, u.DisableOpenAPIValidation)
+	assert.Equal(t, i.SubNotes, u.SubNotes)
+	assert.Equal(t, i.Description, u.Description)
+	assert.Equal(t, i.DependencyUpdate, u.DependencyUpdate)
 }

@@ -1,6 +1,7 @@
 package bootstrappers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,12 +11,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
-	"github.com/lithammer/dedent"
-
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
-
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -26,17 +25,56 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 )
+
+type extraInputMatcher struct {
+	input any
+}
+
+func (e *extraInputMatcher) Matches(x any) bool {
+	e.input = x
+	return true
+}
+
+func (e *extraInputMatcher) String() string {
+	return ""
+}
+
+type apiGWMatcher struct {
+	gw *apiGateway
+}
+
+func (a *apiGWMatcher) Matches(x any) bool {
+	gateway, ok := x.(*apiGateway)
+	if !ok {
+		return false
+	}
+	if gateway.newServerFunc == nil {
+		return false
+	}
+	return gateway.endpoint == a.gw.endpoint
+}
+
+func (a *apiGWMatcher) String() string {
+	return ""
+}
 
 func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	app := mock.NewMockApplicationInterface(controller)
 	app.EXPECT().Config().Return(&config.Config{GrpcPort: "50000"})
-	app.EXPECT().AddServer(&apiGateway{endpoint: fmt.Sprintf("localhost:%s", "50000")}).Times(1)
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).Times(1)
+	app.EXPECT().AddServer(&apiGWMatcher{gw: &apiGateway{endpoint: fmt.Sprintf("localhost:%s", "50000")}}).Times(1)
+	ex := &extraInputMatcher{}
+	app.EXPECT().RegisterAfterShutdownFunc(ex).Times(1)
 	assert.Nil(t, (&ApiGatewayBootstrapper{}).Bootstrap(app))
+	assert.NotPanics(t, func() {
+		fn, ok := ex.input.(contracts.Callback)
+		assert.True(t, ok)
+		fn(app)
+	})
 }
 
 func TestLoadSwaggerUI(t *testing.T) {
@@ -54,9 +92,39 @@ func TestLoadSwaggerUI(t *testing.T) {
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 }
 
-func Test_apiGateway_Run(t *testing.T) {}
+func Test_apiGateway_Run(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	port, _ := config.GetFreePort()
+	app.EXPECT().Config().Return(&config.Config{AppPort: fmt.Sprintf("%v", port)}).AnyTimes()
+	s := &mockHttpServer{}
+	s.wg.Add(1)
+	assert.Nil(t, (&apiGateway{newServerFunc: func(ctx context.Context, a *apiGateway) (httpServer, error) {
+		return s, nil
+	}}).Run(context.TODO()))
+	s.wg.Wait()
+}
 
-func Test_apiGateway_Shutdown(t *testing.T) {}
+type mockHttpServer struct {
+	wg sync.WaitGroup
+}
+
+func (m *mockHttpServer) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockHttpServer) ListenAndServe() error {
+	defer m.wg.Done()
+	return nil
+}
+
+func Test_apiGateway_Shutdown(t *testing.T) {
+	err := (&apiGateway{server: &mockHttpServer{}}).Shutdown(context.TODO())
+	assert.Nil(t, err)
+	err = (&apiGateway{}).Shutdown(context.TODO())
+	assert.Nil(t, err)
+}
 
 func Test_authenticated(t *testing.T) {
 	m := gomock.NewController(t)
@@ -484,4 +552,15 @@ Content-Transfer-Encoding: binary
 	req.Form = make(url.Values)
 
 	return req
+}
+
+func Test_initServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	server, err := initServer(context.TODO(), &apiGateway{})
+	assert.Nil(t, err)
+	assert.NotNil(t, server)
 }

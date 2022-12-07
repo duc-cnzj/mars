@@ -39,6 +39,19 @@ func TestGetGitServer(t *testing.T) {
 	assert.True(t, p.called)
 }
 
+func TestGetGitServerCached(t *testing.T) {
+	p := &gitPlugin{}
+	ma := &mockApp{
+		cached: true,
+		p:      map[string]contracts.PluginInterface{"git": p},
+	}
+	instance.SetInstance(ma)
+	gitServerOnce = sync.Once{}
+	assert.IsType(t, (*gitServerCache)(nil), GetGitServer())
+	assert.Equal(t, 1, ma.callback)
+	assert.True(t, p.called)
+}
+
 func Test_branch_GetName(t *testing.T) {
 	b := branch{
 		Name: "name",

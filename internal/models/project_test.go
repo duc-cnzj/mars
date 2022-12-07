@@ -107,7 +107,7 @@ func TestProject_GetAllPods(t *testing.T) {
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				deployment.RevisionAnnotation: "3",
+				deployment.RevisionAnnotation: "5",
 			},
 			UID:       "bbbb",
 			Namespace: "test",
@@ -129,6 +129,23 @@ func TestProject_GetAllPods(t *testing.T) {
 			UID:       "cccc",
 			Namespace: "test",
 			Name:      "rs3",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind: "Deployment",
+					UID:  "deploy-1",
+				},
+			},
+		},
+	}
+	rs4 := &appsv1.ReplicaSet{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				deployment.RevisionAnnotation: "4",
+			},
+			UID:       "dddd",
+			Namespace: "test",
+			Name:      "rs4",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind: "Deployment",
@@ -197,6 +214,24 @@ func TestProject_GetAllPods(t *testing.T) {
 			},
 		},
 	}
+	pod5 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod5",
+			Namespace: "test",
+			Labels: map[string]string{
+				"b": "b",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "rs4",
+					UID:        "dddd",
+				},
+			},
+		},
+	}
+
 	podWithErrorRsName := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod-x-error",
@@ -214,11 +249,11 @@ func TestProject_GetAllPods(t *testing.T) {
 			},
 		},
 	}
-	fk := fake2.NewSimpleClientset(rs, rs2, rs3, pod1, pod2, pod3, pod4, podWithErrorRsName)
+	fk := fake2.NewSimpleClientset(rs, rs2, rs3, rs4, pod1, pod2, pod3, pod4, pod5, podWithErrorRsName)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:           fk,
-		PodLister:        testutil.NewPodLister(pod1, pod2, pod3, pod4, podWithErrorRsName),
-		ReplicaSetLister: testutil.NewRsLister(rs, rs2, rs3),
+		PodLister:        testutil.NewPodLister(pod1, pod2, pod3, pod4, pod5, podWithErrorRsName),
+		ReplicaSetLister: testutil.NewRsLister(rs, rs2, rs3, rs4),
 	}).AnyTimes()
 	m := Project{
 		ID:           1,
@@ -228,16 +263,16 @@ func TestProject_GetAllPods(t *testing.T) {
 	}
 	assert.Nil(t, m.GetAllPods())
 	m.PodSelectors = "a=a|b=b"
-	assert.Len(t, m.GetAllPods(), 4)
+	assert.Len(t, m.GetAllPods(), 5)
 	var oldCount int
 	for _, po := range m.GetAllPods() {
 		if po.IsOld {
 			oldCount++
 			continue
 		}
-		assert.True(t, po.Pod.Name == "pod2" || po.Pod.Name == "pod-x-error")
+		assert.True(t, po.Pod.Name == "pod2" || po.Pod.Name == "pod-x-error" || po.Pod.Name == "pod5")
 	}
-	assert.Equal(t, 2, oldCount)
+	assert.Equal(t, 3, oldCount)
 }
 
 func TestProject_GetEnvValues(t *testing.T) {

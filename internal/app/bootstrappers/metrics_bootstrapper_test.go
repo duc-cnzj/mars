@@ -1,6 +1,7 @@
 package bootstrappers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,4 +23,8 @@ func TestMetricsBootstrapper_Bootstrap(t *testing.T) {
 
 func TestMetricsBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"metrics"}, (&MetricsBootstrapper{}).Tags())
+}
+
+func Test_metricsRunner_Shutdown(t *testing.T) {
+	assert.Nil(t, (&metricsRunner{}).Shutdown(context.TODO()))
 }

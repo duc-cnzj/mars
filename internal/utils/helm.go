@@ -74,7 +74,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 // UpgradeOrInstall
 // 不会自动回滚
 func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string, desc string) (*release.Release, error) {
-	actionConfig, settings, err := getActionConfigAndSettings(namespace, fn.UnWrap())
+	actionConfig, err := getActionConfigAndSettings(namespace, fn.UnWrap())
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +84,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Wait = wait
 	client.Description = desc
 	client.DryRun = dryRun
+	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
 	var selectorList []labels.Selector
 	for _, label := range podSelectors {
@@ -125,44 +126,28 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		client.Timeout = 5 * 60 * time.Second
 	}
 
-	client.Namespace = namespace
 	if valueOpts == nil {
 		valueOpts = &values.Options{}
 	}
 
 	client.Namespace = namespace
+	if client.Version == "" && client.Devel {
+		mlog.Debug("setting version to >0.0.0-0")
+		client.Version = ">0.0.0-0"
+	}
 	if client.Install {
 		// If a release does not exist, install it.
 		histClient := action.NewHistory(actionConfig)
 		histClient.Max = 1
 		if _, err := histClient.Run(releaseName); err == driver.ErrReleaseNotFound {
 			instClient := action.NewInstall(actionConfig)
-			instClient.CreateNamespace = true
-			instClient.ChartPathOptions = client.ChartPathOptions
-			instClient.DryRun = client.DryRun
-			instClient.DisableHooks = client.DisableHooks
-			instClient.SkipCRDs = client.SkipCRDs
-			instClient.Timeout = client.Timeout
-			instClient.Wait = client.Wait
-			instClient.WaitForJobs = client.WaitForJobs
-			instClient.Devel = client.Devel
-			instClient.Namespace = client.Namespace
-			instClient.Atomic = client.Atomic
-			instClient.PostRenderer = client.PostRenderer
-			instClient.DisableOpenAPIValidation = client.DisableOpenAPIValidation
-			instClient.SubNotes = client.SubNotes
-			instClient.Description = client.Description
+			fillInstall(instClient, client)
 			mlog.Debug("start install release", valueOpts)
-			return runInstall(ctx, releaseName, ch, instClient, valueOpts, settings)
+			return runInstall(ctx, releaseName, ch, instClient, valueOpts)
 		}
 	}
 
-	if client.Version == "" && client.Devel {
-		mlog.Debug("setting version to >0.0.0-0")
-		client.Version = ">0.0.0-0"
-	}
-
-	vals, err := valueOpts.MergeValues(getter.All(settings))
+	vals, err := valueOpts.MergeValues(getter.All(&cli.EnvSettings{PluginsDirectory: ""}))
 	if err != nil {
 		return nil, err
 	}
@@ -173,11 +158,26 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		}
 	}
 
-	if ch.Metadata.Deprecated {
-		mlog.Warning("This chart is deprecated")
-	}
-
 	return client.RunWithContext(ctx, releaseName, ch, vals)
+}
+
+func fillInstall(instClient *action.Install, client *action.Upgrade) {
+	instClient.CreateNamespace = true
+	instClient.ChartPathOptions = client.ChartPathOptions
+	instClient.DryRun = client.DryRun
+	instClient.DisableHooks = client.DisableHooks
+	instClient.SkipCRDs = client.SkipCRDs
+	instClient.Timeout = client.Timeout
+	instClient.Wait = client.Wait
+	instClient.WaitForJobs = client.WaitForJobs
+	instClient.Devel = client.Devel
+	instClient.Namespace = client.Namespace
+	instClient.Atomic = client.Atomic
+	instClient.PostRenderer = client.PostRenderer
+	instClient.DisableOpenAPIValidation = client.DisableOpenAPIValidation
+	instClient.SubNotes = client.SubNotes
+	instClient.Description = client.Description
+	instClient.DependencyUpdate = client.DependencyUpdate
 }
 
 func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], selectorList []labels.Selector, fn contracts.WrapLogFn) {
@@ -263,7 +263,7 @@ func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], release
 }
 
 func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+	actionConfig, err := getActionConfigAndSettings(namespace, log)
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error 
 	return nil
 }
 
-func runInstall(ctx context.Context, releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options, settings *cli.EnvSettings) (*release.Release, error) {
+func runInstall(ctx context.Context, releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options) (*release.Release, error) {
 	mlog.Debugf("Original chart version: %q", client.Version)
 	if client.Version == "" && client.Devel {
 		mlog.Debug("setting version to >0.0.0-0")
@@ -284,8 +284,7 @@ func runInstall(ctx context.Context, releaseName string, chartRequested *chart.C
 
 	client.ReleaseName = releaseName
 
-	p := getter.All(settings)
-	vals, err := valueOpts.MergeValues(p)
+	vals, err := valueOpts.MergeValues(getter.All(&cli.EnvSettings{PluginsDirectory: ""}))
 	if err != nil {
 		return nil, err
 	}
@@ -295,11 +294,6 @@ func runInstall(ctx context.Context, releaseName string, chartRequested *chart.C
 		return nil, err
 	}
 
-	if chartRequested.Metadata.Deprecated {
-		mlog.Warning("This chart is deprecated")
-	}
-
-	client.Namespace = settings.Namespace()
 	return client.RunWithContext(ctx, chartRequested, vals)
 }
 
@@ -324,7 +318,7 @@ var (
 )
 
 func ReleaseStatus(releaseName, namespace string) types.Deploy {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, mlog.Debugf)
+	actionConfig, err := getActionConfigAndSettings(namespace, mlog.Debugf)
 	if err != nil {
 		return types.Deploy_StatusUnknown
 	}
@@ -336,7 +330,11 @@ func ReleaseStatus(releaseName, namespace string) types.Deploy {
 	}
 
 	mlog.Debug(run.Info.Status)
-	switch run.Info.Status {
+	return formatStatus(run.Info.Status)
+}
+
+func formatStatus(input release.Status) types.Deploy {
+	switch input {
 	case release.StatusPendingUpgrade, release.StatusPendingInstall, release.StatusPendingRollback:
 		return types.Deploy_StatusDeploying
 	case release.StatusDeployed:
@@ -382,10 +380,6 @@ func (l ReleaseList) Add(r *release.Release) {
 }
 
 func PackageChart(path string, destDir string) (string, error) {
-	_, settings, err := getActionConfigAndSettings("", mlog.Debugf)
-	if err != nil {
-		return "", err
-	}
 	newPackage := action.NewPackage()
 	if destDir != "" {
 		newPackage.Destination = destDir
@@ -398,13 +392,11 @@ func PackageChart(path string, destDir string) (string, error) {
 	if chartLocal.Metadata.Dependencies != nil && action.CheckDependencies(chartLocal, chartLocal.Metadata.Dependencies) != nil {
 		// 更新依赖 dependency, 防止没有依赖文件打包失败
 		downloadManager := &downloader.Manager{
-			Out:              io.Discard,
-			ChartPath:        path,
-			Keyring:          newPackage.Keyring,
-			Getters:          getter.All(settings),
-			Debug:            settings.Debug,
-			RepositoryConfig: settings.RepositoryConfig,
-			RepositoryCache:  settings.RepositoryCache,
+			Out:       io.Discard,
+			ChartPath: path,
+			Keyring:   newPackage.Keyring,
+			Getters:   getter.All(&cli.EnvSettings{PluginsDirectory: ""}),
+			Debug:     true,
 		}
 
 		if err := downloadManager.Update(); err != nil {
@@ -415,12 +407,7 @@ func PackageChart(path string, destDir string) (string, error) {
 	return newPackage.Run(path, nil)
 }
 
-func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, *cli.EnvSettings, error) {
-	settings := cli.New()
-	sflags := pflag.NewFlagSet("", pflag.ContinueOnError)
-	settings.AddFlags(sflags)
-	ssets := []string{"--namespace=" + namespace, fmt.Sprintf("--debug=%T", app.App().IsDebug())}
-
+func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	set := pflag.NewFlagSet("", pflag.ContinueOnError)
@@ -428,23 +415,20 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	sets := []string{"--namespace=" + namespace}
 	if app.Config().KubeConfig != "" {
 		sets = append(sets, "--kubeconfig="+app.Config().KubeConfig)
-		ssets = append(ssets, "--kubeconfig="+app.Config().KubeConfig)
 	} else {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
 		server := "https://" + net.JoinHostPort(host, port)
 		token, _ := os.ReadFile(tokenFile)
 		sets = append(sets, "--server="+server, "--token="+string(token), "--certificate-authority="+rootCAFile)
-		ssets = append(ssets, "--kube-apiserver="+server, "--kube-token="+string(token), "--kube-ca-file="+rootCAFile)
 	}
 
-	sflags.Parse(ssets)
 	set.Parse(sets)
 
 	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return actionConfig, settings, nil
+	return actionConfig, nil
 }
 
 func GetSlugName[T int64 | int](namespaceId T, name string) string {
@@ -452,7 +436,7 @@ func GetSlugName[T int64 | int](namespaceId T, name string) string {
 }
 
 func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
-	actionConfig, _, err := getActionConfigAndSettings(namespace, log)
+	actionConfig, err := getActionConfigAndSettings(namespace, log)
 	if err != nil {
 		return err
 	}

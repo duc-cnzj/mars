@@ -11,6 +11,7 @@ import (
 )
 
 type mockApp struct {
+	cached   bool
 	cache    contracts.CacheInterface
 	p        map[string]contracts.PluginInterface
 	callback int
@@ -23,6 +24,7 @@ func (receiver *mockApp) Cache() contracts.CacheInterface {
 
 func (receiver *mockApp) Config() *config.Config {
 	return &config.Config{
+		GitServerCached:     receiver.cached,
 		DomainManagerPlugin: config.Plugin{Name: "test"},
 		PicturePlugin:       config.Plugin{Name: "picture"},
 		WsSenderPlugin:      config.Plugin{Name: "sender"},

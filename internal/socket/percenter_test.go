@@ -49,6 +49,8 @@ func Test_processPercent_Current(t *testing.T) {
 func Test_processPercent_To(t *testing.T) {
 	p := &ppm{}
 	percent := newProcessPercent(p, &fakeSleeper{})
+	percent.To(71)
+	assert.Equal(t, int64(71), percent.Current())
 	percent.To(100)
 	assert.Equal(t, int64(100), percent.Current())
 }
