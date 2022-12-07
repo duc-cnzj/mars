@@ -84,6 +84,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Wait = wait
 	client.Description = desc
 	client.DryRun = dryRun
+	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
 	var selectorList []labels.Selector
 	for _, label := range podSelectors {
@@ -125,41 +126,25 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		client.Timeout = 5 * 60 * time.Second
 	}
 
-	client.Namespace = namespace
 	if valueOpts == nil {
 		valueOpts = &values.Options{}
 	}
 
 	client.Namespace = namespace
+	if client.Version == "" && client.Devel {
+		mlog.Debug("setting version to >0.0.0-0")
+		client.Version = ">0.0.0-0"
+	}
 	if client.Install {
 		// If a release does not exist, install it.
 		histClient := action.NewHistory(actionConfig)
 		histClient.Max = 1
 		if _, err := histClient.Run(releaseName); err == driver.ErrReleaseNotFound {
 			instClient := action.NewInstall(actionConfig)
-			instClient.CreateNamespace = true
-			instClient.ChartPathOptions = client.ChartPathOptions
-			instClient.DryRun = client.DryRun
-			instClient.DisableHooks = client.DisableHooks
-			instClient.SkipCRDs = client.SkipCRDs
-			instClient.Timeout = client.Timeout
-			instClient.Wait = client.Wait
-			instClient.WaitForJobs = client.WaitForJobs
-			instClient.Devel = client.Devel
-			instClient.Namespace = client.Namespace
-			instClient.Atomic = client.Atomic
-			instClient.PostRenderer = client.PostRenderer
-			instClient.DisableOpenAPIValidation = client.DisableOpenAPIValidation
-			instClient.SubNotes = client.SubNotes
-			instClient.Description = client.Description
+			fillInstall(instClient, client)
 			mlog.Debug("start install release", valueOpts)
 			return runInstall(ctx, releaseName, ch, instClient, valueOpts, settings)
 		}
-	}
-
-	if client.Version == "" && client.Devel {
-		mlog.Debug("setting version to >0.0.0-0")
-		client.Version = ">0.0.0-0"
 	}
 
 	vals, err := valueOpts.MergeValues(getter.All(settings))
@@ -173,11 +158,26 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		}
 	}
 
-	if ch.Metadata.Deprecated {
-		mlog.Warning("This chart is deprecated")
-	}
-
 	return client.RunWithContext(ctx, releaseName, ch, vals)
+}
+
+func fillInstall(instClient *action.Install, client *action.Upgrade) {
+	instClient.CreateNamespace = true
+	instClient.ChartPathOptions = client.ChartPathOptions
+	instClient.DryRun = client.DryRun
+	instClient.DisableHooks = client.DisableHooks
+	instClient.SkipCRDs = client.SkipCRDs
+	instClient.Timeout = client.Timeout
+	instClient.Wait = client.Wait
+	instClient.WaitForJobs = client.WaitForJobs
+	instClient.Devel = client.Devel
+	instClient.Namespace = client.Namespace
+	instClient.Atomic = client.Atomic
+	instClient.PostRenderer = client.PostRenderer
+	instClient.DisableOpenAPIValidation = client.DisableOpenAPIValidation
+	instClient.SubNotes = client.SubNotes
+	instClient.Description = client.Description
+	instClient.DependencyUpdate = client.DependencyUpdate
 }
 
 func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], selectorList []labels.Selector, fn contracts.WrapLogFn) {
@@ -295,11 +295,6 @@ func runInstall(ctx context.Context, releaseName string, chartRequested *chart.C
 		return nil, err
 	}
 
-	if chartRequested.Metadata.Deprecated {
-		mlog.Warning("This chart is deprecated")
-	}
-
-	client.Namespace = settings.Namespace()
 	return client.RunWithContext(ctx, chartRequested, vals)
 }
 
@@ -336,7 +331,11 @@ func ReleaseStatus(releaseName, namespace string) types.Deploy {
 	}
 
 	mlog.Debug(run.Info.Status)
-	switch run.Info.Status {
+	return formatStatus(run.Info.Status)
+}
+
+func formatStatus(input release.Status) types.Deploy {
+	switch input {
 	case release.StatusPendingUpgrade, release.StatusPendingInstall, release.StatusPendingRollback:
 		return types.Deploy_StatusDeploying
 	case release.StatusDeployed:
@@ -419,7 +418,7 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	settings := cli.New()
 	sflags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	settings.AddFlags(sflags)
-	ssets := []string{"--namespace=" + namespace, fmt.Sprintf("--debug=%T", app.App().IsDebug())}
+	ssets := []string{"--namespace=" + namespace, "--debug=true"}
 
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
