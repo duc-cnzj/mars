@@ -376,7 +376,7 @@ func encodeToYaml(objs ...runtime.Object) []string {
 	return results
 }
 
-func TestGetNodePortMappingByNamespace(t *testing.T) {
+func TestGetNodePortMappingByProjects(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
@@ -431,13 +431,9 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 			},
 		},
 	}
-	fk := fake.NewSimpleClientset(&corev1.ServiceList{
-		Items: []corev1.Service{
-			svc1,
-		},
-	})
+	lister := testutil.NewServiceLister(&svc1)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
+		ServiceLister: lister,
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 	db, closeFn := testutil.SetGormDB(m, app)
@@ -456,7 +452,6 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 	db.Preload("Projects").First(&ns)
 	mapping := GetNodePortMappingByProjects(ns.Name, ns.Projects...)
 	httpCount := 0
-	grpcCount := 0
 	total := 0
 	for _, endpoints := range mapping {
 		for _, endpoint := range endpoints {
@@ -464,15 +459,99 @@ func TestGetNodePortMappingByNamespace(t *testing.T) {
 			if strings.HasPrefix(endpoint.Url, "http") {
 				httpCount++
 			}
-
-			if strings.HasPrefix(endpoint.Url, "grpc://") {
-				grpcCount++
-			}
 		}
 	}
 	assert.Equal(t, 4, httpCount)
-	assert.Equal(t, 1, grpcCount)
 	assert.Equal(t, 6, total)
+}
+
+func TestGetLoadBalancerMappingByProjects(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	svc1 := corev1.Service{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "svc1",
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:     "http",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30000,
+				},
+				{
+					Name:     "https",
+					Protocol: "tcp",
+					Port:     443,
+					NodePort: 30001,
+				},
+				{
+					Name:     "xxxx",
+					Protocol: "tcp",
+					Port:     8080,
+					NodePort: 30005,
+				},
+				{
+					Name:     "httpx",
+					Protocol: "tcp",
+					Port:     8080,
+					NodePort: 30006,
+				},
+			},
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					{
+						IP: "111.111.111.111",
+					},
+				},
+			},
+		},
+	}
+	lister := testutil.NewServiceLister(&svc1)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		ServiceLister: lister,
+	})
+	db, closeFn := testutil.SetGormDB(m, app)
+	defer closeFn()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	ns := models.Namespace{
+		Name: "duc",
+	}
+	db.Create(&ns)
+	p1 := &models.Project{
+		Name:        "svc1",
+		Manifest:    strings.Join(encodeToYaml(&svc1), "---"),
+		NamespaceId: ns.ID,
+	}
+	db.Create(p1)
+	db.Preload("Projects").First(&ns)
+	mapping := GetLoadBalancerMappingByProjects(ns.Name, ns.Projects...)
+	for _, endpoints := range mapping {
+		for _, endpoint := range endpoints {
+			if endpoint.Name == "http" {
+				assert.Equal(t, "http://111.111.111.111", endpoint.Url)
+			}
+			if endpoint.Name == "https" {
+				assert.Equal(t, "https://111.111.111.111", endpoint.Url)
+			}
+			if endpoint.Name == "xxxx" {
+				assert.Equal(t, "111.111.111.111:8080", endpoint.Url)
+			}
+			if endpoint.Name == "httpx" {
+				assert.Equal(t, "http://111.111.111.111:8080", endpoint.Url)
+			}
+		}
+	}
 }
 
 func TestFilterK8sTypeFromManifest(t *testing.T) {
@@ -634,4 +713,43 @@ func TestSplitManifests(t *testing.T) {
 	manifests := SplitManifests(f)
 	assert.Len(t, manifests, 3)
 	assert.NotEqual(t, 3, len(strings.Split(f, "---")))
+}
+
+func Test_isHttpPortName(t *testing.T) {
+	var tests = []struct {
+		name  string
+		wants bool
+	}{
+		{
+			name:  "webx",
+			wants: true,
+		},
+		{
+			name:  "http",
+			wants: true,
+		},
+		{
+			name:  "ui",
+			wants: true,
+		},
+		{
+			name:  "api",
+			wants: true,
+		},
+		{
+			name:  "xapix",
+			wants: true,
+		},
+		{
+			name:  "xxxx",
+			wants: false,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wants, isHttpPortName(tt.name))
+		})
+	}
 }

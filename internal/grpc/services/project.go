@@ -189,6 +189,7 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 
 	nodePortMapping := utils.GetNodePortMappingByProjects(projectModel.Namespace.Name, projectModel)
 	ingMapping := utils.GetIngressMappingByProjects(projectModel.Namespace.Name, projectModel)
+	lbMapping := utils.GetLoadBalancerMappingByProjects(projectModel.Namespace.Name, projectModel)
 
 	var urls = make([]*types.ServiceEndpoint, 0)
 	for key, values := range ingMapping {
@@ -197,6 +198,11 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 		}
 	}
 	for key, values := range nodePortMapping {
+		if projectModel.Name == key {
+			urls = append(urls, values...)
+		}
+	}
+	for key, values := range lbMapping {
 		if projectModel.Name == key {
 			urls = append(urls, values...)
 		}

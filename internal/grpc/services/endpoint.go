@@ -36,10 +36,13 @@ func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNames
 	var res = []*types.ServiceEndpoint{}
 	nodePortMapping := utils.GetNodePortMappingByProjects(ns.Name, ns.Projects...)
 	ingMapping := utils.GetIngressMappingByProjects(ns.Name, ns.Projects...)
+	lbMapping := utils.GetLoadBalancerMappingByProjects(ns.Name, ns.Projects...)
 	for _, hosts := range ingMapping {
 		res = append(res, hosts...)
 	}
-
+	for _, hosts := range lbMapping {
+		res = append(res, hosts...)
+	}
 	for _, hosts := range nodePortMapping {
 		res = append(res, hosts...)
 	}

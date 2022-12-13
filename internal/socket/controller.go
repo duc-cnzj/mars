@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -216,14 +217,15 @@ func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func write(wsconn *WsConn) error {
+func write(wsconn *WsConn) (err error) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		mlog.Debugf("[Websocket]: go write exit")
+		mlog.Debugf("[Websocket]: go write exit, %v", err)
 		ticker.Stop()
 		wsconn.conn.Close()
 	}()
 	ch := wsconn.pubSub.Subscribe()
+	var w io.WriteCloser
 	for {
 		select {
 		case message, ok := <-ch:
@@ -232,7 +234,7 @@ func write(wsconn *WsConn) error {
 				return wsconn.conn.WriteMessage(websocket.CloseMessage, []byte{})
 			}
 
-			w, err := wsconn.conn.NextWriter(websocket.BinaryMessage)
+			w, err = wsconn.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return err
 			}
@@ -243,7 +245,7 @@ func write(wsconn *WsConn) error {
 			}
 		case <-ticker.C:
 			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if err = wsconn.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return err
 			}
 		}

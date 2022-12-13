@@ -188,7 +188,39 @@ func TestProjectSvc_Show(t *testing.T) {
 			},
 		},
 	}
-	p := &models.Project{Namespace: models.Namespace{Name: "test"}, GitProjectId: 100, Name: "yyy", PodSelectors: "a=a", Manifest: strings.Join(encodeToYaml(&ing1, &svc1), "---")}
+	svc2 := v1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test",
+			Name:      "svc2",
+			Labels: map[string]string{
+				"app.kubernetes.io/instance": "yyy",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type: "LoadBalancer",
+			Ports: []v1.ServicePort{
+				{
+					Name:     "https",
+					Protocol: "tcp",
+					Port:     443,
+				},
+			},
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{
+					{
+						IP: "111.111.111.111",
+					},
+				},
+			},
+		},
+	}
+	p := &models.Project{Namespace: models.Namespace{Name: "test"}, GitProjectId: 100, Name: "yyy", PodSelectors: "a=a", Manifest: strings.Join(encodeToYaml(&ing1, &svc1, &svc2), "---")}
 	db.Create(p)
 	mcfg := mars.Config{
 		Elements: []*mars.Element{
@@ -239,7 +271,7 @@ func TestProjectSvc_Show(t *testing.T) {
 	})
 	fk := fake.NewSimpleClientset(&v1.ServiceList{
 		Items: []v1.Service{
-			svc1,
+			svc1, svc2,
 		},
 	},
 		&v12.IngressList{
@@ -252,6 +284,7 @@ func TestProjectSvc_Show(t *testing.T) {
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		MetricsClient: fm,
 		Client:        fk,
+		ServiceLister: testutil.NewServiceLister(&svc1, &svc2),
 	}).AnyTimes()
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 
@@ -261,12 +294,12 @@ func TestProjectSvc_Show(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "4 m", show.Cpu)
 	assert.Equal(t, "5.0 MB", show.Memory)
-	assert.Len(t, show.Urls, 3)
 	assert.Equal(t, p.ProtoTransform().String(), show.Project.String())
 	assert.Equal(t, "conf->env", show.Elements[0].Path)
 	assert.Equal(t, "xx", show.Elements[0].Description)
 	assert.Equal(t, "xx", show.Elements[0].Default)
 	assert.Equal(t, []string{"1", "2", "3"}, show.Elements[0].SelectValues)
+	assert.Len(t, show.Urls, 4)
 }
 
 func TestProjectSvc_Delete(t *testing.T) {

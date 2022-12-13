@@ -13,6 +13,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -131,6 +132,21 @@ func (m projectObjectMap) GetProject(svc runtime.Object) (string, bool) {
 	return "", false
 }
 
+func isHttpPortName(name string) bool {
+	switch {
+	case strings.Contains(name, "web"):
+		fallthrough
+	case strings.Contains(name, "ui"):
+		fallthrough
+	case strings.Contains(name, "api"):
+		fallthrough
+	case strings.Contains(name, "http"):
+		return true
+	default:
+		return false
+	}
+}
+
 func GetNodePortMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
 	cfg := app.Config()
 	var projectMap = make(projectObjectMap)
@@ -138,39 +154,16 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](SplitManifests(project.Manifest))
 	}
 
-	list, _ := app.K8sClientSet().CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
+	list, _ := app.K8sClient().ServiceLister.Services(namespace).List(labels.Everything())
 	var m = map[string][]*Endpoint{}
 
-	isHttp := func(name string) bool {
-		switch {
-		case strings.Contains(name, "web"):
-			fallthrough
-		case strings.Contains(name, "ui"):
-			fallthrough
-		case strings.Contains(name, "api"):
-			fallthrough
-		case strings.Contains(name, "http"):
-			return true
-		default:
-			return false
-		}
-	}
-
-	for _, item := range list.Items {
-		if projectName, ok := projectMap.GetProject(&item); ok && item.Spec.Type == v1.ServiceTypeNodePort {
+	for _, item := range list {
+		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeNodePort {
 			for _, port := range item.Spec.Ports {
 				data := m[projectName]
 
 				switch {
-				case strings.Contains(port.Name, "rpc"):
-					fallthrough
-				case strings.Contains(port.Name, "tcp"):
-					m[projectName] = append(data, &Endpoint{
-						Name:     projectName,
-						PortName: port.Name,
-						Url:      fmt.Sprintf("%s://%s:%d", port.Name, cfg.ExternalIp, port.NodePort),
-					})
-				case isHttp(port.Name):
+				case isHttpPortName(port.Name):
 					m[projectName] = append(data, &Endpoint{
 						Name:     projectName,
 						PortName: port.Name,
@@ -181,6 +174,48 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 						Name:     projectName,
 						PortName: port.Name,
 						Url:      fmt.Sprintf("%s:%d", cfg.ExternalIp, port.NodePort),
+					})
+				}
+			}
+		}
+	}
+	return m
+}
+
+func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
+	var projectMap = make(projectObjectMap)
+	for _, project := range projects {
+		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](SplitManifests(project.Manifest))
+	}
+
+	list, _ := app.K8sClient().ServiceLister.Services(namespace).List(labels.Everything())
+	var m = map[string][]*Endpoint{}
+
+	for _, item := range list {
+		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeLoadBalancer && len(item.Status.LoadBalancer.Ingress) > 0 {
+			lbIP := item.Status.LoadBalancer.Ingress[0].IP
+			for _, port := range item.Spec.Ports {
+				data := m[projectName]
+
+				switch {
+				case isHttpPortName(port.Name):
+					var url string = fmt.Sprintf("http://%s:%d", lbIP, port.Port)
+					if port.Port == 80 {
+						url = fmt.Sprintf("http://%s", lbIP)
+					}
+					if port.Port == 443 {
+						url = fmt.Sprintf("https://%s", lbIP)
+					}
+					m[projectName] = append(data, &Endpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      url,
+					})
+				default:
+					m[projectName] = append(data, &Endpoint{
+						Name:     projectName,
+						PortName: port.Name,
+						Url:      fmt.Sprintf("%s:%d", lbIP, port.Port),
 					})
 				}
 			}

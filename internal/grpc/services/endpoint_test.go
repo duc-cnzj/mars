@@ -113,6 +113,43 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 		Manifest:    strings.Join(encodeToYaml(&svc1), "---"),
 	}
 	db.Create(p3)
+	svc2 := corev1.Service{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: "duc",
+			Name:      "svc2",
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:     "http",
+					Protocol: "tcp",
+					Port:     80,
+					NodePort: 30000,
+				},
+			},
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					{
+						IP: "111.111.111.111",
+					},
+				},
+			},
+		},
+	}
+	p4 := &models.Project{
+		Name:        "lb-proj",
+		NamespaceId: ns.ID,
+		Manifest:    strings.Join(encodeToYaml(&svc2), "---"),
+	}
+	db.Create(p4)
+	svcLister := testutil.NewServiceLister(&svc1, &svc2)
 	fk := fake.NewSimpleClientset(
 		&v12.IngressList{
 			Items: []v12.Ingress{
@@ -122,16 +159,18 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 		&corev1.ServiceList{
 			Items: []corev1.Service{
 				svc1,
+				svc2,
 			},
 		})
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
+		Client:        fk,
+		ServiceLister: svcLister,
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 	res, _ := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: int64(ns.ID),
 	})
-	assert.Len(t, res.Items, 3)
+	assert.Len(t, res.Items, 4)
 }
 
 func encodeToYaml(objs ...runtime.Object) []string {
@@ -249,7 +288,8 @@ func TestEndpointSvc_InProject(t *testing.T) {
 			},
 		})
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
+		Client:        fk,
+		ServiceLister: testutil.NewServiceLister(&svc1),
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"}).AnyTimes()
 	res, _ := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
