@@ -42,7 +42,7 @@ func AssertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterfac
 }
 
 func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range pods {
 		idxer.Add(po)
 	}
@@ -50,9 +50,16 @@ func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
 }
 
 func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
-	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range rs {
 		idxer.Add(po)
 	}
 	return appsv1lister.NewReplicaSetLister(idxer)
+}
+func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range svcs {
+		idxer.Add(po)
+	}
+	return corev1lister.NewServiceLister(idxer)
 }
