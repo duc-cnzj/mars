@@ -198,8 +198,8 @@ func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Proje
 				data := m[projectName]
 
 				switch {
-				case isHttpPortName(port.Name) && (port.Port == 80 || port.Port == 443):
-					var url string
+				case isHttpPortName(port.Name):
+					var url string = fmt.Sprintf("http://%s:%d", lbIP, port.Port)
 					if port.Port == 80 {
 						url = fmt.Sprintf("http://%s", lbIP)
 					}

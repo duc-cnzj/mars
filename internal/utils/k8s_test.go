@@ -499,6 +499,12 @@ func TestGetLoadBalancerMappingByProjects(t *testing.T) {
 					Port:     8080,
 					NodePort: 30005,
 				},
+				{
+					Name:     "httpx",
+					Protocol: "tcp",
+					Port:     8080,
+					NodePort: 30006,
+				},
 			},
 		},
 		Status: corev1.ServiceStatus{
@@ -540,6 +546,9 @@ func TestGetLoadBalancerMappingByProjects(t *testing.T) {
 			}
 			if endpoint.Name == "xxxx" {
 				assert.Equal(t, "111.111.111.111:8080", endpoint.Url)
+			}
+			if endpoint.Name == "httpx" {
+				assert.Equal(t, "http://111.111.111.111:8080", endpoint.Url)
 			}
 		}
 	}
