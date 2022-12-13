@@ -136,7 +136,7 @@ const Element: React.FC<{
         <Form.Item
           className="elements__form-item-textarea"
           label={<div style={style.label}>{element.description}</div>}
-          style={{...style.formItem, width: "100%"}}
+          style={{ ...style.formItem, width: "100%" }}
         >
           <TextArea
             defaultValue={element.default}

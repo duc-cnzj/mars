@@ -24,8 +24,8 @@ import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 const TabShell: React.FC<{
   namespaceID: number;
@@ -84,15 +84,15 @@ const TabShell: React.FC<{
     if (list.length > 0) {
       if (value === "") {
         setValue(list[0].pod + "|" + list[0].container);
-        return
+        return;
       }
-       if (!list.map((v) => v.pod + "|" + v.container).includes(value)) {
+      if (!list.map((v) => v.pod + "|" + v.container).includes(value)) {
         setValue(list[0].pod + "|" + list[0].container);
-        return
+        return;
       }
     }
     if (list.length === 0 && value.length !== 0) {
-      setValue("")
+      setValue("");
     }
   }, [list, value]);
 
@@ -206,7 +206,6 @@ const TabShell: React.FC<{
     if (logCount && term) {
       handleConnectionMessage(log, term);
     }
-
   }, [logCount, log, handleConnectionMessage, term]);
 
   useEffect(() => {

@@ -1,29 +1,29 @@
 /* eslint-disable no-plusplus, no-continue */
 const foregroundColors = {
-  '30': 'black',
-  '31': 'red',
-  '32': 'green',
-  '33': 'yellow',
-  '34': 'blue',
-  '35': 'magenta',
-  '36': 'cyan',
-  '37': 'white',
-  '90': 'grey',
+  30: "black",
+  31: "red",
+  32: "green",
+  33: "yellow",
+  34: "blue",
+  35: "magenta",
+  36: "cyan",
+  37: "white",
+  90: "grey",
 };
 const backgroundColors = {
-  '40': 'black',
-  '41': 'red',
-  '42': 'green',
-  '43': 'yellow',
-  '44': 'blue',
-  '45': 'magenta',
-  '46': 'cyan',
-  '47': 'white',
+  40: "black",
+  41: "red",
+  42: "green",
+  43: "yellow",
+  44: "blue",
+  45: "magenta",
+  46: "cyan",
+  47: "white",
 };
 const styles = {
-  '1': 'bold',
-  '3': 'italic',
-  '4': 'underline',
+  1: "bold",
+  3: "italic",
+  4: "underline",
 };
 const eraseChar = (matchingText, result) => {
   if (matchingText.length) {
@@ -46,26 +46,26 @@ const eraseChar = (matchingText, result) => {
   return [matchingText, result];
 };
 
-const ansiparse = str => {
+const ansiparse = (str) => {
   let matchingControl = null;
   let matchingData = null;
-  let matchingText = '';
+  let matchingText = "";
   let ansiState = [];
   let result = [];
   let state = {};
 
   for (let i = 0; i < str.length; i++) {
     if (matchingControl !== null) {
-      if (matchingControl === '\x1b' && str[i] === '[') {
+      if (matchingControl === "\x1b" && str[i] === "[") {
         if (matchingText) {
           state.text = matchingText;
           result.push(state);
           state = {};
-          matchingText = '';
+          matchingText = "";
         }
 
         matchingControl = null;
-        matchingData = '';
+        matchingData = "";
       } else {
         matchingText += matchingControl + str[i];
         matchingControl = null;
@@ -73,13 +73,13 @@ const ansiparse = str => {
 
       continue;
     } else if (matchingData !== null) {
-      if (str[i] === ';') {
+      if (str[i] === ";") {
         ansiState.push(matchingData);
-        matchingData = '';
-      } else if (str[i] === 'm') {
+        matchingData = "";
+      } else if (str[i] === "m") {
         ansiState.push(matchingData);
         matchingData = null;
-        matchingText = '';
+        matchingText = "";
 
         for (let a = 0; a < ansiState.length; a++) {
           const ansiCode = ansiState[a];
@@ -111,9 +111,9 @@ const ansiparse = str => {
       continue;
     }
 
-    if (str[i] === '\x1b') {
+    if (str[i] === "\x1b") {
       matchingControl = str[i];
-    } else if (str[i] === '\u0008') {
+    } else if (str[i] === "\u0008") {
       [matchingText, result] = eraseChar(matchingText, result);
     } else {
       matchingText += str[i];
@@ -121,7 +121,7 @@ const ansiparse = str => {
   }
 
   if (matchingText) {
-    state.text = matchingText + (matchingControl || '');
+    state.text = matchingText + (matchingControl || "");
     result.push(state);
   }
 

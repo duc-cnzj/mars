@@ -1,5 +1,8 @@
 import React, { memo, useState } from "react";
-import { getNamespaceServiceEndpoints, getProjectServiceEndpoints } from "../api/namespace";
+import {
+  getNamespaceServiceEndpoints,
+  getProjectServiceEndpoints,
+} from "../api/namespace";
 import { Popover } from "antd";
 import { CopyOutlined } from "@ant-design/icons";
 import CopyToClipboard from "./CopyToClipboard";
@@ -26,7 +29,7 @@ const ServiceEndpoint: React.FC<{
               {v.url}
             </a>
           ) : (
-            <span style={{marginRight: 10}}>v.url</span>
+            <span style={{ marginRight: 10 }}>v.url</span>
           )}
 
           <CopyToClipboard text={v.url} successText="已复制！">

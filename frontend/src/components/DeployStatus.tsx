@@ -6,7 +6,7 @@ import {
   ClockCircleTwoTone,
 } from "@ant-design/icons";
 import { Tooltip } from "antd";
-import pb from '../api/compiled'
+import pb from "../api/compiled";
 
 const DeployStatus: React.FC<{ status: pb.types.Deploy }> = ({ status }) => {
   return (
