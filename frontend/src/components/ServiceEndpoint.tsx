@@ -29,7 +29,7 @@ const ServiceEndpoint: React.FC<{
               {v.url}
             </a>
           ) : (
-            <span style={{ marginRight: 10 }}>v.url</span>
+            <span style={{ marginRight: 10 }}>{v.url}</span>
           )}
 
           <CopyToClipboard text={v.url} successText="已复制！">
