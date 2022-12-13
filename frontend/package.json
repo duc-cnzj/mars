@@ -68,7 +68,7 @@
     "test": "craco test",
     "eject": "react-scripts eject",
     "prepare": "cd .. && husky install frontend/.husky",
-    "fmt-check": "prettier --check '**/*.{js,css,md,less,tsx,ts}'"
+    "fmt-check": "prettier --check 'src/**/*.{js,css,less,tsx,ts}'"
   },
   "eslintConfig": {
     "extends": [
@@ -111,6 +111,6 @@
     "protobufjs-cli": "^1.0.2"
   },
   "lint-staged": {
-    "*.{js,css,md,less,tsx,ts}": "prettier --write"
+    "src/**/*.{js,css,less,tsx,ts}": "prettier --write"
   }
 }
