@@ -156,7 +156,7 @@ const ProjectSelector: React.FC<{
       <Cascader
         onDropdownVisibleChange={() => {
           if (selectedValues && selectedValues.length !== 3) {
-            setSelectedValues([])
+            setSelectedValues([]);
           }
         }}
         disabled={disabled}
@@ -168,13 +168,15 @@ const ProjectSelector: React.FC<{
                   if (option.type !== "project") {
                     return false;
                   }
-                  option.children = []
+                  option.children = [];
                   break;
                 case 1:
                   if (option.type !== "branch") {
                     return false;
                   }
-                  if (String(option.gitProjectId) !== String(selectedValues[0])) {
+                  if (
+                    String(option.gitProjectId) !== String(selectedValues[0])
+                  ) {
                     return false;
                   }
                   break;
@@ -182,7 +184,9 @@ const ProjectSelector: React.FC<{
                   if (option.type !== "commit") {
                     return false;
                   }
-                  if (String(option.gitProjectId) !== String(selectedValues[0])) {
+                  if (
+                    String(option.gitProjectId) !== String(selectedValues[0])
+                  ) {
                     return false;
                   }
                   break;

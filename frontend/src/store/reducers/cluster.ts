@@ -1,4 +1,4 @@
-import pb from './../../api/compiled.d';
+import pb from "./../../api/compiled.d";
 import { SET_CLUSTER_INFO } from "../actionTypes";
 const initialState: pb.cluster.InfoResponse = {
   status: "",
@@ -14,8 +14,9 @@ const initialState: pb.cluster.InfoResponse = {
   request_cpu_rate: "",
 };
 
-export const selectClusterInfo = (state: { cluster: pb.cluster.InfoResponse }) =>
-  state.cluster;
+export const selectClusterInfo = (state: {
+  cluster: pb.cluster.InfoResponse;
+}) => state.cluster;
 
 export default function cluster(
   state = initialState,

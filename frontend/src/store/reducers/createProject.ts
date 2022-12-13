@@ -1,4 +1,8 @@
-import { CLEAR_CREATE_PROJECT_LOG, SET_DEPLOY_STATUS, SET_PROCESS_PERCENT } from "./../actionTypes";
+import {
+  CLEAR_CREATE_PROJECT_LOG,
+  SET_DEPLOY_STATUS,
+  SET_PROCESS_PERCENT,
+} from "./../actionTypes";
 import {
   CREATE_PROJECT_LOADING,
   CREATE_PROJECT_LOADING_DONE,
@@ -7,7 +11,7 @@ import {
 } from "../actionTypes";
 
 import { set, get } from "lodash";
-import pb from '../../api/compiled'
+import pb from "../../api/compiled";
 
 export enum DeployStatus {
   DeployUnknown = "unknown",
@@ -29,7 +33,7 @@ export interface CreateProjectItem {
   processPercent: number;
 }
 
-export const selectList = (state: { createProject: List }):List =>
+export const selectList = (state: { createProject: List }): List =>
   state.createProject;
 
 export interface List {

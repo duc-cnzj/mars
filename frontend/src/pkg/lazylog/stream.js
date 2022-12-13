@@ -1,32 +1,30 @@
-import { List } from 'immutable';
-import mitt from 'mitt';
-import { convertBufferToLines, bufferConcat } from './utils';
-import { decode } from './encoding';
+import { List } from "immutable";
+import mitt from "mitt";
+import { convertBufferToLines, bufferConcat } from "./utils";
+import { decode } from "./encoding";
 
 const fetcher = Promise.resolve().then(() =>
-  'ReadableStream' in self && 'body' in self.Response.prototype
+  "ReadableStream" in self && "body" in self.Response.prototype
     ? self.fetch
-    : import('web-streams-polyfill/ponyfill').then(
-        ({ ReadableStream }) => {
-          self.ReadableStream = ReadableStream;
+    : import("web-streams-polyfill/ponyfill").then(({ ReadableStream }) => {
+        self.ReadableStream = ReadableStream;
 
-          return import('fetch-readablestream');
-        }
-      )
+        return import("fetch-readablestream");
+      })
 );
 
 export const recurseReaderAsEvent = async (reader, emitter) => {
   const result = await reader.read();
 
   if (result.value) {
-    emitter.emit('data', result.value);
+    emitter.emit("data", result.value);
   }
 
   if (!result.done) {
     return recurseReaderAsEvent(reader, emitter);
   }
 
-  emitter.emit('done');
+  emitter.emit("done");
 };
 
 export default (url, options) => {
@@ -34,29 +32,29 @@ export default (url, options) => {
   let overage = null;
   let encodedLog = new Uint8Array();
 
-  emitter.on('data', data => {
+  emitter.on("data", (data) => {
     encodedLog = bufferConcat(encodedLog, new Uint8Array(data));
 
     const { lines, remaining } = convertBufferToLines(data, overage);
 
     overage = remaining;
-    emitter.emit('update', { lines, encodedLog });
+    emitter.emit("update", { lines, encodedLog });
   });
 
-  emitter.on('done', () => {
+  emitter.on("done", () => {
     if (overage) {
-      emitter.emit('update', { lines: List.of(overage), encodedLog });
+      emitter.emit("update", { lines: List.of(overage), encodedLog });
     }
 
-    emitter.emit('end', encodedLog);
+    emitter.emit("end", encodedLog);
   });
 
-  emitter.on('start', async () => {
+  emitter.on("start", async () => {
     try {
       const fetch = await fetcher;
       const response = await fetch(
         url,
-        Object.assign({ credentials: 'omit' }, options)
+        Object.assign({ credentials: "omit" }, options)
       );
 
       if (!response.ok) {
@@ -64,19 +62,21 @@ export default (url, options) => {
 
         error.status = response.status;
         const result = await response.body.getReader().read();
-        error.body = decode(bufferConcat(encodedLog, new Uint8Array(result.value)))
-        emitter.emit('error', error);
+        error.body = decode(
+          bufferConcat(encodedLog, new Uint8Array(result.value))
+        );
+        emitter.emit("error", error);
 
         return;
       }
 
       const reader = response.body.getReader();
 
-      emitter.on('abort', () => reader.cancel('ABORTED'));
+      emitter.on("abort", () => reader.cancel("ABORTED"));
 
       return recurseReaderAsEvent(reader, emitter);
     } catch (err) {
-      emitter.emit('error', err);
+      emitter.emit("error", err);
     }
   });
 

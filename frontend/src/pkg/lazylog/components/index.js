@@ -1,1 +1,1 @@
-export { default as LazyLog } from './LazyLog';
+export { default as LazyLog } from "./LazyLog";

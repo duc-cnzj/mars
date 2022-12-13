@@ -102,7 +102,7 @@ const AccessTokenManager: React.FC = () => {
     switch (unit) {
       case "month":
         const now = new Date();
-        return dayjs(now).add(num, "months").diff(now, "seconds")
+        return dayjs(now).add(num, "months").diff(now, "seconds");
       case "day":
         return 24 * 60 * 60 * num;
       case "hour":

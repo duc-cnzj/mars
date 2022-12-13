@@ -2,11 +2,11 @@ import React, { memo } from "react";
 import { xonokai } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Popover } from "antd";
 import { CopyOutlined, QuestionCircleOutlined } from "@ant-design/icons";
-import  CopyToClipboard  from "./CopyToClipboard";
+import CopyToClipboard from "./CopyToClipboard";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import pyaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 
-SyntaxHighlighter.registerLanguage('yaml', pyaml);
+SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
 const MarsExample: React.FC = () => {
   const example = `# 显示的名称 (helm app name), 不填就使用 git server project name
@@ -88,10 +88,7 @@ values_yaml: |
       title={
         <div>
           example
-          <CopyToClipboard
-            text={example}
-            successText="已复制！"
-          >
+          <CopyToClipboard text={example} successText="已复制！">
             <CopyOutlined />
           </CopyToClipboard>
         </div>

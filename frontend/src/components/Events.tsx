@@ -325,40 +325,43 @@ const EventList: React.FC = () => {
                   }
                   description={`${item.message}`}
                 />
-                {!!item.file && item.action === pb.types.EventActionType.Shell && (
-                  <>
-                    <Button
-                      type="dashed"
-                      style={{ marginRight: 5 }}
-                      onClick={() => {
-                        setShellModalVisible(true);
-                        fetchFileRaw(item.file_id);
-                      }}
-                    >
-                      查看操作记录{" "}
-                      {item.duration && (
-                        <span style={{ fontSize: "10px", marginLeft: 5 }}>
-                          (时长: {item.duration}, 大小:{" "}
-                          {item.file?.humanize_size})
-                        </span>
-                      )}
-                    </Button>
-                    <DeleteFile
-                      onDelete={() => {
-                        deleteFile({ id: item.file_id })
-                          .then((res) => {
-                            setData(
-                              data.map((v) =>
-                                v.id === item.id ? { ...v, file: null } : v
-                              )
+                {!!item.file &&
+                  item.action === pb.types.EventActionType.Shell && (
+                    <>
+                      <Button
+                        type="dashed"
+                        style={{ marginRight: 5 }}
+                        onClick={() => {
+                          setShellModalVisible(true);
+                          fetchFileRaw(item.file_id);
+                        }}
+                      >
+                        查看操作记录{" "}
+                        {item.duration && (
+                          <span style={{ fontSize: "10px", marginLeft: 5 }}>
+                            (时长: {item.duration}, 大小:{" "}
+                            {item.file?.humanize_size})
+                          </span>
+                        )}
+                      </Button>
+                      <DeleteFile
+                        onDelete={() => {
+                          deleteFile({ id: item.file_id })
+                            .then((res) => {
+                              setData(
+                                data.map((v) =>
+                                  v.id === item.id ? { ...v, file: null } : v
+                                )
+                              );
+                              message.success("删除成功");
+                            })
+                            .catch((e) =>
+                              message.error(e.response.data.message)
                             );
-                            message.success("删除成功");
-                          })
-                          .catch((e) => message.error(e.response.data.message));
-                      }}
-                    />
-                  </>
-                )}
+                        }}
+                      />
+                    </>
+                  )}
                 {!!item.file &&
                   item.action === pb.types.EventActionType.Upload && (
                     <>

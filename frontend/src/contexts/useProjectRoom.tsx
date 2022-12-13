@@ -1,7 +1,11 @@
-import {  useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import pb from "../api/compiled";
 
-export default function useProjectRoom(namespaceID: number, projectID: number, ws: WebSocket|null) {
+export default function useProjectRoom(
+  namespaceID: number,
+  projectID: number,
+  ws: WebSocket | null
+) {
   const [online, setOnline] = useState(false);
   useEffect(() => {
     let s = pb.websocket.ProjectPodEventJoinInput.encode({

@@ -1,26 +1,26 @@
-import mitt from 'mitt';
-import { convertBufferToLines } from './utils';
+import mitt from "mitt";
+import { convertBufferToLines } from "./utils";
 
 const fetcher = Promise.resolve().then(() =>
-  'fetch' in self ? self.fetch : import('whatwg-fetch').then(() => self.fetch)
+  "fetch" in self ? self.fetch : import("whatwg-fetch").then(() => self.fetch)
 );
 
 export default (url, options) => {
   const emitter = mitt();
 
-  emitter.on('start', async () => {
+  emitter.on("start", async () => {
     try {
       const fetch = await fetcher;
       const response = await fetch(
         url,
-        Object.assign({ credentials: 'omit' }, options)
+        Object.assign({ credentials: "omit" }, options)
       );
 
       if (!response.ok) {
         const error = new Error(response.statusText);
 
         error.status = response.status;
-        emitter.emit('error', error);
+        emitter.emit("error", error);
 
         return;
       }
@@ -29,12 +29,12 @@ export default (url, options) => {
       const encodedLog = new Uint8Array(arrayBuffer);
       const { lines, remaining } = convertBufferToLines(encodedLog);
 
-      emitter.emit('update', {
+      emitter.emit("update", {
         lines: remaining ? lines.concat(remaining) : lines,
       });
-      emitter.emit('end', encodedLog);
+      emitter.emit("end", encodedLog);
     } catch (err) {
-      emitter.emit('error', err);
+      emitter.emit("error", err);
     }
   });
 

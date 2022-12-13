@@ -147,7 +147,21 @@ func isHttpPortName(name string) bool {
 	}
 }
 
-func GetNodePortMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
+type EndpointMapping map[string][]*Endpoint
+
+func (e EndpointMapping) Get(projName string) []*Endpoint {
+	return e[projName]
+}
+
+func (e EndpointMapping) AllEndpoints() []*Endpoint {
+	var res = make([]*Endpoint, 0)
+	for _, endpoints := range e {
+		res = append(res, endpoints...)
+	}
+	return res
+}
+
+func GetNodePortMappingByProjects(namespace string, projects ...models.Project) EndpointMapping {
 	cfg := app.Config()
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
@@ -182,14 +196,14 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 	return m
 }
 
-func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
+func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Project) EndpointMapping {
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](SplitManifests(project.Manifest))
 	}
 
 	list, _ := app.K8sClient().ServiceLister.Services(namespace).List(labels.Everything())
-	var m = map[string][]*Endpoint{}
+	var m = EndpointMapping{}
 
 	for _, item := range list {
 		if projectName, ok := projectMap.GetProject(item); ok && item.Spec.Type == v1.ServiceTypeLoadBalancer && len(item.Status.LoadBalancer.Ingress) > 0 {
@@ -224,19 +238,19 @@ func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Proje
 	return m
 }
 
-func GetIngressMappingByProjects(namespace string, projects ...models.Project) map[string][]*Endpoint {
+func GetIngressMappingByProjects(namespace string, projects ...models.Project) EndpointMapping {
 	var projectMap = make(projectObjectMap)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*networkingv1.Ingress](SplitManifests(project.Manifest))
 	}
 
-	var m = map[string][]*Endpoint{}
+	var m = EndpointMapping{}
 
-	list, _ := app.K8sClientSet().NetworkingV1().Ingresses(namespace).List(context.Background(), metav1.ListOptions{})
-	for _, item := range list.Items {
+	list, _ := app.K8sClient().IngressLister.Ingresses(namespace).List(labels.Everything())
+	for _, item := range list {
 		if len(item.Spec.TLS) > 0 {
 			for _, tls := range item.Spec.TLS {
-				if projectName, ok := projectMap.GetProject(&item); ok {
+				if projectName, ok := projectMap.GetProject(item); ok {
 					data := m[projectName]
 					var hosts []*Endpoint
 					for _, host := range tls.Hosts {
@@ -247,7 +261,7 @@ func GetIngressMappingByProjects(namespace string, projects ...models.Project) m
 			}
 		} else {
 			for _, rules := range item.Spec.Rules {
-				if projectName, ok := projectMap.GetProject(&item); ok {
+				if projectName, ok := projectMap.GetProject(item); ok {
 					data := m[projectName]
 					var hosts []*Endpoint
 					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("http://%s", rules.Host)})

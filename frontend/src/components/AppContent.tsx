@@ -15,7 +15,9 @@ const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [namespaceItems, setNamespaceItems] = useAsyncState<pb.types.NamespaceModel[]>([]);
+  const [namespaceItems, setNamespaceItems] = useAsyncState<
+    pb.types.NamespaceModel[]
+  >([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
     allNamespaces()
@@ -62,7 +64,7 @@ const AppContent: React.FC = () => {
 
   return (
     <DraggableModalProvider>
-      <div className="content" style={{marginBottom: 30}}>
+      <div className="content" style={{ marginBottom: 30 }}>
         <AddNamespace onCreated={onNamespaceCreated} />
 
         {namespaceItems.length < 1 ? (

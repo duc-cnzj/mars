@@ -25,7 +25,7 @@ const DiffViewer: React.FC<{
   const highlightSyntax = useCallback(
     (str: string) => (
       <pre
-        style={{ display: 'inline' }}
+        style={{ display: "inline" }}
         dangerouslySetInnerHTML={{
           __html: getHighlightSyntax(str, mode),
         }}

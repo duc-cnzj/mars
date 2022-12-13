@@ -25,7 +25,9 @@ const DynamicElement: React.FC<{
       {(fields, { add, remove }) => (
         <>
           {fields.map((field) => {
-            const type = Number(form.getFieldValue(["elements", field.name, "type"]));
+            const type = Number(
+              form.getFieldValue(["elements", field.name, "type"])
+            );
             return (
               <div key={field.name} className="dynamic-element">
                 <div className="dynamic-element__wrapper">

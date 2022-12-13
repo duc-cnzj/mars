@@ -1,12 +1,12 @@
-import { List, Range } from 'immutable';
-import reactStringReplace from 'react-string-replace';
+import { List, Range } from "immutable";
+import reactStringReplace from "react-string-replace";
 
 export const ENCODED_NEWLINE = 10; // \n
 export const ENCODED_CARRIAGE_RETURN = 13; // \r
 export const SEARCH_BAR_HEIGHT = 45;
 export const SEARCH_MIN_KEYWORDS = 2;
 
-export const isNewline = current =>
+export const isNewline = (current) =>
   current === ENCODED_NEWLINE || current === ENCODED_CARRIAGE_RETURN;
 
 export const getScrollIndex = ({
@@ -27,7 +27,7 @@ export const getScrollIndex = ({
   return -1;
 };
 
-export const getHighlightRange = highlight => {
+export const getHighlightRange = (highlight) => {
   if (!highlight) {
     return Range(0, 0);
   }
@@ -57,7 +57,7 @@ export const convertBufferToLines = (current, previous) => {
   const { length } = buffer;
   let lastNewlineIndex = 0;
   let index = 0;
-  const lines = List().withMutations(lines => {
+  const lines = List().withMutations((lines) => {
     while (index < length) {
       const current = buffer[index];
       const next = buffer[index + 1];
@@ -83,7 +83,7 @@ export const convertBufferToLines = (current, previous) => {
   };
 };
 
-export const getLinesLengthRanges = rawLog => {
+export const getLinesLengthRanges = (rawLog) => {
   const { length } = rawLog;
   const linesRanges = [];
   let lastNewlineIndex = 0;
@@ -109,25 +109,22 @@ export const getLinesLengthRanges = rawLog => {
   return linesRanges;
 };
 
-export const searchFormatPart = ({
-  searchKeywords,
-  nextFormatPart,
-  caseInsensitive,
-  replaceJsx,
-}) => part => {
-  let formattedPart = part;
+export const searchFormatPart =
+  ({ searchKeywords, nextFormatPart, caseInsensitive, replaceJsx }) =>
+  (part) => {
+    let formattedPart = part;
 
-  if (nextFormatPart) {
-    formattedPart = nextFormatPart(part);
-  }
+    if (nextFormatPart) {
+      formattedPart = nextFormatPart(part);
+    }
 
-  if (caseInsensitive) {
-    if (part.toLowerCase().includes(searchKeywords.toLowerCase())) {
+    if (caseInsensitive) {
+      if (part.toLowerCase().includes(searchKeywords.toLowerCase())) {
+        return reactStringReplace(formattedPart, searchKeywords, replaceJsx);
+      }
+    } else if (part.includes(searchKeywords)) {
       return reactStringReplace(formattedPart, searchKeywords, replaceJsx);
     }
-  } else if (part.includes(searchKeywords)) {
-    return reactStringReplace(formattedPart, searchKeywords, replaceJsx);
-  }
 
-  return formattedPart;
-};
+    return formattedPart;
+  };

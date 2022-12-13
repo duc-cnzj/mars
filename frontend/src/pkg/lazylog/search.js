@@ -1,5 +1,5 @@
-import { decode, encode } from './encoding';
-import { getLinesLengthRanges } from './utils';
+import { decode, encode } from "./encoding";
+import { getLinesLengthRanges } from "./utils";
 
 export const searchIndexes = (rawKeywords, rawLog) => {
   const keywords = Array.from(encode(rawKeywords));

@@ -154,7 +154,7 @@ const MyTabs: React.FC<{
       key: "shell",
       label: "命令行",
       children: (
-        <div style={{height: "100%"}}>
+        <div style={{ height: "100%" }}>
           <Suspense fallback={<Skeleton active />}>
             <ErrorBoundary>
               {detail?.project && detail.project.namespace && (

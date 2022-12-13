@@ -12,13 +12,7 @@ const ConfigHistory: React.FC<{
   currentConfig: string;
   onDataChange: (s: string) => void;
   updatedAt: any;
-}> = ({
-  currentConfig,
-  projectID,
-  configType,
-  updatedAt,
-  onDataChange,
-}) => {
+}> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
   const [visible, setVisible] = useState(false);
   return (
     <Popover

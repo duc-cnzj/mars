@@ -318,7 +318,8 @@ func TestGetIngressMappingByNamespace(t *testing.T) {
 		},
 	)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
-		Client: fk,
+		Client:        fk,
+		IngressLister: testutil.NewIngressLister(&ing1, &ing2, &ing3, &ing4),
 	})
 	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
@@ -752,4 +753,41 @@ func Test_isHttpPortName(t *testing.T) {
 			assert.Equal(t, tt.wants, isHttpPortName(tt.name))
 		})
 	}
+}
+
+func TestEndpointMapping_AllEndpoints(t *testing.T) {
+	em := EndpointMapping{
+		"a": []*Endpoint{
+			{
+				Name: "a",
+			},
+			{
+				Name: "b",
+			},
+		},
+		"b": []*Endpoint{
+			{
+				Name: "c",
+			},
+			{
+				Name: "d",
+			},
+		},
+	}
+	assert.Len(t, em.AllEndpoints(), 4)
+}
+
+func TestEndpointMapping_Get(t *testing.T) {
+	em := EndpointMapping{
+		"a": []*Endpoint{
+			{
+				Name: "a",
+			},
+			{
+				Name: "b",
+			},
+		},
+	}
+	assert.Nil(t, em.Get("xxxx"))
+	assert.Len(t, em.Get("a"), 2)
 }

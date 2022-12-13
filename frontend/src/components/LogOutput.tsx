@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from "react";
-import { Timeline, Button} from "antd";
+import { Timeline, Button } from "antd";
 import { useSelector } from "react-redux";
 import { selectList } from "../store/reducers/createProject";
 import pb from "../api/compiled";
@@ -35,8 +35,8 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
       >
         {list[slug]?.output?.map((data, index) => (
           <Timeline.Item key={index} color={getResultColor(data.type)}>
-            <div style={{display: "flex", alignItems: "center"}}>
-              <span style={{marginRight: 5}}>{data.log}</span>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span style={{ marginRight: 5 }}>{data.log}</span>
               {data.containers &&
                 data.containers.map((item, k) => (
                   <LogButton c={item} key={k} />
@@ -60,7 +60,7 @@ const LogButton: React.FC<{ c: pb.types.Container }> = ({ c }) => {
   return (
     <div>
       <DraggableModal
-      zIndex={99999}
+        zIndex={99999}
         className="draggable-modal"
         destroyOnClose
         open={visible}
@@ -80,7 +80,12 @@ const LogButton: React.FC<{ c: pb.types.Container }> = ({ c }) => {
           />
         )}
       </DraggableModal>
-      <Button danger size="small" style={{marginRight: 5}} onClick={() => handleVisibleChange(true)}>
+      <Button
+        danger
+        size="small"
+        style={{ marginRight: 5 }}
+        onClick={() => handleVisibleChange(true)}
+      >
         查看日志 {c.pod}
       </Button>
     </div>

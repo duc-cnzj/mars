@@ -3,7 +3,8 @@ const initialState = {
   reload: false,
 };
 
-export const selectReload = (state:{namespace: {reload:boolean}}) => state.namespace.reload;
+export const selectReload = (state: { namespace: { reload: boolean } }) =>
+  state.namespace.reload;
 
 export default function namespace(
   state = initialState,
