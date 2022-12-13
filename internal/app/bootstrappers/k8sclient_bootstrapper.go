@@ -93,6 +93,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 
 	inf := informers.NewSharedInformerFactory(clientset, 0)
 	svcLister := inf.Core().V1().Services().Lister()
+	ingLister := inf.Networking().V1().Ingresses().Lister()
 	rsLister := inf.Apps().V1().ReplicaSets().Lister()
 	podInf := inf.Core().V1().Pods().Informer()
 	podLister := inf.Core().V1().Pods().Lister()
@@ -143,6 +144,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		PodLister:        podLister,
 		ReplicaSetLister: rsLister,
 		ServiceLister:    svcLister,
+		IngressLister:    ingLister,
 		EventInformer:    eventInf,
 		EventFanOut:      eventFanOutObj,
 		PodFanOut:        podFanOutObj,

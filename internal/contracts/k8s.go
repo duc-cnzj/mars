@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/listers/apps/v1"
 	v1 "k8s.io/client-go/listers/core/v1"
+	networkingv1 "k8s.io/client-go/listers/networking/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
@@ -71,6 +72,7 @@ type K8sClient struct {
 
 	ReplicaSetLister appsv1.ReplicaSetLister
 	ServiceLister    v1.ServiceLister
+	IngressLister    networkingv1.IngressLister
 
 	EventInformer cache.SharedIndexInformer
 

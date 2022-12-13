@@ -285,6 +285,7 @@ func TestProjectSvc_Show(t *testing.T) {
 		MetricsClient: fm,
 		Client:        fk,
 		ServiceLister: testutil.NewServiceLister(&svc1, &svc2),
+		IngressLister: testutil.NewIngressLister(&ing1),
 	}).AnyTimes()
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 

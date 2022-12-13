@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -98,5 +99,25 @@ func TestNewServiceLister(t *testing.T) {
 	_, err = lister.Services("ns").Get("svc2")
 	assert.Nil(t, err)
 	_, err = lister.Services("ns").Get("svc3")
+	assert.Error(t, err)
+}
+
+func TestNewIngressLister(t *testing.T) {
+	lister := NewIngressLister(&networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "ing1",
+		},
+	}, &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "ing2",
+		},
+	})
+	_, err := lister.Ingresses("ns").Get("ing1")
+	assert.Nil(t, err)
+	_, err = lister.Ingresses("ns").Get("ing2")
+	assert.Nil(t, err)
+	_, err = lister.Ingresses("ns").Get("ing3")
 	assert.Error(t, err)
 }

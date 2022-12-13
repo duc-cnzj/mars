@@ -192,21 +192,9 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	lbMapping := utils.GetLoadBalancerMappingByProjects(projectModel.Namespace.Name, projectModel)
 
 	var urls = make([]*types.ServiceEndpoint, 0)
-	for key, values := range ingMapping {
-		if projectModel.Name == key {
-			urls = append(urls, values...)
-		}
-	}
-	for key, values := range nodePortMapping {
-		if projectModel.Name == key {
-			urls = append(urls, values...)
-		}
-	}
-	for key, values := range lbMapping {
-		if projectModel.Name == key {
-			urls = append(urls, values...)
-		}
-	}
+	urls = append(urls, ingMapping.Get(projectModel.Name)...)
+	urls = append(urls, nodePortMapping.Get(projectModel.Name)...)
+	urls = append(urls, lbMapping.Get(projectModel.Name)...)
 
 	return &project.ShowResponse{
 		Project:  projectModel.ProtoTransform(),

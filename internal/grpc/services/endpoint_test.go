@@ -165,6 +165,7 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:        fk,
 		ServiceLister: svcLister,
+		IngressLister: testutil.NewIngressLister(&ing1, &ing2),
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 	res, _ := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
@@ -202,7 +203,7 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	_, err = new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: int64(p1.ID),
 	})
-	assert.Error(t, err)
+	assert.Equal(t, "namespace not exists", err.Error())
 	svc1 := corev1.Service{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Service",
@@ -290,6 +291,7 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:        fk,
 		ServiceLister: testutil.NewServiceLister(&svc1),
+		IngressLister: testutil.NewIngressLister(&ing1, &ing2),
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"}).AnyTimes()
 	res, _ := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{

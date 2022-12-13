@@ -9,8 +9,10 @@ import (
 	"gorm.io/gorm"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	appsv1lister "k8s.io/client-go/listers/apps/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
+	networkingv1lister "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -56,10 +58,19 @@ func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
 	}
 	return appsv1lister.NewReplicaSetLister(idxer)
 }
+
 func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range svcs {
 		idxer.Add(po)
 	}
 	return corev1lister.NewServiceLister(idxer)
+}
+
+func NewIngressLister(svcs ...*networkingv1.Ingress) networkingv1lister.IngressLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range svcs {
+		idxer.Add(po)
+	}
+	return networkingv1lister.NewIngressLister(idxer)
 }

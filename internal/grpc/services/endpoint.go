@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
@@ -33,39 +34,32 @@ func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNames
 		return nil, err
 	}
 
-	var res = []*types.ServiceEndpoint{}
-	nodePortMapping := utils.GetNodePortMappingByProjects(ns.Name, ns.Projects...)
-	ingMapping := utils.GetIngressMappingByProjects(ns.Name, ns.Projects...)
-	lbMapping := utils.GetLoadBalancerMappingByProjects(ns.Name, ns.Projects...)
-	for _, hosts := range ingMapping {
-		res = append(res, hosts...)
-	}
-	for _, hosts := range lbMapping {
-		res = append(res, hosts...)
-	}
-	for _, hosts := range nodePortMapping {
-		res = append(res, hosts...)
-	}
-
-	return &endpoint.InNamespaceResponse{Items: res}, nil
+	return &endpoint.InNamespaceResponse{Items: e.endpoints(ns.Name, ns.Projects...)}, nil
 }
 
 func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.InProjectRequest) (*endpoint.InProjectResponse, error) {
 	var p models.Project
-	if err := app.DB().Where("`id` = ?", request.ProjectId).First(&p).Error; err != nil {
+	if err := app.DB().
+		Preload("Namespace").
+		Select("id", "manifest", "namespace_id", "name").
+		Where("`id` = ?", request.ProjectId).
+		First(&p).Error; err != nil {
 		return nil, err
 	}
-	sd, err := e.InNamespace(ctx, &endpoint.InNamespaceRequest{NamespaceId: int64(p.NamespaceId)})
-	if err != nil {
-		return nil, err
+	if p.Namespace.Name == "" {
+		return nil, errors.New("namespace not exists")
 	}
+
+	return &endpoint.InProjectResponse{Items: e.endpoints(p.Namespace.Name, p)}, nil
+}
+
+func (e *EndpointSvc) endpoints(ns string, projects ...models.Project) []*types.ServiceEndpoint {
 	var res = []*types.ServiceEndpoint{}
-
-	for _, re := range sd.Items {
-		if re.Name == p.Name {
-			res = append(res, re)
-		}
-	}
-
-	return &endpoint.InProjectResponse{Items: res}, nil
+	nodePortMapping := utils.GetNodePortMappingByProjects(ns, projects...)
+	ingMapping := utils.GetIngressMappingByProjects(ns, projects...)
+	lbMapping := utils.GetLoadBalancerMappingByProjects(ns, projects...)
+	res = append(res, ingMapping.AllEndpoints()...)
+	res = append(res, lbMapping.AllEndpoints()...)
+	res = append(res, nodePortMapping.AllEndpoints()...)
+	return res
 }
