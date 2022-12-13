@@ -225,6 +225,7 @@ func write(wsconn *WsConn) (err error) {
 		wsconn.conn.Close()
 	}()
 	ch := wsconn.pubSub.Subscribe()
+	var w io.WriteCloser
 	for {
 		select {
 		case message, ok := <-ch:
@@ -233,7 +234,6 @@ func write(wsconn *WsConn) (err error) {
 				return wsconn.conn.WriteMessage(websocket.CloseMessage, []byte{})
 			}
 
-			var w io.WriteCloser
 			w, err = wsconn.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return err
