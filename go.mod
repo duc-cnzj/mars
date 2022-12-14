@@ -53,7 +53,7 @@ require (
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.1
-	helm.sh/helm/v3 v3.10.2
+	helm.sh/helm/v3 v3.10.3
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
 	k8s.io/cli-runtime v0.25.4
