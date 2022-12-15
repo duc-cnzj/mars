@@ -78,33 +78,39 @@ func TestGormLoggerAdapter_Trace(t *testing.T) {
 	l := &loggerMock{}
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
+
 	time1 := time.Now()
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "aaa", 100
 	}, gorm.ErrRecordNotFound)
 	assert.Regexp(t, `\[SQL\]: record not found \[(.*?)ms\] \[rows:100\] aaa \S+$`, l.debugs[0])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "aaa", -1
 	}, gorm.ErrRecordNotFound)
 	assert.Regexp(t, `\[SQL\]: record not found \[(.*?)ms\] \[rows:-\] aaa \S+$`, l.debugs[1])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "aaa", -1
 	}, errors.New("xxx"))
 	assert.Regexp(t, `\[SQL\]: xxx \[(.*?)ms\] \[rows:-\] aaa \S+$`, l.errs[0])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "aaa", 100
 	}, errors.New("xxx"))
 	assert.Regexp(t, `\[SQL\]: xxx \[(.*?)ms\] \[rows:100\] aaa \S+$`, l.errs[1])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "aaa", 100
 	}, errors.New("xxx for key 'cache_locks.PRIMARY'"))
 	assert.Regexp(t, `\[SQL\]: xxx for key 'cache_locks.PRIMARY' \[(.*?)ms\] \[rows:100\] aaa \S+$`, l.debugs[2])
 
 	time2 := time.Now().Add(-1 * time.Second)
-	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time2, func() (string, int64) {
+	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Error).Trace(context.TODO(), time2, func() (string, int64) {
 		return "show sql...", 100
 	}, nil)
 	assert.Regexp(t, `\[SQL\]: \(SLOW SQL\) >= 200ms \[(.*?)ms\] \[rows:100\] show sql\.\.\. \S+$`, l.warns[0])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time2, func() (string, int64) {
 		return "show sql...", -1
 	}, nil)
@@ -114,6 +120,7 @@ func TestGormLoggerAdapter_Trace(t *testing.T) {
 		return "sql...", -1
 	}, nil)
 	assert.Regexp(t, `\[SQL\]: \[(.*?)ms\] \[rows:-\] sql\.\.\. \S+$`, l.infos[0])
+
 	NewGormLoggerAdapter(true, defaultSlowThreshold).LogMode(logger.Info).Trace(context.TODO(), time1, func() (string, int64) {
 		return "sql...", 100
 	}, nil)
