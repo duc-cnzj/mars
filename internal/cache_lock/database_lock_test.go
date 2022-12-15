@@ -37,7 +37,7 @@ func TestMain(t *testing.M) {
 	setDefault(&dbname, "mars_test_db")
 	setDefault(&dbhost, "127.0.0.1")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, dbpwd, dbhost, port, dbname)
-	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: adapter.NewGormLoggerAdapter(false, 0)})
+	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: adapter.NewGormLoggerAdapter()})
 	if err == nil {
 		prepared = true
 		sqlDB, _ := gormDB.DB()

@@ -23,11 +23,21 @@ type gormLoggerAdapter struct {
 	slowThreshold  time.Duration
 }
 
-func NewGormLoggerAdapter(enabledSlowLog bool, slowThreshold time.Duration) *gormLoggerAdapter {
-	if slowThreshold == 0 {
-		slowThreshold = defaultSlowThreshold
+type GormLoggerOption func(*gormLoggerAdapter)
+
+func GormLoggerWithSlowLog(enabled bool, slowThreshold time.Duration) func(*gormLoggerAdapter) {
+	return func(l *gormLoggerAdapter) {
+		l.enabledSlowLog = enabled
+		l.slowThreshold = slowThreshold
 	}
-	return &gormLoggerAdapter{slowThreshold: slowThreshold, enabledSlowLog: enabledSlowLog}
+}
+
+func NewGormLoggerAdapter(opts ...GormLoggerOption) *gormLoggerAdapter {
+	l := &gormLoggerAdapter{level: logger.Warn, enabledSlowLog: false, slowThreshold: defaultSlowThreshold}
+	for _, opt := range opts {
+		opt(l)
+	}
+	return l
 }
 
 func (g *gormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
