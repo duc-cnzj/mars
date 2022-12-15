@@ -104,14 +104,14 @@ type Config struct {
 	JaegerAgentHostPort string `mapstructure:"jaeger_agent_host_port"`
 
 	// mysql
-	DBDriver         string        `mapstructure:"db_driver"`
-	DBHost           string        `mapstructure:"db_host"`
-	DBPort           string        `mapstructure:"db_port"`
-	DBUsername       string        `mapstructure:"db_username"`
-	DBPassword       string        `mapstructure:"db_password"`
-	DBDatabase       string        `mapstructure:"db_database"`
-	DBSlowLogEnabled bool          `mapstructure:"db_slow_log_enabled"`
-	DBSlowThreshold  time.Duration `mapstructure:"db_slow_threshold"`
+	DBDriver           string        `mapstructure:"db_driver"`
+	DBHost             string        `mapstructure:"db_host"`
+	DBPort             string        `mapstructure:"db_port"`
+	DBUsername         string        `mapstructure:"db_username"`
+	DBPassword         string        `mapstructure:"db_password"`
+	DBDatabase         string        `mapstructure:"db_database"`
+	DBSlowLogEnabled   bool          `mapstructure:"db_slow_log_enabled"`
+	DBSlowLogThreshold time.Duration `mapstructure:"db_slow_log_threshold"`
 
 	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`
 

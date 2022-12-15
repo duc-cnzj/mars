@@ -77,7 +77,7 @@ db_username: root
 db_password: ""
 db_slow_log_enabled: true
 # "ns", "us" (or "µs"), "ms", "s", "m", "h"
-db_slow_threshold: 200ms
+db_slow_log_threshold: 200ms
 
 jaeger_agent_host_port: ""
 
