@@ -100,14 +100,14 @@ func TestName(t *testing.T) {
 	sf := singleflight.Group{}
 	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
 	db.AutoMigrate(&models.DBCache{})
-	caled := 0
+	called := 0
 	NewDBCache(app.Singleflight(), func() *gorm.DB {
-		if caled > 0 {
+		if called > 0 {
 			db.Migrator().DropTable(&models.DBCache{})
 			assert.False(t, db.Migrator().HasTable(&models.DBCache{}))
 			return db
 		}
-		caled++
+		called++
 		return db
 	}).Remember(NewKey("aaaa-xx"), 1, func() ([]byte, error) {
 		return []byte("xxx"), nil

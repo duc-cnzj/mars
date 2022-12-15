@@ -82,7 +82,7 @@ export type Action =
   | {
       type: "mount";
       id: ModalID;
-      intialState: { initialWidth?: number; initialHeight?: number };
+      initialState: { initialWidth?: number; initialHeight?: number };
     }
   | { type: "windowResize"; size: { width: number; height: number } }
   | { type: "drag"; id: ModalID; x: number; y: number }
@@ -338,7 +338,7 @@ export const draggableModalReducer = (
       };
     }
     case "mount":
-      const initialState = getInitialModalState(action.intialState);
+      const initialState = getInitialModalState(action.initialState);
       return {
         ...state,
         initSize: initialState,

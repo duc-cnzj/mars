@@ -42,11 +42,11 @@ func (receiver *mockApp) RegisterAfterShutdownFunc(callback contracts.Callback) 
 
 type testDm struct {
 	DomainManager
-	inited bool
+	initialized bool
 }
 
 func (t *testDm) Initialize(args map[string]any) error {
-	t.inited = true
+	t.initialized = true
 	return nil
 }
 
@@ -59,5 +59,5 @@ func TestGetDomainManager(t *testing.T) {
 	domainManagerOnce = sync.Once{}
 	GetDomainManager()
 	assert.Equal(t, 1, ma.callback)
-	assert.True(t, dm.inited)
+	assert.True(t, dm.initialized)
 }
