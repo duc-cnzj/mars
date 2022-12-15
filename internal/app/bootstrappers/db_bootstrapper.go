@@ -57,7 +57,7 @@ func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 		return err
 	}
 
-	db.Logger = &adapter.GormLoggerAdapter{}
+	db.Logger = adapter.NewGormLoggerAdapter(cfg.DBEnabledSlowLog, cfg.DBSlowThreshold)
 
 	// SetMaxIdleConns 设置空闲连接池中连接的最大数量
 	sqlDB.SetMaxIdleConns(10)

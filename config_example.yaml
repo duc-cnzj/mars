@@ -28,8 +28,8 @@ ws_sender_plugin:
 #  name: ws_sender_nsq
 #  args:
 #    addr: 127.0.0.1:4150
-    # lookupd_addr 可选，有就用
-    # lookupd_addr: 127.0.0.1:4160
+# lookupd_addr 可选，有就用
+# lookupd_addr: 127.0.0.1:4160
 #  name: ws_sender_redis
 #  args:
 #    addr: 127.0.0.1:6379
@@ -75,6 +75,9 @@ db_host: 127.0.0.1
 db_port: 3306
 db_username: root
 db_password: ""
+db_enabled_slow_log: true
+# "ns", "us" (or "µs"), "ms", "s", "m", "h"
+db_slow_threshold: 200ms
 
 jaeger_agent_host_port: ""
 
