@@ -110,7 +110,7 @@ type Config struct {
 	DBUsername       string        `mapstructure:"db_username"`
 	DBPassword       string        `mapstructure:"db_password"`
 	DBDatabase       string        `mapstructure:"db_database"`
-	DBEnabledSlowLog bool          `mapstructure:"db_enabled_slow_log"`
+	DBSlowLogEnabled bool          `mapstructure:"db_slow_log_enabled"`
 	DBSlowThreshold  time.Duration `mapstructure:"db_slow_threshold"`
 
 	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`

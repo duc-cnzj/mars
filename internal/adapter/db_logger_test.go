@@ -140,10 +140,10 @@ func TestGormLoggerAdapter_Warn(t *testing.T) {
 func TestNewGormLoggerAdapter(t *testing.T) {
 	l := NewGormLoggerAdapter(GormLoggerWithSlowLog(true, 1*time.Millisecond))
 	assert.Equal(t, 1*time.Millisecond, l.slowThreshold)
-	assert.True(t, l.enabledSlowLog)
+	assert.True(t, l.slowLogEnabled)
 	assert.Equal(t, logger.Warn, l.level)
 	l2 := NewGormLoggerAdapter()
-	assert.False(t, l2.enabledSlowLog)
+	assert.False(t, l2.slowLogEnabled)
 	assert.Equal(t, defaultSlowThreshold, l2.slowThreshold)
 	assert.Equal(t, logger.Warn, l2.level)
 }

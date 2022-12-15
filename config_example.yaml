@@ -75,7 +75,7 @@ db_host: 127.0.0.1
 db_port: 3306
 db_username: root
 db_password: ""
-db_enabled_slow_log: true
+db_slow_log_enabled: true
 # "ns", "us" (or "µs"), "ms", "s", "m", "h"
 db_slow_threshold: 200ms
 

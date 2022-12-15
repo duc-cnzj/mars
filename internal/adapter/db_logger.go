@@ -19,7 +19,7 @@ const defaultSlowThreshold = 200 * time.Millisecond
 type gormLoggerAdapter struct {
 	level logger.LogLevel
 
-	enabledSlowLog bool
+	slowLogEnabled bool
 	slowThreshold  time.Duration
 }
 
@@ -27,13 +27,13 @@ type GormLoggerOption func(*gormLoggerAdapter)
 
 func GormLoggerWithSlowLog(enabled bool, slowThreshold time.Duration) func(*gormLoggerAdapter) {
 	return func(l *gormLoggerAdapter) {
-		l.enabledSlowLog = enabled
+		l.slowLogEnabled = enabled
 		l.slowThreshold = slowThreshold
 	}
 }
 
 func NewGormLoggerAdapter(opts ...GormLoggerOption) *gormLoggerAdapter {
-	l := &gormLoggerAdapter{level: logger.Warn, enabledSlowLog: false, slowThreshold: defaultSlowThreshold}
+	l := &gormLoggerAdapter{level: logger.Warn, slowLogEnabled: false, slowThreshold: defaultSlowThreshold}
 	for _, opt := range opts {
 		opt(l)
 	}
@@ -94,7 +94,7 @@ func (g *gormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 				}
 				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
-		case elapsed > g.slowThreshold && g.enabledSlowLog:
+		case elapsed > g.slowThreshold && g.slowLogEnabled:
 			sql, rows := fc()
 			slowLog := fmt.Sprintf("(SLOW SQL) >= %v", g.slowThreshold)
 			if rows == -1 {
