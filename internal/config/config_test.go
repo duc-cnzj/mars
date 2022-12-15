@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -55,6 +56,8 @@ func TestInit(t *testing.T) {
 	assert.Len(t, cfg.ImagePullSecrets, 2)
 	assert.Equal(t, cfg.ImagePullSecrets[0].Server, "https://index.docker.io/v1/")
 	assert.Equal(t, cfg.ImagePullSecrets[1].Server, "registry.cn-hangzhou.aliyuncs.com")
+	assert.Equal(t, true, cfg.DBSlowLogEnabled)
+	assert.Equal(t, 200*time.Millisecond, cfg.DBSlowLogThreshold)
 }
 
 func TestPlugin_String(t *testing.T) {

@@ -14,41 +14,63 @@ import (
 	"gorm.io/gorm/utils"
 )
 
-type GormLoggerAdapter struct {
+const defaultSlowThreshold = 200 * time.Millisecond
+
+type gormLoggerAdapter struct {
 	level logger.LogLevel
+
+	slowLogEnabled   bool
+	slowLogThreshold time.Duration
 }
 
-func (g *GormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
+type GormLoggerOption func(*gormLoggerAdapter)
+
+func GormLoggerWithSlowLog(enabled bool, slowThreshold time.Duration) func(*gormLoggerAdapter) {
+	return func(l *gormLoggerAdapter) {
+		l.slowLogEnabled = enabled
+		l.slowLogThreshold = slowThreshold
+	}
+}
+
+func NewGormLoggerAdapter(opts ...GormLoggerOption) *gormLoggerAdapter {
+	l := &gormLoggerAdapter{level: logger.Warn, slowLogEnabled: false, slowLogThreshold: defaultSlowThreshold}
+	for _, opt := range opts {
+		opt(l)
+	}
+	return l
+}
+
+func (g *gormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
 	g.level = level
 
 	return g
 }
 
-func (g *GormLoggerAdapter) Info(ctx context.Context, s string, i ...any) {
+func (g *gormLoggerAdapter) Info(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Info {
 		mlog.Infof(s, i...)
 	}
 }
 
-func (g *GormLoggerAdapter) Warn(ctx context.Context, s string, i ...any) {
+func (g *gormLoggerAdapter) Warn(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Warn {
 		mlog.Warningf(s, i...)
 	}
 }
 
-func (g *GormLoggerAdapter) Error(ctx context.Context, s string, i ...any) {
+func (g *gormLoggerAdapter) Error(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Error {
 		mlog.Errorf(s, i...)
 	}
 }
 
-func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+func (g *gormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	const (
-		traceStr      = "[SQL]: [%.3fms] [rows:%v] %s %s"
-		traceWarnStr  = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
-		traceErrStr   = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
-		slowThreshold = 200 * time.Millisecond
+		traceStr     = "[SQL]: [%.3fms] [rows:%v] %s %s"
+		traceWarnStr = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
+		traceErrStr  = "[SQL]: %s [%.3fms] [rows:%v] %s %s"
 	)
+
 	if g.level > logger.Silent {
 		elapsed := time.Since(begin)
 		switch {
@@ -72,9 +94,9 @@ func (g *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 				}
 				mlog.Errorf(traceErrStr, err, float64(elapsed.Nanoseconds())/1e6, rows, sql, utils.FileWithLineNum())
 			}
-		case elapsed > slowThreshold && g.level >= logger.Warn:
+		case elapsed > g.slowLogThreshold && g.slowLogEnabled:
 			sql, rows := fc()
-			slowLog := fmt.Sprintf("(SLOW SQL) >= %v", slowThreshold)
+			slowLog := fmt.Sprintf("(SLOW SQL) >= %v", g.slowLogThreshold)
 			if rows == -1 {
 				mlog.Warningf(traceWarnStr, slowLog, float64(elapsed.Nanoseconds())/1e6, "-", sql, utils.FileWithLineNum())
 			} else {

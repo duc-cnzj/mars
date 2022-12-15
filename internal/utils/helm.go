@@ -207,7 +207,7 @@ func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], 
 
 			var (
 				containerNames []string
-				contaniners    []*types.Container
+				containers     []*types.Container
 			)
 			for _, status := range p.Status.ContainerStatuses {
 				if !status.Ready && status.RestartCount > 0 {
@@ -216,14 +216,14 @@ func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], 
 			}
 			for _, name := range containerNames {
 				//查看日志
-				contaniners = append(contaniners, &types.Container{
+				containers = append(containers, &types.Container{
 					Namespace: p.Namespace,
 					Pod:       p.Name,
 					Container: name,
 				})
 			}
-			if len(contaniners) > 0 {
-				fn(contaniners, "容器多次异常重启")
+			if len(containers) > 0 {
+				fn(containers, "容器多次异常重启")
 			}
 		}
 	}

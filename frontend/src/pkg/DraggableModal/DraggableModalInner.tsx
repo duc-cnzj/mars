@@ -43,7 +43,7 @@ function DraggableModalInnerNonMemo({
     dispatch({
       type: "mount",
       id,
-      intialState: { initialWidth, initialHeight },
+      initialState: { initialWidth, initialHeight },
     });
     return () => dispatch({ type: "unmount", id });
   }, [dispatch, id, initialWidth, initialHeight]);
