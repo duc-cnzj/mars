@@ -179,7 +179,6 @@ func TestManager_AutoMigrate(t *testing.T) {
 	}
 	assert.False(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasIndex(&models.Event{}, "Action"))
-	assert.False(t, db.Migrator().HasIndex(&Changelog{}, "idx_version_projectid_deleted_at_config_changed"))
 	if db.Migrator().HasTable(&models.AccessToken{}) {
 		assert.Nil(t, db.Migrator().DropTable(&models.AccessToken{}))
 	}
@@ -189,7 +188,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 
 	assert.Nil(t, ma.AutoMigrate())
 
-	assert.True(t, db.Migrator().HasIndex(&models.Changelog{}, "idx_version_projectid_deleted_at_config_changed"))
+	assert.False(t, db.Migrator().HasIndex(&models.Changelog{}, "idx_version_projectid_deleted_at_config_changed"))
 	assert.True(t, db.Migrator().HasColumn("files", "upload_type"))
 	assert.False(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.False(t, db.Migrator().HasTable("gitlab_projects"))

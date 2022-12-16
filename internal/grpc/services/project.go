@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"

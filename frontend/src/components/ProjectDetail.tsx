@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, memo, Suspense } from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
 import { detailProject } from "../api/project";
-import { Button, Tabs, Skeleton, Badge } from "antd";
+import { Button, Tabs, Skeleton, Badge, Spin } from "antd";
 import DeployStatus from "./DeployStatus";
 import { setNamespaceReload } from "../store/actions";
 import ErrorBoundary from "./ErrorBoundary";
@@ -98,7 +98,7 @@ const ItemDetailModal: React.FC<{
           </Badge.Ribbon>
         }
       >
-        {detail && detail.project && (
+        {detail && detail.project ? (
           <MarsTabs
             namespaceId={namespaceId}
             projectID={detail.project.id}
@@ -108,6 +108,17 @@ const ItemDetailModal: React.FC<{
             item={item}
             resizeAt={resizeAt}
           />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              height: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Spin tip="loading..." spinning={true} size="large" />
+          </div>
         )}
       </DraggableModal>
     </div>
