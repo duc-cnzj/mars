@@ -36,6 +36,10 @@ const ProjectSelector: React.FC<{
         let r = res.data.items.find(
           (item) => item.gitProjectId === String(v.gitProjectId)
         );
+        if (r) {
+          (r as any).children = [];
+        }
+        setOptions(r ? [r] : []);
 
         commit({
           git_project_id: String(v.gitProjectId),
@@ -47,27 +51,19 @@ const ProjectSelector: React.FC<{
         });
       });
     }
-  }, [v, value]);
+  }, [v, value, setOptions]);
 
   useEffect(() => {
-    projectOptions().then((res) => {
-      if (!isCreate && v?.gitProjectId) {
-        let r = res.data.items.find(
-          (item) => item.gitProjectId === String(v.gitProjectId)
-        );
-        if (r) {
-          (r as any).children = [];
-        }
-        setOptions(r ? [r] : []);
-      } else {
+    if (isCreate) {
+      projectOptions().then((res) => {
         setOptions(
           res.data.items.map((i: any) => {
             i.children = [];
             return i;
           })
         );
-      }
-    });
+      });
+    }
   }, [v, isCreate, setOptions]);
 
   const loadData = useCallback(

@@ -298,7 +298,7 @@ const EventList: React.FC = () => {
         <InfiniteScroll
           dataLength={data.length}
           next={loadMoreData}
-          hasMore={paginate.page_size === data.length}
+          hasMore={data.length % paginate.page_size === 0}
           loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
           endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
           scrollableTarget="scrollableDiv"
