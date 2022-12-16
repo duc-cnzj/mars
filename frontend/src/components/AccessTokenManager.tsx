@@ -289,21 +289,19 @@ const AccessTokenManager: React.FC = () => {
                   }
                 />
 
-                {!item.is_deleted && (
+                {!item.is_deleted && !item.is_expired && (
                   <>
-                    {!item.is_expired && (
-                      <Button
-                        size="small"
-                        type="primary"
-                        style={{ marginRight: 3 }}
-                        onClick={() => {
-                          setCurrToken(item.token);
-                          setIsModalVisible(true);
-                        }}
-                      >
-                        续租
-                      </Button>
-                    )}
+                    <Button
+                      size="small"
+                      type="primary"
+                      style={{ marginRight: 3 }}
+                      onClick={() => {
+                        setCurrToken(item.token);
+                        setIsModalVisible(true);
+                      }}
+                    >
+                      续租
+                    </Button>
                     <Popconfirm
                       title="确定要撤销 token ?"
                       okText="Yes"
