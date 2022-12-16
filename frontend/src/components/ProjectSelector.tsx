@@ -34,6 +34,16 @@ const ProjectSelector: React.FC<{
 
   const [selectedValues, setSelectedValues] = useState<(string | number)[]>([]);
 
+  useEffect(() => {
+    if (isCreate) {
+      projectOptions().then(({ data }) => {
+        setOptions(
+          data.items.map((i: pb.git.Option): Option => ({ ...i, children: [] }))
+        );
+      });
+    }
+  }, [isCreate, setOptions]);
+
   // 初始化，设置 initvalue
   useEffect(() => {
     if (value.length < 1 && v && v.gitCommit && v.gitBranch && v.gitProjectId) {
@@ -54,18 +64,6 @@ const ProjectSelector: React.FC<{
       });
     }
   }, [v, value, setOptions]);
-
-  useEffect(() => {
-    if (isCreate) {
-      projectOptions().then((res) => {
-        setOptions(
-          res.data.items.map((i: pb.git.Option): Option => {
-            return { ...i, children: [] };
-          })
-        );
-      });
-    }
-  }, [v, isCreate, setOptions]);
 
   const loadData = useCallback(
     (selectedOptions: BaseOptionType[]) => {
