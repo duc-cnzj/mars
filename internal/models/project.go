@@ -32,7 +32,7 @@ type Project struct {
 	OverrideValues   string `json:"override_values"`
 	DockerImage      string `json:"docker_image" gorm:"not null;size:255;default:''"`
 	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
-	NamespaceId      int    `json:"namespace_id"`
+	NamespaceId      int    `json:"namespace_id" gorm:"index:idx_namespace_id_deleted_at,priority:1;"`
 	Atomic           bool   `json:"atomic"`
 	DeployStatus     uint8  `json:"deploy_status" gorm:"not null;default:0"`
 	EnvValues        string `json:"env_values" gorm:"type:text;nullable;comment:可用的环境变量值"`
@@ -49,7 +49,7 @@ type Project struct {
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index:idx_namespace_id_deleted_at,priority:2;"`
 
 	Namespace Namespace
 }

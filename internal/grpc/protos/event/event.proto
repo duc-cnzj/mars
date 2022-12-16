@@ -20,7 +20,6 @@ message ListResponse {
   int64 page = 1;
   int64 page_size = 2;
   repeated types.EventModel items = 3;
-  int64 count = 4;
 }
 
 message ShowRequest {

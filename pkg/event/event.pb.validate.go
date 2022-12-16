@@ -224,8 +224,6 @@ func (m *ListResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for Count
-
 	if len(errors) > 0 {
 		return ListResponseMultiError(errors)
 	}

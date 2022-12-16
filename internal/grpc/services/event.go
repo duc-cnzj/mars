@@ -33,7 +33,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
 		events   []EventDiff
-		count    int64
 	)
 
 	queryScope := func(db *gorm.DB) *gorm.DB {
@@ -57,7 +56,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	}).Order("`id` DESC").Find(&events).Error; err != nil {
 		return nil, err
 	}
-	app.DB().Model(&models.Event{}).Scopes(queryScope).Count(&count)
 	res := make([]*types.EventModel, 0, len(events))
 	for _, m := range events {
 		protoModel := m.ProtoTransform()
@@ -69,7 +67,6 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		Page:     int64(page),
 		PageSize: int64(pageSize),
 		Items:    res,
-		Count:    count,
 	}, nil
 }
 

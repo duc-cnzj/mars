@@ -44,8 +44,7 @@ const EventList: React.FC = () => {
   const [paginate, setPaginate] = useState<{
     page: number;
     page_size: number;
-    count: number;
-  }>({ page: 0, page_size: defaultPageSize, count: 0 });
+  }>({ page: 0, page_size: defaultPageSize });
   const [data, setData] = useState<pb.types.EventModel[]>([]);
   const [queries, setQueries] = useState<{
     action_type: pb.types.EventActionType;
@@ -72,7 +71,6 @@ const EventList: React.FC = () => {
         setPaginate({
           page: Number(res.page),
           page_size: Number(res.page_size),
-          count: Number(res.count),
         });
         setLoading(false);
       })
@@ -98,7 +96,6 @@ const EventList: React.FC = () => {
         setPaginate({
           page: Number(res.page),
           page_size: Number(res.page_size),
-          count: Number(res.count),
         });
       })
       .catch((e) => {
@@ -240,7 +237,7 @@ const EventList: React.FC = () => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div>事件日志: {paginate.count} 条</div>
+            <div>事件日志</div>
             <Select
               defaultValue={pb.types.EventActionType.Unknown}
               size="small"
@@ -301,7 +298,7 @@ const EventList: React.FC = () => {
         <InfiniteScroll
           dataLength={data.length}
           next={loadMoreData}
-          hasMore={paginate.count > data.length}
+          hasMore={paginate.page_size === data.length}
           loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
           endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
           scrollableTarget="scrollableDiv"
