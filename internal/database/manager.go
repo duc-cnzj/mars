@@ -272,6 +272,30 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2022-12-16-add-deleted_at-index-to-namespaces-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Namespace{}, "DeletedAt") {
+					if err := tx.Migrator().CreateIndex(&models.Namespace{}, "DeletedAt"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
+		{
+			ID: "2022-12-16-add-idx_namespace_id_deleted_at-to-projects-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at") {
+					if err := tx.Migrator().CreateIndex(&models.Project{}, "idx_namespace_id_deleted_at"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	if err := gm.Migrate(); err != nil {

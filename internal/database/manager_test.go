@@ -122,6 +122,19 @@ type Event struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+type Namespace struct {
+	ID int `json:"id" gorm:"primaryKey;"`
+
+	Name             string `json:"name" gorm:"size:100;not null;comment:项目空间名"`
+	ImagePullSecrets string `json:"image_pull_secrets" gorm:"size:255;not null;default:'';comment:项目空间拉取镜像的secrets，数组"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+
+	Projects []Project
+}
+
 func TestManager_AutoMigrate(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	db.Exec("PRAGMA foreign_keys = ON", nil)
@@ -129,7 +142,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	defer s.Close()
 
 	ma := &Manager{db: db}
-	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}, &File{}))
+	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}, &File{}, &Namespace{}))
 	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
 	assert.True(t, db.Migrator().HasColumn("gitlab_projects", "gitlab_project_id"))
@@ -171,6 +184,9 @@ func TestManager_AutoMigrate(t *testing.T) {
 		assert.Nil(t, db.Migrator().DropTable(&models.AccessToken{}))
 	}
 
+	assert.False(t, db.Migrator().HasIndex(&models.Namespace{}, "DeletedAt"))
+	assert.False(t, db.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at"))
+
 	assert.Nil(t, ma.AutoMigrate())
 
 	assert.True(t, db.Migrator().HasIndex(&models.Changelog{}, "idx_version_projectid_deleted_at_config_changed"))
@@ -187,6 +203,9 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasTable("cache_locks"))
 	assert.False(t, db.Migrator().HasColumn(&models.DBCache{}, "id"))
 	assert.True(t, db.Migrator().HasTable(&models.AccessToken{}))
+	assert.True(t, db.Migrator().HasIndex(&models.Namespace{}, "DeletedAt"))
+	assert.True(t, db.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at"))
+
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)
 	for _, columnType := range types {

@@ -47,14 +47,12 @@ func TestEventSvc_List(t *testing.T) {
 	f := seedEvents(db)
 	list, _ := e.List(context.TODO(), &event.ListRequest{Page: 1, PageSize: 1})
 	assert.Len(t, list.Items, 1)
-	assert.Equal(t, int64(3), list.Count)
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:       1,
 		PageSize:   2,
 		ActionType: types.EventActionType_Upload,
 	})
 	assert.Len(t, list.Items, 1)
-	assert.Equal(t, int64(1), list.Count)
 	list, _ = e.List(context.TODO(), &event.ListRequest{
 		Page:       1,
 		PageSize:   2,

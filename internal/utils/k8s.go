@@ -109,7 +109,7 @@ func FilterRuntimeObjectFromManifests[T runtime.Object](manifests []string) Runt
 	for _, f := range manifests {
 		obj, _, err := info.Serializer.Decode([]byte(f), nil, nil)
 		if err != nil {
-			mlog.Error(err)
+			mlog.Debug(err)
 			continue
 		}
 		switch obj.(type) {
