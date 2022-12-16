@@ -49,14 +49,15 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
   );
 };
 
-const LogButton: React.FC<{ c: pb.types.Container }> = ({ c }) => {
+const LogButton: React.FC<{ c: pb.types.Container }> = memo(({ c }) => {
   const [visible, setVisible] = useState(false);
   const [timestamp, setTimestamp] = useState(new Date().getTime());
 
-  const handleVisibleChange = (newVisible: boolean) => {
+  const handleVisibleChange = useCallback((newVisible: boolean) => {
     setVisible(newVisible);
     newVisible && setTimestamp(new Date().getTime());
-  };
+  }, []);
+
   return (
     <div>
       <DraggableModal
@@ -90,6 +91,6 @@ const LogButton: React.FC<{ c: pb.types.Container }> = ({ c }) => {
       </Button>
     </div>
   );
-};
+});
 
 export default memo(LogOutput);

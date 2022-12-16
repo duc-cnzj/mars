@@ -96,8 +96,6 @@ const Cpu: React.FC<{
   );
 };
 
-const CpuArea = memo(Cpu);
-const MemoryArea = memo(Memory);
-const MarsArea = { CpuArea, MemoryArea };
+const MarsArea = { CpuArea: memo(Cpu), MemoryArea: memo(Memory) };
 
 export default MarsArea;

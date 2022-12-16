@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, MouseEvent, useCallback, useState } from "react";
 import {
   getNamespaceServiceEndpoints,
   getProjectServiceEndpoints,
@@ -13,6 +13,25 @@ const ServiceEndpoint: React.FC<{
   projectId?: number;
 }> = ({ namespaceId, projectId }) => {
   const [endpoints, setEndpoints] = useState<pb.types.ServiceEndpoint[]>();
+  const enterFn = useCallback(
+    (e: MouseEvent<SVGElement>) => {
+      if (namespaceId) {
+        getNamespaceServiceEndpoints({
+          namespace_id: namespaceId,
+        }).then((res) => {
+          setEndpoints(res.data.items);
+        });
+      }
+      if (projectId) {
+        getProjectServiceEndpoints({
+          project_id: projectId,
+        }).then((res) => {
+          setEndpoints(res.data.items);
+        });
+      }
+    },
+    [namespaceId, projectId]
+  );
 
   return (
     <Popover
@@ -46,22 +65,7 @@ const ServiceEndpoint: React.FC<{
         viewBox="0 0 24 24"
         style={{ width: 18, height: 18, flexShrink: 0 }}
         stroke="currentColor"
-        onMouseEnter={(e) => {
-          if (namespaceId) {
-            getNamespaceServiceEndpoints({
-              namespace_id: namespaceId,
-            }).then((res) => {
-              setEndpoints(res.data.items);
-            });
-          }
-          if (projectId) {
-            getProjectServiceEndpoints({
-              project_id: projectId,
-            }).then((res) => {
-              setEndpoints(res.data.items);
-            });
-          }
-        }}
+        onMouseEnter={enterFn}
       >
         <path
           strokeLinecap="round"

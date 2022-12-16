@@ -3,6 +3,7 @@ import { disabledProject, enabledProject, allProjects } from "../api/git";
 import { CopyOutlined } from "@ant-design/icons";
 import { copy } from "../utils/copy";
 import { maxUploadSize } from "../api/file";
+import type { UploadProps } from "antd";
 import {
   List,
   Avatar,
@@ -19,6 +20,7 @@ import { GlobalOutlined, UploadOutlined } from "@ant-design/icons";
 import pb from "../api/compiled";
 import { downloadConfig } from "../api/file";
 import { getToken } from "../utils/token";
+import { RcFile } from "antd/lib/upload";
 
 const { Option } = Select;
 const GitProjectManager: React.FC = () => {
@@ -77,7 +79,7 @@ const GitProjectManager: React.FC = () => {
   const [selected, setSelected] = useState<pb.git.ProjectItem>();
 
   const onChange = useCallback(
-    (v: any) => {
+    (v: Pick<UploadProps, "onChange">) => {
       if (!v) {
         setSelected(undefined);
         return;
@@ -93,7 +95,7 @@ const GitProjectManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const beforeUpload = useCallback(
-    (file: any) => {
+    (file: RcFile, FileList: RcFile[]) => {
       if (maxUploadInfo.bytes === 0) {
         return true;
       }
@@ -108,7 +110,7 @@ const GitProjectManager: React.FC = () => {
     [maxUploadInfo]
   );
 
-  const props = {
+  let props: UploadProps = {
     name: "file",
     beforeUpload: beforeUpload,
     action: process.env.REACT_APP_BASE_URL + "/api/config/import",
@@ -116,7 +118,7 @@ const GitProjectManager: React.FC = () => {
       authorization: getToken(),
     },
     showUploadList: false,
-    onChange(info: any) {
+    onChange(info) {
       if (info.file.status !== "uploading") {
         console.log(info.file, info.fileList);
       }
@@ -129,6 +131,7 @@ const GitProjectManager: React.FC = () => {
       }
     },
   };
+
   return (
     <>
       <Card
