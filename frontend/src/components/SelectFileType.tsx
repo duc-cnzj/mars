@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Select, SelectProps } from "antd";
 
 const SelectFileType: React.FC<
@@ -134,4 +134,4 @@ const SelectFileType: React.FC<
   );
 };
 
-export default SelectFileType;
+export default memo(SelectFileType);

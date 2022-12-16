@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import pb from "../api/compiled";
 import { Tag } from "antd";
 import { SyncOutlined, LoadingOutlined } from "@ant-design/icons";
@@ -47,4 +47,4 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
   );
 };
 
-export default PodStateTag;
+export default memo(PodStateTag);

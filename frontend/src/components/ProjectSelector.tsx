@@ -5,6 +5,11 @@ import { branchOptions, commitOptions, projectOptions } from "../api/git";
 import { get } from "lodash";
 import pb from "../api/compiled";
 import { useAsyncState } from "../utils/async";
+import { BaseOptionType } from "antd/lib/cascader";
+
+interface Option extends pb.git.Option {
+  children?: Option[];
+}
 
 const ProjectSelector: React.FC<{
   isCreate: boolean;
@@ -23,11 +28,21 @@ const ProjectSelector: React.FC<{
     gitCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate, disabled }) => {
-  const [options, setOptions] = useAsyncState<pb.git.Option[]>([]);
+  const [options, setOptions] = useAsyncState<Option[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
 
   const [selectedValues, setSelectedValues] = useState<(string | number)[]>([]);
+
+  useEffect(() => {
+    if (isCreate) {
+      projectOptions().then(({ data }) => {
+        setOptions(
+          data.items.map((i: pb.git.Option): Option => ({ ...i, children: [] }))
+        );
+      });
+    }
+  }, [isCreate, setOptions]);
 
   // 初始化，设置 initvalue
   useEffect(() => {
@@ -36,10 +51,7 @@ const ProjectSelector: React.FC<{
         let r = res.data.items.find(
           (item) => item.gitProjectId === String(v.gitProjectId)
         );
-        if (r) {
-          (r as any).children = [];
-        }
-        setOptions(r ? [r] : []);
+        !!r ? setOptions([{ ...r, children: [] }]) : setOptions([]);
 
         commit({
           git_project_id: String(v.gitProjectId),
@@ -53,21 +65,8 @@ const ProjectSelector: React.FC<{
     }
   }, [v, value, setOptions]);
 
-  useEffect(() => {
-    if (isCreate) {
-      projectOptions().then((res) => {
-        setOptions(
-          res.data.items.map((i: any) => {
-            i.children = [];
-            return i;
-          })
-        );
-      });
-    }
-  }, [v, isCreate, setOptions]);
-
   const loadData = useCallback(
-    (selectedOptions: any | undefined) => {
+    (selectedOptions: BaseOptionType[]) => {
       if (!selectedOptions) {
         return;
       }
@@ -111,25 +110,20 @@ const ProjectSelector: React.FC<{
       let o = options.find((item) => item.value === values[0]);
       setValue([o ? o.label : ""]);
       if (gbranch) {
-        // @ts-ignore
         if (o && o.children) {
-          // @ts-ignore
-          let b = o.children.find(
-            (item: pb.git.Option) => item.value === gbranch
-          );
+          let b = o.children.find((item) => item.value === gbranch);
           setValue([o.label, b ? b.label : ""]);
           if (gcommit) {
             if (b && b.children) {
-              let c = b.children.find(
-                (item: pb.git.Option) => item.value === gcommit
-              );
-              setValue([o.label, b.label, c ? c.label : ""]);
+              setValue([
+                o.label,
+                b.label,
+                b.children.find((item) => item.value === gcommit)?.label || "",
+              ]);
               onCh?.({
-                projectName: get(
-                  options.find((item) => item.value === values[0]),
-                  "display_name",
-                  ""
-                ),
+                projectName:
+                  options.find((item) => item.value === values[0])
+                    ?.display_name || "",
                 gitProjectId: Number(gitId),
                 gitBranch: String(gbranch),
                 gitCommit: String(gcommit),

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { copy } from "../utils/copy";
 
 const CopyToClipboard: React.FC<{
@@ -13,4 +13,4 @@ const CopyToClipboard: React.FC<{
   );
 };
 
-export default CopyToClipboard;
+export default memo(CopyToClipboard);

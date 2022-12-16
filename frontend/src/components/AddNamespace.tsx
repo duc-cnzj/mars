@@ -9,7 +9,7 @@ interface IProps {
 
 const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
   const [isVisible, setIsVisible] = useState<boolean>(false);
-  const [namespace, setNamespace] = useState<string>("");
+  const [namespace, setNamespace] = useState<string>();
   const submit = useCallback(() => {
     if (!namespace) {
       message.error("名称空间必填");

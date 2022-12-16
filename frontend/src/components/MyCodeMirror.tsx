@@ -13,12 +13,12 @@ import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
-const myCodeMirror: React.FC<{
+export const MyCodeMirror: React.FC<{
   mode: string;
   value?: string;
   disabled?: boolean;
   onChange?: (v: string) => void;
-}> = ({ mode, value, onChange, disabled }) => {
+}> = memo(({ mode, value, onChange, disabled }) => {
   const langeExt = getLangs(mode);
   const extensions = [
     color,
@@ -65,7 +65,7 @@ const myCodeMirror: React.FC<{
       extensions={extensions}
     />
   );
-};
+});
 
 const theme = EditorView.theme(
   {
@@ -161,5 +161,4 @@ export const getMode = (mode: string): string => {
   }
 };
 
-export const MyCodeMirror = memo(myCodeMirror);
 export default MyCodeMirror;

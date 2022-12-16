@@ -30,26 +30,7 @@ const AppContent: React.FC = () => {
       });
   }, [setNamespaceItems]);
 
-  useEffect(() => {
-    window.history.pushState(null, document.title, window.location.href);
-    let fn = function (event: any) {
-      console.log("first");
-      window.history.pushState(null, document.title, window.location.href);
-    };
-    console.log("add");
-    window.addEventListener("popstate", fn);
-    return () => {
-      console.log("remove");
-      window.removeEventListener("popstate", fn);
-    };
-  }, []);
-
-  const onNamespaceCreated = useCallback(
-    ({ id, name }: { id: number; name: string }) => {
-      fetchNamespaces();
-    },
-    [fetchNamespaces]
-  );
+  usePreventModalBack();
 
   useEffect(() => {
     fetchNamespaces();
@@ -65,7 +46,7 @@ const AppContent: React.FC = () => {
   return (
     <DraggableModalProvider>
       <div className="content" style={{ marginBottom: 30 }}>
-        <AddNamespace onCreated={onNamespaceCreated} />
+        <AddNamespace onCreated={() => fetchNamespaces()} />
 
         {namespaceItems.length < 1 ? (
           <Empty description={false} imageStyle={{ height: 300 }} />
@@ -88,3 +69,19 @@ const AppContent: React.FC = () => {
 };
 
 export default memo(AppContent);
+
+const usePreventModalBack = () => {
+  useEffect(() => {
+    window.history.pushState(null, document.title, window.location.href);
+    let fn = function (event: any) {
+      console.log("first");
+      window.history.pushState(null, document.title, window.location.href);
+    };
+    console.log("add");
+    window.addEventListener("popstate", fn);
+    return () => {
+      console.log("remove");
+      window.removeEventListener("popstate", fn);
+    };
+  }, []);
+};
