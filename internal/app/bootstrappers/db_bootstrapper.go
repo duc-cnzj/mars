@@ -83,9 +83,5 @@ func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	})
 	app.DBManager().SetDB(db)
 
-	if err := app.DBManager().AutoMigrate(Models...); err != nil {
-		return err
-	}
-
-	return nil
+	return app.DBManager().AutoMigrate(Models...)
 }

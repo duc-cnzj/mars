@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
@@ -310,10 +309,5 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 		},
 	})
 
-	if err := gm.Migrate(); err != nil {
-		mlog.Error(err)
-		return err
-	}
-
-	return nil
+	return gm.Migrate()
 }
