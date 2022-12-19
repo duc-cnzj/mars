@@ -131,6 +131,7 @@ elements:
   - dev
   - master
   - '*'
+  order: 0
 display_name: app
 `, m.PrettyYaml())
 }
