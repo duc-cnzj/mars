@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import { Form, Input, Button, Select, SelectProps, InputNumber } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import pb from "../../api/compiled";
@@ -22,39 +22,43 @@ const DynamicElement: React.FC<{
 }> = ({ disabled }) => {
   const form = Form.useFormInstance();
   const [isDragging, setIsDragging] = useState(false);
-  const onDragEnd = (result: any) => {
-    if (result.destination.index === result.source.index || disabled) {
-      return;
-    }
+  const onDragEnd = useCallback(
+    (result: any) => {
+      if (result.destination.index === result.source.index || disabled) {
+        return;
+      }
 
-    let deleteIdx = result.source.index;
-    let eles = form.getFieldValue("elements") as any[];
-    let n = [
-      ...slice(
-        eles,
-        0,
+      let deleteIdx = result.source.index;
+      let eles = form.getFieldValue("elements") as any[];
+      let n = [
+        ...slice(
+          eles,
+          0,
+          result.source.index > result.destination.index
+            ? result.destination.index
+            : result.destination.index + 1
+        ),
+        eles[result.source.index],
+        ...slice(
+          eles,
+          result.source.index > result.destination.index
+            ? result.destination.index
+            : result.destination.index + 1
+        ),
+      ];
+      n.splice(
         result.source.index > result.destination.index
-          ? result.destination.index
-          : result.destination.index + 1
-      ),
-      eles[result.source.index],
-      ...slice(
-        eles,
-        result.source.index > result.destination.index
-          ? result.destination.index
-          : result.destination.index + 1
-      ),
-    ];
-    n.splice(
-      result.source.index > result.destination.index
-        ? deleteIdx + 1
-        : deleteIdx,
-      1
-    );
+          ? deleteIdx + 1
+          : deleteIdx,
+        1
+      );
 
-    form.setFieldValue("elements", [...n]);
-    setIsDragging(false);
-  };
+      form.setFieldValue("elements", [...n]);
+      setIsDragging(false);
+    },
+    [disabled, form]
+  );
+
   return (
     <DragDropContext
       onDragEnd={onDragEnd}
@@ -312,7 +316,7 @@ const DynamicElement: React.FC<{
                   <Form.Item>
                     <Button
                       hidden={isDragging}
-                      disabled={disabled}
+                      disabled={disabled || isDragging}
                       type="dashed"
                       onClick={() => add()}
                       block
