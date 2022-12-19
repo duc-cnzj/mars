@@ -11460,6 +11460,7 @@ export const mars = ($root.mars = (() => {
      * @property {string|null} ["default"] Element default
      * @property {string|null} [description] Element description
      * @property {Array.<string>|null} [select_values] Element select_values
+     * @property {number|null} [order] Element order
      */
 
     /**
@@ -11518,6 +11519,14 @@ export const mars = ($root.mars = (() => {
     Element.prototype.select_values = $util.emptyArray;
 
     /**
+     * Element order.
+     * @member {number} order
+     * @memberof mars.Element
+     * @instance
+     */
+    Element.prototype.order = 0;
+
+    /**
      * Encodes the specified Element message. Does not implicitly {@link mars.Element.verify|verify} messages.
      * @function encode
      * @memberof mars.Element
@@ -11547,6 +11556,8 @@ export const mars = ($root.mars = (() => {
           writer
             .uint32(/* id 6, wireType 2 =*/ 50)
             .string(message.select_values[i]);
+      if (message.order != null && Object.hasOwnProperty.call(message, "order"))
+        writer.uint32(/* id 7, wireType 0 =*/ 56).uint32(message.order);
       return writer;
     };
 
@@ -11588,6 +11599,10 @@ export const mars = ($root.mars = (() => {
             if (!(message.select_values && message.select_values.length))
               message.select_values = [];
             message.select_values.push(reader.string());
+            break;
+          }
+          case 7: {
+            message.order = reader.uint32();
             break;
           }
           default:

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"sort"
 	"testing"
 	"time"
 
@@ -43,6 +44,43 @@ func TestGitProject_GlobalMarsConfig(t *testing.T) {
 
 	m2 := GitProject{}
 	assert.Equal(t, (&mars.Config{}).String(), m2.GlobalMarsConfig().String())
+
+	// sortedElements
+	cfg := mars.Config{
+		Elements: []*mars.Element{
+			{
+				Path:  "1",
+				Order: 1,
+			},
+			{
+				Path:  "3",
+				Order: 3,
+			},
+			{
+				Path:  "2",
+				Order: 2,
+			},
+		},
+	}
+	bytes, _ := json.Marshal(&cfg)
+	m3 := GitProject{
+		GlobalConfig: string(bytes),
+	}
+	config := m3.GlobalMarsConfig()
+	assert.Equal(t, []*mars.Element{
+		{
+			Path:  "1",
+			Order: 1,
+		},
+		{
+			Path:  "2",
+			Order: 2,
+		},
+		{
+			Path:  "3",
+			Order: 3,
+		},
+	}, config.Elements)
 }
 
 func TestGitProject_PrettyYaml(t *testing.T) {
@@ -93,6 +131,7 @@ elements:
   - dev
   - master
   - '*'
+  order: 0
 display_name: app
 `, m.PrettyYaml())
 }
@@ -160,4 +199,45 @@ func TestGitProject_ProtoTransform(t *testing.T) {
 		UpdatedAt:     date.ToRFC3339DatetimeString(&m.UpdatedAt),
 		DeletedAt:     date.ToRFC3339DatetimeString(&m.DeletedAt.Time),
 	}, m.ProtoTransform())
+}
+
+func Test_sortedElements(t *testing.T) {
+	var eles = sortedElements{
+		{
+			Path:  "1",
+			Order: 1,
+		},
+		{
+			Path:  "4",
+			Order: 4,
+		},
+		{
+			Path:  "3",
+			Order: 3,
+		},
+		{
+			Path:  "2",
+			Order: 2,
+		},
+	}
+	sort.Sort(eles)
+	assert.Len(t, eles, 4)
+	assert.Equal(t, sortedElements{
+		{
+			Path:  "1",
+			Order: 1,
+		},
+		{
+			Path:  "2",
+			Order: 2,
+		},
+		{
+			Path:  "3",
+			Order: 3,
+		},
+		{
+			Path:  "4",
+			Order: 4,
+		},
+	}, eles)
 }

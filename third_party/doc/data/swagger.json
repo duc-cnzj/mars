@@ -2451,6 +2451,10 @@
         "description": {
           "type": "string"
         },
+        "order": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },

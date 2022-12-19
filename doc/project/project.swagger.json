@@ -9,12 +9,8 @@
       "name": "Project"
     }
   ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
   "paths": {
     "/api/projects": {
       "get": {
@@ -50,9 +46,7 @@
             "format": "int64"
           }
         ],
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/api/projects/host_variables": {
@@ -83,9 +77,7 @@
             }
           }
         ],
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/api/projects/{project_id}": {
@@ -115,9 +107,7 @@
             "format": "int64"
           }
         ],
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       },
       "delete": {
         "summary": "Delete 删除项目",
@@ -145,9 +135,7 @@
             "format": "int64"
           }
         ],
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/api/projects/{project_id}/containers": {
@@ -177,9 +165,7 @@
             "format": "int64"
           }
         ],
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     }
   },
@@ -222,6 +208,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "order": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -600,11 +590,7 @@
     },
     "websocketTo": {
       "type": "string",
-      "enum": [
-        "ToSelf",
-        "ToAll",
-        "ToOthers"
-      ],
+      "enum": ["ToSelf", "ToAll", "ToOthers"],
       "default": "ToSelf"
     },
     "websocketType": {

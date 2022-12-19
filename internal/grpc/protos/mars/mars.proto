@@ -50,4 +50,5 @@ message Element {
   string default = 3 [(validate.rules).string.min_bytes = 1];
   string description = 4;
   repeated string select_values = 6;
+  uint32 order = 7;
 }

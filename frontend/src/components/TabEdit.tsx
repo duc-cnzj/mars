@@ -3,7 +3,6 @@ import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import Elements from "./elements/Elements";
 import PipelineInfo from "./PipelineInfo";
 import ConfigHistory from "./ConfigHistory";
-import { orderBy } from "lodash";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -317,7 +316,7 @@ const ModalSub: React.FC<{
           >
             <Form.Item name="extra_values" noStyle>
               <Elements
-                elements={orderBy(elements, ["type"], ["asc"])}
+                elements={elements}
                 style={{
                   inputNumber: { fontSize: 10, width: "100%" },
                   input: { fontSize: 10 },

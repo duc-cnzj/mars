@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"sort"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -63,6 +64,20 @@ func (g GitProject) PrettyYaml() string {
 	return bf.String()
 }
 
+type sortedElements []*mars.Element
+
+func (s sortedElements) Len() int {
+	return len(s)
+}
+
+func (s sortedElements) Less(i, j int) bool {
+	return s[i].Order < s[j].Order
+}
+
+func (s sortedElements) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (g *GitProject) GlobalMarsConfig() *mars.Config {
 	if g.GlobalConfig == "" {
 		return &mars.Config{}
@@ -70,6 +85,7 @@ func (g *GitProject) GlobalMarsConfig() *mars.Config {
 
 	var c = &mars.Config{}
 	json.Unmarshal([]byte(g.GlobalConfig), c)
+	sort.Sort(sortedElements(c.Elements))
 	return c
 }
 

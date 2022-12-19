@@ -12,12 +12,12 @@ import yaml from "js-yaml";
 
 import {
   Tooltip,
+  Drawer,
   Popover,
   Switch,
   Select,
   Button,
   message,
-  Modal,
   Skeleton,
   Row,
   Badge,
@@ -206,6 +206,10 @@ const ConfigModal: React.FC<{
 
   const onSave = useCallback(
     (values: any) => {
+      values.elements = values.elements.map((v: any, i: number) => ({
+        ...v,
+        order: i,
+      }));
       updateGlobalConfig({
         git_project_id: item.id,
         config: values,
@@ -314,7 +318,7 @@ const ConfigModal: React.FC<{
   }, [config, form, setWatch]);
 
   return (
-    <Modal
+    <Drawer
       keyboard={false}
       title={
         <div>
@@ -326,7 +330,7 @@ const ConfigModal: React.FC<{
       open={configVisible}
       footer={null}
       width={"100%"}
-      onCancel={resetModal}
+      onClose={resetModal}
     >
       <Skeleton active loading={loading}>
         <Form
@@ -693,7 +697,7 @@ const ConfigModal: React.FC<{
           </Row>
         </Form>
       </Skeleton>
-    </Modal>
+    </Drawer>
   );
 };
 

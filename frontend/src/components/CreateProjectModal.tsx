@@ -5,7 +5,6 @@ import Elements from "./elements/Elements";
 import { DraggableModal } from "../pkg/DraggableModal/DraggableModal";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
-import { orderBy } from "lodash";
 import { useAsyncState } from "../utils/async";
 import { selectTimer } from "../store/reducers/deployTimer";
 import { configFile } from "../api/git";
@@ -379,7 +378,7 @@ const CreateProjectModal: React.FC<{
               >
                 <Form.Item name="extra_values" noStyle>
                   <Elements
-                    elements={orderBy(elements, ["type"], ["asc"])}
+                    elements={elements || []}
                     style={{
                       inputNumber: { fontSize: 10, width: "100%" },
                       input: { fontSize: 10 },
