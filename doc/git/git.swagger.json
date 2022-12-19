@@ -9,12 +9,8 @@
       "name": "Git"
     }
   ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
   "paths": {
     "/api/git/project_options": {
       "get": {
@@ -34,9 +30,7 @@
             }
           }
         },
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects": {
@@ -57,9 +51,7 @@
             }
           }
         },
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/disable": {
@@ -90,9 +82,7 @@
             }
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/enable": {
@@ -123,9 +113,7 @@
             }
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/{git_project_id}/branch_options": {
@@ -160,9 +148,7 @@
             "type": "boolean"
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commit_options": {
@@ -197,9 +183,7 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
@@ -240,9 +224,7 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
@@ -283,9 +265,7 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/config_file": {
@@ -320,9 +300,7 @@
             "type": "string"
           }
         ],
-        "tags": [
-          "Git"
-        ]
+        "tags": ["Git"]
       }
     }
   },
@@ -545,6 +523,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "order": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

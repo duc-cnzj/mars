@@ -265,6 +265,8 @@ func (m *Element) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Order
+
 	if len(errors) > 0 {
 		return ElementMultiError(errors)
 	}

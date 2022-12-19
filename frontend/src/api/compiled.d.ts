@@ -5659,6 +5659,9 @@ export namespace mars {
 
     /** Element select_values */
     select_values?: string[] | null;
+
+    /** Element order */
+    order?: number | null;
   }
 
   /** Represents an Element. */
@@ -5683,6 +5686,9 @@ export namespace mars {
 
     /** Element select_values. */
     public select_values: string[];
+
+    /** Element order. */
+    public order: number;
 
     /**
      * Encodes the specified Element message. Does not implicitly {@link mars.Element.verify|verify} messages.
