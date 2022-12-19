@@ -60,7 +60,7 @@ const DynamicElement: React.FC<{
       onDragEnd={onDragEnd}
       onDragStart={() => setIsDragging(true)}
     >
-      <Droppable droppableId="list">
+      <Droppable droppableId="dynamic-elements">
         {(provided) => (
           <div ref={provided.innerRef} {...provided.droppableProps}>
             <Form.List name="elements">
