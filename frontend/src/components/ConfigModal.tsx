@@ -206,6 +206,10 @@ const ConfigModal: React.FC<{
 
   const onSave = useCallback(
     (values: any) => {
+      values.elements = values.elements.map((v: any, i: number) => ({
+        ...v,
+        order: i,
+      }));
       updateGlobalConfig({
         git_project_id: item.id,
         config: values,
