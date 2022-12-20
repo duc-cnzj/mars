@@ -23,11 +23,11 @@ const DiffViewer: React.FC<{
   styles?: ReactDiffViewerStylesOverride;
 }> = ({ mode, oldValue, newValue, splitView, showDiffOnly, styles }) => {
   const highlightSyntax = useCallback(
-    (str: string) => (
+    (str?: string) => (
       <pre
         style={{ display: "inline" }}
         dangerouslySetInnerHTML={{
-          __html: getHighlightSyntax(str, mode),
+          __html: getHighlightSyntax(str || "", mode),
         }}
       />
     ),

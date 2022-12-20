@@ -9,7 +9,7 @@ import React, {
 import { debounce } from "lodash";
 import {
   Card,
-  Skeleton,
+  Spin,
   Divider,
   Select,
   List,
@@ -188,6 +188,9 @@ const EventList: React.FC = () => {
   );
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+  useEffect(() => {
+    console.log(isModalVisible);
+  }, [isModalVisible]);
 
   const showModal = useCallback((id: number) => {
     showEvent(id).then(({ data }) => {
@@ -299,7 +302,16 @@ const EventList: React.FC = () => {
           dataLength={data.length}
           next={loadMoreData}
           hasMore={data.length % paginate.page_size === 0}
-          loader={<Skeleton avatar={false} paragraph={{ rows: 1 }} active />}
+          loader={
+            <Spin
+              style={{
+                margin: "20px 0",
+                display: "flex",
+                justifyContent: "center",
+              }}
+              size="large"
+            />
+          }
           endMessage={<Divider plain>老铁，别翻了，到底了！</Divider>}
           scrollableTarget="scrollableDiv"
         >
