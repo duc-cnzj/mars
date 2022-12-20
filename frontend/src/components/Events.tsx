@@ -188,9 +188,6 @@ const EventList: React.FC = () => {
   );
 
   const [isModalVisible, setIsModalVisible] = useState(false);
-  useEffect(() => {
-    console.log(isModalVisible);
-  }, [isModalVisible]);
 
   const showModal = useCallback((id: number) => {
     showEvent(id).then(({ data }) => {
