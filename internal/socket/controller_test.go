@@ -256,6 +256,52 @@ func TestHandleWsHandleExecShellMsg(t *testing.T) {
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, marshal)
 }
 
+func TestHandleWsUpdateProjectSignalError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	cs := &CancelSignals{
+		cs: map[string]func(error){},
+	}
+	ps := mock.NewMockPubSub(m)
+	c := &WsConn{
+		id:  "id",
+		uid: "uid",
+		NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			return job
+		},
+		cancelSignaler: cs,
+		pubSub:         ps,
+	}
+
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
+	assert.Nil(t, db.Create(p).Error)
+	marshal, _ := proto.Marshal(&websocket.UpdateProjectInput{
+		Type:      websocket.Type_UpdateProject,
+		ProjectId: int64(p.ID),
+	})
+	slug := utils.GetSlugName(p.Namespace.ID, p.Name)
+	ps.EXPECT().ToSelf(&websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Slug:    slug,
+			Type:    websocket.Type_UpdateProject,
+			Result:  ResultDeployFailed,
+			End:     true,
+			Uid:     "uid",
+			Id:      "id",
+			Message: "正在清理中，请稍后再试。",
+		},
+	}).Times(1)
+	job.EXPECT().ID().Return(slug).AnyTimes()
+	cs.Add(slug, func(err error) {})
+
+	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
+}
+
 func TestHandleWsUpdateProject(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
