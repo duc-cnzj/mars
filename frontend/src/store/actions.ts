@@ -113,7 +113,6 @@ export const setPodEventPID = (pid: number) => ({
 });
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch, nsID: number) => {
-  console.log("debounceLoadNamespace: ", nsID);
   dispatch(setNamespaceReload(true, nsID));
 }, 500);
 
@@ -137,7 +136,6 @@ export const handleEvents = (
         break;
       case pb.websocket.Type.ReloadProjects:
         let nsReload = pb.websocket.WsReloadProjectsResponse.decode(input);
-        console.log(nsReload.namespace_id, ": nsReload.namespace_id");
         debounceLoadNamespace(dispatch, nsReload.namespace_id);
         break;
       case pb.websocket.Type.UpdateProject:

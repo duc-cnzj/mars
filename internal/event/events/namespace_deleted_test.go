@@ -3,11 +3,11 @@ package events
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/models"
-
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/internal/models"
+
 	"github.com/golang/mock/gomock"
 )
 
