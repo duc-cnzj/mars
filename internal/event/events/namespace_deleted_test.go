@@ -3,6 +3,8 @@ package events
 import (
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/models"
+
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -24,6 +26,6 @@ func TestHandleNamespaceDeleted(t *testing.T) {
 		Args: nil,
 	}})
 	sender.EXPECT().New("", "").Return(pubsub)
-	pubsub.EXPECT().ToAll(gomock.Any()).Times(1)
-	HandleNamespaceDeleted(nil, EventNamespaceDeleted)
+	pubsub.EXPECT().ToAll(&EventNamespaceDeletedMatcher{nsID: 1}).Times(1)
+	HandleNamespaceDeleted(&models.Namespace{ID: 1}, EventNamespaceDeleted)
 }

@@ -59,10 +59,11 @@ export const setDeployStatus = (id: string, status: DeployStatus) => ({
   },
 });
 
-export const setNamespaceReload = (reload: boolean) => ({
+export const setNamespaceReload = (reload: boolean, nsID: number) => ({
   type: SET_NAMESPACE_RELOAD,
   data: {
     reload: reload,
+    nsID: nsID,
   },
 });
 
@@ -111,8 +112,9 @@ export const setPodEventPID = (pid: number) => ({
   projectIDWithTimestamp: `${new Date().getTime()}-${pid}`,
 });
 
-const debounceLoadNamespace = debounce((dispatch: Dispatch) => {
-  dispatch(setNamespaceReload(true));
+const debounceLoadNamespace = debounce((dispatch: Dispatch, nsID: number) => {
+  console.log("debounceLoadNamespace: ", nsID);
+  dispatch(setNamespaceReload(true, nsID));
 }, 500);
 
 export const handleEvents = (
@@ -134,7 +136,9 @@ export const handleEvents = (
         info.info && dispatch(setClusterInfo(info.info));
         break;
       case pb.websocket.Type.ReloadProjects:
-        debounceLoadNamespace(dispatch);
+        let nsReload = pb.websocket.WsReloadProjectsResponse.decode(input);
+        console.log(nsReload.namespace_id, ": nsReload.namespace_id");
+        debounceLoadNamespace(dispatch, nsReload.namespace_id);
         break;
       case pb.websocket.Type.UpdateProject:
         let containers: pb.types.Container[] = [];
@@ -231,7 +235,7 @@ export const handleEvents = (
               break;
           }
           dispatch(setCreateProjectLoading(id, false));
-          debounceLoadNamespace(dispatch);
+          debounceLoadNamespace(dispatch, 0);
         }
         break;
       case pb.websocket.Type.ProcessPercent:

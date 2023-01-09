@@ -1255,6 +1255,61 @@ func (x *WsProjectPodEventResponse) GetProjectId() int64 {
 	return 0
 }
 
+type WsReloadProjectsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Metadata    *Metadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	NamespaceId int64     `protobuf:"varint,2,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
+}
+
+func (x *WsReloadProjectsResponse) Reset() {
+	*x = WsReloadProjectsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_websocket_websocket_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *WsReloadProjectsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WsReloadProjectsResponse) ProtoMessage() {}
+
+func (x *WsReloadProjectsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_websocket_websocket_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WsReloadProjectsResponse.ProtoReflect.Descriptor instead.
+func (*WsReloadProjectsResponse) Descriptor() ([]byte, []int) {
+	return file_websocket_websocket_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *WsReloadProjectsResponse) GetMetadata() *Metadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *WsReloadProjectsResponse) GetNamespaceId() int64 {
+	if x != nil {
+		return x.NamespaceId
+	}
+	return 0
+}
+
 var File_websocket_websocket_proto protoreflect.FileDescriptor
 
 var file_websocket_websocket_proto_rawDesc = []byte{
@@ -1402,7 +1457,14 @@ var file_websocket_websocket_proto_rawDesc = []byte{
 	0x65, 0x74, 0x2e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08, 0x6d, 0x65, 0x74,
 	0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
 	0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x70, 0x72, 0x6f, 0x6a, 0x65,
-	0x63, 0x74, 0x49, 0x64, 0x2a, 0xab, 0x02, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0f, 0x0a,
+	0x63, 0x74, 0x49, 0x64, 0x22, 0x6e, 0x0a, 0x18, 0x57, 0x73, 0x52, 0x65, 0x6c, 0x6f, 0x61, 0x64,
+	0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x2f, 0x0a, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x13, 0x2e, 0x77, 0x65, 0x62, 0x73, 0x6f, 0x63, 0x6b, 0x65, 0x74, 0x2e, 0x4d,
+	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0x12, 0x21, 0x0a, 0x0c, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x5f, 0x69,
+	0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0b, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61,
+	0x63, 0x65, 0x49, 0x64, 0x2a, 0xab, 0x02, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0f, 0x0a,
 	0x0b, 0x54, 0x79, 0x70, 0x65, 0x55, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x10, 0x00, 0x12, 0x0a,
 	0x0a, 0x06, 0x53, 0x65, 0x74, 0x55, 0x69, 0x64, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e, 0x52, 0x65,
 	0x6c, 0x6f, 0x61, 0x64, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x10, 0x02, 0x12, 0x11,
@@ -1452,7 +1514,7 @@ func file_websocket_websocket_proto_rawDescGZIP() []byte {
 }
 
 var file_websocket_websocket_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_websocket_websocket_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_websocket_websocket_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_websocket_websocket_proto_goTypes = []interface{}{
 	(Type)(0),                              // 0: websocket.Type
 	(ResultType)(0),                        // 1: websocket.ResultType
@@ -1472,9 +1534,10 @@ var file_websocket_websocket_proto_goTypes = []interface{}{
 	(*WsHandleClusterResponse)(nil),        // 15: websocket.WsHandleClusterResponse
 	(*WsWithContainerMessageResponse)(nil), // 16: websocket.WsWithContainerMessageResponse
 	(*WsProjectPodEventResponse)(nil),      // 17: websocket.WsProjectPodEventResponse
-	(*types.Container)(nil),                // 18: types.Container
-	(*types.ExtraValue)(nil),               // 19: types.ExtraValue
-	(*cluster.InfoResponse)(nil),           // 20: cluster.InfoResponse
+	(*WsReloadProjectsResponse)(nil),       // 18: websocket.WsReloadProjectsResponse
+	(*types.Container)(nil),                // 19: types.Container
+	(*types.ExtraValue)(nil),               // 20: types.ExtraValue
+	(*cluster.InfoResponse)(nil),           // 21: cluster.InfoResponse
 }
 var file_websocket_websocket_proto_depIdxs = []int32{
 	0,  // 0: websocket.WsRequestMetadata.type:type_name -> websocket.Type
@@ -1483,29 +1546,30 @@ var file_websocket_websocket_proto_depIdxs = []int32{
 	0,  // 3: websocket.TerminalMessageInput.type:type_name -> websocket.Type
 	5,  // 4: websocket.TerminalMessageInput.message:type_name -> websocket.TerminalMessage
 	0,  // 5: websocket.WsHandleExecShellInput.type:type_name -> websocket.Type
-	18, // 6: websocket.WsHandleExecShellInput.container:type_name -> types.Container
+	19, // 6: websocket.WsHandleExecShellInput.container:type_name -> types.Container
 	0,  // 7: websocket.CancelInput.type:type_name -> websocket.Type
 	0,  // 8: websocket.CreateProjectInput.type:type_name -> websocket.Type
-	19, // 9: websocket.CreateProjectInput.extra_values:type_name -> types.ExtraValue
+	20, // 9: websocket.CreateProjectInput.extra_values:type_name -> types.ExtraValue
 	0,  // 10: websocket.UpdateProjectInput.type:type_name -> websocket.Type
-	19, // 11: websocket.UpdateProjectInput.extra_values:type_name -> types.ExtraValue
+	20, // 11: websocket.UpdateProjectInput.extra_values:type_name -> types.ExtraValue
 	0,  // 12: websocket.Metadata.type:type_name -> websocket.Type
 	1,  // 13: websocket.Metadata.result:type_name -> websocket.ResultType
 	2,  // 14: websocket.Metadata.to:type_name -> websocket.To
 	12, // 15: websocket.WsMetadataResponse.metadata:type_name -> websocket.Metadata
 	12, // 16: websocket.WsHandleShellResponse.metadata:type_name -> websocket.Metadata
 	5,  // 17: websocket.WsHandleShellResponse.terminal_message:type_name -> websocket.TerminalMessage
-	18, // 18: websocket.WsHandleShellResponse.container:type_name -> types.Container
+	19, // 18: websocket.WsHandleShellResponse.container:type_name -> types.Container
 	12, // 19: websocket.WsHandleClusterResponse.metadata:type_name -> websocket.Metadata
-	20, // 20: websocket.WsHandleClusterResponse.info:type_name -> cluster.InfoResponse
+	21, // 20: websocket.WsHandleClusterResponse.info:type_name -> cluster.InfoResponse
 	12, // 21: websocket.WsWithContainerMessageResponse.metadata:type_name -> websocket.Metadata
-	18, // 22: websocket.WsWithContainerMessageResponse.containers:type_name -> types.Container
+	19, // 22: websocket.WsWithContainerMessageResponse.containers:type_name -> types.Container
 	12, // 23: websocket.WsProjectPodEventResponse.metadata:type_name -> websocket.Metadata
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	12, // 24: websocket.WsReloadProjectsResponse.metadata:type_name -> websocket.Metadata
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_websocket_websocket_proto_init() }
@@ -1694,6 +1758,18 @@ func file_websocket_websocket_proto_init() {
 				return nil
 			}
 		}
+		file_websocket_websocket_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*WsReloadProjectsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1701,7 +1777,7 @@ func file_websocket_websocket_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_websocket_websocket_proto_rawDesc,
 			NumEnums:      3,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

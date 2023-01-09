@@ -31,8 +31,6 @@ done
 #  --no-encode \
 #  --no-decode \
 
-../frontend/node_modules/.bin/pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep-case
-
 # https://github.com/protobufjs/protobuf.js/blob/master/cli/README.md#reflection-vs-static-code
 #  Static targets only:
 #
@@ -49,5 +47,7 @@ done
 #  --force-long     Enforces the use of 'Long' for s-/u-/int64 and s-/fixed64 fields.
 #  --force-number   Enforces the use of 'number' for s-/u-/int64 and s-/fixed64 fields.
 #  --force-message  Enforces the use of message instances instead of plain objects.
+
+../frontend/node_modules/.bin/pbts -o ../frontend/src/api/compiled.d.ts ../frontend/src/api/compiled.js --keep-case
 
 swagger mixin --ignore-conflicts ../third_party/doc/data/api.json ../doc/**/*.json > ../third_party/doc/data/swagger.json

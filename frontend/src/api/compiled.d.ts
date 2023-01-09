@@ -11079,4 +11079,59 @@ export namespace websocket {
      */
     public static getTypeUrl(typeUrlPrefix?: string): string;
   }
+
+  /** Properties of a WsReloadProjectsResponse. */
+  interface IWsReloadProjectsResponse {
+    /** WsReloadProjectsResponse metadata */
+    metadata?: websocket.Metadata | null;
+
+    /** WsReloadProjectsResponse namespace_id */
+    namespace_id?: number | null;
+  }
+
+  /** Represents a WsReloadProjectsResponse. */
+  class WsReloadProjectsResponse implements IWsReloadProjectsResponse {
+    /**
+     * Constructs a new WsReloadProjectsResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: websocket.IWsReloadProjectsResponse);
+
+    /** WsReloadProjectsResponse metadata. */
+    public metadata?: websocket.Metadata | null;
+
+    /** WsReloadProjectsResponse namespace_id. */
+    public namespace_id: number;
+
+    /**
+     * Encodes the specified WsReloadProjectsResponse message. Does not implicitly {@link websocket.WsReloadProjectsResponse.verify|verify} messages.
+     * @param message WsReloadProjectsResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(
+      message: websocket.WsReloadProjectsResponse,
+      writer?: $protobuf.Writer
+    ): $protobuf.Writer;
+
+    /**
+     * Decodes a WsReloadProjectsResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WsReloadProjectsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(
+      reader: $protobuf.Reader | Uint8Array,
+      length?: number
+    ): websocket.WsReloadProjectsResponse;
+
+    /**
+     * Gets the default type url for WsReloadProjectsResponse
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+  }
 }

@@ -500,9 +500,10 @@ func TestJober_Finish(t *testing.T) {
 	j := &Jober{
 		pubsub: ps,
 		done:   make(chan struct{}),
+		ns:     &models.Namespace{ID: 1},
 	}
 
-	ps.EXPECT().ToAll(reloadProjectsMessage).Times(1)
+	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(1)
 	j.Finish()
 	_, ok := <-j.done
 	assert.False(t, ok)
@@ -1214,7 +1215,7 @@ func TestJober_Validate(t *testing.T) {
 	}
 	job3 := newJob3()
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// 正常创建
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, 1, len(job3.destroyFuncs))
@@ -1241,7 +1242,7 @@ func TestJober_Validate(t *testing.T) {
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
 	job3 = newJob3()
 	job3.input.Version = 2
-	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// 正常返回 commit，设置 prevProject
 	assert.Nil(t, job3.Validate())
 	assert.NotNil(t, job3.prevProject)
@@ -1256,7 +1257,7 @@ func TestJober_Validate(t *testing.T) {
 	job3 = newJob3()
 	job3.input.Name = ""
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// inputName 设置为空, 并且置空 displayName, app name 就会变成 git proj name
 	// 此时应该为创建, version = 1
 	assert.Nil(t, job3.Validate())
@@ -1271,7 +1272,7 @@ func TestJober_Validate(t *testing.T) {
 
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("aaa")).Times(1)
 	job3.input.Version = int64(pp.Version)
-	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// GetCommit 返回 error 的情景
 	assert.Equal(t, "aaa", job3.Validate().Error())
 }
@@ -1330,7 +1331,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 	}
 	assert.ErrorIs(t, ErrorVersionNotMatched, job.Validate())
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	ps.EXPECT().ToSelf(reloadProjectsMessage).AnyTimes()
+	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).AnyTimes()
 
 	wg := sync.WaitGroup{}
 	var successedTimes int64

@@ -19,7 +19,10 @@ func init() {
 }
 
 func HandleNamespaceDeleted(data any, e contracts.Event) error {
-	plugins.GetWsSender().New("", "").ToAll(&plugins.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects}})
+	plugins.GetWsSender().New("", "").ToAll(&websocket_pb.WsReloadProjectsResponse{
+		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
+		NamespaceId: int64(data.(*models.Namespace).ID),
+	})
 	mlog.Debug("event handled: ", e.String())
 
 	return nil

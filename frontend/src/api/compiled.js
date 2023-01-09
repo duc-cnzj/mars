@@ -23337,6 +23337,129 @@ export const websocket = ($root.websocket = (() => {
     return WsProjectPodEventResponse;
   })();
 
+  websocket.WsReloadProjectsResponse = (function () {
+    /**
+     * Properties of a WsReloadProjectsResponse.
+     * @memberof websocket
+     * @interface IWsReloadProjectsResponse
+     * @property {websocket.Metadata|null} [metadata] WsReloadProjectsResponse metadata
+     * @property {number|null} [namespace_id] WsReloadProjectsResponse namespace_id
+     */
+
+    /**
+     * Constructs a new WsReloadProjectsResponse.
+     * @memberof websocket
+     * @classdesc Represents a WsReloadProjectsResponse.
+     * @implements IWsReloadProjectsResponse
+     * @constructor
+     * @param {websocket.IWsReloadProjectsResponse=} [properties] Properties to set
+     */
+    function WsReloadProjectsResponse(properties) {
+      if (properties)
+        for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+          if (properties[keys[i]] != null) this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * WsReloadProjectsResponse metadata.
+     * @member {websocket.Metadata|null|undefined} metadata
+     * @memberof websocket.WsReloadProjectsResponse
+     * @instance
+     */
+    WsReloadProjectsResponse.prototype.metadata = null;
+
+    /**
+     * WsReloadProjectsResponse namespace_id.
+     * @member {number} namespace_id
+     * @memberof websocket.WsReloadProjectsResponse
+     * @instance
+     */
+    WsReloadProjectsResponse.prototype.namespace_id = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
+     * Encodes the specified WsReloadProjectsResponse message. Does not implicitly {@link websocket.WsReloadProjectsResponse.verify|verify} messages.
+     * @function encode
+     * @memberof websocket.WsReloadProjectsResponse
+     * @static
+     * @param {websocket.WsReloadProjectsResponse} message WsReloadProjectsResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WsReloadProjectsResponse.encode = function encode(message, writer) {
+      if (!writer) writer = $Writer.create();
+      if (
+        message.metadata != null &&
+        Object.hasOwnProperty.call(message, "metadata")
+      )
+        $root.websocket.Metadata.encode(
+          message.metadata,
+          writer.uint32(/* id 1, wireType 2 =*/ 10).fork()
+        ).ldelim();
+      if (
+        message.namespace_id != null &&
+        Object.hasOwnProperty.call(message, "namespace_id")
+      )
+        writer.uint32(/* id 2, wireType 0 =*/ 16).int64(message.namespace_id);
+      return writer;
+    };
+
+    /**
+     * Decodes a WsReloadProjectsResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof websocket.WsReloadProjectsResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {websocket.WsReloadProjectsResponse} WsReloadProjectsResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WsReloadProjectsResponse.decode = function decode(reader, length) {
+      if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
+      let end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.websocket.WsReloadProjectsResponse();
+      while (reader.pos < end) {
+        let tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            message.metadata = $root.websocket.Metadata.decode(
+              reader,
+              reader.uint32()
+            );
+            break;
+          }
+          case 2: {
+            message.namespace_id = reader.int64();
+            break;
+          }
+          default:
+            reader.skipType(tag & 7);
+            break;
+        }
+      }
+      return message;
+    };
+
+    /**
+     * Gets the default type url for WsReloadProjectsResponse
+     * @function getTypeUrl
+     * @memberof websocket.WsReloadProjectsResponse
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    WsReloadProjectsResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+      if (typeUrlPrefix === undefined) {
+        typeUrlPrefix = "type.googleapis.com";
+      }
+      return typeUrlPrefix + "/websocket.WsReloadProjectsResponse";
+    };
+
+    return WsReloadProjectsResponse;
+  })();
+
   return websocket;
 })());
 

@@ -21,9 +21,7 @@ const (
 	ToOthers = websocket_pb.To_ToOthers
 )
 
-type WsMetadataResponse = websocket_pb.WsMetadataResponse
-
-var _ contracts.WebsocketMessage = (*WsMetadataResponse)(nil)
+var _ contracts.WebsocketMessage = (*websocket_pb.WsMetadataResponse)(nil)
 
 type WsSender interface {
 	contracts.PluginInterface

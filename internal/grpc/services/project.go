@@ -170,7 +170,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
-	app.Event().Dispatch(events.EventProjectDeleted, map[string]any{"data": &projectModel})
+	app.Event().Dispatch(events.EventProjectDeleted, &projectModel)
 
 	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete,
 		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name))

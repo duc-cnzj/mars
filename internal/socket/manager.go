@@ -77,7 +77,12 @@ var (
 	ErrorVersionNotMatched = errors.New("当前版本已落后于最新版本，请刷新重试")
 )
 
-var reloadProjectsMessage = &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
+func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjectsResponse {
+	return &websocket_pb.WsReloadProjectsResponse{
+		Metadata:    &websocket_pb.Metadata{Type: WsReloadProjects},
+		NamespaceId: int64(nsID),
+	}
+}
 
 type WsResponse = websocket_pb.WsMetadataResponse
 
@@ -276,7 +281,7 @@ func (j *Jober) Done() <-chan struct{} {
 func (j *Jober) Finish() {
 	mlog.Debug("finished")
 	close(j.done)
-	j.PubSub().ToAll(reloadProjectsMessage)
+	j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
 }
 
 func (j *Jober) Prune() {
@@ -662,7 +667,7 @@ func (j *Jober) Validate() error {
 		}
 	}
 	if !j.IsDryRun() {
-		j.PubSub().ToSelf(reloadProjectsMessage)
+		j.PubSub().ToSelf(reloadProjectsMessage(j.project.NamespaceId))
 	}
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
 
