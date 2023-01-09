@@ -73,7 +73,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 	}
 	mlog.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
-	job := p.NewJobFunc(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&socket.JobInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -83,6 +83,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
+		Version:      input.Version,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
 
 	ch := make(chan struct{})
@@ -120,7 +121,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{})
 
-	job := p.NewJobFunc(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&socket.JobInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -130,6 +131,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
+		Version:      input.Version,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds)
 
 	go func() {

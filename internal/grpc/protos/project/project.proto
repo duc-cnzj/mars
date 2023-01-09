@@ -61,6 +61,8 @@ message ApplyRequest {
   repeated types.ExtraValue extra_values = 9;
   // 部署超时时间
   int64 install_timeout_seconds = 10 [(validate.rules).int64.gte = 0];
+  // 版本号, dryRun 时可以不传
+  int64 version = 12 [(validate.rules).int64.gte = 0];
 }
 
 message DeleteResponse {}

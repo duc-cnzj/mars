@@ -15,6 +15,7 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
     switch (data) {
       case pb.websocket.ResultType.DeployedCanceled:
         return "#F59E0B";
+      case pb.websocket.ResultType.Error:
       case pb.websocket.ResultType.DeployedFailed:
         return "red";
       case pb.websocket.ResultType.Deployed:

@@ -14957,6 +14957,7 @@ export const project = ($root.project = (() => {
      * @property {boolean|null} [send_percent] ApplyRequest send_percent
      * @property {Array.<types.ExtraValue>|null} [extra_values] ApplyRequest extra_values
      * @property {number|null} [install_timeout_seconds] ApplyRequest install_timeout_seconds
+     * @property {number|null} [version] ApplyRequest version
      */
 
     /**
@@ -15069,6 +15070,16 @@ export const project = ($root.project = (() => {
       : 0;
 
     /**
+     * ApplyRequest version.
+     * @member {number} version
+     * @memberof project.ApplyRequest
+     * @instance
+     */
+    ApplyRequest.prototype.version = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
      * Encodes the specified ApplyRequest message. Does not implicitly {@link project.ApplyRequest.verify|verify} messages.
      * @function encode
      * @memberof project.ApplyRequest
@@ -15134,6 +15145,11 @@ export const project = ($root.project = (() => {
         Object.hasOwnProperty.call(message, "send_percent")
       )
         writer.uint32(/* id 11, wireType 0 =*/ 88).bool(message.send_percent);
+      if (
+        message.version != null &&
+        Object.hasOwnProperty.call(message, "version")
+      )
+        writer.uint32(/* id 12, wireType 0 =*/ 96).int64(message.version);
       return writer;
     };
 
@@ -15201,6 +15217,10 @@ export const project = ($root.project = (() => {
           }
           case 10: {
             message.install_timeout_seconds = reader.int64();
+            break;
+          }
+          case 12: {
+            message.version = reader.int64();
             break;
           }
           default:
@@ -19760,6 +19780,7 @@ export const types = ($root.types = (() => {
      * @property {string|null} [git_commit_title] ProjectModel git_commit_title
      * @property {string|null} [git_commit_author] ProjectModel git_commit_author
      * @property {string|null} [git_commit_date] ProjectModel git_commit_date
+     * @property {number|null} [version] ProjectModel version
      * @property {types.NamespaceModel|null} [namespace] ProjectModel namespace
      * @property {string|null} [created_at] ProjectModel created_at
      * @property {string|null} [updated_at] ProjectModel updated_at
@@ -19964,6 +19985,16 @@ export const types = ($root.types = (() => {
     ProjectModel.prototype.git_commit_date = "";
 
     /**
+     * ProjectModel version.
+     * @member {number} version
+     * @memberof types.ProjectModel
+     * @instance
+     */
+    ProjectModel.prototype.version = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
      * ProjectModel namespace.
      * @member {types.NamespaceModel|null|undefined} namespace
      * @memberof types.ProjectModel
@@ -20130,6 +20161,11 @@ export const types = ($root.types = (() => {
           .uint32(/* id 22, wireType 2 =*/ 178)
           .string(message.git_commit_date);
       if (
+        message.version != null &&
+        Object.hasOwnProperty.call(message, "version")
+      )
+        writer.uint32(/* id 23, wireType 0 =*/ 184).int64(message.version);
+      if (
         message.namespace != null &&
         Object.hasOwnProperty.call(message, "namespace")
       )
@@ -20263,6 +20299,10 @@ export const types = ($root.types = (() => {
           }
           case 22: {
             message.git_commit_date = reader.string();
+            break;
+          }
+          case 23: {
+            message.version = reader.int64();
             break;
           }
           case 50: {
@@ -22224,6 +22264,7 @@ export const websocket = ($root.websocket = (() => {
      * @property {string|null} [config] UpdateProjectInput config
      * @property {boolean|null} [atomic] UpdateProjectInput atomic
      * @property {Array.<types.ExtraValue>|null} [extra_values] UpdateProjectInput extra_values
+     * @property {number|null} [version] UpdateProjectInput version
      */
 
     /**
@@ -22300,6 +22341,16 @@ export const websocket = ($root.websocket = (() => {
     UpdateProjectInput.prototype.extra_values = $util.emptyArray;
 
     /**
+     * UpdateProjectInput version.
+     * @member {number} version
+     * @memberof websocket.UpdateProjectInput
+     * @instance
+     */
+    UpdateProjectInput.prototype.version = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
      * Encodes the specified UpdateProjectInput message. Does not implicitly {@link websocket.UpdateProjectInput.verify|verify} messages.
      * @function encode
      * @memberof websocket.UpdateProjectInput
@@ -22343,6 +22394,11 @@ export const websocket = ($root.websocket = (() => {
             message.extra_values[i],
             writer.uint32(/* id 7, wireType 2 =*/ 58).fork()
           ).ldelim();
+      if (
+        message.version != null &&
+        Object.hasOwnProperty.call(message, "version")
+      )
+        writer.uint32(/* id 8, wireType 0 =*/ 64).int64(message.version);
       return writer;
     };
 
@@ -22394,6 +22450,10 @@ export const websocket = ($root.websocket = (() => {
             message.extra_values.push(
               $root.types.ExtraValue.decode(reader, reader.uint32())
             );
+            break;
+          }
+          case 8: {
+            message.version = reader.int64();
             break;
           }
           default:

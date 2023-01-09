@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	h := mock.NewMockHelmer(m)
 	job := &Jober{
 		helmer: h,
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			GitProjectId: 100,
 		},
 		messager:  em,
@@ -123,7 +124,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 	h := mock.NewMockHelmer(m)
 	job := &Jober{
 		helmer: h,
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			GitCommit:    "commit",
 			GitProjectId: 100,
 		},
@@ -161,7 +162,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 func TestDynamicLoader_Load(t *testing.T) {
 	em := &emptyMsger{}
 	job := &Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			Config: "xxxx",
 		},
 		messager:  em,
@@ -177,7 +178,7 @@ func TestDynamicLoader_Load(t *testing.T) {
   config: xxxx
 `, job.dynamicConfigYaml)
 	job2 := &Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			Config: "name: duc\nage: 17",
 		},
 		messager:  em,
@@ -197,7 +198,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 
 	em.msgs = []string{}
 	job3 := &Jober{
-		input:     &websocket_pb.CreateProjectInput{},
+		input:     &JobInput{},
 		messager:  em,
 		percenter: &emptyPercenter{},
 	}
@@ -209,7 +210,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 func TestExtraValuesLoader_Load(t *testing.T) {
 	em := &emptyMsger{}
 	job := &Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
 					Path:  "app->config",
@@ -252,7 +253,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 		job.extraValues[1])
 
 	err := (&ExtraValuesLoader{}).Load(&Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
 					Path:  "app->config",
@@ -278,7 +279,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
 
 	j := &Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
 					Path:  "app->config",
@@ -308,7 +309,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.Equal(t, []string{"duc: xxx\n"}, j.extraValues)
 
 	j2 := &Jober{
-		input:     &websocket_pb.CreateProjectInput{},
+		input:     &JobInput{},
 		messager:  em,
 		percenter: &emptyPercenter{},
 		config:    &mars.Config{},
@@ -856,6 +857,16 @@ func TestJober_Prune(t *testing.T) {
 	j.Prune()
 	db.Model(&models.Project{}).Count(&c)
 	assert.Equal(t, int64(0), c)
+
+	// 重置 version
+	j2 := &Jober{
+		isNew:       false,
+		dryRun:      false,
+		project:     &models.Project{ID: p.ID, Version: 101},
+		prevProject: &models.Project{ID: p.ID, Version: 100},
+	}
+	j2.Prune()
+	assert.Equal(t, 100, j2.project.Version)
 }
 
 func TestJober_PubSub(t *testing.T) {
@@ -1027,7 +1038,7 @@ spec:
 			Name: "duc",
 		},
 		ns: &proj.Namespace,
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{{
 				Path:  "app->config",
 				Value: "xxx",
@@ -1150,7 +1161,7 @@ func TestJober_Validate(t *testing.T) {
 	db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.GitProject{})
 
 	job2 := &Jober{
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			NamespaceId: 9999,
 		},
 		messager:  &emptyMsger{},
@@ -1183,24 +1194,28 @@ func TestJober_Validate(t *testing.T) {
 	commit := mock.NewMockCommitInterface(m)
 	h := mock.NewMockHelmer(m)
 	ps := mock.NewMockPubSub(m)
-	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(4)
-	job3 := &Jober{
-		pubsub: ps,
-		helmer: h,
-		input: &websocket_pb.CreateProjectInput{
-			NamespaceId:  int64(ns.ID),
-			GitProjectId: 100,
-			GitBranch:    "dev",
-			GitCommit:    "commit",
-			Config:       "xxx",
-			Atomic:       true,
-		},
-		messager:  &emptyMsger{},
-		percenter: &emptyPercenter{},
-		wsType:    websocket_pb.Type_CreateProject,
-		dryRun:    false,
+	var newJob3 = func() *Jober {
+		return &Jober{
+			pubsub: ps,
+			helmer: h,
+			input: &JobInput{
+				NamespaceId:  int64(ns.ID),
+				GitProjectId: 100,
+				GitBranch:    "dev",
+				GitCommit:    "commit",
+				Config:       "xxx",
+				Atomic:       true,
+			},
+			messager:  &emptyMsger{},
+			percenter: &emptyPercenter{},
+			wsType:    websocket_pb.Type_CreateProject,
+			dryRun:    false,
+		}
 	}
+	job3 := newJob3()
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	// 正常创建
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, 1, len(job3.destroyFuncs))
 	assert.Equal(t, "app", job3.input.Name)
@@ -1209,6 +1224,7 @@ func TestJober_Validate(t *testing.T) {
 	var p models.Project
 	db.First(&p)
 	assert.Equal(t, uint8(types.Deploy_StatusDeploying), p.DeployStatus)
+	assert.Equal(t, int(1), p.Version)
 	assert.Equal(t, 100, int(p.GitProjectId))
 	assert.Equal(t, "dev", p.GitBranch)
 	assert.Equal(t, "commit", p.GitCommit)
@@ -1217,31 +1233,134 @@ func TestJober_Validate(t *testing.T) {
 	assert.Equal(t, "go", p.ConfigType)
 	assert.Nil(t, job3.prevProject)
 
+	// 创建后状态变成了 types.Deploy_StatusDeploying
+	job3.input.Version = 1
 	assert.Equal(t, "有别人也在操作这个项目，等等哦~", job3.Validate().Error())
 
 	db.Model(&p).UpdateColumn("deploy_status", types.Deploy_StatusDeployed)
-	marshal2, _ := json.Marshal(&mars.Config{
-		DisplayName: "",
-	})
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
+	job3 = newJob3()
+	job3.input.Version = 2
+	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	// 正常返回 commit，设置 prevProject
 	assert.Nil(t, job3.Validate())
 	assert.NotNil(t, job3.prevProject)
 
+	marshal2, _ := json.Marshal(&mars.Config{
+		DisplayName: "",
+	})
 	db.Model(&gp).UpdateColumn("global_config", string(marshal2))
 	gitproj := mock.NewMockProjectInterface(m)
 	gitproj.EXPECT().GetName().Return("app-git")
 	gits.EXPECT().GetProject("100").Return(gitproj, nil)
+	job3 = newJob3()
 	job3.input.Name = ""
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
+	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	// inputName 设置为空, 并且置空 displayName, app name 就会变成 git proj name
+	// 此时应该为创建, version = 1
 	assert.Nil(t, job3.Validate())
 	assert.Equal(t, "app-git", job3.input.Name)
+	var pp = models.Project{ID: job3.project.ID}
+	db.First(&pp)
+	assert.Equal(t, 1, pp.Version)
 
 	h.EXPECT().ReleaseStatus("app-git", "ns").Return(types.Deploy_StatusUnknown).AnyTimes()
 	job3.CallDestroyFuncs()
 	assert.Equal(t, uint8(types.Deploy_StatusUnknown), job3.project.DeployStatus)
 
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("aaa")).Times(1)
+	job3.input.Version = int64(pp.Version)
+	ps.EXPECT().ToSelf(reloadProjectsMessage).Times(1)
+	// GetCommit 返回 error 的情景
 	assert.Equal(t, "aaa", job3.Validate().Error())
+}
+
+func TestJober_Validate_VersionMatch(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, fn := testutil.SetGormDB(m, app)
+	defer fn()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.GitProject{})
+
+	ns := &models.Namespace{Name: "ns", ImagePullSecrets: "aa,bb"}
+	db.Create(ns)
+	marsC := mars.Config{
+		DisplayName:    "app",
+		ConfigFileType: "go",
+	}
+	marshal, _ := json.Marshal(&marsC)
+	gp := &models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "git-app",
+		GitProjectId:  100,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal),
+	}
+	db.Create(gp)
+	p := models.Project{
+		NamespaceId:  ns.ID,
+		GitProjectId: 100,
+		Name:         "app",
+		Version:      1,
+		DeployStatus: uint8(types.Deploy_StatusDeployed),
+	}
+	assert.Nil(t, db.Create(&p).Error)
+	gits := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	h := mock.NewMockHelmer(m)
+	ps := mock.NewMockPubSub(m)
+	job := &Jober{
+		pubsub: ps,
+		helmer: h,
+		input: &JobInput{
+			NamespaceId:  int64(ns.ID),
+			GitProjectId: 100,
+			Name:         p.Name,
+			Version:      0,
+		},
+		messager:  &emptyMsger{},
+		percenter: &emptyPercenter{},
+		wsType:    websocket_pb.Type_UpdateProject,
+	}
+	assert.ErrorIs(t, ErrorVersionNotMatched, job.Validate())
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	ps.EXPECT().ToSelf(reloadProjectsMessage).AnyTimes()
+
+	wg := sync.WaitGroup{}
+	var successedTimes int64
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			job2 := &Jober{
+				pubsub: ps,
+				helmer: h,
+				input: &JobInput{
+					NamespaceId:  int64(ns.ID),
+					GitProjectId: 100,
+					Name:         p.Name,
+					Version:      1,
+				},
+				messager:  &emptyMsger{},
+				percenter: &emptyPercenter{},
+				wsType:    websocket_pb.Type_ApplyProject,
+			}
+			if job2.Validate() == nil {
+				atomic.AddInt64(&successedTimes, 1)
+			}
+		}()
+	}
+	wg.Wait()
+	var pp = models.Project{ID: p.ID}
+	db.First(&pp)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&successedTimes))
+	assert.Equal(t, int(2), pp.Version)
 }
 
 func Test_DisplayNameValidate(t *testing.T) {
@@ -1342,7 +1461,7 @@ app:
 		valuesYaml:        vy,
 		extraValues:       []string{ev1, ev2},
 		valuesOptions:     &values.Options{},
-		input:             &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
+		input:             &JobInput{GitProjectId: 99, GitBranch: "dev"},
 		messager:          &emptyMsger{},
 		percenter:         &emptyPercenter{},
 	}
@@ -1355,7 +1474,7 @@ app:
 		valuesYaml:        "",
 		extraValues:       nil,
 		valuesOptions:     &values.Options{},
-		input:             &websocket_pb.CreateProjectInput{GitProjectId: 99, GitBranch: "dev"},
+		input:             &JobInput{GitProjectId: 99, GitBranch: "dev"},
 		messager:          &emptyMsger{},
 		percenter:         &emptyPercenter{},
 	}
@@ -1363,8 +1482,8 @@ app:
 }
 
 func TestNewJober(t *testing.T) {
-	assert.Implements(t, (*contracts.Job)(nil), NewJober(&websocket_pb.CreateProjectInput{}, contracts.UserInfo{}, "", nil, nil, 10))
-	jober := NewJober(&websocket_pb.CreateProjectInput{}, contracts.UserInfo{}, "", nil, nil, 0, WithDryRun())
+	assert.Implements(t, (*contracts.Job)(nil), NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 10))
+	jober := NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 0, WithDryRun())
 	assert.True(t, jober.IsDryRun())
 }
 
@@ -1414,7 +1533,7 @@ func TestReleaseInstallerLoader_Load(t *testing.T) {
 		messager:       em,
 		dryRun:         true,
 		timeoutSeconds: 20,
-		input: &websocket_pb.CreateProjectInput{
+		input: &JobInput{
 			Atomic: true,
 		},
 		project: &models.Project{

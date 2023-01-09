@@ -7422,6 +7422,9 @@ export namespace project {
 
     /** ApplyRequest install_timeout_seconds */
     install_timeout_seconds?: number | null;
+
+    /** ApplyRequest version */
+    version?: number | null;
   }
 
   /** Represents an ApplyRequest. */
@@ -7464,6 +7467,9 @@ export namespace project {
 
     /** ApplyRequest install_timeout_seconds. */
     public install_timeout_seconds: number;
+
+    /** ApplyRequest version. */
+    public version: number;
 
     /**
      * Encodes the specified ApplyRequest message. Does not implicitly {@link project.ApplyRequest.verify|verify} messages.
@@ -9618,6 +9624,9 @@ export namespace types {
     /** ProjectModel git_commit_date */
     git_commit_date?: string | null;
 
+    /** ProjectModel version */
+    version?: number | null;
+
     /** ProjectModel namespace */
     namespace?: types.NamespaceModel | null;
 
@@ -9704,6 +9713,9 @@ export namespace types {
 
     /** ProjectModel git_commit_date. */
     public git_commit_date: string;
+
+    /** ProjectModel version. */
+    public version: number;
 
     /** ProjectModel namespace. */
     public namespace?: types.NamespaceModel | null;
@@ -10625,6 +10637,9 @@ export namespace websocket {
 
     /** UpdateProjectInput extra_values */
     extra_values?: types.ExtraValue[] | null;
+
+    /** UpdateProjectInput version */
+    version?: number | null;
   }
 
   /** Represents an UpdateProjectInput. */
@@ -10655,6 +10670,9 @@ export namespace websocket {
 
     /** UpdateProjectInput extra_values. */
     public extra_values: types.ExtraValue[];
+
+    /** UpdateProjectInput version. */
+    public version: number;
 
     /**
      * Encodes the specified UpdateProjectInput message. Does not implicitly {@link websocket.UpdateProjectInput.verify|verify} messages.

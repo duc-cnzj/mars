@@ -357,7 +357,7 @@ func TestProjectSvc_Apply(t *testing.T) {
 	}
 	job.EXPECT().Stop(gomock.Any()).Times(0)
 	ma := &mockApplyServer{}
-	(&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	(&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job
 	}}).Apply(req, ma)
 }
@@ -425,7 +425,7 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	cancel()
 	ma := &mockApplyServer{ctx: ctx}
 
-	err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return &mockJob{msger: msger, t: t}
 	}}).Apply(req, ma)
 	assert.Equal(t, "context canceled", err.Error())
@@ -434,7 +434,7 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	gits := mockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
 	req.GitCommit = ""
-	err = (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	err = (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return &mockJob{msger: msger, t: t}
 	}}).Apply(req, ma)
 	assert.Equal(t, "没有可用的 commit", err.Error())
@@ -456,7 +456,7 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
-	_, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	_, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job
 	}}).ApplyDryRun(adminCtx(), req)
 	assert.Error(t, err)
@@ -470,7 +470,7 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	job.EXPECT().Finish().Times(1)
 	job.EXPECT().Manifests().Return([]string{"Manifests"}).Times(1)
 
-	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job
 	}}).ApplyDryRun(adminCtx(), req)
 	assert.Nil(t, err)
@@ -495,7 +495,7 @@ func TestProjectSvc_ApplyDryRun_Error(t *testing.T) {
 	ctx, cancel := context.WithCancel(adminCtx())
 	cancel()
 
-	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return &mockJob{msger: msger, t: t}
 	}}).ApplyDryRun(ctx, req)
 	assert.Nil(t, run)

@@ -33,7 +33,7 @@ func TestNamespaceSvc_All(t *testing.T) {
 	db.Create(&models.Namespace{
 		ID:               0,
 		Name:             "ns1",
-		ImagePullSecrets: "",
+		ImagePullSecrets: "sec1",
 		Projects: []models.Project{
 			{
 				Name:         "deploy1",
@@ -47,7 +47,7 @@ func TestNamespaceSvc_All(t *testing.T) {
 	})
 	db.Create(&models.Namespace{
 		Name:             "ns2",
-		ImagePullSecrets: "",
+		ImagePullSecrets: "sec2,sec3",
 		Projects: []models.Project{
 			{
 				Name:         "deploy3",
@@ -62,6 +62,8 @@ func TestNamespaceSvc_All(t *testing.T) {
 	all, _ := new(NamespaceSvc).All(context.TODO(), &namespace.AllRequest{})
 	assert.Equal(t, "ns1", all.Items[0].Name)
 	assert.Equal(t, "ns2", all.Items[1].Name)
+	assert.Len(t, all.Items[0].ImagePullSecrets, 0)
+	assert.Len(t, all.Items[1].ImagePullSecrets, 0)
 	assert.Len(t, all.Items[0].Projects, 2)
 }
 

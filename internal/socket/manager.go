@@ -73,6 +73,10 @@ const (
 	pingPeriod = (pongWait * 8) / 10
 )
 
+var (
+	ErrorVersionNotMatched = errors.New("当前版本已落后于最新版本，请刷新重试")
+)
+
 var reloadProjectsMessage = &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
 
 type WsResponse = websocket_pb.WsMetadataResponse
@@ -121,7 +125,7 @@ type Jober struct {
 	dryRun    bool
 	manifests []string
 
-	input    *websocket_pb.CreateProjectInput
+	input    *JobInput
 	wsType   websocket_pb.Type
 	slugName string
 
@@ -166,8 +170,21 @@ func WithDryRun() Option {
 	}
 }
 
+type JobInput struct {
+	Type         websocket_pb.Type
+	NamespaceId  int64
+	Name         string
+	GitProjectId int64
+	GitBranch    string
+	GitCommit    string
+	Config       string
+	Atomic       bool
+	ExtraValues  []*types.ExtraValue
+	Version      int64
+}
+
 type NewJobFunc func(
-	input *websocket_pb.CreateProjectInput,
+	input *JobInput,
 	user contracts.UserInfo,
 	slugName string,
 	messager contracts.DeployMsger,
@@ -177,7 +194,7 @@ type NewJobFunc func(
 ) contracts.Job
 
 func NewJober(
-	input *websocket_pb.CreateProjectInput,
+	input *JobInput,
 	user contracts.UserInfo,
 	slugName string,
 	messager contracts.DeployMsger,
@@ -263,10 +280,17 @@ func (j *Jober) Finish() {
 }
 
 func (j *Jober) Prune() {
-	if j.IsNew() && !j.IsDryRun() {
+	if j.IsDryRun() {
+		return
+	}
+
+	if j.IsNew() {
 		mlog.Debug("清理项目")
 		app.DB().Delete(&j.project)
+		return
 	}
+
+	app.DB().Model(&j.project).UpdateColumn("version", j.prevProject.Version)
 }
 
 func (j *Jober) Stop(err error) {
@@ -627,10 +651,13 @@ func (j *Jober) Validate() error {
 	} else {
 		j.project.ID = p.ID
 		j.prevProject = &p
-		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
-			return errors.New("有别人也在操作这个项目，等等哦~")
-		}
 		if !j.IsDryRun() {
+			if app.DB().Model(&p).Where("`version` = ?", j.input.Version).UpdateColumn("version", gorm.Expr("`version`+?", 1)).RowsAffected == 0 {
+				return ErrorVersionNotMatched
+			}
+			if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
+				return errors.New("有别人也在操作这个项目，等等哦~")
+			}
 			app.DB().Model(&p).Update("deploy_status", types.Deploy_StatusDeploying)
 		}
 	}

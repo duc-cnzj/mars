@@ -102,7 +102,7 @@ func TestHandleWsCreateProject(t *testing.T) {
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
-		NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 			return job
 		},
 		cancelSignaler:   cs,
@@ -266,7 +266,7 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
-		NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 			return job
 		},
 		cancelSignaler:   cs,

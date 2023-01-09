@@ -3206,6 +3206,10 @@
         },
         "updated_at": {
           "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

@@ -9,12 +9,8 @@
       "name": "Changelog"
     }
   ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
   "paths": {
     "/api/projects/{project_id}/changelogs": {
       "get": {
@@ -49,9 +45,7 @@
             "type": "boolean"
           }
         ],
-        "tags": [
-          "Changelog"
-        ]
+        "tags": ["Changelog"]
       }
     }
   },
@@ -351,6 +345,10 @@
         },
         "git_commit_date": {
           "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
         },
         "namespace": {
           "$ref": "#/definitions/typesNamespaceModel"

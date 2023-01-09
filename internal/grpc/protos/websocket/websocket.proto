@@ -120,6 +120,7 @@ message UpdateProjectInput {
   string config = 5;
   bool atomic = 6;
   repeated types.ExtraValue extra_values = 7;
+  int64 version = 8;
 }
 
 // Response

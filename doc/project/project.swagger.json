@@ -489,6 +489,10 @@
         "git_commit_date": {
           "type": "string"
         },
+        "version": {
+          "type": "string",
+          "format": "int64"
+        },
         "namespace": {
           "$ref": "#/definitions/typesNamespaceModel"
         },
