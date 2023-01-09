@@ -74,7 +74,7 @@ const (
 )
 
 var (
-	ErrorVersionNotMatched = errors.New("当前版本已落后于最新版本，请刷新重试")
+	ErrorVersionNotMatched = errors.New("当前版本和最新版本存在差异，请刷新重试")
 )
 
 func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjectsResponse {
