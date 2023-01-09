@@ -40,9 +40,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (reloadNamespace) {
       fetchNamespaces();
-      dispatch(setNamespaceReload(false, reloadNsID));
+      dispatch(setNamespaceReload(false, 0));
     }
-  }, [reloadNamespace, dispatch, fetchNamespaces, reloadNsID]);
+  }, [reloadNamespace, dispatch, fetchNamespaces]);
 
   return (
     <DraggableModalProvider>
