@@ -97,7 +97,17 @@ func TestHandleWsCreateProject(t *testing.T) {
 	app := testutil.MockApp(m)
 	l := mock.NewMockLocker(m)
 	app.EXPECT().CacheLock().Return(l).AnyTimes()
-	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
+	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
+		Type:         websocket.Type_CreateProject,
+		NamespaceId:  0,
+		Name:         "",
+		GitProjectId: 0,
+		GitBranch:    "",
+		GitCommit:    "",
+		Config:       "",
+		Atomic:       false,
+		ExtraValues:  nil,
+	})
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
@@ -111,6 +121,13 @@ func TestHandleWsCreateProject(t *testing.T) {
 
 	msg := mock.NewMockDeployMsger(m)
 
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, false).Times(1)
+	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	job.EXPECT().IsDryRun().Return(false).AnyTimes()
+	job.EXPECT().ID().Return("1").AnyTimes()
+	HandleWsCreateProject(c, websocket.Type_CreateProject, marshal)
+
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsCreateProject(c, websocket.Type_UpdateProject, []byte("1:"))
 
@@ -121,27 +138,33 @@ func TestHandleWsCreateProject(t *testing.T) {
 	job.EXPECT().Run().Return(nil).Times(1)
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
-	job.EXPECT().ID().Return("1").AnyTimes()
 	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
-	job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
+	jm := &jobMatcher{}
+	job.EXPECT().AddDestroyFunc(jm).Times(2)
 
-	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
-		Type:         websocket.Type_CreateProject,
-		NamespaceId:  0,
-		Name:         "",
-		GitProjectId: 0,
-		GitBranch:    "",
-		GitCommit:    "",
-		Config:       "",
-		Atomic:       false,
-		ExtraValues:  nil,
-	})
-
+	cs.EXPECT().Remove("1").Times(1)
 	HandleWsCreateProject(c, websocket.Type_CreateProject, marshal)
+	assert.Len(t, jm.x, 2)
+	jm.x[1].(func())()
+
+	job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
 
 	cs.EXPECT().Add("1", gomock.Any()).Return(errors.New("xxx"))
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsCreateProject(c, websocket.Type_CreateProject, marshal)
+}
+
+type jobMatcher struct {
+	x []any
+}
+
+func (j *jobMatcher) Matches(x any) bool {
+	j.x = append(j.x, x)
+	return true
+}
+
+func (j *jobMatcher) String() string {
+	return ""
 }
 
 func TestHandleWsHandleCloseShell(t *testing.T) {

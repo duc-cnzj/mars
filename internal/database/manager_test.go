@@ -186,7 +186,6 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasIndex(&models.Namespace{}, "DeletedAt"))
 	assert.False(t, db.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at"))
 	assert.False(t, db.Migrator().HasIndex(&models.Changelog{}, "idx_projectid_config_changed_deleted_at_version"))
-
 	assert.False(t, db.Migrator().HasColumn("projects", "version"))
 
 	assert.Nil(t, ma.AutoMigrate())

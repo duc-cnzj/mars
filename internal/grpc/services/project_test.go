@@ -350,7 +350,7 @@ func TestProjectSvc_Apply(t *testing.T) {
 	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
 	ws := mockWsServer(m, app)
 	ps := mock.NewMockPubSub(m)
-	ws.EXPECT().New("", "").Return(ps)
+	ws.EXPECT().New("", "").Return(ps).AnyTimes()
 	req := &project.ApplyRequest{
 		NamespaceId:   1,
 		Name:          "aaa",
@@ -365,6 +365,13 @@ func TestProjectSvc_Apply(t *testing.T) {
 	(&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job
 	}}).Apply(req, ma)
+
+	job.EXPECT().ID().Return("job-id").Times(2)
+	l.EXPECT().RenewalAcquire(job.ID(), int64(30), int64(20)).Return(func() {}, false).Times(1)
+	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		return job
+	}}).Apply(req, ma)
+	assert.Equal(t, "正在部署中，请稍后再试", err.Error())
 }
 
 type mockJob struct {

@@ -81,7 +81,6 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
-	client.DisableHooks = true
 	client.Atomic = false
 	client.Wait = wait
 	client.Description = desc
@@ -413,10 +412,7 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags = flags.WithDiscoveryQPS(-1)
-	flags = flags.WithWrapConfigFn(func(config *restclient.Config) *restclient.Config {
-		config.QPS = -1
-		return config
-	})
+	flags = flags.WithWrapConfigFn(wrapRestConfig)
 	set := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.AddFlags(set)
 	sets := []string{"--namespace=" + namespace}
@@ -436,6 +432,11 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	}
 
 	return actionConfig, nil
+}
+
+func wrapRestConfig(config *restclient.Config) *restclient.Config {
+	config.QPS = -1
+	return config
 }
 
 func GetSlugName[T int64 | int](namespaceId T, name string) string {
