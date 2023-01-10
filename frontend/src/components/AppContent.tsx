@@ -19,9 +19,9 @@ const AppContent: React.FC = () => {
   const [namespaceItems, setNamespaceItems] = useAsyncState<
     pb.types.NamespaceModel[]
   >([]);
-  const fetchNamespaces = useCallback(() => {
+  const fetchNamespaces = useCallback(async () => {
     setLoading(true);
-    allNamespaces()
+    return allNamespaces()
       .then((res) => {
         setNamespaceItems(res.data.items);
         setLoading(false);
@@ -39,8 +39,9 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (reloadNamespace) {
-      fetchNamespaces();
-      dispatch(setNamespaceReload(false, reloadNsID));
+      fetchNamespaces().finally(() =>
+        dispatch(setNamespaceReload(false, reloadNsID))
+      );
     }
   }, [reloadNamespace, dispatch, fetchNamespaces, reloadNsID]);
 
