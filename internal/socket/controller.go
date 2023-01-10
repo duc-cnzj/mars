@@ -495,7 +495,7 @@ func InstallProject(job contracts.Job) (err error) {
 			handleStopErr(e)
 			return
 		}
-		job.Messager().SendEndError(err)
+		job.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), job.ProjectModel())
 		return
 	}
 
@@ -504,7 +504,7 @@ func InstallProject(job contracts.Job) (err error) {
 			handleStopErr(e)
 			return
 		}
-		job.Messager().SendEndError(err)
+		job.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), job.ProjectModel())
 		return
 	}
 

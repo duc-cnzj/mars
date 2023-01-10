@@ -716,6 +716,7 @@ func (j *Jober) Validate() error {
 			if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
 				return errors.New("有别人也在操作这个项目，等等哦~")
 			}
+			j.Messager().SendMsg("[Check]: 检查当前版本")
 			if app.DB().Model(&p).Where("`version` = ?", j.input.Version).UpdateColumn("version", gorm.Expr("`version` + ?", 1)).RowsAffected == 0 {
 				return ErrorVersionNotMatched
 			}
