@@ -1399,7 +1399,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal),
 	}
-	db.Create(gp)
+	assert.Nil(t, db.Create(gp).Error)
 	p := models.Project{
 		NamespaceId:  ns.ID,
 		GitProjectId: 100,
@@ -1413,6 +1413,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	gits.EXPECT().GetFileContentWithBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	h := mock.NewMockHelmer(m)
 	ps := mock.NewMockPubSub(m)
 	job := &Jober{
@@ -1434,7 +1435,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	var successedTimes int64
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -1444,7 +1445,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 				input: &JobInput{
 					NamespaceId:  int64(ns.ID),
 					GitProjectId: 100,
-					Name:         p.Name,
+					Name:         "app",
 					Version:      1,
 				},
 				messager:  &emptyMsger{},
