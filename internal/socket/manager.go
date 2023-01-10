@@ -292,8 +292,12 @@ func (j *Jober) Done() <-chan struct{} {
 func (j *Jober) Finish() {
 	mlog.Debug("finished")
 	close(j.done)
-	if j.IsNotDryRun() && j.Project().ID > 0 && j.prevProject.DeployStatus != uint8(types.Deploy_StatusDeploying) {
-		app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+	cs := j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name)
+	mlog.Warning(cs, "###")
+
+	//&& j.prevProject.DeployStatus != uint8(types.Deploy_StatusDeploying)
+	if j.IsNotDryRun() && j.Project().ID > 0 {
+		app.DB().Model(j.Project()).UpdateColumn("deploy_status", cs)
 	}
 	if j.deployResult.IsSet() {
 		j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())

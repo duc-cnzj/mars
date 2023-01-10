@@ -3,6 +3,7 @@ package socket
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -469,6 +470,16 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		c.cancelSignaler.Remove(job.ID())
 	})
 	InstallProject(job)
+}
+
+func Install(job contracts.Job) error {
+	releaseFn, acquired := app.CacheLock().RenewalAcquire(job.ID(), 60, 45)
+	if !acquired {
+		job.Messager().SendEndError(errors.New("其他人占用了"))
+		return errors.New("其他人")
+	}
+	defer releaseFn()
+	return InstallProject(job)
 }
 
 func InstallProject(job contracts.Job) (err error) {
