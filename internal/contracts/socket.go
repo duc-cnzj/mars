@@ -103,7 +103,6 @@ type DeployMsger interface {
 	Msger
 	ProcessPercentMsger
 
-	Stop(error)
 	SendDeployedResult(t websocket.ResultType, msg string, p *types.ProjectModel)
 }
 
@@ -120,7 +119,7 @@ type ProcessPercentMsger interface {
 }
 
 type SafeWriteMessageChInterface interface {
-	Closed()
+	Close()
 	Chan() <-chan MessageItem
 	Send(m MessageItem)
 }
@@ -139,8 +138,8 @@ type Job interface {
 	Prune()
 
 	Stop(error)
-	IsStopped() bool
 	GetStoppedErrorIfHas() error
+	SetDeployResult(t websocket.ResultType, msg string, model *types.ProjectModel)
 
 	Run() error
 	Logs() []string
@@ -149,6 +148,7 @@ type Job interface {
 
 	User() UserInfo
 	IsNew() bool
+	Owned() bool
 	ProjectModel() *types.ProjectModel
 	Commit() CommitInterface
 

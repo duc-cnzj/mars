@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	v12 "k8s.io/client-go/listers/core/v1"
+	restclient "k8s.io/client-go/rest"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -80,6 +81,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	}
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
+	client.DisableHooks = true
 	client.Atomic = false
 	client.Wait = wait
 	client.Description = desc
@@ -410,6 +412,11 @@ func PackageChart(path string, destDir string) (string, error) {
 func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
+	flags = flags.WithDiscoveryQPS(-1)
+	flags = flags.WithWrapConfigFn(func(config *restclient.Config) *restclient.Config {
+		config.QPS = -1
+		return config
+	})
 	set := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.AddFlags(set)
 	sets := []string{"--namespace=" + namespace}

@@ -368,6 +368,15 @@ type mockJob struct {
 	msger contracts.DeployMsger
 	contracts.Job
 	e error
+	socket.DeployResult
+}
+
+func newMockJob(t *testing.T, msger contracts.DeployMsger) *mockJob {
+	return &mockJob{t: t, msger: msger}
+}
+
+func (m *mockJob) SetDeployResult(t websocket.ResultType, msg string, model *types.ProjectModel) {
+	m.DeployResult.Set(t, msg, model)
 }
 
 func (m *mockJob) Validate() error {
@@ -386,6 +395,9 @@ func (m *mockJob) IsDryRun() bool {
 }
 
 func (m *mockJob) Finish() {
+	if m.DeployResult.IsSet() {
+		m.msger.SendDeployedResult(m.DeployResult.ResultType(), m.DeployResult.Msg(), m.DeployResult.Model())
+	}
 }
 
 func (m *mockJob) Messager() contracts.DeployMsger {
@@ -411,7 +423,6 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	msger.EXPECT().Stop(gomock.Any()).Times(1)
 	req := &project.ApplyRequest{
 		NamespaceId:  1,
 		Name:         "aaa",
@@ -426,7 +437,7 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	ma := &mockApplyServer{ctx: ctx}
 
 	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
+		return newMockJob(t, msger)
 	}}).Apply(req, ma)
 	assert.Equal(t, "context canceled", err.Error())
 
@@ -435,7 +446,7 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
 	req.GitCommit = ""
 	err = (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
+		return newMockJob(t, msger)
 	}}).Apply(req, ma)
 	assert.Equal(t, "没有可用的 commit", err.Error())
 }
@@ -482,7 +493,6 @@ func TestProjectSvc_ApplyDryRun_Error(t *testing.T) {
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	msger.EXPECT().Stop(gomock.Any()).Times(1)
 	req := &project.ApplyRequest{
 		NamespaceId:  1,
 		Name:         "aaa",
@@ -496,7 +506,7 @@ func TestProjectSvc_ApplyDryRun_Error(t *testing.T) {
 	cancel()
 
 	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
+		return newMockJob(t, msger)
 	}}).ApplyDryRun(ctx, req)
 	assert.Nil(t, run)
 	assert.Equal(t, "context canceled", err.Error())

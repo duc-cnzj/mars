@@ -91,7 +91,7 @@ type SafeWriteMessageCh struct {
 	ch        chan contracts.MessageItem
 }
 
-func (s *SafeWriteMessageCh) Closed() {
+func (s *SafeWriteMessageCh) Close() {
 	mlog.Debug("SafeWriteMessageCh closed")
 	if s.closeable.Close() {
 		close(s.ch)
@@ -101,6 +101,7 @@ func (s *SafeWriteMessageCh) Closed() {
 func (s *SafeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 	return s.ch
 }
+
 func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
 	if s.closeable.IsClosed() {
 		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
@@ -124,6 +125,8 @@ func (v vars) MustGetString(key string) string {
 type Jober struct {
 	helmer contracts.Helmer
 	done   chan struct{}
+
+	deployResult DeployResult
 
 	loaders []Loader
 
@@ -153,6 +156,7 @@ type Jober struct {
 	stopFn    func(error)
 
 	isNew       bool
+	owned       bool
 	config      *mars.Config
 	ns          *models.Namespace
 	project     *models.Project
@@ -247,8 +251,15 @@ func (j *Jober) IsNew() bool {
 	return j.isNew
 }
 
+func (j *Jober) Owned() bool {
+	return j.owned
+}
+
 func (j *Jober) IsDryRun() bool {
 	return j.dryRun
+}
+func (j *Jober) IsNotDryRun() bool {
+	return !j.dryRun
 }
 
 func (j *Jober) Commit() contracts.CommitInterface {
@@ -281,7 +292,15 @@ func (j *Jober) Done() <-chan struct{} {
 func (j *Jober) Finish() {
 	mlog.Debug("finished")
 	close(j.done)
-	j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
+	if j.IsNotDryRun() && j.Project().ID > 0 && j.prevProject.DeployStatus != uint8(types.Deploy_StatusDeploying) {
+		app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+	}
+	if j.deployResult.IsSet() {
+		j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
+	}
+	if j.IsNotDryRun() {
+		j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
+	}
 }
 
 func (j *Jober) Prune() {
@@ -295,7 +314,9 @@ func (j *Jober) Prune() {
 		return
 	}
 
-	app.DB().Model(&j.project).UpdateColumn("version", j.prevProject.Version)
+	if j.Owned() {
+		app.DB().Model(&j.project).UpdateColumn("version", j.prevProject.Version)
+	}
 }
 
 func (j *Jober) Stop(err error) {
@@ -314,6 +335,44 @@ func (j *Jober) IsStopped() bool {
 	}
 
 	return false
+}
+
+type DeployResult struct {
+	sync.RWMutex
+	result websocket_pb.ResultType
+	msg    string
+	model  *types.ProjectModel
+	set    bool
+}
+
+func (d *DeployResult) IsSet() bool {
+	d.RLock()
+	defer d.RUnlock()
+	return d.set
+}
+func (d *DeployResult) Msg() string {
+	d.RLock()
+	defer d.RUnlock()
+	return d.msg
+}
+func (d *DeployResult) Model() *types.ProjectModel {
+	d.RLock()
+	defer d.RUnlock()
+	return d.model
+}
+func (d *DeployResult) ResultType() websocket_pb.ResultType {
+	d.RLock()
+	defer d.RUnlock()
+	return d.result
+}
+
+func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+	d.Lock()
+	defer d.Unlock()
+	d.result = t
+	d.msg = msg
+	d.model = model
+	d.set = true
 }
 
 func (j *Jober) HandleMessage() {
@@ -338,13 +397,13 @@ func (j *Jober) HandleMessage() {
 				}
 				select {
 				case <-j.stopCtx.Done():
-					j.Messager().SendDeployedResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
 				default:
-					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
 				}
 				return
 			case contracts.MessageSuccess:
-				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
+				j.SetDeployResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
 				return
 			}
 		}
@@ -432,7 +491,6 @@ func toUpdatesMap(p *models.Project) map[string]any {
 		"extra_values":       p.ExtraValues,
 		"final_extra_values": p.FinalExtraValues,
 		"env_values":         p.EnvValues,
-		"deploy_status":      p.DeployStatus,
 		"git_commit_title":   p.GitCommitTitle,
 		"git_commit_web_url": p.GitCommitWebUrl,
 		"git_commit_author":  p.GitCommitAuthor,
@@ -453,7 +511,7 @@ func (j *Jober) Run() error {
 	}()
 
 	err := func() error {
-		defer j.messageCh.Closed()
+		defer j.messageCh.Close()
 		var (
 			result *release.Release
 			err    error
@@ -503,7 +561,7 @@ func (j *Jober) Run() error {
 			if j.prevProject != nil && j.prevProject.ID > 0 {
 				p = j.prevProject
 				j.project.ID = p.ID
-				if !j.IsDryRun() {
+				if j.IsNotDryRun() {
 					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
 				}
 				var (
@@ -532,7 +590,7 @@ func (j *Jober) Run() error {
 					oldConf.Title = commit.GetTitle()
 				}
 			} else {
-				if !j.IsDryRun() {
+				if j.IsNotDryRun() {
 					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
 				}
 			}
@@ -547,7 +605,7 @@ func (j *Jober) Run() error {
 				FinalExtraValues: mergeYamlString(j.extraValues),
 				EnvValues:        j.vars,
 			}
-			if !j.IsDryRun() {
+			if j.IsNotDryRun() {
 				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
 					Project:  j.project,
 					Username: j.User().Name,
@@ -573,6 +631,10 @@ func (j *Jober) Run() error {
 	}()
 	<-done
 	return err
+}
+
+func (j *Jober) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+	j.deployResult.Set(t, msg, model)
 }
 
 func (j *Jober) GetStoppedErrorIfHas() error {
@@ -638,35 +700,31 @@ func (j *Jober) Validate() error {
 
 	j.Messager().SendMsg("[Check]: 检查项目是否存在")
 
-	j.AddDestroyFunc(func() {
-		mlog.Debug("update DeployStatus in DestroyFunc")
-		if !j.IsDryRun() && j.Project().ID > 0 {
-			app.DB().Model(j.Project()).Update("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
-		}
-	})
-
 	var p models.Project
 	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		if !j.IsDryRun() {
-			j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
+		j.Messager().SendMsg("[Check]: 新建项目")
+		j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
+		if j.IsNotDryRun() {
 			app.DB().Create(&j.project)
 		}
-		j.Messager().SendMsg("[Check]: 新建项目")
 		j.isNew = true
 	} else {
 		j.project.ID = p.ID
 		j.prevProject = &p
-		if !j.IsDryRun() {
-			if app.DB().Model(&p).Where("`version` = ?", j.input.Version).UpdateColumn("version", gorm.Expr("`version`+?", 1)).RowsAffected == 0 {
-				return ErrorVersionNotMatched
-			}
+
+		if j.IsNotDryRun() {
 			if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
 				return errors.New("有别人也在操作这个项目，等等哦~")
 			}
-			app.DB().Model(&p).Update("deploy_status", types.Deploy_StatusDeploying)
+			if app.DB().Model(&p).Where("`version` = ?", j.input.Version).UpdateColumn("version", gorm.Expr("`version` + ?", 1)).RowsAffected == 0 {
+				return ErrorVersionNotMatched
+			}
+			app.DB().Model(j.project).UpdateColumn("deploy_status", types.Deploy_StatusDeploying)
 		}
 	}
-	if !j.IsDryRun() {
+	j.owned = true
+
+	if j.IsNotDryRun() {
 		j.PubSub().ToSelf(reloadProjectsMessage(j.project.NamespaceId))
 	}
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()

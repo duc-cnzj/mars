@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	types "github.com/duc-cnzj/mars-client/v4/types"
+	websocket "github.com/duc-cnzj/mars-client/v4/websocket"
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -167,20 +168,6 @@ func (mr *MockJobMockRecorder) IsNew() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNew", reflect.TypeOf((*MockJob)(nil).IsNew))
 }
 
-// IsStopped mocks base method.
-func (m *MockJob) IsStopped() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsStopped")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsStopped indicates an expected call of IsStopped.
-func (mr *MockJobMockRecorder) IsStopped() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsStopped", reflect.TypeOf((*MockJob)(nil).IsStopped))
-}
-
 // LoadConfigs mocks base method.
 func (m *MockJob) LoadConfigs() error {
 	m.ctrl.T.Helper()
@@ -235,6 +222,20 @@ func (m *MockJob) Messager() contracts.DeployMsger {
 func (mr *MockJobMockRecorder) Messager() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Messager", reflect.TypeOf((*MockJob)(nil).Messager))
+}
+
+// Owned mocks base method.
+func (m *MockJob) Owned() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Owned")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Owned indicates an expected call of Owned.
+func (mr *MockJobMockRecorder) Owned() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Owned", reflect.TypeOf((*MockJob)(nil).Owned))
 }
 
 // Percenter mocks base method.
@@ -317,6 +318,18 @@ func (m *MockJob) Run() error {
 func (mr *MockJobMockRecorder) Run() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockJob)(nil).Run))
+}
+
+// SetDeployResult mocks base method.
+func (m *MockJob) SetDeployResult(arg0 websocket.ResultType, arg1 string, arg2 *types.ProjectModel) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDeployResult", arg0, arg1, arg2)
+}
+
+// SetDeployResult indicates an expected call of SetDeployResult.
+func (mr *MockJobMockRecorder) SetDeployResult(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeployResult", reflect.TypeOf((*MockJob)(nil).SetDeployResult), arg0, arg1, arg2)
 }
 
 // Stop mocks base method.

@@ -18,13 +18,6 @@ func TestNewMessageSender(t *testing.T) {
 	assert.Implements(t, (*contracts.DeployMsger)(nil), NewMessageSender(&WsConn{}, "aa", websocket.Type_ProcessPercent))
 }
 
-func Test_messager_IsStopped(t *testing.T) {
-	sender := &messager{conn: nil, slugName: "", wsType: websocket.Type_ProcessPercent}
-	assert.False(t, sender.IsStopped())
-	sender.Stop(nil)
-	assert.True(t, sender.IsStopped())
-}
-
 func Test_messager_SendDeployedResult(t *testing.T) {
 	c := gomock.NewController(t)
 	defer c.Finish()
@@ -33,8 +26,6 @@ func Test_messager_SendDeployedResult(t *testing.T) {
 		pubSub: ps,
 	}, "aa", websocket.Type_ApplyProject)
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	sender.SendDeployedResult(websocket.ResultType_Deployed, "aa", nil)
-	sender.Stop(nil)
 	sender.SendDeployedResult(websocket.ResultType_Deployed, "aa", nil)
 }
 

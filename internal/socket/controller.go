@@ -427,10 +427,12 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		ExtraValues:  input.ExtraValues,
 	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, "", t).SendEndError(err)
+		NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 		return
 	}
-	defer c.cancelSignaler.Remove(job.ID())
+	job.AddDestroyFunc(func() {
+		c.cancelSignaler.Remove(job.ID())
+	})
 	InstallProject(job)
 }
 
@@ -463,7 +465,9 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 		return
 	}
-	defer c.cancelSignaler.Remove(job.ID())
+	job.AddDestroyFunc(func() {
+		c.cancelSignaler.Remove(job.ID())
+	})
 	InstallProject(job)
 }
 
@@ -477,8 +481,7 @@ func InstallProject(job contracts.Job) (err error) {
 	}()
 
 	handleStopErr := func(e error) {
-		job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), job.ProjectModel())
-		job.Messager().Stop(e)
+		job.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), job.ProjectModel())
 		err = e
 	}
 

@@ -14,29 +14,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars/internal/utils"
-
-	"github.com/duc-cnzj/mars/internal/cache_lock"
-
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/cache_lock"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
+	"github.com/duc-cnzj/mars/internal/utils"
 )
 
 func TestHandleWsAuthorize(t *testing.T) {
@@ -123,7 +118,7 @@ func TestHandleWsCreateProject(t *testing.T) {
 	job.EXPECT().Finish().Times(1)
 	job.EXPECT().ID().Return("1").AnyTimes()
 	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
-	cs.EXPECT().Remove("1").Times(1)
+	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
 
 	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
 		Type:         websocket.Type_CreateProject,
@@ -137,11 +132,11 @@ func TestHandleWsCreateProject(t *testing.T) {
 		ExtraValues:  nil,
 	})
 
-	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
+	HandleWsCreateProject(c, websocket.Type_CreateProject, marshal)
 
 	cs.EXPECT().Add("1", gomock.Any()).Return(errors.New("xxx"))
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
+	HandleWsCreateProject(c, websocket.Type_CreateProject, marshal)
 }
 
 func TestHandleWsHandleCloseShell(t *testing.T) {
@@ -348,7 +343,6 @@ func TestHandleWsUpdateProject(t *testing.T) {
 		Namespace: models.Namespace{Name: "ns"},
 	}
 	db.Create(targetProject)
-	cs.EXPECT().Remove("1").Times(1)
 
 	marshal, _ := proto.Marshal(&websocket.UpdateProjectInput{
 		Type:        websocket.Type_UpdateProject,
@@ -370,6 +364,7 @@ func TestHandleWsUpdateProject(t *testing.T) {
 		ExtraValues: nil,
 	})
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshalNotFound)
 
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
@@ -413,8 +408,7 @@ func TestInstallProject_ValidateFail2(t *testing.T) {
 	defer m.Finish()
 	job := mock.NewMockJob(m)
 	msg := mock.NewMockDeployMsger(m)
-	msg.EXPECT().SendDeployedResult(websocket.ResultType_DeployedCanceled, "stopped", nil)
-	msg.EXPECT().Stop(gomock.Any()).Times(1)
+	job.EXPECT().SetDeployResult(websocket.ResultType_DeployedCanceled, "stopped", nil)
 	job.EXPECT().ProjectModel().Return(nil).Times(1)
 	job.EXPECT().Messager().Return(msg).AnyTimes()
 	job.EXPECT().Validate().Return(errors.New("err Validate")).Times(1)
@@ -472,9 +466,8 @@ func TestInstallProject_LoadConfigsFail2(t *testing.T) {
 	job.EXPECT().IsDryRun().Return(false).Times(1)
 	job.EXPECT().Prune().Times(1)
 	job.EXPECT().GetStoppedErrorIfHas().Return(errors.New("err")).Times(1)
-	msg.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	job.EXPECT().SetDeployResult(ResultDeployCanceled, "err", gomock.Any()).Times(1)
 	job.EXPECT().ProjectModel().Return(nil)
-	msg.EXPECT().Stop(gomock.Any()).Times(1)
 	InstallProject(job)
 }
 

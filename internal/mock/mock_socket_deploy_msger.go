@@ -119,15 +119,3 @@ func (mr *MockDeployMsgerMockRecorder) SendProtoMsg(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendProtoMsg", reflect.TypeOf((*MockDeployMsger)(nil).SendProtoMsg), arg0)
 }
-
-// Stop mocks base method.
-func (m *MockDeployMsger) Stop(arg0 error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop", arg0)
-}
-
-// Stop indicates an expected call of Stop.
-func (mr *MockDeployMsgerMockRecorder) Stop(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockDeployMsger)(nil).Stop), arg0)
-}

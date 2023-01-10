@@ -496,14 +496,89 @@ func TestJober_Finish(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}, DeployStatus: uint8(types.Deploy_StatusUnknown)}
+	assert.Nil(t, db.Create(p).Error)
 	ps := mock.NewMockPubSub(m)
+	hm := mock.NewMockHelmer(m)
+	hm.EXPECT().ReleaseStatus("app", "ns").Return(types.Deploy_StatusDeployed).Times(1)
 	j := &Jober{
-		pubsub: ps,
-		done:   make(chan struct{}),
-		ns:     &models.Namespace{ID: 1},
+		pubsub:      ps,
+		done:        make(chan struct{}),
+		ns:          &p.Namespace,
+		helmer:      hm,
+		dryRun:      false,
+		project:     p,
+		prevProject: &models.Project{DeployStatus: p.DeployStatus},
 	}
 
 	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(1)
+	j.Finish()
+	_, ok := <-j.done
+	assert.False(t, ok)
+
+	var pn = models.Project{ID: p.ID}
+	db.First(&pn)
+	assert.Equal(t, uint8(types.Deploy_StatusDeployed), pn.DeployStatus)
+}
+
+func TestJober_Finish2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}, DeployStatus: uint8(types.Deploy_StatusUnknown)}
+	assert.Nil(t, db.Create(p).Error)
+	ps := mock.NewMockPubSub(m)
+	hm := mock.NewMockHelmer(m)
+	hm.EXPECT().ReleaseStatus(gomock.Any(), gomock.Any()).Times(0)
+	j := &Jober{
+		pubsub:      ps,
+		done:        make(chan struct{}),
+		ns:          &p.Namespace,
+		helmer:      hm,
+		dryRun:      true,
+		project:     p,
+		prevProject: &models.Project{DeployStatus: p.DeployStatus},
+	}
+
+	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
+	j.Finish()
+	_, ok := <-j.done
+	assert.False(t, ok)
+	var pn = models.Project{ID: p.ID}
+	db.First(&pn)
+	assert.Equal(t, uint8(types.Deploy_StatusUnknown), pn.DeployStatus)
+}
+
+func TestJober_Finish3(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	ps := mock.NewMockPubSub(m)
+	msger := mock.NewMockDeployMsger(m)
+	j := &Jober{
+		pubsub:   ps,
+		done:     make(chan struct{}),
+		ns:       &models.Namespace{ID: 1},
+		messager: msger,
+		dryRun:   true,
+		deployResult: DeployResult{
+			result: 1,
+			msg:    "xx",
+			model:  &types.ProjectModel{Name: "app"},
+			set:    true,
+		},
+	}
+
+	msger.EXPECT().SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model()).Times(1)
+	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
 	j.Finish()
 	_, ok := <-j.done
 	assert.False(t, ok)
@@ -614,8 +689,12 @@ func TestJober_HandleMessage_ErrorMessage(t *testing.T) {
 		ch <- contracts.MessageItem{Msg: "errors", Type: contracts.MessageError}
 		close(ch)
 	}()
-	msger.EXPECT().SendDeployedResult(ResultDeployFailed, "errors", gomock.Any()).Times(1)
+
 	j.HandleMessage()
+	assert.True(t, j.deployResult.IsSet())
+	assert.Equal(t, "errors", j.deployResult.Msg())
+	assert.Equal(t, ResultDeployFailed, j.deployResult.ResultType())
+	assert.NotNil(t, j.deployResult.Model())
 }
 
 func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
@@ -639,8 +718,11 @@ func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
 		ch <- contracts.MessageItem{Msg: "ok", Type: contracts.MessageSuccess}
 		close(ch)
 	}()
-	msger.EXPECT().SendDeployedResult(ResultDeployed, "ok", gomock.Any()).Times(1)
 	j.HandleMessage()
+	assert.True(t, j.deployResult.IsSet())
+	assert.Equal(t, "ok", j.deployResult.Msg())
+	assert.Equal(t, ResultDeployed, j.deployResult.ResultType())
+	assert.NotNil(t, j.deployResult.Model())
 }
 
 func TestJober_HandleMessage_UserCanceled(t *testing.T) {
@@ -680,8 +762,11 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 		ch <- contracts.MessageItem{Msg: "errors", Type: contracts.MessageError}
 		close(ch)
 	}()
-	msger.EXPECT().SendDeployedResult(ResultDeployCanceled, gomock.Any(), gomock.Any()).Times(1)
 	j.HandleMessage()
+	assert.True(t, j.deployResult.IsSet())
+	assert.NotEmpty(t, j.deployResult.Msg())
+	assert.Equal(t, ResultDeployCanceled, j.deployResult.ResultType())
+	assert.NotNil(t, j.deployResult.Model())
 	newp := &models.Project{}
 	db.Unscoped().Where("`id` = ?", p.ID).First(newp)
 	assert.True(t, newp.DeletedAt.Valid)
@@ -865,7 +950,11 @@ func TestJober_Prune(t *testing.T) {
 		dryRun:      false,
 		project:     &models.Project{ID: p.ID, Version: 101},
 		prevProject: &models.Project{ID: p.ID, Version: 100},
+		owned:       false,
 	}
+	j2.Prune()
+	assert.Equal(t, 101, j2.project.Version)
+	j2.owned = true
 	j2.Prune()
 	assert.Equal(t, 100, j2.project.Version)
 }
@@ -919,7 +1008,6 @@ func TestJober_Run_Fail(t *testing.T) {
 	commit.EXPECT().GetTitle().Return("xxx").Times(1)
 	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, errors.New("xxx"))
 	job := &Jober{
-		messager:  &emptyMsger{},
 		project:   proj,
 		isNew:     true,
 		dryRun:    false,
@@ -929,7 +1017,7 @@ func TestJober_Run_Fail(t *testing.T) {
 		commit:    commit,
 	}
 	assert.Equal(t, "xxx", job.Run().Error())
-	assert.Equal(t, "xxx", job.messager.(*emptyMsger).msgs[0])
+	assert.Equal(t, "xxx", job.deployResult.Msg())
 	newProj := &models.Project{}
 	assert.Nil(t, db.Unscoped().Where("`id` = ?", proj.ID).First(&newProj).Error)
 	assert.True(t, newProj.DeletedAt.Valid)
@@ -1061,7 +1149,7 @@ spec:
 		vars:        map[string]any{"var-a": "aaa", "var-b": "bbb"},
 	}
 	assert.Nil(t, job.Run())
-	assert.Equal(t, "部署成功", job.messager.(*emptyMsger).msgs[0])
+	assert.Equal(t, "部署成功", job.deployResult.Msg())
 
 	assert.Equal(t, "{}\n", job.Project().OverrideValues)
 	assert.Equal(t, manifest, job.Project().Manifest)
@@ -1218,7 +1306,8 @@ func TestJober_Validate(t *testing.T) {
 	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// 正常创建
 	assert.Nil(t, job3.Validate())
-	assert.Equal(t, 1, len(job3.destroyFuncs))
+	assert.True(t, job3.owned)
+	assert.Equal(t, 0, len(job3.destroyFuncs))
 	assert.Equal(t, "app", job3.input.Name)
 	assert.Same(t, commit, job3.Commit())
 	assert.Equal(t, []string{"aa", "bb"}, job3.imagePullSecrets)
@@ -1241,7 +1330,7 @@ func TestJober_Validate(t *testing.T) {
 	db.Model(&p).UpdateColumn("deploy_status", types.Deploy_StatusDeployed)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
 	job3 = newJob3()
-	job3.input.Version = 2
+	job3.input.Version = 1
 	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
 	// 正常返回 commit，设置 prevProject
 	assert.Nil(t, job3.Validate())
@@ -1267,8 +1356,9 @@ func TestJober_Validate(t *testing.T) {
 	assert.Equal(t, 1, pp.Version)
 
 	h.EXPECT().ReleaseStatus("app-git", "ns").Return(types.Deploy_StatusUnknown).AnyTimes()
+	assert.Len(t, job3.destroyFuncs, 0)
 	job3.CallDestroyFuncs()
-	assert.Equal(t, uint8(types.Deploy_StatusUnknown), job3.project.DeployStatus)
+	db.Model(&models.Project{ID: job3.project.ID}).UpdateColumn("deploy_status", types.Deploy_StatusUnknown)
 
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("aaa")).Times(1)
 	job3.input.Version = int64(pp.Version)
@@ -1573,7 +1663,7 @@ func TestSafeWriteMessageCh_Closed(t *testing.T) {
 	sc := &SafeWriteMessageCh{
 		ch: ch,
 	}
-	sc.Closed()
+	sc.Close()
 	_, ok := <-ch
 	assert.False(t, ok)
 }
@@ -1593,7 +1683,7 @@ func TestSafeWriteMessageCh_Send(t *testing.T) {
 	}
 	wg.Wait()
 	assert.Len(t, ch, 2)
-	sc.Closed()
+	sc.Close()
 	sc.Send(contracts.MessageItem{})
 	assert.Len(t, ch, 2)
 
@@ -1844,7 +1934,6 @@ func Test_toUpdatesMap(t *testing.T) {
 		"extra_values":       p.ExtraValues,
 		"final_extra_values": p.FinalExtraValues,
 		"env_values":         p.EnvValues,
-		"deploy_status":      p.DeployStatus,
 		"git_commit_title":   p.GitCommitTitle,
 		"git_commit_web_url": p.GitCommitWebUrl,
 		"git_commit_author":  p.GitCommitAuthor,
