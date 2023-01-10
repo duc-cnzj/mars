@@ -134,6 +134,12 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		Version:      input.Version,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds)
 
+	releaseFn, acquired := app.CacheLock().RenewalAcquire(job.ID(), 30, 20)
+	if !acquired {
+		return errors.New("正在部署中，请稍后再试")
+	}
+	job.AddDestroyFunc(releaseFn)
+
 	go func() {
 		select {
 		case <-server.Context().Done():

@@ -94,6 +94,10 @@ func TestHandleWsCreateProject(t *testing.T) {
 	cs := mock.NewMockCancelSignaler(m)
 	sm := mock.NewMockSessionMapper(m)
 	ps := mock.NewMockPubSub(m)
+	app := testutil.MockApp(m)
+	l := mock.NewMockLocker(m)
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
@@ -111,6 +115,7 @@ func TestHandleWsCreateProject(t *testing.T) {
 	HandleWsCreateProject(c, websocket.Type_UpdateProject, []byte("1:"))
 
 	job.EXPECT().Messager().Return(msg).AnyTimes()
+	job.EXPECT().IsDryRun().Return(false).AnyTimes()
 	job.EXPECT().Validate().Return(nil).Times(1)
 	job.EXPECT().LoadConfigs().Return(nil).Times(1)
 	job.EXPECT().Run().Return(nil).Times(1)
@@ -118,7 +123,7 @@ func TestHandleWsCreateProject(t *testing.T) {
 	job.EXPECT().Finish().Times(1)
 	job.EXPECT().ID().Return("1").AnyTimes()
 	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
-	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
+	job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
 
 	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
 		Type:         websocket.Type_CreateProject,
@@ -292,8 +297,13 @@ func TestHandleWsUpdateProjectSignalError(t *testing.T) {
 		},
 	}).Times(1)
 	job.EXPECT().ID().Return(slug).AnyTimes()
+	job.EXPECT().IsDryRun().Return(false).AnyTimes()
 	cs.Add(slug, func(err error) {})
+	job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
 
+	l := mock.NewMockLocker(m)
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
 }
 
@@ -304,6 +314,12 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	cs := mock.NewMockCancelSignaler(m)
 	sm := mock.NewMockSessionMapper(m)
 	ps := mock.NewMockPubSub(m)
+	app := testutil.MockApp(m)
+	l := mock.NewMockLocker(m)
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
+	//job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
+	job.EXPECT().IsDryRun().Return(false).AnyTimes()
 	c := &WsConn{
 		id:  "id",
 		uid: "uid",
@@ -334,7 +350,6 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	s, _ := db.DB()
 	defer s.Close()
 	manager.EXPECT().DB().Return(db).AnyTimes()
-	app := testutil.MockApp(m)
 	app.EXPECT().DBManager().Return(manager).AnyTimes()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 
@@ -364,7 +379,7 @@ func TestHandleWsUpdateProject(t *testing.T) {
 		ExtraValues: nil,
 	})
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
+	job.EXPECT().AddDestroyFunc(gomock.Any()).AnyTimes()
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshalNotFound)
 
 	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)

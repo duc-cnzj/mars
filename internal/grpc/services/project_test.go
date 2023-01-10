@@ -343,6 +343,11 @@ func TestProjectSvc_Apply(t *testing.T) {
 	job.EXPECT().CallDestroyFuncs().Times(1)
 	job.EXPECT().Finish().Times(1)
 	app := testutil.MockApp(m)
+	l := mock.NewMockLocker(m)
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
+	job.EXPECT().ID().Return("job-id").Times(2)
+	l.EXPECT().RenewalAcquire(job.ID(), int64(30), int64(20)).Return(func() {}, true)
+	job.EXPECT().AddDestroyFunc(gomock.Any()).Times(1)
 	ws := mockWsServer(m, app)
 	ps := mock.NewMockPubSub(m)
 	ws.EXPECT().New("", "").Return(ps)
@@ -413,6 +418,11 @@ func (m *mockJob) Stop(e error) {
 
 func (m *mockJob) CallDestroyFuncs() {
 }
+func (m *mockJob) AddDestroyFunc(func()) {
+}
+func (m *mockJob) ID() string {
+	return "mock-job"
+}
 
 func (m *mockJob) ProjectModel() *types.ProjectModel {
 	return nil
@@ -421,6 +431,10 @@ func (m *mockJob) ProjectModel() *types.ProjectModel {
 func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
+	app := testutil.MockApp(m)
+	l := mock.NewMockLocker(m)
+	l.EXPECT().RenewalAcquire(gomock.Any(), int64(30), int64(20)).Return(func() {}, true).AnyTimes()
+	app.EXPECT().CacheLock().Return(l).AnyTimes()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 	req := &project.ApplyRequest{
@@ -441,7 +455,6 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	}}).Apply(req, ma)
 	assert.Equal(t, "context canceled", err.Error())
 
-	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
 	req.GitCommit = ""

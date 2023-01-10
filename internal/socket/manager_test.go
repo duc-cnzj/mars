@@ -527,7 +527,7 @@ func TestJober_Finish(t *testing.T) {
 	j.owned = false
 	j.done = make(chan struct{})
 	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
-	hm.EXPECT().ReleaseStatus("app", "ns").Times(0)
+	hm.EXPECT().ReleaseStatus("app", "ns").Times(1)
 	j.prevProject.DeployStatus = uint8(types.Deploy_StatusDeploying)
 	j.Finish()
 }

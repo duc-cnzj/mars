@@ -415,8 +415,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	slug := utils.GetSlugName(input.NamespaceId, input.Name)
-	job := c.NewJobFunc(&JobInput{
+	upgradeOrInstall(c, t, &JobInput{
 		Type:         input.Type,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -426,15 +425,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
-	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
-	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
-		return
-	}
-	job.AddDestroyFunc(func() {
-		c.cancelSignaler.Remove(job.ID())
 	})
-	InstallProject(job)
 }
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
@@ -449,8 +440,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	slug := utils.GetSlugName(p.NamespaceId, p.Name)
-	job := c.NewJobFunc(&JobInput{
+	upgradeOrInstall(c, t, &JobInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),
 		Name:         p.Name,
@@ -461,34 +451,38 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
 		Version:      input.Version,
-	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
-	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
-		return
-	}
-	job.AddDestroyFunc(func() {
-		c.cancelSignaler.Remove(job.ID())
 	})
-	InstallProject(job)
 }
 
-func Install(job contracts.Job) error {
-	releaseFn, acquired := app.CacheLock().RenewalAcquire(job.ID(), 60, 45)
-	if !acquired {
-		job.Messager().SendEndError(errors.New("其他人占用了"))
-		return errors.New("其他人")
+func upgradeOrInstall(c *WsConn, t websocket_pb.Type, input *JobInput) {
+	slug := utils.GetSlugName(input.NamespaceId, input.Name)
+	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
+
+	if !job.IsDryRun() {
+		releaseFn, acquired := app.CacheLock().RenewalAcquire(job.ID(), 30, 20)
+		if !acquired {
+			NewMessageSender(c, slug, t).SendEndError(errors.New("正在部署中，请稍后再试"))
+			return
+		}
+		job.AddDestroyFunc(releaseFn)
+		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
+			NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
+			return
+		}
+		job.AddDestroyFunc(func() {
+			c.cancelSignaler.Remove(job.ID())
+		})
 	}
-	defer releaseFn()
-	return InstallProject(job)
+	InstallProject(job)
 }
 
 func InstallProject(job contracts.Job) (err error) {
 	defer func() {
-		job.CallDestroyFuncs()
 		if err != nil && !job.IsDryRun() {
 			job.Prune()
 		}
 		job.Finish()
+		job.CallDestroyFuncs()
 	}()
 
 	handleStopErr := func(e error) {
