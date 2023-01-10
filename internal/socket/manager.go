@@ -298,7 +298,7 @@ func (j *Jober) Finish() {
 	if j.deployResult.IsSet() {
 		j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
 	}
-	if j.IsNotDryRun() {
+	if j.IsNotDryRun() && j.Owned() {
 		j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
 	}
 }
@@ -725,7 +725,7 @@ func (j *Jober) Validate() error {
 	j.owned = true
 
 	if j.IsNotDryRun() {
-		j.PubSub().ToSelf(reloadProjectsMessage(j.project.NamespaceId))
+		j.PubSub().ToSelf(reloadProjectsMessage(j.ns.ID))
 	}
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
 

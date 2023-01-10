@@ -513,6 +513,7 @@ func TestJober_Finish(t *testing.T) {
 		dryRun:      false,
 		project:     p,
 		prevProject: &models.Project{DeployStatus: p.DeployStatus},
+		owned:       true,
 	}
 
 	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(1)
@@ -523,6 +524,12 @@ func TestJober_Finish(t *testing.T) {
 	var pn = models.Project{ID: p.ID}
 	db.First(&pn)
 	assert.Equal(t, uint8(types.Deploy_StatusDeployed), pn.DeployStatus)
+	j.owned = false
+	j.done = make(chan struct{})
+	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
+	hm.EXPECT().ReleaseStatus("app", "ns").Times(0)
+	j.prevProject.DeployStatus = uint8(types.Deploy_StatusDeploying)
+	j.Finish()
 }
 
 func TestJober_Finish2(t *testing.T) {
@@ -546,6 +553,7 @@ func TestJober_Finish2(t *testing.T) {
 		dryRun:      true,
 		project:     p,
 		prevProject: &models.Project{DeployStatus: p.DeployStatus},
+		owned:       true,
 	}
 
 	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
@@ -575,6 +583,7 @@ func TestJober_Finish3(t *testing.T) {
 			model:  &types.ProjectModel{Name: "app"},
 			set:    true,
 		},
+		owned: true,
 	}
 
 	msger.EXPECT().SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model()).Times(1)
