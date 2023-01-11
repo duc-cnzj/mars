@@ -31,7 +31,7 @@ function DraggableModalInnerNonMemo({
   modalState,
   onResize,
   dispatch,
-  visible,
+  open: visible,
   children,
   title,
   initialWidth,
