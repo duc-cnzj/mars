@@ -135,6 +135,7 @@ type Jober struct {
 	helmer contracts.Helmer
 
 	deployResult DeployResult
+	locker       contracts.Locker
 
 	loaders []Loader
 
@@ -251,7 +252,7 @@ func (j *Jober) GlobalLock() contracts.Job {
 	if j.HasError() {
 		return j
 	}
-	releaseFn, acquired := app.CacheLock().RenewalAcquire(j.ID(), 30, 20)
+	releaseFn, acquired := j.locker.RenewalAcquire(j.ID(), 30, 20)
 	if !acquired {
 		return j.SetError(errors.New("正在部署中，请稍后再试"))
 	}
@@ -269,7 +270,7 @@ func (j *Jober) Validate() contracts.Job {
 		return j
 	}
 
-	if !(j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject) {
+	if !j.WsTypeValidated() {
 		return j.SetError(errors.New("type error: " + j.input.Type.String()))
 	}
 
@@ -353,6 +354,10 @@ func (j *Jober) Validate() contracts.Job {
 	j.commit, err = plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
 
 	return j.SetError(err)
+}
+
+func (j *Jober) WsTypeValidated() bool {
+	return j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject
 }
 
 func (j *Jober) LoadConfigs() contracts.Job {

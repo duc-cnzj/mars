@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
+	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
@@ -73,4 +74,13 @@ func NewIngressLister(svcs ...*networkingv1.Ingress) networkingv1lister.IngressL
 		idxer.Add(po)
 	}
 	return networkingv1lister.NewIngressLister(idxer)
+}
+
+func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
+	gits := mock.NewMockGitServer(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	return gits
 }

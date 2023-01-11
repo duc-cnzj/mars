@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/cache_lock"
+
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
@@ -626,6 +628,11 @@ func TestJober_LoadConfigs1(t *testing.T) {
 }
 
 func TestJober_LoadConfigs(t *testing.T) {
+	assert.Equal(t, "xxx", (&Jober{
+		err:     errors.New("xxx"),
+		loaders: []Loader{},
+	}).LoadConfigs().Error().Error())
+
 	l := &emptyLoader{}
 	assert.Nil(t, (&Jober{
 		messager: &emptyMsger{},
@@ -1563,4 +1570,205 @@ func Test_vars_MustGetString(t *testing.T) {
 func Test_defaultFileOpener_Open(t *testing.T) {
 	_, err := (&defaultFileOpener{}).Open("not exist")
 	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestJober_GlobalLock(t *testing.T) {
+	l := cache_lock.NewMemoryLock([2]int{2, 100}, cache_lock.NewMemStore())
+	job := &Jober{locker: l, slugName: "id"}
+	assert.Nil(t, job.GlobalLock().Error())
+	assert.Equal(t, "正在部署中，请稍后再试", (&Jober{locker: l, slugName: "id"}).GlobalLock().Error().Error())
+	assert.Len(t, job.finallyCallback.Sort(), 1)
+	for _, fn := range job.finallyCallback.Sort() {
+		fn(func(err error) { assert.Nil(t, err) })(nil)
+	}
+	acquire := l.Acquire("id", 100)
+	assert.True(t, acquire)
+
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ml := mock.NewMockLocker(m)
+	ml.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
+}
+
+// job.err 有值
+func TestJober_Validate_Error(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := mock.NewMockDeployMsger(m)
+	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
+	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), messager: msger}).Validate().Error().Error())
+}
+
+func TestJober_Validate_NamespaceNotExists(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{})
+	err := (&Jober{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: 100}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
+	assert.Equal(t, "[FAILED]: 校验名称空间: record not found", err.Error())
+}
+func TestJober_Validate_GetProjectMarsConfigError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{})
+	ns := &models.Namespace{Name: "ns"}
+	db.Create(ns)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().GetFileContentWithBranch("100", "dev", ".mars.yaml").Return("", errors.New("xxx"))
+	err := (&Jober{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
+	assert.Equal(t, "xxx", err.Error())
+}
+
+func TestJober_Validate_Create(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	ns := &models.Namespace{Name: "ns"}
+	db.Create(ns)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().GetFileContentWithBranch("100", "dev", ".mars.yaml").Return("{}", nil)
+	gitp := mock.NewMockProjectInterface(m)
+	gits.EXPECT().GetProject("100").Return(gitp, nil)
+	gitp.EXPECT().GetName().Return("git-app").Times(1)
+	pubsub := mock.NewMockPubSub(m)
+	pubsub.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).Times(1)
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("commit err"))
+	job := &Jober{pubsub: pubsub, input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	err := job.
+		Validate().
+		Error()
+	assert.Equal(t, "git-app", job.input.Name)
+	assert.Equal(t, "commit err", err.Error())
+
+	assert.Len(t, job.errorCallback.Sort(), 1)
+	assert.Len(t, job.finallyCallback.Sort(), 1)
+
+	called := 0
+	hm := mock.NewMockHelmer(m)
+	job.helmer = hm
+	hm.EXPECT().ReleaseStatus("git-app", "ns").Return(types.Deploy_StatusFailed)
+	pubsub.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).Times(1)
+	job.finallyCallback.Sort()[0](func(err error) {
+		called++
+	})(nil)
+	assert.Equal(t, 1, called)
+	p1 := &models.Project{ID: job.project.ID}
+	db.First(&p1)
+	assert.Equal(t, p1.DeployStatus, uint8(types.Deploy_StatusFailed))
+
+	job.errorCallback.Sort()[0](func(err error) {
+		called++
+	})(nil)
+	assert.Equal(t, 2, called)
+	p := &models.Project{ID: job.project.ID}
+	db.Unscoped().First(&p)
+	assert.True(t, p.DeletedAt.Valid)
+}
+
+func TestJober_Validate_Update(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	ns := &models.Namespace{Name: "ns"}
+	db.Create(ns)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().GetFileContentWithBranch("100", "dev", ".mars.yaml").Return("{}", nil)
+	pubsub := mock.NewMockPubSub(m)
+	pubsub.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).Times(1)
+	commit := mock.NewMockCommitInterface(m)
+	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil)
+	p := &models.Project{Name: "app", NamespaceId: ns.ID}
+	db.Create(p)
+	assert.Equal(t, 1, p.Version)
+	job := &Jober{pubsub: pubsub, input: &JobInput{Version: int64(p.Version), Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	err := job.
+		Validate().
+		Error()
+	job.prevProject.Version = 1
+	var newp = models.Project{ID: p.ID}
+	db.First(&newp)
+
+	assert.Equal(t, p.ProtoTransform(), job.prevProject.ProtoTransform())
+	assert.Equal(t, uint8(0), job.prevProject.DeployStatus)
+	assert.Equal(t, int(2), newp.Version)
+	assert.Equal(t, "app", job.input.Name)
+	assert.Nil(t, err)
+	assert.Same(t, commit, job.commit)
+
+	assert.Len(t, job.errorCallback.Sort(), 1)
+	called := false
+	job.errorCallback.Sort()[0](func(err error) {
+		called = true
+	})(nil)
+	assert.True(t, called)
+	pp := &models.Project{ID: job.project.ID}
+	db.First(&pp)
+	assert.Equal(t, 1, pp.Version)
+}
+
+func TestJober_Validate_ErrVersionNotMatched(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{}, &models.Project{})
+	ns := &models.Namespace{Name: "ns"}
+	db.Create(ns)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().GetFileContentWithBranch("100", "dev", ".mars.yaml").Return("{}", nil)
+	p := &models.Project{Name: "app", NamespaceId: ns.ID}
+	db.Create(p)
+	assert.Equal(t, 1, p.Version)
+	job := &Jober{input: &JobInput{Version: int64(p.Version) + 1, Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	err := job.
+		Validate().
+		Error()
+	assert.Equal(t, ErrorVersionNotMatched, err)
+}
+
+func TestJober_WsTypeValidated(t *testing.T) {
+	var tests = []struct {
+		t      websocket_pb.Type
+		result bool
+	}{
+		{t: websocket_pb.Type_TypeUnknown, result: false},
+		{t: websocket_pb.Type_SetUid, result: false},
+		{t: websocket_pb.Type_ReloadProjects, result: false},
+		{t: websocket_pb.Type_CancelProject, result: false},
+		{t: websocket_pb.Type_CreateProject, result: true},
+		{t: websocket_pb.Type_UpdateProject, result: true},
+		{t: websocket_pb.Type_ProcessPercent, result: false},
+		{t: websocket_pb.Type_ClusterInfoSync, result: false},
+		{t: websocket_pb.Type_InternalError, result: false},
+		{t: websocket_pb.Type_ApplyProject, result: true},
+		{t: websocket_pb.Type_ProjectPodEvent, result: false},
+		{t: websocket_pb.Type_HandleExecShell, result: false},
+		{t: websocket_pb.Type_HandleExecShellMsg, result: false},
+		{t: websocket_pb.Type_HandleCloseShell, result: false},
+		{t: websocket_pb.Type_HandleAuthorize, result: false},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(fmt.Sprintf("WsTypeValidated: %v %t", tt.t.String(), tt.result), func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.result, (&Jober{input: &JobInput{Type: tt.t}}).WsTypeValidated())
+		})
+	}
+}
+
+func TestJober_Run(t *testing.T) {
+	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx")}).Run().Error().Error())
 }
