@@ -551,3 +551,16 @@ func Test_handleWsRead(t *testing.T) {
 		})
 	})
 }
+
+func TestInstallProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(errors.New("xxx")).Times(1)
+	assert.Equal(t, "xxx", InstallProject(job).Error())
+}

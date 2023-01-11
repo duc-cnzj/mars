@@ -28,4 +28,10 @@ func TestMyPipeline_Send(t *testing.T) {
 	})
 
 	assert.Equal(t, []string{"1", "2", "4", "5", "xxx", "6", "3"}, result)
+
+	called := false
+	NewPipeline[int]().Then(func(int) {
+		called = true
+	})
+	assert.True(t, called)
 }

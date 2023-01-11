@@ -40,7 +40,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/pipeline"
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
-	mysort "github.com/duc-cnzj/mars/internal/utils/sort"
+	mysort "github.com/duc-cnzj/mars/internal/utils/xsort"
 )
 
 const (
@@ -543,12 +543,12 @@ func (j *Jober) Finish() contracts.Job {
 	// Run error hooks
 	if j.HasError() {
 		func(err error) {
+			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
+
 			if e := j.GetStoppedErrorIfHas(); e != nil {
 				j.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), j.ProjectModel())
 				err = e
-				return
 			}
-			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
 		}(j.Error())
 		callbacks = append(callbacks, j.errorCallback.Sort()...)
 	}
@@ -585,36 +585,28 @@ func (j *Jober) Stop(err error) {
 }
 
 func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.errorCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
-		return func(err error) {
-			fn(err, func() {
-				sendResultToUser(err)
-			})
-		}
-	})
+	j.errorCallback.Add(p, toCallbackFunc(fn))
 	return j
 }
 
 func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.successCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
-		return func(err error) {
-			fn(err, func() {
-				sendResultToUser(err)
-			})
-		}
-	})
+	j.successCallback.Add(p, toCallbackFunc(fn))
 	return j
 }
 
 func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.finallyCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
+	j.finallyCallback.Add(p, toCallbackFunc(fn))
+	return j
+}
+
+func toCallbackFunc(fn func(err error, sendResultToUser func())) func(sendResultToUser func(err error)) func(error) {
+	return func(sendResultToUser func(err error)) func(error) {
 		return func(err error) {
 			fn(err, func() {
 				sendResultToUser(err)
 			})
 		}
-	})
-	return j
+	}
 }
 
 func (j *Jober) Error() error {

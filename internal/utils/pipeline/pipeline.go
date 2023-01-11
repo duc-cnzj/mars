@@ -26,7 +26,7 @@ func (m *pipeline[T]) Through(middlewares ...func(func(T)) func(T)) Pipeline[T] 
 }
 
 func (m *pipeline[T]) Then(f func(T)) {
-	var fn func(T)
+	var fn func(T) = f
 	for idx := range m.middlewares {
 		fn = m.middlewares[len(m.middlewares)-1-idx](f)
 		f = fn

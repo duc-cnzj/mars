@@ -1,4 +1,4 @@
-package sort
+package xsort
 
 import (
 	"testing"

@@ -1772,3 +1772,121 @@ func TestJober_WsTypeValidated(t *testing.T) {
 func TestJober_Run(t *testing.T) {
 	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx")}).Run().Error().Error())
 }
+
+func TestJober_Finish_WhenError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := mock.NewMockDeployMsger(m)
+	stopCtx, stopFn := utils.NewCustomErrorContext()
+	stopFn(errors.New("stopped"))
+	job := &Jober{err: errors.New("xxx"), messager: msger, stopCtx: stopCtx, stopFn: stopFn}
+	successCalled := 0
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		successCalled++
+	})
+	errorCalled := 0
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		errorCalled++
+	})
+	finallyCalled := 0
+	job.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		finallyCalled++
+	})
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, "stopped", nil).Times(1)
+	// canceled
+	assert.Equal(t, "xxx", job.Finish().Error().Error())
+	assert.Equal(t, 1, finallyCalled)
+	assert.Equal(t, 0, successCalled)
+	assert.Equal(t, 1, errorCalled)
+
+	// failed
+	job2 := &Jober{err: errors.New("xxx"), messager: msger, stopCtx: context.TODO()}
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedFailed, "xxx", nil).Times(1)
+	job2.Finish()
+}
+func TestJober_Finish_WhenSuccess(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msger := mock.NewMockDeployMsger(m)
+	job := &Jober{messager: msger}
+	successCalled := 0
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		successCalled++
+	})
+	errorCalled := 0
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		errorCalled++
+	})
+	finallyCalled := 0
+	job.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		finallyCalled++
+	})
+	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_Deployed, "ok", nil).Times(1)
+	job.SetDeployResult(websocket_pb.ResultType_Deployed, "ok", nil)
+	// success
+	assert.Nil(t, job.Finish().Error())
+	assert.Equal(t, 1, finallyCalled)
+	assert.Equal(t, 1, successCalled)
+	assert.Equal(t, 0, errorCalled)
+}
+
+func TestJober_OnError(t *testing.T) {
+	job := &Jober{err: errors.New("xxx")}
+	job.OnError(1, func(err error, sendResultToUser func()) {
+		assert.Equal(t, "xxx", err.Error())
+		sendResultToUser()
+	})
+	assert.Len(t, job.errorCallback.Sort(), 1)
+	called := 0
+	job.errorCallback.Sort()[0](func(err error) {
+		assert.Equal(t, "xxx", err.Error())
+		called++
+	})(job.Error())
+	assert.Equal(t, 1, called)
+}
+
+func TestJober_OnSuccess(t *testing.T) {
+	job := &Jober{}
+	job.OnSuccess(1, func(err error, sendResultToUser func()) {
+		assert.Nil(t, err)
+		sendResultToUser()
+	})
+	assert.Len(t, job.successCallback.Sort(), 1)
+	called := 0
+	job.successCallback.Sort()[0](func(err error) {
+		assert.Nil(t, err)
+		called++
+	})(job.Error())
+	assert.Equal(t, 1, called)
+}
+
+func TestJober_OnFinally(t *testing.T) {
+	var tests = []error{
+		errors.New("xxx"),
+		nil,
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			job := &Jober{err: tt}
+			job.OnFinally(1, func(err error, sendResultToUser func()) {
+				assert.Equal(t, tt, err)
+				sendResultToUser()
+			})
+			assert.Len(t, job.finallyCallback.Sort(), 1)
+			called := 0
+			job.finallyCallback.Sort()[0](func(err error) {
+				assert.Equal(t, tt, err)
+				called++
+			})(job.Error())
+			assert.Equal(t, 1, called)
+		})
+	}
+}
