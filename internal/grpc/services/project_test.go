@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/plugins/domain_manager"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -27,12 +26,15 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/plugins/domain_manager"
 )
 
 func TestProjectSvc_AllContainers(t *testing.T) {
@@ -575,4 +577,122 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitBranch:    "dev-xxx",
 	})
 	assert.Equal(t, "xxx", err.Error())
+}
+
+type tjob struct {
+	err error
+	contracts.Job
+}
+
+func (t *tjob) Error() error {
+	time.Sleep(1 * time.Second)
+	return t.err
+}
+
+func TestProjectSvc_Apply(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	ws := testutil.MockWsServer(m, app)
+	ws.EXPECT().New("", "").Times(1)
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{err: errors.New("xxx")}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:           1,
+		Name:                  "aaa",
+		GitProjectId:          100,
+		GitBranch:             "dev",
+		GitCommit:             "xxx",
+		Config:                "cfg",
+		WebsocketSync:         true,
+		InstallTimeoutSeconds: 100,
+		Version:               100,
+	}
+	job.EXPECT().Stop(gomock.Any()).Times(0)
+	ma := &mockApplyServer{}
+	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Equal(t, &socket.JobInput{
+			Type:         websocket.Type_ApplyProject,
+			NamespaceId:  req.NamespaceId,
+			Name:         req.Name,
+			GitProjectId: req.GitProjectId,
+			GitBranch:    req.GitBranch,
+			GitCommit:    req.GitCommit,
+			Config:       req.Config,
+			Atomic:       req.Atomic,
+			ExtraValues:  req.ExtraValues,
+			Version:      req.Version,
+		}, input)
+		assert.Equal(t, req.InstallTimeoutSeconds, timeoutSeconds)
+		return job
+	}}).Apply(req, ma)
+	assert.Equal(t, "xxx", err.Error())
+}
+
+func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	ws := testutil.MockWsServer(m, app)
+	ws.EXPECT().New("", "").Times(1)
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{err: errors.New("xxx")}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	ctx := auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"})
+	ma := &mockApplyServer{ctx: ctx}
+	job.EXPECT().Stop(errors.New("context canceled")).Times(1)
+	(&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		return job
+	}}).Apply(req, ma)
+}
+
+func TestProjectSvc_ApplyDryRun(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{}).Times(1)
+	job.EXPECT().Manifests().Return([]string{}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Len(t, opts, 1)
+		return job
+	}}).ApplyDryRun(auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}), req)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{}, run.Results)
 }

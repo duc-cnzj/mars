@@ -139,7 +139,6 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		case <-server.Context().Done():
 			job.Stop(server.Context().Err())
 		case <-ch:
-			return
 		}
 	}()
 	err := socket.InstallProject(job)

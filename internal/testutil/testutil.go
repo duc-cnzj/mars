@@ -85,6 +85,15 @@ func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 	return gits
 }
 
+func MockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockWsSender {
+	wssender := mock.NewMockWsSender(m)
+	app.EXPECT().Config().Return(&config.Config{WsSenderPlugin: config.Plugin{Name: "wssender"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("wssender").Return(wssender).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	wssender.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	return wssender
+}
+
 type ValueMatcher struct {
 	Value any
 }

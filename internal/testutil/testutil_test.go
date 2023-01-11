@@ -138,3 +138,12 @@ func TestValueMatcher(t *testing.T) {
 	vm.Matches("aa")
 	assert.Equal(t, "aa", vm.Value)
 }
+
+func TestMockWsServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := MockApp(m)
+	server := MockWsServer(m, app)
+	assert.IsType(t, (*mock.MockWsSender)(nil), server)
+	assert.Same(t, server, app.GetPluginByName("wssender"))
+}
