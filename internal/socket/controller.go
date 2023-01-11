@@ -414,7 +414,7 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	upgradeOrInstall(c, t, &JobInput{
+	upgradeOrInstall(c, &JobInput{
 		Type:         input.Type,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -439,7 +439,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	upgradeOrInstall(c, t, &JobInput{
+	upgradeOrInstall(c, &JobInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),
 		Name:         p.Name,
@@ -453,14 +453,14 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 	})
 }
 
-func upgradeOrInstall(c *WsConn, t websocket_pb.Type, input *JobInput) {
+func upgradeOrInstall(c *WsConn, input *JobInput) error {
 	slug := utils.GetSlugName(input.NamespaceId, input.Name)
-	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
+	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, input.Type), c.pubSub, 0)
 
 	if job.IsNotDryRun() {
 		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-			NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
-			return
+			NewMessageSender(c, slug, input.Type).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
+			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
 			mlog.Warning("### c.cancelSignaler.Remove(job.ID())")
@@ -468,7 +468,7 @@ func upgradeOrInstall(c *WsConn, t websocket_pb.Type, input *JobInput) {
 			base()
 		})
 	}
-	InstallProject(job)
+	return InstallProject(job)
 }
 
 func InstallProject(job contracts.Job) (err error) {

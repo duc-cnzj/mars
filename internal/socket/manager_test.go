@@ -1591,13 +1591,14 @@ func TestJober_GlobalLock(t *testing.T) {
 	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
 }
 
-// job.err 有值
 func TestJober_Validate_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
 	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), messager: msger}).Validate().Error().Error())
+
+	assert.Equal(t, errors.New("type error: "+websocket_pb.Type_TypeUnknown.String()), (&Jober{messager: msger, input: &JobInput{Type: websocket_pb.Type_TypeUnknown}}).Validate().Error())
 }
 
 func TestJober_Validate_NamespaceNotExists(t *testing.T) {
@@ -1610,6 +1611,7 @@ func TestJober_Validate_NamespaceNotExists(t *testing.T) {
 	err := (&Jober{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: 100}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
 	assert.Equal(t, "[FAILED]: 校验名称空间: record not found", err.Error())
 }
+
 func TestJober_Validate_GetProjectMarsConfigError(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -1889,4 +1891,72 @@ func TestJober_OnFinally(t *testing.T) {
 			assert.Equal(t, 1, called)
 		})
 	}
+}
+func TestChartFileLoader_Load(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := &emptyMsger{}
+	h := mock.NewMockHelmer(m)
+	job := &Jober{
+		helmer: h,
+		input: &JobInput{
+			GitProjectId: 100,
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			LocalChartPath: "9999|master|dir",
+		},
+	}
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			c: &chart.Chart{
+				Metadata: &chart.Metadata{
+					Dependencies: []*chart.Dependency{
+						{
+							Repository: "file://xxxx",
+						},
+					},
+				},
+			},
+		},
+		fileOpener: &fakeOpener{},
+	}
+	gits := mock.NewMockGitServer(m)
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
+
+	err := l.Load(job)
+	assert.Equal(t, "charts 文件不存在", err.Error())
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
+	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
+	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
+
+	err = l.Load(job)
+	assert.Len(t, job.finallyCallback.Sort(), 2)
+	assert.Nil(t, err)
+
+	up.EXPECT().DeleteDir("/dir").Times(2)
+	called := 0
+	for _, fn := range job.finallyCallback.Sort() {
+		fn(func(err error) {
+			called++
+		})(nil)
+	}
+	assert.Equal(t, 2, called)
 }

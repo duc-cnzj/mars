@@ -980,11 +980,9 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	}
 	defer archive.Close()
 
-	if j.chart, err = c.chartLoader.LoadArchive(archive); err != nil {
-		return err
-	}
+	j.chart, err = c.chartLoader.LoadArchive(archive)
 
-	return nil
+	return err
 }
 
 type DynamicLoader struct{}

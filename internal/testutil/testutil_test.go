@@ -121,3 +121,20 @@ func TestNewIngressLister(t *testing.T) {
 	_, err = lister.Ingresses("ns").Get("ing3")
 	assert.Error(t, err)
 }
+
+func TestMockGitServer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := MockApp(m)
+	server := MockGitServer(m, app)
+	assert.IsType(t, (*mock.MockGitServer)(nil), server)
+	assert.Same(t, server, app.GetPluginByName("gits"))
+}
+
+func TestValueMatcher(t *testing.T) {
+	assert.Implements(t, (*gomock.Matcher)(nil), &ValueMatcher{})
+	vm := &ValueMatcher{}
+	assert.Equal(t, "", vm.String())
+	vm.Matches("aa")
+	assert.Equal(t, "aa", vm.Value)
+}

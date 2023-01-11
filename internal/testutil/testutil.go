@@ -84,3 +84,16 @@ func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	return gits
 }
+
+type ValueMatcher struct {
+	Value any
+}
+
+func (v *ValueMatcher) Matches(x interface{}) bool {
+	v.Value = x
+	return true
+}
+
+func (v *ValueMatcher) String() string {
+	return ""
+}

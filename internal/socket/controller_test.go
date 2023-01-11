@@ -564,3 +564,214 @@ func TestInstallProject(t *testing.T) {
 	job.EXPECT().Error().Return(errors.New("xxx")).Times(1)
 	assert.Equal(t, "xxx", InstallProject(job).Error())
 }
+
+func Test_upgradeOrInstallError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	pubsub := mock.NewMockPubSub(m)
+	cs := mock.NewMockCancelSignaler(m)
+	input := &JobInput{
+		NamespaceId: 1,
+		Name:        "app",
+	}
+	job.EXPECT().IsNotDryRun().Return(true).Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	cs.EXPECT().Add("id", gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pubsub.EXPECT().ToSelf(gomock.Any()).Times(1)
+	upgradeOrInstall(&WsConn{
+		user:           contracts.UserInfo{Name: "duc"},
+		cancelSignaler: cs,
+		pubSub:         pubsub,
+		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			assert.Equal(t, contracts.UserInfo{Name: "duc"}, user)
+			assert.Equal(t, input, jobinput)
+			assert.Equal(t, utils.GetSlugName(input.NamespaceId, input.Name), slugName)
+			assert.NotNil(t, messager)
+			assert.Same(t, pubsub, jpubsub)
+			assert.Equal(t, int64(0), timeoutSeconds)
+			assert.Len(t, opts, 0)
+			return job
+		},
+	}, input)
+}
+func Test_upgradeOrInstall(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	pubsub := mock.NewMockPubSub(m)
+	cs := mock.NewMockCancelSignaler(m)
+	input := &JobInput{
+		NamespaceId: 1,
+		Name:        "app",
+	}
+	job.EXPECT().IsNotDryRun().Return(true).Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	cs.EXPECT().Add("id", gomock.Any()).Times(1).Return(nil)
+	v := &testutil.ValueMatcher{}
+	job.EXPECT().OnFinally(1000, v).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(errors.New("xxx"))
+
+	err := upgradeOrInstall(&WsConn{
+		user:           contracts.UserInfo{Name: "duc"},
+		cancelSignaler: cs,
+		pubSub:         pubsub,
+		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			return job
+		},
+	}, input)
+	assert.Equal(t, "xxx", err.Error())
+
+	cs.EXPECT().Remove("id").Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	called := 0
+	v.Value.(func(err error, base func()))(nil, func() {
+		called++
+	})
+	assert.Equal(t, 1, called)
+}
+
+func TestHandleWsCreateProjectError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsCreateProject(&WsConn{pubSub: ps}, websocket.Type_CreateProject, []byte("1:"))
+	assert.Equal(t, websocket.Type_CreateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+}
+func TestHandleWsCreateProjectSuccess(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(0)
+	cinput := &websocket.CreateProjectInput{
+		Type:         websocket.Type_CreateProject,
+		NamespaceId:  1,
+		Name:         "app",
+		GitProjectId: 100,
+		GitBranch:    "dev",
+		GitCommit:    "commit",
+		Config:       "xxx",
+		Atomic:       true,
+		ExtraValues:  nil,
+	}
+	marshal, _ := proto.Marshal(cinput)
+	job := mock.NewMockJob(m)
+	job.EXPECT().IsNotDryRun().Return(false).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(nil).Times(1)
+
+	HandleWsCreateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		assert.Equal(t, &JobInput{
+			Type:         cinput.Type,
+			NamespaceId:  cinput.NamespaceId,
+			Name:         cinput.Name,
+			GitProjectId: cinput.GitProjectId,
+			GitBranch:    cinput.GitBranch,
+			GitCommit:    cinput.GitCommit,
+			Config:       cinput.Config,
+			Atomic:       cinput.Atomic,
+			ExtraValues:  cinput.ExtraValues,
+		}, input)
+		return job
+	}}, websocket.Type_CreateProject, marshal)
+}
+
+func TestHandleWsUpdateProjectError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsUpdateProject(&WsConn{pubSub: ps}, websocket.Type_UpdateProject, []byte("1:"))
+	assert.Equal(t, websocket.Type_UpdateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+}
+
+func TestHandleWsUpdateProjectError2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	cinput := &websocket.UpdateProjectInput{
+		Type:      websocket.Type_UpdateProject,
+		ProjectId: 1000,
+	}
+	marshal, _ := proto.Marshal(cinput)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsUpdateProject(&WsConn{pubSub: ps}, websocket.Type_UpdateProject, marshal)
+	assert.Equal(t, websocket.Type_UpdateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+	assert.Equal(t, "record not found", vm.Value.(*websocket.WsMetadataResponse).Metadata.Message)
+}
+
+func TestHandleWsUpdateProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(0)
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
+	db.Create(p)
+	cinput := &websocket.UpdateProjectInput{
+		Type:        websocket.Type_UpdateProject,
+		ProjectId:   int64(p.ID),
+		GitBranch:   "dev",
+		GitCommit:   "commit",
+		Config:      "xxx",
+		Atomic:      true,
+		ExtraValues: nil,
+		Version:     int64(p.Version),
+	}
+	marshal, _ := proto.Marshal(cinput)
+	job := mock.NewMockJob(m)
+	job.EXPECT().IsNotDryRun().Return(false).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(nil).Times(1)
+
+	HandleWsUpdateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		assert.Equal(t, &JobInput{
+			Type:         cinput.Type,
+			NamespaceId:  int64(p.NamespaceId),
+			Name:         p.Name,
+			GitProjectId: int64(p.GitProjectId),
+			GitBranch:    cinput.GitBranch,
+			GitCommit:    cinput.GitCommit,
+			Config:       cinput.Config,
+			Atomic:       cinput.Atomic,
+			ExtraValues:  cinput.ExtraValues,
+			Version:      int64(p.Version),
+		}, input)
+		return job
+	}}, websocket.Type_UpdateProject, marshal)
+}
