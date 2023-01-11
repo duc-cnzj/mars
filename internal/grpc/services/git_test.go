@@ -13,7 +13,6 @@ import (
 	"github.com/duc-cnzj/mars/internal/app/instance"
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/cache"
-	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
@@ -511,16 +510,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 }
 
 func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
-	gitS := mock.NewMockGitServer(m)
-	app.EXPECT().Config().Return(&config.Config{
-		GitServerPlugin: config.Plugin{
-			Name: "test_git_server",
-		},
-	}).AnyTimes()
-	app.EXPECT().GetPluginByName("test_git_server").Return(gitS).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
-	return gitS
+	return testutil.MockGitServer(m, app)
 }
 
 func TestSortableOption(t *testing.T) {

@@ -84,12 +84,8 @@ func TestChartFileLoader_Load2(t *testing.T) {
 		},
 		fileOpener: &fakeOpener{},
 	}
-	gits := mock.NewMockGitServer(m)
 	app := testutil.MockApp(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	gits := testutil.MockGitServer(m, app)
 
 	gits.EXPECT().GetDirectoryFilesWithSha("100", "commit", "dir", true).Return([]string{"file1", "file2"}, nil)
 
@@ -851,11 +847,7 @@ spec:
 	date := time.Now()
 	commit.EXPECT().GetCommittedDate().Return(&date)
 
-	gits := mock.NewMockGitServer(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits)
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	gits := testutil.MockGitServer(m, app)
 
 	commit2 := mock.NewMockCommitInterface(m)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit2, nil)
@@ -1013,11 +1005,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 		DeployStatus: uint8(types.Deploy_StatusDeployed),
 	}
 	assert.Nil(t, db.Create(&p).Error)
-	gits := mock.NewMockGitServer(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	gits := testutil.MockGitServer(m, app)
 	gits.EXPECT().GetFileContentWithBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	h := mock.NewMockHelmer(m)
 	ps := mock.NewMockPubSub(m)
@@ -1922,12 +1910,8 @@ func TestChartFileLoader_Load(t *testing.T) {
 		},
 		fileOpener: &fakeOpener{},
 	}
-	gits := mock.NewMockGitServer(m)
 	app := testutil.MockApp(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	gits := testutil.MockGitServer(m, app)
 
 	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
 

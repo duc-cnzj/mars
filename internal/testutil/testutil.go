@@ -89,7 +89,7 @@ type ValueMatcher struct {
 	Value any
 }
 
-func (v *ValueMatcher) Matches(x interface{}) bool {
+func (v *ValueMatcher) Matches(x any) bool {
 	v.Value = x
 	return true
 }
