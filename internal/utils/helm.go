@@ -87,14 +87,14 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.DryRun = dryRun
 	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
-	var selectorList []labels.Selector
-	for _, label := range podSelectors {
-		selector, _ := metav1.ParseToLabelSelector(label)
-		asSelector, _ := metav1.LabelSelectorAsSelector(selector)
-		selectorList = append(selectorList, asSelector)
-	}
 
 	if wait && !dryRun {
+		var selectorList []labels.Selector
+		for _, label := range podSelectors {
+			selector, _ := metav1.ParseToLabelSelector(label)
+			asSelector, _ := metav1.LabelSelectorAsSelector(selector)
+			selectorList = append(selectorList, asSelector)
+		}
 		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
 		key := fmt.Sprintf("%s-%s", namespace, releaseName)
 		k8sClient := app.K8sClient()

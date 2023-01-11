@@ -19,7 +19,7 @@ type DefaultHelmer struct{}
 
 func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
 	var podSelectors []string
-	if !dryRun {
+	if wait && !dryRun {
 		re, err := utils.UpgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc)
 		if err != nil {
 			return nil, err
