@@ -24,11 +24,8 @@ const AppContent: React.FC = () => {
     return allNamespaces()
       .then((res) => {
         setNamespaceItems(res.data.items);
-        setLoading(false);
       })
-      .catch((e) => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   }, [setNamespaceItems]);
 
   usePreventModalBack();
@@ -39,11 +36,9 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (reloadNamespace) {
-      fetchNamespaces().finally(() =>
-        dispatch(setNamespaceReload(false, reloadNsID))
-      );
+      fetchNamespaces().finally(() => dispatch(setNamespaceReload(false, 0)));
     }
-  }, [reloadNamespace, dispatch, fetchNamespaces, reloadNsID]);
+  }, [reloadNamespace, dispatch, fetchNamespaces]);
 
   return (
     <DraggableModalProvider>
