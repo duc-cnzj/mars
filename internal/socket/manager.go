@@ -38,6 +38,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/pipeline"
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 )
 
@@ -88,7 +89,9 @@ type WsResponse = websocket_pb.WsMetadataResponse
 
 type SafeWriteMessageCh struct {
 	closeable utils.Closeable
-	ch        chan contracts.MessageItem
+
+	chMu sync.Mutex
+	ch   chan contracts.MessageItem
 }
 
 func (s *SafeWriteMessageCh) Close() {
@@ -107,6 +110,9 @@ func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
 		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
 	}
+	// 存在并发写
+	s.chMu.Lock()
+	defer s.chMu.Unlock()
 	s.ch <- m
 }
 
@@ -123,6 +129,8 @@ func (v vars) MustGetString(key string) string {
 }
 
 type Jober struct {
+	err error
+
 	helmer contracts.Helmer
 	done   chan struct{}
 
@@ -134,11 +142,11 @@ type Jober struct {
 	manifests []string
 
 	input    *JobInput
-	wsType   websocket_pb.Type
 	slugName string
 
-	destroyFuncLock sync.RWMutex
-	destroyFuncs    []func()
+	finallyCallback callbackManager[func(sendResultToUser func(err error)) func(error)]
+	errorCallback   callbackManager[func(sendResultToUser func(err error)) func(error)]
+	successCallback callbackManager[func(sendResultToUser func(err error)) func(error)]
 
 	imagePullSecrets  []string
 	vars              vars
@@ -152,11 +160,9 @@ type Jober struct {
 
 	messageCh contracts.SafeWriteMessageChInterface
 	stopCtx   context.Context
-	stopOnce  sync.Once
 	stopFn    func(error)
 
 	isNew       bool
-	owned       bool
 	config      *mars.Config
 	ns          *models.Namespace
 	project     *models.Project
@@ -222,7 +228,6 @@ func NewJober(
 		valuesOptions:  &values.Options{},
 		slugName:       slugName,
 		input:          input,
-		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
 		messageCh:      &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
 		percenter:      newProcessPercent(messager, &realSleeper{}),
@@ -235,271 +240,165 @@ func NewJober(
 	return jb
 }
 
-func (j *Jober) Manifests() []string {
-	return j.manifests
-}
-
 func (j *Jober) ID() string {
 	return j.slugName
 }
 
-func (j *Jober) Logs() []string {
-	return j.ReleaseInstaller().Logs()
-}
-
-func (j *Jober) IsNew() bool {
-	return j.isNew
-}
-
-func (j *Jober) Owned() bool {
-	return j.owned
-}
-
-func (j *Jober) IsDryRun() bool {
-	return j.dryRun
-}
 func (j *Jober) IsNotDryRun() bool {
 	return !j.dryRun
 }
 
-func (j *Jober) Commit() contracts.CommitInterface {
-	return j.commit
-}
-
-func (j *Jober) User() contracts.UserInfo {
-	return j.user
-}
-
-func (j *Jober) ProjectModel() *types.ProjectModel {
-	if j.project == nil {
-		return nil
+func (j *Jober) GlobalLock() contracts.Job {
+	if j.HasError() {
+		return j
 	}
-	return j.project.ProtoTransform()
-}
-
-func (j *Jober) Project() *models.Project {
-	return j.project
-}
-
-func (j *Jober) Namespace() *models.Namespace {
-	return j.ns
-}
-
-func (j *Jober) Done() <-chan struct{} {
-	return j.done
-}
-
-func (j *Jober) Finish() {
-	mlog.Debug("finished")
-	close(j.done)
-	if j.IsNotDryRun() && j.Project().ID > 0 {
-		app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
-	}
-	if j.deployResult.IsSet() {
-		j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
-	}
-	if j.IsNotDryRun() && j.Owned() {
-		j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
-	}
-}
-
-func (j *Jober) Prune() {
-	if j.IsDryRun() {
-		return
+	releaseFn, acquired := app.CacheLock().RenewalAcquire(j.ID(), 30, 20)
+	if !acquired {
+		return j.SetError(errors.New("正在部署中，请稍后再试"))
 	}
 
-	if j.IsNew() {
-		mlog.Debug("清理项目")
-		app.DB().Delete(&j.project)
-		return
-	}
-
-	if j.Owned() {
-		app.DB().Model(&j.project).UpdateColumn("version", j.prevProject.Version)
-	}
-}
-
-func (j *Jober) Stop(err error) {
-	j.stopOnce.Do(func() {
-		mlog.Debugf("stop deploy job, because '%v'", err)
-		j.messager.SendMsg("收到取消信号, 开始停止部署~")
-		j.stopFn(err)
+	return j.OnFinally(-1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		mlog.Warning("### releaseFn()")
+		releaseFn()
 	})
 }
 
-func (j *Jober) IsStopped() bool {
-	select {
-	case <-j.stopCtx.Done():
-		return true
-	default:
+func (j *Jober) Validate() contracts.Job {
+	var err error
+	if j.HasError() {
+		return j
 	}
 
-	return false
-}
+	if !(j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject) {
+		return j.SetError(errors.New("type error: " + j.input.Type.String()))
+	}
 
-type DeployResult struct {
-	sync.RWMutex
-	result websocket_pb.ResultType
-	msg    string
-	model  *types.ProjectModel
-	set    bool
-}
+	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
+	j.Percenter().To(5)
 
-func (d *DeployResult) IsSet() bool {
-	d.RLock()
-	defer d.RUnlock()
-	return d.set
-}
-func (d *DeployResult) Msg() string {
-	d.RLock()
-	defer d.RUnlock()
-	return d.msg
-}
-func (d *DeployResult) Model() *types.ProjectModel {
-	d.RLock()
-	defer d.RUnlock()
-	return d.model
-}
-func (d *DeployResult) ResultType() websocket_pb.ResultType {
-	d.RLock()
-	defer d.RUnlock()
-	return d.result
-}
+	j.Messager().SendMsg("[Check]: 校验名称空间...")
 
-func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
-	d.Lock()
-	defer d.Unlock()
-	d.result = t
-	d.msg = msg
-	d.model = model
-	d.set = true
-}
+	if err = app.DB().Where("`id` = ?", j.input.NamespaceId).First(&j.ns).Error; err != nil {
+		return j.SetError(fmt.Errorf("[FAILED]: 校验名称空间: %w", err))
+	}
 
-func (j *Jober) HandleMessage() {
-	defer mlog.Debug("HandleMessage exit")
-	ch := j.messageCh.Chan()
-	for {
-		select {
-		case <-j.Done():
-			return
-		case <-app.App().Done():
-			return
-		case s, ok := <-ch:
-			if !ok {
-				return
+	j.Messager().SendMsg("[Loading]: 加载用户配置")
+	j.Percenter().To(10)
+
+	j.config, err = utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
+	if err != nil {
+		return j.SetError(err)
+	}
+	if j.input.Name == "" {
+		j.input.Name = utils.GetProjectName(j.input.GitProjectId, j.config)
+	}
+
+	j.project = &models.Project{
+		Name:         slug.Make(j.input.Name),
+		GitProjectId: int(j.input.GitProjectId),
+		GitBranch:    j.input.GitBranch,
+		GitCommit:    j.input.GitCommit,
+		Config:       j.input.Config,
+		NamespaceId:  j.ns.ID,
+		Atomic:       j.input.Atomic,
+		ConfigType:   j.config.ConfigFileType,
+	}
+
+	j.Messager().SendMsg("[Check]: 检查项目是否存在")
+
+	var p models.Project
+	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
+		j.Messager().SendMsg("[Check]: 新建项目")
+		j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
+		j.isNew = true
+		if j.IsNotDryRun() {
+			app.DB().Create(&j.project)
+			j.OnError(1, func(err error, sendResultToUser func()) {
+				mlog.Debug("清理项目")
+				app.DB().Delete(&j.project)
+				sendResultToUser()
+			})
+		}
+	} else {
+		j.project.ID = p.ID
+		j.prevProject = &p
+
+		if j.IsNotDryRun() {
+			j.Messager().SendMsg("[Check]: 检查当前版本")
+			if app.DB().Model(&models.Project{ID: p.ID}).Where("`version` = ?", j.input.Version).Updates(map[string]any{
+				"version":       gorm.Expr("`version` + ?", 1),
+				"deploy_status": types.Deploy_StatusDeploying,
+			}).RowsAffected == 0 {
+				return j.SetError(ErrorVersionNotMatched)
 			}
-			switch s.Type {
-			case contracts.MessageText:
-				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
-			case contracts.MessageError:
-				if j.IsNew() && !j.IsDryRun() {
-					app.DB().Delete(&j.project)
-				}
-				select {
-				case <-j.stopCtx.Done():
-					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
-				default:
-					j.SetDeployResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
-				}
-				return
-			case contracts.MessageSuccess:
-				j.SetDeployResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
-				return
-			}
+			j.OnError(1, func(err error, sendResultToUser func()) {
+				app.DB().Model(&models.Project{ID: p.ID}).UpdateColumn("version", j.prevProject.Version)
+				sendResultToUser()
+			})
 		}
 	}
-}
 
-func (j *Jober) CallDestroyFuncs() {
-	j.destroyFuncLock.RLock()
-	defer j.destroyFuncLock.RUnlock()
-	for _, destroyFunc := range j.destroyFuncs {
-		destroyFunc()
+	if j.IsNotDryRun() {
+		j.PubSub().ToAll(reloadProjectsMessage(j.ns.ID))
+		j.OnFinally(1, func(err error, sendResultToUser func()) {
+			// 如果状态出现问题，只有拿到锁的才能更新状态
+			mlog.Warning("### app.DB().Model(j.Project()).UpdateColumn(\"deploy_status\", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))")
+			app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+			sendResultToUser()
+			mlog.Warning("### j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))")
+			j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
+		})
 	}
+	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
+	j.commit, err = plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
+
+	return j.SetError(err)
 }
 
-func (j *Jober) AddDestroyFunc(fn func()) {
-	j.destroyFuncLock.Lock()
-	defer j.destroyFuncLock.Unlock()
-	j.destroyFuncs = append(j.destroyFuncs, fn)
-}
-
-type userConfig struct {
-	Config           string              `yaml:"config"`
-	Branch           string              `yaml:"branch"`
-	Commit           string              `yaml:"commit"`
-	Atomic           bool                `yaml:"atomic"`
-	WebUrl           string              `yaml:"web_url"`
-	Title            string              `yaml:"title"`
-	ExtraValues      []*types.ExtraValue `yaml:"extra_values"`
-	FinalExtraValues mergeYamlString     `yaml:"final_extra_values"`
-	EnvValues        vars                `yaml:"env_values"`
-}
-
-type mergeYamlString []string
-
-func (s mergeYamlString) MarshalYAML() (any, error) {
-	var opts []config.YAMLOption
-	for _, item := range s {
-		opts = append(opts, config.Source(strings.NewReader(item)))
+func (j *Jober) LoadConfigs() contracts.Job {
+	if j.HasError() {
+		return j
 	}
-	if len(opts) == 0 {
-		return "", nil
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	ch := make(chan error, 1)
+	go func() {
+		defer recovery.HandlePanic("LoadConfigs")
+		defer wg.Done()
+		defer close(ch)
+		err := func() error {
+			j.Messager().SendMsg("[Check]: 加载项目文件")
+
+			for _, defaultLoader := range j.loaders {
+				if err := j.GetStoppedErrorIfHas(); err != nil {
+					return err
+				}
+				if err := defaultLoader.Load(j); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}()
+		ch <- err
+	}()
+
+	var err error
+	select {
+	case err = <-ch:
+	case <-j.stopCtx.Done():
+		err = j.stopCtx.Err()
 	}
-	provider, _ := config.NewYAML(opts...)
-	var merged map[string]any
-	provider.Get("").Populate(&merged)
+	wg.Wait()
 
-	bf := &bytes.Buffer{}
-	yaml.NewEncoder(bf).Encode(&merged)
-
-	return bf.String(), nil
+	return j.SetError(err)
 }
 
-type sortableExtraItem []*types.ExtraValue
-
-func (s sortableExtraItem) Len() int {
-	return len(s)
-}
-
-func (s sortableExtraItem) Less(i, j int) bool {
-	return s[i].Path < s[j].Path
-}
-
-func (s sortableExtraItem) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (u userConfig) PrettyYaml() string {
-	bf := bytes.Buffer{}
-	sort.Sort(sortableExtraItem(u.ExtraValues))
-	yaml.NewEncoder(&bf).Encode(&u)
-	return bf.String()
-}
-
-func toUpdatesMap(p *models.Project) map[string]any {
-	return map[string]any{
-		"manifest":           p.Manifest,
-		"config":             p.Config,
-		"git_project_id":     p.GitProjectId,
-		"git_commit":         p.GitCommit,
-		"git_branch":         p.GitBranch,
-		"docker_image":       p.DockerImage,
-		"pod_selectors":      p.PodSelectors,
-		"override_values":    p.OverrideValues,
-		"atomic":             p.Atomic,
-		"extra_values":       p.ExtraValues,
-		"final_extra_values": p.FinalExtraValues,
-		"env_values":         p.EnvValues,
-		"git_commit_title":   p.GitCommitTitle,
-		"git_commit_web_url": p.GitCommitWebUrl,
-		"git_commit_author":  p.GitCommitAuthor,
-		"git_commit_date":    p.GitCommitDate,
-		"config_type":        p.ConfigType,
+func (j *Jober) Run() contracts.Job {
+	if j.HasError() {
+		return j
 	}
-}
-
-func (j *Jober) Run() error {
 	done := make(chan struct{}, 1)
 	go func() {
 		defer func() {
@@ -511,7 +410,6 @@ func (j *Jober) Run() error {
 	}()
 
 	err := func() error {
-		defer j.messageCh.Close()
 		var (
 			result *release.Release
 			err    error
@@ -630,7 +528,346 @@ func (j *Jober) Run() error {
 		return err
 	}()
 	<-done
-	return err
+	return j.SetError(err)
+}
+
+func (j *Jober) Finish() contracts.Job {
+	mlog.Debug("finished")
+	close(j.done)
+
+	var callbacks []func(func(err error)) func(err error)
+
+	// Run error hooks
+	if j.HasError() {
+		func(err error) {
+			if e := j.GetStoppedErrorIfHas(); e != nil {
+				j.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), j.ProjectModel())
+				err = e
+				return
+			}
+			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
+		}(j.Error())
+		callbacks = append(callbacks, j.errorCallback.All()...)
+	}
+
+	// Run success hooks
+	if !j.HasError() {
+		callbacks = append(callbacks, j.successCallback.All()...)
+	}
+
+	// run finally hooks
+	callbacks = append(callbacks, j.finallyCallback.All()...)
+
+	pipeline.NewPipeline[error]().
+		Send(j.Error()).
+		Through(callbacks...).
+		Then(func(error) {
+			if j.deployResult.IsSet() {
+				j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
+			}
+			mlog.Debug("SendDeployedResult")
+		})
+
+	return j
+}
+
+func (j *Jober) Manifests() []string {
+	return j.manifests
+}
+
+func (j *Jober) Stop(err error) {
+	j.messager.SendMsg("收到取消信号, 开始停止部署~")
+	mlog.Debugf("stop deploy job, because '%v'", err)
+	j.stopFn(err)
+}
+
+func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.errorCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
+		return func(err error) {
+			fn(err, func() {
+				sendResultToUser(nil)
+			})
+		}
+	})
+	return j
+}
+
+func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.successCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
+		return func(err error) {
+			fn(err, func() {
+				sendResultToUser(nil)
+			})
+		}
+	})
+	return j
+}
+
+func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.finallyCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
+		return func(err error) {
+			fn(err, func() {
+				sendResultToUser(nil)
+			})
+		}
+	})
+	return j
+}
+
+func (j *Jober) Error() error {
+	return j.err
+}
+
+func (j *Jober) SetError(err error) *Jober {
+	j.err = err
+	return j
+}
+
+func (j *Jober) HasError() bool {
+	return j.err != nil
+}
+
+func (j *Jober) Logs() []string {
+	return j.ReleaseInstaller().Logs()
+}
+
+func (j *Jober) IsNew() bool {
+	return j.isNew
+}
+
+func (j *Jober) IsDryRun() bool {
+	return j.dryRun
+}
+
+func (j *Jober) Commit() contracts.CommitInterface {
+	return j.commit
+}
+
+func (j *Jober) User() contracts.UserInfo {
+	return j.user
+}
+
+func (j *Jober) ProjectModel() *types.ProjectModel {
+	if j.project == nil {
+		return nil
+	}
+	return j.project.ProtoTransform()
+}
+
+func (j *Jober) Project() *models.Project {
+	return j.project
+}
+
+func (j *Jober) Namespace() *models.Namespace {
+	return j.ns
+}
+
+func (j *Jober) Done() <-chan struct{} {
+	return j.done
+}
+
+type sortCallback[T any] []callback[T]
+
+func (s sortCallback[T]) Len() int {
+	return len(s)
+}
+
+func (s sortCallback[T]) Less(i, j int) bool {
+	return s[i].priority > s[j].priority
+}
+
+func (s sortCallback[T]) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+type callbackManager[T any] struct {
+	sync.RWMutex
+	list []callback[T]
+}
+
+func (m *callbackManager[T]) Add(priority int, t T) {
+	m.Lock()
+	defer m.Unlock()
+	m.list = append(m.list, callback[T]{
+		priority: priority,
+		fn:       t,
+	})
+}
+
+func (m *callbackManager[T]) All() []T {
+	m.RLock()
+	defer m.RUnlock()
+	var l = make(sortCallback[T], len(m.list))
+	copy(l, m.list)
+	sort.Sort(l)
+	var res []T
+	for _, c := range l {
+		res = append(res, c.fn)
+	}
+	return res
+}
+
+type callback[T any] struct {
+	priority int
+	fn       T
+}
+
+func (j *Jober) IsStopped() bool {
+	select {
+	case <-j.stopCtx.Done():
+		return true
+	default:
+	}
+
+	return false
+}
+
+type DeployResult struct {
+	sync.RWMutex
+	result websocket_pb.ResultType
+	msg    string
+	model  *types.ProjectModel
+	set    bool
+}
+
+func (d *DeployResult) IsSet() bool {
+	d.RLock()
+	defer d.RUnlock()
+	return d.set
+}
+
+func (d *DeployResult) Msg() string {
+	d.RLock()
+	defer d.RUnlock()
+	return d.msg
+}
+
+func (d *DeployResult) Model() *types.ProjectModel {
+	d.RLock()
+	defer d.RUnlock()
+	return d.model
+}
+
+func (d *DeployResult) ResultType() websocket_pb.ResultType {
+	d.RLock()
+	defer d.RUnlock()
+	return d.result
+}
+
+func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+	d.Lock()
+	defer d.Unlock()
+	d.result = t
+	d.msg = msg
+	d.model = model
+	d.set = true
+}
+
+func (j *Jober) HandleMessage() {
+	defer mlog.Debug("HandleMessage exit")
+	ch := j.messageCh.Chan()
+	for {
+		select {
+		case <-j.Done():
+			return
+		case <-app.App().Done():
+			return
+		case s, ok := <-ch:
+			if !ok {
+				return
+			}
+			switch s.Type {
+			case contracts.MessageText:
+				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
+			case contracts.MessageError:
+				select {
+				case <-j.stopCtx.Done():
+					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
+				default:
+					j.SetDeployResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
+				}
+				return
+			case contracts.MessageSuccess:
+				j.SetDeployResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
+				return
+			}
+		}
+	}
+}
+
+type userConfig struct {
+	Config           string              `yaml:"config"`
+	Branch           string              `yaml:"branch"`
+	Commit           string              `yaml:"commit"`
+	Atomic           bool                `yaml:"atomic"`
+	WebUrl           string              `yaml:"web_url"`
+	Title            string              `yaml:"title"`
+	ExtraValues      []*types.ExtraValue `yaml:"extra_values"`
+	FinalExtraValues mergeYamlString     `yaml:"final_extra_values"`
+	EnvValues        vars                `yaml:"env_values"`
+}
+
+type mergeYamlString []string
+
+func (s mergeYamlString) MarshalYAML() (any, error) {
+	var opts []config.YAMLOption
+	for _, item := range s {
+		opts = append(opts, config.Source(strings.NewReader(item)))
+	}
+	if len(opts) == 0 {
+		return "", nil
+	}
+	provider, _ := config.NewYAML(opts...)
+	var merged map[string]any
+	provider.Get("").Populate(&merged)
+
+	bf := &bytes.Buffer{}
+	yaml.NewEncoder(bf).Encode(&merged)
+
+	return bf.String(), nil
+}
+
+type sortableExtraItem []*types.ExtraValue
+
+func (s sortableExtraItem) Len() int {
+	return len(s)
+}
+
+func (s sortableExtraItem) Less(i, j int) bool {
+	return s[i].Path < s[j].Path
+}
+
+func (s sortableExtraItem) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (u userConfig) PrettyYaml() string {
+	bf := bytes.Buffer{}
+	sort.Sort(sortableExtraItem(u.ExtraValues))
+	yaml.NewEncoder(&bf).Encode(&u)
+	return bf.String()
+}
+
+func toUpdatesMap(p *models.Project) map[string]any {
+	return map[string]any{
+		"manifest":           p.Manifest,
+		"config":             p.Config,
+		"git_project_id":     p.GitProjectId,
+		"git_commit":         p.GitCommit,
+		"git_branch":         p.GitBranch,
+		"docker_image":       p.DockerImage,
+		"pod_selectors":      p.PodSelectors,
+		"override_values":    p.OverrideValues,
+		"atomic":             p.Atomic,
+		"extra_values":       p.ExtraValues,
+		"final_extra_values": p.FinalExtraValues,
+		"env_values":         p.EnvValues,
+		"git_commit_title":   p.GitCommitTitle,
+		"git_commit_web_url": p.GitCommitWebUrl,
+		"git_commit_author":  p.GitCommitAuthor,
+		"git_commit_date":    p.GitCommitDate,
+		"config_type":        p.ConfigType,
+	}
 }
 
 func (j *Jober) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
@@ -660,85 +897,6 @@ func (j *Jober) Percenter() contracts.Percentable {
 	return j.percenter
 }
 
-func (j *Jober) Validate() error {
-	if !(j.wsType == websocket_pb.Type_CreateProject || j.wsType == websocket_pb.Type_UpdateProject || j.wsType == websocket_pb.Type_ApplyProject) {
-		return errors.New("type error: " + j.wsType.String())
-	}
-	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
-	j.Percenter().To(5)
-
-	j.Messager().SendMsg("[Check]: 校验名称空间...")
-
-	var ns models.Namespace
-	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
-		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
-	}
-	j.ns = &ns
-
-	j.Messager().SendMsg("[Loading]: 加载用户配置")
-	j.Percenter().To(10)
-
-	marsC, err := utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
-	if err != nil {
-		return err
-	}
-	j.config = marsC
-	if j.input.Name == "" {
-		j.input.Name = utils.GetProjectName(j.input.GitProjectId, marsC)
-	}
-
-	j.project = &models.Project{
-		Name:         slug.Make(j.input.Name),
-		GitProjectId: int(j.input.GitProjectId),
-		GitBranch:    j.input.GitBranch,
-		GitCommit:    j.input.GitCommit,
-		Config:       j.input.Config,
-		NamespaceId:  ns.ID,
-		Atomic:       j.input.Atomic,
-		ConfigType:   marsC.ConfigFileType,
-	}
-
-	j.Messager().SendMsg("[Check]: 检查项目是否存在")
-
-	var p models.Project
-	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		j.Messager().SendMsg("[Check]: 新建项目")
-		j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
-		if j.IsNotDryRun() {
-			app.DB().Create(&j.project)
-		}
-		j.isNew = true
-	} else {
-		j.project.ID = p.ID
-		j.prevProject = &p
-
-		if j.IsNotDryRun() {
-			if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
-				return errors.New("有别人也在操作这个项目，等等哦~")
-			}
-			j.Messager().SendMsg("[Check]: 检查当前版本")
-			if app.DB().Model(&p).Where("`version` = ?", j.input.Version).UpdateColumn("version", gorm.Expr("`version` + ?", 1)).RowsAffected == 0 {
-				return ErrorVersionNotMatched
-			}
-			app.DB().Model(j.project).UpdateColumn("deploy_status", types.Deploy_StatusDeploying)
-		}
-	}
-	j.owned = true
-
-	if j.IsNotDryRun() {
-		j.PubSub().ToSelf(reloadProjectsMessage(j.ns.ID))
-	}
-	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
-
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
-	if err != nil {
-		return err
-	}
-	j.commit = commit
-
-	return nil
-}
-
 func defaultLoaders() []Loader {
 	return []Loader{
 		&ChartFileLoader{
@@ -751,42 +909,6 @@ func defaultLoaders() []Loader {
 		&MergeValuesLoader{},
 		&ReleaseInstallerLoader{},
 	}
-}
-
-func (j *Jober) LoadConfigs() error {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	ch := make(chan error, 1)
-	go func() {
-		defer recovery.HandlePanic("LoadConfigs")
-		defer wg.Done()
-		defer close(ch)
-		err := func() error {
-			j.Messager().SendMsg("[Check]: 加载项目文件")
-
-			for _, defaultLoader := range j.loaders {
-				if err := j.GetStoppedErrorIfHas(); err != nil {
-					return err
-				}
-				if err := defaultLoader.Load(j); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}()
-		ch <- err
-	}()
-
-	var err error
-	select {
-	case err = <-ch:
-	case <-j.stopCtx.Done():
-		err = j.stopCtx.Err()
-	}
-	wg.Wait()
-
-	return err
 }
 
 type Loader interface {
@@ -881,7 +1003,11 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 			return err
 		}
 	}
-	j.AddDestroyFunc(deleteDirFn)
+	j.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		mlog.Warning("### deleteDirFn()")
+		deleteDirFn()
+	})
 
 	loadDir, _ := c.chartLoader.LoadDir(filepath.Join(tmpChartsDir, dir))
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
@@ -892,7 +1018,10 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 				if err != nil {
 					return err
 				}
-				j.AddDestroyFunc(depDeleteFn)
+				j.OnFinally(1, func(err error, sendResultToUser func()) {
+					sendResultToUser()
+					depDeleteFn()
+				})
 				j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载本地依赖 %s", dependency.Name))
 			}
 		}
@@ -1213,7 +1342,11 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	if err != nil {
 		return err
 	}
-	j.AddDestroyFunc(func() { closer.Close() })
+	j.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		mlog.Warning("### closer.Close()")
+		closer.Close()
+	})
 	j.valuesOptions.ValueFiles = append(j.valuesOptions.ValueFiles, mergedFile)
 
 	return nil

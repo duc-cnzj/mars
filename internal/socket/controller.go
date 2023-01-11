@@ -3,7 +3,6 @@ package socket
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -458,56 +457,20 @@ func upgradeOrInstall(c *WsConn, t websocket_pb.Type, input *JobInput) {
 	slug := utils.GetSlugName(input.NamespaceId, input.Name)
 	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
 
-	if !job.IsDryRun() {
-		releaseFn, acquired := app.CacheLock().RenewalAcquire(job.ID(), 30, 20)
-		if !acquired {
-			NewMessageSender(c, slug, t).SendEndError(errors.New("正在部署中，请稍后再试"))
-			return
-		}
-		job.AddDestroyFunc(releaseFn)
+	if job.IsNotDryRun() {
 		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
 			NewMessageSender(c, slug, t).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 			return
 		}
-		job.AddDestroyFunc(func() {
+		job.OnFinally(1000, func(err error, base func()) {
+			mlog.Warning("### c.cancelSignaler.Remove(job.ID())")
 			c.cancelSignaler.Remove(job.ID())
+			base()
 		})
 	}
 	InstallProject(job)
 }
 
 func InstallProject(job contracts.Job) (err error) {
-	defer func() {
-		if err != nil && !job.IsDryRun() {
-			job.Prune()
-		}
-		job.Finish()
-		job.CallDestroyFuncs()
-	}()
-
-	handleStopErr := func(e error) {
-		job.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), job.ProjectModel())
-		err = e
-	}
-
-	if err = job.Validate(); err != nil {
-		if e := job.GetStoppedErrorIfHas(); e != nil {
-			handleStopErr(e)
-			return
-		}
-		job.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), job.ProjectModel())
-		return
-	}
-
-	if err = job.LoadConfigs(); err != nil {
-		if e := job.GetStoppedErrorIfHas(); e != nil {
-			handleStopErr(e)
-			return
-		}
-		job.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), job.ProjectModel())
-		return
-	}
-
-	err = job.Run()
-	return
+	return job.GlobalLock().Validate().LoadConfigs().Run().Finish().Error()
 }

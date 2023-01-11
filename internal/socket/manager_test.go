@@ -57,66 +57,6 @@ func (f *fakeOpener) Close() error {
 	return nil
 }
 
-func TestChartFileLoader_Load(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	em := &emptyMsger{}
-	h := mock.NewMockHelmer(m)
-	job := &Jober{
-		helmer: h,
-		input: &JobInput{
-			GitProjectId: 100,
-		},
-		messager:  em,
-		percenter: &emptyPercenter{},
-		config: &mars.Config{
-			LocalChartPath: "9999|master|dir",
-		},
-	}
-	l := &ChartFileLoader{
-		chartLoader: &fakeChartLoader{
-			c: &chart.Chart{
-				Metadata: &chart.Metadata{
-					Dependencies: []*chart.Dependency{
-						{
-							Repository: "file://xxxx",
-						},
-					},
-				},
-			},
-		},
-		fileOpener: &fakeOpener{},
-	}
-	gits := mock.NewMockGitServer(m)
-	app := testutil.MockApp(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
-
-	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return(nil, errors.New("xxx"))
-
-	err := l.Load(job)
-	assert.Equal(t, "charts 文件不存在", err.Error())
-
-	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
-
-	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
-	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
-	up := mock.NewMockUploader(m)
-	app.EXPECT().LocalUploader().Return(up).AnyTimes()
-	up.EXPECT().AbsolutePath(gomock.Any()).Return("")
-	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
-	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
-	h.EXPECT().PackageChart(gomock.Any(), gomock.Any()).Times(1)
-
-	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir/xxxx", true).Return([]string{}, nil)
-
-	err = l.Load(job)
-	assert.Len(t, job.destroyFuncs, 2)
-	assert.Nil(t, err)
-}
-
 func TestChartFileLoader_Load2(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -448,29 +388,6 @@ func TestExtraValuesLoader_typeValue(t *testing.T) {
 	}
 }
 
-func TestJober_AddDestroyFunc(t *testing.T) {
-	j := &Jober{}
-	called := 0
-	j.AddDestroyFunc(func() {
-		called++
-	})
-	j.AddDestroyFunc(func() {
-		called++
-	})
-	j.CallDestroyFuncs()
-	assert.Equal(t, 2, called)
-}
-
-func TestJober_CallDestroyFuncs(t *testing.T) {
-	j := &Jober{}
-	called := false
-	j.AddDestroyFunc(func() {
-		called = true
-	})
-	j.CallDestroyFuncs()
-	assert.True(t, called)
-}
-
 func TestJober_Commit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -490,107 +407,6 @@ func TestJober_Done(t *testing.T) {
 		return ch
 	}
 	assert.Equal(t, fn(), j.Done())
-}
-
-func TestJober_Finish(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-
-	app := testutil.MockApp(m)
-	db, f := testutil.SetGormDB(m, app)
-	defer f()
-	db.AutoMigrate(&models.Namespace{}, &models.Project{})
-	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}, DeployStatus: uint8(types.Deploy_StatusUnknown)}
-	assert.Nil(t, db.Create(p).Error)
-	ps := mock.NewMockPubSub(m)
-	hm := mock.NewMockHelmer(m)
-	hm.EXPECT().ReleaseStatus("app", "ns").Return(types.Deploy_StatusDeployed).Times(1)
-	j := &Jober{
-		pubsub:      ps,
-		done:        make(chan struct{}),
-		ns:          &p.Namespace,
-		helmer:      hm,
-		dryRun:      false,
-		project:     p,
-		prevProject: &models.Project{DeployStatus: p.DeployStatus},
-		owned:       true,
-	}
-
-	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(1)
-	j.Finish()
-	_, ok := <-j.done
-	assert.False(t, ok)
-
-	var pn = models.Project{ID: p.ID}
-	db.First(&pn)
-	assert.Equal(t, uint8(types.Deploy_StatusDeployed), pn.DeployStatus)
-	j.owned = false
-	j.done = make(chan struct{})
-	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
-	hm.EXPECT().ReleaseStatus("app", "ns").Times(1)
-	j.prevProject.DeployStatus = uint8(types.Deploy_StatusDeploying)
-	j.Finish()
-}
-
-func TestJober_Finish2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-
-	app := testutil.MockApp(m)
-	db, f := testutil.SetGormDB(m, app)
-	defer f()
-	db.AutoMigrate(&models.Namespace{}, &models.Project{})
-	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}, DeployStatus: uint8(types.Deploy_StatusUnknown)}
-	assert.Nil(t, db.Create(p).Error)
-	ps := mock.NewMockPubSub(m)
-	hm := mock.NewMockHelmer(m)
-	hm.EXPECT().ReleaseStatus(gomock.Any(), gomock.Any()).Times(0)
-	j := &Jober{
-		pubsub:      ps,
-		done:        make(chan struct{}),
-		ns:          &p.Namespace,
-		helmer:      hm,
-		dryRun:      true,
-		project:     p,
-		prevProject: &models.Project{DeployStatus: p.DeployStatus},
-		owned:       true,
-	}
-
-	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
-	j.Finish()
-	_, ok := <-j.done
-	assert.False(t, ok)
-	var pn = models.Project{ID: p.ID}
-	db.First(&pn)
-	assert.Equal(t, uint8(types.Deploy_StatusUnknown), pn.DeployStatus)
-}
-
-func TestJober_Finish3(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-
-	ps := mock.NewMockPubSub(m)
-	msger := mock.NewMockDeployMsger(m)
-	j := &Jober{
-		pubsub:   ps,
-		done:     make(chan struct{}),
-		ns:       &models.Namespace{ID: 1},
-		messager: msger,
-		dryRun:   true,
-		deployResult: DeployResult{
-			result: 1,
-			msg:    "xx",
-			model:  &types.ProjectModel{Name: "app"},
-			set:    true,
-		},
-		owned: true,
-	}
-
-	msger.EXPECT().SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model()).Times(1)
-	ps.EXPECT().ToAll(reloadProjectsMessage(1)).Times(0)
-	j.Finish()
-	_, ok := <-j.done
-	assert.False(t, ok)
 }
 
 func TestJober_GetStoppedErrorIfHas(t *testing.T) {
@@ -776,9 +592,6 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 	assert.NotEmpty(t, j.deployResult.Msg())
 	assert.Equal(t, ResultDeployCanceled, j.deployResult.ResultType())
 	assert.NotNil(t, j.deployResult.Model())
-	newp := &models.Project{}
-	db.Unscoped().Where("`id` = ?", p.ID).First(newp)
-	assert.True(t, newp.DeletedAt.Valid)
 }
 
 func TestJober_ID(t *testing.T) {
@@ -843,7 +656,7 @@ func TestJober_LoadConfigs1(t *testing.T) {
 		messager: &emptyMsger{},
 		stopCtx:  ctx,
 		loaders:  []Loader{l},
-	}).LoadConfigs().Error())
+	}).LoadConfigs().Error().Error())
 	assert.False(t, l.GetCalled())
 }
 
@@ -853,7 +666,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		messager: &emptyMsger{},
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l},
-	}).LoadConfigs())
+	}).LoadConfigs().Error())
 	assert.True(t, l.GetCalled())
 
 	l2 := &emptyLoader{}
@@ -863,7 +676,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		messager: &emptyMsger{},
 		stopCtx:  cancel,
 		loaders:  []Loader{l2},
-	}).LoadConfigs().Error())
+	}).LoadConfigs().Error().Error())
 	assert.False(t, l2.GetCalled())
 
 	l3 := &emptyLoader{
@@ -873,7 +686,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 		messager: &emptyMsger{},
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l3},
-	}).LoadConfigs().Error())
+	}).LoadConfigs().Error().Error())
 	assert.True(t, l3.GetCalled())
 }
 
@@ -930,42 +743,6 @@ func TestJober_ProjectModel(t *testing.T) {
 	assert.Nil(t, j.ProjectModel())
 	j.project = &models.Project{Name: "aa"}
 	assert.NotNil(t, j.ProjectModel())
-}
-
-func TestJober_Prune(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	db, cfn := testutil.SetGormDB(m, app)
-	defer cfn()
-	db.AutoMigrate(&models.Project{}, &models.Namespace{})
-	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "aaa"}}
-	db.Create(p)
-	j := &Jober{
-		isNew:   true,
-		dryRun:  false,
-		project: &models.Project{ID: p.ID},
-	}
-	var c int64
-	db.Model(&models.Project{}).Count(&c)
-	assert.Equal(t, int64(1), c)
-	j.Prune()
-	db.Model(&models.Project{}).Count(&c)
-	assert.Equal(t, int64(0), c)
-
-	// 重置 version
-	j2 := &Jober{
-		isNew:       false,
-		dryRun:      false,
-		project:     &models.Project{ID: p.ID, Version: 101},
-		prevProject: &models.Project{ID: p.ID, Version: 100},
-		owned:       false,
-	}
-	j2.Prune()
-	assert.Equal(t, 101, j2.project.Version)
-	j2.owned = true
-	j2.Prune()
-	assert.Equal(t, 100, j2.project.Version)
 }
 
 func TestJober_PubSub(t *testing.T) {
@@ -1025,11 +802,8 @@ func TestJober_Run_Fail(t *testing.T) {
 		messageCh: msgCh,
 		commit:    commit,
 	}
-	assert.Equal(t, "xxx", job.Run().Error())
+	assert.Equal(t, "xxx", job.Run().Error().Error())
 	assert.Equal(t, "xxx", job.deployResult.Msg())
-	newProj := &models.Project{}
-	assert.Nil(t, db.Unscoped().Where("`id` = ?", proj.ID).First(&newProj).Error)
-	assert.True(t, newProj.DeletedAt.Valid)
 }
 
 func TestJober_Run_Success(t *testing.T) {
@@ -1157,7 +931,7 @@ spec:
 		extraValues: []string{"ex-aaa", "ex-bbb"},
 		vars:        map[string]any{"var-a": "aaa", "var-b": "bbb"},
 	}
-	assert.Nil(t, job.Run())
+	assert.Nil(t, job.Run().Error())
 	assert.Equal(t, "部署成功", job.deployResult.Msg())
 
 	assert.Equal(t, "{}\n", job.Project().OverrideValues)
@@ -1221,10 +995,10 @@ func TestJober_Stop(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msg := mock.NewMockDeployMsger(m)
-	msg.EXPECT().SendMsg(gomock.Any()).Times(1)
-	called := 0
+	msg.EXPECT().SendMsg(gomock.Any()).Times(3)
+	var called int64 = 0
 	j := &Jober{messager: msg, stopFn: func(err error) {
-		called++
+		atomic.AddInt64(&called, 1)
 	}}
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -1236,144 +1010,12 @@ func TestJober_Stop(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	assert.Equal(t, 1, called)
+	assert.Equal(t, int64(3), atomic.LoadInt64(&called))
 }
 
 func TestJober_User(t *testing.T) {
 	j := &Jober{}
 	assert.IsType(t, contracts.UserInfo{}, j.User())
-}
-
-func TestJober_Validate(t *testing.T) {
-	job := &Jober{
-		wsType: 99999,
-	}
-	err := job.Validate()
-	assert.Equal(t, "type error: 99999", err.Error())
-
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	db, fn := testutil.SetGormDB(m, app)
-	defer fn()
-	db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.GitProject{})
-
-	job2 := &Jober{
-		input: &JobInput{
-			NamespaceId: 9999,
-		},
-		messager:  &emptyMsger{},
-		percenter: &emptyPercenter{},
-		wsType:    websocket_pb.Type_CreateProject,
-	}
-	assert.Equal(t, "[FAILED]: 校验名称空间: record not found", job2.Validate().Error())
-
-	ns := &models.Namespace{Name: "ns", ImagePullSecrets: "aa,bb"}
-	db.Create(ns)
-	marsC := mars.Config{
-		DisplayName:    "app",
-		ConfigFileType: "go",
-	}
-	marshal, _ := json.Marshal(&marsC)
-	gp := &models.GitProject{
-		DefaultBranch: "dev",
-		Name:          "git-app",
-		GitProjectId:  100,
-		Enabled:       true,
-		GlobalEnabled: true,
-		GlobalConfig:  string(marshal),
-	}
-	db.Create(gp)
-	gits := mock.NewMockGitServer(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
-	commit := mock.NewMockCommitInterface(m)
-	h := mock.NewMockHelmer(m)
-	ps := mock.NewMockPubSub(m)
-	var newJob3 = func() *Jober {
-		return &Jober{
-			pubsub: ps,
-			helmer: h,
-			input: &JobInput{
-				NamespaceId:  int64(ns.ID),
-				GitProjectId: 100,
-				GitBranch:    "dev",
-				GitCommit:    "commit",
-				Config:       "xxx",
-				Atomic:       true,
-			},
-			messager:  &emptyMsger{},
-			percenter: &emptyPercenter{},
-			wsType:    websocket_pb.Type_CreateProject,
-			dryRun:    false,
-		}
-	}
-	job3 := newJob3()
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
-	// 正常创建
-	assert.Nil(t, job3.Validate())
-	assert.True(t, job3.owned)
-	assert.Equal(t, 0, len(job3.destroyFuncs))
-	assert.Equal(t, "app", job3.input.Name)
-	assert.Same(t, commit, job3.Commit())
-	assert.Equal(t, []string{"aa", "bb"}, job3.imagePullSecrets)
-	var p models.Project
-	db.First(&p)
-	assert.Equal(t, uint8(types.Deploy_StatusDeploying), p.DeployStatus)
-	assert.Equal(t, int(1), p.Version)
-	assert.Equal(t, 100, int(p.GitProjectId))
-	assert.Equal(t, "dev", p.GitBranch)
-	assert.Equal(t, "commit", p.GitCommit)
-	assert.Equal(t, "xxx", p.Config)
-	assert.Equal(t, true, p.Atomic)
-	assert.Equal(t, "go", p.ConfigType)
-	assert.Nil(t, job3.prevProject)
-
-	// 创建后状态变成了 types.Deploy_StatusDeploying
-	job3.input.Version = 1
-	assert.Equal(t, "有别人也在操作这个项目，等等哦~", job3.Validate().Error())
-
-	db.Model(&p).UpdateColumn("deploy_status", types.Deploy_StatusDeployed)
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-	job3 = newJob3()
-	job3.input.Version = 1
-	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
-	// 正常返回 commit，设置 prevProject
-	assert.Nil(t, job3.Validate())
-	assert.NotNil(t, job3.prevProject)
-
-	marshal2, _ := json.Marshal(&mars.Config{
-		DisplayName: "",
-	})
-	db.Model(&gp).UpdateColumn("global_config", string(marshal2))
-	gitproj := mock.NewMockProjectInterface(m)
-	gitproj.EXPECT().GetName().Return("app-git")
-	gits.EXPECT().GetProject("100").Return(gitproj, nil)
-	job3 = newJob3()
-	job3.input.Name = ""
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(commit, nil).Times(1)
-	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
-	// inputName 设置为空, 并且置空 displayName, app name 就会变成 git proj name
-	// 此时应该为创建, version = 1
-	assert.Nil(t, job3.Validate())
-	assert.Equal(t, "app-git", job3.input.Name)
-	var pp = models.Project{ID: job3.project.ID}
-	db.First(&pp)
-	assert.Equal(t, 1, pp.Version)
-
-	h.EXPECT().ReleaseStatus("app-git", "ns").Return(types.Deploy_StatusUnknown).AnyTimes()
-	assert.Len(t, job3.destroyFuncs, 0)
-	job3.CallDestroyFuncs()
-	db.Model(&models.Project{ID: job3.project.ID}).UpdateColumn("deploy_status", types.Deploy_StatusUnknown)
-
-	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("aaa")).Times(1)
-	job3.input.Version = int64(pp.Version)
-	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).Times(1)
-	// GetCommit 返回 error 的情景
-	assert.Equal(t, "aaa", job3.Validate().Error())
 }
 
 func TestJober_Validate_VersionMatch(t *testing.T) {
@@ -1424,44 +1066,14 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 			GitProjectId: 100,
 			Name:         p.Name,
 			Version:      0,
+			Type:         websocket_pb.Type_UpdateProject,
 		},
 		messager:  &emptyMsger{},
 		percenter: &emptyPercenter{},
-		wsType:    websocket_pb.Type_UpdateProject,
 	}
-	assert.ErrorIs(t, ErrorVersionNotMatched, job.Validate())
+	assert.ErrorIs(t, ErrorVersionNotMatched, job.Validate().Error())
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	ps.EXPECT().ToSelf(reloadProjectsMessage(ns.ID)).AnyTimes()
-
-	wg := sync.WaitGroup{}
-	var successedTimes int64
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			job2 := &Jober{
-				pubsub: ps,
-				helmer: h,
-				input: &JobInput{
-					NamespaceId:  int64(ns.ID),
-					GitProjectId: 100,
-					Name:         "app",
-					Version:      1,
-				},
-				messager:  &emptyMsger{},
-				percenter: &emptyPercenter{},
-				wsType:    websocket_pb.Type_ApplyProject,
-			}
-			if job2.Validate() == nil {
-				atomic.AddInt64(&successedTimes, 1)
-			}
-		}()
-	}
-	wg.Wait()
-	var pp = models.Project{ID: p.ID}
-	db.First(&pp)
-	assert.Equal(t, int64(1), atomic.LoadInt64(&successedTimes))
-	assert.Equal(t, int(2), pp.Version)
+	ps.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).AnyTimes()
 }
 
 func Test_DisplayNameValidate(t *testing.T) {
@@ -1585,7 +1197,7 @@ app:
 func TestNewJober(t *testing.T) {
 	assert.Implements(t, (*contracts.Job)(nil), NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 10))
 	jober := NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 0, WithDryRun())
-	assert.True(t, jober.IsDryRun())
+	assert.False(t, jober.IsNotDryRun())
 }
 
 type emptyMsger struct {

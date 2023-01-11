@@ -523,19 +523,6 @@ func mockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 	return gitS
 }
 
-func mockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockWsSender {
-	ws := mock.NewMockWsSender(m)
-	app.EXPECT().Config().Return(&config.Config{
-		WsSenderPlugin: config.Plugin{
-			Name: "test_ws",
-		},
-	}).AnyTimes()
-	app.EXPECT().GetPluginByName("test_ws").Return(ws).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	ws.EXPECT().Initialize(gomock.All()).AnyTimes()
-	return ws
-}
-
 func TestSortableOption(t *testing.T) {
 	var options = []*git.Option{
 		{

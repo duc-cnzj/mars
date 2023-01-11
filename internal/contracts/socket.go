@@ -133,36 +133,21 @@ type CancelSignaler interface {
 }
 
 type Job interface {
-	Done() <-chan struct{}
-	Finish()
-	Prune()
-
 	Stop(error)
-	GetStoppedErrorIfHas() error
-	SetDeployResult(t websocket.ResultType, msg string, model *types.ProjectModel)
-
-	Run() error
-	Logs() []string
-	IsDryRun() bool
-	Manifests() []string
-
-	User() UserInfo
-	IsNew() bool
-	Owned() bool
-	ProjectModel() *types.ProjectModel
-	Commit() CommitInterface
+	IsNotDryRun() bool
 
 	ID() string
-	Validate() error
-	LoadConfigs() error
-	HandleMessage()
-	AddDestroyFunc(fn func())
-	CallDestroyFuncs()
+	GlobalLock() Job
+	Validate() Job
+	LoadConfigs() Job
+	Run() Job
+	Finish() Job
+	Error() error
+	Manifests() []string
 
-	ReleaseInstaller() ReleaseInstaller
-	Messager() DeployMsger
-	PubSub() PubSub
-	Percenter() Percentable
+	OnError(p int, fn func(err error, sendResultToUser func())) Job
+	OnSuccess(p int, fn func(err error, sendResultToUser func())) Job
+	OnFinally(p int, fn func(err error, sendResultToUser func())) Job
 }
 
 type SessionMapper interface {
