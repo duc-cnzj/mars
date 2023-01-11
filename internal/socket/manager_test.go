@@ -398,17 +398,6 @@ func TestJober_Commit(t *testing.T) {
 	assert.Same(t, c, j.Commit())
 }
 
-func TestJober_Done(t *testing.T) {
-	ch := make(chan struct{})
-	j := &Jober{
-		done: ch,
-	}
-	fn := func() <-chan struct{} {
-		return ch
-	}
-	assert.Equal(t, fn(), j.Done())
-}
-
 func TestJober_GetStoppedErrorIfHas(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -426,25 +415,6 @@ func TestJober_GetStoppedErrorIfHas(t *testing.T) {
 	assert.Error(t, j.GetStoppedErrorIfHas())
 }
 
-func TestJober_HandleMessage_DoneClosed(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	app.EXPECT().Done().Return(nil)
-	ch := make(chan contracts.MessageItem, 10)
-	done := make(chan struct{}, 1)
-	msger := mock.NewMockDeployMsger(m)
-	close(done)
-	j := &Jober{
-		done:     done,
-		messager: msger,
-		messageCh: &SafeWriteMessageCh{
-			ch: ch,
-		},
-	}
-	j.HandleMessage()
-}
-
 func TestJober_HandleMessage_AppDoneClosed(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -455,7 +425,6 @@ func TestJober_HandleMessage_AppDoneClosed(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
 	j := &Jober{
-		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
 			ch: ch,
@@ -472,7 +441,6 @@ func TestJober_HandleMessage_TextMessage(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
 	j := &Jober{
-		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
 			ch: ch,
@@ -504,7 +472,6 @@ func TestJober_HandleMessage_ErrorMessage(t *testing.T) {
 		project:  &models.Project{},
 		stopCtx:  context.TODO(),
 		dryRun:   true,
-		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
 			ch: ch,
@@ -533,7 +500,6 @@ func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
 		project:  &models.Project{},
 		stopCtx:  context.TODO(),
 		dryRun:   true,
-		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
 			ch: ch,
@@ -577,7 +543,6 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 		stopCtx:  ctx,
 		dryRun:   false,
 		isNew:    true,
-		done:     nil,
 		messager: msger,
 		messageCh: &SafeWriteMessageCh{
 			ch: ch,
@@ -688,15 +653,6 @@ func TestJober_LoadConfigs(t *testing.T) {
 		loaders:  []Loader{l3},
 	}).LoadConfigs().Error().Error())
 	assert.True(t, l3.GetCalled())
-}
-
-func TestJober_Logs(t *testing.T) {
-	ri := newReleaseInstaller("a", "a", nil, nil, false, 10, false)
-	j := &Jober{
-		installer: ri,
-	}
-	ri.logs = &timeOrderedSetString{}
-	assert.Equal(t, ri.logs.sortedItems(), j.Logs())
 }
 
 func TestJober_Manifests(t *testing.T) {

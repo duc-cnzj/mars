@@ -40,6 +40,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/pipeline"
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	mysort "github.com/duc-cnzj/mars/internal/utils/sort"
 )
 
 const (
@@ -132,7 +133,6 @@ type Jober struct {
 	err error
 
 	helmer contracts.Helmer
-	done   chan struct{}
 
 	deployResult DeployResult
 
@@ -144,9 +144,9 @@ type Jober struct {
 	input    *JobInput
 	slugName string
 
-	finallyCallback callbackManager[func(sendResultToUser func(err error)) func(error)]
-	errorCallback   callbackManager[func(sendResultToUser func(err error)) func(error)]
-	successCallback callbackManager[func(sendResultToUser func(err error)) func(error)]
+	finallyCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
+	errorCallback   mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
+	successCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
 
 	imagePullSecrets  []string
 	vars              vars
@@ -220,7 +220,6 @@ func NewJober(
 	jb := &Jober{
 		helmer:         &DefaultHelmer{},
 		loaders:        defaultLoaders(),
-		done:           make(chan struct{}),
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -245,7 +244,7 @@ func (j *Jober) ID() string {
 }
 
 func (j *Jober) IsNotDryRun() bool {
-	return !j.dryRun
+	return !j.IsDryRun()
 }
 
 func (j *Jober) GlobalLock() contracts.Job {
@@ -533,7 +532,6 @@ func (j *Jober) Run() contracts.Job {
 
 func (j *Jober) Finish() contracts.Job {
 	mlog.Debug("finished")
-	close(j.done)
 
 	var callbacks []func(func(err error)) func(err error)
 
@@ -547,16 +545,16 @@ func (j *Jober) Finish() contracts.Job {
 			}
 			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
 		}(j.Error())
-		callbacks = append(callbacks, j.errorCallback.All()...)
+		callbacks = append(callbacks, j.errorCallback.Sort()...)
 	}
 
 	// Run success hooks
 	if !j.HasError() {
-		callbacks = append(callbacks, j.successCallback.All()...)
+		callbacks = append(callbacks, j.successCallback.Sort()...)
 	}
 
 	// run finally hooks
-	callbacks = append(callbacks, j.finallyCallback.All()...)
+	callbacks = append(callbacks, j.finallyCallback.Sort()...)
 
 	pipeline.NewPipeline[error]().
 		Send(j.Error()).
@@ -585,7 +583,7 @@ func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) cont
 	j.errorCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
 		return func(err error) {
 			fn(err, func() {
-				sendResultToUser(nil)
+				sendResultToUser(err)
 			})
 		}
 	})
@@ -596,7 +594,7 @@ func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) co
 	j.successCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
 		return func(err error) {
 			fn(err, func() {
-				sendResultToUser(nil)
+				sendResultToUser(err)
 			})
 		}
 	})
@@ -607,7 +605,7 @@ func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) co
 	j.finallyCallback.Add(p, func(sendResultToUser func(err error)) func(error) {
 		return func(err error) {
 			fn(err, func() {
-				sendResultToUser(nil)
+				sendResultToUser(err)
 			})
 		}
 	})
@@ -625,10 +623,6 @@ func (j *Jober) SetError(err error) *Jober {
 
 func (j *Jober) HasError() bool {
 	return j.err != nil
-}
-
-func (j *Jober) Logs() []string {
-	return j.ReleaseInstaller().Logs()
 }
 
 func (j *Jober) IsNew() bool {
@@ -660,56 +654,6 @@ func (j *Jober) Project() *models.Project {
 
 func (j *Jober) Namespace() *models.Namespace {
 	return j.ns
-}
-
-func (j *Jober) Done() <-chan struct{} {
-	return j.done
-}
-
-type sortCallback[T any] []callback[T]
-
-func (s sortCallback[T]) Len() int {
-	return len(s)
-}
-
-func (s sortCallback[T]) Less(i, j int) bool {
-	return s[i].priority > s[j].priority
-}
-
-func (s sortCallback[T]) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-type callbackManager[T any] struct {
-	sync.RWMutex
-	list []callback[T]
-}
-
-func (m *callbackManager[T]) Add(priority int, t T) {
-	m.Lock()
-	defer m.Unlock()
-	m.list = append(m.list, callback[T]{
-		priority: priority,
-		fn:       t,
-	})
-}
-
-func (m *callbackManager[T]) All() []T {
-	m.RLock()
-	defer m.RUnlock()
-	var l = make(sortCallback[T], len(m.list))
-	copy(l, m.list)
-	sort.Sort(l)
-	var res []T
-	for _, c := range l {
-		res = append(res, c.fn)
-	}
-	return res
-}
-
-type callback[T any] struct {
-	priority int
-	fn       T
 }
 
 func (j *Jober) IsStopped() bool {
@@ -768,8 +712,6 @@ func (j *Jober) HandleMessage() {
 	ch := j.messageCh.Chan()
 	for {
 		select {
-		case <-j.Done():
-			return
 		case <-app.App().Done():
 			return
 		case s, ok := <-ch:
