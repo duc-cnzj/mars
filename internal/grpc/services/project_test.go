@@ -445,17 +445,8 @@ func Test_messager_SendProtoMsg(t *testing.T) {
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
 
-func Test_messager_Stop(t *testing.T) {
-	m := &messager{}
-	m.Stop(nil)
-	assert.True(t, m.IsStopped())
-}
-
 func Test_messager_send(t *testing.T) {
 	m := &messager{server: &mockApplyServer{}}
-	m.send(nil)
-	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
-	m.Stop(nil)
 	m.send(nil)
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
@@ -500,7 +491,6 @@ func TestEmptyMessager(t *testing.T) {
 	em.SendProcessPercent(10)
 	em.SendMsg("")
 	em.SendProtoMsg(nil)
-	em.Stop(nil)
 	em.SendMsgWithContainerLog("", nil)
 	assert.True(t, true)
 }

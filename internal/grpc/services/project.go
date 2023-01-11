@@ -265,14 +265,10 @@ func (e *emptyMessager) SendMsg(s string)                                       
 func (e *emptyMessager) SendProtoMsg(message contracts.WebsocketMessage)                   {}
 func (e *emptyMessager) SendProcessPercent(int64)                                          {}
 func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*types.Container) {}
-func (e *emptyMessager) Stop(err error)                                                    {}
 func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
 type messager struct {
-	closeable utils.Closeable
-	stoperr   error
-
 	sendPercent bool
 
 	slugName string
@@ -351,18 +347,5 @@ func (m *messager) SendMsgWithContainerLog(msg string, containers []*types.Conta
 }
 
 func (m *messager) send(res *project.ApplyResponse) {
-	if m.IsStopped() {
-		return
-	}
 	m.server.Send(res)
-}
-
-func (m *messager) Stop(err error) {
-	if m.closeable.Close() {
-		m.stoperr = err
-	}
-}
-
-func (m *messager) IsStopped() bool {
-	return m.closeable.IsClosed()
 }
