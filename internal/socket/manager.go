@@ -260,7 +260,6 @@ func (j *Jober) GlobalLock() contracts.Job {
 
 	return j.OnFinally(-1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
-		mlog.Warning("### releaseFn()")
 		releaseFn()
 	})
 }
@@ -344,11 +343,9 @@ func (j *Jober) Validate() contracts.Job {
 		j.PubSub().ToAll(reloadProjectsMessage(j.ns.ID))
 		j.OnFinally(1, func(err error, sendResultToUser func()) {
 			// 如果状态出现问题，只有拿到锁的才能更新状态
-			mlog.Warning("### app.DB().Model(j.Project()).UpdateColumn(\"deploy_status\", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))")
 			app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
-			sendResultToUser()
-			mlog.Warning("### j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))")
 			j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
+			sendResultToUser()
 		})
 	}
 	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
@@ -945,7 +942,6 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	}
 	j.OnFinally(1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
-		mlog.Warning("### deleteDirFn()")
 		deleteDirFn()
 	})
 
@@ -1282,7 +1278,6 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	}
 	j.OnFinally(1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
-		mlog.Warning("### closer.Close()")
 		closer.Close()
 	})
 	j.valuesOptions.ValueFiles = append(j.valuesOptions.ValueFiles, mergedFile)

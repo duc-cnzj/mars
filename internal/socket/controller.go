@@ -463,7 +463,6 @@ func upgradeOrInstall(c *WsConn, input *JobInput) error {
 			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
-			mlog.Warning("### c.cancelSignaler.Remove(job.ID())")
 			c.cancelSignaler.Remove(job.ID())
 			base()
 		})
