@@ -31,6 +31,14 @@ message AllContainersRequest {
   int64 project_id = 1 [(validate.rules).int64.gt = 0];
 }
 
+message VersionRequest {
+  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+}
+
+message VersionResponse {
+  int64 version = 1;
+}
+
 message AllContainersResponse {
   repeated types.StateContainer items = 1;
 }
@@ -61,6 +69,8 @@ message ApplyRequest {
   repeated types.ExtraValue extra_values = 9;
   // 部署超时时间
   int64 install_timeout_seconds = 10 [(validate.rules).int64.gte = 0];
+  // 版本号, dryRun 时可以不传
+  int64 version = 12 [(validate.rules).int64.gte = 0];
 }
 
 message DeleteResponse {}
@@ -107,6 +117,13 @@ service Project {
   rpc Show(ShowRequest) returns (ShowResponse) {
     option (google.api.http) = {
       get: "/api/projects/{project_id}"
+    };
+  }
+
+  // Version 版本号, 如果不存在则返回 0
+  rpc Version(VersionRequest) returns (VersionResponse) {
+    option (google.api.http) = {
+      get: "/api/projects/{project_id}/version"
     };
   }
 

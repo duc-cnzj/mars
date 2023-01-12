@@ -14,29 +14,22 @@ import (
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
-	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars/internal/utils"
-
-	"github.com/duc-cnzj/mars/internal/cache_lock"
-
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/cache_lock"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
+	"github.com/duc-cnzj/mars/internal/utils"
 )
 
 func TestHandleWsAuthorize(t *testing.T) {
@@ -90,58 +83,6 @@ func TestHandleWsCancel(t *testing.T) {
 	conn := &WsConn{pubSub: pubsub, cancelSignaler: cs}
 	HandleWsCancel(conn, websocket.Type_CancelProject, []byte("1:"))
 	HandleWsCancel(conn, websocket.Type_CancelProject, marshal)
-}
-
-func TestHandleWsCreateProject(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	cs := mock.NewMockCancelSignaler(m)
-	sm := mock.NewMockSessionMapper(m)
-	ps := mock.NewMockPubSub(m)
-	c := &WsConn{
-		id:  "id",
-		uid: "uid",
-		NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
-			return job
-		},
-		cancelSignaler:   cs,
-		terminalSessions: sm,
-		pubSub:           ps,
-	}
-
-	msg := mock.NewMockDeployMsger(m)
-
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsCreateProject(c, websocket.Type_UpdateProject, []byte("1:"))
-
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().ID().Return("1").AnyTimes()
-	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
-	cs.EXPECT().Remove("1").Times(1)
-
-	marshal, _ := proto.Marshal(&websocket.CreateProjectInput{
-		Type:         websocket.Type_CreateProject,
-		NamespaceId:  0,
-		Name:         "",
-		GitProjectId: 0,
-		GitBranch:    "",
-		GitCommit:    "",
-		Config:       "",
-		Atomic:       false,
-		ExtraValues:  nil,
-	})
-
-	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
-
-	cs.EXPECT().Add("1", gomock.Any()).Return(errors.New("xxx"))
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsCreateProject(c, websocket.Type_UpdateProject, marshal)
 }
 
 func TestHandleWsHandleCloseShell(t *testing.T) {
@@ -254,182 +195,6 @@ func TestHandleWsHandleExecShellMsg(t *testing.T) {
 	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, []byte("1:"))
 	HandleWsHandleExecShellMsg(conn, websocket.Type_HandleExecShellMsg, marshal)
-}
-
-func TestHandleWsUpdateProject(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	cs := mock.NewMockCancelSignaler(m)
-	sm := mock.NewMockSessionMapper(m)
-	ps := mock.NewMockPubSub(m)
-	c := &WsConn{
-		id:  "id",
-		uid: "uid",
-		NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
-			return job
-		},
-		cancelSignaler:   cs,
-		terminalSessions: sm,
-		pubSub:           ps,
-	}
-
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsUpdateProject(c, websocket.Type_UpdateProject, []byte("1:"))
-
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().ID().Return("1").AnyTimes()
-	cs.EXPECT().Add("1", gomock.Any()).Return(nil)
-
-	manager := mock.NewMockDBManager(m)
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	db.Exec("PRAGMA foreign_keys = ON", nil)
-	s, _ := db.DB()
-	defer s.Close()
-	manager.EXPECT().DB().Return(db).AnyTimes()
-	app := testutil.MockApp(m)
-	app.EXPECT().DBManager().Return(manager).AnyTimes()
-	db.AutoMigrate(&models.Project{}, &models.Namespace{})
-
-	targetProject := &models.Project{
-		Name:      "app",
-		Namespace: models.Namespace{Name: "ns"},
-	}
-	db.Create(targetProject)
-	cs.EXPECT().Remove("1").Times(1)
-
-	marshal, _ := proto.Marshal(&websocket.UpdateProjectInput{
-		Type:        websocket.Type_UpdateProject,
-		ProjectId:   int64(targetProject.ID),
-		GitBranch:   "",
-		GitCommit:   "",
-		Config:      "",
-		Atomic:      false,
-		ExtraValues: nil,
-	})
-
-	marshalNotFound, _ := proto.Marshal(&websocket.UpdateProjectInput{
-		Type:        websocket.Type_UpdateProject,
-		ProjectId:   99999,
-		GitBranch:   "",
-		GitCommit:   "",
-		Config:      "",
-		Atomic:      false,
-		ExtraValues: nil,
-	})
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshalNotFound)
-
-	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
-
-	cs.EXPECT().Add(gomock.Any(), gomock.Any()).Return(errors.New(""))
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
-	HandleWsUpdateProject(c, websocket.Type_UpdateProject, marshal)
-}
-
-func TestInstallProject_Success(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	InstallProject(job)
-}
-
-func TestInstallProject_ValidateFail(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	msg.EXPECT().SendEndError(gomock.Any()).Times(1)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(errors.New("err Validate")).Times(1)
-	job.EXPECT().GetStoppedErrorIfHas().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().IsDryRun().Return(false).Times(1)
-	job.EXPECT().Prune().Times(1)
-	assert.Equal(t, "err Validate", InstallProject(job).Error())
-}
-func TestInstallProject_ValidateFail2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	msg.EXPECT().SendDeployedResult(websocket.ResultType_DeployedCanceled, "stopped", nil)
-	msg.EXPECT().Stop(gomock.Any()).Times(1)
-	job.EXPECT().ProjectModel().Return(nil).Times(1)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(errors.New("err Validate")).Times(1)
-	job.EXPECT().GetStoppedErrorIfHas().Return(errors.New("stopped")).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().IsDryRun().Return(false).Times(1)
-	job.EXPECT().Prune().Times(1)
-	assert.Equal(t, "stopped", InstallProject(job).Error())
-}
-
-func TestInstallProject_RunFail(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(errors.New("err")).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().IsDryRun().Return(false).Times(1)
-	job.EXPECT().Prune().Times(1)
-	InstallProject(job)
-}
-
-func TestInstallProject_LoadConfigsFail(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(errors.New("")).Times(1)
-	msg.EXPECT().SendEndError(gomock.Any()).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().IsDryRun().Return(false).Times(1)
-	job.EXPECT().Prune().Times(1)
-	job.EXPECT().GetStoppedErrorIfHas().Return(nil).Times(1)
-	InstallProject(job)
-}
-
-func TestInstallProject_LoadConfigsFail2(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(errors.New("")).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().IsDryRun().Return(false).Times(1)
-	job.EXPECT().Prune().Times(1)
-	job.EXPECT().GetStoppedErrorIfHas().Return(errors.New("err")).Times(1)
-	msg.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	job.EXPECT().ProjectModel().Return(nil)
-	msg.EXPECT().Stop(gomock.Any()).Times(1)
-	InstallProject(job)
 }
 
 func TestNewWebsocketManager(t *testing.T) {
@@ -785,4 +550,228 @@ func Test_handleWsRead(t *testing.T) {
 			},
 		})
 	})
+}
+
+func TestInstallProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(errors.New("xxx")).Times(1)
+	assert.Equal(t, "xxx", InstallProject(job).Error())
+}
+
+func Test_upgradeOrInstallError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	pubsub := mock.NewMockPubSub(m)
+	cs := mock.NewMockCancelSignaler(m)
+	input := &JobInput{
+		NamespaceId: 1,
+		Name:        "app",
+	}
+	job.EXPECT().IsNotDryRun().Return(true).Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	cs.EXPECT().Add("id", gomock.Any()).Times(1).Return(errors.New("xxx"))
+	pubsub.EXPECT().ToSelf(gomock.Any()).Times(1)
+	upgradeOrInstall(&WsConn{
+		user:           contracts.UserInfo{Name: "duc"},
+		cancelSignaler: cs,
+		pubSub:         pubsub,
+		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			assert.Equal(t, contracts.UserInfo{Name: "duc"}, user)
+			assert.Equal(t, input, jobinput)
+			assert.Equal(t, utils.GetSlugName(input.NamespaceId, input.Name), slugName)
+			assert.NotNil(t, messager)
+			assert.Same(t, pubsub, jpubsub)
+			assert.Equal(t, int64(0), timeoutSeconds)
+			assert.Len(t, opts, 0)
+			return job
+		},
+	}, input)
+}
+func Test_upgradeOrInstall(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	job := mock.NewMockJob(m)
+	pubsub := mock.NewMockPubSub(m)
+	cs := mock.NewMockCancelSignaler(m)
+	input := &JobInput{
+		NamespaceId: 1,
+		Name:        "app",
+	}
+	job.EXPECT().IsNotDryRun().Return(true).Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	cs.EXPECT().Add("id", gomock.Any()).Times(1).Return(nil)
+	v := &testutil.ValueMatcher{}
+	job.EXPECT().OnFinally(1000, v).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(errors.New("xxx"))
+
+	err := upgradeOrInstall(&WsConn{
+		user:           contracts.UserInfo{Name: "duc"},
+		cancelSignaler: cs,
+		pubSub:         pubsub,
+		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+			return job
+		},
+	}, input)
+	assert.Equal(t, "xxx", err.Error())
+
+	cs.EXPECT().Remove("id").Times(1)
+	job.EXPECT().ID().Return("id").Times(1)
+	called := 0
+	v.Value.(func(err error, base func()))(nil, func() {
+		called++
+	})
+	assert.Equal(t, 1, called)
+}
+
+func TestHandleWsCreateProjectError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsCreateProject(&WsConn{pubSub: ps}, websocket.Type_CreateProject, []byte("1:"))
+	assert.Equal(t, websocket.Type_CreateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+}
+func TestHandleWsCreateProjectSuccess(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(0)
+	cinput := &websocket.CreateProjectInput{
+		Type:         websocket.Type_CreateProject,
+		NamespaceId:  1,
+		Name:         "app",
+		GitProjectId: 100,
+		GitBranch:    "dev",
+		GitCommit:    "commit",
+		Config:       "xxx",
+		Atomic:       true,
+		ExtraValues:  nil,
+	}
+	marshal, _ := proto.Marshal(cinput)
+	job := mock.NewMockJob(m)
+	job.EXPECT().IsNotDryRun().Return(false).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(nil).Times(1)
+
+	HandleWsCreateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		assert.Equal(t, &JobInput{
+			Type:         cinput.Type,
+			NamespaceId:  cinput.NamespaceId,
+			Name:         cinput.Name,
+			GitProjectId: cinput.GitProjectId,
+			GitBranch:    cinput.GitBranch,
+			GitCommit:    cinput.GitCommit,
+			Config:       cinput.Config,
+			Atomic:       cinput.Atomic,
+			ExtraValues:  cinput.ExtraValues,
+		}, input)
+		return job
+	}}, websocket.Type_CreateProject, marshal)
+}
+
+func TestHandleWsUpdateProjectError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsUpdateProject(&WsConn{pubSub: ps}, websocket.Type_UpdateProject, []byte("1:"))
+	assert.Equal(t, websocket.Type_UpdateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+}
+
+func TestHandleWsUpdateProjectError2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	cinput := &websocket.UpdateProjectInput{
+		Type:      websocket.Type_UpdateProject,
+		ProjectId: 1000,
+	}
+	marshal, _ := proto.Marshal(cinput)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(1)
+	HandleWsUpdateProject(&WsConn{pubSub: ps}, websocket.Type_UpdateProject, marshal)
+	assert.Equal(t, websocket.Type_UpdateProject, vm.Value.(*websocket.WsMetadataResponse).Metadata.Type)
+	assert.Equal(t, ResultError, vm.Value.(*websocket.WsMetadataResponse).Metadata.Result)
+	assert.Equal(t, true, vm.Value.(*websocket.WsMetadataResponse).Metadata.End)
+	assert.Equal(t, "record not found", vm.Value.(*websocket.WsMetadataResponse).Metadata.Message)
+}
+
+func TestHandleWsUpdateProject(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ps := mock.NewMockPubSub(m)
+	vm := &testutil.ValueMatcher{}
+	ps.EXPECT().ToSelf(vm).Times(0)
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
+	db.Create(p)
+	cinput := &websocket.UpdateProjectInput{
+		Type:        websocket.Type_UpdateProject,
+		ProjectId:   int64(p.ID),
+		GitBranch:   "dev",
+		GitCommit:   "commit",
+		Config:      "xxx",
+		Atomic:      true,
+		ExtraValues: nil,
+		Version:     int64(p.Version),
+	}
+	marshal, _ := proto.Marshal(cinput)
+	job := mock.NewMockJob(m)
+	job.EXPECT().IsNotDryRun().Return(false).Times(1)
+
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(job).Times(1)
+	job.EXPECT().Error().Return(nil).Times(1)
+
+	HandleWsUpdateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		assert.Equal(t, &JobInput{
+			Type:         cinput.Type,
+			NamespaceId:  int64(p.NamespaceId),
+			Name:         p.Name,
+			GitProjectId: int64(p.GitProjectId),
+			GitBranch:    cinput.GitBranch,
+			GitCommit:    cinput.GitCommit,
+			Config:       cinput.Config,
+			Atomic:       cinput.Atomic,
+			ExtraValues:  cinput.ExtraValues,
+			Version:      int64(p.Version),
+		}, input)
+		return job
+	}}, websocket.Type_UpdateProject, marshal)
 }

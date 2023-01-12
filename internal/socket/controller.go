@@ -414,14 +414,17 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 		return
 	}
-	slug := utils.GetSlugName(input.NamespaceId, input.Name)
-	job := c.NewJobFunc(&input, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
-	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, "", t).SendEndError(err)
-		return
-	}
-	defer c.cancelSignaler.Remove(job.ID())
-	InstallProject(job)
+	upgradeOrInstall(c, &JobInput{
+		Type:         input.Type,
+		NamespaceId:  input.NamespaceId,
+		Name:         input.Name,
+		GitProjectId: input.GitProjectId,
+		GitBranch:    input.GitBranch,
+		GitCommit:    input.GitCommit,
+		Config:       input.Config,
+		Atomic:       input.Atomic,
+		ExtraValues:  input.ExtraValues,
+	})
 }
 
 func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
@@ -436,8 +439,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	slug := utils.GetSlugName(p.NamespaceId, p.Name)
-	job := c.NewJobFunc(&websocket_pb.CreateProjectInput{
+	upgradeOrInstall(c, &JobInput{
 		Type:         t,
 		NamespaceId:  int64(p.NamespaceId),
 		Name:         p.Name,
@@ -447,48 +449,27 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
-	}, c.GetUser(), slug, NewMessageSender(c, slug, t), c.pubSub, 0)
-	if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
-		NewMessageSender(c, "", t).SendEndError(err)
-		return
+		Version:      input.Version,
+	})
+}
+
+func upgradeOrInstall(c *WsConn, input *JobInput) error {
+	slug := utils.GetSlugName(input.NamespaceId, input.Name)
+	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, input.Type), c.pubSub, 0)
+
+	if job.IsNotDryRun() {
+		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
+			NewMessageSender(c, slug, input.Type).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
+			return nil
+		}
+		job.OnFinally(1000, func(err error, base func()) {
+			c.cancelSignaler.Remove(job.ID())
+			base()
+		})
 	}
-	defer c.cancelSignaler.Remove(job.ID())
-	InstallProject(job)
+	return InstallProject(job)
 }
 
 func InstallProject(job contracts.Job) (err error) {
-	defer func() {
-		job.CallDestroyFuncs()
-		if err != nil && !job.IsDryRun() {
-			job.Prune()
-		}
-		job.Finish()
-	}()
-
-	handleStopErr := func(e error) {
-		job.Messager().SendDeployedResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), job.ProjectModel())
-		job.Messager().Stop(e)
-		err = e
-	}
-
-	if err = job.Validate(); err != nil {
-		if e := job.GetStoppedErrorIfHas(); e != nil {
-			handleStopErr(e)
-			return
-		}
-		job.Messager().SendEndError(err)
-		return
-	}
-
-	if err = job.LoadConfigs(); err != nil {
-		if e := job.GetStoppedErrorIfHas(); e != nil {
-			handleStopErr(e)
-			return
-		}
-		job.Messager().SendEndError(err)
-		return
-	}
-
-	err = job.Run()
-	return
+	return job.GlobalLock().Validate().LoadConfigs().Run().Finish().Error()
 }

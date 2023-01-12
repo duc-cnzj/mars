@@ -333,6 +333,7 @@ func TestProject_ProtoTransform(t *testing.T) {
 		GitCommitTitle:   "",
 		GitCommitAuthor:  "",
 		GitCommitDate:    &tt,
+		Version:          100,
 		CreatedAt:        time.Now().Add(15 * time.Minute),
 		UpdatedAt:        time.Now().Add(30 * time.Minute),
 		DeletedAt: gorm.DeletedAt{
@@ -364,6 +365,7 @@ func TestProject_ProtoTransform(t *testing.T) {
 		GitCommitTitle:    m.GitCommitTitle,
 		GitCommitAuthor:   m.GitCommitAuthor,
 		GitCommitDate:     date.ToHumanizeDatetimeString(m.GitCommitDate),
+		Version:           int64(m.Version),
 		Namespace:         m.Namespace.ProtoTransform(),
 		CreatedAt:         date.ToRFC3339DatetimeString(&m.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&m.UpdatedAt),

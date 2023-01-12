@@ -7,7 +7,6 @@ package mock
 import (
 	reflect "reflect"
 
-	types "github.com/duc-cnzj/mars-client/v4/types"
 	contracts "github.com/duc-cnzj/mars/internal/contracts"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,62 +34,26 @@ func (m *MockJob) EXPECT() *MockJobMockRecorder {
 	return m.recorder
 }
 
-// AddDestroyFunc mocks base method.
-func (m *MockJob) AddDestroyFunc(arg0 func()) {
+// Error mocks base method.
+func (m *MockJob) Error() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddDestroyFunc", arg0)
-}
-
-// AddDestroyFunc indicates an expected call of AddDestroyFunc.
-func (mr *MockJobMockRecorder) AddDestroyFunc(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDestroyFunc", reflect.TypeOf((*MockJob)(nil).AddDestroyFunc), arg0)
-}
-
-// CallDestroyFuncs mocks base method.
-func (m *MockJob) CallDestroyFuncs() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CallDestroyFuncs")
-}
-
-// CallDestroyFuncs indicates an expected call of CallDestroyFuncs.
-func (mr *MockJobMockRecorder) CallDestroyFuncs() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CallDestroyFuncs", reflect.TypeOf((*MockJob)(nil).CallDestroyFuncs))
-}
-
-// Commit mocks base method.
-func (m *MockJob) Commit() contracts.CommitInterface {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Commit")
-	ret0, _ := ret[0].(contracts.CommitInterface)
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Commit indicates an expected call of Commit.
-func (mr *MockJobMockRecorder) Commit() *gomock.Call {
+// Error indicates an expected call of Error.
+func (mr *MockJobMockRecorder) Error() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockJob)(nil).Commit))
-}
-
-// Done mocks base method.
-func (m *MockJob) Done() <-chan struct{} {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Done")
-	ret0, _ := ret[0].(<-chan struct{})
-	return ret0
-}
-
-// Done indicates an expected call of Done.
-func (mr *MockJobMockRecorder) Done() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockJob)(nil).Done))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockJob)(nil).Error))
 }
 
 // Finish mocks base method.
-func (m *MockJob) Finish() {
+func (m *MockJob) Finish() contracts.Job {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Finish")
+	ret := m.ctrl.Call(m, "Finish")
+	ret0, _ := ret[0].(contracts.Job)
+	return ret0
 }
 
 // Finish indicates an expected call of Finish.
@@ -99,30 +62,18 @@ func (mr *MockJobMockRecorder) Finish() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Finish", reflect.TypeOf((*MockJob)(nil).Finish))
 }
 
-// GetStoppedErrorIfHas mocks base method.
-func (m *MockJob) GetStoppedErrorIfHas() error {
+// GlobalLock mocks base method.
+func (m *MockJob) GlobalLock() contracts.Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStoppedErrorIfHas")
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "GlobalLock")
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
-// GetStoppedErrorIfHas indicates an expected call of GetStoppedErrorIfHas.
-func (mr *MockJobMockRecorder) GetStoppedErrorIfHas() *gomock.Call {
+// GlobalLock indicates an expected call of GlobalLock.
+func (mr *MockJobMockRecorder) GlobalLock() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStoppedErrorIfHas", reflect.TypeOf((*MockJob)(nil).GetStoppedErrorIfHas))
-}
-
-// HandleMessage mocks base method.
-func (m *MockJob) HandleMessage() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleMessage")
-}
-
-// HandleMessage indicates an expected call of HandleMessage.
-func (mr *MockJobMockRecorder) HandleMessage() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMessage", reflect.TypeOf((*MockJob)(nil).HandleMessage))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GlobalLock", reflect.TypeOf((*MockJob)(nil).GlobalLock))
 }
 
 // ID mocks base method.
@@ -139,53 +90,25 @@ func (mr *MockJobMockRecorder) ID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ID", reflect.TypeOf((*MockJob)(nil).ID))
 }
 
-// IsDryRun mocks base method.
-func (m *MockJob) IsDryRun() bool {
+// IsNotDryRun mocks base method.
+func (m *MockJob) IsNotDryRun() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsDryRun")
+	ret := m.ctrl.Call(m, "IsNotDryRun")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// IsDryRun indicates an expected call of IsDryRun.
-func (mr *MockJobMockRecorder) IsDryRun() *gomock.Call {
+// IsNotDryRun indicates an expected call of IsNotDryRun.
+func (mr *MockJobMockRecorder) IsNotDryRun() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDryRun", reflect.TypeOf((*MockJob)(nil).IsDryRun))
-}
-
-// IsNew mocks base method.
-func (m *MockJob) IsNew() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsNew")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsNew indicates an expected call of IsNew.
-func (mr *MockJobMockRecorder) IsNew() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNew", reflect.TypeOf((*MockJob)(nil).IsNew))
-}
-
-// IsStopped mocks base method.
-func (m *MockJob) IsStopped() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsStopped")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsStopped indicates an expected call of IsStopped.
-func (mr *MockJobMockRecorder) IsStopped() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsStopped", reflect.TypeOf((*MockJob)(nil).IsStopped))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNotDryRun", reflect.TypeOf((*MockJob)(nil).IsNotDryRun))
 }
 
 // LoadConfigs mocks base method.
-func (m *MockJob) LoadConfigs() error {
+func (m *MockJob) LoadConfigs() contracts.Job {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadConfigs")
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
@@ -193,20 +116,6 @@ func (m *MockJob) LoadConfigs() error {
 func (mr *MockJobMockRecorder) LoadConfigs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadConfigs", reflect.TypeOf((*MockJob)(nil).LoadConfigs))
-}
-
-// Logs mocks base method.
-func (m *MockJob) Logs() []string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Logs")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// Logs indicates an expected call of Logs.
-func (mr *MockJobMockRecorder) Logs() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logs", reflect.TypeOf((*MockJob)(nil).Logs))
 }
 
 // Manifests mocks base method.
@@ -223,93 +132,53 @@ func (mr *MockJobMockRecorder) Manifests() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Manifests", reflect.TypeOf((*MockJob)(nil).Manifests))
 }
 
-// Messager mocks base method.
-func (m *MockJob) Messager() contracts.DeployMsger {
+// OnError mocks base method.
+func (m *MockJob) OnError(arg0 int, arg1 func(error, func())) contracts.Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Messager")
-	ret0, _ := ret[0].(contracts.DeployMsger)
+	ret := m.ctrl.Call(m, "OnError", arg0, arg1)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
-// Messager indicates an expected call of Messager.
-func (mr *MockJobMockRecorder) Messager() *gomock.Call {
+// OnError indicates an expected call of OnError.
+func (mr *MockJobMockRecorder) OnError(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Messager", reflect.TypeOf((*MockJob)(nil).Messager))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockJob)(nil).OnError), arg0, arg1)
 }
 
-// Percenter mocks base method.
-func (m *MockJob) Percenter() contracts.Percentable {
+// OnFinally mocks base method.
+func (m *MockJob) OnFinally(arg0 int, arg1 func(error, func())) contracts.Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Percenter")
-	ret0, _ := ret[0].(contracts.Percentable)
+	ret := m.ctrl.Call(m, "OnFinally", arg0, arg1)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
-// Percenter indicates an expected call of Percenter.
-func (mr *MockJobMockRecorder) Percenter() *gomock.Call {
+// OnFinally indicates an expected call of OnFinally.
+func (mr *MockJobMockRecorder) OnFinally(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Percenter", reflect.TypeOf((*MockJob)(nil).Percenter))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnFinally", reflect.TypeOf((*MockJob)(nil).OnFinally), arg0, arg1)
 }
 
-// ProjectModel mocks base method.
-func (m *MockJob) ProjectModel() *types.ProjectModel {
+// OnSuccess mocks base method.
+func (m *MockJob) OnSuccess(arg0 int, arg1 func(error, func())) contracts.Job {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProjectModel")
-	ret0, _ := ret[0].(*types.ProjectModel)
+	ret := m.ctrl.Call(m, "OnSuccess", arg0, arg1)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
-// ProjectModel indicates an expected call of ProjectModel.
-func (mr *MockJobMockRecorder) ProjectModel() *gomock.Call {
+// OnSuccess indicates an expected call of OnSuccess.
+func (mr *MockJobMockRecorder) OnSuccess(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectModel", reflect.TypeOf((*MockJob)(nil).ProjectModel))
-}
-
-// Prune mocks base method.
-func (m *MockJob) Prune() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Prune")
-}
-
-// Prune indicates an expected call of Prune.
-func (mr *MockJobMockRecorder) Prune() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockJob)(nil).Prune))
-}
-
-// PubSub mocks base method.
-func (m *MockJob) PubSub() contracts.PubSub {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PubSub")
-	ret0, _ := ret[0].(contracts.PubSub)
-	return ret0
-}
-
-// PubSub indicates an expected call of PubSub.
-func (mr *MockJobMockRecorder) PubSub() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PubSub", reflect.TypeOf((*MockJob)(nil).PubSub))
-}
-
-// ReleaseInstaller mocks base method.
-func (m *MockJob) ReleaseInstaller() contracts.ReleaseInstaller {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReleaseInstaller")
-	ret0, _ := ret[0].(contracts.ReleaseInstaller)
-	return ret0
-}
-
-// ReleaseInstaller indicates an expected call of ReleaseInstaller.
-func (mr *MockJobMockRecorder) ReleaseInstaller() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseInstaller", reflect.TypeOf((*MockJob)(nil).ReleaseInstaller))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnSuccess", reflect.TypeOf((*MockJob)(nil).OnSuccess), arg0, arg1)
 }
 
 // Run mocks base method.
-func (m *MockJob) Run() error {
+func (m *MockJob) Run() contracts.Job {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Run")
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 
@@ -331,25 +200,11 @@ func (mr *MockJobMockRecorder) Stop(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockJob)(nil).Stop), arg0)
 }
 
-// User mocks base method.
-func (m *MockJob) User() contracts.UserInfo {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "User")
-	ret0, _ := ret[0].(contracts.UserInfo)
-	return ret0
-}
-
-// User indicates an expected call of User.
-func (mr *MockJobMockRecorder) User() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "User", reflect.TypeOf((*MockJob)(nil).User))
-}
-
 // Validate mocks base method.
-func (m *MockJob) Validate() error {
+func (m *MockJob) Validate() contracts.Job {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate")
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(contracts.Job)
 	return ret0
 }
 

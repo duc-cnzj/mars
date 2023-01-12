@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/plugins/domain_manager"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -27,8 +25,8 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/project"
-	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
@@ -36,6 +34,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/socket"
 	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/plugins/domain_manager"
 )
 
 func TestProjectSvc_AllContainers(t *testing.T) {
@@ -331,177 +330,6 @@ func TestProjectSvc_Delete(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestProjectSvc_Apply(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	app := testutil.MockApp(m)
-	ws := mockWsServer(m, app)
-	ps := mock.NewMockPubSub(m)
-	ws.EXPECT().New("", "").Return(ps)
-	req := &project.ApplyRequest{
-		NamespaceId:   1,
-		Name:          "aaa",
-		GitProjectId:  100,
-		GitBranch:     "dev",
-		GitCommit:     "xxx",
-		Config:        "cfg",
-		WebsocketSync: true,
-	}
-	job.EXPECT().Stop(gomock.Any()).Times(0)
-	ma := &mockApplyServer{}
-	(&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return job
-	}}).Apply(req, ma)
-}
-
-type mockJob struct {
-	sync.Mutex
-	t     *testing.T
-	msger contracts.DeployMsger
-	contracts.Job
-	e error
-}
-
-func (m *mockJob) Validate() error {
-	time.Sleep(1 * time.Second)
-	return errors.New("timeout")
-}
-
-func (m *mockJob) GetStoppedErrorIfHas() error {
-	m.Lock()
-	defer m.Unlock()
-	return m.e
-}
-
-func (m *mockJob) IsDryRun() bool {
-	return true
-}
-
-func (m *mockJob) Finish() {
-}
-
-func (m *mockJob) Messager() contracts.DeployMsger {
-	return m.msger
-}
-
-func (m *mockJob) Stop(e error) {
-	m.Lock()
-	defer m.Unlock()
-	m.e = e
-	assert.Equal(m.t, "context canceled", e.Error())
-}
-
-func (m *mockJob) CallDestroyFuncs() {
-}
-
-func (m *mockJob) ProjectModel() *types.ProjectModel {
-	return nil
-}
-
-func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	msger := mock.NewMockDeployMsger(m)
-	msger.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	msger.EXPECT().Stop(gomock.Any()).Times(1)
-	req := &project.ApplyRequest{
-		NamespaceId:  1,
-		Name:         "aaa",
-		GitProjectId: 100,
-		GitBranch:    "dev",
-		GitCommit:    "xxx",
-		Config:       "cfg",
-	}
-
-	ctx, cancel := context.WithCancel(adminCtx())
-	cancel()
-	ma := &mockApplyServer{ctx: ctx}
-
-	err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
-	}}).Apply(req, ma)
-	assert.Equal(t, "context canceled", err.Error())
-
-	app := testutil.MockApp(m)
-	gits := mockGitServer(m, app)
-	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
-	req.GitCommit = ""
-	err = (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
-	}}).Apply(req, ma)
-	assert.Equal(t, "没有可用的 commit", err.Error())
-}
-
-func TestProjectSvc_ApplyDryRun(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	job := mock.NewMockJob(m)
-	msg := mock.NewMockDeployMsger(m)
-	req := &project.ApplyRequest{
-		NamespaceId:  1,
-		Name:         "aaa",
-		GitProjectId: 100,
-		GitBranch:    "dev",
-		Config:       "cfg",
-	}
-
-	app := testutil.MockApp(m)
-	gits := mockGitServer(m, app)
-	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil)
-	_, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return job
-	}}).ApplyDryRun(adminCtx(), req)
-	assert.Error(t, err)
-	req.GitCommit = "xxx"
-
-	job.EXPECT().Messager().Return(msg).AnyTimes()
-	job.EXPECT().Validate().Return(nil).Times(1)
-	job.EXPECT().LoadConfigs().Return(nil).Times(1)
-	job.EXPECT().Run().Return(nil).Times(1)
-	job.EXPECT().CallDestroyFuncs().Times(1)
-	job.EXPECT().Finish().Times(1)
-	job.EXPECT().Manifests().Return([]string{"Manifests"}).Times(1)
-
-	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return job
-	}}).ApplyDryRun(adminCtx(), req)
-	assert.Nil(t, err)
-	assert.Equal(t, []string{"Manifests"}, run.Results)
-}
-
-func TestProjectSvc_ApplyDryRun_Error(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	msger := mock.NewMockDeployMsger(m)
-	msger.EXPECT().SendDeployedResult(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
-	msger.EXPECT().Stop(gomock.Any()).Times(1)
-	req := &project.ApplyRequest{
-		NamespaceId:  1,
-		Name:         "aaa",
-		GitProjectId: 100,
-		GitBranch:    "dev",
-		GitCommit:    "xxx",
-		Config:       "cfg",
-	}
-
-	ctx, cancel := context.WithCancel(adminCtx())
-	cancel()
-
-	run, err := (&ProjectSvc{NewJobFunc: func(input *websocket.CreateProjectInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
-		return &mockJob{msger: msger, t: t}
-	}}).ApplyDryRun(ctx, req)
-	assert.Nil(t, run)
-	assert.Equal(t, "context canceled", err.Error())
-}
-
 func TestProjectSvc_List(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -619,17 +447,8 @@ func Test_messager_SendProtoMsg(t *testing.T) {
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
 
-func Test_messager_Stop(t *testing.T) {
-	m := &messager{}
-	m.Stop(nil)
-	assert.True(t, m.IsStopped())
-}
-
 func Test_messager_send(t *testing.T) {
 	m := &messager{server: &mockApplyServer{}}
-	m.send(nil)
-	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
-	m.Stop(nil)
 	m.send(nil)
 	assert.Equal(t, 1, m.server.(*mockApplyServer).send)
 }
@@ -674,7 +493,6 @@ func TestEmptyMessager(t *testing.T) {
 	em.SendProcessPercent(10)
 	em.SendMsg("")
 	em.SendProtoMsg(nil)
-	em.Stop(nil)
 	em.SendMsgWithContainerLog("", nil)
 	assert.True(t, true)
 }
@@ -759,4 +577,197 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 		GitBranch:    "dev-xxx",
 	})
 	assert.Equal(t, "xxx", err.Error())
+}
+
+type tjob struct {
+	err error
+	contracts.Job
+}
+
+func (t *tjob) Error() error {
+	time.Sleep(1 * time.Second)
+	return t.err
+}
+
+func TestProjectSvc_Apply(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	ws := testutil.MockWsServer(m, app)
+	ws.EXPECT().New("", "").Times(1)
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{err: errors.New("xxx")}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:           1,
+		Name:                  "aaa",
+		GitProjectId:          100,
+		GitBranch:             "dev",
+		GitCommit:             "xxx",
+		Config:                "cfg",
+		WebsocketSync:         true,
+		InstallTimeoutSeconds: 100,
+		Version:               100,
+	}
+	job.EXPECT().Stop(gomock.Any()).Times(0)
+	ma := &mockApplyServer{}
+	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Equal(t, &socket.JobInput{
+			Type:         websocket.Type_ApplyProject,
+			NamespaceId:  req.NamespaceId,
+			Name:         req.Name,
+			GitProjectId: req.GitProjectId,
+			GitBranch:    req.GitBranch,
+			GitCommit:    req.GitCommit,
+			Config:       req.Config,
+			Atomic:       req.Atomic,
+			ExtraValues:  req.ExtraValues,
+			Version:      req.Version,
+		}, input)
+		assert.Equal(t, req.InstallTimeoutSeconds, timeoutSeconds)
+		return job
+	}}).Apply(req, ma)
+	assert.Equal(t, "xxx", err.Error())
+}
+
+func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	app := testutil.MockApp(m)
+	ws := testutil.MockWsServer(m, app)
+	ws.EXPECT().New("", "").Times(1)
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{err: errors.New("xxx")}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	ctx := auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"})
+	ma := &mockApplyServer{ctx: ctx}
+	job.EXPECT().Stop(errors.New("context canceled")).Times(1)
+	(&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		return job
+	}}).Apply(req, ma)
+}
+
+func TestProjectSvc_ApplyDryRun_CompleteError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&ProjectSvc{}).ApplyDryRun(context.TODO(), &project.ApplyRequest{
+		GitCommit: "",
+	})
+	assert.Equal(t, "没有可用的 commit", err.Error())
+}
+
+func TestProjectSvc_Apply_CompleteError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	err := (&ProjectSvc{}).Apply(&project.ApplyRequest{
+		GitCommit: "",
+	}, nil)
+	assert.Equal(t, "没有可用的 commit", err.Error())
+}
+
+func TestProjectSvc_ApplyDryRun(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	job.EXPECT().Finish().Return(&tjob{}).Times(1)
+	job.EXPECT().Manifests().Return([]string{}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Len(t, opts, 1)
+		return job
+	}}).ApplyDryRun(auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}), req)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{}, run.Results)
+}
+
+func TestProjectSvc_ApplyDryRun_WithClientStop(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	stopErr := errors.New("context canceled")
+	job.EXPECT().Finish().Return(&tjob{err: stopErr}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	job.EXPECT().Stop(stopErr).Times(1)
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Len(t, opts, 1)
+		return job
+	}}).ApplyDryRun(auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"}), req)
+	assert.Nil(t, run)
+	assert.Equal(t, stopErr, err)
+}
+
+func TestProjectSvc_Version(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
+	assert.Nil(t, db.Create(p).Error)
+	version, err := (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(p.Version), version.Version)
+	assert.Equal(t, int64(1), version.Version)
+	db.Delete(&p)
+	version, err = (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), version.Version)
 }

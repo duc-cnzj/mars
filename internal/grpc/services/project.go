@@ -73,7 +73,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 	}
 	mlog.Debug("ApplyDryRun..")
 	user := MustGetUser(ctx)
-	job := p.NewJobFunc(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&socket.JobInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -83,6 +83,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
+		Version:      input.Version,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds, socket.WithDryRun())
 
 	ch := make(chan struct{})
@@ -120,7 +121,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	user := MustGetUser(server.Context())
 	ch := make(chan struct{})
 
-	job := p.NewJobFunc(&websocket.CreateProjectInput{
+	job := p.NewJobFunc(&socket.JobInput{
 		Type:         t,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -130,6 +131,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
+		Version:      input.Version,
 	}, *user, "", msger, pubsub, input.InstallTimeoutSeconds)
 
 	go func() {
@@ -137,7 +139,6 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 		case <-server.Context().Done():
 			job.Stop(server.Context().Err())
 		case <-ch:
-			return
 		}
 	}()
 	err := socket.InstallProject(job)
@@ -168,7 +169,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)
-	app.Event().Dispatch(events.EventProjectDeleted, map[string]any{"data": &projectModel})
+	app.Event().Dispatch(events.EventProjectDeleted, &projectModel)
 
 	AuditLog(MustGetUser(ctx).Name, types.EventActionType_Delete,
 		fmt.Sprintf("删除项目: %d: %s/%s ", projectModel.ID, projectModel.Namespace.Name, projectModel.Name))
@@ -203,6 +204,13 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 		Memory:   memory,
 		Elements: marsC.Elements,
 	}, nil
+}
+
+func (p *ProjectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
+	var pm = models.Project{ID: int(req.ProjectId)}
+	app.DB().Select("id", "version").First(&pm)
+
+	return &project.VersionResponse{Version: int64(pm.Version)}, nil
 }
 
 func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
@@ -263,14 +271,10 @@ func (e *emptyMessager) SendMsg(s string)                                       
 func (e *emptyMessager) SendProtoMsg(message contracts.WebsocketMessage)                   {}
 func (e *emptyMessager) SendProcessPercent(int64)                                          {}
 func (e *emptyMessager) SendMsgWithContainerLog(msg string, containers []*types.Container) {}
-func (e *emptyMessager) Stop(err error)                                                    {}
 func (e *emptyMessager) SendDeployedResult(resultType websocket.ResultType, s string, p *types.ProjectModel) {
 }
 
 type messager struct {
-	closeable utils.Closeable
-	stoperr   error
-
 	sendPercent bool
 
 	slugName string
@@ -349,18 +353,5 @@ func (m *messager) SendMsgWithContainerLog(msg string, containers []*types.Conta
 }
 
 func (m *messager) send(res *project.ApplyResponse) {
-	if m.IsStopped() {
-		return
-	}
 	m.server.Send(res)
-}
-
-func (m *messager) Stop(err error) {
-	if m.closeable.Close() {
-		m.stoperr = err
-	}
-}
-
-func (m *messager) IsStopped() bool {
-	return m.closeable.IsClosed()
 }

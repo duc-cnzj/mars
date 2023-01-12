@@ -307,6 +307,18 @@ func (m *Manager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2023-01-09-add-version-to-projects-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasColumn(&models.Project{}, "version") {
+					if err := tx.Migrator().AddColumn(&models.Project{}, "Version"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	return gm.Migrate()

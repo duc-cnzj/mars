@@ -178,6 +178,7 @@ message ProjectModel {
   string git_commit_title = 20;
   string git_commit_author = 21;
   string git_commit_date = 22;
+  int64 version = 23;
 
   NamespaceModel namespace = 50;
 

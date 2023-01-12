@@ -46,7 +46,9 @@ func (n *NamespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (
 	var namespaces []*models.Namespace
 	app.DB().Preload("Projects", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID", "Name", "DeployStatus", "NamespaceId")
-	}).Find(&namespaces)
+	}).
+		Select("id", "name", "created_at").
+		Find(&namespaces)
 	var res = &namespace.AllResponse{Items: make([]*types.NamespaceModel, 0, len(namespaces))}
 	for _, ns := range namespaces {
 		res.Items = append(res.Items, ns.ProtoTransform())

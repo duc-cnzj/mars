@@ -1542,6 +1542,8 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for GitCommitDate
 
+	// no validation rules for Version
+
 	if all {
 		switch v := interface{}(m.GetNamespace()).(type) {
 		case interface{ ValidateAll() error }:

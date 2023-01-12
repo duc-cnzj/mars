@@ -120,6 +120,7 @@ message UpdateProjectInput {
   string config = 5;
   bool atomic = 6;
   repeated types.ExtraValue extra_values = 7;
+  int64 version = 8;
 }
 
 // Response
@@ -163,4 +164,10 @@ message WsProjectPodEventResponse {
   Metadata metadata = 1;
 
   int64 project_id = 2;
+}
+
+message WsReloadProjectsResponse {
+  Metadata metadata = 1;
+
+  int64 namespace_id = 2;
 }

@@ -38,6 +38,7 @@ type Project struct {
 	EnvValues        string `json:"env_values" gorm:"type:text;nullable;comment:可用的环境变量值"`
 	ExtraValues      string `json:"extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值"`
 	FinalExtraValues string `json:"final_extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`
+	Version          int    `json:"version" gorm:"type:int;not null;default:1;"`
 
 	ConfigType string `json:"config_type" gorm:"size:255;nullable;"`
 	Manifest   string `json:"manifest" gorm:"type:longtext;"`
@@ -252,6 +253,7 @@ func (project *Project) ProtoTransform() *types.ProjectModel {
 		GitCommitTitle:    project.GitCommitTitle,
 		GitCommitAuthor:   project.GitCommitAuthor,
 		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
+		Version:           int64(project.Version),
 		Namespace:         project.Namespace.ProtoTransform(),
 		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),

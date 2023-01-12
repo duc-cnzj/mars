@@ -6,13 +6,14 @@ import "../pkg/DraggableModal/index.css";
 import { allNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload } from "../store/actions";
-import { selectReload } from "../store/reducers/namespace";
+import { selectReload, selectReloadNsID } from "../store/reducers/namespace";
 import pb from "../api/compiled";
 import AddNamespace from "./AddNamespace";
 import { useAsyncState } from "../utils/async";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
+  const reloadNsID = useSelector(selectReloadNsID);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [namespaceItems, setNamespaceItems] = useAsyncState<
@@ -20,14 +21,11 @@ const AppContent: React.FC = () => {
   >([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
-    allNamespaces()
+    return allNamespaces()
       .then((res) => {
         setNamespaceItems(res.data.items);
-        setLoading(false);
       })
-      .catch((e) => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   }, [setNamespaceItems]);
 
   usePreventModalBack();
@@ -38,8 +36,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (reloadNamespace) {
-      fetchNamespaces();
-      dispatch(setNamespaceReload(false));
+      fetchNamespaces().finally(() => dispatch(setNamespaceReload(false, 0)));
     }
   }, [reloadNamespace, dispatch, fetchNamespaces]);
 
@@ -55,7 +52,10 @@ const AppContent: React.FC = () => {
             {namespaceItems.map((item: pb.types.NamespaceModel) => (
               <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
                 <ItemCard
-                  loading={loading}
+                  loading={
+                    loading &&
+                    (Number(item.id) === Number(reloadNsID) || reloadNsID === 0)
+                  }
                   item={item}
                   onNamespaceDeleted={() => fetchNamespaces()}
                 />

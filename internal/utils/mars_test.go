@@ -9,7 +9,6 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
@@ -71,14 +70,7 @@ func TestGetProjectMarsConfig(t *testing.T) {
 		GitProjectId:  199,
 		GlobalEnabled: false,
 	})
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{
-		Name: "test_git_server",
-		Args: nil,
-	}}).AnyTimes()
-	gs := mock.NewMockGitServer(ctrl)
-	gs.EXPECT().Initialize(gomock.Any()).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).AnyTimes()
-	app.EXPECT().GetPluginByName("test_git_server").Return(gs).AnyTimes()
+	gs := testutil.MockGitServer(ctrl, app)
 	pid := 199
 	gs.EXPECT().GetFileContentWithBranch(fmt.Sprintf("%v", pid), "dev", ".mars.yaml").Return("", errors.New("xxx"))
 	_, err := GetProjectMarsConfig(pid, "dev")
@@ -260,11 +252,7 @@ func TestGetProjectName(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	app := testutil.MockApp(m)
-	gitS := mock.NewMockGitServer(m)
-	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
+	gitS := testutil.MockGitServer(m, app)
 	p := mock.NewMockProjectInterface(m)
 	gitS.EXPECT().GetProject("1").Return(p, nil).AnyTimes()
 	p.EXPECT().GetName().Return("app").AnyTimes()

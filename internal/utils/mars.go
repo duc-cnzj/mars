@@ -45,12 +45,11 @@ func GetProjectMarsConfig(projectId any, branch string) (*mars.Config, error) {
 
 	var gp models.GitProject
 	pid := fmt.Sprintf("%v", projectId)
-	if app.DB().Where("`git_project_id` = ?", pid).First(&gp).Error == nil {
+	if err := app.DB().Where("`git_project_id` = ?", pid).First(&gp).Error; err == nil {
 		if gp.GlobalEnabled {
 			return gp.GlobalMarsConfig(), nil
 		}
 	}
-
 	// 因为 protobuf 没有生成yaml的tag，所以需要通过json来转换一下
 	data, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, ".mars.yaml")
 	if err != nil {

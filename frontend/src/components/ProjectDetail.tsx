@@ -36,9 +36,9 @@ const ItemDetailModal: React.FC<{
   }, [item.id, visible, namespaceId]);
 
   const onDelete = useCallback(() => {
-    dispatch(setNamespaceReload(true));
+    dispatch(setNamespaceReload(true, namespaceId));
     setVisible(false);
-  }, [dispatch]);
+  }, [dispatch, namespaceId]);
 
   const onSuccess = useCallback(() => {
     item.id &&

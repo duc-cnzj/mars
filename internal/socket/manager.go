@@ -38,7 +38,9 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/pipeline"
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	mysort "github.com/duc-cnzj/mars/internal/utils/xsort"
 )
 
 const (
@@ -73,16 +75,27 @@ const (
 	pingPeriod = (pongWait * 8) / 10
 )
 
-var reloadProjectsMessage = &websocket_pb.WsMetadataResponse{Metadata: &websocket_pb.Metadata{Type: WsReloadProjects}}
+var (
+	ErrorVersionNotMatched = errors.New("当前版本和最新版本存在差异，请刷新重试")
+)
+
+func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjectsResponse {
+	return &websocket_pb.WsReloadProjectsResponse{
+		Metadata:    &websocket_pb.Metadata{Type: WsReloadProjects},
+		NamespaceId: int64(nsID),
+	}
+}
 
 type WsResponse = websocket_pb.WsMetadataResponse
 
 type SafeWriteMessageCh struct {
 	closeable utils.Closeable
-	ch        chan contracts.MessageItem
+
+	chMu sync.Mutex
+	ch   chan contracts.MessageItem
 }
 
-func (s *SafeWriteMessageCh) Closed() {
+func (s *SafeWriteMessageCh) Close() {
 	mlog.Debug("SafeWriteMessageCh closed")
 	if s.closeable.Close() {
 		close(s.ch)
@@ -92,11 +105,15 @@ func (s *SafeWriteMessageCh) Closed() {
 func (s *SafeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 	return s.ch
 }
+
 func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
 	if s.closeable.IsClosed() {
 		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
 	}
+	// 存在并发写
+	s.chMu.Lock()
+	defer s.chMu.Unlock()
 	s.ch <- m
 }
 
@@ -113,20 +130,24 @@ func (v vars) MustGetString(key string) string {
 }
 
 type Jober struct {
+	err error
+
 	helmer contracts.Helmer
-	done   chan struct{}
+
+	deployResult DeployResult
+	locker       contracts.Locker
 
 	loaders []Loader
 
 	dryRun    bool
 	manifests []string
 
-	input    *websocket_pb.CreateProjectInput
-	wsType   websocket_pb.Type
+	input    *JobInput
 	slugName string
 
-	destroyFuncLock sync.RWMutex
-	destroyFuncs    []func()
+	finallyCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
+	errorCallback   mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
+	successCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
 
 	imagePullSecrets  []string
 	vars              vars
@@ -140,7 +161,6 @@ type Jober struct {
 
 	messageCh contracts.SafeWriteMessageChInterface
 	stopCtx   context.Context
-	stopOnce  sync.Once
 	stopFn    func(error)
 
 	isNew       bool
@@ -166,8 +186,21 @@ func WithDryRun() Option {
 	}
 }
 
+type JobInput struct {
+	Type         websocket_pb.Type
+	NamespaceId  int64
+	Name         string
+	GitProjectId int64
+	GitBranch    string
+	GitCommit    string
+	Config       string
+	Atomic       bool
+	ExtraValues  []*types.ExtraValue
+	Version      int64
+}
+
 type NewJobFunc func(
-	input *websocket_pb.CreateProjectInput,
+	input *JobInput,
 	user contracts.UserInfo,
 	slugName string,
 	messager contracts.DeployMsger,
@@ -177,7 +210,7 @@ type NewJobFunc func(
 ) contracts.Job
 
 func NewJober(
-	input *websocket_pb.CreateProjectInput,
+	input *JobInput,
 	user contracts.UserInfo,
 	slugName string,
 	messager contracts.DeployMsger,
@@ -188,7 +221,6 @@ func NewJober(
 	jb := &Jober{
 		helmer:         &DefaultHelmer{},
 		loaders:        defaultLoaders(),
-		done:           make(chan struct{}),
 		user:           user,
 		pubsub:         pubsub,
 		messager:       messager,
@@ -196,8 +228,8 @@ func NewJober(
 		valuesOptions:  &values.Options{},
 		slugName:       slugName,
 		input:          input,
-		wsType:         input.Type,
 		timeoutSeconds: timeoutSeconds,
+		locker:         app.CacheLock(),
 		messageCh:      &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
 		percenter:      newProcessPercent(messager, &realSleeper{}),
 	}
@@ -209,16 +241,383 @@ func NewJober(
 	return jb
 }
 
-func (j *Jober) Manifests() []string {
-	return j.manifests
-}
-
 func (j *Jober) ID() string {
 	return j.slugName
 }
 
-func (j *Jober) Logs() []string {
-	return j.ReleaseInstaller().Logs()
+func (j *Jober) IsNotDryRun() bool {
+	return !j.IsDryRun()
+}
+
+func (j *Jober) GlobalLock() contracts.Job {
+	if j.HasError() {
+		return j
+	}
+	releaseFn, acquired := j.locker.RenewalAcquire(j.ID(), 30, 20)
+	if !acquired {
+		return j.SetError(errors.New("正在部署中，请稍后再试"))
+	}
+
+	return j.OnFinally(-1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		releaseFn()
+	})
+}
+
+func (j *Jober) Validate() contracts.Job {
+	var err error
+	if j.HasError() {
+		return j
+	}
+
+	if !j.WsTypeValidated() {
+		return j.SetError(errors.New("type error: " + j.input.Type.String()))
+	}
+
+	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
+	j.Percenter().To(5)
+
+	j.Messager().SendMsg("[Check]: 校验名称空间...")
+
+	if err = app.DB().Where("`id` = ?", j.input.NamespaceId).First(&j.ns).Error; err != nil {
+		return j.SetError(fmt.Errorf("[FAILED]: 校验名称空间: %w", err))
+	}
+
+	j.Messager().SendMsg("[Loading]: 加载用户配置")
+	j.Percenter().To(10)
+
+	j.config, err = utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
+	if err != nil {
+		return j.SetError(err)
+	}
+	if j.input.Name == "" {
+		j.input.Name = utils.GetProjectName(j.input.GitProjectId, j.config)
+	}
+
+	j.project = &models.Project{
+		Name:         slug.Make(j.input.Name),
+		GitProjectId: int(j.input.GitProjectId),
+		GitBranch:    j.input.GitBranch,
+		GitCommit:    j.input.GitCommit,
+		Config:       j.input.Config,
+		NamespaceId:  j.ns.ID,
+		Atomic:       j.input.Atomic,
+		ConfigType:   j.config.ConfigFileType,
+	}
+
+	j.Messager().SendMsg("[Check]: 检查项目是否存在")
+
+	var p models.Project
+	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
+		j.Messager().SendMsg("[Check]: 新建项目")
+		j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
+		j.isNew = true
+		if j.IsNotDryRun() {
+			app.DB().Create(&j.project)
+			j.OnError(1, func(err error, sendResultToUser func()) {
+				mlog.Debug("清理项目")
+				app.DB().Delete(&j.project)
+				sendResultToUser()
+			})
+		}
+	} else {
+		j.project.ID = p.ID
+		j.prevProject = &p
+
+		if j.IsNotDryRun() {
+			j.Messager().SendMsg("[Check]: 检查当前版本")
+			if app.DB().Model(&models.Project{ID: p.ID}).Where("`version` = ?", j.input.Version).Updates(map[string]any{
+				"version":       gorm.Expr("`version` + ?", 1),
+				"deploy_status": types.Deploy_StatusDeploying,
+			}).RowsAffected == 0 {
+				return j.SetError(ErrorVersionNotMatched)
+			}
+			j.OnError(1, func(err error, sendResultToUser func()) {
+				app.DB().Model(&models.Project{ID: p.ID}).UpdateColumn("version", j.prevProject.Version)
+				sendResultToUser()
+			})
+		}
+	}
+
+	if j.IsNotDryRun() {
+		j.PubSub().ToAll(reloadProjectsMessage(j.ns.ID))
+		j.OnFinally(1, func(err error, sendResultToUser func()) {
+			// 如果状态出现问题，只有拿到锁的才能更新状态
+			app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
+			j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
+			sendResultToUser()
+		})
+	}
+	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
+	j.commit, err = plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
+
+	return j.SetError(err)
+}
+
+func (j *Jober) WsTypeValidated() bool {
+	return j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject
+}
+
+func (j *Jober) LoadConfigs() contracts.Job {
+	if j.HasError() {
+		return j
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	ch := make(chan error, 1)
+	go func() {
+		defer recovery.HandlePanic("LoadConfigs")
+		defer wg.Done()
+		defer close(ch)
+		err := func() error {
+			j.Messager().SendMsg("[Check]: 加载项目文件")
+
+			for _, defaultLoader := range j.loaders {
+				if err := j.GetStoppedErrorIfHas(); err != nil {
+					return err
+				}
+				if err := defaultLoader.Load(j); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}()
+		ch <- err
+	}()
+
+	var err error
+	select {
+	case err = <-ch:
+	case <-j.stopCtx.Done():
+		err = j.stopCtx.Err()
+	}
+	wg.Wait()
+
+	return j.SetError(err)
+}
+
+func (j *Jober) Run() contracts.Job {
+	if j.HasError() {
+		return j
+	}
+	done := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			done <- struct{}{}
+			close(done)
+		}()
+		defer recovery.HandlePanic("[Websocket]: Jober Run")
+		j.HandleMessage()
+	}()
+
+	err := func() error {
+		var (
+			result *release.Release
+			err    error
+		)
+
+		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
+			mlog.Errorf("[Websocket]: %v", err)
+			j.messageCh.Send(contracts.MessageItem{
+				Msg:  err.Error(),
+				Type: contracts.MessageError,
+			})
+		} else {
+			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
+			j.project.OverrideValues, _ = coalesceValues.YAML()
+
+			j.manifests = utils.SplitManifests(result.Manifest)
+			j.project.Manifest = result.Manifest
+			j.project.SetPodSelectors(getPodSelectorsByManifest(j.manifests))
+			j.project.DockerImage = matchDockerImage(pipelineVars{
+				Pipeline: j.vars.MustGetString("Pipeline"),
+				Commit:   j.vars.MustGetString("Commit"),
+				Branch:   j.vars.MustGetString("Branch"),
+			}, result.Manifest)
+			j.project.GitCommitTitle = j.Commit().GetTitle()
+			j.project.GitCommitWebUrl = j.Commit().GetWebURL()
+			j.project.GitCommitAuthor = j.Commit().GetAuthorName()
+			j.project.GitCommitDate = j.Commit().GetCommittedDate()
+			j.project.ConfigType = j.config.GetConfigFileType()
+
+			if len(j.input.ExtraValues) > 0 {
+				marshal, _ := json.Marshal(j.input.ExtraValues)
+				j.project.ExtraValues = string(marshal)
+			}
+			if len(j.extraValues) > 0 {
+				marshal, _ := json.Marshal(j.extraValues)
+				j.project.FinalExtraValues = string(marshal)
+			}
+			if len(j.vars) > 0 {
+				marshal, _ := json.Marshal(j.vars)
+				j.project.EnvValues = string(marshal)
+			}
+
+			var (
+				p                *models.Project
+				oldConf, newConf userConfig
+			)
+			if j.prevProject != nil && j.prevProject.ID > 0 {
+				p = j.prevProject
+				j.project.ID = p.ID
+				if j.IsNotDryRun() {
+					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
+				}
+				var (
+					ev  []*types.ExtraValue
+					fev mergeYamlString
+				)
+				if len(p.ExtraValues) > 0 {
+					json.Unmarshal([]byte(p.ExtraValues), &ev)
+				}
+				if len(p.FinalExtraValues) > 0 {
+					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
+				}
+
+				oldConf = userConfig{
+					Config:           p.Config,
+					Branch:           p.GitBranch,
+					Commit:           p.GitCommit,
+					Atomic:           p.Atomic,
+					ExtraValues:      ev,
+					FinalExtraValues: fev,
+					EnvValues:        vars(p.GetEnvValues()),
+				}
+				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
+				if err == nil {
+					oldConf.WebUrl = commit.GetWebURL()
+					oldConf.Title = commit.GetTitle()
+				}
+			} else {
+				if j.IsNotDryRun() {
+					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
+				}
+			}
+			newConf = userConfig{
+				Config:           j.project.Config,
+				Branch:           j.project.GitBranch,
+				Commit:           j.project.GitCommit,
+				Atomic:           j.project.Atomic,
+				WebUrl:           j.project.GitCommitWebUrl,
+				Title:            j.project.GitCommitTitle,
+				ExtraValues:      j.input.ExtraValues,
+				FinalExtraValues: mergeYamlString(j.extraValues),
+				EnvValues:        j.vars,
+			}
+			if j.IsNotDryRun() {
+				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
+					Project:  j.project,
+					Username: j.User().Name,
+				})
+			}
+			var act types.EventActionType = types.EventActionType_Create
+			if !j.IsNew() {
+				act = types.EventActionType_Update
+			}
+			if j.IsDryRun() {
+				act = types.EventActionType_DryRun
+			}
+			AuditLogWithChange(j.User().Name, act,
+				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
+				oldConf, newConf)
+			j.Percenter().To(100)
+			j.messageCh.Send(contracts.MessageItem{
+				Msg:  "部署成功",
+				Type: contracts.MessageSuccess,
+			})
+		}
+		return err
+	}()
+	<-done
+	return j.SetError(err)
+}
+
+func (j *Jober) Finish() contracts.Job {
+	mlog.Debug("finished")
+
+	var callbacks []func(func(err error)) func(err error)
+
+	// Run error hooks
+	if j.HasError() {
+		func(err error) {
+			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
+
+			if e := j.GetStoppedErrorIfHas(); e != nil {
+				j.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), j.ProjectModel())
+				err = e
+			}
+		}(j.Error())
+		callbacks = append(callbacks, j.errorCallback.Sort()...)
+	}
+
+	// Run success hooks
+	if !j.HasError() {
+		callbacks = append(callbacks, j.successCallback.Sort()...)
+	}
+
+	// run finally hooks
+	callbacks = append(callbacks, j.finallyCallback.Sort()...)
+
+	pipeline.NewPipeline[error]().
+		Send(j.Error()).
+		Through(callbacks...).
+		Then(func(error) {
+			if j.deployResult.IsSet() {
+				j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
+			}
+			mlog.Debug("SendDeployedResult")
+		})
+
+	return j
+}
+
+func (j *Jober) Manifests() []string {
+	return j.manifests
+}
+
+func (j *Jober) Stop(err error) {
+	j.messager.SendMsg("收到取消信号, 开始停止部署~")
+	mlog.Debugf("stop deploy job, because '%v'", err)
+	j.stopFn(err)
+}
+
+func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.errorCallback.Add(p, toCallbackFunc(fn))
+	return j
+}
+
+func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.successCallback.Add(p, toCallbackFunc(fn))
+	return j
+}
+
+func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+	j.finallyCallback.Add(p, toCallbackFunc(fn))
+	return j
+}
+
+func toCallbackFunc(fn func(err error, sendResultToUser func())) func(sendResultToUser func(err error)) func(error) {
+	return func(sendResultToUser func(err error)) func(error) {
+		return func(err error) {
+			fn(err, func() {
+				sendResultToUser(err)
+			})
+		}
+	}
+}
+
+func (j *Jober) Error() error {
+	return j.err
+}
+
+func (j *Jober) SetError(err error) *Jober {
+	j.err = err
+	return j
+}
+
+func (j *Jober) HasError() bool {
+	return j.err != nil
 }
 
 func (j *Jober) IsNew() bool {
@@ -252,31 +651,6 @@ func (j *Jober) Namespace() *models.Namespace {
 	return j.ns
 }
 
-func (j *Jober) Done() <-chan struct{} {
-	return j.done
-}
-
-func (j *Jober) Finish() {
-	mlog.Debug("finished")
-	close(j.done)
-	j.PubSub().ToAll(reloadProjectsMessage)
-}
-
-func (j *Jober) Prune() {
-	if j.IsNew() && !j.IsDryRun() {
-		mlog.Debug("清理项目")
-		app.DB().Delete(&j.project)
-	}
-}
-
-func (j *Jober) Stop(err error) {
-	j.stopOnce.Do(func() {
-		mlog.Debugf("stop deploy job, because '%v'", err)
-		j.messager.SendMsg("收到取消信号, 开始停止部署~")
-		j.stopFn(err)
-	})
-}
-
 func (j *Jober) IsStopped() bool {
 	select {
 	case <-j.stopCtx.Done():
@@ -287,13 +661,52 @@ func (j *Jober) IsStopped() bool {
 	return false
 }
 
+type DeployResult struct {
+	sync.RWMutex
+	result websocket_pb.ResultType
+	msg    string
+	model  *types.ProjectModel
+	set    bool
+}
+
+func (d *DeployResult) IsSet() bool {
+	d.RLock()
+	defer d.RUnlock()
+	return d.set
+}
+
+func (d *DeployResult) Msg() string {
+	d.RLock()
+	defer d.RUnlock()
+	return d.msg
+}
+
+func (d *DeployResult) Model() *types.ProjectModel {
+	d.RLock()
+	defer d.RUnlock()
+	return d.model
+}
+
+func (d *DeployResult) ResultType() websocket_pb.ResultType {
+	d.RLock()
+	defer d.RUnlock()
+	return d.result
+}
+
+func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+	d.Lock()
+	defer d.Unlock()
+	d.result = t
+	d.msg = msg
+	d.model = model
+	d.set = true
+}
+
 func (j *Jober) HandleMessage() {
 	defer mlog.Debug("HandleMessage exit")
 	ch := j.messageCh.Chan()
 	for {
 		select {
-		case <-j.Done():
-			return
 		case <-app.App().Done():
 			return
 		case s, ok := <-ch:
@@ -304,36 +717,19 @@ func (j *Jober) HandleMessage() {
 			case contracts.MessageText:
 				j.Messager().SendMsgWithContainerLog(s.Msg, s.Containers)
 			case contracts.MessageError:
-				if j.IsNew() && !j.IsDryRun() {
-					app.DB().Delete(&j.project)
-				}
 				select {
 				case <-j.stopCtx.Done():
-					j.Messager().SendDeployedResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
 				default:
-					j.Messager().SendDeployedResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
 				}
 				return
 			case contracts.MessageSuccess:
-				j.Messager().SendDeployedResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
+				j.SetDeployResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
 				return
 			}
 		}
 	}
-}
-
-func (j *Jober) CallDestroyFuncs() {
-	j.destroyFuncLock.RLock()
-	defer j.destroyFuncLock.RUnlock()
-	for _, destroyFunc := range j.destroyFuncs {
-		destroyFunc()
-	}
-}
-
-func (j *Jober) AddDestroyFunc(fn func()) {
-	j.destroyFuncLock.Lock()
-	defer j.destroyFuncLock.Unlock()
-	j.destroyFuncs = append(j.destroyFuncs, fn)
 }
 
 type userConfig struct {
@@ -403,7 +799,6 @@ func toUpdatesMap(p *models.Project) map[string]any {
 		"extra_values":       p.ExtraValues,
 		"final_extra_values": p.FinalExtraValues,
 		"env_values":         p.EnvValues,
-		"deploy_status":      p.DeployStatus,
 		"git_commit_title":   p.GitCommitTitle,
 		"git_commit_web_url": p.GitCommitWebUrl,
 		"git_commit_author":  p.GitCommitAuthor,
@@ -412,138 +807,8 @@ func toUpdatesMap(p *models.Project) map[string]any {
 	}
 }
 
-func (j *Jober) Run() error {
-	done := make(chan struct{}, 1)
-	go func() {
-		defer func() {
-			done <- struct{}{}
-			close(done)
-		}()
-		defer recovery.HandlePanic("[Websocket]: Jober Run")
-		j.HandleMessage()
-	}()
-
-	err := func() error {
-		defer j.messageCh.Closed()
-		var (
-			result *release.Release
-			err    error
-		)
-
-		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
-			mlog.Errorf("[Websocket]: %v", err)
-			j.messageCh.Send(contracts.MessageItem{
-				Msg:  err.Error(),
-				Type: contracts.MessageError,
-			})
-		} else {
-			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
-			j.project.OverrideValues, _ = coalesceValues.YAML()
-
-			j.manifests = utils.SplitManifests(result.Manifest)
-			j.project.Manifest = result.Manifest
-			j.project.SetPodSelectors(getPodSelectorsByManifest(j.manifests))
-			j.project.DockerImage = matchDockerImage(pipelineVars{
-				Pipeline: j.vars.MustGetString("Pipeline"),
-				Commit:   j.vars.MustGetString("Commit"),
-				Branch:   j.vars.MustGetString("Branch"),
-			}, result.Manifest)
-			j.project.GitCommitTitle = j.Commit().GetTitle()
-			j.project.GitCommitWebUrl = j.Commit().GetWebURL()
-			j.project.GitCommitAuthor = j.Commit().GetAuthorName()
-			j.project.GitCommitDate = j.Commit().GetCommittedDate()
-			j.project.ConfigType = j.config.GetConfigFileType()
-
-			if len(j.input.ExtraValues) > 0 {
-				marshal, _ := json.Marshal(j.input.ExtraValues)
-				j.project.ExtraValues = string(marshal)
-			}
-			if len(j.extraValues) > 0 {
-				marshal, _ := json.Marshal(j.extraValues)
-				j.project.FinalExtraValues = string(marshal)
-			}
-			if len(j.vars) > 0 {
-				marshal, _ := json.Marshal(j.vars)
-				j.project.EnvValues = string(marshal)
-			}
-
-			var (
-				p                *models.Project
-				oldConf, newConf userConfig
-			)
-			if j.prevProject != nil && j.prevProject.ID > 0 {
-				p = j.prevProject
-				j.project.ID = p.ID
-				if !j.IsDryRun() {
-					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
-				}
-				var (
-					ev  []*types.ExtraValue
-					fev mergeYamlString
-				)
-				if len(p.ExtraValues) > 0 {
-					json.Unmarshal([]byte(p.ExtraValues), &ev)
-				}
-				if len(p.FinalExtraValues) > 0 {
-					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
-				}
-
-				oldConf = userConfig{
-					Config:           p.Config,
-					Branch:           p.GitBranch,
-					Commit:           p.GitCommit,
-					Atomic:           p.Atomic,
-					ExtraValues:      ev,
-					FinalExtraValues: fev,
-					EnvValues:        vars(p.GetEnvValues()),
-				}
-				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
-				if err == nil {
-					oldConf.WebUrl = commit.GetWebURL()
-					oldConf.Title = commit.GetTitle()
-				}
-			} else {
-				if !j.IsDryRun() {
-					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
-				}
-			}
-			newConf = userConfig{
-				Config:           j.project.Config,
-				Branch:           j.project.GitBranch,
-				Commit:           j.project.GitCommit,
-				Atomic:           j.project.Atomic,
-				WebUrl:           j.project.GitCommitWebUrl,
-				Title:            j.project.GitCommitTitle,
-				ExtraValues:      j.input.ExtraValues,
-				FinalExtraValues: mergeYamlString(j.extraValues),
-				EnvValues:        j.vars,
-			}
-			if !j.IsDryRun() {
-				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
-					Project:  j.project,
-					Username: j.User().Name,
-				})
-			}
-			var act types.EventActionType = types.EventActionType_Create
-			if !j.IsNew() {
-				act = types.EventActionType_Update
-			}
-			if j.IsDryRun() {
-				act = types.EventActionType_DryRun
-			}
-			AuditLogWithChange(j.User().Name, act,
-				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
-				oldConf, newConf)
-			j.Percenter().To(100)
-			j.messageCh.Send(contracts.MessageItem{
-				Msg:  "部署成功",
-				Type: contracts.MessageSuccess,
-			})
-		}
-		return err
-	}()
-	<-done
-	return err
+func (j *Jober) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+	j.deployResult.Set(t, msg, model)
 }
 
 func (j *Jober) GetStoppedErrorIfHas() error {
@@ -569,85 +834,6 @@ func (j *Jober) Percenter() contracts.Percentable {
 	return j.percenter
 }
 
-func (j *Jober) Validate() error {
-	if !(j.wsType == websocket_pb.Type_CreateProject || j.wsType == websocket_pb.Type_UpdateProject || j.wsType == websocket_pb.Type_ApplyProject) {
-		return errors.New("type error: " + j.wsType.String())
-	}
-	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
-	j.Percenter().To(5)
-
-	j.Messager().SendMsg("[Check]: 校验名称空间...")
-
-	var ns models.Namespace
-	if err := app.DB().Where("`id` = ?", j.input.NamespaceId).First(&ns).Error; err != nil {
-		return fmt.Errorf("[FAILED]: 校验名称空间: %w", err)
-	}
-	j.ns = &ns
-
-	j.Messager().SendMsg("[Loading]: 加载用户配置")
-	j.Percenter().To(10)
-
-	marsC, err := utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
-	if err != nil {
-		return err
-	}
-	j.config = marsC
-	if j.input.Name == "" {
-		j.input.Name = utils.GetProjectName(j.input.GitProjectId, marsC)
-	}
-
-	j.project = &models.Project{
-		Name:         slug.Make(j.input.Name),
-		GitProjectId: int(j.input.GitProjectId),
-		GitBranch:    j.input.GitBranch,
-		GitCommit:    j.input.GitCommit,
-		Config:       j.input.Config,
-		NamespaceId:  ns.ID,
-		Atomic:       j.input.Atomic,
-		ConfigType:   marsC.ConfigFileType,
-	}
-
-	j.Messager().SendMsg("[Check]: 检查项目是否存在")
-
-	j.AddDestroyFunc(func() {
-		mlog.Debug("update DeployStatus in DestroyFunc")
-		if !j.IsDryRun() && j.Project().ID > 0 {
-			app.DB().Model(j.Project()).Update("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
-		}
-	})
-
-	var p models.Project
-	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		if !j.IsDryRun() {
-			j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
-			app.DB().Create(&j.project)
-		}
-		j.Messager().SendMsg("[Check]: 新建项目")
-		j.isNew = true
-	} else {
-		j.project.ID = p.ID
-		j.prevProject = &p
-		if p.DeployStatus == uint8(types.Deploy_StatusDeploying) {
-			return errors.New("有别人也在操作这个项目，等等哦~")
-		}
-		if !j.IsDryRun() {
-			app.DB().Model(&p).Update("deploy_status", types.Deploy_StatusDeploying)
-		}
-	}
-	if !j.IsDryRun() {
-		j.PubSub().ToSelf(reloadProjectsMessage)
-	}
-	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
-
-	commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
-	if err != nil {
-		return err
-	}
-	j.commit = commit
-
-	return nil
-}
-
 func defaultLoaders() []Loader {
 	return []Loader{
 		&ChartFileLoader{
@@ -660,42 +846,6 @@ func defaultLoaders() []Loader {
 		&MergeValuesLoader{},
 		&ReleaseInstallerLoader{},
 	}
-}
-
-func (j *Jober) LoadConfigs() error {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	ch := make(chan error, 1)
-	go func() {
-		defer recovery.HandlePanic("LoadConfigs")
-		defer wg.Done()
-		defer close(ch)
-		err := func() error {
-			j.Messager().SendMsg("[Check]: 加载项目文件")
-
-			for _, defaultLoader := range j.loaders {
-				if err := j.GetStoppedErrorIfHas(); err != nil {
-					return err
-				}
-				if err := defaultLoader.Load(j); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}()
-		ch <- err
-	}()
-
-	var err error
-	select {
-	case err = <-ch:
-	case <-j.stopCtx.Done():
-		err = j.stopCtx.Err()
-	}
-	wg.Wait()
-
-	return err
 }
 
 type Loader interface {
@@ -790,7 +940,10 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 			return err
 		}
 	}
-	j.AddDestroyFunc(deleteDirFn)
+	j.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		deleteDirFn()
+	})
 
 	loadDir, _ := c.chartLoader.LoadDir(filepath.Join(tmpChartsDir, dir))
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
@@ -801,7 +954,10 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 				if err != nil {
 					return err
 				}
-				j.AddDestroyFunc(depDeleteFn)
+				j.OnFinally(1, func(err error, sendResultToUser func()) {
+					sendResultToUser()
+					depDeleteFn()
+				})
 				j.Messager().SendMsg(fmt.Sprintf(loaderName+"下载本地依赖 %s", dependency.Name))
 			}
 		}
@@ -821,11 +977,9 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 	}
 	defer archive.Close()
 
-	if j.chart, err = c.chartLoader.LoadArchive(archive); err != nil {
-		return err
-	}
+	j.chart, err = c.chartLoader.LoadArchive(archive)
 
-	return nil
+	return err
 }
 
 type DynamicLoader struct{}
@@ -1122,7 +1276,10 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 	if err != nil {
 		return err
 	}
-	j.AddDestroyFunc(func() { closer.Close() })
+	j.OnFinally(1, func(err error, sendResultToUser func()) {
+		sendResultToUser()
+		closer.Close()
+	})
 	j.valuesOptions.ValueFiles = append(j.valuesOptions.ValueFiles, mergedFile)
 
 	return nil

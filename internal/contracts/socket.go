@@ -103,7 +103,6 @@ type DeployMsger interface {
 	Msger
 	ProcessPercentMsger
 
-	Stop(error)
 	SendDeployedResult(t websocket.ResultType, msg string, p *types.ProjectModel)
 }
 
@@ -120,7 +119,7 @@ type ProcessPercentMsger interface {
 }
 
 type SafeWriteMessageChInterface interface {
-	Closed()
+	Close()
 	Chan() <-chan MessageItem
 	Send(m MessageItem)
 }
@@ -134,35 +133,21 @@ type CancelSignaler interface {
 }
 
 type Job interface {
-	Done() <-chan struct{}
-	Finish()
-	Prune()
-
 	Stop(error)
-	IsStopped() bool
-	GetStoppedErrorIfHas() error
-
-	Run() error
-	Logs() []string
-	IsDryRun() bool
-	Manifests() []string
-
-	User() UserInfo
-	IsNew() bool
-	ProjectModel() *types.ProjectModel
-	Commit() CommitInterface
+	IsNotDryRun() bool
 
 	ID() string
-	Validate() error
-	LoadConfigs() error
-	HandleMessage()
-	AddDestroyFunc(fn func())
-	CallDestroyFuncs()
+	GlobalLock() Job
+	Validate() Job
+	LoadConfigs() Job
+	Run() Job
+	Finish() Job
+	Error() error
+	Manifests() []string
 
-	ReleaseInstaller() ReleaseInstaller
-	Messager() DeployMsger
-	PubSub() PubSub
-	Percenter() Percentable
+	OnError(p int, fn func(err error, sendResultToUser func())) Job
+	OnSuccess(p int, fn func(err error, sendResultToUser func())) Job
+	OnFinally(p int, fn func(err error, sendResultToUser func())) Job
 }
 
 type SessionMapper interface {

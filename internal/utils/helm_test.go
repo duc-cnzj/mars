@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	restclient "k8s.io/client-go/rest"
+
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 
@@ -521,4 +523,10 @@ func Test_fillInstall(t *testing.T) {
 	assert.Equal(t, i.SubNotes, u.SubNotes)
 	assert.Equal(t, i.Description, u.Description)
 	assert.Equal(t, i.DependencyUpdate, u.DependencyUpdate)
+}
+
+func Test_wrapRestConfig(t *testing.T) {
+	cfg := &restclient.Config{}
+	wrapRestConfig(cfg)
+	assert.Equal(t, float32(-1), cfg.QPS)
 }

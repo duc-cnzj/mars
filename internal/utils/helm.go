@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	v12 "k8s.io/client-go/listers/core/v1"
+	restclient "k8s.io/client-go/rest"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
@@ -86,14 +87,14 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.DryRun = dryRun
 	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
-	var selectorList []labels.Selector
-	for _, label := range podSelectors {
-		selector, _ := metav1.ParseToLabelSelector(label)
-		asSelector, _ := metav1.LabelSelectorAsSelector(selector)
-		selectorList = append(selectorList, asSelector)
-	}
 
 	if wait && !dryRun {
+		var selectorList []labels.Selector
+		for _, label := range podSelectors {
+			selector, _ := metav1.ParseToLabelSelector(label)
+			asSelector, _ := metav1.LabelSelectorAsSelector(selector)
+			selectorList = append(selectorList, asSelector)
+		}
 		fanOutCtx, cancelFn := context.WithCancel(context.TODO())
 		key := fmt.Sprintf("%s-%s", namespace, releaseName)
 		k8sClient := app.K8sClient()
@@ -410,6 +411,8 @@ func PackageChart(path string, destDir string) (string, error) {
 func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
+	flags = flags.WithDiscoveryQPS(-1)
+	flags = flags.WithWrapConfigFn(wrapRestConfig)
 	set := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.AddFlags(set)
 	sets := []string{"--namespace=" + namespace}
@@ -429,6 +432,11 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	}
 
 	return actionConfig, nil
+}
+
+func wrapRestConfig(config *restclient.Config) *restclient.Config {
+	config.QPS = -1
+	return config
 }
 
 func GetSlugName[T int64 | int](namespaceId T, name string) string {

@@ -5,7 +5,10 @@ import (
 	"sync"
 )
 
-var ErrCancel = errors.New("取消本次部署，自动回滚到上一个版本！")
+var (
+	ErrCancel       = errors.New("取消本次部署，自动回滚到上一个版本！")
+	ErrSignalExists = errors.New("项目已经存在")
+)
 
 type CancelSignals struct {
 	cs map[string]func(error)
@@ -39,7 +42,7 @@ func (cs *CancelSignals) Add(id string, fn func(error)) error {
 	cs.Lock()
 	defer cs.Unlock()
 	if _, ok := cs.cs[id]; ok {
-		return errors.New("项目已经存在")
+		return ErrSignalExists
 	}
 	cs.cs[id] = fn
 	return nil

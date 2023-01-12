@@ -134,6 +134,7 @@ const ModalSub: React.FC<{
         git_commit: values.selectors.gitCommit,
         config: values.config,
         atomic: !values.debug,
+        version: detail.version,
       }).finish();
       dispatch(setDeployStatus(slug, DeployStatusEnum.DeployUnknown));
 
