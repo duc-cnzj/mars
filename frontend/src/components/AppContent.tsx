@@ -19,7 +19,7 @@ const AppContent: React.FC = () => {
   const [namespaceItems, setNamespaceItems] = useAsyncState<
     pb.types.NamespaceModel[]
   >([]);
-  const fetchNamespaces = useCallback(async () => {
+  const fetchNamespaces = useCallback(() => {
     setLoading(true);
     return allNamespaces()
       .then((res) => {
