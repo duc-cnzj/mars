@@ -9,8 +9,12 @@
       "name": "Changelog"
     }
   ],
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
     "/api/projects/{project_id}/changelogs": {
       "get": {
@@ -45,7 +49,9 @@
             "type": "boolean"
           }
         ],
-        "tags": ["Changelog"]
+        "tags": [
+          "Changelog"
+        ]
       }
     }
   },

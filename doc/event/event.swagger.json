@@ -9,8 +9,12 @@
       "name": "Event"
     }
   ],
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
     "/api/events": {
       "get": {
@@ -72,7 +76,9 @@
             "type": "string"
           }
         ],
-        "tags": ["Event"]
+        "tags": [
+          "Event"
+        ]
       }
     },
     "/api/events/{id}": {
@@ -102,7 +108,9 @@
             "format": "int64"
           }
         ],
-        "tags": ["Event"]
+        "tags": [
+          "Event"
+        ]
       }
     }
   },

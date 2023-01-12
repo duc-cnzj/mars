@@ -9,8 +9,12 @@
       "name": "GitConfig"
     }
   ],
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
     "/api/git/projects/{git_project_id}/default_values": {
       "get": {
@@ -45,7 +49,9 @@
             "type": "string"
           }
         ],
-        "tags": ["GitConfig"]
+        "tags": [
+          "GitConfig"
+        ]
       }
     },
     "/api/git/projects/{git_project_id}/global_config": {
@@ -75,7 +81,9 @@
             "format": "int64"
           }
         ],
-        "tags": ["GitConfig"]
+        "tags": [
+          "GitConfig"
+        ]
       }
     },
     "/api/git/projects/{git_project_id}/mars_config": {
@@ -111,7 +119,9 @@
             "type": "string"
           }
         ],
-        "tags": ["GitConfig"]
+        "tags": [
+          "GitConfig"
+        ]
       },
       "put": {
         "summary": "Update 更新全局配置",
@@ -152,7 +162,9 @@
             }
           }
         ],
-        "tags": ["GitConfig"]
+        "tags": [
+          "GitConfig"
+        ]
       }
     },
     "/api/git/projects/{git_project_id}/toggle_status": {
@@ -195,7 +207,9 @@
             }
           }
         ],
-        "tags": ["GitConfig"]
+        "tags": [
+          "GitConfig"
+        ]
       }
     }
   },

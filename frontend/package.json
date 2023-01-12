@@ -114,6 +114,7 @@
     "protobufjs-cli": "^1.0.2"
   },
   "lint-staged": {
-    "src/**/*.{js,css,less,tsx,ts}": "prettier --write"
+    "src/**/*.{js,css,less,tsx,ts}": "prettier --write",
+    "../*.md": "prettier --write"
   }
 }

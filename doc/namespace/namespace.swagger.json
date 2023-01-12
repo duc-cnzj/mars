@@ -9,8 +9,12 @@
       "name": "Namespace"
     }
   ],
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
     "/api/namespaces": {
       "get": {
@@ -30,7 +34,9 @@
             }
           }
         },
-        "tags": ["Namespace"]
+        "tags": [
+          "Namespace"
+        ]
       },
       "post": {
         "summary": "Create 创建名称空间",
@@ -59,7 +65,9 @@
             }
           }
         ],
-        "tags": ["Namespace"]
+        "tags": [
+          "Namespace"
+        ]
       }
     },
     "/api/namespaces/exists": {
@@ -88,7 +96,9 @@
             "type": "string"
           }
         ],
-        "tags": ["Namespace"]
+        "tags": [
+          "Namespace"
+        ]
       }
     },
     "/api/namespaces/{namespace_id}": {
@@ -118,7 +128,9 @@
             "format": "int64"
           }
         ],
-        "tags": ["Namespace"]
+        "tags": [
+          "Namespace"
+        ]
       },
       "delete": {
         "summary": "Delete 删除名称空间",
@@ -146,7 +158,9 @@
             "format": "int64"
           }
         ],
-        "tags": ["Namespace"]
+        "tags": [
+          "Namespace"
+        ]
       }
     }
   },

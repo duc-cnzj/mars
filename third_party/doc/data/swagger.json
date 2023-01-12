@@ -1,6 +1,10 @@
 {
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "swagger": "2.0",
   "info": {
     "title": "mars api docs",
@@ -9,7 +13,9 @@
   "paths": {
     "/api/access_tokens": {
       "get": {
-        "tags": ["AccessToken"],
+        "tags": [
+          "AccessToken"
+        ],
         "operationId": "AccessToken_List",
         "parameters": [
           {
@@ -41,7 +47,9 @@
         }
       },
       "post": {
-        "tags": ["AccessToken"],
+        "tags": [
+          "AccessToken"
+        ],
         "operationId": "AccessToken_Grant",
         "parameters": [
           {
@@ -71,7 +79,9 @@
     },
     "/api/access_tokens/{token}": {
       "put": {
-        "tags": ["AccessToken"],
+        "tags": [
+          "AccessToken"
+        ],
         "operationId": "AccessToken_Lease",
         "parameters": [
           {
@@ -111,7 +121,9 @@
         }
       },
       "delete": {
-        "tags": ["AccessToken"],
+        "tags": [
+          "AccessToken"
+        ],
         "operationId": "AccessToken_Revoke",
         "parameters": [
           {
@@ -140,7 +152,9 @@
     "/api/auth/exchange": {
       "post": {
         "security": [],
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Exchange sso code 换取 token",
         "operationId": "Auth_Exchange",
         "parameters": [
@@ -171,7 +185,9 @@
     },
     "/api/auth/info": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Info 获取当前登录的用户信息",
         "operationId": "Auth_Info",
         "responses": {
@@ -193,7 +209,9 @@
     "/api/auth/login": {
       "post": {
         "security": [],
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Login 登录接口",
         "operationId": "Auth_Login",
         "parameters": [
@@ -225,7 +243,9 @@
     "/api/auth/settings": {
       "get": {
         "security": [],
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Settings 获取 sso 配置以及跳转 url",
         "operationId": "Auth_Settings",
         "responses": {
@@ -247,7 +267,9 @@
     "/api/cluster_info": {
       "get": {
         "security": [],
-        "tags": ["Cluster"],
+        "tags": [
+          "Cluster"
+        ],
         "summary": "ClusterInfo 查看集群信息",
         "operationId": "Cluster_ClusterInfo",
         "responses": {
@@ -268,7 +290,9 @@
     },
     "/api/containers/copy_to_pod": {
       "post": {
-        "tags": ["Container"],
+        "tags": [
+          "Container"
+        ],
         "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
         "operationId": "Container_CopyToPod",
         "parameters": [
@@ -299,7 +323,9 @@
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
       "get": {
-        "tags": ["Container"],
+        "tags": [
+          "Container"
+        ],
         "summary": "ContainerLog 查看 pod 日志",
         "operationId": "Container_ContainerLog",
         "parameters": [
@@ -340,7 +366,9 @@
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
       "get": {
-        "tags": ["Container"],
+        "tags": [
+          "Container"
+        ],
         "summary": "StreamContainerLog stream 方式查看 pod 日志",
         "operationId": "Container_StreamContainerLog",
         "parameters": [
@@ -390,7 +418,9 @@
     },
     "/api/containers/pod_exists": {
       "post": {
-        "tags": ["Container"],
+        "tags": [
+          "Container"
+        ],
         "summary": "IsPodExists pod 是否存在",
         "operationId": "Container_IsPodExists",
         "parameters": [
@@ -421,7 +451,9 @@
     },
     "/api/containers/pod_running_status": {
       "post": {
-        "tags": ["Container"],
+        "tags": [
+          "Container"
+        ],
         "summary": "IsPodRunning pod 是否正常在跑",
         "operationId": "Container_IsPodRunning",
         "parameters": [
@@ -452,7 +484,9 @@
     },
     "/api/endpoints/namespaces/{namespace_id}": {
       "get": {
-        "tags": ["Endpoint"],
+        "tags": [
+          "Endpoint"
+        ],
         "summary": "InNamespace 名称空间下所有的 endpoints",
         "operationId": "Endpoint_InNamespace",
         "parameters": [
@@ -482,7 +516,9 @@
     },
     "/api/endpoints/projects/{project_id}": {
       "get": {
-        "tags": ["Endpoint"],
+        "tags": [
+          "Endpoint"
+        ],
         "summary": "InProject 项目下所有的 endpoints",
         "operationId": "Endpoint_InProject",
         "parameters": [
@@ -512,7 +548,9 @@
     },
     "/api/events": {
       "get": {
-        "tags": ["Event"],
+        "tags": [
+          "Event"
+        ],
         "summary": "List 用户操作事件列表, 不包含 old, new",
         "operationId": "Event_List",
         "parameters": [
@@ -571,7 +609,9 @@
     },
     "/api/events/{id}": {
       "get": {
-        "tags": ["Event"],
+        "tags": [
+          "Event"
+        ],
         "summary": "Show 查看事件详情, 包含 old, new",
         "operationId": "Event_Show",
         "parameters": [
@@ -601,7 +641,9 @@
     },
     "/api/files": {
       "get": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "文件列表",
         "operationId": "File_List",
         "parameters": [
@@ -641,7 +683,9 @@
     },
     "/api/files/disk_info": {
       "get": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "DiskInfo 查看上传文件目录大小",
         "operationId": "File_DiskInfo",
         "responses": {
@@ -663,7 +707,9 @@
     "/api/files/max_upload_size": {
       "get": {
         "security": [],
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "operationId": "File_MaxUploadSize",
         "responses": {
           "200": {
@@ -683,7 +729,9 @@
     },
     "/api/files/{id}": {
       "delete": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "删除文件",
         "operationId": "File_Delete",
         "parameters": [
@@ -713,7 +761,9 @@
     },
     "/api/git/project_options": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "ProjectOptions 获取项目信息， 用在级联列表",
         "operationId": "Git_ProjectOptions",
         "responses": {
@@ -734,7 +784,9 @@
     },
     "/api/git/projects": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "All 获取所有的 git 项目",
         "operationId": "Git_All",
         "responses": {
@@ -755,7 +807,9 @@
     },
     "/api/git/projects/disable": {
       "post": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "DisableProject 关闭项目",
         "operationId": "Git_DisableProject",
         "parameters": [
@@ -786,7 +840,9 @@
     },
     "/api/git/projects/enable": {
       "post": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
         "operationId": "Git_EnableProject",
         "parameters": [
@@ -817,7 +873,9 @@
     },
     "/api/git/projects/{git_project_id}/branch_options": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "BranchOptions 获取分支信息， 用在级联列表",
         "operationId": "Git_BranchOptions",
         "parameters": [
@@ -851,7 +909,9 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commit_options": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "CommitOptions 获取commit信息， 用在级联列表",
         "operationId": "Git_CommitOptions",
         "parameters": [
@@ -886,7 +946,9 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "Commit 获取 commit 详情",
         "operationId": "Git_Commit",
         "parameters": [
@@ -927,7 +989,9 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "PipelineInfo 获取 pipeline 详情",
         "operationId": "Git_PipelineInfo",
         "parameters": [
@@ -968,7 +1032,9 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/config_file": {
       "get": {
-        "tags": ["Git"],
+        "tags": [
+          "Git"
+        ],
         "summary": "MarsConfigFile 获取项目 mars 配置详情",
         "operationId": "Git_MarsConfigFile",
         "parameters": [
@@ -1003,7 +1069,9 @@
     },
     "/api/git/projects/{git_project_id}/default_values": {
       "get": {
-        "tags": ["GitConfig"],
+        "tags": [
+          "GitConfig"
+        ],
         "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
         "operationId": "GitConfig_GetDefaultChartValues",
         "parameters": [
@@ -1038,7 +1106,9 @@
     },
     "/api/git/projects/{git_project_id}/global_config": {
       "get": {
-        "tags": ["GitConfig"],
+        "tags": [
+          "GitConfig"
+        ],
         "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
         "operationId": "GitConfig_GlobalConfig",
         "parameters": [
@@ -1068,7 +1138,9 @@
     },
     "/api/git/projects/{git_project_id}/mars_config": {
       "get": {
-        "tags": ["GitConfig"],
+        "tags": [
+          "GitConfig"
+        ],
         "summary": "Show 查看项目配置",
         "operationId": "GitConfig_Show",
         "parameters": [
@@ -1101,7 +1173,9 @@
         }
       },
       "put": {
-        "tags": ["GitConfig"],
+        "tags": [
+          "GitConfig"
+        ],
         "summary": "Update 更新全局配置",
         "operationId": "GitConfig_Update",
         "parameters": [
@@ -1144,7 +1218,9 @@
     },
     "/api/git/projects/{git_project_id}/toggle_status": {
       "post": {
-        "tags": ["GitConfig"],
+        "tags": [
+          "GitConfig"
+        ],
         "summary": "ToggleGlobalStatus 开启/关闭全局配置",
         "operationId": "GitConfig_ToggleGlobalStatus",
         "parameters": [
@@ -1187,7 +1263,9 @@
     },
     "/api/metrics/namespace/{namespace_id}/cpu_memory": {
       "get": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "CpuMemoryInNamespace 名称空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInNamespace",
         "parameters": [
@@ -1217,7 +1295,9 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}": {
       "get": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "TopPod 获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_TopPod",
         "parameters": [
@@ -1252,7 +1332,9 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}/stream": {
       "get": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "StreamTopPod stream 的方式获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_StreamTopPod",
         "parameters": [
@@ -1296,7 +1378,9 @@
     },
     "/api/metrics/projects/{project_id}/cpu_memory": {
       "get": {
-        "tags": ["Metrics"],
+        "tags": [
+          "Metrics"
+        ],
         "summary": "CpuMemoryInProject 项目空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInProject",
         "parameters": [
@@ -1326,7 +1410,9 @@
     },
     "/api/namespaces": {
       "get": {
-        "tags": ["Namespace"],
+        "tags": [
+          "Namespace"
+        ],
         "summary": "All 获取所有的名称空间",
         "operationId": "Namespace_All",
         "responses": {
@@ -1345,7 +1431,9 @@
         }
       },
       "post": {
-        "tags": ["Namespace"],
+        "tags": [
+          "Namespace"
+        ],
         "summary": "Create 创建名称空间",
         "operationId": "Namespace_Create",
         "parameters": [
@@ -1376,7 +1464,9 @@
     },
     "/api/namespaces/exists": {
       "post": {
-        "tags": ["Namespace"],
+        "tags": [
+          "Namespace"
+        ],
         "summary": "IsExists 名称空间是否存在",
         "operationId": "Namespace_IsExists",
         "parameters": [
@@ -1404,7 +1494,9 @@
     },
     "/api/namespaces/{namespace_id}": {
       "get": {
-        "tags": ["Namespace"],
+        "tags": [
+          "Namespace"
+        ],
         "summary": "Show 查看名称空间详情",
         "operationId": "Namespace_Show",
         "parameters": [
@@ -1432,7 +1524,9 @@
         }
       },
       "delete": {
-        "tags": ["Namespace"],
+        "tags": [
+          "Namespace"
+        ],
         "summary": "Delete 删除名称空间",
         "operationId": "Namespace_Delete",
         "parameters": [
@@ -1463,7 +1557,9 @@
     "/api/picture/background": {
       "get": {
         "security": [],
-        "tags": ["Picture"],
+        "tags": [
+          "Picture"
+        ],
         "summary": "Background 获取背景图片",
         "operationId": "Picture_Background",
         "parameters": [
@@ -1491,7 +1587,9 @@
     },
     "/api/projects": {
       "get": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "List 获取项目列表",
         "operationId": "Project_List",
         "parameters": [
@@ -1526,7 +1624,9 @@
     },
     "/api/projects/host_variables": {
       "post": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "HostVariables 获取 hosts 变量",
         "operationId": "Project_HostVariables",
         "parameters": [
@@ -1557,7 +1657,9 @@
     },
     "/api/projects/{project_id}": {
       "get": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "Show 项目详情",
         "operationId": "Project_Show",
         "parameters": [
@@ -1585,7 +1687,9 @@
         }
       },
       "delete": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "Delete 删除项目",
         "operationId": "Project_Delete",
         "parameters": [
@@ -1615,7 +1719,9 @@
     },
     "/api/projects/{project_id}/changelogs": {
       "get": {
-        "tags": ["Changelog"],
+        "tags": [
+          "Changelog"
+        ],
         "summary": "Show 查看项目修改的版本差异",
         "operationId": "Changelog_Show",
         "parameters": [
@@ -1650,7 +1756,9 @@
     },
     "/api/projects/{project_id}/containers": {
       "get": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "AllContainers 获取项目下的所有 pod",
         "operationId": "Project_AllContainers",
         "parameters": [
@@ -1680,7 +1788,9 @@
     },
     "/api/projects/{project_id}/version": {
       "get": {
-        "tags": ["Project"],
+        "tags": [
+          "Project"
+        ],
         "summary": "Version 版本号, 如果不存在则返回 0",
         "operationId": "Project_Version",
         "parameters": [
@@ -1710,7 +1820,9 @@
     },
     "/api/record_files/{id}": {
       "get": {
-        "tags": ["File"],
+        "tags": [
+          "File"
+        ],
         "summary": "records 文件信息",
         "operationId": "File_ShowRecords",
         "parameters": [
@@ -1741,7 +1853,9 @@
     "/api/version": {
       "get": {
         "security": [],
-        "tags": ["Version"],
+        "tags": [
+          "Version"
+        ],
         "summary": "Version 获取当前版本信息",
         "operationId": "Version_Version",
         "responses": {
@@ -3378,7 +3492,11 @@
     "websocketTo": {
       "type": "string",
       "default": "ToSelf",
-      "enum": ["ToSelf", "ToAll", "ToOthers"]
+      "enum": [
+        "ToSelf",
+        "ToAll",
+        "ToOthers"
+      ]
     },
     "websocketType": {
       "type": "string",
