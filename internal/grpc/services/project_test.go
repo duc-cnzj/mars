@@ -668,6 +668,30 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	}}).Apply(req, ma)
 }
 
+func TestProjectSvc_ApplyDryRun_CompleteError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	_, err := (&ProjectSvc{}).ApplyDryRun(context.TODO(), &project.ApplyRequest{
+		GitCommit: "",
+	})
+	assert.Equal(t, "没有可用的 commit", err.Error())
+}
+
+func TestProjectSvc_Apply_CompleteError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	gits := testutil.MockGitServer(m, app)
+	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	err := (&ProjectSvc{}).Apply(&project.ApplyRequest{
+		GitCommit: "",
+	}, nil)
+	assert.Equal(t, "没有可用的 commit", err.Error())
+}
+
 func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -695,4 +719,36 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 	}}).ApplyDryRun(auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}), req)
 	assert.Nil(t, err)
 	assert.Equal(t, []string{}, run.Results)
+}
+
+func TestProjectSvc_ApplyDryRun_WithClientStop(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+
+	job := mock.NewMockJob(m)
+	job.EXPECT().GlobalLock().Return(job).Times(1)
+	job.EXPECT().Validate().Return(job).Times(1)
+	job.EXPECT().LoadConfigs().Return(job).Times(1)
+	job.EXPECT().Run().Return(job).Times(1)
+	stopErr := errors.New("context canceled")
+	job.EXPECT().Finish().Return(&tjob{err: stopErr}).Times(1)
+
+	req := &project.ApplyRequest{
+		NamespaceId:   1,
+		Name:          "aaa",
+		GitProjectId:  100,
+		GitBranch:     "dev",
+		GitCommit:     "xxx",
+		Config:        "cfg",
+		WebsocketSync: true,
+	}
+	cancel, cancelFunc := context.WithCancel(context.TODO())
+	cancelFunc()
+	job.EXPECT().Stop(stopErr).Times(1)
+	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+		assert.Len(t, opts, 1)
+		return job
+	}}).ApplyDryRun(auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"}), req)
+	assert.Nil(t, run)
+	assert.Equal(t, stopErr, err)
 }
