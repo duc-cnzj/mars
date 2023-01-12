@@ -29,19 +29,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type extraInputMatcher struct {
-	input any
-}
-
-func (e *extraInputMatcher) Matches(x any) bool {
-	e.input = x
-	return true
-}
-
-func (e *extraInputMatcher) String() string {
-	return ""
-}
-
 type apiGWMatcher struct {
 	gw *apiGateway
 }
@@ -67,11 +54,11 @@ func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 	app := mock.NewMockApplicationInterface(controller)
 	app.EXPECT().Config().Return(&config.Config{GrpcPort: "50000"})
 	app.EXPECT().AddServer(&apiGWMatcher{gw: &apiGateway{endpoint: fmt.Sprintf("localhost:%s", "50000")}}).Times(1)
-	ex := &extraInputMatcher{}
+	ex := &testutil.ValueMatcher{}
 	app.EXPECT().RegisterAfterShutdownFunc(ex).Times(1)
 	assert.Nil(t, (&ApiGatewayBootstrapper{}).Bootstrap(app))
 	assert.NotPanics(t, func() {
-		fn, ok := ex.input.(contracts.Callback)
+		fn, ok := ex.Value.(contracts.Callback)
 		assert.True(t, ok)
 		fn(app)
 	})

@@ -115,6 +115,7 @@
   },
   "lint-staged": {
     "src/**/*.{js,css,less,tsx,ts}": "prettier --write",
-    "../*.md": "prettier --write"
+    "../*.md": "prettier --write",
+    "../**/*.go": "cd .. && make fmt && make lint"
   }
 }
