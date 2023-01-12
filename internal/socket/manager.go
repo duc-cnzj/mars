@@ -145,9 +145,9 @@ type Jober struct {
 	input    *JobInput
 	slugName string
 
-	finallyCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
-	errorCallback   mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
-	successCallback mysort.PrioritySort[func(sendResultToUser func(err error)) func(error)]
+	finallyCallback mysort.PrioritySort[func(err error, next func())]
+	errorCallback   mysort.PrioritySort[func(err error, next func())]
+	successCallback mysort.PrioritySort[func(err error, next func())]
 
 	imagePullSecrets  []string
 	vars              vars
@@ -536,7 +536,7 @@ func (j *Jober) Run() contracts.Job {
 func (j *Jober) Finish() contracts.Job {
 	mlog.Debug("finished")
 
-	var callbacks []func(func(err error)) func(err error)
+	var callbacks []func(err error, next func())
 
 	// Run error hooks
 	if j.HasError() {
@@ -597,13 +597,11 @@ func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) co
 	return j
 }
 
-func toCallbackFunc(fn func(err error, sendResultToUser func())) func(sendResultToUser func(err error)) func(error) {
-	return func(sendResultToUser func(err error)) func(error) {
-		return func(err error) {
-			fn(err, func() {
-				sendResultToUser(err)
-			})
-		}
+func toCallbackFunc(fn func(err error, sendResultToUser func())) func(err error, next func()) {
+	return func(err error, next func()) {
+		fn(err, func() {
+			next()
+		})
 	}
 }
 

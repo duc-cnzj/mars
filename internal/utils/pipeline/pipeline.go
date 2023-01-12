@@ -2,7 +2,7 @@ package pipeline
 
 type Pipeline[T any] interface {
 	Send(T) Pipeline[T]
-	Through(middlewares ...func(func(T)) func(T)) Pipeline[T]
+	Through(middlewares ...func(t T, next func())) Pipeline[T]
 	Then(func(T))
 }
 
@@ -20,8 +20,15 @@ func (m *pipeline[T]) Send(t T) Pipeline[T] {
 	return m
 }
 
-func (m *pipeline[T]) Through(middlewares ...func(func(T)) func(T)) Pipeline[T] {
-	m.middlewares = middlewares
+func (m *pipeline[T]) Through(middlewares ...func(t T, next func())) Pipeline[T] {
+	for idx := range middlewares {
+		middleware := middlewares[idx]
+		m.middlewares = append(m.middlewares, func(next func(t T)) func(t T) {
+			return func(t T) {
+				middleware(t, func() { next(t) })
+			}
+		})
+	}
 	return m
 }
 

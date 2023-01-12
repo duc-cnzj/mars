@@ -14,11 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/cache_lock"
-
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/cache_lock"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event"
@@ -27,6 +26,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/models"
 	"github.com/duc-cnzj/mars/internal/testutil"
 	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/internal/utils/pipeline"
 	"github.com/duc-cnzj/mars/plugins/domain_manager"
 	"helm.sh/helm/v3/pkg/release"
 
@@ -1591,9 +1591,12 @@ func TestJober_GlobalLock(t *testing.T) {
 	assert.Nil(t, job.GlobalLock().Error())
 	assert.Equal(t, "正在部署中，请稍后再试", (&Jober{locker: l, slugName: "id"}).GlobalLock().Error().Error())
 	assert.Len(t, job.finallyCallback.Sort(), 1)
-	for _, fn := range job.finallyCallback.Sort() {
-		fn(func(err error) { assert.Nil(t, err) })(nil)
-	}
+	called := 0
+	pipeline.NewPipeline[error]().Send(nil).Through(job.finallyCallback.Sort()...).Then(func(e error) {
+		called++
+		assert.Nil(t, e)
+	})
+	assert.Equal(t, 1, called)
 	acquire := l.Acquire("id", 100)
 	assert.True(t, acquire)
 
@@ -1672,17 +1675,17 @@ func TestJober_Validate_Create(t *testing.T) {
 	job.helmer = hm
 	hm.EXPECT().ReleaseStatus("git-app", "ns").Return(types.Deploy_StatusFailed)
 	pubsub.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).Times(1)
-	job.finallyCallback.Sort()[0](func(err error) {
+	pipeline.NewPipeline[error]().Send(nil).Through(job.finallyCallback.Sort()...).Then(func(err2 error) {
 		called++
-	})(nil)
+	})
 	assert.Equal(t, 1, called)
 	p1 := &models.Project{ID: job.project.ID}
 	db.First(&p1)
 	assert.Equal(t, p1.DeployStatus, uint8(types.Deploy_StatusFailed))
 
-	job.errorCallback.Sort()[0](func(err error) {
+	pipeline.NewPipeline[error]().Send(nil).Through(job.errorCallback.Sort()...).Then(func(err2 error) {
 		called++
-	})(nil)
+	})
 	assert.Equal(t, 2, called)
 	p := &models.Project{ID: job.project.ID}
 	db.Unscoped().First(&p)
@@ -1724,9 +1727,9 @@ func TestJober_Validate_Update(t *testing.T) {
 
 	assert.Len(t, job.errorCallback.Sort(), 1)
 	called := false
-	job.errorCallback.Sort()[0](func(err error) {
+	pipeline.NewPipeline[error]().Send(nil).Through(job.errorCallback.Sort()...).Then(func(err error) {
 		called = true
-	})(nil)
+	})
 	assert.True(t, called)
 	pp := &models.Project{ID: job.project.ID}
 	db.First(&pp)
@@ -1859,10 +1862,10 @@ func TestJober_OnError(t *testing.T) {
 	})
 	assert.Len(t, job.errorCallback.Sort(), 1)
 	called := 0
-	job.errorCallback.Sort()[0](func(err error) {
+	pipeline.NewPipeline[error]().Send(job.Error()).Through(job.errorCallback.Sort()...).Then(func(err error) {
 		assert.Equal(t, "xxx", err.Error())
 		called++
-	})(job.Error())
+	})
 	assert.Equal(t, 1, called)
 }
 
@@ -1874,10 +1877,10 @@ func TestJober_OnSuccess(t *testing.T) {
 	})
 	assert.Len(t, job.successCallback.Sort(), 1)
 	called := 0
-	job.successCallback.Sort()[0](func(err error) {
+	pipeline.NewPipeline[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
 		assert.Nil(t, err)
 		called++
-	})(job.Error())
+	})
 	assert.Equal(t, 1, called)
 }
 
@@ -1897,10 +1900,10 @@ func TestJober_OnFinally(t *testing.T) {
 			})
 			assert.Len(t, job.finallyCallback.Sort(), 1)
 			called := 0
-			job.finallyCallback.Sort()[0](func(err error) {
+			pipeline.NewPipeline[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
 				assert.Equal(t, tt, err)
 				called++
-			})(job.Error())
+			})
 			assert.Equal(t, 1, called)
 		})
 	}
@@ -1962,10 +1965,9 @@ func TestChartFileLoader_Load(t *testing.T) {
 
 	up.EXPECT().DeleteDir("/dir").Times(2)
 	called := 0
-	for _, fn := range job.finallyCallback.Sort() {
-		fn(func(err error) {
-			called++
-		})(nil)
-	}
-	assert.Equal(t, 2, called)
+
+	pipeline.NewPipeline[error]().Send(job.Error()).Through(job.finallyCallback.Sort()...).Then(func(err error) {
+		called++
+	})
+	assert.Equal(t, 1, called)
 }

@@ -8,24 +8,24 @@ import (
 
 func TestMyPipeline_Send(t *testing.T) {
 	var result []string
-	p := NewPipeline[string]()
-	p.Send("xxx").Through(func(f func(msg string)) func(msg string) {
-		return func(msg string) {
+	NewPipeline[string]().
+		Send("xxx").
+		Through(func(msg string, next func()) {
+			assert.Equal(t, "xxx", msg)
 			result = append(result, "1")
 			result = append(result, "2")
-			f(msg)
+			next()
 			result = append(result, "3")
-		}
-	}, func(f func(msg string)) func(msg string) {
-		return func(msg string) {
+		}, func(msg string, next func()) {
+			assert.Equal(t, "xxx", msg)
 			result = append(result, "4")
 			result = append(result, "5")
-			f(msg)
+			next()
 			result = append(result, "6")
-		}
-	}).Then(func(msg string) {
-		result = append(result, msg)
-	})
+		}).
+		Then(func(msg string) {
+			result = append(result, msg)
+		})
 
 	assert.Equal(t, []string{"1", "2", "4", "5", "xxx", "6", "3"}, result)
 
@@ -34,4 +34,27 @@ func TestMyPipeline_Send(t *testing.T) {
 		called = true
 	})
 	assert.True(t, called)
+
+	type obj struct {
+		name string
+	}
+
+	oo := &obj{name: "app"}
+	NewPipeline[*obj]().
+		Send(oo).
+		Through(func(o *obj, next func()) {
+			o.name += "1"
+			next()
+			o.name += "2"
+		}).
+		Through(func(o *obj, next func()) {
+			o.name += "3"
+			next()
+			o.name += "4"
+		}).
+		Then(func(o *obj) {
+			o.name += "base"
+		})
+
+	assert.Equal(t, "app13base42", oo.name)
 }
