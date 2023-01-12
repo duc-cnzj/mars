@@ -1146,9 +1146,34 @@ app:
 }
 
 func TestNewJober(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	msg := mock.NewMockDeployMsger(m)
+	ps := mock.NewMockPubSub(m)
+	l := mock.NewMockLocker(m)
+	testutil.MockApp(m).EXPECT().CacheLock().Return(l).Times(2)
+	input := &JobInput{}
+	user := contracts.UserInfo{Name: "duc"}
+	job := NewJober(input, user, "x", msg, ps, 10, WithDryRun()).(*Jober)
+	assert.False(t, job.IsNotDryRun())
+
+	assert.Equal(t, &DefaultHelmer{}, job.helmer)
+	assert.Equal(t, defaultLoaders(), job.loaders)
+	assert.Equal(t, user, job.user)
+	assert.Same(t, ps, job.pubsub)
+	assert.Same(t, msg, job.messager)
+	assert.Equal(t, vars{}, job.vars)
+	assert.Equal(t, &values.Options{}, job.valuesOptions)
+	assert.Equal(t, "x", job.slugName)
+	assert.Equal(t, input, job.input)
+	assert.Equal(t, int64(10), job.timeoutSeconds)
+	assert.Same(t, l, job.locker)
+	assert.NotNil(t, job.messageCh)
+	assert.Equal(t, 100, cap(job.messageCh.(*SafeWriteMessageCh).ch))
+	assert.Equal(t, newProcessPercent(msg, &realSleeper{}), job.percenter)
+
 	assert.Implements(t, (*contracts.Job)(nil), NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 10))
-	jober := NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 0, WithDryRun())
-	assert.False(t, jober.IsNotDryRun())
+
 }
 
 type emptyMsger struct {

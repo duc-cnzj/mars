@@ -229,6 +229,7 @@ func NewJober(
 		slugName:       slugName,
 		input:          input,
 		timeoutSeconds: timeoutSeconds,
+		locker:         app.CacheLock(),
 		messageCh:      &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
 		percenter:      newProcessPercent(messager, &realSleeper{}),
 	}
