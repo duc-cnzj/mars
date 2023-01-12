@@ -7235,6 +7235,104 @@ export namespace project {
     public static getTypeUrl(typeUrlPrefix?: string): string;
   }
 
+  /** Properties of a VersionRequest. */
+  interface IVersionRequest {
+    /** VersionRequest project_id */
+    project_id?: number | null;
+  }
+
+  /** Represents a VersionRequest. */
+  class VersionRequest implements IVersionRequest {
+    /**
+     * Constructs a new VersionRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: project.IVersionRequest);
+
+    /** VersionRequest project_id. */
+    public project_id: number;
+
+    /**
+     * Encodes the specified VersionRequest message. Does not implicitly {@link project.VersionRequest.verify|verify} messages.
+     * @param message VersionRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(
+      message: project.VersionRequest,
+      writer?: $protobuf.Writer
+    ): $protobuf.Writer;
+
+    /**
+     * Decodes a VersionRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns VersionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(
+      reader: $protobuf.Reader | Uint8Array,
+      length?: number
+    ): project.VersionRequest;
+
+    /**
+     * Gets the default type url for VersionRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+  }
+
+  /** Properties of a VersionResponse. */
+  interface IVersionResponse {
+    /** VersionResponse version */
+    version?: number | null;
+  }
+
+  /** Represents a VersionResponse. */
+  class VersionResponse implements IVersionResponse {
+    /**
+     * Constructs a new VersionResponse.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: project.IVersionResponse);
+
+    /** VersionResponse version. */
+    public version: number;
+
+    /**
+     * Encodes the specified VersionResponse message. Does not implicitly {@link project.VersionResponse.verify|verify} messages.
+     * @param message VersionResponse message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(
+      message: project.VersionResponse,
+      writer?: $protobuf.Writer
+    ): $protobuf.Writer;
+
+    /**
+     * Decodes a VersionResponse message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns VersionResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(
+      reader: $protobuf.Reader | Uint8Array,
+      length?: number
+    ): project.VersionResponse;
+
+    /**
+     * Gets the default type url for VersionResponse
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+  }
+
   /** Properties of an AllContainersResponse. */
   interface IAllContainersResponse {
     /** AllContainersResponse items */
@@ -7869,6 +7967,25 @@ export namespace project {
     public show(request: project.ShowRequest): Promise<project.ShowResponse>;
 
     /**
+     * Calls Version.
+     * @param request VersionRequest message or plain object
+     * @param callback Node-style callback called with the error, if any, and VersionResponse
+     */
+    public version(
+      request: project.VersionRequest,
+      callback: project.Project.VersionCallback
+    ): void;
+
+    /**
+     * Calls Version.
+     * @param request VersionRequest message or plain object
+     * @returns Promise
+     */
+    public version(
+      request: project.VersionRequest
+    ): Promise<project.VersionResponse>;
+
+    /**
      * Calls Delete.
      * @param request DeleteRequest message or plain object
      * @param callback Node-style callback called with the error, if any, and DeleteResponse
@@ -7965,6 +8082,16 @@ export namespace project {
     type ShowCallback = (
       error: Error | null,
       response?: project.ShowResponse
+    ) => void;
+
+    /**
+     * Callback as used by {@link project.Project#version}.
+     * @param error Error, if any
+     * @param [response] VersionResponse
+     */
+    type VersionCallback = (
+      error: Error | null,
+      response?: project.VersionResponse
     ) => void;
 
     /**

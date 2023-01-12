@@ -1678,6 +1678,36 @@
         }
       }
     },
+    "/api/projects/{project_id}/version": {
+      "get": {
+        "tags": ["Project"],
+        "summary": "Version 版本号, 如果不存在则返回 0",
+        "operationId": "Project_Version",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "project_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/projectVersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/record_files/{id}": {
       "get": {
         "tags": ["File"],
@@ -2710,6 +2740,15 @@
           "items": {
             "$ref": "#/definitions/typesServiceEndpoint"
           }
+        }
+      }
+    },
+    "projectVersionResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

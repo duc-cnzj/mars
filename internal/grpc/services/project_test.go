@@ -752,3 +752,22 @@ func TestProjectSvc_ApplyDryRun_WithClientStop(t *testing.T) {
 	assert.Nil(t, run)
 	assert.Equal(t, stopErr, err)
 }
+
+func TestProjectSvc_Version(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Project{}, &models.Namespace{})
+	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
+	assert.Nil(t, db.Create(p).Error)
+	version, err := (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(p.Version), version.Version)
+	assert.Equal(t, int64(1), version.Version)
+	db.Delete(&p)
+	version, err = (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), version.Version)
+}

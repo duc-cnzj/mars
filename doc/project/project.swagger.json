@@ -167,6 +167,36 @@
         ],
         "tags": ["Project"]
       }
+    },
+    "/api/projects/{project_id}/version": {
+      "get": {
+        "summary": "Version 版本号, 如果不存在则返回 0",
+        "operationId": "Project_Version",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/projectVersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": ["Project"]
+      }
     }
   },
   "definitions": {
@@ -340,6 +370,15 @@
           "items": {
             "$ref": "#/definitions/marsElement"
           }
+        }
+      }
+    },
+    "projectVersionResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

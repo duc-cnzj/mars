@@ -206,6 +206,13 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	}, nil
 }
 
+func (p *ProjectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
+	var pm = models.Project{ID: int(req.ProjectId)}
+	app.DB().Select("id", "version").First(&pm)
+
+	return &project.VersionResponse{Version: int64(pm.Version)}, nil
+}
+
 func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {

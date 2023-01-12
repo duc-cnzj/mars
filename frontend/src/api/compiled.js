@@ -14614,6 +14614,204 @@ export const project = ($root.project = (() => {
     return AllContainersRequest;
   })();
 
+  project.VersionRequest = (function () {
+    /**
+     * Properties of a VersionRequest.
+     * @memberof project
+     * @interface IVersionRequest
+     * @property {number|null} [project_id] VersionRequest project_id
+     */
+
+    /**
+     * Constructs a new VersionRequest.
+     * @memberof project
+     * @classdesc Represents a VersionRequest.
+     * @implements IVersionRequest
+     * @constructor
+     * @param {project.IVersionRequest=} [properties] Properties to set
+     */
+    function VersionRequest(properties) {
+      if (properties)
+        for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+          if (properties[keys[i]] != null) this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * VersionRequest project_id.
+     * @member {number} project_id
+     * @memberof project.VersionRequest
+     * @instance
+     */
+    VersionRequest.prototype.project_id = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
+     * Encodes the specified VersionRequest message. Does not implicitly {@link project.VersionRequest.verify|verify} messages.
+     * @function encode
+     * @memberof project.VersionRequest
+     * @static
+     * @param {project.VersionRequest} message VersionRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    VersionRequest.encode = function encode(message, writer) {
+      if (!writer) writer = $Writer.create();
+      if (
+        message.project_id != null &&
+        Object.hasOwnProperty.call(message, "project_id")
+      )
+        writer.uint32(/* id 1, wireType 0 =*/ 8).int64(message.project_id);
+      return writer;
+    };
+
+    /**
+     * Decodes a VersionRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof project.VersionRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {project.VersionRequest} VersionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    VersionRequest.decode = function decode(reader, length) {
+      if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
+      let end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.project.VersionRequest();
+      while (reader.pos < end) {
+        let tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            message.project_id = reader.int64();
+            break;
+          }
+          default:
+            reader.skipType(tag & 7);
+            break;
+        }
+      }
+      return message;
+    };
+
+    /**
+     * Gets the default type url for VersionRequest
+     * @function getTypeUrl
+     * @memberof project.VersionRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    VersionRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+      if (typeUrlPrefix === undefined) {
+        typeUrlPrefix = "type.googleapis.com";
+      }
+      return typeUrlPrefix + "/project.VersionRequest";
+    };
+
+    return VersionRequest;
+  })();
+
+  project.VersionResponse = (function () {
+    /**
+     * Properties of a VersionResponse.
+     * @memberof project
+     * @interface IVersionResponse
+     * @property {number|null} [version] VersionResponse version
+     */
+
+    /**
+     * Constructs a new VersionResponse.
+     * @memberof project
+     * @classdesc Represents a VersionResponse.
+     * @implements IVersionResponse
+     * @constructor
+     * @param {project.IVersionResponse=} [properties] Properties to set
+     */
+    function VersionResponse(properties) {
+      if (properties)
+        for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+          if (properties[keys[i]] != null) this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * VersionResponse version.
+     * @member {number} version
+     * @memberof project.VersionResponse
+     * @instance
+     */
+    VersionResponse.prototype.version = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0;
+
+    /**
+     * Encodes the specified VersionResponse message. Does not implicitly {@link project.VersionResponse.verify|verify} messages.
+     * @function encode
+     * @memberof project.VersionResponse
+     * @static
+     * @param {project.VersionResponse} message VersionResponse message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    VersionResponse.encode = function encode(message, writer) {
+      if (!writer) writer = $Writer.create();
+      if (
+        message.version != null &&
+        Object.hasOwnProperty.call(message, "version")
+      )
+        writer.uint32(/* id 1, wireType 0 =*/ 8).int64(message.version);
+      return writer;
+    };
+
+    /**
+     * Decodes a VersionResponse message from the specified reader or buffer.
+     * @function decode
+     * @memberof project.VersionResponse
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {project.VersionResponse} VersionResponse
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    VersionResponse.decode = function decode(reader, length) {
+      if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
+      let end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.project.VersionResponse();
+      while (reader.pos < end) {
+        let tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            message.version = reader.int64();
+            break;
+          }
+          default:
+            reader.skipType(tag & 7);
+            break;
+        }
+      }
+      return message;
+    };
+
+    /**
+     * Gets the default type url for VersionResponse
+     * @function getTypeUrl
+     * @memberof project.VersionResponse
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    VersionResponse.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+      if (typeUrlPrefix === undefined) {
+        typeUrlPrefix = "type.googleapis.com";
+      }
+      return typeUrlPrefix + "/project.VersionResponse";
+    };
+
+    return VersionResponse;
+  })();
+
   project.AllContainersResponse = (function () {
     /**
      * Properties of an AllContainersResponse.
@@ -16069,6 +16267,49 @@ export const project = ($root.project = (() => {
      * @instance
      * @param {project.ShowRequest} request ShowRequest message or plain object
      * @returns {Promise<project.ShowResponse>} Promise
+     * @variation 2
+     */
+
+    /**
+     * Callback as used by {@link project.Project#version}.
+     * @memberof project.Project
+     * @typedef VersionCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {project.VersionResponse} [response] VersionResponse
+     */
+
+    /**
+     * Calls Version.
+     * @function version
+     * @memberof project.Project
+     * @instance
+     * @param {project.VersionRequest} request VersionRequest message or plain object
+     * @param {project.Project.VersionCallback} callback Node-style callback called with the error, if any, and VersionResponse
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(
+      (Project.prototype.version = function version(request, callback) {
+        return this.rpcCall(
+          version,
+          $root.project.VersionRequest,
+          $root.project.VersionResponse,
+          request,
+          callback
+        );
+      }),
+      "name",
+      { value: "Version" }
+    );
+
+    /**
+     * Calls Version.
+     * @function version
+     * @memberof project.Project
+     * @instance
+     * @param {project.VersionRequest} request VersionRequest message or plain object
+     * @returns {Promise<project.VersionResponse>} Promise
      * @variation 2
      */
 
