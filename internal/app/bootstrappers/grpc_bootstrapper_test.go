@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	auth2 "github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -72,6 +73,7 @@ func (m *mockGrpcServer) Serve(lis net.Listener) error {
 }
 
 func (m *mockGrpcServer) GracefulStop() {
+	time.Sleep(1 * time.Second)
 }
 
 func Test_grpcRunner_Shutdown(t *testing.T) {
@@ -81,8 +83,6 @@ func Test_grpcRunner_Shutdown(t *testing.T) {
 	cancelFunc()
 	assert.Error(t, (&grpcRunner{server: &mockGrpcServer{}}).Shutdown(cancel))
 }
-
-func Test_traceWithOpName(t *testing.T) {}
 
 func TestGrpcBootstrapper_Tags(t *testing.T) {
 	assert.Equal(t, []string{"api", "grpc"}, (&GrpcBootstrapper{}).Tags())
