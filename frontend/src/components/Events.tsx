@@ -16,7 +16,7 @@ import {
   Tag,
   Button,
   Popconfirm,
-  Modal,
+  Drawer,
   message,
   Input,
   Radio,
@@ -30,7 +30,11 @@ import { showRecords } from "../api/file";
 import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "./DiffViewer";
-import { ClockCircleOutlined, PlayCircleOutlined } from "@ant-design/icons";
+import {
+  ClockCircleOutlined,
+  PlayCircleOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const defaultPageSize = 15;
@@ -116,7 +120,10 @@ const EventList: React.FC = () => {
   }, [fetch]);
 
   const [config, setConfig] = useState({ old: "", new: "", title: "" });
-  const [shellModalVisible, setShellModalVisible] = useState(false);
+  const [recordWindow, setRecordWindow] = useState<{
+    title: React.ReactNode;
+    visible: boolean;
+  }>({ title: "", visible: false });
 
   const getActionStyle = useCallback(
     (type: pb.types.EventActionType): React.ReactNode => {
@@ -187,9 +194,9 @@ const EventList: React.FC = () => {
     []
   );
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isWindowVisible, setIsWindowVisible] = useState(false);
 
-  const showModal = useCallback((id: number) => {
+  const showWindow = useCallback((id: number) => {
     showEvent(id).then(({ data }) => {
       data.event &&
         setConfig({
@@ -197,16 +204,12 @@ const EventList: React.FC = () => {
           new: data.event.new || "",
           title: `[${data.event.username}]: ` + data.event.message,
         });
-      setIsModalVisible(true);
+      setIsWindowVisible(true);
     });
   }, []);
 
-  const handleOk = useCallback(() => {
-    setIsModalVisible(false);
-  }, []);
-
   const handleCancel = useCallback(() => {
-    setIsModalVisible(false);
+    setIsWindowVisible(false);
     setConfig({ new: "", old: "", title: "" });
   }, []);
   const getHeight = () => {
@@ -338,7 +341,22 @@ const EventList: React.FC = () => {
                         type="dashed"
                         style={{ marginRight: 5 }}
                         onClick={() => {
-                          setShellModalVisible(true);
+                          setRecordWindow({
+                            visible: true,
+                            title: (
+                              <div>
+                                <span style={{ color: "red", marginRight: 5 }}>
+                                  <UserOutlined />
+                                  {item.username}
+                                </span>
+                                <span
+                                  style={{ fontWeight: "normal", fontSize: 13 }}
+                                >
+                                  {item.message}
+                                </span>
+                              </div>
+                            ),
+                          });
                           fetchFileRaw(item.file_id);
                         }}
                       >
@@ -402,7 +420,7 @@ const EventList: React.FC = () => {
                   <Button
                     type="dashed"
                     onClick={() => {
-                      showModal(item.id);
+                      showWindow(item.id);
                     }}
                   >
                     查看改动
@@ -413,19 +431,16 @@ const EventList: React.FC = () => {
           />
         </InfiniteScroll>
       </div>
-      <Modal
+      <Drawer
         destroyOnClose
-        width={"80%"}
+        width={"100%"}
         title={config.title}
-        open={isModalVisible}
-        okText={"确定"}
-        cancelText={"取消"}
-        onOk={handleOk}
+        open={isWindowVisible}
         footer={null}
-        onCancel={handleCancel}
+        onClose={handleCancel}
       >
         <ErrorBoundary>
-          <div style={{ maxHeight: 550, overflowY: "auto" }}>
+          <div style={{ maxHeight: "100%", overflowY: "auto" }}>
             <DiffViewer
               styles={{
                 line: { fontSize: 12, wordBreak: "break-word" },
@@ -438,15 +453,15 @@ const EventList: React.FC = () => {
             />
           </div>
         </ErrorBoundary>
-      </Modal>
-      <Modal
-        width={"65%"}
-        title={null}
+      </Drawer>
+      <Drawer
+        width={"100%"}
+        title={recordWindow.title}
         destroyOnClose
-        open={shellModalVisible}
+        open={recordWindow.visible}
         footer={null}
-        onCancel={() => {
-          setShellModalVisible(false);
+        onClose={() => {
+          setRecordWindow({ visible: false, title: "" });
           setRecords([]);
           setKey(0);
         }}
@@ -495,7 +510,7 @@ const EventList: React.FC = () => {
             </div>
           ))}
         </div>
-      </Modal>
+      </Drawer>
     </Card>
   );
 };
