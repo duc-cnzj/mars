@@ -119,11 +119,30 @@ const EventList: React.FC = () => {
     fetch(initQuery.action_type, initQuery.search);
   }, [fetch]);
 
-  const [config, setConfig] = useState({ old: "", new: "", title: "" });
+  const [config, setConfig] = useState<{
+    old: string;
+    new: string;
+    title: React.ReactNode;
+  }>({ old: "", new: "", title: "" });
   const [recordWindow, setRecordWindow] = useState<{
     title: React.ReactNode;
     visible: boolean;
   }>({ title: "", visible: false });
+
+  const detail = useCallback(
+    (username: string, message: string): React.ReactNode => {
+      return (
+        <div>
+          <span style={{ color: "red", marginRight: 5 }}>
+            <UserOutlined />
+            {username}
+          </span>
+          <span style={{ fontWeight: "normal", fontSize: 13 }}>{message}</span>
+        </div>
+      );
+    },
+    []
+  );
 
   const getActionStyle = useCallback(
     (type: pb.types.EventActionType): React.ReactNode => {
@@ -196,17 +215,20 @@ const EventList: React.FC = () => {
 
   const [isWindowVisible, setIsWindowVisible] = useState(false);
 
-  const showWindow = useCallback((id: number) => {
-    showEvent(id).then(({ data }) => {
-      data.event &&
-        setConfig({
-          old: data.event.old || "",
-          new: data.event.new || "",
-          title: `[${data.event.username}]: ` + data.event.message,
-        });
-      setIsWindowVisible(true);
-    });
-  }, []);
+  const showWindow = useCallback(
+    (id: number) => {
+      showEvent(id).then(({ data }) => {
+        data.event &&
+          setConfig({
+            old: data.event.old,
+            new: data.event.new,
+            title: detail(data.event.username, data.event.message),
+          });
+        setIsWindowVisible(true);
+      });
+    },
+    [detail]
+  );
 
   const handleCancel = useCallback(() => {
     setIsWindowVisible(false);
@@ -343,19 +365,7 @@ const EventList: React.FC = () => {
                         onClick={() => {
                           setRecordWindow({
                             visible: true,
-                            title: (
-                              <div>
-                                <span style={{ color: "red", marginRight: 5 }}>
-                                  <UserOutlined />
-                                  {item.username}
-                                </span>
-                                <span
-                                  style={{ fontWeight: "normal", fontSize: 13 }}
-                                >
-                                  {item.message}
-                                </span>
-                              </div>
-                            ),
+                            title: detail(item.username, item.message),
                           });
                           fetchFileRaw(item.file_id);
                         }}
