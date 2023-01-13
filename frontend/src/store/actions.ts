@@ -233,7 +233,6 @@ export const handleEvents = (
               break;
           }
           dispatch(setCreateProjectLoading(id, false));
-          debounceLoadNamespace(dispatch, 0);
         }
         break;
       case pb.websocket.Type.ProcessPercent:
