@@ -414,6 +414,7 @@ const EventList: React.FC = () => {
         </InfiniteScroll>
       </div>
       <Modal
+        destroyOnClose
         width={"80%"}
         title={config.title}
         open={isModalVisible}
