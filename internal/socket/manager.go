@@ -583,26 +583,18 @@ func (j *Jober) Stop(err error) {
 }
 
 func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.errorCallback.Add(p, toCallbackFunc(fn))
+	j.errorCallback.Add(p, fn)
 	return j
 }
 
 func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.successCallback.Add(p, toCallbackFunc(fn))
+	j.successCallback.Add(p, fn)
 	return j
 }
 
 func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.finallyCallback.Add(p, toCallbackFunc(fn))
+	j.finallyCallback.Add(p, fn)
 	return j
-}
-
-func toCallbackFunc(fn func(err error, sendResultToUser func())) func(err error, next func()) {
-	return func(err error, next func()) {
-		fn(err, func() {
-			next()
-		})
-	}
 }
 
 func (j *Jober) Error() error {
