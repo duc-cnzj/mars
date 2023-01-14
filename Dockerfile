@@ -14,7 +14,7 @@ ARG TARGETOS
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
   apt update && \
-  apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu
+  apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu upx
 
 WORKDIR /app
 
