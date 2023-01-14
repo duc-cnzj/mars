@@ -1,4 +1,4 @@
-name: CI
+name: release
 on:
   push:
     tags:
@@ -34,64 +34,8 @@ jobs:
           path: |
             frontend/build
 
-  test:
-    needs: [build-frontend]
-    name: unittest
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis
-        ports:
-          - 6379:6379
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: test
-        ports:
-          - 33306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download frontend files
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend_dist_files
-          path: frontend/build
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.19'
-      - name: Setup minio
-        run: |
-          docker run -d -p 9000:9000 --name minio \
-            -e "MINIO_ACCESS_KEY=minioadmin" \
-            -e "MINIO_SECRET_KEY=minioadmin" \
-            minio/minio server /data
-      - name: Setup Nsq
-        run: |
-          docker run --name nsqlookupd -p 4160:4160 -p 4161:4161 -d nsqio/nsq /nsqlookupd
-          docker run --name nsqd -p 4150:4150 -p 4151:4151 -d nsqio/nsq /nsqd
-      - name: Run coverage
-        env:
-          DB_PORT: ${{ job.services.mysql.ports[3306] }}
-          DB_USERNAME: root
-          DB_DATABASE: test
-          S3_ENDPOINT: localhost:9000
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          NSQ_ADDR: localhost:4150
-          NSQ_LOOKUPD_ADDR: localhost:4161
-        run: |
-          make test
-
   build-linux:
-    needs: [test]
+    needs: [build-frontend]
     name: Build Go Binary linux amd64
     runs-on: ubuntu-latest
     steps:
@@ -128,7 +72,7 @@ jobs:
             app-linux-arm64
 
   build-darwin:
-    needs: [test]
+    needs: [build-frontend]
     name: Build Go Binary macos amd64
     runs-on: macos-latest
     steps:
