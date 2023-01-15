@@ -97,6 +97,8 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 	rsLister := inf.Apps().V1().ReplicaSets().Lister()
 	podInf := inf.Core().V1().Pods().Informer()
 	podLister := inf.Core().V1().Pods().Lister()
+	secretInf := inf.Core().V1().Secrets().Informer()
+	secretLister := inf.Core().V1().Secrets().Lister()
 	podInf.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterPod(nsPrefix),
 		Handler: cache.ResourceEventHandlerFuncs{
@@ -134,7 +136,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		},
 	})
 	inf.Start(app.Done())
-	cache.WaitForCacheSync(nil, eventInf.HasSynced, podInf.HasSynced)
+	cache.WaitForCacheSync(nil, eventInf.HasSynced, podInf.HasSynced, secretInf.HasSynced)
 
 	app.SetK8sClient(&contracts.K8sClient{
 		Client:           clientset,
@@ -142,6 +144,8 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		RestConfig:       config,
 		PodInformer:      podInf,
 		PodLister:        podLister,
+		SecretInformer:   secretInf,
+		SecretLister:     secretLister,
 		ReplicaSetLister: rsLister,
 		ServiceLister:    svcLister,
 		IngressLister:    ingLister,

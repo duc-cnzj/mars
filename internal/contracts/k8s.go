@@ -70,6 +70,9 @@ type K8sClient struct {
 	PodInformer cache.SharedIndexInformer
 	PodLister   v1.PodLister
 
+	SecretInformer cache.SharedIndexInformer
+	SecretLister   v1.SecretLister
+
 	ReplicaSetLister appsv1.ReplicaSetLister
 	ServiceLister    v1.ServiceLister
 	IngressLister    networkingv1.IngressLister

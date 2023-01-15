@@ -3,6 +3,8 @@ package testutil
 import (
 	"testing"
 
+	"github.com/duc-cnzj/mars/internal/plugins"
+
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/event/events"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -129,6 +131,7 @@ func TestMockGitServer(t *testing.T) {
 	server := MockGitServer(m, app)
 	assert.IsType(t, (*mock.MockGitServer)(nil), server)
 	assert.Same(t, server, app.GetPluginByName("gits"))
+	assert.Same(t, server, plugins.GetGitServer())
 }
 
 func TestValueMatcher(t *testing.T) {
@@ -146,4 +149,35 @@ func TestMockWsServer(t *testing.T) {
 	server := MockWsServer(m, app)
 	assert.IsType(t, (*mock.MockWsSender)(nil), server)
 	assert.Same(t, server, app.GetPluginByName("wssender"))
+	assert.Same(t, server, plugins.GetWsSender())
+}
+
+func TestMockDomainManager(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := MockApp(m)
+	dm := MockDomainManager(m, app)
+	assert.IsType(t, (*mock.MockDomainManager)(nil), dm)
+	assert.Same(t, dm, app.GetPluginByName("domain_manager"))
+	assert.Same(t, dm, plugins.GetDomainManager())
+}
+
+func TestNewSecretLister(t *testing.T) {
+	lister := NewSecretLister(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "sec1",
+		},
+	}, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "sec2",
+		},
+	})
+	_, err := lister.Secrets("ns").Get("sec1")
+	assert.Nil(t, err)
+	_, err = lister.Secrets("ns").Get("sec2")
+	assert.Nil(t, err)
+	_, err = lister.Secrets("ns").Get("sec3")
+	assert.Error(t, err)
 }

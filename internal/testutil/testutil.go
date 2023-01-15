@@ -60,6 +60,14 @@ func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
 	return appsv1lister.NewReplicaSetLister(idxer)
 }
 
+func NewSecretLister(rs ...*corev1.Secret) corev1lister.SecretLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range rs {
+		idxer.Add(po)
+	}
+	return corev1lister.NewSecretLister(idxer)
+}
+
 func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range svcs {
@@ -83,6 +91,15 @@ func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	return gits
+}
+
+func MockDomainManager(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDomainManager {
+	dm := mock.NewMockDomainManager(m)
+	app.EXPECT().Config().Return(&config.Config{DomainManagerPlugin: config.Plugin{Name: "domain_manager"}}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain_manager").Return(dm).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
+	dm.EXPECT().Initialize(gomock.Any()).AnyTimes()
+	return dm
 }
 
 func MockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockWsSender {

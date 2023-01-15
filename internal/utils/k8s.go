@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 
+	"k8s.io/client-go/kubernetes"
+
 	"helm.sh/helm/v3/pkg/releaseutil"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -43,7 +45,7 @@ func DecodeDockerConfigJSON(data []byte) (res DockerConfigJSON, err error) {
 	return
 }
 
-func CreateDockerSecrets(namespace string, auths config.DockerAuths) (*v1.Secret, error) {
+func CreateDockerSecrets(client kubernetes.Interface, namespace string, auths config.DockerAuths) (*v1.Secret, error) {
 	var entries = make(map[string]DockerConfigEntry)
 	for _, auth := range auths {
 		entries[auth.Server] = DockerConfigEntry{
@@ -60,7 +62,7 @@ func CreateDockerSecrets(namespace string, auths config.DockerAuths) (*v1.Secret
 
 	marshal, _ := json.Marshal(dockerCfgJSON)
 
-	return app.K8sClientSet().CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
+	return client.CoreV1().Secrets(namespace).Create(context.Background(), &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1.SchemeGroupVersion.String(),
 			Kind:       "Secret",
@@ -293,26 +295,4 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 	}
 
 	return false, "pod not running."
-}
-
-func AddTlsSecret(ns string, name string, key string, crt string) error {
-	_, err := app.K8sClientSet().CoreV1().Secrets(ns).Create(context.TODO(), &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-			Annotations: map[string]string{
-				"created-by": "mars",
-			},
-		},
-		StringData: map[string]string{
-			"tls.key": key,
-			"tls.crt": crt,
-		},
-		Type: v1.SecretTypeTLS,
-	}, metav1.CreateOptions{})
-	return err
 }

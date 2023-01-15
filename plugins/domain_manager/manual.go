@@ -1,10 +1,7 @@
 package domain_manager
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -52,27 +49,9 @@ func (m *ManualDomainManager) Initialize(args map[string]any) error {
 	if m.tlsKey == "" || m.tlsCrt == "" || m.wildcardDomain == "" {
 		return errors.New("tls_crt, tls_key, wildcard_domain required")
 	}
-	pair, err := tls.X509KeyPair([]byte(m.tlsCrt), []byte(m.tlsKey))
-	if err != nil {
+	if err := validateTelsWildcardDomain(m.tlsKey, m.tlsCrt, m.wildcardDomain); err != nil {
 		return err
 	}
-
-	certificate, err := x509.ParseCertificate(pair.Certificate[0])
-	if err != nil {
-		return err
-	}
-	var validDomain bool
-	for _, dnsName := range certificate.DNSNames {
-		if dnsName == m.wildcardDomain {
-			validDomain = true
-			break
-		}
-		continue
-	}
-	if !validDomain {
-		return fmt.Errorf("域名和证书不匹配, cert dnsNames: %v, 域名: %s", certificate.DNSNames, m.wildcardDomain)
-	}
-
 	mlog.Info("[Plugin]: " + m.Name() + " plugin Initialize...")
 	return nil
 }
