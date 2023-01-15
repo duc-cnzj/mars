@@ -147,3 +147,23 @@ func TestMockWsServer(t *testing.T) {
 	assert.IsType(t, (*mock.MockWsSender)(nil), server)
 	assert.Same(t, server, app.GetPluginByName("wssender"))
 }
+
+func TestNewSecretLister(t *testing.T) {
+	lister := NewSecretLister(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "sec1",
+		},
+	}, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "sec2",
+		},
+	})
+	_, err := lister.Secrets("ns").Get("sec1")
+	assert.Nil(t, err)
+	_, err = lister.Secrets("ns").Get("sec2")
+	assert.Nil(t, err)
+	_, err = lister.Secrets("ns").Get("sec3")
+	assert.Error(t, err)
+}

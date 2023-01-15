@@ -14,6 +14,8 @@ import (
 	"github.com/duc-cnzj/mars/internal/plugins"
 	"github.com/duc-cnzj/mars/internal/utils"
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/internal/utils/tls"
+
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +35,7 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetDomainManager()
 
 	app.BeforeServerRunHooks(ProjectPodEventListener)
-	app.BeforeServerRunHooks(UpdateCertTls)
+	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) { tls.UpdateCertTls(plugins.GetDomainManager().GetCerts()) })
 	app.BeforeServerRunHooks(SyncImagePullSecrets)
 
 	return nil
@@ -67,7 +69,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		var missing config.DockerAuths
 
 		for _, secretName := range ns.ImagePullSecretsArray() {
-			secret, err := app.K8sClient().Client.CoreV1().Secrets(ns.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
+			secret, err := app.K8sClient().SecretLister.Secrets(ns.Name).Get(secretName)
 			if err != nil {
 				mlog.Warningf("[SyncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
 				if apierrors.IsNotFound(err) {
@@ -121,7 +123,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		}
 
 		if len(missing) > 0 {
-			secret, err := utils.CreateDockerSecrets(ns.Name, missing)
+			secret, err := utils.CreateDockerSecrets(app.K8sClient().Client, ns.Name, missing)
 			if err == nil {
 				mlog.Warningf("[SyncImagePullSecrets]: Missing %v", missing)
 
@@ -146,44 +148,6 @@ func deleteSecret(app contracts.ApplicationInterface, ns *models.Namespace, secr
 	app.DB().Model(&ns).Updates(map[string]any{
 		"image_pull_secrets": strings.Join(newNsArray, ","),
 	})
-}
-
-func UpdateCertTls(app contracts.ApplicationInterface) {
-	// 需要更新 tls 证书
-	name, key, crt := plugins.GetDomainManager().GetCerts()
-	if name != "" && key != "" && crt != "" {
-		var namespaceList []models.Namespace
-		app.DB().Select("ID", "Name").Find(&namespaceList)
-		var changed bool
-		var changedSecrets []*v1.Secret
-		for _, n := range namespaceList {
-			secret, err := app.K8sClient().Client.CoreV1().Secrets(n.Name).Get(context.TODO(), name, metav1.GetOptions{})
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					utils.AddTlsSecret(n.Name, name, key, crt)
-					continue
-				}
-			}
-			if string(secret.Data["tls.crt"]) != crt || string(secret.Data["tls.key"]) != key {
-				changed = true
-				changedSecrets = append(changedSecrets, secret.DeepCopy())
-			}
-		}
-		if changed {
-			sdata := map[string]string{
-				"tls.key": key,
-				"tls.crt": crt,
-			}
-			mlog.Warning("[TLS]: certs changed, updating...")
-			for _, secret := range changedSecrets {
-				secret.StringData = sdata
-				_, err := app.K8sClient().Client.CoreV1().Secrets(secret.Namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
-				if err == nil {
-					mlog.Infof("[TLS]: namespace: %s, name %s updated", secret.Namespace, secret.Name)
-				}
-			}
-		}
-	}
 }
 
 func ProjectPodEventListener(app contracts.ApplicationInterface) {

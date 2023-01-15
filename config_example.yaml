@@ -42,6 +42,11 @@ domain_manager_plugin:
 #    wildcard_domain: "*.mars.local"
 #    tls_key: ""
 #    tls_crt: ""
+#  name: sync_secret_domain_manager
+#  args:
+#    wildcard_domain: "*.mars.local"
+#    secret_name: ""
+#    secret_namespace: ""
 #  name: cert-manager_domain_manager
 #  args:
 #    wildcard_domain: "*.mars.local"

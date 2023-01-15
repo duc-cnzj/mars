@@ -29,7 +29,7 @@
 - 支持查看容器日志。
 - 支持查看容器 cpu 和内存使用情况。
 - 插件化
-  - 队列驱动: ws_sender_nsq, ws_sender_redis, ws_sender_memory
+  - 队列驱动: ws_sender_nsq, ws_sender_redis, ws_sender_memory, sync_secret_domain_manager
   - 证书驱动: manual_domain_manager, cert-manager_domain_manager
   - 代码仓库支持: gitlab, github
   - 背景图: picture_cartoon，picture_bing

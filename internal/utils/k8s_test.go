@@ -26,36 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func TestAddTlsSecret(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	fk := fake.NewSimpleClientset()
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fk,
-	})
-	AddTlsSecret("default", "tls-secret", "key", "crt")
-	sec, _ := fk.CoreV1().Secrets("default").Get(context.TODO(), "tls-secret", v1.GetOptions{})
-	assert.Equal(t, &corev1.Secret{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "",
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "tls-secret",
-			Namespace: "default",
-			Annotations: map[string]string{
-				"created-by": "mars",
-			},
-		},
-		StringData: map[string]string{
-			"tls.key": "key",
-			"tls.crt": "crt",
-		},
-		Type: corev1.SecretTypeTLS,
-	}, sec)
-}
-
 func TestDecodeDockerConfigJSON(t *testing.T) {
 	a := DockerConfigJSON{
 		Auths: map[string]DockerConfigEntry{
@@ -83,12 +53,8 @@ func TestDecodeDockerConfigJSON(t *testing.T) {
 func TestCreateDockerSecrets(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	app := testutil.MockApp(m)
 	fk := fake.NewSimpleClientset()
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fk,
-	})
-	secret, _ := CreateDockerSecrets("default", config.DockerAuths{
+	secret, _ := CreateDockerSecrets(fk, "default", config.DockerAuths{
 		&config.DockerAuth{
 			Username: "name",
 			Password: "pwd",

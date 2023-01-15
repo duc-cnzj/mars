@@ -60,6 +60,14 @@ func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {
 	return appsv1lister.NewReplicaSetLister(idxer)
 }
 
+func NewSecretLister(rs ...*corev1.Secret) corev1lister.SecretLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range rs {
+		idxer.Add(po)
+	}
+	return corev1lister.NewSecretLister(idxer)
+}
+
 func NewServiceLister(svcs ...*corev1.Service) corev1lister.ServiceLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range svcs {

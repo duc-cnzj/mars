@@ -85,7 +85,7 @@ func (n *NamespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	mlog.Debug("成功创建namespace: ", create.Name)
 
 	var imagePullSecrets []string
-	secret, err := utils.CreateDockerSecrets(request.Namespace, app.Config().ImagePullSecrets)
+	secret, err := utils.CreateDockerSecrets(app.K8sClientSet(), request.Namespace, app.Config().ImagePullSecrets)
 	if err == nil {
 		imagePullSecrets = append(imagePullSecrets, secret.Name)
 	}

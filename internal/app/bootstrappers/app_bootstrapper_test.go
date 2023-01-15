@@ -18,7 +18,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	corev1lister "k8s.io/client-go/listers/core/v1"
 )
 
 type runHooksEqual struct{}
@@ -173,9 +175,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 	defer m.Finish()
 
 	app := testutil.MockApp(m)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fake.NewSimpleClientset(),
-	}).AnyTimes()
+	fk := fake.NewSimpleClientset()
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
@@ -194,7 +194,7 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 	}).AnyTimes()
 	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
 
-	secret, err := utils.CreateDockerSecrets("test", config.DockerAuths{
+	secret, err := utils.CreateDockerSecrets(fk, "test", config.DockerAuths{
 		{
 			Username: "1",
 			Password: "1",
@@ -207,8 +207,18 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		Name:             "test",
 		ImagePullSecrets: secret.Name,
 	}).Error)
+
+	getLister := func(fk kubernetes.Interface) corev1lister.SecretLister {
+		var ss []*corev1.Secret
+		list, _ := fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+		for idx := range list.Items {
+			ss = append(ss, &list.Items[idx])
+		}
+		return testutil.NewSecretLister(ss...)
+	}
 	secret.Data[corev1.DockerConfigJsonKey] = nil
-	app.K8sClient().Client.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	fk.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).AnyTimes()
 	SyncImagePullSecrets(app)
 	get, _ := app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	assert.Nil(t, get.Data[corev1.DockerConfigJsonKey])
@@ -225,9 +235,7 @@ func TestSyncImagePullSecrets(t *testing.T) {
 	defer m.Finish()
 
 	app := testutil.MockApp(m)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fake.NewSimpleClientset(),
-	}).AnyTimes()
+	fk := fake.NewSimpleClientset()
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
@@ -246,7 +254,7 @@ func TestSyncImagePullSecrets(t *testing.T) {
 	}).Times(1)
 	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
 
-	secret, err := utils.CreateDockerSecrets("test", config.DockerAuths{
+	secret, err := utils.CreateDockerSecrets(fk, "test", config.DockerAuths{
 		{
 			Username: "1",
 			Password: "1",
@@ -365,53 +373,4 @@ func TestSyncImagePullSecrets(t *testing.T) {
 	var newNs4 models.Namespace
 	assert.Nil(t, app.DB().Model(&models.Namespace{}).First(&newNs4).Error)
 	assert.Len(t, newNs4.ImagePullSecretsArray(), 1)
-}
-
-func TestUpdateCertTls(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-
-	app.EXPECT().Config().Return(&config.Config{DomainManagerPlugin: config.Plugin{Name: "test_domain"}}).AnyTimes()
-
-	d := mock.NewMockDomainManager(m)
-	app.EXPECT().GetPluginByName("test_domain").Return(d).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
-	d.EXPECT().Initialize(gomock.All()).AnyTimes()
-
-	d.EXPECT().GetCerts().Return("cert", "key", "crt")
-	db, fn := testutil.SetGormDB(m, app)
-	defer fn()
-	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
-
-	assert.Nil(t, db.Create(&models.Namespace{Name: "ns"}).Error)
-	assert.Nil(t, db.Create(&models.Namespace{Name: "ns-2"}).Error)
-	assert.Nil(t, db.Create(&models.Namespace{Name: "ns-3"}).Error)
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
-		Client: fake.NewSimpleClientset(
-			&corev1.Secret{
-				TypeMeta: v1.TypeMeta{
-					Kind: "Secret",
-				},
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: "ns-2",
-					Name:      "cert",
-				},
-				StringData: map[string]string{
-					"tls.key": "key-2",
-					"tls.crt": "crt-2",
-				},
-			},
-		),
-	}).AnyTimes()
-	UpdateCertTls(app)
-	s, _ := app.K8sClient().Client.CoreV1().Secrets("ns").Get(context.TODO(), "cert", v1.GetOptions{})
-	assert.Equal(t, "key", s.StringData["tls.key"])
-	assert.Equal(t, "crt", s.StringData["tls.crt"])
-	s2, _ := app.K8sClient().Client.CoreV1().Secrets("ns-2").Get(context.TODO(), "cert", v1.GetOptions{})
-	assert.Equal(t, "key", s2.StringData["tls.key"])
-	assert.Equal(t, "crt", s2.StringData["tls.crt"])
-	s3, _ := app.K8sClient().Client.CoreV1().Secrets("ns-3").Get(context.TODO(), "cert", v1.GetOptions{})
-	assert.Equal(t, "key", s3.StringData["tls.key"])
-	assert.Equal(t, "crt", s3.StringData["tls.crt"])
 }
