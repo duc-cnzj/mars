@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, memo } from "react";
+import { ReactDiffViewerStylesOverride } from "react-diff-viewer";
 import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import Elements from "./elements/Elements";
 import PipelineInfo from "./PipelineInfo";
@@ -34,6 +35,17 @@ interface WatchData {
   gitCommit: string;
   config: string;
 }
+
+const diffViewerStyles: ReactDiffViewerStylesOverride = {
+  gutter: { padding: "0 5px", minWidth: 25 },
+  marker: { padding: "0 6px" },
+  diffContainer: {
+    height: "100%",
+    display: "block",
+    width: "100%",
+    overflowX: "auto",
+  },
+};
 
 const ModalSub: React.FC<{
   namespaceId: number;
@@ -353,16 +365,7 @@ const ModalSub: React.FC<{
                 style={{ fontSize: 13 }}
               >
                 <DiffViewer
-                  styles={{
-                    gutter: { padding: "0 5px", minWidth: 25 },
-                    marker: { padding: "0 6px" },
-                    diffContainer: {
-                      height: "100%",
-                      display: "block",
-                      width: "100%",
-                      overflowX: "auto",
-                    },
-                  }}
+                  styles={diffViewerStyles}
                   mode={detail.config_type}
                   showDiffOnly={false}
                   oldValue={detail.config}
@@ -377,5 +380,4 @@ const ModalSub: React.FC<{
     </div>
   );
 };
-
 export default memo(ModalSub);
