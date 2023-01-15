@@ -87,7 +87,7 @@ func NewIngressLister(svcs ...*networkingv1.Ingress) networkingv1lister.IngressL
 func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockGitServer {
 	gits := mock.NewMockGitServer(m)
 	app.EXPECT().Config().Return(&config.Config{GitServerPlugin: config.Plugin{Name: "gits"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("gits").Return(gits).MinTimes(1)
+	app.EXPECT().GetPluginByName("gits").Return(gits).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gits.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	return gits
@@ -96,7 +96,7 @@ func MockGitServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mo
 func MockDomainManager(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDomainManager {
 	dm := mock.NewMockDomainManager(m)
 	app.EXPECT().Config().Return(&config.Config{DomainManagerPlugin: config.Plugin{Name: "domain_manager"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("domain_manager").Return(dm).MinTimes(1)
+	app.EXPECT().GetPluginByName("domain_manager").Return(dm).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	dm.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	return dm
@@ -105,7 +105,7 @@ func MockDomainManager(m *gomock.Controller, app *mock.MockApplicationInterface)
 func MockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockWsSender {
 	wssender := mock.NewMockWsSender(m)
 	app.EXPECT().Config().Return(&config.Config{WsSenderPlugin: config.Plugin{Name: "wssender"}}).AnyTimes()
-	app.EXPECT().GetPluginByName("wssender").Return(wssender).MinTimes(1)
+	app.EXPECT().GetPluginByName("wssender").Return(wssender).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	wssender.EXPECT().Initialize(gomock.Any()).AnyTimes()
 	return wssender
