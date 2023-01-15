@@ -322,5 +322,11 @@ func TestSyncSecretDomainManager_handleSecretChange(t *testing.T) {
 	db, f := testutil.SetGormDB(ctrl, app)
 	defer f()
 	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
+	called := false
+	m.updateCertTlsFunc = func(name, key, crt string) {
+		called = true
+		assert.Equal(t, SyncSecretSecretName, name)
+	}
 	m.handleSecretChange(sec1, sec3)
+	assert.True(t, called)
 }

@@ -44,6 +44,7 @@ func UpdateCertTls(secretName, tlsKey, tlsCrt string) {
 		secret, err := app.K8sClient().SecretLister.Secrets(n.Name).Get(secretName)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
+				mlog.Infof("[TLS]: Add secret namespace: %s, name %s.", n.Name, secretName)
 				AddTlsSecret(n.Name, secretName, tlsKey, tlsCrt)
 				continue
 			}

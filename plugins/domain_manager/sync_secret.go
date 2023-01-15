@@ -19,14 +19,15 @@ var _ plugins.DomainManager = (*SyncSecretDomainManager)(nil)
 const SyncSecretSecretName = "mars-tls-sync-secret"
 
 func init() {
-	dr := &SyncSecretDomainManager{}
+	dr := &SyncSecretDomainManager{updateCertTlsFunc: tls.UpdateCertTls}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
 type SyncSecretDomainManager struct {
-	nsPrefix       string
-	wildcardDomain string
-	domainSuffix   string
+	updateCertTlsFunc func(name, key, crt string)
+	nsPrefix          string
+	wildcardDomain    string
+	domainSuffix      string
 
 	secretNamespace string
 	secretName      string
@@ -124,7 +125,7 @@ func (d *SyncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
 			newCrt = string(newSec.Data["tls.crt"])
 		)
 		if oldKey != newKey || oldCrt != newCrt {
-			tls.UpdateCertTls(newSec.Name, newKey, newCrt)
+			d.updateCertTlsFunc(d.GetCerts())
 		}
 	}
 }
@@ -165,5 +166,6 @@ func (d *SyncSecretDomainManager) GetClusterIssuer() string {
 }
 
 func (d *SyncSecretDomainManager) GetCerts() (name, key, crt string) {
-	return SyncSecretSecretName, string(d.secret.Data["tls.key"]), string(d.secret.Data["tls.crt"])
+	sec := d.GetSecret()
+	return SyncSecretSecretName, string(sec.Data["tls.key"]), string(sec.Data["tls.crt"])
 }
