@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
@@ -53,6 +55,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 	var (
 		namespaceList       []models.Namespace
 		cfgImagePullSecrets = app.Config().ImagePullSecrets
+		k8sClient           = app.K8sClient()
 	)
 	var serverMap = make(map[string]utils.DockerConfigEntry)
 	for _, s := range cfgImagePullSecrets {
@@ -69,11 +72,11 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		var missing config.DockerAuths
 
 		for _, secretName := range ns.ImagePullSecretsArray() {
-			secret, err := app.K8sClient().SecretLister.Secrets(ns.Name).Get(secretName)
+			secret, err := k8sClient.SecretLister.Secrets(ns.Name).Get(secretName)
 			if err != nil {
 				mlog.Warningf("[SyncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
 				if apierrors.IsNotFound(err) {
-					deleteSecret(app, &ns, secretName)
+					deleteSecret(app, k8sClient.Client, &ns, secretName)
 				}
 				continue
 			}
@@ -98,7 +101,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 					}
 				}
 				if len(newConfigJson.Auths) == 0 {
-					deleteSecret(app, &ns, secretName)
+					deleteSecret(app, k8sClient.Client, &ns, secretName)
 					continue
 				}
 
@@ -106,7 +109,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 					mlog.Warningf("[SyncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
 					marshal, _ := json.Marshal(&newConfigJson)
 					secret.Data[v1.DockerConfigJsonKey] = marshal
-					app.K8sClient().Client.CoreV1().Secrets(ns.Name).Update(context.TODO(), secret, metav1.UpdateOptions{})
+					k8sClient.Client.CoreV1().Secrets(ns.Name).Update(context.TODO(), secret, metav1.UpdateOptions{})
 				}
 			}
 		}
@@ -123,7 +126,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		}
 
 		if len(missing) > 0 {
-			secret, err := utils.CreateDockerSecrets(app.K8sClient().Client, ns.Name, missing)
+			secret, err := utils.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
 			if err == nil {
 				mlog.Warningf("[SyncImagePullSecrets]: Missing %v", missing)
 
@@ -135,10 +138,10 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 	}
 }
 
-func deleteSecret(app contracts.ApplicationInterface, ns *models.Namespace, secretName string) {
+func deleteSecret(app contracts.ApplicationInterface, client kubernetes.Interface, ns *models.Namespace, secretName string) {
 	mlog.Warningf("[SyncImagePullSecrets]: DELETE: %s", secretName)
 
-	app.K8sClient().Client.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
+	client.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	var newNsArray []string
 	for _, name := range ns.ImagePullSecretsArray() {
 		if name != secretName {

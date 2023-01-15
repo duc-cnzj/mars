@@ -169,6 +169,14 @@ func TestProjectPodEventListener(t *testing.T) {
 	podFanOutObj2.Distribute(nil)
 	assert.True(t, true)
 }
+func getLister(fk kubernetes.Interface) corev1lister.SecretLister {
+	var ss []*corev1.Secret
+	list, _ := fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	for idx := range list.Items {
+		ss = append(ss, &list.Items[idx])
+	}
+	return testutil.NewSecretLister(ss...)
+}
 
 func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 	m := gomock.NewController(t)
@@ -178,8 +186,6 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 	fk := fake.NewSimpleClientset()
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
-	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	SyncImagePullSecrets(app)
 
 	// changed
 	app.EXPECT().Config().Return(&config.Config{
@@ -208,25 +214,18 @@ func TestSyncImagePullSecretsWithBadSecret(t *testing.T) {
 		ImagePullSecrets: secret.Name,
 	}).Error)
 
-	getLister := func(fk kubernetes.Interface) corev1lister.SecretLister {
-		var ss []*corev1.Secret
-		list, _ := fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
-		for idx := range list.Items {
-			ss = append(ss, &list.Items[idx])
-		}
-		return testutil.NewSecretLister(ss...)
-	}
 	secret.Data[corev1.DockerConfigJsonKey] = nil
 	fk.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
-	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).AnyTimes()
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
-	get, _ := app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
+	get, _ := fk.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	assert.Nil(t, get.Data[corev1.DockerConfigJsonKey])
 
 	secret.Data = map[string][]byte{}
-	app.K8sClient().Client.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	fk.CoreV1().Secrets("test").Update(context.TODO(), secret, v1.UpdateOptions{})
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
-	get, _ = app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
+	get, _ = fk.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	assert.Len(t, get.Data, 0)
 }
 
@@ -239,6 +238,7 @@ func TestSyncImagePullSecrets(t *testing.T) {
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	app.EXPECT().K8sClient().Times(1)
 	SyncImagePullSecrets(app)
 
 	// changed
@@ -267,8 +267,9 @@ func TestSyncImagePullSecrets(t *testing.T) {
 		Name:             "test",
 		ImagePullSecrets: secret.Name,
 	}).Error)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
-	get, _ := app.K8sClient().Client.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
+	get, _ := fk.CoreV1().Secrets("test").Get(context.TODO(), secret.Name, v1.GetOptions{})
 	dockerConfig, _ := utils.DecodeDockerConfigJSON(get.Data[corev1.DockerConfigJsonKey])
 	entry := dockerConfig.Auths["mars"]
 	assert.Equal(t, "name", entry.Username)
@@ -292,12 +293,13 @@ func TestSyncImagePullSecrets(t *testing.T) {
 			},
 		},
 	}).Times(1)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
 	var newNs models.Namespace
 	assert.Nil(t, app.DB().Model(&models.Namespace{}).First(&newNs).Error)
 	assert.Len(t, newNs.ImagePullSecretsArray(), 2)
 
-	list, err := app.K8sClient().Client.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	list, err := fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Len(t, list.Items, 2)
 
@@ -312,13 +314,14 @@ func TestSyncImagePullSecrets(t *testing.T) {
 			},
 		},
 	}).Times(1)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
 
 	var newNs2 models.Namespace
 	assert.Nil(t, app.DB().Model(&models.Namespace{}).First(&newNs2).Error)
 	assert.Len(t, newNs2.ImagePullSecretsArray(), 1)
 
-	list, err = app.K8sClient().Client.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	list, err = fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Len(t, list.Items, 1)
 	assert.Equal(t, newNs2.ImagePullSecretsArray()[0], list.Items[0].Name)
@@ -334,11 +337,12 @@ func TestSyncImagePullSecrets(t *testing.T) {
 			},
 		},
 	}).Times(1)
-	assert.Nil(t, app.K8sClient().Client.CoreV1().Secrets("test").Delete(context.TODO(), list.Items[0].Name, v1.DeleteOptions{}))
+	assert.Nil(t, fk.CoreV1().Secrets("test").Delete(context.TODO(), list.Items[0].Name, v1.DeleteOptions{}))
 
-	list, err = app.K8sClient().Client.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	list, err = fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Len(t, list.Items, 0)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
 
 	var newNs3 models.Namespace
@@ -361,12 +365,13 @@ func TestSyncImagePullSecrets(t *testing.T) {
 		},
 	}).Times(1)
 
-	list, err = app.K8sClient().Client.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	list, err = fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Len(t, list.Items, 1)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{Client: fk, SecretLister: getLister(fk)}).Times(1)
 	SyncImagePullSecrets(app)
 
-	list, err = app.K8sClient().Client.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
+	list, err = fk.CoreV1().Secrets("test").List(context.TODO(), v1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Len(t, list.Items, 2)
 
