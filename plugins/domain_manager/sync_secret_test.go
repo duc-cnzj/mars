@@ -1,7 +1,6 @@
 package domain_manager
 
 import (
-	"encoding/base64"
 	"errors"
 	"testing"
 
@@ -52,8 +51,8 @@ func TestSyncSecretDomainManager_GetCerts(t *testing.T) {
 			Name:      "my-secret",
 		},
 		Data: map[string][]byte{
-			"tls.key": base64Encode(tlsKey),
-			"tls.crt": base64Encode(tlsCrt),
+			"tls.key": []byte(tlsKey),
+			"tls.crt": []byte(tlsCrt),
 		},
 		Type: v1.SecretTypeTLS,
 	}
@@ -83,10 +82,6 @@ type testInf struct {
 
 func (i *testInf) AddEventHandler(handler cache.ResourceEventHandler) {
 	i.handlers = append(i.handlers, handler)
-}
-
-func base64Encode[T []byte | string](s T) []byte {
-	return []byte(base64.StdEncoding.EncodeToString([]byte(s)))
 }
 
 func TestSyncSecretDomainManager_GetClusterIssuer(t *testing.T) {
@@ -139,8 +134,8 @@ func TestSyncSecretDomainManager_Initialize(t *testing.T) {
 			Name:      "my-secret",
 		},
 		Data: map[string][]byte{
-			"tls.key": base64Encode(tlsKey),
-			"tls.crt": base64Encode(tlsCrt),
+			"tls.key": []byte(tlsKey),
+			"tls.crt": []byte(tlsCrt),
 		},
 		Type: v1.SecretTypeTLS,
 	}
@@ -187,8 +182,8 @@ func TestSyncSecretDomainManager_Initialize_Error(t *testing.T) {
 			Name:      "my-secret",
 		},
 		Data: map[string][]byte{
-			"tls.key": base64Encode(tlsKey),
-			"tls.crt": base64Encode(tlsCrt),
+			"tls.key": []byte(tlsKey),
+			"tls.crt": []byte(tlsCrt),
 		},
 		Type: v1.SecretTypeOpaque,
 	}
@@ -206,8 +201,8 @@ func TestSyncSecretDomainManager_Initialize_Error(t *testing.T) {
 			Name:      "my-secret",
 		},
 		Data: map[string][]byte{
-			"tls.key": base64Encode(tlsKey),
-			"tls.crt": base64Encode(tlsCrt),
+			"tls.key": []byte(tlsKey),
+			"tls.crt": []byte(tlsCrt),
 		},
 		Type: v1.SecretTypeTLS,
 	}

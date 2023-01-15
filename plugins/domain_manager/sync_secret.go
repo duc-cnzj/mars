@@ -1,7 +1,6 @@
 package domain_manager
 
 import (
-	"encoding/base64"
 	"errors"
 	"strings"
 	"sync"
@@ -84,8 +83,8 @@ func (d *SyncSecretDomainManager) Initialize(args map[string]any) error {
 	}
 
 	var (
-		tlsKey, _ = base64.StdEncoding.DecodeString(string(secret.Data["tls.key"]))
-		tlsCrt, _ = base64.StdEncoding.DecodeString(string(secret.Data["tls.crt"]))
+		tlsKey = secret.Data["tls.key"]
+		tlsCrt = secret.Data["tls.crt"]
 	)
 	err = validateTelsWildcardDomain(tlsKey, tlsCrt, d.wildcardDomain)
 	if err != nil {
@@ -166,7 +165,5 @@ func (d *SyncSecretDomainManager) GetClusterIssuer() string {
 }
 
 func (d *SyncSecretDomainManager) GetCerts() (name, key, crt string) {
-	tlsKey, _ := base64.StdEncoding.DecodeString(string(d.secret.Data["tls.key"]))
-	tlsCrt, _ := base64.StdEncoding.DecodeString(string(d.secret.Data["tls.crt"]))
-	return SyncSecretSecretName, string(tlsKey), string(tlsCrt)
+	return SyncSecretSecretName, string(d.secret.Data["tls.key"]), string(d.secret.Data["tls.crt"])
 }
