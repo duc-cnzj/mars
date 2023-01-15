@@ -322,11 +322,22 @@ func TestSyncSecretDomainManager_handleSecretChange(t *testing.T) {
 	db, f := testutil.SetGormDB(ctrl, app)
 	defer f()
 	assert.Nil(t, db.AutoMigrate(&models.Namespace{}))
-	called := false
+	called := 0
 	m.updateCertTlsFunc = func(name, key, crt string) {
-		called = true
+		called++
 		assert.Equal(t, SyncSecretSecretName, name)
 	}
 	m.handleSecretChange(sec1, sec3)
-	assert.True(t, called)
+	assert.Equal(t, 1, called)
+
+	sec4 := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
+		Data: map[string][]byte{
+			"tls.key": []byte("aaa"),
+			"tls.crt": []byte("bbb"),
+		},
+	}
+	m.handleSecretChange(nil, sec4)
+	assert.Same(t, m.secret, sec4)
+	assert.Equal(t, 2, called)
 }

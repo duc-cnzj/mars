@@ -106,12 +106,21 @@ func (d *SyncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj an
 			return sec.Namespace == d.secretNamespace && sec.Name == d.secretName
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj any) {
+				updateFunc(nil, obj)
+			},
 			UpdateFunc: updateFunc,
 		},
 	}
 }
 
 func (d *SyncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
+	if oldObj == nil && newObj != nil {
+		d.SetSecret(newObj.(*v1.Secret))
+		d.updateCertTlsFunc(d.GetCerts())
+		return
+	}
+
 	oldSec := oldObj.(*v1.Secret)
 	newSec := newObj.(*v1.Secret)
 	if newSec.ResourceVersion != oldSec.ResourceVersion {
