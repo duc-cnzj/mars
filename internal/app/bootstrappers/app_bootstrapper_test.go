@@ -379,3 +379,15 @@ func TestSyncImagePullSecrets(t *testing.T) {
 	assert.Nil(t, app.DB().Model(&models.Namespace{}).First(&newNs4).Error)
 	assert.Len(t, newNs4.ImagePullSecretsArray(), 1)
 }
+
+func Test_updateCerts(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+	db.AutoMigrate(&models.Namespace{})
+	manager := testutil.MockDomainManager(m, app)
+	manager.EXPECT().GetCerts().Return("name", "key", "crt").Times(1)
+	updateCerts(app)
+}

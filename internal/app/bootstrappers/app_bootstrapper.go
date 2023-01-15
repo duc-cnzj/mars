@@ -36,10 +36,14 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetDomainManager()
 
 	app.BeforeServerRunHooks(ProjectPodEventListener)
-	app.BeforeServerRunHooks(func(app contracts.ApplicationInterface) { tls.UpdateCertTls(plugins.GetDomainManager().GetCerts()) })
+	app.BeforeServerRunHooks(updateCerts)
 	app.BeforeServerRunHooks(SyncImagePullSecrets)
 
 	return nil
+}
+
+func updateCerts(app contracts.ApplicationInterface) {
+	tls.UpdateCertTls(plugins.GetDomainManager().GetCerts())
 }
 
 // SyncImagePullSecrets
