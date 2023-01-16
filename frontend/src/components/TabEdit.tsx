@@ -8,7 +8,7 @@ import {
   DeployStatus as DeployStatusEnum,
   selectList,
 } from "../store/reducers/createProject";
-import { Button, Row, Col, Form, Progress } from "antd";
+import { Button, Row, Col, Form, Progress, Affix } from "antd";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCreateProjectLog,
@@ -204,9 +204,10 @@ const ModalSub: React.FC<{
       dispatch(setCreateProjectLoading(slug, false));
     }
   }, [wsReady, dispatch, slug, resetTimeCost]);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="edit-project">
+    <div className="edit-project" ref={setContainer}>
       <Form
         style={{ height: "100%" }}
         initialValues={formInitData}
@@ -219,90 +220,95 @@ const ModalSub: React.FC<{
         <div
           style={{ height: "100%", display: "flex", flexDirection: "column" }}
         >
-          <PipelineInfo
-            projectId={data.gitProjectId}
-            branch={data.gitBranch}
-            commit={data.gitCommit}
-          />
+          <Affix target={() => container} style={{ zIndex: 18 }}>
+            <div style={{ backgroundColor: "white" }}>
+              <PipelineInfo
+                projectId={data.gitProjectId}
+                branch={data.gitBranch}
+                commit={data.gitCommit}
+              />
 
-          <Form.Item
-            name="selectors"
-            style={{ width: "100%", marginBottom: 10 }}
-            rules={[{ required: true, message: "项目必选" }]}
-          >
-            <ProjectSelector
-              disabled={isLoading}
-              isCreate={false}
-              onChange={onChange}
-            />
-          </Form.Item>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div className={classNames("edit-project__footer")}>
-              <Button
-                htmlType="submit"
-                style={{ fontSize: 12, marginRight: 5 }}
-                size="small"
-                type="primary"
-                loading={isLoading}
+              <Form.Item
+                name="selectors"
+                style={{ width: "100%", marginBottom: 10 }}
+                rules={[{ required: true, message: "项目必选" }]}
               >
-                部署
-              </Button>
-
-              <Button
-                size="small"
-                hidden={isLoading}
-                style={{ marginRight: 5, fontSize: 12 }}
-                disabled={isLoading}
-                onClick={onReset}
-              >
-                重置
-              </Button>
-              <Button
-                style={{ fontSize: 12, marginRight: 5 }}
-                size="small"
-                hidden={!isLoading}
-                danger
-                icon={<StopOutlined />}
-                type="dashed"
-                onClick={onCancel}
-              >
-                取消
-              </Button>
-              {list[slug]?.output?.length > 0 && (
-                <Button
-                  type="dashed"
-                  style={{ fontSize: 12, marginRight: 5 }}
-                  size="small"
-                  onClick={() => setShowLog((show) => !show)}
-                >
-                  {showLog ? "隐藏" : "查看"}日志
-                </Button>
-              )}
-
-              {!isLoading && (
-                <ConfigHistory
-                  onDataChange={(s: string) => {
-                    form.setFieldsValue({ config: s });
-                    setData((d) => ({ ...d, config: s }));
-                  }}
-                  projectID={detail.id}
-                  configType={detail.config_type}
-                  currentConfig={data.config}
-                  updatedAt={detail.updated_at}
+                <ProjectSelector
+                  disabled={isLoading}
+                  isCreate={false}
+                  onChange={onChange}
                 />
-              )}
+              </Form.Item>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div className={classNames("edit-project__footer")}>
+                  <Button
+                    htmlType="submit"
+                    style={{ fontSize: 12, marginRight: 5 }}
+                    size="small"
+                    type="primary"
+                    loading={isLoading}
+                  >
+                    部署
+                  </Button>
+
+                  <Button
+                    size="small"
+                    hidden={isLoading}
+                    style={{ marginRight: 5, fontSize: 12 }}
+                    disabled={isLoading}
+                    onClick={onReset}
+                  >
+                    重置
+                  </Button>
+                  <Button
+                    style={{ fontSize: 12, marginRight: 5 }}
+                    size="small"
+                    hidden={!isLoading}
+                    danger
+                    icon={<StopOutlined />}
+                    type="dashed"
+                    onClick={onCancel}
+                  >
+                    取消
+                  </Button>
+                  {list[slug]?.output?.length > 0 && (
+                    <Button
+                      type="dashed"
+                      style={{ fontSize: 12, marginRight: 5 }}
+                      size="small"
+                      onClick={() => setShowLog((show) => !show)}
+                    >
+                      {showLog ? "隐藏" : "查看"}日志
+                    </Button>
+                  )}
+
+                  {!isLoading && (
+                    <ConfigHistory
+                      onDataChange={(s: string) => {
+                        form.setFieldsValue({ config: s });
+                        setData((d) => ({ ...d, config: s }));
+                      }}
+                      projectID={detail.id}
+                      configType={detail.config_type}
+                      currentConfig={data.config}
+                      updatedAt={detail.updated_at}
+                    />
+                  )}
+                </div>
+                <Form.Item noStyle name={"debug"}>
+                  <DebugModeSwitch disabled={isLoading} />
+                </Form.Item>
+              </div>
             </div>
-            <Form.Item noStyle name={"debug"}>
-              <DebugModeSwitch disabled={isLoading} />
-            </Form.Item>
-          </div>
+          </Affix>
+
           <div style={{ marginTop: 10, display: showLog ? "block" : "none" }}>
             <Progress
               percent={processPercent}

@@ -13,7 +13,7 @@ import {
   selectList,
 } from "../store/reducers/createProject";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { message, Button, Form, Progress } from "antd";
+import { message, Button, Form, Progress, Affix } from "antd";
 import { PlusOutlined, StopOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -243,6 +243,7 @@ const CreateProjectModal: React.FC<{
       dispatch(setCreateProjectLoading(slug, false));
     }
   }, [wsReady, dispatch, slug, resetTimeCost]);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
     <div>
@@ -266,9 +267,10 @@ const CreateProjectModal: React.FC<{
         initialWidth={900}
         initialHeight={600}
         title={<div style={{ textAlign: "center" }}>创建项目</div>}
-        className="draggable-modal drag-item-modal"
+        className="draggable-modal"
       >
         <div
+          ref={setContainer}
           className="create-project-modal"
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
@@ -286,71 +288,74 @@ const CreateProjectModal: React.FC<{
                 flexDirection: "column",
               }}
             >
-              {data?.gitCommit && (
-                <PipelineInfo
-                  projectId={data.gitProjectId}
-                  branch={data.gitBranch}
-                  commit={data.gitCommit}
-                />
-              )}
-              <Form.Item
-                name="selectors"
-                style={{ width: "100%", marginBottom: 10 }}
-                rules={[{ required: true, message: "项目必选" }]}
-              >
-                <ProjectSelector
-                  disabled={isLoading}
-                  isCreate
-                  onChange={onChange}
-                />
-              </Form.Item>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingBottom: 10,
-                }}
-              >
-                <div style={{ display: "flex" }}>
-                  <Button
-                    htmlType="submit"
-                    style={{ fontSize: 12, marginRight: 5 }}
-                    size="small"
-                    danger={info.status === "bad"}
-                    type={"primary"}
-                    loading={isLoading}
-                  >
-                    {info.status === "bad" ? "集群资源不足" : "部署"}
-                  </Button>
-                  <Button
-                    style={{ fontSize: 12, marginRight: 5 }}
-                    size="small"
-                    hidden={!isLoading}
-                    danger
-                    icon={<StopOutlined />}
-                    type="dashed"
-                    onClick={onRemove}
-                  >
-                    取消
-                  </Button>
-                  {list[slug]?.output?.length > 0 && (
-                    <Button
-                      type="dashed"
-                      style={{ fontSize: 12, marginRight: 5 }}
-                      size="small"
-                      onClick={() => setShowLog((show) => !show)}
-                    >
-                      {showLog ? "隐藏" : "查看"}日志
-                    </Button>
+              <Affix target={() => container} style={{ zIndex: 18 }}>
+                <div style={{ backgroundColor: "white" }}>
+                  {data?.gitCommit && (
+                    <PipelineInfo
+                      projectId={data.gitProjectId}
+                      branch={data.gitBranch}
+                      commit={data.gitCommit}
+                    />
                   )}
-                </div>
-                <Form.Item noStyle name={"debug"}>
-                  <DebugModeSwitch disabled={isLoading} />
-                </Form.Item>
-              </div>
+                  <Form.Item
+                    name="selectors"
+                    style={{ width: "100%", marginBottom: 10 }}
+                    rules={[{ required: true, message: "项目必选" }]}
+                  >
+                    <ProjectSelector
+                      disabled={isLoading}
+                      isCreate
+                      onChange={onChange}
+                    />
+                  </Form.Item>
 
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingBottom: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex" }}>
+                      <Button
+                        htmlType="submit"
+                        style={{ fontSize: 12, marginRight: 5 }}
+                        size="small"
+                        danger={info.status === "bad"}
+                        type={"primary"}
+                        loading={isLoading}
+                      >
+                        {info.status === "bad" ? "集群资源不足" : "部署"}
+                      </Button>
+                      <Button
+                        style={{ fontSize: 12, marginRight: 5 }}
+                        size="small"
+                        hidden={!isLoading}
+                        danger
+                        icon={<StopOutlined />}
+                        type="dashed"
+                        onClick={onRemove}
+                      >
+                        取消
+                      </Button>
+                      {list[slug]?.output?.length > 0 && (
+                        <Button
+                          type="dashed"
+                          style={{ fontSize: 12, marginRight: 5 }}
+                          size="small"
+                          onClick={() => setShowLog((show) => !show)}
+                        >
+                          {showLog ? "隐藏" : "查看"}日志
+                        </Button>
+                      )}
+                    </div>
+                    <Form.Item noStyle name={"debug"}>
+                      <DebugModeSwitch disabled={isLoading} />
+                    </Form.Item>
+                  </div>
+                </div>
+              </Affix>
               <div
                 style={{ display: showLog ? "block" : "none", marginTop: 10 }}
               >
