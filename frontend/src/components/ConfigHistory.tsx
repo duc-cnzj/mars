@@ -68,7 +68,7 @@ const Content: React.FC<{
     >
       <Collapse accordion bordered={false}>
         {list.length > 0 ? (
-          list.map((item) => (
+          list.map((item, idx) => (
             <Panel
               key={item.version}
               header={
@@ -111,44 +111,42 @@ const Content: React.FC<{
               }
             >
               <div style={{ marginTop: 5 }}>
-                {currentConfig === item.config ? (
-                  <div>和当前配置一致</div>
-                ) : (
-                  <div>
-                    <DiffViewer
-                      mode={configType}
-                      styles={{
-                        line: { fontSize: 12 },
-                        gutter: { padding: "0 5px", minWidth: 20 },
-                        marker: { padding: "0 6px" },
-                        diffContainer: {
-                          display: "block",
-                          width: "100%",
-                          overflowX: "auto",
-                        },
-                      }}
-                      showDiffOnly
-                      oldValue={currentConfig}
-                      newValue={item.config}
-                      splitView={false}
-                    />
+                <div>
+                  <DiffViewer
+                    mode={configType}
+                    styles={{
+                      line: { fontSize: 12 },
+                      gutter: { padding: "0 5px", minWidth: 20 },
+                      marker: { padding: "0 6px" },
+                      diffContainer: {
+                        display: "block",
+                        width: "100%",
+                        overflowX: "auto",
+                      },
+                    }}
+                    showDiffOnly
+                    oldValue={
+                      list && idx + 1 < list.length ? list[idx + 1].config : ""
+                    }
+                    newValue={item.config}
+                    splitView={false}
+                  />
 
-                    <div
-                      style={{ display: "flex", flexDirection: "row-reverse" }}
+                  <div
+                    style={{ display: "flex", flexDirection: "row-reverse" }}
+                  >
+                    <Button
+                      onClick={() => {
+                        onDataChange(item.config);
+                      }}
+                      size="small"
+                      type="dashed"
+                      style={{ marginTop: 3 }}
                     >
-                      <Button
-                        onClick={() => {
-                          onDataChange(item.config);
-                        }}
-                        size="small"
-                        type="dashed"
-                        style={{ marginTop: 3 }}
-                      >
-                        使用这个配置
-                      </Button>
-                    </div>
+                      使用这个配置
+                    </Button>
                   </div>
-                )}
+                </div>
               </div>
             </Panel>
           ))
