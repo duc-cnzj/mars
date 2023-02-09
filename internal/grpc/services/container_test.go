@@ -191,7 +191,7 @@ func TestContainer_Exec(t *testing.T) {
 	re.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Return(re)
 	re.EXPECT().WithCommand(gomock.Any()).Return(re)
 	re.EXPECT().WithMethod(gomock.Any()).Return(re)
-	re.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("xxx"))
+	re.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("xxx"))
 	err = (&Container{
 		Executor: re,
 	}).Exec(&container.ExecRequest{
@@ -235,7 +235,7 @@ func (f *fakeRemoteExecutor) WithCommand(cmd []string) contracts.RemoteExecutor 
 	return f
 }
 
-func (f *fakeRemoteExecutor) Execute(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (f *fakeRemoteExecutor) Execute(ctx context.Context, clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	return f.execute(clientSet, config, stdin, stdout, stderr, tty, terminalSizeQueue)
 }
 

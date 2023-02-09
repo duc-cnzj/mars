@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"io"
 
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -38,7 +39,7 @@ func (e *defaultRemoteExecutor) WithCommand(cmd []string) contracts.RemoteExecut
 	return e
 }
 
-func (e *defaultRemoteExecutor) Execute(clientSet kubernetes.Interface, cfg *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (e *defaultRemoteExecutor) Execute(ctx context.Context, clientSet kubernetes.Interface, cfg *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	peo := e.newOption(stdin, stdout, stderr, tty)
 
 	req := clientSet.CoreV1().
@@ -54,7 +55,7 @@ func (e *defaultRemoteExecutor) Execute(clientSet kubernetes.Interface, cfg *res
 		return err
 	}
 
-	return exec.Stream(remotecommand.StreamOptions{
+	return exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:             stdin,
 		Stdout:            stdout,
 		Stderr:            stderr,

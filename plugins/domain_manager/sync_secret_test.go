@@ -80,8 +80,9 @@ type testInf struct {
 	cache.SharedIndexInformer
 }
 
-func (i *testInf) AddEventHandler(handler cache.ResourceEventHandler) {
+func (i *testInf) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	i.handlers = append(i.handlers, handler)
+	return nil, nil
 }
 
 func TestSyncSecretDomainManager_GetClusterIssuer(t *testing.T) {

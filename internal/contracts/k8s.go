@@ -5,6 +5,7 @@ package contracts
 //go:generate mockgen -destination ../mock/mock_archiver.go -package mock github.com/duc-cnzj/mars/internal/contracts Archiver
 
 import (
+	"context"
 	"io"
 	"net/url"
 
@@ -95,7 +96,7 @@ type RemoteExecutor interface {
 	WithMethod(method string) RemoteExecutor
 	WithContainer(namespace, pod, container string) RemoteExecutor
 	WithCommand(cmd []string) RemoteExecutor
-	Execute(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
+	Execute(ctx context.Context, clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
 }
 
 type CopyFileToPodResult struct {

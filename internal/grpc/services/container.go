@@ -94,7 +94,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 			WithMethod("POST").
 			WithContainer(request.Namespace, request.Pod, request.Container).
 			WithCommand(request.Command).
-			Execute(clientSet, restConfig, nil, writer, writer, false, nil)
+			Execute(context.TODO(), clientSet, restConfig, nil, writer, writer, false, nil)
 		if err != nil {
 			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
 				mlog.Debugf("[Container]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())

@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -39,17 +40,17 @@ func (m *MockRemoteExecutor) EXPECT() *MockRemoteExecutorMockRecorder {
 }
 
 // Execute mocks base method.
-func (m *MockRemoteExecutor) Execute(arg0 kubernetes.Interface, arg1 *rest.Config, arg2 io.Reader, arg3, arg4 io.Writer, arg5 bool, arg6 remotecommand.TerminalSizeQueue) error {
+func (m *MockRemoteExecutor) Execute(arg0 context.Context, arg1 kubernetes.Interface, arg2 *rest.Config, arg3 io.Reader, arg4, arg5 io.Writer, arg6 bool, arg7 remotecommand.TerminalSizeQueue) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "Execute", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockRemoteExecutorMockRecorder) Execute(arg0, arg1, arg2, arg3, arg4, arg5, arg6 any) *gomock.Call {
+func (mr *MockRemoteExecutorMockRecorder) Execute(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockRemoteExecutor)(nil).Execute), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockRemoteExecutor)(nil).Execute), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // WithCommand mocks base method.

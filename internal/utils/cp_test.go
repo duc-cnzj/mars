@@ -45,7 +45,7 @@ func Test_fileCopier_Copy(t *testing.T) {
 	re.EXPECT().WithCommand([]string{"tar", "-zmxf", "-", "-C", "/abc"}).Return(re)
 	re.EXPECT().WithMethod("POST").Return(re)
 	re.EXPECT().WithContainer("ns", "pod", "app").Return(re)
-	re.EXPECT().Execute(nil, nil, gomock.Any(), gomock.Any(), gomock.Any(), false, nil).Return(nil)
+	re.EXPECT().Execute(gomock.Any(), nil, nil, gomock.Any(), gomock.Any(), gomock.Any(), false, nil).Return(nil)
 
 	_, err := NewFileCopier(re, arch).Copy("ns", "pod", "app", "a.txt", "/abc", nil, nil)
 	assert.Nil(t, err)
@@ -80,7 +80,7 @@ func Test_fileCopier_Copy_DiffDir(t *testing.T) {
 	re.EXPECT().WithCommand([]string{"tar", "-zmxf", "-", "-C", "/tmp"}).Return(re)
 	re.EXPECT().WithMethod("POST").Return(re)
 	re.EXPECT().WithContainer("ns", "pod", "app").Return(re)
-	re.EXPECT().Execute(nil, nil, gomock.Any(), gomock.Any(), gomock.Any(), false, nil).Return(nil)
+	re.EXPECT().Execute(gomock.Any(), nil, nil, gomock.Any(), gomock.Any(), gomock.Any(), false, nil).Return(nil)
 
 	res, err := NewFileCopier(re, arch).Copy("ns", "pod", "app", "a.txt", "", nil, nil)
 	assert.Nil(t, err)

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -117,7 +118,7 @@ func (fc *fileCopier) Copy(namespace, pod, container, fpath, targetContainerDir 
 		WithCommand([]string{"tar", "-zmxf", "-", "-C", targetContainerDir}).
 		WithMethod("POST").
 		WithContainer(namespace, pod, container).
-		Execute(clientSet, config, reader, outbf, errbf, false, nil)
+		Execute(context.TODO(), clientSet, config, reader, outbf, errbf, false, nil)
 
 	return &contracts.CopyFileToPodResult{
 		TargetDir:     targetContainerDir,
