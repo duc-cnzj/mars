@@ -233,6 +233,14 @@ func TestGetIngressMappingByNamespace(t *testing.T) {
 					SecretName: "sec2",
 				},
 			},
+			Rules: []v12.IngressRule{
+				{
+					Host: "http.com",
+				},
+				{
+					Host: "app2.org",
+				},
+			},
 		},
 	}
 	ing3 := v12.Ingress{
@@ -321,10 +329,9 @@ func TestGetIngressMappingByNamespace(t *testing.T) {
 	mapping := GetIngressMappingByProjects(ns.Name, ns.Projects...)
 
 	assert.Len(t, mapping["app1"], 3)
-	assert.Len(t, mapping["app2"], 1)
-	for _, endpoint := range mapping["app2"] {
-		assert.True(t, strings.HasPrefix(endpoint.Url, "https://"))
-	}
+	assert.Len(t, mapping["app2"], 2)
+	assert.Equal(t, "https://app2.org", mapping["app2"][0].Url)
+	assert.Equal(t, "http://http.com", mapping["app2"][1].Url)
 	assert.Len(t, mapping["xxx"], 0)
 	assert.Len(t, mapping["yyy"], 2)
 	for _, endpoint := range mapping["yyy"] {
@@ -756,4 +763,50 @@ func TestEndpointMapping_Get(t *testing.T) {
 	}
 	assert.Nil(t, em.Get("xxxx"))
 	assert.Len(t, em.Get("a"), 2)
+}
+
+func TestEndpointMapping_Sort(t *testing.T) {
+	e := EndpointMapping{
+		"a": []*Endpoint{
+			{
+				Name: "a1",
+				Url:  "https://xxx",
+			},
+			{
+				Name: "a2",
+				Url:  "http://xxx",
+			},
+		},
+		"b": []*Endpoint{
+			{
+				Name: "b1",
+				Url:  "http://xxx",
+			},
+			{
+				Name: "b2",
+				Url:  "https://xxx",
+			},
+		},
+	}
+	e.Sort()
+	assert.Equal(t, []*Endpoint{
+		{
+			Name: "a1",
+			Url:  "https://xxx",
+		},
+		{
+			Name: "a2",
+			Url:  "http://xxx",
+		},
+	}, e["a"])
+	assert.Equal(t, []*Endpoint{
+		{
+			Name: "b2",
+			Url:  "https://xxx",
+		},
+		{
+			Name: "b1",
+			Url:  "http://xxx",
+		},
+	}, e["b"])
 }

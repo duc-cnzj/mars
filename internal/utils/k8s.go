@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"k8s.io/client-go/kubernetes"
@@ -149,7 +150,27 @@ func isHttpPortName(name string) bool {
 	}
 }
 
+type sortEndpoint []*Endpoint
+
+func (s sortEndpoint) Len() int {
+	return len(s)
+}
+
+func (s sortEndpoint) Less(i, j int) bool {
+	return strings.HasPrefix(s[i].Url, "https") && !strings.HasPrefix(s[j].Url, "https")
+}
+
+func (s sortEndpoint) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 type EndpointMapping map[string][]*Endpoint
+
+func (e EndpointMapping) Sort() {
+	for _, endpoints := range e {
+		sort.Sort(sortEndpoint(endpoints))
+	}
+}
 
 func (e EndpointMapping) Get(projName string) []*Endpoint {
 	return e[projName]
@@ -195,6 +216,7 @@ func GetNodePortMappingByProjects(namespace string, projects ...models.Project) 
 			}
 		}
 	}
+
 	return m
 }
 
@@ -237,6 +259,8 @@ func GetLoadBalancerMappingByProjects(namespace string, projects ...models.Proje
 			}
 		}
 	}
+	m.Sort()
+
 	return m
 }
 
@@ -249,29 +273,42 @@ func GetIngressMappingByProjects(namespace string, projects ...models.Project) E
 	var m = EndpointMapping{}
 
 	list, _ := app.K8sClient().IngressLister.Ingresses(namespace).List(labels.Everything())
+	type Host = string
+	var allHosts = make(map[Host]struct {
+		projectName string
+		tls         bool
+	})
 	for _, item := range list {
-		if len(item.Spec.TLS) > 0 {
-			for _, tls := range item.Spec.TLS {
-				if projectName, ok := projectMap.GetProject(item); ok {
-					data := m[projectName]
-					var hosts []*Endpoint
-					for _, host := range tls.Hosts {
-						hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("https://%s", host)})
-					}
-					m[projectName] = append(data, hosts...)
-				}
+		for _, rules := range item.Spec.Rules {
+			if projectName, ok := projectMap.GetProject(item); ok {
+				allHosts[rules.Host] = struct {
+					projectName string
+					tls         bool
+				}{projectName: projectName, tls: false}
 			}
-		} else {
-			for _, rules := range item.Spec.Rules {
-				if projectName, ok := projectMap.GetProject(item); ok {
-					data := m[projectName]
-					var hosts []*Endpoint
-					hosts = append(hosts, &Endpoint{Name: projectName, Url: fmt.Sprintf("http://%s", rules.Host)})
-					m[projectName] = append(data, hosts...)
+		}
+		for _, tls := range item.Spec.TLS {
+			if projectName, ok := projectMap.GetProject(item); ok {
+				for _, host := range tls.Hosts {
+					allHosts[host] = struct {
+						projectName string
+						tls         bool
+					}{projectName: projectName, tls: true}
 				}
 			}
 		}
 	}
+	for host, data := range allHosts {
+		urlScheme := "http"
+		if data.tls {
+			urlScheme = "https"
+		}
+		m[data.projectName] = append(m[data.projectName], &Endpoint{
+			Name: data.projectName,
+			Url:  fmt.Sprintf("%s://%s", urlScheme, host),
+		})
+	}
+	m.Sort()
 
 	return m
 }
