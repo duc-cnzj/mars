@@ -342,7 +342,7 @@ func (c *Command) Days(days []int) contracts.Command {
 		daysStr = append(daysStr, strconv.Itoa(day))
 	}
 	c.spliceIntoPosition(POS_SECOND, "0")
-	c.spliceIntoPosition(5, strings.Join(daysStr, ","))
+	c.spliceIntoPosition(POS_DAY_OF_WEEK, strings.Join(daysStr, ","))
 	return c
 }
 
