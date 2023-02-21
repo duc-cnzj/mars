@@ -65,9 +65,10 @@ func TestRecorder_Close(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		user:  contracts.UserInfo{Name: "duc"},
-		timer: timer.NewRealTimer(),
+	r := &recorder{
+		action: types.EventActionType_Shell,
+		user:   contracts.UserInfo{Name: "duc"},
+		timer:  timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -136,7 +137,7 @@ func TestRecorder_Close2(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
+	r := &recorder{
 		user:  contracts.UserInfo{Name: "duc"},
 		timer: timer.NewRealTimer(),
 		container: contracts.Container{
@@ -185,7 +186,7 @@ func TestRecorder_Close3(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
+	r := &recorder{
 		user:  contracts.UserInfo{Name: "duc"},
 		timer: timer.NewRealTimer(),
 		container: contracts.Container{
@@ -225,7 +226,7 @@ func TestRecorder_Write(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	f := mock.NewMockFile(m)
-	r := &Recorder{
+	r := &recorder{
 		user:  contracts.UserInfo{Name: "duc"},
 		timer: timer.NewRealTimer(),
 		container: contracts.Container{
@@ -253,7 +254,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	f := mock.NewMockFile(m)
-	r := &Recorder{
+	r := &recorder{
 		user:  contracts.UserInfo{Name: "duc"},
 		timer: timer.NewRealTimer(),
 		container: contracts.Container{
@@ -276,7 +277,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 }
 
 func TestRecorder_Resize(t *testing.T) {
-	r := &Recorder{}
+	r := &recorder{}
 	r.Resize(10, 20)
 	r.Resize(20, 10)
 	assert.Equal(t, uint16(20), r.rows)
@@ -288,7 +289,7 @@ func Test_realTimer_Now(t *testing.T) {
 }
 
 func TestRecorder_HeadLineColRow(t *testing.T) {
-	r := &Recorder{}
+	r := &recorder{}
 	r.HeadLineColRow(10, 20)
 	r.HeadLineColRow(20, 10)
 	assert.Equal(t, uint16(20), r.rows)
@@ -307,9 +308,9 @@ func TestNewRecorder(t *testing.T) {
 		Pod:       "p",
 		Container: "c",
 	}
-	recorder := NewRecorder(types.EventActionType_Exec, contracts.UserInfo{Name: "duc"}, timer.NewRealTimer(), c)
-	assert.Equal(t, types.EventActionType_Exec, recorder.(*Recorder).action)
-	assert.Equal(t, contracts.UserInfo{Name: "duc"}, recorder.(*Recorder).user)
-	assert.NotNil(t, recorder.(*Recorder).timer)
-	assert.Equal(t, c, recorder.(*Recorder).container)
+	r := NewRecorder(types.EventActionType_Exec, contracts.UserInfo{Name: "duc"}, timer.NewRealTimer(), c)
+	assert.Equal(t, types.EventActionType_Exec, r.(*recorder).action)
+	assert.Equal(t, contracts.UserInfo{Name: "duc"}, r.(*recorder).user)
+	assert.NotNil(t, r.(*recorder).timer)
+	assert.Equal(t, c, r.(*recorder).container)
 }

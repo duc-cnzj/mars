@@ -1,10 +1,13 @@
 package socket
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/rest"
 
 	"github.com/duc-cnzj/mars/internal/testutil"
 
@@ -35,7 +38,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	p := &MyPtyHandler{
 		id:       "duc",
 		conn:     &WsConn{pubSub: ps},
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 2),
 		doneChan: make(chan struct{}),
@@ -134,7 +137,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
 	p := &MyPtyHandler{
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
@@ -146,7 +149,7 @@ func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
 func TestMyPtyHandler_Read(t *testing.T) {
 	p := &MyPtyHandler{
 		id:       "duc",
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan: make(chan struct{}),
@@ -188,7 +191,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 
 	p2 := &MyPtyHandler{
 		id:       "duc",
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan: make(chan struct{}),
@@ -201,7 +204,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 
 	p3 := &MyPtyHandler{
 		id:       "duc",
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
 		doneChan: make(chan struct{}),
 	}
@@ -215,14 +218,14 @@ func TestMyPtyHandler_Read(t *testing.T) {
 
 func TestMyPtyHandler_Recorder(t *testing.T) {
 	p := &MyPtyHandler{
-		recorder: &Recorder{},
+		recorder: &recorder{},
 	}
 	assert.Implements(t, (*contracts.RecorderInterface)(nil), p.Recorder())
 }
 
 func TestMyPtyHandler_SetShell(t *testing.T) {
 	p := &MyPtyHandler{
-		recorder: &Recorder{},
+		recorder: &recorder{},
 	}
 	p.SetShell("xxx")
 	assert.Equal(t, "xxx", p.recorder.GetShell())
@@ -426,7 +429,7 @@ func Test_resetSession(t *testing.T) {
 			Pod:       "b",
 			Container: "c",
 		},
-		recorder:  &Recorder{},
+		recorder:  &recorder{},
 		id:        "id",
 		conn:      &WsConn{},
 		doneChan:  make(chan struct{}, 1),
@@ -457,7 +460,7 @@ func Test_resetSession4(t *testing.T) {
 			Pod:       "b",
 			Container: "c",
 		},
-		recorder:  &Recorder{},
+		recorder:  &recorder{},
 		id:        "id",
 		conn:      &WsConn{},
 		doneChan:  make(chan struct{}, 1),
@@ -480,7 +483,7 @@ func Test_resetSession1(t *testing.T) {
 			Pod:       "b",
 			Container: "c",
 		},
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		id:       "id",
 		conn:     &WsConn{},
 		doneChan: make(chan struct{}, 1),
@@ -505,7 +508,7 @@ func Test_resetSession2(t *testing.T) {
 			Pod:       "b",
 			Container: "c",
 		},
-		recorder: &Recorder{},
+		recorder: &recorder{},
 		id:       "id",
 		conn:     &WsConn{},
 		doneChan: make(chan struct{}, 1),
@@ -566,4 +569,21 @@ func TestMyPtyHandler_ClosePreviousChannels(t *testing.T) {
 		defaultTimes++
 	}
 	assert.Equal(t, 2, defaultTimes)
+}
+
+func Test_startProcess1(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	e := mock.NewMockRemoteExecutor(m)
+	pty := &MyPtyHandler{}
+	cfg := &rest.Config{}
+	e.EXPECT().WithMethod("POST").Return(e)
+	e.EXPECT().WithCommand([]string{"ls"}).Return(e)
+	e.EXPECT().WithContainer("ns", "pod", "c").Return(e)
+	e.EXPECT().Execute(context.TODO(), nil, cfg, pty, pty, pty, true, pty).Return(nil)
+	assert.Nil(t, startProcess(e, nil, cfg, &contracts.Container{
+		Namespace: "ns",
+		Pod:       "pod",
+		Container: "c",
+	}, []string{"ls"}, pty))
 }

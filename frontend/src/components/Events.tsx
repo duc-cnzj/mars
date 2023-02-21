@@ -160,6 +160,12 @@ const EventList: React.FC = () => {
               执行命令
             </Tag>
           );
+        case pb.types.EventActionType.Exec:
+          return (
+            <Tag color="#a78bfa" style={style}>
+              SDK 执行命令
+            </Tag>
+          );
         case pb.types.EventActionType.Update:
           return (
             <Tag color="#52c41a" style={style}>
@@ -280,6 +286,9 @@ const EventList: React.FC = () => {
               </Option>
               <Option value={pb.types.EventActionType.DryRun}>试运行</Option>
               <Option value={pb.types.EventActionType.Shell}>执行命令</Option>
+              <Option value={pb.types.EventActionType.Exec}>
+                SDK 执行命令
+              </Option>
               <Option value={pb.types.EventActionType.Update}>更新</Option>
               <Option value={pb.types.EventActionType.Upload}>上传文件</Option>
               <Option value={pb.types.EventActionType.Login}>登录</Option>
@@ -357,7 +366,8 @@ const EventList: React.FC = () => {
                   description={`${item.message}`}
                 />
                 {!!item.file &&
-                  item.action === pb.types.EventActionType.Shell && (
+                  (item.action === pb.types.EventActionType.Shell ||
+                    item.action === pb.types.EventActionType.Exec) && (
                     <>
                       <Button
                         type="dashed"

@@ -26,7 +26,7 @@ type Timer interface {
 	Now() time.Time
 }
 
-type Recorder struct {
+type recorder struct {
 	sync.RWMutex
 	action    types.EventActionType
 	timer     Timer
@@ -47,7 +47,7 @@ type Recorder struct {
 }
 
 func NewRecorder(action types.EventActionType, user contracts.UserInfo, timer Timer, container contracts.Container) contracts.RecorderInterface {
-	return &Recorder{user: user, timer: timer, container: container, action: action}
+	return &recorder{user: user, timer: timer, container: container, action: action}
 }
 
 func max[T int | uint16 | uint64](a, b T) T {
@@ -57,30 +57,30 @@ func max[T int | uint16 | uint64](a, b T) T {
 	return a
 }
 
-func (r *Recorder) GetShell() string {
+func (r *recorder) GetShell() string {
 	r.shellMu.RLock()
 	defer r.shellMu.RUnlock()
 	return r.shell
 }
 
-func (r *Recorder) SetShell(sh string) {
+func (r *recorder) SetShell(sh string) {
 	r.shellMu.Lock()
 	defer r.shellMu.Unlock()
 	r.shell = sh
 }
 
-func (r *Recorder) Resize(cols, rows uint16) {
+func (r *recorder) Resize(cols, rows uint16) {
 	r.HeadLineColRow(cols, rows)
 }
 
-func (r *Recorder) HeadLineColRow(cols, rows uint16) {
+func (r *recorder) HeadLineColRow(cols, rows uint16) {
 	r.rcMu.Lock()
 	defer r.rcMu.Unlock()
 	r.cols = max(r.cols, cols)
 	r.rows = max(r.rows, rows)
 }
 
-func (r *Recorder) Write(data string) (err error) {
+func (r *recorder) Write(data string) (err error) {
 	r.Lock()
 	defer r.Unlock()
 	r.once.Do(func() {
@@ -105,7 +105,7 @@ func (r *Recorder) Write(data string) (err error) {
 	return err
 }
 
-func (r *Recorder) Close() error {
+func (r *recorder) Close() error {
 	r.RLock()
 	defer r.RUnlock()
 	var (

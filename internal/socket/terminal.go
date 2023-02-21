@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/executor"
+
 	timer2 "github.com/duc-cnzj/mars/internal/utils/timer"
 
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
@@ -19,9 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/google/uuid"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -395,41 +395,12 @@ func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
 
 // startProcess is called by handleAttach
 // Executed cmd in the contracts.Container specified in request and connects it up with the ptyHandler (a session)
-func startProcess(client kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
-	namespace := container.Namespace
-	podName := container.Pod
-	containerName := container.Container
-
-	req := client.
-		CoreV1().
-		RESTClient().
-		Post().
-		Resource("pods").
-		Name(podName).
-		Namespace(namespace).
-		SubResource("exec")
-
-	req.VersionedParams(&v1.PodExecOptions{
-		Container: containerName,
-		Command:   cmd,
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       true,
-	}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
-	if err != nil {
-		return err
-	}
-
-	return exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
-		Stdin:             ptyHandler,
-		Stdout:            ptyHandler,
-		Stderr:            ptyHandler,
-		TerminalSizeQueue: ptyHandler,
-		Tty:               true,
-	})
+func startProcess(executor contracts.RemoteExecutor, client kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
+	return executor.
+		WithContainer(container.Namespace, container.Pod, container.Container).
+		WithMethod("POST").
+		WithCommand(cmd).
+		Execute(context.TODO(), client, cfg, ptyHandler, ptyHandler, ptyHandler, true, ptyHandler)
 }
 
 func GenMyPtyHandlerId() string {
@@ -468,12 +439,12 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
-
+	exec := executor.NewDefaultRemoteExecutor()
 	session, _ := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
 		session.SetShell(shell)
-		err = startProcess(k8sClient, cfg, container, cmd, session)
+		err = startProcess(exec, k8sClient, cfg, container, cmd, session)
 	} else {
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
@@ -485,7 +456,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 			}
 			cmd := []string{testShell}
 			session.SetShell(testShell)
-			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {
+			if err = startProcess(exec, k8sClient, cfg, container, cmd, session); err == nil {
 				break
 			}
 			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
