@@ -577,7 +577,8 @@
               "DryRun",
               "Shell",
               "Login",
-              "CancelDeploy"
+              "CancelDeploy",
+              "Exec"
             ],
             "type": "string",
             "default": "Unknown",
@@ -3089,7 +3090,8 @@
         "DryRun",
         "Shell",
         "Login",
-        "CancelDeploy"
+        "CancelDeploy",
+        "Exec"
       ]
     },
     "typesEventModel": {

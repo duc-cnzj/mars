@@ -22,24 +22,19 @@ var (
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 
-type timer interface {
+type Timer interface {
 	Now() time.Time
-}
-
-type realTimer struct{}
-
-func (r realTimer) Now() time.Time {
-	return time.Now()
 }
 
 type Recorder struct {
 	sync.RWMutex
-	timer     timer
+	action    types.EventActionType
+	timer     Timer
 	container contracts.Container
 	f         contracts.File
 	startTime time.Time
 
-	t    *MyPtyHandler
+	user contracts.UserInfo
 	once sync.Once
 
 	buffer *bufio.Writer
@@ -49,6 +44,10 @@ type Recorder struct {
 
 	rcMu       sync.RWMutex
 	cols, rows uint16
+}
+
+func NewRecorder(action types.EventActionType, user contracts.UserInfo, timer Timer, container contracts.Container) contracts.RecorderInterface {
+	return &Recorder{user: user, timer: timer, container: container, action: action}
 }
 
 func max[T int | uint16 | uint64](a, b T) T {
@@ -87,9 +86,9 @@ func (r *Recorder) Write(data string) (err error) {
 	r.once.Do(func() {
 		var file contracts.File
 		file, err = app.LocalUploader().Disk("tmp").NewFile(fmt.Sprintf("%s/%s/%s",
-			r.t.conn.GetUser().Name,
+			r.user.Name,
 			r.timer.Now().Format("2006-01-02"),
-			fmt.Sprintf("recorder-%s-%s-%s-%s.cast.tmp", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+			fmt.Sprintf("recorder-%s-%s-%s-%s.cast.tmp", r.container.Namespace, r.container.Pod, r.container.Container, utils.RandomString(20))))
 		if err != nil {
 			return
 		}
@@ -120,9 +119,9 @@ func (r *Recorder) Close() error {
 	r.buffer.Flush()
 
 	upFile, _ := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
-		r.t.conn.GetUser().Name,
+		r.user.Name,
 		r.timer.Now().Format("2006-01-02"),
-		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.container.Namespace, r.container.Pod, r.container.Container, utils.RandomString(20))))
 
 	func() {
 		defer func() {
@@ -151,15 +150,15 @@ func (r *Recorder) Close() error {
 			UploadType: uploader.Type(),
 			Path:       upFile.Name(),
 			Size:       uint64(stat.Size()),
-			Username:   r.t.conn.GetUser().Name,
+			Username:   r.user.Name,
 			Namespace:  r.container.Namespace,
 			Pod:        r.container.Pod,
 			Container:  r.container.Container,
 		}
 		app.DB().Create(file)
 		var emodal = models.Event{
-			Action:   uint8(types.EventActionType_Shell),
-			Username: r.t.conn.GetUser().Name,
+			Action:   uint8(r.action),
+			Username: r.user.Name,
 			Message:  fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
 			Duration: date.HumanDuration(time.Since(r.startTime)),

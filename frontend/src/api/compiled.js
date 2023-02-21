@@ -16363,6 +16363,7 @@ export const types = $root.types = (() => {
      * @property {number} Shell=7 Shell value
      * @property {number} Login=8 Login value
      * @property {number} CancelDeploy=9 CancelDeploy value
+     * @property {number} Exec=10 Exec value
      */
     types.EventActionType = (function() {
         const valuesById = {}, values = Object.create(valuesById);
@@ -16376,6 +16377,7 @@ export const types = $root.types = (() => {
         values[valuesById[7] = "Shell"] = 7;
         values[valuesById[8] = "Login"] = 8;
         values[valuesById[9] = "CancelDeploy"] = 9;
+        values[valuesById[10] = "Exec"] = 10;
         return values;
     })();
 

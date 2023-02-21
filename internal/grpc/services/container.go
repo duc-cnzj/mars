@@ -7,9 +7,16 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
+
+	"github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/socket"
+	"github.com/duc-cnzj/mars/internal/utils/timer"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -34,18 +41,21 @@ func init() {
 		ex := executor.NewDefaultRemoteExecutor()
 
 		container.RegisterContainerServer(s, &Container{
-			Steamer:       &DefaultStreamer{},
-			Executor:      ex,
-			PodFileCopier: utils.NewFileCopier(ex, utils.NewDefaultArchiver()),
+			NewRecorderFunc: socket.NewRecorder,
+			Steamer:         &DefaultStreamer{},
+			Executor:        ex,
+			PodFileCopier:   utils.NewFileCopier(ex, utils.NewDefaultArchiver()),
 		})
 	})
 	RegisterEndpoint(container.RegisterContainerHandlerFromEndpoint)
 }
 
 type Container struct {
-	Steamer       Steamer
-	Executor      contracts.RemoteExecutor
-	PodFileCopier contracts.PodFileCopier
+	Steamer         Steamer
+	Executor        contracts.RemoteExecutor
+	PodFileCopier   contracts.PodFileCopier
+	NewRecorderFunc func(types.EventActionType, contracts.UserInfo, socket.Timer, contracts.Container) contracts.RecorderInterface
+
 	container.UnsafeContainerServer
 }
 
@@ -82,7 +92,14 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 	}
 
 	var exitCode atomic.Value
-	writer := newExecWriter()
+	r := c.NewRecorderFunc(types.EventActionType_Exec, *auth.MustGetUser(server.Context()), timer.NewRealTimer(), contracts.Container{
+		Namespace: request.Namespace,
+		Pod:       request.Pod,
+		Container: request.Container,
+	})
+	r.Write(fmt.Sprintf("mars@%s:/# %s", request.Container, strings.Join(request.Command, " ")))
+	r.Write("\r\n")
+	writer := newExecWriter(r)
 	defer writer.Close()
 	restConfig := app.K8sClient().RestConfig
 	clientSet := app.K8sClient().Client
@@ -94,7 +111,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 			WithMethod("POST").
 			WithContainer(request.Namespace, request.Pod, request.Container).
 			WithCommand(request.Command).
-			Execute(context.TODO(), clientSet, restConfig, nil, writer, writer, false, nil)
+			Execute(context.TODO(), clientSet, restConfig, nil, writer, writer, true, nil)
 		if err != nil {
 			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
 				mlog.Debugf("[Container]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
@@ -398,6 +415,7 @@ func (c *Container) StreamContainerLog(request *container.LogRequest, server con
 }
 
 type execWriter struct {
+	recorder  contracts.RecorderInterface
 	closeable utils.Closeable
 	ch        chan string
 }
@@ -408,15 +426,17 @@ func (rw *execWriter) IsClosed() bool {
 
 func (rw *execWriter) Close() error {
 	if rw.closeable.Close() {
+		rw.recorder.Close()
 		close(rw.ch)
 	}
 
 	return nil
 }
 
-func newExecWriter() *execWriter {
+func newExecWriter(r contracts.RecorderInterface) *execWriter {
 	return &execWriter{
-		ch: make(chan string, 100),
+		recorder: r,
+		ch:       make(chan string, 100),
 	}
 }
 
@@ -426,6 +446,7 @@ func (rw *execWriter) Write(p []byte) (int, error) {
 		return 0, errors.New("closed")
 	}
 	rw.ch <- string(p)
+	rw.recorder.Write(string(p))
 	return len(p), nil
 }
 

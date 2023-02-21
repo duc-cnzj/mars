@@ -9,6 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/auth"
+	"github.com/duc-cnzj/mars/internal/socket"
+
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
@@ -192,11 +196,19 @@ func TestContainer_Exec(t *testing.T) {
 	re.EXPECT().WithCommand(gomock.Any()).Return(re)
 	re.EXPECT().WithMethod(gomock.Any()).Return(re)
 	re.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("xxx"))
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
+	r.EXPECT().Write("\r\n").Times(1)
+	r.EXPECT().Close().Times(1)
 	err = (&Container{
 		Executor: re,
+		NewRecorderFunc: func(action types.EventActionType, user contracts.UserInfo, timer socket.Timer, container contracts.Container) contracts.RecorderInterface {
+			return r
+		},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
+		Container: "app",
 		Command:   []string{"sh", "-c", "ls"},
 	}, &execServer{
 		send: func(res *container.ExecResponse) error {
@@ -205,7 +217,7 @@ func TestContainer_Exec(t *testing.T) {
 			result = append(result, res)
 			return nil
 		},
-		ctx: context.TODO(),
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Nil(t, err)
 	mu.Lock()
@@ -904,8 +916,12 @@ func TestFindDefaultContainer(t *testing.T) {
 }
 
 func Test_execWriter_IsClosed(t *testing.T) {
-	w := newExecWriter()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRecorderInterface(m)
+	w := newExecWriter(r)
 	assert.False(t, w.IsClosed())
+	r.EXPECT().Close().Times(1)
 	w.Close()
 	w.Close()
 	assert.True(t, w.IsClosed())
@@ -914,16 +930,22 @@ func Test_execWriter_IsClosed(t *testing.T) {
 }
 
 func Test_execWriter_Write(t *testing.T) {
-	w := newExecWriter()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRecorderInterface(m)
+
+	w := newExecWriter(r)
+	r.EXPECT().Write("aaa").Times(1)
 	_, err2 := w.Write([]byte("aaa"))
 	assert.Nil(t, err2)
 	data := <-w.ch
 	assert.Equal(t, "aaa", data)
+	r.EXPECT().Close().Times(1)
 	w.Close()
 	_, err := w.Write([]byte("bbb"))
 	assert.Error(t, err)
 }
 
 func Test_newExecWriter(t *testing.T) {
-	assert.NotNil(t, newExecWriter())
+	assert.NotNil(t, newExecWriter(nil))
 }

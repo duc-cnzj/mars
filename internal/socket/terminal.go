@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	timer2 "github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -562,10 +564,7 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 	}
 
 	sessionID := GenMyPtyHandlerId()
-	r := &Recorder{
-		timer:     realTimer{},
-		container: c,
-	}
+	r := NewRecorder(types.EventActionType_Shell, conn.GetUser(), timer2.NewRealTimer(), c)
 	pty := &MyPtyHandler{
 		container: c,
 		id:        sessionID,
@@ -575,7 +574,6 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 		recorder:  r,
 	}
-	r.t = pty
 	conn.terminalSessions.Set(sessionID, pty)
 
 	go func() {

@@ -15,6 +15,7 @@ enum EventActionType {
   Shell = 7;
   Login = 8;
   CancelDeploy = 9;
+  Exec = 10;
 }
 
 
