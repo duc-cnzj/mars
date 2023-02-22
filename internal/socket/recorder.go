@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -22,14 +24,10 @@ var (
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 
-type Timer interface {
-	Now() time.Time
-}
-
 type recorder struct {
 	sync.RWMutex
 	action    types.EventActionType
-	timer     Timer
+	timer     timer.Timer
 	container contracts.Container
 	f         contracts.File
 	startTime time.Time
@@ -46,7 +44,7 @@ type recorder struct {
 	cols, rows uint16
 }
 
-func NewRecorder(action types.EventActionType, user contracts.UserInfo, timer Timer, container contracts.Container) contracts.RecorderInterface {
+func NewRecorder(action types.EventActionType, user contracts.UserInfo, timer timer.Timer, container contracts.Container) contracts.RecorderInterface {
 	return &recorder{user: user, timer: timer, container: container, action: action}
 }
 

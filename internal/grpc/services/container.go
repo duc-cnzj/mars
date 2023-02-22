@@ -54,7 +54,7 @@ type Container struct {
 	Steamer         Steamer
 	Executor        contracts.RemoteExecutor
 	PodFileCopier   contracts.PodFileCopier
-	NewRecorderFunc func(types.EventActionType, contracts.UserInfo, socket.Timer, contracts.Container) contracts.RecorderInterface
+	NewRecorderFunc func(types.EventActionType, contracts.UserInfo, timer.Timer, contracts.Container) contracts.RecorderInterface
 
 	container.UnsafeContainerServer
 }

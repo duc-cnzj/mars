@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/socket"
-
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
@@ -202,7 +202,7 @@ func TestContainer_Exec(t *testing.T) {
 	r.EXPECT().Close().Times(1)
 	err = (&Container{
 		Executor: re,
-		NewRecorderFunc: func(action types.EventActionType, user contracts.UserInfo, timer socket.Timer, container contracts.Container) contracts.RecorderInterface {
+		NewRecorderFunc: func(action types.EventActionType, user contracts.UserInfo, timer timer.Timer, container contracts.Container) contracts.RecorderInterface {
 			assert.Equal(t, "duc", user.Name)
 			return r
 		},
@@ -279,7 +279,7 @@ func TestContainer_Exec_Success(t *testing.T) {
 	var mu sync.Mutex
 	var result []*container.ExecResponse
 	err := (&Container{
-		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer socket.Timer, c contracts.Container) contracts.RecorderInterface {
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			assert.Equal(t, "duc", info.Name)
 			return r
 		},
@@ -335,7 +335,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 	r.EXPECT().Close().Times(1)
 	var result []*container.ExecResponse
 	err := (&Container{
-		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer socket.Timer, c contracts.Container) contracts.RecorderInterface {
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r
 		},
 		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
@@ -371,7 +371,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 	r2.EXPECT().Write("aaa").Times(1)
 	r2.EXPECT().Close().Times(1)
 	err = (&Container{
-		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer socket.Timer, c contracts.Container) contracts.RecorderInterface {
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r2
 		},
 		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
@@ -422,7 +422,7 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	r.EXPECT().Write(gomock.Any()).AnyTimes()
 	r.EXPECT().Close().Times(1)
 	err := (&Container{
-		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer socket.Timer, c contracts.Container) contracts.RecorderInterface {
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r
 		},
 		Executor: &fakeRemoteExecutor{
