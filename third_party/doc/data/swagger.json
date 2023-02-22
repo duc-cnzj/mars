@@ -582,6 +582,7 @@
             ],
             "type": "string",
             "default": "Unknown",
+            "description": " - Shell: websocket 执行命令\n - Exec: SDK 执行命令",
             "name": "action_type",
             "in": "query"
           },
@@ -3079,6 +3080,7 @@
     },
     "typesEventActionType": {
       "type": "string",
+      "title": "- Shell: websocket 执行命令\n - Exec: SDK 执行命令",
       "default": "Unknown",
       "enum": [
         "Unknown",

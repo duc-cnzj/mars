@@ -51,6 +51,7 @@
           },
           {
             "name": "action_type",
+            "description": " - Shell: websocket 执行命令\n - Exec: SDK 执行命令",
             "in": "query",
             "required": false,
             "type": "string",
@@ -185,7 +186,8 @@
         "CancelDeploy",
         "Exec"
       ],
-      "default": "Unknown"
+      "default": "Unknown",
+      "title": "- Shell: websocket 执行命令\n - Exec: SDK 执行命令"
     },
     "typesEventModel": {
       "type": "object",

@@ -314,7 +314,7 @@ func TestSessionMap_Close(t *testing.T) {
 	defer m.Finish()
 	p1 := mock.NewMockPtyHandler(m)
 	p2 := mock.NewMockPtyHandler(m)
-	sm := SessionMap{
+	sm := sessionMap{
 		sessLock: sync.RWMutex{},
 		Sessions: map[string]contracts.PtyHandler{},
 	}
@@ -331,7 +331,7 @@ func TestSessionMap_CloseAll(t *testing.T) {
 	defer m.Finish()
 	p1 := mock.NewMockPtyHandler(m)
 	p2 := mock.NewMockPtyHandler(m)
-	sm := SessionMap{
+	sm := sessionMap{
 		sessLock: sync.RWMutex{},
 		Sessions: map[string]contracts.PtyHandler{},
 	}
@@ -346,7 +346,7 @@ func TestSessionMap_CloseAll(t *testing.T) {
 
 func TestSessionMap_Send(t *testing.T) {
 	t.Parallel()
-	sm := SessionMap{
+	sm := sessionMap{
 		sessLock: sync.RWMutex{},
 		Sessions: map[string]contracts.PtyHandler{},
 	}
@@ -369,7 +369,7 @@ func TestSessionMap_Send(t *testing.T) {
 
 func TestSessionMap_Set(t *testing.T) {
 	t.Parallel()
-	sm := SessionMap{
+	sm := sessionMap{
 		sessLock: sync.RWMutex{},
 		Sessions: map[string]contracts.PtyHandler{},
 	}
@@ -379,7 +379,120 @@ func TestSessionMap_Set(t *testing.T) {
 	assert.Same(t, p, get)
 }
 
-func TestWaitForTerminal(t *testing.T) {}
+func TestWaitForTerminal(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRemoteExecutor(m)
+	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return r
+		},
+	}
+	c.terminalSessions = NewSessionMap(c)
+	pty := mock.NewMockPtyHandler(m)
+	pty.EXPECT().SetShell("bash").Times(1)
+	pty.EXPECT().Close("Process exited").Times(1)
+	c.terminalSessions.Set("session_id", pty)
+	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
+	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
+	c.terminalSessions.CloseAll()
+}
+
+func TestWaitForTerminalUnsetShell(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRemoteExecutor(m)
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return r
+		},
+	}
+	c.terminalSessions = NewSessionMap(c)
+	pty := mock.NewMockPtyHandler(m)
+	pty.EXPECT().SetShell(gomock.Any()).Times(0)
+	pty.EXPECT().IsClosed().Return(true)
+	pty.EXPECT().Close("Process exited").Times(1)
+	c.terminalSessions.Set("session_id", pty)
+	WaitForTerminal(c, nil, nil, &contracts.Container{}, "", "session_id")
+	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
+	c.terminalSessions.CloseAll()
+}
+
+func TestWaitForTerminalUnsetShell2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRemoteExecutor(m)
+	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return r
+		},
+	}
+	c.terminalSessions = NewSessionMap(c)
+	pty := mock.NewMockPtyHandler(m)
+	pty.EXPECT().IsClosed().Return(false).Times(1)
+	pty.EXPECT().SetShell("bash").Times(1)
+	pty.EXPECT().Close("Process exited").Times(1)
+	c.terminalSessions.Set("session_id", pty)
+	WaitForTerminal(c, nil, nil, &contracts.Container{}, "", "session_id")
+	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
+	c.terminalSessions.CloseAll()
+}
+
+func TestWaitForTerminalReturnError(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRemoteExecutor(m)
+	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("xxx"))
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return r
+		},
+	}
+	c.terminalSessions = NewSessionMap(c)
+	pty := mock.NewMockPtyHandler(m)
+	pty.EXPECT().SetShell("bash").Times(1)
+	pty.EXPECT().Toast("xxx").Times(1)
+	pty.EXPECT().Close("xxx").Times(1)
+	c.terminalSessions.Set("session_id", pty)
+	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
+	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
+	c.terminalSessions.CloseAll()
+}
+
+func TestWaitForTerminalReturnErrorSilence(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRemoteExecutor(m)
+	r.EXPECT().WithContainer(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithCommand(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().WithMethod(gomock.Any()).Times(1).Return(r)
+	r.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("command terminated with exit code 126"))
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return r
+		},
+	}
+	c.terminalSessions = NewSessionMap(c)
+	pty := mock.NewMockPtyHandler(m)
+	pty.EXPECT().SetShell("bash").Times(1)
+	pty.EXPECT().Toast(gomock.Any()).Times(0)
+	pty.EXPECT().Close("command terminated with exit code 126").Times(1)
+	c.terminalSessions.Set("session_id", pty)
+	WaitForTerminal(c, nil, nil, &contracts.Container{}, "bash", "session_id")
+	assert.Len(t, c.terminalSessions.(*sessionMap).Sessions, 0)
+	c.terminalSessions.CloseAll()
+}
 
 func Test_isValidShell(t *testing.T) {
 	t.Parallel()

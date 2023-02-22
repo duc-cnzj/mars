@@ -24,17 +24,19 @@ const (
 type EventActionType int32
 
 const (
-	EventActionType_Unknown      EventActionType = 0
-	EventActionType_Create       EventActionType = 1
-	EventActionType_Update       EventActionType = 2
-	EventActionType_Delete       EventActionType = 3
-	EventActionType_Upload       EventActionType = 4
-	EventActionType_Download     EventActionType = 5
-	EventActionType_DryRun       EventActionType = 6
+	EventActionType_Unknown  EventActionType = 0
+	EventActionType_Create   EventActionType = 1
+	EventActionType_Update   EventActionType = 2
+	EventActionType_Delete   EventActionType = 3
+	EventActionType_Upload   EventActionType = 4
+	EventActionType_Download EventActionType = 5
+	EventActionType_DryRun   EventActionType = 6
+	// websocket 执行命令
 	EventActionType_Shell        EventActionType = 7
 	EventActionType_Login        EventActionType = 8
 	EventActionType_CancelDeploy EventActionType = 9
-	EventActionType_Exec         EventActionType = 10
+	// SDK 执行命令
+	EventActionType_Exec EventActionType = 10
 )
 
 // Enum value maps for EventActionType.

@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils/executor"
-
 	timer2 "github.com/duc-cnzj/mars/internal/utils/timer"
 
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
@@ -338,15 +336,20 @@ func (t *MyPtyHandler) Toast(p string) error {
 	return nil
 }
 
-// SessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
-type SessionMap struct {
+// sessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
+type sessionMap struct {
 	conn *WsConn
+	wg   sync.WaitGroup
 
 	sessLock sync.RWMutex
 	Sessions map[string]contracts.PtyHandler
 }
 
-func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
+func NewSessionMap(conn *WsConn) contracts.SessionMapper {
+	return &sessionMap{conn: conn, Sessions: map[string]contracts.PtyHandler{}}
+}
+
+func (sm *sessionMap) Send(m *websocket_pb.TerminalMessage) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionId]; ok {
@@ -355,41 +358,50 @@ func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
 }
 
 // Get return a given terminalSession by sessionId
-func (sm *SessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
+func (sm *sessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	h, ok := sm.Sessions[sessionId]
 	return h, ok
 }
 
-// Set store a MyPtyHandler to SessionMap
-func (sm *SessionMap) Set(sessionId string, session contracts.PtyHandler) {
+// Set store a MyPtyHandler to sessionMap
+func (sm *sessionMap) Set(sessionId string, session contracts.PtyHandler) {
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	sm.Sessions[sessionId] = session
 }
 
-func (sm *SessionMap) CloseAll() {
+func (sm *sessionMap) CloseAll() {
 	mlog.Debug("[Websocket]: close all.")
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 
 	for _, s := range sm.Sessions {
-		s.Close("websocket conn closed")
+		sm.wg.Add(1)
+		go func(s contracts.PtyHandler) {
+			defer sm.wg.Done()
+			s.Close("websocket conn closed")
+		}(s)
 	}
+	sm.wg.Wait()
 	sm.Sessions = map[string]contracts.PtyHandler{}
 }
 
 // Close shuts down the SockJS connection and sends the status code and reason to the client
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
-func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
+func (sm *sessionMap) Close(sessionId string, status uint32, reason string) {
 	mlog.Debugf("[Websocket]: session %v closed, reason: %s.", sessionId, reason)
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	if s, ok := sm.Sessions[sessionId]; ok {
 		delete(sm.Sessions, sessionId)
-		go s.Close(reason)
+		sm.wg.Add(1)
+		go func() {
+			defer sm.wg.Done()
+			s.Close(reason)
+		}()
 	}
 }
 
@@ -439,7 +451,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
-	exec := executor.NewDefaultRemoteExecutor()
+	exec := conn.newExecutorFunc()
 	session, _ := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
@@ -525,7 +537,7 @@ type TerminalResponse struct {
 	ID string `json:"id"`
 }
 
-type NewShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
+type newShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
 	var c = contracts.Container{

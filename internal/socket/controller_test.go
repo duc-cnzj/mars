@@ -130,7 +130,7 @@ func TestHandleWsHandleExecShell(t *testing.T) {
 		id:     "id-x",
 		uid:    "uid-x",
 		pubSub: pubsub,
-		NewShellFunc: func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
+		newShellFunc: func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
 			return "id", nil
 		},
 	}
@@ -143,7 +143,7 @@ func TestHandleWsHandleExecShell(t *testing.T) {
 		},
 	})
 	HandleWsHandleExecShell(conn, websocket.Type_HandleExecShell, marshal)
-	conn.NewShellFunc = func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
+	conn.newShellFunc = func(input *websocket.WsHandleExecShellInput, conn *WsConn) (string, error) {
 		return "", errors.New("xxx")
 	}
 	pubsub.EXPECT().ToSelf(&websocket.WsMetadataResponse{
@@ -583,7 +583,7 @@ func Test_upgradeOrInstallError(t *testing.T) {
 		user:           contracts.UserInfo{Name: "duc"},
 		cancelSignaler: cs,
 		pubSub:         pubsub,
-		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		newJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 			assert.Equal(t, contracts.UserInfo{Name: "duc"}, user)
 			assert.Equal(t, input, jobinput)
 			assert.Equal(t, utils.GetSlugName(input.NamespaceId, input.Name), slugName)
@@ -622,7 +622,7 @@ func Test_upgradeOrInstall(t *testing.T) {
 		user:           contracts.UserInfo{Name: "duc"},
 		cancelSignaler: cs,
 		pubSub:         pubsub,
-		NewJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+		newJobFunc: func(jobinput *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, jpubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 			return job
 		},
 	}, input)
@@ -676,7 +676,7 @@ func TestHandleWsCreateProjectSuccess(t *testing.T) {
 	job.EXPECT().Finish().Return(job).Times(1)
 	job.EXPECT().Error().Return(nil).Times(1)
 
-	HandleWsCreateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+	HandleWsCreateProject(&WsConn{pubSub: ps, newJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 		assert.Equal(t, &JobInput{
 			Type:         cinput.Type,
 			NamespaceId:  cinput.NamespaceId,
@@ -759,7 +759,7 @@ func TestHandleWsUpdateProject(t *testing.T) {
 	job.EXPECT().Finish().Return(job).Times(1)
 	job.EXPECT().Error().Return(nil).Times(1)
 
-	HandleWsUpdateProject(&WsConn{pubSub: ps, NewJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
+	HandleWsUpdateProject(&WsConn{pubSub: ps, newJobFunc: func(input *JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...Option) contracts.Job {
 		assert.Equal(t, &JobInput{
 			Type:         cinput.Type,
 			NamespaceId:  int64(p.NamespaceId),

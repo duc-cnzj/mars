@@ -12,9 +12,11 @@ enum EventActionType {
   Upload = 4;
   Download = 5;
   DryRun = 6;
+  // websocket 执行命令
   Shell = 7;
   Login = 8;
   CancelDeploy = 9;
+  // SDK 执行命令
   Exec = 10;
 }
 
