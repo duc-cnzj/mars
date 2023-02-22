@@ -9,6 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/timer"
+
+	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/auth"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
@@ -192,11 +196,20 @@ func TestContainer_Exec(t *testing.T) {
 	re.EXPECT().WithCommand(gomock.Any()).Return(re)
 	re.EXPECT().WithMethod(gomock.Any()).Return(re)
 	re.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("xxx"))
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
+	r.EXPECT().Write("\r\n").Times(1)
+	r.EXPECT().Close().Times(1)
 	err = (&Container{
 		Executor: re,
+		NewRecorderFunc: func(action types.EventActionType, user contracts.UserInfo, timer timer.Timer, container contracts.Container) contracts.RecorderInterface {
+			assert.Equal(t, "duc", user.Name)
+			return r
+		},
 	}).Exec(&container.ExecRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
+		Container: "app",
 		Command:   []string{"sh", "-c", "ls"},
 	}, &execServer{
 		send: func(res *container.ExecResponse) error {
@@ -205,7 +218,7 @@ func TestContainer_Exec(t *testing.T) {
 			result = append(result, res)
 			return nil
 		},
-		ctx: context.TODO(),
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Nil(t, err)
 	mu.Lock()
@@ -258,10 +271,18 @@ func TestContainer_Exec_Success(t *testing.T) {
 		Client:    fk,
 		PodLister: testutil.NewPodLister(pod),
 	})
-
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
+	r.EXPECT().Write("\r\n").Times(1)
+	r.EXPECT().Write("aaa").Times(1)
+	r.EXPECT().Close().Times(1)
 	var mu sync.Mutex
 	var result []*container.ExecResponse
 	err := (&Container{
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
+			assert.Equal(t, "duc", info.Name)
+			return r
+		},
 		Executor: &fakeRemoteExecutor{
 			execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 				stdout.Write([]byte("aaa"))
@@ -280,7 +301,7 @@ func TestContainer_Exec_Success(t *testing.T) {
 			result = append(result, res)
 			return nil
 		},
-		ctx: context.TODO(),
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Nil(t, err)
 	mu.Lock()
@@ -308,9 +329,15 @@ func TestContainer_Exec_Error(t *testing.T) {
 		Client:    fk,
 		PodLister: testutil.NewPodLister(pod),
 	})
-
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
+	r.EXPECT().Write("\r\n").Times(1)
+	r.EXPECT().Close().Times(1)
 	var result []*container.ExecResponse
 	err := (&Container{
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
+			return r
+		},
 		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 			return &clientgoexec.CodeExitError{
 				Err:  errors.New("aaa"),
@@ -327,7 +354,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 			result = append(result, res)
 			return nil
 		},
-		ctx: context.TODO(),
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Nil(t, err)
 	assert.Len(t, result, 1)
@@ -338,7 +365,15 @@ func TestContainer_Exec_Error(t *testing.T) {
 		},
 	}).String(), result[0].String())
 
+	r2 := mock.NewMockRecorderInterface(m)
+	r2.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
+	r2.EXPECT().Write("\r\n").Times(1)
+	r2.EXPECT().Write("aaa").Times(1)
+	r2.EXPECT().Close().Times(1)
 	err = (&Container{
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
+			return r2
+		},
 		Executor: &fakeRemoteExecutor{execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 			stdout.Write([]byte("aaa"))
 			return nil
@@ -352,7 +387,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 		send: func(res *container.ExecResponse) error {
 			return errors.New("xxx")
 		},
-		ctx: context.TODO(),
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Equal(t, "xxx", err.Error())
 }
@@ -383,7 +418,13 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	)
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write(gomock.Any()).AnyTimes()
+	r.EXPECT().Close().Times(1)
 	err := (&Container{
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
+			return r
+		},
 		Executor: &fakeRemoteExecutor{
 			execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 				time.Sleep(1 * time.Second)
@@ -402,7 +443,7 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 			result = append(result, res)
 			return nil
 		},
-		ctx: cancel,
+		ctx: auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"}),
 	})
 	assert.Equal(t, "context canceled", err.Error())
 }
@@ -904,8 +945,12 @@ func TestFindDefaultContainer(t *testing.T) {
 }
 
 func Test_execWriter_IsClosed(t *testing.T) {
-	w := newExecWriter()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRecorderInterface(m)
+	w := newExecWriter(r)
 	assert.False(t, w.IsClosed())
+	r.EXPECT().Close().Times(1)
 	w.Close()
 	w.Close()
 	assert.True(t, w.IsClosed())
@@ -914,16 +959,22 @@ func Test_execWriter_IsClosed(t *testing.T) {
 }
 
 func Test_execWriter_Write(t *testing.T) {
-	w := newExecWriter()
+	m := gomock.NewController(t)
+	defer m.Finish()
+	r := mock.NewMockRecorderInterface(m)
+
+	w := newExecWriter(r)
+	r.EXPECT().Write("aaa").Times(1)
 	_, err2 := w.Write([]byte("aaa"))
 	assert.Nil(t, err2)
 	data := <-w.ch
 	assert.Equal(t, "aaa", data)
+	r.EXPECT().Close().Times(1)
 	w.Close()
 	_, err := w.Write([]byte("bbb"))
 	assert.Error(t, err)
 }
 
 func Test_newExecWriter(t *testing.T) {
-	assert.NotNil(t, newExecWriter())
+	assert.NotNil(t, newExecWriter(nil))
 }

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/executor"
+
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"github.com/google/uuid"
@@ -48,8 +50,9 @@ type WsConn struct {
 	uid  string
 	conn contracts.WebsocketConn
 
-	NewJobFunc   NewJobFunc
-	NewShellFunc NewShellFunc
+	newJobFunc      NewJobFunc
+	newShellFunc    newShellFunc
+	newExecutorFunc func() contracts.RemoteExecutor
 
 	userMu           sync.RWMutex
 	user             contracts.UserInfo
@@ -70,17 +73,20 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 	ps := plugins.GetWsSender().New(uid, id)
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	var wsconn = &WsConn{
-		doneCtx:        ctx,
-		doneFunc:       cancelFunc,
-		pubSub:         ps,
-		id:             id,
-		uid:            uid,
-		NewJobFunc:     NewJober,
-		NewShellFunc:   HandleExecShell,
+		doneCtx:      ctx,
+		doneFunc:     cancelFunc,
+		pubSub:       ps,
+		id:           id,
+		uid:          uid,
+		newJobFunc:   NewJober,
+		newShellFunc: HandleExecShell,
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return executor.NewDefaultRemoteExecutor()
+		},
 		conn:           c,
 		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
 	}
-	wsconn.terminalSessions = &SessionMap{Sessions: make(map[string]contracts.PtyHandler), conn: wsconn}
+	wsconn.terminalSessions = NewSessionMap(wsconn)
 
 	Wait.Inc()
 
@@ -362,7 +368,7 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 		return
 	}
 
-	sessionID, err := c.NewShellFunc(&input, c)
+	sessionID, err := c.newShellFunc(&input, c)
 	if err != nil {
 		mlog.Error(err)
 		NewMessageSender(c, "", WsHandleExecShell).SendEndError(err)
@@ -455,7 +461,7 @@ func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 
 func upgradeOrInstall(c *WsConn, input *JobInput) error {
 	slug := utils.GetSlugName(input.NamespaceId, input.Name)
-	job := c.NewJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, input.Type), c.pubSub, 0)
+	job := c.newJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, input.Type), c.pubSub, 0)
 
 	if job.IsNotDryRun() {
 		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {

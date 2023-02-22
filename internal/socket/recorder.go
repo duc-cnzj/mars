@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
@@ -22,24 +24,15 @@ var (
 	writeLine = "[%.6f, \"o\", %s]\n"
 )
 
-type timer interface {
-	Now() time.Time
-}
-
-type realTimer struct{}
-
-func (r realTimer) Now() time.Time {
-	return time.Now()
-}
-
-type Recorder struct {
+type recorder struct {
 	sync.RWMutex
-	timer     timer
+	action    types.EventActionType
+	timer     timer.Timer
 	container contracts.Container
 	f         contracts.File
 	startTime time.Time
 
-	t    *MyPtyHandler
+	user contracts.UserInfo
 	once sync.Once
 
 	buffer *bufio.Writer
@@ -51,6 +44,10 @@ type Recorder struct {
 	cols, rows uint16
 }
 
+func NewRecorder(action types.EventActionType, user contracts.UserInfo, timer timer.Timer, container contracts.Container) contracts.RecorderInterface {
+	return &recorder{user: user, timer: timer, container: container, action: action}
+}
+
 func max[T int | uint16 | uint64](a, b T) T {
 	if a < b {
 		return b
@@ -58,38 +55,38 @@ func max[T int | uint16 | uint64](a, b T) T {
 	return a
 }
 
-func (r *Recorder) GetShell() string {
+func (r *recorder) GetShell() string {
 	r.shellMu.RLock()
 	defer r.shellMu.RUnlock()
 	return r.shell
 }
 
-func (r *Recorder) SetShell(sh string) {
+func (r *recorder) SetShell(sh string) {
 	r.shellMu.Lock()
 	defer r.shellMu.Unlock()
 	r.shell = sh
 }
 
-func (r *Recorder) Resize(cols, rows uint16) {
+func (r *recorder) Resize(cols, rows uint16) {
 	r.HeadLineColRow(cols, rows)
 }
 
-func (r *Recorder) HeadLineColRow(cols, rows uint16) {
+func (r *recorder) HeadLineColRow(cols, rows uint16) {
 	r.rcMu.Lock()
 	defer r.rcMu.Unlock()
 	r.cols = max(r.cols, cols)
 	r.rows = max(r.rows, rows)
 }
 
-func (r *Recorder) Write(data string) (err error) {
+func (r *recorder) Write(data string) (err error) {
 	r.Lock()
 	defer r.Unlock()
 	r.once.Do(func() {
 		var file contracts.File
 		file, err = app.LocalUploader().Disk("tmp").NewFile(fmt.Sprintf("%s/%s/%s",
-			r.t.conn.GetUser().Name,
+			r.user.Name,
 			r.timer.Now().Format("2006-01-02"),
-			fmt.Sprintf("recorder-%s-%s-%s-%s.cast.tmp", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+			fmt.Sprintf("recorder-%s-%s-%s-%s.cast.tmp", r.container.Namespace, r.container.Pod, r.container.Container, utils.RandomString(20))))
 		if err != nil {
 			return
 		}
@@ -106,7 +103,7 @@ func (r *Recorder) Write(data string) (err error) {
 	return err
 }
 
-func (r *Recorder) Close() error {
+func (r *recorder) Close() error {
 	r.RLock()
 	defer r.RUnlock()
 	var (
@@ -120,9 +117,9 @@ func (r *Recorder) Close() error {
 	r.buffer.Flush()
 
 	upFile, _ := uploader.Disk("shell").NewFile(fmt.Sprintf("%s/%s/%s",
-		r.t.conn.GetUser().Name,
+		r.user.Name,
 		r.timer.Now().Format("2006-01-02"),
-		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.t.Container().Namespace, r.t.Container().Pod, r.t.Container().Container, utils.RandomString(20))))
+		fmt.Sprintf("recorder-%s-%s-%s-%s.cast", r.container.Namespace, r.container.Pod, r.container.Container, utils.RandomString(20))))
 
 	func() {
 		defer func() {
@@ -151,15 +148,15 @@ func (r *Recorder) Close() error {
 			UploadType: uploader.Type(),
 			Path:       upFile.Name(),
 			Size:       uint64(stat.Size()),
-			Username:   r.t.conn.GetUser().Name,
+			Username:   r.user.Name,
 			Namespace:  r.container.Namespace,
 			Pod:        r.container.Pod,
 			Container:  r.container.Container,
 		}
 		app.DB().Create(file)
 		var emodal = models.Event{
-			Action:   uint8(types.EventActionType_Shell),
-			Username: r.t.conn.GetUser().Name,
+			Action:   uint8(r.action),
+			Username: r.user.Name,
 			Message:  fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod),
 			FileID:   &file.ID,
 			Duration: date.HumanDuration(time.Since(r.startTime)),

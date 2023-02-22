@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	timer2 "github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars/internal/utils/recovery"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -17,9 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/google/uuid"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -336,15 +336,20 @@ func (t *MyPtyHandler) Toast(p string) error {
 	return nil
 }
 
-// SessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
-type SessionMap struct {
+// sessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
+type sessionMap struct {
 	conn *WsConn
+	wg   sync.WaitGroup
 
 	sessLock sync.RWMutex
 	Sessions map[string]contracts.PtyHandler
 }
 
-func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
+func NewSessionMap(conn *WsConn) contracts.SessionMapper {
+	return &sessionMap{conn: conn, Sessions: map[string]contracts.PtyHandler{}}
+}
+
+func (sm *sessionMap) Send(m *websocket_pb.TerminalMessage) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	if h, ok := sm.Sessions[m.SessionId]; ok {
@@ -353,81 +358,61 @@ func (sm *SessionMap) Send(m *websocket_pb.TerminalMessage) {
 }
 
 // Get return a given terminalSession by sessionId
-func (sm *SessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
+func (sm *sessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
 	sm.sessLock.RLock()
 	defer sm.sessLock.RUnlock()
 	h, ok := sm.Sessions[sessionId]
 	return h, ok
 }
 
-// Set store a MyPtyHandler to SessionMap
-func (sm *SessionMap) Set(sessionId string, session contracts.PtyHandler) {
+// Set store a MyPtyHandler to sessionMap
+func (sm *sessionMap) Set(sessionId string, session contracts.PtyHandler) {
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	sm.Sessions[sessionId] = session
 }
 
-func (sm *SessionMap) CloseAll() {
+func (sm *sessionMap) CloseAll() {
 	mlog.Debug("[Websocket]: close all.")
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 
 	for _, s := range sm.Sessions {
-		s.Close("websocket conn closed")
+		sm.wg.Add(1)
+		go func(s contracts.PtyHandler) {
+			defer sm.wg.Done()
+			s.Close("websocket conn closed")
+		}(s)
 	}
+	sm.wg.Wait()
 	sm.Sessions = map[string]contracts.PtyHandler{}
 }
 
 // Close shuts down the SockJS connection and sends the status code and reason to the client
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
-func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
+func (sm *sessionMap) Close(sessionId string, status uint32, reason string) {
 	mlog.Debugf("[Websocket]: session %v closed, reason: %s.", sessionId, reason)
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
 	if s, ok := sm.Sessions[sessionId]; ok {
 		delete(sm.Sessions, sessionId)
-		go s.Close(reason)
+		sm.wg.Add(1)
+		go func() {
+			defer sm.wg.Done()
+			s.Close(reason)
+		}()
 	}
 }
 
 // startProcess is called by handleAttach
 // Executed cmd in the contracts.Container specified in request and connects it up with the ptyHandler (a session)
-func startProcess(client kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
-	namespace := container.Namespace
-	podName := container.Pod
-	containerName := container.Container
-
-	req := client.
-		CoreV1().
-		RESTClient().
-		Post().
-		Resource("pods").
-		Name(podName).
-		Namespace(namespace).
-		SubResource("exec")
-
-	req.VersionedParams(&v1.PodExecOptions{
-		Container: containerName,
-		Command:   cmd,
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       true,
-	}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
-	if err != nil {
-		return err
-	}
-
-	return exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
-		Stdin:             ptyHandler,
-		Stdout:            ptyHandler,
-		Stderr:            ptyHandler,
-		TerminalSizeQueue: ptyHandler,
-		Tty:               true,
-	})
+func startProcess(executor contracts.RemoteExecutor, client kubernetes.Interface, cfg *rest.Config, container *contracts.Container, cmd []string, ptyHandler contracts.PtyHandler) error {
+	return executor.
+		WithContainer(container.Namespace, container.Pod, container.Container).
+		WithMethod("POST").
+		WithCommand(cmd).
+		Execute(context.TODO(), client, cfg, ptyHandler, ptyHandler, ptyHandler, true, ptyHandler)
 }
 
 func GenMyPtyHandlerId() string {
@@ -466,12 +451,12 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 	}()
 	var err error
 	validShells := []string{"bash", "sh", "powershell", "cmd"}
-
+	exec := conn.newExecutorFunc()
 	session, _ := conn.terminalSessions.Get(sessionId)
 	if isValidShell(validShells, shell) {
 		cmd := []string{shell}
 		session.SetShell(shell)
-		err = startProcess(k8sClient, cfg, container, cmd, session)
+		err = startProcess(exec, k8sClient, cfg, container, cmd, session)
 	} else {
 		// No shell given or it was not valid: try some shells until one succeeds or all fail
 		// FIXME: if the first shell fails then the first keyboard event is lost
@@ -483,7 +468,7 @@ func WaitForTerminal(conn *WsConn, k8sClient kubernetes.Interface, cfg *rest.Con
 			}
 			cmd := []string{testShell}
 			session.SetShell(testShell)
-			if err = startProcess(k8sClient, cfg, container, cmd, session); err == nil {
+			if err = startProcess(exec, k8sClient, cfg, container, cmd, session); err == nil {
 				break
 			}
 			// 当出现 bash 回退的时候，需要注意，resize 不会触发，导致，新的 'sh', cols, rows 和用户端不一致，所以需要重置，
@@ -552,7 +537,7 @@ type TerminalResponse struct {
 	ID string `json:"id"`
 }
 
-type NewShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
+type newShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
 
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
 	var c = contracts.Container{
@@ -562,10 +547,7 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 	}
 
 	sessionID := GenMyPtyHandlerId()
-	r := &Recorder{
-		timer:     realTimer{},
-		container: c,
-	}
+	r := NewRecorder(types.EventActionType_Shell, conn.GetUser(), timer2.NewRealTimer(), c)
 	pty := &MyPtyHandler{
 		container: c,
 		id:        sessionID,
@@ -575,7 +557,6 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 100),
 		recorder:  r,
 	}
-	r.t = pty
 	conn.terminalSessions.Set(sessionID, pty)
 
 	go func() {

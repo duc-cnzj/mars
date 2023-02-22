@@ -7773,7 +7773,8 @@ export namespace types {
         DryRun = 6,
         Shell = 7,
         Login = 8,
-        CancelDeploy = 9
+        CancelDeploy = 9,
+        Exec = 10
     }
 
     /** Properties of a Pod. */

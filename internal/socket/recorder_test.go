@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/utils/timer"
+
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/mock"
@@ -63,8 +65,10 @@ func TestRecorder_Close(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		timer: realTimer{},
+	r := &recorder{
+		action: types.EventActionType_Shell,
+		user:   contracts.UserInfo{Name: "duc"},
+		timer:  timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -72,14 +76,9 @@ func TestRecorder_Close(t *testing.T) {
 		},
 		f:      f,
 		buffer: bufio.NewWriter(f),
-		t: &MyPtyHandler{
-			conn: &WsConn{user: contracts.UserInfo{
-				Name: "duc",
-			}},
-		},
-		rows:  25,
-		cols:  106,
-		shell: "bash-x",
+		rows:   25,
+		cols:   106,
+		shell:  "bash-x",
 	}
 	f.EXPECT().Stat().Times(0)
 	r.Close()
@@ -138,8 +137,9 @@ func TestRecorder_Close2(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		timer: realTimer{},
+	r := &recorder{
+		user:  contracts.UserInfo{Name: "duc"},
+		timer: timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -147,14 +147,9 @@ func TestRecorder_Close2(t *testing.T) {
 		},
 		f:      f,
 		buffer: bufio.NewWriter(f),
-		t: &MyPtyHandler{
-			conn: &WsConn{user: contracts.UserInfo{
-				Name: "duc",
-			}},
-		},
-		rows:  25,
-		cols:  106,
-		shell: "bash-x",
+		rows:   25,
+		cols:   106,
+		shell:  "bash-x",
 	}
 	f.EXPECT().Stat().Times(0)
 	r.Close()
@@ -191,8 +186,9 @@ func TestRecorder_Close3(t *testing.T) {
 	up.EXPECT().Type().Return(contracts.Local).AnyTimes()
 
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		timer: realTimer{},
+	r := &recorder{
+		user:  contracts.UserInfo{Name: "duc"},
+		timer: timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -200,14 +196,9 @@ func TestRecorder_Close3(t *testing.T) {
 		},
 		f:      f,
 		buffer: bufio.NewWriter(f),
-		t: &MyPtyHandler{
-			conn: &WsConn{user: contracts.UserInfo{
-				Name: "duc",
-			}},
-		},
-		rows:  25,
-		cols:  106,
-		shell: "bash-x",
+		rows:   25,
+		cols:   106,
+		shell:  "bash-x",
 	}
 	f.EXPECT().Stat().Times(0)
 	r.Close()
@@ -235,8 +226,9 @@ func TestRecorder_Write(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		timer: realTimer{},
+	r := &recorder{
+		user:  contracts.UserInfo{Name: "duc"},
+		timer: timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -244,12 +236,7 @@ func TestRecorder_Write(t *testing.T) {
 		},
 		f:         f,
 		startTime: time.Time{},
-		t: &MyPtyHandler{
-			conn: &WsConn{user: contracts.UserInfo{
-				Name: "duc",
-			}},
-		},
-		once: sync.Once{},
+		once:      sync.Once{},
 	}
 	app := testutil.MockApp(m)
 	up := mock.NewMockUploader(m)
@@ -267,8 +254,9 @@ func TestRecorder_Write_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	f := mock.NewMockFile(m)
-	r := &Recorder{
-		timer: realTimer{},
+	r := &recorder{
+		user:  contracts.UserInfo{Name: "duc"},
+		timer: timer.NewRealTimer(),
 		container: contracts.Container{
 			Namespace: "ns",
 			Pod:       "po",
@@ -276,12 +264,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 		},
 		f:         f,
 		startTime: time.Time{},
-		t: &MyPtyHandler{
-			conn: &WsConn{user: contracts.UserInfo{
-				Name: "duc",
-			}},
-		},
-		once: sync.Once{},
+		once:      sync.Once{},
 	}
 	up := mock.NewMockUploader(m)
 	up.EXPECT().Disk("tmp").Times(1).Return(up)
@@ -294,7 +277,7 @@ func TestRecorder_Write_Error(t *testing.T) {
 }
 
 func TestRecorder_Resize(t *testing.T) {
-	r := &Recorder{}
+	r := &recorder{}
 	r.Resize(10, 20)
 	r.Resize(20, 10)
 	assert.Equal(t, uint16(20), r.rows)
@@ -302,11 +285,11 @@ func TestRecorder_Resize(t *testing.T) {
 }
 
 func Test_realTimer_Now(t *testing.T) {
-	assert.Equal(t, time.Now().Format("2006-01-02 15:04"), realTimer{}.Now().Format("2006-01-02 15:04"))
+	assert.Equal(t, time.Now().Format("2006-01-02 15:04"), timer.NewRealTimer().Now().Format("2006-01-02 15:04"))
 }
 
 func TestRecorder_HeadLineColRow(t *testing.T) {
-	r := &Recorder{}
+	r := &recorder{}
 	r.HeadLineColRow(10, 20)
 	r.HeadLineColRow(20, 10)
 	assert.Equal(t, uint16(20), r.rows)
@@ -317,4 +300,17 @@ func Test_max(t *testing.T) {
 	assert.Equal(t, 2, max(1, 2))
 	assert.Equal(t, 3, max(3, 2))
 	assert.Equal(t, 2, max(2, 2))
+}
+
+func TestNewRecorder(t *testing.T) {
+	c := contracts.Container{
+		Namespace: "ns",
+		Pod:       "p",
+		Container: "c",
+	}
+	r := NewRecorder(types.EventActionType_Exec, contracts.UserInfo{Name: "duc"}, timer.NewRealTimer(), c)
+	assert.Equal(t, types.EventActionType_Exec, r.(*recorder).action)
+	assert.Equal(t, contracts.UserInfo{Name: "duc"}, r.(*recorder).user)
+	assert.NotNil(t, r.(*recorder).timer)
+	assert.Equal(t, c, r.(*recorder).container)
 }
