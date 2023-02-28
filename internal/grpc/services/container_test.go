@@ -586,7 +586,6 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		Client:    fk,
 		PodLister: testutil.NewPodLister(pod, podSuccessed),
 	})
-
 	err := (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "naas",
 		Pod:       "poaaa",
@@ -618,7 +617,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		ctx: context.TODO(),
 	})
 	assert.Nil(t, err)
-
+	result = nil
 	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod-succeeded",
@@ -632,6 +631,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		},
 		ctx: context.TODO(),
 	})
+	assert.Equal(t, "fake logs", result[0].Log)
 	assert.Nil(t, err)
 }
 
@@ -977,4 +977,83 @@ func Test_execWriter_Write(t *testing.T) {
 
 func Test_newExecWriter(t *testing.T) {
 	assert.NotNil(t, newExecWriter(nil))
+}
+
+func Test_scannerText(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  []string
+	}{
+		{
+			input: "a",
+			want:  []string{"a"},
+		},
+		{
+			input: "a\nb\nc",
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			input: "a\nb\n\nc",
+			want:  []string{"a", "b", "", "c"},
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
+			var res []string
+			err := scannerText(tt.input, func(s string) {
+				res = append(res, s)
+			})
+			assert.Nil(t, err)
+			assert.Equal(t, tt.want, res)
+		})
+	}
+}
+
+func Test_podHasLog(t *testing.T) {
+	var tests = []struct {
+		pod  *v1.Pod
+		want bool
+	}{
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodFailed,
+				},
+			},
+			want: true,
+		},
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+			want: true,
+		},
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+			want: false,
+		},
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodSucceeded,
+				},
+			},
+			want: true,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, podHasLog(tt.pod))
+		})
+	}
 }

@@ -285,11 +285,15 @@ func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodSe
 	}
 }
 
+func podHasLog(pod *v1.Pod) bool {
+	return pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed
+}
+
 var tailLines int64 = 1000
 
 func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
-	if err != nil || (podInfo.Status.Phase != v1.PodRunning && podInfo.Status.Phase != v1.PodSucceeded) {
+	if err != nil || !podHasLog(podInfo) {
 		return nil, status.Error(codes.NotFound, "未找到日志")
 	}
 
@@ -332,23 +336,34 @@ func (d *DefaultStreamer) Stream(ctx context.Context, namespace, pod, container 
 	return logs.Stream(ctx)
 }
 
+func scannerText(text string, fn func(s string)) error {
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		fn(scanner.Text())
+	}
+	return scanner.Err()
+}
+
 func (c *Container) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
-	if err != nil || (podInfo.Status.Phase != v1.PodRunning && podInfo.Status.Phase != v1.PodSucceeded) {
+	if err != nil || !podHasLog(podInfo) {
 		return status.Error(codes.NotFound, "未找到日志")
 	}
-	if podInfo.Status.Phase == v1.PodSucceeded {
+	if podInfo.Status.Phase == v1.PodSucceeded || podInfo.Status.Phase == v1.PodFailed {
 		log, err := c.ContainerLog(server.Context(), request)
 		if err != nil {
 			return err
 		}
-		server.Send(&container.LogResponse{
-			Namespace:     request.Namespace,
-			PodName:       request.Pod,
-			ContainerName: request.Container,
-			Log:           string(log.Log),
+
+		return scannerText(log.Log, func(s string) {
+			server.Send(&container.LogResponse{
+				Namespace:     request.Namespace,
+				PodName:       request.Pod,
+				ContainerName: request.Container,
+				Log:           s,
+			})
 		})
-		return nil
 	}
 
 	stream, err := c.Steamer.Stream(context.TODO(), request.Namespace, request.Pod, request.Container)
