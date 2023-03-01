@@ -310,6 +310,72 @@ func TestContainer_Exec_Success(t *testing.T) {
 	assert.Equal(t, (&container.ExecResponse{Message: "aaa"}).String(), result[0].String())
 }
 
+func TestContainer_Exec_SuccessWithDefaultContainer(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "duc",
+			Annotations: map[string]string{
+				DefaultContainerAnnotationName: "app-default",
+			},
+		},
+		Spec: v1.PodSpec{Containers: []v1.Container{
+			{Name: "app"},
+			{Name: "app-default"},
+		}},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+	fk := fake.NewSimpleClientset(pod)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client:    fk,
+		PodLister: testutil.NewPodLister(pod),
+	})
+	r := mock.NewMockRecorderInterface(m)
+	r.EXPECT().Write("mars@app-default:/# sh -c ls").Times(1)
+	r.EXPECT().Write("\r\n").Times(1)
+	r.EXPECT().Write("aaa").Times(1)
+	r.EXPECT().Close().Times(1)
+	var mu sync.Mutex
+	var result []*container.ExecResponse
+	err := (&Container{
+		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
+			assert.Equal(t, "app-default", c.Container)
+			assert.Equal(t, "duc", info.Name)
+			return r
+		},
+		Executor: &fakeRemoteExecutor{
+			execute: func(clientSet kubernetes.Interface, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+				stdout.Write([]byte("aaa"))
+				return nil
+			},
+		},
+	}).Exec(&container.ExecRequest{
+		Namespace: "duc",
+		Pod:       "pod1",
+		Container: "",
+		Command:   []string{"sh", "-c", "ls"},
+	}, &execServer{
+		send: func(res *container.ExecResponse) error {
+			mu.Lock()
+			defer mu.Unlock()
+			result = append(result, res)
+			return nil
+		},
+		ctx: auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}),
+	})
+	assert.Nil(t, err)
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, result, 1)
+	assert.Equal(t, (&container.ExecResponse{Message: "aaa"}).String(), result[0].String())
+}
+
 func TestContainer_Exec_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
