@@ -18,8 +18,12 @@ export function downloadFile(id: number) {
   return download(`/api/download_file/${id}`);
 }
 
-export function downloadConfig() {
-  return download(`/api/config/export`);
+export function downloadConfig(pid?: number) {
+  let url = `/api/config/export`;
+  if (pid && pid > 0) {
+    url += `/${pid}`;
+  }
+  return download(url);
 }
 
 export function maxUploadSize() {
