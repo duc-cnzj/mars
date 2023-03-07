@@ -444,6 +444,86 @@ func Test_exportMarsConfig(t *testing.T) {
 `), fmt.Sprintf("\n%s\n", r3.Body.String()))
 }
 
+func Test_exportMarsConfigWithPid(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	auth := mock.NewMockAuthInterface(m)
+	app.EXPECT().Auth().Return(auth).AnyTimes()
+
+	db, f := testutil.SetGormDB(m, app)
+	defer f()
+
+	db.AutoMigrate(&models.GitProject{})
+	gp1 := &models.GitProject{
+		DefaultBranch: "dev",
+		Name:          "app",
+		GitProjectId:  1,
+		Enabled:       true,
+		GlobalEnabled: false,
+		GlobalConfig:  "xxx",
+	}
+	db.Create(gp1)
+	gp2 := &models.GitProject{
+		DefaultBranch: "dev2",
+		Name:          "app2",
+		GitProjectId:  2,
+		Enabled:       true,
+		GlobalEnabled: false,
+		GlobalConfig:  "yyy",
+	}
+	db.Create(gp2)
+	admin := &contracts.JwtClaims{
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+	}
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	r3 := httptest.NewRecorder()
+
+	e := mock.NewMockDispatcherInterface(m)
+	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/config/export/%v", gp2.GitProjectId), nil)
+	exportMarsConfig(r3, req, map[string]string{"pid": fmt.Sprintf("%d", gp2.GitProjectId)})
+	assert.Equal(t, 200, r3.Code)
+	assert.Equal(t, dedent.Dedent(`
+			[
+				{
+					"default_branch": "dev2",
+					"name": "app2",
+					"git_project_id": 2,
+					"enabled": true,
+					"global_enabled": false,
+					"global_config": "yyy"
+				}
+			]
+`), fmt.Sprintf("\n%s\n", r3.Body.String()))
+
+	req2, _ := http.NewRequest("GET", fmt.Sprintf("/api/config/export/%v", gp1.GitProjectId), nil)
+	r4 := httptest.NewRecorder()
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
+	exportMarsConfig(r4, req2, map[string]string{"pid": fmt.Sprintf("%d", gp1.GitProjectId)})
+	assert.Equal(t, dedent.Dedent(`
+			[
+				{
+					"default_branch": "dev",
+					"name": "app",
+					"git_project_id": 1,
+					"enabled": true,
+					"global_enabled": false,
+					"global_config": "xxx"
+				}
+			]
+`), fmt.Sprintf("\n%s\n", r4.Body.String()))
+
+	req3, _ := http.NewRequest("GET", fmt.Sprintf("/api/config/export/%v", "999"), nil)
+	r5 := httptest.NewRecorder()
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
+	exportMarsConfig(r5, req3, map[string]string{"pid": fmt.Sprintf("%v", "999")})
+	assert.Equal(t, "[]", r5.Body.String())
+}
+
 func Test_importMarsConfig(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()

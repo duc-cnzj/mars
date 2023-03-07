@@ -332,6 +332,7 @@ type ExportProject struct {
 }
 
 func handleDownloadConfig(gmux *runtime.ServeMux) {
+	gmux.HandlePath("GET", "/api/config/export/{git_project_id}", exportMarsConfig)
 	gmux.HandlePath("GET", "/api/config/export", exportMarsConfig)
 	gmux.HandlePath("POST", "/api/config/import", importMarsConfig)
 }
@@ -409,10 +410,17 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
+	var db = app.DB()
+	var pname []string
+	pid := pathParams["git_project_id"]
+	if pid != "" {
+		db = db.Where("git_project_id = ?", pid)
+	}
 	var projects []models.GitProject
-	app.DB().Find(&projects)
+	db.Find(&projects)
 	data := make([]ExportProject, 0, len(projects))
 	for _, gitProject := range projects {
+		pname = append(pname, gitProject.Name)
 		data = append(data, ExportProject{
 			DefaultBranch: gitProject.DefaultBranch,
 			Name:          gitProject.Name,
@@ -423,9 +431,12 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 		})
 	}
 	marshal, _ := json.MarshalIndent(&data, "", "\t")
+	if pid == "" {
+		pname = []string{"全部"}
+	}
 	e.AuditLog(user.Name,
 		types.EventActionType_Download,
-		"下载配置文件", nil, &e.StringYamlPrettier{Str: string(marshal)})
+		fmt.Sprintf("下载配置文件: %v", strings.Join(pname, ",")), nil, &e.StringYamlPrettier{Str: string(marshal)})
 	download(w, "mars-config.json", bytes.NewReader(marshal))
 }
 

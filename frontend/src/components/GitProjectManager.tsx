@@ -16,7 +16,11 @@ import {
   Upload,
 } from "antd";
 import ConfigModal from "./ConfigModal";
-import { GlobalOutlined, UploadOutlined } from "@ant-design/icons";
+import {
+  GlobalOutlined,
+  UploadOutlined,
+  CloudDownloadOutlined,
+} from "@ant-design/icons";
 import pb from "../api/compiled";
 import { downloadConfig } from "../api/file";
 import { getToken } from "../utils/token";
@@ -237,18 +241,30 @@ const GitProjectManager: React.FC = () => {
                       )
                     </div>
                     {item.global_enabled && (
-                      <Tooltip
-                        placement="top"
-                        title="已使用全局配置"
-                        overlayStyle={{ fontSize: "10px" }}
-                      >
-                        <GlobalOutlined
-                          style={{
-                            color: item.enabled ? "green" : "red",
-                            marginLeft: 3,
-                          }}
-                        />
-                      </Tooltip>
+                      <>
+                        <Tooltip
+                          placement="top"
+                          title="已使用全局配置"
+                          overlayStyle={{ fontSize: "10px" }}
+                        >
+                          <GlobalOutlined
+                            style={{
+                              color: item.enabled ? "green" : "red",
+                              marginLeft: 3,
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          placement="top"
+                          title="下载项目配置"
+                          overlayStyle={{ fontSize: "10px" }}
+                        >
+                          <CloudDownloadOutlined
+                            onClick={() => downloadConfig(item.id)}
+                            style={{ marginLeft: 3, cursor: "pointer" }}
+                          />
+                        </Tooltip>
+                      </>
                     )}
                   </div>
                 }
