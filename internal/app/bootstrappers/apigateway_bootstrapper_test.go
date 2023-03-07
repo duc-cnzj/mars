@@ -483,7 +483,7 @@ func Test_exportMarsConfigWithPid(t *testing.T) {
 	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
 	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/config/export/%v", gp2.GitProjectId), nil)
-	exportMarsConfig(r3, req, map[string]string{"pid": fmt.Sprintf("%d", gp2.GitProjectId)})
+	exportMarsConfig(r3, req, map[string]string{"git_project_id": fmt.Sprintf("%d", gp2.GitProjectId)})
 	assert.Equal(t, 200, r3.Code)
 	assert.Equal(t, dedent.Dedent(`
 			[
@@ -502,7 +502,7 @@ func Test_exportMarsConfigWithPid(t *testing.T) {
 	r4 := httptest.NewRecorder()
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
-	exportMarsConfig(r4, req2, map[string]string{"pid": fmt.Sprintf("%d", gp1.GitProjectId)})
+	exportMarsConfig(r4, req2, map[string]string{"git_project_id": fmt.Sprintf("%d", gp1.GitProjectId)})
 	assert.Equal(t, dedent.Dedent(`
 			[
 				{
@@ -520,7 +520,7 @@ func Test_exportMarsConfigWithPid(t *testing.T) {
 	r5 := httptest.NewRecorder()
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
-	exportMarsConfig(r5, req3, map[string]string{"pid": fmt.Sprintf("%v", "999")})
+	exportMarsConfig(r5, req3, map[string]string{"git_project_id": fmt.Sprintf("%v", "999")})
 	assert.Equal(t, "[]", r5.Body.String())
 }
 
