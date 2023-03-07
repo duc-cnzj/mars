@@ -1,17 +1,10 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { bg } from "../api/background";
 import pb from "../api/compiled";
-import { Form, Button, Input } from "antd";
+import { Form, Button, Input, Divider } from "antd";
 import { useAuth } from "../contexts/auth";
 import { useHistory } from "react-router-dom";
-import {
-  GoogleOutlined,
-  GithubOutlined,
-  QqOutlined,
-  WechatOutlined,
-  PushpinFilled,
-  PushpinOutlined,
-} from "@ant-design/icons";
+import { PushpinFilled, PushpinOutlined } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
 import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
 
@@ -29,40 +22,6 @@ const Login: React.FC = () => {
 
   const h = useHistory();
   const auth = useAuth();
-
-  const renderOidcItem: (name: string) => React.ReactNode = useCallback(
-    (name: string) => {
-      switch (name) {
-        case "wechat":
-          return (
-            <div className="login__sso-icon-item">
-              <WechatOutlined />
-            </div>
-          );
-        case "qq":
-          return (
-            <div className="login__sso-icon-item">
-              <QqOutlined />
-            </div>
-          );
-        case "github":
-          return (
-            <div className="login__sso-icon-item">
-              <GithubOutlined />
-            </div>
-          );
-        case "google":
-          return (
-            <div className="login__sso-icon-item">
-              <GoogleOutlined />
-            </div>
-          );
-        default:
-          return <div className="login__sso-item__name">{name}</div>;
-      }
-    },
-    []
-  );
 
   return (
     <div
@@ -105,30 +64,41 @@ const Login: React.FC = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
+              <button
+                className="login__button"
+                type="submit"
                 style={{ width: "100%" }}
               >
                 登录
-              </Button>
+              </button>
             </Form.Item>
+            <Divider style={{ fontWeight: "normal", fontSize: 12 }}>
+              或者
+            </Divider>
 
-            <div className="login__sso-card">
-              {settings?.items.map((item, index) => (
-                <Form.Item key={index}>
-                  <a
-                    href="javascript(0);"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setState(item.state || "");
-                      window.location.href = item.url || "/login";
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {settings?.items.map((item) => (
+                <Button
+                  type="primary"
+                  key={item.name}
+                  className="login__odic-btn"
+                  href="javascript(0);"
+                  style={{ marginBottom: 10 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setState(item.state || "");
+                    window.location.href = item.url || "/login";
+                  }}
+                >
+                  <span
+                    style={{
+                      textTransform: "uppercase",
+                      fontFamily: "monospace",
                     }}
-                    className="login__sso-item"
                   >
-                    {renderOidcItem(item.name || "")}
-                  </a>
-                </Form.Item>
+                    {item.name}
+                  </span>
+                </Button>
               ))}
             </div>
           </Form>
