@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Mars",
   description: "专为devops而生，30秒内部署一个应用。",
+  base: "/mars/",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: './images/logo512.png',
