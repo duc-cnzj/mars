@@ -34,15 +34,17 @@ func TestMessage_Marshal(t *testing.T) {
 }
 
 func TestProtoToMessage(t *testing.T) {
-	m := websocket.Metadata{
-		Message: "aa",
+	m := websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Message: "aa",
+		},
 	}
 	marshal, _ := proto.Marshal(&m)
 	assert.Equal(t, Message{
 		Data: marshal,
 		To:   1,
 		ID:   "idx",
-	}, ProtoToMessage(&m, 1, "idx"))
+	}, ProtoToMessage(&m, "idx"))
 }
 
 func TestTransformToResponse(t *testing.T) {

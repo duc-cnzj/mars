@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-const ephemeralBroadroom = wssender.BroadcastRoom + "#ephemeral"
+const ephemeralBroadcastRoom = wssender.BroadcastRoom + "#ephemeral"
 
 var nsqSenderName = "ws_sender_nsq"
 
@@ -279,15 +279,22 @@ func (n *nsq) ID() string {
 }
 
 func (n *nsq) ToSelf(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(n.ephemeralID(), wssender.ProtoToMessage(response, websocket_pb.To_ToSelf, n.id).Marshal())
+	return n.to(response, websocket_pb.To_ToSelf)
 }
 
 func (n *nsq) ToAll(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(ephemeralBroadroom, wssender.ProtoToMessage(response, websocket_pb.To_ToAll, n.id).Marshal())
+	return n.to(response, websocket_pb.To_ToAll)
 }
 
 func (n *nsq) ToOthers(response contracts.WebsocketMessage) error {
-	return n.producer.Publish(ephemeralBroadroom, wssender.ProtoToMessage(response, websocket_pb.To_ToOthers, n.id).Marshal())
+	return n.to(response, websocket_pb.To_ToOthers)
+}
+
+func (n *nsq) to(response contracts.WebsocketMessage, to websocket_pb.To) error {
+	response.GetMetadata().To = to
+	response.GetMetadata().Uid = n.uid
+	response.GetMetadata().Id = n.id
+	return n.producer.Publish(ephemeralBroadcastRoom, wssender.ProtoToMessage(response, n.id).Marshal())
 }
 
 func (n *nsq) ephemeralID() string {
@@ -295,7 +302,7 @@ func (n *nsq) ephemeralID() string {
 }
 
 func (n *nsq) Subscribe() <-chan []byte {
-	consumerAll, _ := gonsq.NewConsumer(ephemeralBroadroom, n.ephemeralID(), n.cfg)
+	consumerAll, _ := gonsq.NewConsumer(ephemeralBroadcastRoom, n.ephemeralID(), n.cfg)
 	consumer, _ := gonsq.NewConsumer(n.ephemeralID(), n.ephemeralID(), n.cfg)
 	h := &handler{msgCh: n.msgCh, id: n.id}
 	connect(consumer, n.addr, n.lookupdAddr, h)
@@ -304,8 +311,8 @@ func (n *nsq) Subscribe() <-chan []byte {
 	n.consumersMu.Lock()
 	defer n.consumersMu.Unlock()
 	n.consumers = map[string]*gonsq.Consumer{
-		ephemeralBroadroom: consumerAll,
-		n.ephemeralID():    consumer,
+		ephemeralBroadcastRoom: consumerAll,
+		n.ephemeralID():        consumer,
 	}
 
 	return n.msgCh
