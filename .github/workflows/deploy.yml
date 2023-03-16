@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-          cache: npm
+          cache: yarn
       - name: Build
         run: yarn run docs:build
       - uses: actions/configure-pages@v2
