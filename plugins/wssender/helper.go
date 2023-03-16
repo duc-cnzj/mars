@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/contracts"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -31,10 +32,10 @@ func DecodeMessage(data []byte) (msg Message, err error) {
 	return
 }
 
-func ProtoToMessage(m proto.Message, to websocket_pb.To, id string) Message {
+func ProtoToMessage(m contracts.WebsocketMessage, id string) Message {
 	return Message{
 		Data: TransformToResponse(m),
-		To:   to,
+		To:   m.GetMetadata().GetTo(),
 		ID:   id,
 	}
 }

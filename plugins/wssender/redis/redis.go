@@ -267,17 +267,22 @@ func (p *rdsPubSub) Close() error {
 }
 
 func (p *rdsPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), p.id, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToSelf, p.id).Marshal())
-	return nil
+	return p.to(wsResponse, websocket_pb.To_ToSelf)
 }
 
 func (p *rdsPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToAll, p.id).Marshal())
-	return nil
+	return p.to(wsResponse, websocket_pb.To_ToAll)
 }
 
 func (p *rdsPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
-	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(wsResponse, websocket_pb.To_ToOthers, p.id).Marshal())
+	return p.to(wsResponse, websocket_pb.To_ToOthers)
+}
+
+func (p *rdsPubSub) to(response contracts.WebsocketMessage, to websocket_pb.To) error {
+	response.GetMetadata().To = to
+	response.GetMetadata().Uid = p.uid
+	response.GetMetadata().Id = p.id
+	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(response, p.id).Marshal())
 	return nil
 }
 

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -81,8 +80,7 @@ func TestNsqSender_Initialize(t *testing.T) {
 	assert.Equal(t, ns.lookupdAddr, lookupdAddr)
 	assert.Equal(t, ns.addr, addr)
 	assert.NotNil(t, ns.producer)
-	ns.producer.Stop()
-
+	ns.Destroy()
 	assert.Error(t, ns.Initialize(map[string]any{}))
 	assert.Error(t, ns.Initialize(map[string]any{
 		"addr": "xxx",
@@ -183,15 +181,17 @@ func Test_handler_HandleMessage(t *testing.T) {
 	assert.Nil(t, h.HandleMessage(nil))
 	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: nil}))
 
-	item := &websocket.WsMetadataResponse{}
+	item := &websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{To: websocket.To_ToOthers},
+	}
 	marshal := wssender.TransformToResponse(item)
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "xxx").Marshal()}))
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, "xxx").Marshal()}))
 	data := <-h.msgCh
 	assert.Equal(t, marshal, data)
 
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "id").Marshal()}))
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, "id").Marshal()}))
 	assert.Len(t, h.msgCh, 0)
-	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, websocket.To_ToOthers, "ccc").Marshal()}))
+	assert.Nil(t, h.HandleMessage(&gonsq.Message{Body: wssender.ProtoToMessage(item, "ccc").Marshal()}))
 	assert.Len(t, h.msgCh, 1)
 }
 
@@ -302,6 +302,7 @@ func Test_nsq_Leave(t *testing.T) {
 	assert.Len(t, n.pidSelectors[int64(pmodel.ID)], 0)
 	assert.Len(t, n.channels, 0)
 	assert.Len(t, n.consumers, 0)
+	assert.Nil(t, n.Close())
 }
 
 func Test_nsq_Run(t *testing.T) {
@@ -317,7 +318,7 @@ func Test_nsq_Run(t *testing.T) {
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	assert.Nil(t, n.Run(cancel))
-	ns.Destroy()
+	assert.Nil(t, ns.Destroy())
 }
 
 func Test_nsq_Subscribe(t *testing.T) {
@@ -329,10 +330,9 @@ func Test_nsq_Subscribe(t *testing.T) {
 		cfg:      newNsqConfig(),
 		addr:     addr,
 	}
-	defer ns.Destroy()
 	n := ns.New("uid", "id").(*nsq)
 	ch := n.Subscribe()
-	p := NewNsqProducer()
+	p := ns.producer
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	cancel, cancelFunc := context.WithCancel(context.TODO())
@@ -342,7 +342,7 @@ func Test_nsq_Subscribe(t *testing.T) {
 		n.Run(cancel)
 	}()
 	assert.Nil(t, p.Publish(n.ephemeralID(), []byte("aa")))
-	assert.Nil(t, p.Publish(ephemeralBroadroom, []byte("bb")))
+	assert.Nil(t, p.Publish(ephemeralBroadcastRoom, []byte("bb")))
 	assert.Len(t, n.consumers, 2)
 	<-ch
 	<-ch
@@ -356,24 +356,67 @@ func Test_nsq_ToAll(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	n := &nsq{
-		id:       "id",
+	nss := &NsqSender{
 		producer: NewNsqProducer(),
+		cfg:      newNsqConfig(),
+		addr:     addr,
 	}
-	assert.Nil(t, n.ToAll(&websocket.WsMetadataResponse{}))
-	n.producer.Stop()
+	n := nss.New("uid", "id").(*nsq)
+	n2 := nss.New("uid-others", "id-others").(*nsq)
+	defer n.Close()
+	defer n2.Close()
+	subscribe1 := n.Subscribe()
+	subscribe2 := n2.Subscribe()
+	assert.Nil(t, n.ToAll(&websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Message: "to all",
+		},
+	}))
+	defer n.producer.Stop()
+	data1 := <-subscribe1
+	data2 := <-subscribe2
+	assert.Equal(t, websocket.To_ToAll, decodeMsg(data1).Metadata.To)
+	assert.Equal(t, "id", decodeMsg(data1).Metadata.Id)
+	assert.Equal(t, "uid", decodeMsg(data1).Metadata.Uid)
+	assert.Equal(t, "to all", decodeMsg(data1).Metadata.Message)
+
+	assert.Equal(t, websocket.To_ToAll, decodeMsg(data2).Metadata.To)
+	assert.Equal(t, "id", decodeMsg(data2).Metadata.Id)
+	assert.Equal(t, "uid", decodeMsg(data2).Metadata.Uid)
+	assert.Equal(t, "to all", decodeMsg(data2).Metadata.Message)
 }
 
 func Test_nsq_ToOthers(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	n := &nsq{
-		id:       "id",
+	nss := &NsqSender{
 		producer: NewNsqProducer(),
+		cfg:      newNsqConfig(),
+		addr:     addr,
 	}
-	assert.Nil(t, n.ToOthers(&websocket.WsMetadataResponse{}))
-	n.producer.Stop()
+	n := nss.New("uid", "id").(*nsq)
+	n2 := nss.New("uid-others", "id-others").(*nsq)
+	defer n.Close()
+	defer n2.Close()
+	subscribe := n2.Subscribe()
+	assert.Nil(t, n.ToOthers(&websocket.WsMetadataResponse{
+		Metadata: &websocket.Metadata{
+			Message: "to others",
+		},
+	}))
+	defer n.producer.Stop()
+	data := <-subscribe
+	assert.Equal(t, websocket.To_ToOthers, decodeMsg(data).Metadata.To)
+	assert.Equal(t, "id", decodeMsg(data).Metadata.Id)
+	assert.Equal(t, "uid", decodeMsg(data).Metadata.Uid)
+	assert.Equal(t, "to others", decodeMsg(data).Metadata.Message)
+}
+
+func decodeMsg(data []byte) *websocket.WsMetadataResponse {
+	var msg websocket.WsMetadataResponse
+	proto.Unmarshal(data, &msg)
+	return &msg
 }
 
 func newNsqConfig() *gonsq.Config {
@@ -417,11 +460,18 @@ func Test_nsq_ToSelf(t *testing.T) {
 			Percent: 0,
 		},
 	}
-
 	subscribe := n.Subscribe()
 	assert.Nil(t, n.ToSelf(m))
-
-	data := <-subscribe
+	var data []byte
+	for {
+		data = <-subscribe
+		var msg websocket.WsMetadataResponse
+		proto.Unmarshal(data, &msg)
+		if msg.Metadata.To == websocket.To_ToSelf {
+			break
+		}
+		t.Log(msg.Metadata.Id)
+	}
 	marshal, _ := proto.Marshal(m)
 	marshal2, _ := proto.Marshal(m2)
 	assert.Equal(t, marshal, data)
