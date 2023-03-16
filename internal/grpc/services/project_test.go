@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/annotations"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -28,6 +26,7 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/annotations"
 	"github.com/duc-cnzj/mars/internal/auth"
 	"github.com/duc-cnzj/mars/internal/config"
 	"github.com/duc-cnzj/mars/internal/contracts"

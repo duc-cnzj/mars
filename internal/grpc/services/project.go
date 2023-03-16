@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/annotations"
-
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/internal/annotations"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/contracts"
 	"github.com/duc-cnzj/mars/internal/event/events"
