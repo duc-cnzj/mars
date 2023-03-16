@@ -37,6 +37,7 @@ func TestProtoToMessage(t *testing.T) {
 	m := websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
 			Message: "aa",
+			To:      1,
 		},
 	}
 	marshal, _ := proto.Marshal(&m)

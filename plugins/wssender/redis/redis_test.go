@@ -284,7 +284,9 @@ func Test_rdsPubSub_ToAll(t *testing.T) {
 
 	msg := &websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
-			To: plugins.ToAll,
+			Id:  "b-1",
+			Uid: "bbb",
+			To:  plugins.ToAll,
 		},
 	}
 
