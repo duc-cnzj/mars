@@ -7,7 +7,7 @@ export default defineConfig({
   base: "/mars/",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    logo: './images/logo512.png',
+    logo: '/logo512.png',
 
     nav: [
       { text: 'Home', link: '/' },
