@@ -5,6 +5,7 @@ export default defineConfig({
   title: "Mars",
   description: "专为devops而生，30秒内部署一个应用。",
   srcDir: "./docs",
+  base: "https://github.com/duc-cnzj/mars",
   themeConfig: {
     siteTitle: "Mars",
     // https://vitepress.dev/reference/default-theme-config
