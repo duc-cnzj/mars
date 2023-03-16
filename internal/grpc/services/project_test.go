@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/internal/annotations"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -55,6 +57,9 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 			Namespace: "test",
 			Labels: map[string]string{
 				"c": "c",
+			},
+			CreationTimestamp: metav1.Time{
+				Time: time.Now(),
 			},
 		},
 		Spec: v1.PodSpec{
@@ -106,16 +111,50 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 			},
 		},
 	}
-	fk := fake.NewSimpleClientset(pod1, pod2, pod3)
+	pod4 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod4",
+			Namespace: "test",
+			Annotations: map[string]string{
+				annotations.IgnoreContainerNames: "c4-1, c4-3",
+			},
+			Labels: map[string]string{
+				"c": "c",
+			},
+			CreationTimestamp: metav1.Time{
+				Time: time.Now().Add(10 * time.Second),
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name: "c4-1",
+				},
+				{
+					Name: "c4-2",
+				},
+				{
+					Name: "c4-3",
+				},
+			},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+	fk := fake.NewSimpleClientset(pod1, pod2, pod3, pod4)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
 		Client:    fk,
-		PodLister: testutil.NewPodLister(pod1, pod2, pod3),
+		PodLister: testutil.NewPodLister(pod1, pod2, pod3, pod4),
 	}).AnyTimes()
 	containers, err := new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
-	assert.Len(t, containers.Items, 1)
+	t.Log(containers.Items)
+	assert.Len(t, containers.Items, 2)
 	assert.Equal(t, "pod1", containers.Items[0].Pod)
 	assert.Equal(t, "c5", containers.Items[0].Container)
+	assert.Equal(t, "pod4", containers.Items[1].Pod)
+	assert.Equal(t, "c4-2", containers.Items[1].Container)
 	_, err = new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
 	assert.Equal(t, "record not found", err.Error())
 }

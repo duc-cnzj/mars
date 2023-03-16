@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/duc-cnzj/mars/internal/annotations"
 
 	"github.com/duc-cnzj/mars-client/v4/project"
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -223,7 +226,17 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 
 	var containerList []*types.StateContainer
 	for _, item := range list {
+		var ignores = make(map[string]struct{})
+		if s, ok := item.Pod.Annotations[annotations.IgnoreContainerNames]; ok {
+			split := strings.Split(s, ",")
+			for _, sp := range split {
+				ignores[strings.TrimSpace(sp)] = struct{}{}
+			}
+		}
 		for _, c := range item.Pod.Spec.Containers {
+			if _, found := ignores[c.Name]; found {
+				continue
+			}
 			containerList = append(containerList,
 				&types.StateContainer{
 					Namespace:   projectModel.Namespace.Name,

@@ -9,7 +9,7 @@
 
 </div>
 
-[查看文档](https://youngduc.gitbook.io/mars/)
+[查看文档](https://duc-cnzj.github.io/mars/)
 
 ## 💡 简介
 
