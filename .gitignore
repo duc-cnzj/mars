@@ -1,3 +1,3 @@
-mars/.vitepress/cache
+docs/.vitepress/cache
 node_modules
-mars/.vitepress/dist
+docs/.vitepress/dist
