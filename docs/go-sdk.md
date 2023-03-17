@@ -15,7 +15,7 @@ go get -u github.com/duc-cnzj/mars-client/v4
 package main
 
 import (
-  client "github.com/duc-cnzj/mars-client/v3"
+  client "github.com/duc-cnzj/mars-client/v4"
 )
 
 func main()  {
