@@ -2,6 +2,7 @@ package models
 
 import (
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -513,32 +514,166 @@ func TestSortStatePod(t *testing.T) {
 				},
 			},
 		},
+		// OrderIndex 10
+		{
+			OrderIndex:  10,
+			IsOld:       false,
+			Terminating: false,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "PodRunning-index-10",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(100 * time.Hour)},
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+		},
+		{
+			OrderIndex:  10,
+			IsOld:       false,
+			Terminating: false,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "PodRunning-index-10-1",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(10 * time.Hour)},
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+				},
+			},
+		},
+		{
+			OrderIndex:  10,
+			IsOld:       false,
+			Terminating: false,
+			Pending:     true,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "PodPending-index-10",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(100 * time.Hour)},
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
+			OrderIndex:  10,
+			IsOld:       false,
+			Terminating: false,
+			Pending:     true,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "PodPending-index-10-2",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(-10 * time.Hour)},
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
+			OrderIndex:  15,
+			IsOld:       false,
+			Terminating: false,
+			Pending:     true,
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "PodPending-index-15",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(120 * time.Hour)},
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+				},
+			},
+		},
+		{
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "PodUnknown",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodUnknown,
+				},
+			},
+		},
+		{
+			Pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "PodSucceed",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodSucceeded,
+				},
+			},
+		},
 	}
 	sort.Sort(s)
 	var names []string
 	for _, pod := range s {
 		names = append(names, pod.Pod.Name)
 	}
-
-	assert.Equal(t, []string{
+	prettier := func(sli []string) string {
+		return strings.Join(sli, "\n")
+	}
+	assert.Equal(t, prettier([]string{
+		"PodRunning-index-10-1",
+		"PodRunning-index-10",
 		"PodRunning-3",
 		"PodRunning-a",
 		"PodRunning-b",
+		"Terminating-PodRunning",
+		"old-PodRunning",
+		"old-Terminating-PodRunning",
+		"PodSucceed",
 		"PodFailed-1",
+		"PodPending-index-15",
+		"PodPending-index-10-2",
+		"PodPending-index-10",
 		"PodPending-1",
 		"PodPending-2",
 		"PodPending-3",
-		"Terminating-PodRunning",
 		"Terminating-PodPending",
-		"old-PodRunning",
-		"old-Terminating-PodRunning",
 		"old-PodPending-b",
 		"old-PodPending-a",
-	}, names)
+		"PodUnknown",
+	}), prettier(names))
 }
 
 func TestProject_SetPodSelectors(t *testing.T) {
 	p := &Project{}
 	p.SetPodSelectors([]string{"app=a", "tag=1.0"})
 	assert.Equal(t, p.PodSelectors, "app=a|tag=1.0")
+}
+
+func Test_mustInt(t *testing.T) {
+	var tests = []struct {
+		in   string
+		want int
+	}{
+		{
+			in:   "aaa",
+			want: 0,
+		},
+		{
+			in:   "-1",
+			want: -1,
+		},
+		{
+			in:   "100x",
+			want: 0,
+		},
+		{
+			in:   "100",
+			want: 100,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, mustInt(tt.in))
+		})
+	}
 }

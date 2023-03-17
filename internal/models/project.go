@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/internal/annotations"
 	app "github.com/duc-cnzj/mars/internal/app/helper"
 	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/duc-cnzj/mars/internal/utils/date"
@@ -78,6 +80,7 @@ type StatePod struct {
 	IsOld       bool
 	Terminating bool
 	Pending     bool
+	OrderIndex  int
 	Pod         *corev1.Pod
 }
 
@@ -87,25 +90,35 @@ func (s SortStatePod) Len() int {
 	return len(s)
 }
 
+var allStatus = map[corev1.PodPhase]int{
+	corev1.PodRunning:   1,
+	corev1.PodSucceeded: 2,
+	corev1.PodFailed:    3,
+	corev1.PodPending:   4,
+	corev1.PodUnknown:   5,
+}
+
 func (s SortStatePod) Less(i, j int) bool {
-	if !s[i].IsOld && s[j].IsOld {
+	if allStatus[s[i].Pod.Status.Phase] < allStatus[s[j].Pod.Status.Phase] {
 		return true
 	}
 
-	if s[i].IsOld == s[j].IsOld && s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning && !s[i].Terminating {
-		return true
-	}
+	if s[i].Pod.Status.Phase == s[j].Pod.Status.Phase {
+		if !s[i].IsOld && s[j].IsOld {
+			return true
+		}
 
-	if s[i].IsOld && s[j].IsOld && s[i].Pod.Status.Phase == corev1.PodRunning && s[j].Pod.Status.Phase != corev1.PodRunning {
-		return true
-	}
+		if s[i].OrderIndex > s[j].OrderIndex && s[i].IsOld == s[j].IsOld {
+			return true
+		}
 
-	if s[i].IsOld == s[j].IsOld && !s[i].Terminating && s[j].Terminating {
-		return true
-	}
+		if !s[i].Terminating && s[j].Terminating && s[i].IsOld == s[j].IsOld {
+			return true
+		}
 
-	if s[i].Terminating == s[j].Terminating && s[i].IsOld == s[j].IsOld && s[i].Pod.Status.Phase == s[j].Pod.Status.Phase {
-		return s[i].Pod.CreationTimestamp.Time.Before(s[j].Pod.CreationTimestamp.Time)
+		if s[i].OrderIndex == s[j].OrderIndex && s[i].IsOld == s[j].IsOld && s[i].Terminating == s[j].Terminating {
+			return s[i].Pod.CreationTimestamp.Time.Before(s[j].Pod.CreationTimestamp.Time)
+		}
 	}
 
 	return false
@@ -195,16 +208,28 @@ func (project *Project) GetAllPods() SortStatePod {
 			}
 		}
 
+		idx := pod.Annotations[annotations.PodOrderIndex]
+
 		newList = append(newList, StatePod{
 			IsOld:       isOld,
-			Pod:         pod.DeepCopy(),
 			Terminating: pod.DeletionTimestamp != nil,
 			Pending:     pod.Status.Phase == corev1.PodPending,
+			OrderIndex:  mustInt(idx),
+			Pod:         pod.DeepCopy(),
 		})
 	}
 	sort.Sort(newList)
 
 	return newList
+}
+
+func mustInt(num string) (res int) {
+	var err error
+	res, err = strconv.Atoi(num)
+	if err != nil {
+		res = 0
+	}
+	return
 }
 
 func (project *Project) GetAllPodMetrics() []v1beta1.PodMetrics {
