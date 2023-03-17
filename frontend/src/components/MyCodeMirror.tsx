@@ -76,6 +76,9 @@ const theme = EditorView.theme(
     ".cm-content": {
       paddingTop: 0,
     },
+    "&.cm-editor .cm-scroller .cm-gutters": {
+      marginRight: "5px",
+    },
     "&.cm-editor.cm-focused": {
       outline: "none",
     },
@@ -133,6 +136,16 @@ const list = [
     apply: "<.Branch>-<.Pipeline>",
     label: "imageTag",
     detail: "<.Branch>-<.Pipeline>",
+  },
+  {
+    apply: "mars.duc-cnzj.github.io/ignore-containers: ",
+    label: "annotationIgnoreContainerNames",
+    detail: `# 过滤容器`,
+  },
+  {
+    apply: "mars.duc-cnzj.github.io/order-index: ",
+    label: "annotationPodOrderIndex",
+    detail: `# 排序，数值越大越前面`,
   },
 ];
 
