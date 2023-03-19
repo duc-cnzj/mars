@@ -1,4 +1,4 @@
-package domain_manager
+package domainmanager
 
 import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"

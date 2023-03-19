@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE)
+[![codecov](https://codecov.io/gh/duc-cnzj/mars/branch/master/graph/badge.svg?token=EUSLRBT6NN)](https://codecov.io/gh/duc-cnzj/mars) [![unittest](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml/badge.svg)](https://github.com/duc-cnzj/mars/actions/workflows/test.yaml) [![Release](https://img.shields.io/github/release/duc-cnzj/mars.svg)](https://github.com/duc-cnzj/mars/releases/latest) [![GitHub license](https://img.shields.io/github/license/duc-cnzj/mars)](https://github.com/duc-cnzj/mars/blob/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/duc-cnzj/mars/v4)](https://goreportcard.com/report/github.com/duc-cnzj/mars/v4)
 
 </div>
 

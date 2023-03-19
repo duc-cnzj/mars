@@ -1,4 +1,4 @@
-package domain_manager
+package domainmanager
 
 import (
 	"errors"
