@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
-
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
+
 	"github.com/xanzy/go-gitlab"
 )
 

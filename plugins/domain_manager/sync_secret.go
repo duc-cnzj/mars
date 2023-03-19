@@ -16,7 +16,8 @@ import (
 
 var _ plugins.DomainManager = (*SyncSecretDomainManager)(nil)
 
-const SyncSecretSecretName = "mars-tls-sync-secret"
+// SyncSecretSecretName 和 manual 方式保持名称一致，避免两种方式之间切换时需要手动部署才能生效的问题
+const SyncSecretSecretName = ManualCertSecretName
 
 func init() {
 	dr := &SyncSecretDomainManager{updateCertTlsFunc: tls.UpdateCertTls}
