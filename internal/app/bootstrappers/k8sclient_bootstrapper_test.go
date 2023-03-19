@@ -6,13 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestK8sClientBootstrapper_Bootstrap(t *testing.T) {}

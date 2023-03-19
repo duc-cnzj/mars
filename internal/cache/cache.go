@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 
 	"golang.org/x/sync/singleflight"
 )

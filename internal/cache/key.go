@@ -3,7 +3,7 @@ package cache
 import (
 	"fmt"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var _ contracts.CacheKeyInterface = (*Key)(nil)

@@ -1,11 +1,11 @@
 package events
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/plugins"
-	"github.com/duc-cnzj/mars/internal/utils/tls"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/utils/tls"
 	v1 "k8s.io/api/core/v1"
 )
 

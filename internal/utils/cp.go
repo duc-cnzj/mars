@@ -12,12 +12,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"

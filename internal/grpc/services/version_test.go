@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/version"
-	marsVersion "github.com/duc-cnzj/mars/version"
+	marsVersion "github.com/duc-cnzj/mars/v4/version"
 	"github.com/stretchr/testify/assert"
 )
 

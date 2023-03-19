@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
 )
 
 type UploadBootstrapper struct{}

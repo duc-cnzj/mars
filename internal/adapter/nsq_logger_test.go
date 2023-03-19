@@ -3,11 +3,11 @@ package adapter
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 )
 
 func TestNsqLoggerAdapter_Output(t *testing.T) {

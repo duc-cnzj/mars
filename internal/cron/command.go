@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 // second minute hour `day of the month` month `day of the week`

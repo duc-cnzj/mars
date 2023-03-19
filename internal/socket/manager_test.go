@@ -17,17 +17,17 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/cache_lock"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/event"
-	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/pipeline"
-	"github.com/duc-cnzj/mars/plugins/domain_manager"
+	"github.com/duc-cnzj/mars/v4/internal/cachelock"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/event"
+	"github.com/duc-cnzj/mars/v4/internal/event/events"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/pipeline"
+	"github.com/duc-cnzj/mars/v4/plugins/domain_manager"
 	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/golang/mock/gomock"
@@ -1586,7 +1586,7 @@ func Test_defaultFileOpener_Open(t *testing.T) {
 }
 
 func TestJober_GlobalLock(t *testing.T) {
-	l := cache_lock.NewMemoryLock([2]int{2, 100}, cache_lock.NewMemStore())
+	l := cachelock.NewMemoryLock([2]int{2, 100}, cachelock.NewMemStore())
 	job := &Jober{locker: l, slugName: "id"}
 	assert.Nil(t, job.GlobalLock().Error())
 	assert.Equal(t, "正在部署中，请稍后再试", (&Jober{locker: l, slugName: "id"}).GlobalLock().Error().Error())

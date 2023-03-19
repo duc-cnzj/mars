@@ -4,9 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/app/instance"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/stretchr/testify/assert"
 )
 

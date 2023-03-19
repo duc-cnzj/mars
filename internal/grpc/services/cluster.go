@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/duc-cnzj/mars-client/v4/cluster"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
 )
 
 func init() {

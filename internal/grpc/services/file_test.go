@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/duc-cnzj/mars-client/v4/file"
-	"github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

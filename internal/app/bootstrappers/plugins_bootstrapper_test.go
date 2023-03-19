@@ -3,10 +3,10 @@ package bootstrappers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 
-	"github.com/duc-cnzj/mars/internal/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPluginsBootstrapper_Bootstrap(t *testing.T) {

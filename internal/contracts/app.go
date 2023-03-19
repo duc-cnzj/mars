@@ -1,13 +1,13 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/internal/contracts ApplicationInterface
+//go:generate mockgen -destination ../mock/mock_app.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts ApplicationInterface
 //go:generate mockgen -destination ../mock/mock_tracer.go -package mock go.opentelemetry.io/otel/trace Tracer
 
 import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"

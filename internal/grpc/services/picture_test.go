@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
 	"github.com/duc-cnzj/mars-client/v4/picture"
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/app/instance"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

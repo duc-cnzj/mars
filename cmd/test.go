@@ -3,12 +3,12 @@ package cmd
 import (
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/app/bootstrappers"
+	"github.com/duc-cnzj/mars/v4/internal/app"
+	"github.com/duc-cnzj/mars/v4/internal/app/bootstrappers"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 
-	"github.com/duc-cnzj/mars/internal/app"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
 	"github.com/spf13/cobra"
 )
 

@@ -1,4 +1,4 @@
-package cache_lock
+package cachelock
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 func TestNewMemoryLock(t *testing.T) {

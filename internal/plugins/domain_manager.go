@@ -1,12 +1,12 @@
 package plugins
 
-//go:generate mockgen -destination ../mock/mock_domain_manager.go -package mock github.com/duc-cnzj/mars/internal/plugins DomainManager
+//go:generate mockgen -destination ../mock/mock_domain_manager.go -package mock github.com/duc-cnzj/mars/v4/internal/plugins DomainManager
 
 import (
 	"sync"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var domainManagerOnce = sync.Once{}

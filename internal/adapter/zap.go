@@ -1,9 +1,10 @@
 package adapter
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 type ZapLogger struct {

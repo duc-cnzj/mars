@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/duc-cnzj/mars/plugins/wssender"
+	"github.com/duc-cnzj/mars/v4/plugins/wssender"
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"

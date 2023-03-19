@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 )
 
 func GetMarsNamespace(ns string) string {

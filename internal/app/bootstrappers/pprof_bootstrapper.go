@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type PprofBootstrapper struct{}

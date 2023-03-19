@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 type processPercent struct {

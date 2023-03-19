@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/app/instance"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"

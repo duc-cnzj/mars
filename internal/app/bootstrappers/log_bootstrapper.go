@@ -3,9 +3,9 @@ package bootstrappers
 import (
 	"errors"
 
-	"github.com/duc-cnzj/mars/internal/adapter"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/adapter"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type LogBootstrapper struct{}

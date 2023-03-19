@@ -9,15 +9,15 @@ import (
 	"sync"
 	"time"
 
-	timer2 "github.com/duc-cnzj/mars/internal/utils/timer"
+	timer2 "github.com/duc-cnzj/mars/v4/internal/utils/timer"
 
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/google/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

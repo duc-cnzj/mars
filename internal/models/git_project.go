@@ -12,7 +12,7 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/utils/date"
+	"github.com/duc-cnzj/mars/v4/internal/utils/date"
 )
 
 type GitProject struct {

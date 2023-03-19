@@ -14,7 +14,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 
-	"github.com/duc-cnzj/mars/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 
@@ -24,9 +24,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

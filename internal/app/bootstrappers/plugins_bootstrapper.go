@@ -1,8 +1,8 @@
 package bootstrappers
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
 type PluginsBootstrapper struct{}

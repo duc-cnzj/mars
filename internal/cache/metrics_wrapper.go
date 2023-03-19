@@ -3,8 +3,8 @@ package cache
 import (
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/metrics"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

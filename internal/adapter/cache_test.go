@@ -7,7 +7,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/duc-cnzj/mars/internal/cache"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 )
 
 func TestNewGoCacheAdapter(t *testing.T) {

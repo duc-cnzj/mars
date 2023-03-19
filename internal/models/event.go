@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils/date"
+	"github.com/duc-cnzj/mars/v4/internal/utils/date"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"gorm.io/gorm"

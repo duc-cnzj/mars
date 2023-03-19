@@ -7,17 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/rest"
-
-	"github.com/duc-cnzj/mars/internal/testutil"
-
 	"k8s.io/client-go/tools/remotecommand"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 )
 
 func TestGenMyPtyHandlerId(t *testing.T) {

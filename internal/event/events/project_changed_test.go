@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/app/instance"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/app/instance"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

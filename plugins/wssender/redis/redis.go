@@ -7,20 +7,20 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/duc-cnzj/mars/plugins/wssender"
+	"github.com/duc-cnzj/mars/v4/plugins/wssender"
 
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/models"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/models"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 
 	"github.com/go-redis/redis/v8"
 )

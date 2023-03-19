@@ -3,7 +3,8 @@ package adapter
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+
 	"github.com/stretchr/testify/assert"
 )
 

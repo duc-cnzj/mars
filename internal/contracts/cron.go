@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_cron_runner.go -package mock github.com/duc-cnzj/mars/internal/contracts CronRunner
+//go:generate mockgen -destination ../mock/mock_cron_runner.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts CronRunner
 
 import "context"
 

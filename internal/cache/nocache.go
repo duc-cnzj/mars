@@ -1,6 +1,6 @@
 package cache
 
-import "github.com/duc-cnzj/mars/internal/contracts"
+import "github.com/duc-cnzj/mars/v4/internal/contracts"
 
 type NoCache struct{}
 

@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_cache_locker.go -package mock github.com/duc-cnzj/mars/internal/contracts Locker
+//go:generate mockgen -destination ../mock/mock_cache_locker.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts Locker
 
 type Locker interface {
 	ID() string

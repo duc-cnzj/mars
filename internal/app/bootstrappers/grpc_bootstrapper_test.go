@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	auth2 "github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/golang/mock/gomock"
 )
 
 func TestAuthenticate(t *testing.T) {

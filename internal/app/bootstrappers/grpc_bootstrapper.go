@@ -12,13 +12,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	marsauthorizor "github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/grpc/services"
-	"github.com/duc-cnzj/mars/internal/middlewares"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/validator"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	marsauthorizor "github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/grpc/services"
+	"github.com/duc-cnzj/mars/v4/internal/middlewares"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/validator"
 )
 
 type GrpcBootstrapper struct{}

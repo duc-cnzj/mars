@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_event.go -package mock github.com/duc-cnzj/mars/internal/contracts DispatcherInterface
+//go:generate mockgen -destination ../mock/mock_event.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts DispatcherInterface
 
 type Listener func(any, Event) error
 

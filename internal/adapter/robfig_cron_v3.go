@@ -8,8 +8,8 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 type RobfigCronV3Runner struct {

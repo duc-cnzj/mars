@@ -1,7 +1,7 @@
-// Package cache_lock
+// Package cachelock
 //
 // Laravel yyds!
-package cache_lock
+package cachelock
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 type timer interface {

@@ -30,10 +30,10 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 func init() {
@@ -85,6 +85,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Wait = wait
 	client.Description = desc
 	client.DryRun = dryRun
+	client.Force = true
 	client.DependencyUpdate = true
 	client.DisableOpenAPIValidation = true
 

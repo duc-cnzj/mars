@@ -9,10 +9,10 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/endpoint"
 	"github.com/duc-cnzj/mars-client/v4/types"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/utils"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
 )
 
 func init() {

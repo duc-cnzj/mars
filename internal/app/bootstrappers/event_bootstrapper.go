@@ -1,9 +1,9 @@
 package bootstrappers
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
-	mevent "github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	mevent "github.com/duc-cnzj/mars/v4/internal/event/events"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type EventBootstrapper struct{}

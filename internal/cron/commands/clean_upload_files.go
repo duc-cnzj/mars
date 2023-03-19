@@ -2,12 +2,12 @@ package commands
 
 import (
 	"github.com/duc-cnzj/mars-client/v4/types"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/cron"
-	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/cron"
+	"github.com/duc-cnzj/mars/v4/internal/event/events"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/models"
 
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v2"

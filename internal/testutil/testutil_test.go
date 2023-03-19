@@ -3,11 +3,11 @@ package testutil
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/event/events"
-	"github.com/duc-cnzj/mars/internal/mock"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/event/events"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"

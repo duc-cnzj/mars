@@ -17,10 +17,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars-client/v4/auth"
-	auth2 "github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 )

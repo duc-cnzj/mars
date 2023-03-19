@@ -1,13 +1,13 @@
 package plugins
 
-//go:generate mockgen -destination ../mock/mock_plugin_picture.go -package mock github.com/duc-cnzj/mars/internal/plugins PictureInterface
+//go:generate mockgen -destination ../mock/mock_plugin_picture.go -package mock github.com/duc-cnzj/mars/v4/internal/plugins PictureInterface
 
 import (
 	"context"
 	"sync"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var pictureOnce = sync.Once{}

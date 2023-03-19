@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
 const ManualCertSecretName = "mars-external-tls-secret"

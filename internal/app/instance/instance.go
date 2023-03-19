@@ -1,7 +1,7 @@
 package instance
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var app contracts.ApplicationInterface

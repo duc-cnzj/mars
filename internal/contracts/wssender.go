@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//go:generate mockgen -destination ../mock/mock_wssender_pubsub.go -package mock github.com/duc-cnzj/mars/internal/contracts PubSub
+//go:generate mockgen -destination ../mock/mock_wssender_pubsub.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts PubSub
 
 type WebsocketMessage interface {
 	proto.Message

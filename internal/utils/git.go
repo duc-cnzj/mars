@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/plugins"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 func DownloadFiles(pid any, commit string, files []string) (string, func(), error) {

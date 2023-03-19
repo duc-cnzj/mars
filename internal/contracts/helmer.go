@@ -9,7 +9,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
-//go:generate mockgen -destination ../mock/mock_helmer.go -package mock github.com/duc-cnzj/mars/internal/contracts Helmer
+//go:generate mockgen -destination ../mock/mock_helmer.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts Helmer
 
 type LogFn func(format string, v ...any)
 

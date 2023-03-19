@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/version"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/version"
 )
 
 var Etag string

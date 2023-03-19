@@ -4,8 +4,8 @@ import (
 	"errors"
 	"runtime"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/mlog"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 func HandlePanic(title string) {

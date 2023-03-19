@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 func RouteLogger(h http.Handler) http.Handler {

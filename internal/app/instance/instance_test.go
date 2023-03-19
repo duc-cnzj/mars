@@ -3,7 +3,8 @@ package instance
 import (
 	"testing"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

@@ -1,6 +1,6 @@
 package plugins
 
-//go:generate mockgen -destination ../mock/mock_wssender.go -package mock github.com/duc-cnzj/mars/internal/plugins WsSender
+//go:generate mockgen -destination ../mock/mock_wssender.go -package mock github.com/duc-cnzj/mars/v4/internal/plugins WsSender
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var wsSenderOnce sync.Once

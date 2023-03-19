@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/utils/date"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/utils/date"
 )
 
 type AccessToken struct {

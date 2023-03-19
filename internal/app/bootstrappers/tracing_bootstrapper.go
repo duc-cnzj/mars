@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/version"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/version"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

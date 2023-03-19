@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/duc-cnzj/mars/internal/metrics"
+	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

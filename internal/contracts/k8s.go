@@ -1,8 +1,8 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_remote_executor.go -package mock github.com/duc-cnzj/mars/internal/contracts RemoteExecutor
-//go:generate mockgen -destination ../mock/mock_pod_copier.go -package mock github.com/duc-cnzj/mars/internal/contracts PodFileCopier
-//go:generate mockgen -destination ../mock/mock_archiver.go -package mock github.com/duc-cnzj/mars/internal/contracts Archiver
+//go:generate mockgen -destination ../mock/mock_remote_executor.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts RemoteExecutor
+//go:generate mockgen -destination ../mock/mock_pod_copier.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts PodFileCopier
+//go:generate mockgen -destination ../mock/mock_archiver.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts Archiver
 
 import (
 	"context"

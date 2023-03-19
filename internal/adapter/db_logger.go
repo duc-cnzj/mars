@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/adapter"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/adapter"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/models"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"

@@ -3,7 +3,7 @@ package adapter
 import (
 	"strings"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type NsqLoggerAdapter struct{}

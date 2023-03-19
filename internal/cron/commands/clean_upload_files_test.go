@@ -1,12 +1,12 @@
 package commands
 
 import (
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
-	"github.com/duc-cnzj/mars/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

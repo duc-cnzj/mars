@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 
-	"github.com/duc-cnzj/mars/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/dustin/go-humanize"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

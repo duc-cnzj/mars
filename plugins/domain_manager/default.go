@@ -1,8 +1,8 @@
 package domain_manager
 
 import (
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
 var _ plugins.DomainManager = (*DefaultDomainManager)(nil)

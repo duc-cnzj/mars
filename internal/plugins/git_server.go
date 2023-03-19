@@ -1,16 +1,16 @@
 package plugins
 
-//go:generate mockgen -destination ../mock/mock_git_server.go -package mock github.com/duc-cnzj/mars/internal/plugins GitServer
+//go:generate mockgen -destination ../mock/mock_git_server.go -package mock github.com/duc-cnzj/mars/v4/internal/plugins GitServer
 
 import (
 	"encoding/json"
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/internal/cache"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
 var gitServerOnce = sync.Once{}

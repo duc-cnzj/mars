@@ -14,9 +14,9 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 
-	"github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/socket"
-	"github.com/duc-cnzj/mars/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/socket"
+	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -27,13 +27,13 @@ import (
 	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
-	app "github.com/duc-cnzj/mars/internal/app/helper"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mlog"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/utils"
-	"github.com/duc-cnzj/mars/internal/utils/executor"
-	"github.com/duc-cnzj/mars/internal/utils/recovery"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/executor"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 func init() {

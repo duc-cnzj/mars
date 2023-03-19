@@ -1,13 +1,13 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_pty_handler.go -package mock github.com/duc-cnzj/mars/internal/contracts PtyHandler
-//go:generate mockgen -destination ../mock/mock_socket_conn.go -package mock github.com/duc-cnzj/mars/internal/contracts WebsocketConn
-//go:generate mockgen -destination ../mock/mock_socket.go -package mock github.com/duc-cnzj/mars/internal/contracts CancelSignaler
-//go:generate mockgen -destination ../mock/mock_socket_deploy_msger.go -package mock github.com/duc-cnzj/mars/internal/contracts DeployMsger
-//go:generate mockgen -destination ../mock/mock_socket_job.go -package mock github.com/duc-cnzj/mars/internal/contracts Job
-//go:generate mockgen -destination ../mock/mock_socket_session_mapper.go -package mock github.com/duc-cnzj/mars/internal/contracts SessionMapper
-//go:generate mockgen -destination ../mock/mock_release_installer.go -package mock github.com/duc-cnzj/mars/internal/contracts ReleaseInstaller
-//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/internal/contracts RecorderInterface
+//go:generate mockgen -destination ../mock/mock_pty_handler.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts PtyHandler
+//go:generate mockgen -destination ../mock/mock_socket_conn.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts WebsocketConn
+//go:generate mockgen -destination ../mock/mock_socket.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts CancelSignaler
+//go:generate mockgen -destination ../mock/mock_socket_deploy_msger.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts DeployMsger
+//go:generate mockgen -destination ../mock/mock_socket_job.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts Job
+//go:generate mockgen -destination ../mock/mock_socket_session_mapper.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts SessionMapper
+//go:generate mockgen -destination ../mock/mock_release_installer.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts ReleaseInstaller
+//go:generate mockgen -destination ../mock/mock_recorder.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts RecorderInterface
 
 import (
 	"context"

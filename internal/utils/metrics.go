@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	app "github.com/duc-cnzj/mars/internal/app/helper"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 
 	"github.com/dustin/go-humanize"
 	"k8s.io/apimachinery/pkg/api/resource"

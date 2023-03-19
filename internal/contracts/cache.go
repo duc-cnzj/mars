@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_cache.go -package mock github.com/duc-cnzj/mars/internal/contracts CacheInterface
+//go:generate mockgen -destination ../mock/mock_cache.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts CacheInterface
 
 type CacheKeyInterface interface {
 	String() string

@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/duc-cnzj/mars/version"
+	"github.com/duc-cnzj/mars/v4/version"
 
 	"github.com/spf13/cobra"
 )

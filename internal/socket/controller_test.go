@@ -22,14 +22,14 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars-client/v4/websocket"
-	auth2 "github.com/duc-cnzj/mars/internal/auth"
-	"github.com/duc-cnzj/mars/internal/cache_lock"
-	"github.com/duc-cnzj/mars/internal/config"
-	"github.com/duc-cnzj/mars/internal/contracts"
-	"github.com/duc-cnzj/mars/internal/mock"
-	"github.com/duc-cnzj/mars/internal/models"
-	"github.com/duc-cnzj/mars/internal/testutil"
-	"github.com/duc-cnzj/mars/internal/utils"
+	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/cachelock"
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/testutil"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
 )
 
 func TestHandleWsAuthorize(t *testing.T) {
@@ -373,7 +373,7 @@ func TestWebsocketManager_TickClusterHealth(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	l := cache_lock.NewMemoryLock([2]int{-1, 100}, cache_lock.NewMemStore())
+	l := cachelock.NewMemoryLock([2]int{-1, 100}, cachelock.NewMemStore())
 	app.EXPECT().CacheLock().Return(l).AnyTimes()
 	app.EXPECT().Done().Return(ch).Times(1)
 	go func() {
@@ -417,8 +417,8 @@ func TestWebsocketManager_TickClusterHealth_Parallel(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	ch := make(chan struct{})
-	l := cache_lock.NewMemStore()
-	app.EXPECT().CacheLock().Return(&slowLocker{Locker: cache_lock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
+	l := cachelock.NewMemStore()
+	app.EXPECT().CacheLock().Return(&slowLocker{Locker: cachelock.NewMemoryLock([2]int{-1, 100}, l)}).AnyTimes()
 	app.EXPECT().Done().Return(ch).AnyTimes()
 	go func() {
 		time.Sleep(1500 * time.Millisecond)

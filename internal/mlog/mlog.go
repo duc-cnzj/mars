@@ -1,7 +1,7 @@
 package mlog
 
 import (
-	"github.com/duc-cnzj/mars/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/sirupsen/logrus"
 )
 

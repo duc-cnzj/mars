@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate mockgen -destination ../mock/mock_auth.go -package mock github.com/duc-cnzj/mars/internal/contracts AuthInterface
+//go:generate mockgen -destination ../mock/mock_auth.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts AuthInterface
 
 import (
 	"context"
