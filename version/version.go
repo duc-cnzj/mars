@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	unknown     = "<unknown>"
-	defaultDate = "1970-01-01T00:00:00Z"
+	unknown     string = "<unknown>"
+	defaultDate string = "1970-01-01T00:00:00Z"
+	gitRepo     string = "https://github.com/duc-cnzj/mars"
 )
 
 var (
-	gitRepo        string = unknown
 	gitBranch      string = unknown     // `git rev-parse --abbrev-ref HEAD`
 	gitCommit      string = unknown     // output from `git rev-parse --short HEAD`
 	gitTag         string = unknown     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
@@ -52,7 +52,7 @@ func GetVersion() Version {
 	}
 
 	return Version{
-		GitRepo:        fmt.Sprintf("https://%s", gitRepo),
+		GitRepo:        gitRepo,
 		Version:        versionStr,
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,

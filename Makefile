@@ -1,6 +1,5 @@
 VERSION_PATH=$(shell go list -m -f "{{.Path}}")/version
 LDFLAGS=-w -s  \
- -X ${VERSION_PATH}.gitRepo=github.com/duc-cnzj/mars \
  -X ${VERSION_PATH}.gitBranch=$(shell git rev-parse --abbrev-ref HEAD) \
  -X ${VERSION_PATH}.buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
  -X ${VERSION_PATH}.gitCommit=$(shell git rev-parse --short HEAD) \

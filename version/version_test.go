@@ -10,7 +10,7 @@ import (
 
 func TestGetVersion(t *testing.T) {
 	assert.Equal(t, Version{
-		GitRepo:        fmt.Sprintf("https://%s", gitRepo),
+		GitRepo:        gitRepo,
 		Version:        unknown,
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,
@@ -23,7 +23,6 @@ func TestGetVersion(t *testing.T) {
 		HelmVersion:    helmVersion,
 	}, GetVersion())
 
-	gitRepo = "github.com/duc-cnzj/mars"
 	gitBranch = "dev"
 	gitCommit = "xx"
 	gitTag = ""
@@ -31,7 +30,7 @@ func TestGetVersion(t *testing.T) {
 	helmVersion = "v3.8.0"
 	buildDate = "2022-01-02T00:00:00Z"
 	assert.Equal(t, Version{
-		GitRepo:        fmt.Sprintf("https://%s", gitRepo),
+		GitRepo:        gitRepo,
 		Version:        gitBranch + "-" + gitCommit,
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,
@@ -45,7 +44,7 @@ func TestGetVersion(t *testing.T) {
 	}, GetVersion())
 	gitTag = "v1"
 	assert.Equal(t, Version{
-		GitRepo:        fmt.Sprintf("https://%s", gitRepo),
+		GitRepo:        gitRepo,
 		Version:        gitTag,
 		BuildDate:      buildDate,
 		GitBranch:      gitBranch,
