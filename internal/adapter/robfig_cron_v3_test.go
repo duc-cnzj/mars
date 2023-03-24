@@ -23,7 +23,7 @@ func TestCronLogger_Error(t *testing.T) {
 	defer mlog.SetLogger(logrus.New())
 	e := errors.New("xx")
 	l.EXPECT().Errorf("[CRON]: %v", e)
-	(&CronLogger{}).Error(e, "")
+	(&cronLogger{}).Error(e, "")
 }
 
 func TestCronLogger_Info(t *testing.T) {
@@ -33,19 +33,19 @@ func TestCronLogger_Info(t *testing.T) {
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
 	l.EXPECT().Infof("[CRON]: %s, %v=%v", "aa", "a", "b")
-	(&CronLogger{}).Info("aa", "a", "b")
+	(&cronLogger{}).Info("aa", "a", "b")
 }
 
 func TestNewRobfigCronV3Runner(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner()
+	runner := NewRobfigCronV3Runner().(*robfigCronV3Runner)
 	assert.NotNil(t, runner.entryMap)
 	assert.IsType(t, (*cron.Cron)(nil), runner.c)
 }
 
 func TestRobfigCronV3Runner_AddCommand(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner()
+	runner := NewRobfigCronV3Runner().(*robfigCronV3Runner)
 	assert.Error(t, runner.AddCommand("a", "", func() {}))
 	assert.Nil(t, runner.AddCommand("a", "* * * * * *", func() {}))
 	runner.Lock()
@@ -55,7 +55,7 @@ func TestRobfigCronV3Runner_AddCommand(t *testing.T) {
 
 func TestRobfigCronV3Runner_Run(t *testing.T) {
 	t.Parallel()
-	runner := NewRobfigCronV3Runner()
+	runner := NewRobfigCronV3Runner().(*robfigCronV3Runner)
 	assert.Nil(t, runner.Run(context.TODO()))
 	<-runner.c.Stop().Done()
 }

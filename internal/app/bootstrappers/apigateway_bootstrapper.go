@@ -41,7 +41,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const MaxRecvMsgSize = 1 << 20 * 20 // 20 MiB
+const maxRecvMsgSize = 1 << 20 * 20 // 20 MiB
 
 type ApiGatewayBootstrapper struct{}
 
@@ -82,7 +82,7 @@ type apiGateway struct {
 	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
-func HeaderMatcher(key string) (string, bool) {
+func headerMatcher(key string) (string, bool) {
 	key = strings.ToLower(key)
 	switch key {
 	case "tracestate":
@@ -116,8 +116,8 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
-		runtime.WithOutgoingHeaderMatcher(HeaderMatcher),
-		runtime.WithIncomingHeaderMatcher(HeaderMatcher),
+		runtime.WithOutgoingHeaderMatcher(headerMatcher),
+		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
 			writer.Header().Set("X-Content-Type-Options", "nosniff")
 			pattern, ok := runtime.HTTPPathPattern(ctx)
@@ -139,7 +139,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		}))
 
 	opts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxRecvMsgSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(middlewares.TraceUnaryClientInterceptor),
 	}

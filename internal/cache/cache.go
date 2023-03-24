@@ -7,18 +7,12 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type Store interface {
-	Get(key string) (value []byte, err error)
-	Set(key string, value []byte, expireSeconds int) (err error)
-	Delete(key string) error
-}
-
 type Cache struct {
-	fc Store
+	fc contracts.Store
 	sf *singleflight.Group
 }
 
-func NewCache(fc Store, sf *singleflight.Group) *Cache {
+func NewCache(fc contracts.Store, sf *singleflight.Group) *Cache {
 	return &Cache{fc: fc, sf: sf}
 }
 

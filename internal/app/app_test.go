@@ -18,7 +18,7 @@ import (
 )
 
 func TestApplication_AddServer(t *testing.T) {
-	a := &Application{}
+	a := &application{}
 	a.AddServer(nil)
 	a.AddServer(nil)
 	a.AddServer(nil)
@@ -233,8 +233,8 @@ func TestApplication_Run(t *testing.T) {
 
 func TestApplication_RunServerHooks(t *testing.T) {
 	called := false
-	a := &Application{
-		hooks: map[Hook][]contracts.Callback{
+	a := &application{
+		hooks: map[hook][]contracts.Callback{
 			"aaa": {func(app contracts.ApplicationInterface) {
 				called = true
 			}},
@@ -306,7 +306,7 @@ func TestApplication_Shutdown(t *testing.T) {
 
 func TestWithExcludeTags(t *testing.T) {
 	tags := []string{"a", "b", "c"}
-	assert.Equal(t, tags, NewApplication(&config.Config{}, WithExcludeTags(tags...)).(*Application).excludeTags)
+	assert.Equal(t, tags, NewApplication(&config.Config{}, WithExcludeTags(tags...)).(*application).excludeTags)
 }
 
 type boota struct{}
@@ -443,12 +443,12 @@ func TestApplication_CronManager(t *testing.T) {
 }
 
 func TestApplication_DB(t *testing.T) {
-	a := NewApplication(&config.Config{}).(*Application)
+	a := NewApplication(&config.Config{}).(*application)
 	assert.Same(t, a.dbManager.DB(), a.DB())
 }
 
 func Test_printConfig(t *testing.T) {
 	assert.NotPanics(t, func() {
-		printConfig(&Application{config: &config.Config{}, excludeBoots: []contracts.Bootstrapper{&boota{}}})
+		printConfig(&application{config: &config.Config{}, excludeBoots: []contracts.Bootstrapper{&boota{}}})
 	})
 }

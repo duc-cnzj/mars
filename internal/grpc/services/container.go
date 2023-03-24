@@ -56,7 +56,7 @@ type Container struct {
 	PodFileCopier   contracts.PodFileCopier
 	NewRecorderFunc func(types.EventActionType, contracts.UserInfo, timer.Timer, contracts.Container) contracts.RecorderInterface
 
-	container.UnsafeContainerServer
+	container.UnimplementedContainerServer
 }
 
 func (c *Container) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {

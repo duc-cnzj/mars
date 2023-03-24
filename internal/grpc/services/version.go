@@ -20,7 +20,7 @@ func init() {
 type VersionSvc struct {
 	Guest
 
-	version.UnsafeVersionServer
+	version.UnimplementedVersionServer
 }
 
 func (*VersionSvc) Version(ctx context.Context, request *version.Request) (*version.Response, error) {

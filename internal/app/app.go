@@ -29,21 +29,21 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
-type Hook string
+type hook string
 
 const (
-	BeforeRunHook  Hook = "before_run"
-	BeforeDownHook Hook = "before_down"
-	AfterDownHook  Hook = "after_down"
+	beforeRunHook  hook = "before_run"
+	beforeDownHook hook = "before_down"
+	afterDownHook  hook = "after_down"
 )
 
-var _ contracts.ApplicationInterface = (*Application)(nil)
+var _ contracts.ApplicationInterface = (*application)(nil)
 
-var MustBooted = []contracts.Bootstrapper{
+var mustBooted = []contracts.Bootstrapper{
 	&bootstrappers.LogBootstrapper{},
 }
 
-type Application struct {
+type application struct {
 	done   context.Context
 	config *config.Config
 
@@ -55,7 +55,7 @@ type Application struct {
 	excludeTags   []string
 
 	hooksMu sync.RWMutex
-	hooks   map[Hook][]contracts.Callback
+	hooks   map[hook][]contracts.Callback
 
 	uploader      contracts.Uploader
 	localUploader contracts.Uploader
@@ -72,128 +72,38 @@ type Application struct {
 	sf            *singleflight.Group
 }
 
-func (app *Application) CacheLock() contracts.Locker {
-	return app.cacheLock
-}
+type Option func(*application)
 
-func (app *Application) SetCacheLock(l contracts.Locker) {
-	app.cacheLock = l
-}
-
-func (app *Application) SetCache(c contracts.CacheInterface) {
-	app.cache = c
-}
-
-func (app *Application) Cache() contracts.CacheInterface {
-	if c, ok := app.cache.(*cache.MetricsForCache); ok {
-		return c
-	}
-
-	return cache.NewMetricsForCache(app.cache)
-}
-
-func (app *Application) Auth() contracts.AuthInterface {
-	return app.auth
-}
-
-func (app *Application) CronManager() contracts.CronManager {
-	return app.cronManager
-}
-func (app *Application) SetCronManager(m contracts.CronManager) {
-	app.cronManager = m
-}
-
-func (app *Application) SetAuth(auth contracts.AuthInterface) {
-	app.auth = auth
-}
-
-func (app *Application) SetLocalUploader(uploader contracts.Uploader) {
-	app.localUploader = uploader
-}
-
-func (app *Application) LocalUploader() contracts.Uploader {
-	return app.localUploader
-}
-func (app *Application) SetUploader(uploader contracts.Uploader) {
-	app.uploader = uploader
-}
-
-func (app *Application) Uploader() contracts.Uploader {
-	return app.uploader
-}
-
-func (app *Application) Oidc() contracts.OidcConfig {
-	return app.oidcProvider
-}
-
-func (app *Application) SetOidc(provider contracts.OidcConfig) {
-	app.oidcProvider = provider
-}
-
-func (app *Application) GetPluginByName(name string) contracts.PluginInterface {
-	return app.plugins[name]
-}
-
-func (app *Application) SetPlugins(plugins map[string]contracts.PluginInterface) {
-	app.plugins = plugins
-}
-
-func (app *Application) GetPlugins() map[string]contracts.PluginInterface {
-	return app.plugins
-}
-
-func (app *Application) Done() <-chan struct{} {
-	return app.done.Done()
-}
-
-func (app *Application) K8sClient() *contracts.K8sClient {
-	return app.clientSet
-}
-
-func (app *Application) SetK8sClient(client *contracts.K8sClient) {
-	app.clientSet = client
-}
-
-func (app *Application) EventDispatcher() contracts.DispatcherInterface {
-	return app.dispatcher
-}
-
-func (app *Application) Singleflight() *singleflight.Group {
-	return app.sf
-}
-
-func (app *Application) SetEventDispatcher(dispatcher contracts.DispatcherInterface) {
-	app.dispatcher = dispatcher
-}
-
-type Option func(*Application)
-
+// WithBootstrappers custom boots.
 func WithBootstrappers(bootstrappers ...contracts.Bootstrapper) Option {
-	return func(app *Application) {
+	return func(app *application) {
 		app.bootstrappers = bootstrappers
 	}
 }
 
+// WithMustBootedBootstrappers set mustBooted.
 func WithMustBootedBootstrappers(bootstrappers ...contracts.Bootstrapper) Option {
-	return func(app *Application) {
+	return func(app *application) {
 		app.mustBooted = bootstrappers
 	}
 }
 
+// WithExcludeTags set excludeTags.
 func WithExcludeTags(tags ...string) Option {
-	return func(app *Application) {
+	return func(app *application) {
 		app.excludeTags = tags
 	}
 }
 
+// NewApplication return contracts.ApplicationInterface.
 func NewApplication(config *config.Config, opts ...Option) contracts.ApplicationInterface {
 	doneCtx, cancelFunc := context.WithCancel(context.Background())
-	app := &Application{
-		mustBooted:  MustBooted,
+	app := &application{
+		mustBooted:  mustBooted,
 		config:      config,
 		done:        doneCtx,
 		doneFunc:    cancelFunc,
-		hooks:       map[Hook][]contracts.Callback{},
+		hooks:       map[hook][]contracts.Callback{},
 		servers:     []contracts.Server{},
 		sf:          &singleflight.Group{},
 		cache:       &cache.NoCache{},
@@ -236,9 +146,128 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 	return app
 }
 
+// CacheLock impl contracts.ApplicationInterface CacheLock.
+func (app *application) CacheLock() contracts.Locker {
+	return app.cacheLock
+}
+
+// SetCacheLock impl contracts.ApplicationInterface SetCacheLock.
+func (app *application) SetCacheLock(l contracts.Locker) {
+	app.cacheLock = l
+}
+
+// SetCache impl contracts.ApplicationInterface SetCache.
+func (app *application) SetCache(c contracts.CacheInterface) {
+	app.cache = c
+}
+
+// Cache impl contracts.ApplicationInterface Cache.
+func (app *application) Cache() contracts.CacheInterface {
+	if c, ok := app.cache.(*cache.MetricsForCache); ok {
+		return c
+	}
+
+	return cache.NewMetricsForCache(app.cache)
+}
+
+// Auth impl contracts.ApplicationInterface Auth.
+func (app *application) Auth() contracts.AuthInterface {
+	return app.auth
+}
+
+// CronManager impl contracts.ApplicationInterface CronManager.
+func (app *application) CronManager() contracts.CronManager {
+	return app.cronManager
+}
+
+// SetCronManager impl contracts.ApplicationInterface SetCronManager.
+func (app *application) SetCronManager(m contracts.CronManager) {
+	app.cronManager = m
+}
+
+// SetAuth impl contracts.ApplicationInterface SetAuth.
+func (app *application) SetAuth(auth contracts.AuthInterface) {
+	app.auth = auth
+}
+
+// SetLocalUploader impl contracts.ApplicationInterface SetLocalUploader.
+func (app *application) SetLocalUploader(uploader contracts.Uploader) {
+	app.localUploader = uploader
+}
+
+// LocalUploader impl contracts.ApplicationInterface LocalUploader.
+func (app *application) LocalUploader() contracts.Uploader {
+	return app.localUploader
+}
+
+// SetUploader impl contracts.ApplicationInterface SetUploader.
+func (app *application) SetUploader(uploader contracts.Uploader) {
+	app.uploader = uploader
+}
+
+// Uploader impl contracts.ApplicationInterface Uploader.
+func (app *application) Uploader() contracts.Uploader {
+	return app.uploader
+}
+
+// Oidc impl contracts.ApplicationInterface Oidc.
+func (app *application) Oidc() contracts.OidcConfig {
+	return app.oidcProvider
+}
+
+// SetOidc impl contracts.ApplicationInterface SetOidc.
+func (app *application) SetOidc(provider contracts.OidcConfig) {
+	app.oidcProvider = provider
+}
+
+// GetPluginByName impl contracts.ApplicationInterface GetPluginByName.
+func (app *application) GetPluginByName(name string) contracts.PluginInterface {
+	return app.plugins[name]
+}
+
+// SetPlugins impl contracts.ApplicationInterface SetPlugins.
+func (app *application) SetPlugins(plugins map[string]contracts.PluginInterface) {
+	app.plugins = plugins
+}
+
+// GetPlugins impl contracts.ApplicationInterface GetPlugins.
+func (app *application) GetPlugins() map[string]contracts.PluginInterface {
+	return app.plugins
+}
+
+// Done impl contracts.ApplicationInterface Done.
+func (app *application) Done() <-chan struct{} {
+	return app.done.Done()
+}
+
+// K8sClient impl contracts.ApplicationInterface K8sClient.
+func (app *application) K8sClient() *contracts.K8sClient {
+	return app.clientSet
+}
+
+// SetK8sClient impl contracts.ApplicationInterface SetK8sClient.
+func (app *application) SetK8sClient(client *contracts.K8sClient) {
+	app.clientSet = client
+}
+
+// EventDispatcher impl contracts.ApplicationInterface EventDispatcher.
+func (app *application) EventDispatcher() contracts.DispatcherInterface {
+	return app.dispatcher
+}
+
+// Singleflight impl contracts.ApplicationInterface Singleflight.
+func (app *application) Singleflight() *singleflight.Group {
+	return app.sf
+}
+
+// SetEventDispatcher impl contracts.ApplicationInterface SetEventDispatcher.
+func (app *application) SetEventDispatcher(dispatcher contracts.DispatcherInterface) {
+	app.dispatcher = dispatcher
+}
+
 type bootTags []string
 
-func (bt bootTags) Has(tag string) bool {
+func (bt bootTags) has(tag string) bool {
 	for _, t := range bt {
 		if t == tag {
 			return true
@@ -247,12 +276,13 @@ func (bt bootTags) Has(tag string) bool {
 	return false
 }
 
+// excludeBootstrapperByTags exclude tags.
 func excludeBootstrapperByTags(tags []string, boots []contracts.Bootstrapper) ([]contracts.Bootstrapper, []contracts.Bootstrapper) {
 	var newBoots, excludeBoots []contracts.Bootstrapper
 loop:
 	for _, boot := range boots {
 		for _, tag := range tags {
-			if bootTags(boot.Tags()).Has(tag) {
+			if bootTags(boot.Tags()).has(tag) {
 				excludeBoots = append(excludeBoots, boot)
 				continue loop
 			}
@@ -263,14 +293,16 @@ loop:
 	return newBoots, excludeBoots
 }
 
-func printConfig(app *Application) {
+// { impl contracts.ApplicationInterface {.
+func printConfig(app *application) {
 	mlog.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
 	for _, boot := range app.excludeBoots {
 		mlog.Warningf("[BOOT]: '%s' (%s) doesn't start because of exclude tags: '%s'", bootShortName(boot), strings.Join(boot.Tags(), ","), strings.Join(app.excludeTags, ","))
 	}
 }
 
-func (app *Application) Bootstrap() error {
+// Bootstrap impl contracts.ApplicationInterface Bootstrap.
+func (app *application) Bootstrap() error {
 	for _, bootstrapper := range app.bootstrappers {
 		err := func() error {
 			defer func(t time.Time) {
@@ -286,35 +318,43 @@ func (app *Application) Bootstrap() error {
 	return nil
 }
 
-func (app *Application) Config() *config.Config {
+// Config impl contracts.ApplicationInterface Config.
+func (app *application) Config() *config.Config {
 	return app.config
 }
 
-func (app *Application) SetTracer(t trace.Tracer) {
+// SetTracer impl contracts.ApplicationInterface SetTracer.
+func (app *application) SetTracer(t trace.Tracer) {
 	app.tracer = t
 }
 
-func (app *Application) GetTracer() trace.Tracer {
+// GetTracer impl contracts.ApplicationInterface GetTracer.
+func (app *application) GetTracer() trace.Tracer {
 	return app.tracer
 }
 
-func (app *Application) DBManager() contracts.DBManager {
+// DBManager impl contracts.ApplicationInterface DBManager.
+func (app *application) DBManager() contracts.DBManager {
 	return app.dbManager
 }
 
-func (app *Application) DB() *gorm.DB {
+// DB impl contracts.ApplicationInterface DB.
+func (app *application) DB() *gorm.DB {
 	return app.dbManager.DB()
 }
 
-func (app *Application) IsDebug() bool {
+// IsDebug impl contracts.ApplicationInterface IsDebug.
+func (app *application) IsDebug() bool {
 	return app.config.Debug
 }
 
-func (app *Application) AddServer(server contracts.Server) {
+// AddServer impl contracts.ApplicationInterface AddServer.
+func (app *application) AddServer(server contracts.Server) {
 	app.servers = append(app.servers, server)
 }
 
-func (app *Application) Run() context.Context {
+// Run impl contracts.ApplicationInterface Run.
+func (app *application) Run() context.Context {
 	sig := make(chan os.Signal, 2)
 	ch, cancel := context.WithCancel(context.TODO())
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
@@ -328,7 +368,7 @@ func (app *Application) Run() context.Context {
 		os.Exit(1)
 	}()
 
-	app.RunServerHooks(BeforeRunHook)
+	app.RunServerHooks(beforeRunHook)
 
 	for _, server := range app.servers {
 		if err := server.Run(context.Background()); err != nil {
@@ -339,9 +379,10 @@ func (app *Application) Run() context.Context {
 	return ch
 }
 
-func (app *Application) Shutdown() {
+// Shutdown impl contracts.ApplicationInterface Shutdown.
+func (app *application) Shutdown() {
 	app.doneFunc()
-	app.RunServerHooks(BeforeDownHook)
+	app.RunServerHooks(beforeDownHook)
 
 	wg := &sync.WaitGroup{}
 	for _, server := range app.servers {
@@ -360,24 +401,27 @@ func (app *Application) Shutdown() {
 	}
 	wg.Wait()
 
-	app.RunServerHooks(AfterDownHook)
+	app.RunServerHooks(afterDownHook)
 
 	mlog.Info("server graceful shutdown.")
 }
 
-func (app *Application) RegisterAfterShutdownFunc(fn contracts.Callback) {
+// RegisterAfterShutdownFunc impl contracts.ApplicationInterface RegisterAfterShutdownFunc.
+func (app *application) RegisterAfterShutdownFunc(fn contracts.Callback) {
 	app.hooksMu.Lock()
 	defer app.hooksMu.Unlock()
-	app.hooks[AfterDownHook] = append(app.hooks[AfterDownHook], fn)
+	app.hooks[afterDownHook] = append(app.hooks[afterDownHook], fn)
 }
 
-func (app *Application) RegisterBeforeShutdownFunc(fn contracts.Callback) {
+// RegisterBeforeShutdownFunc impl contracts.ApplicationInterface RegisterBeforeShutdownFunc.
+func (app *application) RegisterBeforeShutdownFunc(fn contracts.Callback) {
 	app.hooksMu.Lock()
 	defer app.hooksMu.Unlock()
-	app.hooks[BeforeDownHook] = append(app.hooks[BeforeDownHook], fn)
+	app.hooks[beforeDownHook] = append(app.hooks[beforeDownHook], fn)
 }
 
-func (app *Application) RunServerHooks(hook Hook) {
+// RunServerHooks impl contracts.ApplicationInterface RunServerHooks.
+func (app *application) RunServerHooks(hook hook) {
 	app.hooksMu.RLock()
 	defer app.hooksMu.RUnlock()
 	wg := sync.WaitGroup{}
@@ -392,12 +436,14 @@ func (app *Application) RunServerHooks(hook Hook) {
 	wg.Wait()
 }
 
-func (app *Application) BeforeServerRunHooks(cb contracts.Callback) {
+// BeforeServerRunHooks impl contracts.ApplicationInterface BeforeServerRunHooks.
+func (app *application) BeforeServerRunHooks(cb contracts.Callback) {
 	app.hooksMu.Lock()
 	defer app.hooksMu.Unlock()
-	app.hooks[BeforeRunHook] = append(app.hooks[BeforeRunHook], cb)
+	app.hooks[beforeRunHook] = append(app.hooks[beforeRunHook], cb)
 }
 
+// bootShortName get bootstrapper basename.
 func bootShortName(boot contracts.Bootstrapper) string {
 	if boot == nil {
 		return ""

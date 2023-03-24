@@ -27,5 +27,6 @@ type DispatcherInterface interface {
 	// Forget Remove a set of listeners from the dispatcher.
 	Forget(Event)
 
+	// GetListeners get all listeners by event.
 	GetListeners(Event) []Listener
 }

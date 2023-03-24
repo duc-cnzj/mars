@@ -25,7 +25,7 @@ func init() {
 }
 
 type EventSvc struct {
-	event.UnsafeEventServer
+	event.UnimplementedEventServer
 }
 
 func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {

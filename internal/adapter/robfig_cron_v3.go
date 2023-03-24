@@ -6,33 +6,37 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+
 	"github.com/robfig/cron/v3"
 
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
-type RobfigCronV3Runner struct {
+type robfigCronV3Runner struct {
 	sync.RWMutex
 
 	c        *cron.Cron
 	entryMap map[string]int64
 }
 
-func NewRobfigCronV3Runner() *RobfigCronV3Runner {
-	return &RobfigCronV3Runner{
+// NewRobfigCronV3Runner return contracts.CronRunner
+func NewRobfigCronV3Runner() contracts.CronRunner {
+	return &robfigCronV3Runner{
 		c: cron.New(
 			cron.WithLocation(time.Local),
 			cron.WithSeconds(),
 			cron.WithChain(
-				cron.Recover(&CronLogger{}),
+				cron.Recover(&cronLogger{}),
 			),
 		),
 		entryMap: make(map[string]int64),
 	}
 }
 
-func (c *RobfigCronV3Runner) AddCommand(name string, expression string, fn func()) error {
+// AddCommand add cron cmd.
+func (c *robfigCronV3Runner) AddCommand(name string, expression string, fn func()) error {
 	c.Lock()
 	defer c.Unlock()
 	id, err := c.c.AddFunc(expression, fn)
@@ -44,7 +48,8 @@ func (c *RobfigCronV3Runner) AddCommand(name string, expression string, fn func(
 	return nil
 }
 
-func (c *RobfigCronV3Runner) Run(ctx context.Context) error {
+// Run cron.
+func (c *robfigCronV3Runner) Run(ctx context.Context) error {
 	go func() {
 		defer recovery.HandlePanic("[CRON]: robfig/cron/v3 Run")
 		c.c.Run()
@@ -52,7 +57,8 @@ func (c *RobfigCronV3Runner) Run(ctx context.Context) error {
 	return nil
 }
 
-func (c *RobfigCronV3Runner) Shutdown(ctx context.Context) error {
+// Shutdown cron.
+func (c *robfigCronV3Runner) Shutdown(ctx context.Context) error {
 	stopCtx := c.c.Stop()
 	select {
 	case <-stopCtx.Done():
@@ -62,13 +68,15 @@ func (c *RobfigCronV3Runner) Shutdown(ctx context.Context) error {
 	}
 }
 
-type CronLogger struct{}
+type cronLogger struct{}
 
-func (c *CronLogger) Info(msg string, keysAndValues ...any) {
+// Info msg.
+func (c *cronLogger) Info(msg string, keysAndValues ...any) {
 	mlog.Infof(formatString(len(keysAndValues)), append([]any{msg}, keysAndValues...)...)
 }
 
-func (c *CronLogger) Error(err error, msg string, keysAndValues ...any) {
+// Error msg.
+func (c *cronLogger) Error(err error, msg string, keysAndValues ...any) {
 	mlog.Errorf("[CRON]: %v", err)
 }
 

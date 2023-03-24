@@ -28,7 +28,7 @@ func init() {
 }
 
 type MetricsSvc struct {
-	metrics.UnsafeMetricsServer
+	metrics.UnimplementedMetricsServer
 }
 
 var (

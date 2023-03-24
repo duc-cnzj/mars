@@ -378,16 +378,16 @@ func TestHeaderMatcher(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.input, func(t *testing.T) {
-			matcher, _ := HeaderMatcher(tt.input)
+			matcher, _ := headerMatcher(tt.input)
 			assert.Equal(t, tt.want(), matcher)
 		})
 	}
 }
 
 func TestMaxRecvSize(t *testing.T) {
-	assert.Equal(t, 20*1024*1024, MaxRecvMsgSize)
+	assert.Equal(t, 20*1024*1024, maxRecvMsgSize)
 	bytes, _ := humanize.ParseBytes("20Mib")
-	assert.Equal(t, int(bytes), MaxRecvMsgSize)
+	assert.Equal(t, int(bytes), maxRecvMsgSize)
 }
 
 func Test_exportMarsConfig(t *testing.T) {

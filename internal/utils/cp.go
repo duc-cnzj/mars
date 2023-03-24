@@ -25,7 +25,7 @@ import (
 
 type defaultArchiver struct{}
 
-func NewDefaultArchiver() *defaultArchiver {
+func NewDefaultArchiver() contracts.Archiver {
 	return &defaultArchiver{}
 }
 
@@ -46,7 +46,7 @@ type fileCopier struct {
 	executor contracts.RemoteExecutor
 }
 
-func NewFileCopier(executor contracts.RemoteExecutor, archiver contracts.Archiver) *fileCopier {
+func NewFileCopier(executor contracts.RemoteExecutor, archiver contracts.Archiver) contracts.PodFileCopier {
 	return &fileCopier{executor: executor, archiver: archiver}
 }
 
