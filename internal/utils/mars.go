@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/duc-cnzj/mars-client/v4/mars"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 
-	"github.com/duc-cnzj/mars-client/v4/mars"
+	goyaml "github.com/ghodss/yaml"
 	"gopkg.in/yaml.v2"
 )
 
@@ -55,16 +56,8 @@ func GetProjectMarsConfig(projectId any, branch string) (*mars.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	decoder := yaml.NewDecoder(strings.NewReader(data))
-	var m map[string]any
-	if err := decoder.Decode(&m); err != nil {
-		return nil, err
-	}
-	marshal, err := json.Marshal(&m)
-	if err != nil {
-		return nil, err
-	}
-	json.Unmarshal(marshal, &marsC)
+	toJSON, _ := goyaml.YAMLToJSON([]byte(data))
+	json.Unmarshal(toJSON, &marsC)
 
 	return &marsC, nil
 }

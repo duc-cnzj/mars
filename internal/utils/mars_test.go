@@ -57,6 +57,16 @@ func TestGetProjectMarsConfig(t *testing.T) {
 		ConfigFile:       "cf",
 		ConfigFileValues: "vv",
 		ConfigField:      "f",
+		Elements: []*mars.Element{
+			{
+				Path:         "image->tag",
+				Type:         mars.ElementType_ElementTypeSelect,
+				Default:      "v1",
+				Description:  "tag",
+				SelectValues: []string{"v1", "v2"},
+				Order:        0,
+			},
+		},
 	}
 	marshal, _ := json.Marshal(&mc)
 	db.Create(&models.GitProject{
