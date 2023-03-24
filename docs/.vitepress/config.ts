@@ -24,11 +24,28 @@ export default defineConfig({
         ]
       },
       {
-        text: '快速开始',
+        text: '入门',
         items: [
-          { text: '安装', link: '/install' },
-          { text: '配置', link: '/configure' },
+          { text: '快速体验', link: '/quick-start' },
           { text: '让项目跑起来', link: '/run' },
+        ]
+      },
+      {
+        text: '配置',
+        items: [
+          { text: '项目全局配置', link: '/configure' },
+          { text: '单独分支配置', link: '/yaml-configure' },
+          { text: 'annotations', link: '/annotations' },
+          { text: '环境变量', link: '/env' },
+        ]
+      },
+      {
+        text: '可用插件',
+        items: [
+          { text: 'git 仓库', link: '/gitserver' },
+          { text: '域名', link: '/domain' },
+          { text: '登录页背景图', link: '/picture' },
+          { text: 'Websocket', link: '/ws' },
         ]
       },
       {
