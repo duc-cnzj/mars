@@ -24,7 +24,7 @@ func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 
 type metricsRunner struct {
 	port string
-	s    *http.Server
+	s    httpServer
 }
 
 func (m *metricsRunner) Run(ctx context.Context) error {
