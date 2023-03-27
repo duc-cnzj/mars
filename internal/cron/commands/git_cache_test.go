@@ -57,10 +57,10 @@ func TestAllGitProjectCache(t *testing.T) {
 	app.EXPECT().Cache().Return(c).AnyTimes()
 	c.EXPECT().Clear(plugins.CacheKeyAllProjects()).Times(0)
 	git.EXPECT().AllProjects().Return(nil, errors.New("xx"))
-	assert.Equal(t, "xx", AllGitProjectCache().Error())
+	assert.Equal(t, "xx", allGitProjectCache().Error())
 	c.EXPECT().SetWithTTL(plugins.CacheKeyAllProjects(), []byte("[]"), plugins.AllProjectsCacheSeconds).Times(1)
 	git.EXPECT().AllProjects().Return(nil, nil)
-	assert.Nil(t, AllGitProjectCache())
+	assert.Nil(t, allGitProjectCache())
 }
 
 func TestAllGitProjectCache1(t *testing.T) {
@@ -68,7 +68,7 @@ func TestAllGitProjectCache1(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	mockGitServer(m, app, false)
-	assert.Nil(t, AllGitProjectCache())
+	assert.Nil(t, allGitProjectCache())
 }
 
 func TestAllBranchCache(t *testing.T) {
@@ -97,7 +97,7 @@ func TestAllBranchCache(t *testing.T) {
 	})
 
 	c.EXPECT().SetWithTTL(gomock.Any(), []byte("[]"), plugins.AllBranchesCacheSeconds).Times(20)
-	AllBranchCache()
+	allBranchCache()
 }
 
 func TestAllBranchCache1(t *testing.T) {
@@ -108,5 +108,5 @@ func TestAllBranchCache1(t *testing.T) {
 	defer f()
 	db.AutoMigrate(&models.GitProject{})
 	mockGitServer(m, app, true)
-	assert.Nil(t, AllBranchCache())
+	assert.Nil(t, allBranchCache())
 }

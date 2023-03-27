@@ -110,13 +110,13 @@ func TestNewManager(t *testing.T) {
 
 func Test_sortCommand(t *testing.T) {
 	cmds := []contracts.Command{
-		&Command{
+		&command{
 			name: "c",
 		},
-		&Command{
+		&command{
 			name: "a",
 		},
-		&Command{
+		&command{
 			name: "b",
 		},
 	}

@@ -137,7 +137,6 @@ func TestMockGitServer(t *testing.T) {
 func TestValueMatcher(t *testing.T) {
 	assert.Implements(t, (*gomock.Matcher)(nil), &ValueMatcher{})
 	vm := &ValueMatcher{}
-	assert.Equal(t, "", vm.String())
 	vm.Matches("aa")
 	assert.Equal(t, "aa", vm.Value)
 }
@@ -180,4 +179,18 @@ func TestNewSecretLister(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = lister.Secrets("ns").Get("sec3")
 	assert.Error(t, err)
+}
+
+func TestAssertAuditLogFiredWithMsg(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	a := MockApp(m)
+	AssertAuditLogFiredWithMsg(m, a, "hello")
+	a.EventDispatcher().Dispatch(events.EventAuditLog, events.NewEventAuditLog("duc", 1, "hello"))
+}
+
+func Test_auditLogEqMatcher_Matches(t *testing.T) {
+	m := auditLogEqMatcher{msg: "aaa"}
+	assert.False(t, m.Matches(events.NewEventAuditLog("", 1, "11")))
+	assert.True(t, m.Matches(events.NewEventAuditLog("", 1, "aaa")))
 }

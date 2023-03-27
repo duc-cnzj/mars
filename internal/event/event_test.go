@@ -55,7 +55,7 @@ func TestDispatcher_Listen(t *testing.T) {
 		called++
 		return nil
 	})
-	assert.NotNil(t, d.listeners["evt"])
+	assert.NotNil(t, d.(*dispatcher).listeners["evt"])
 	d.Listen("evt", func(a any, event contracts.Event) error {
 		called++
 		return errors.New("err called")

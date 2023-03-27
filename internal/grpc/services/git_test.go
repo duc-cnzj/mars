@@ -261,7 +261,7 @@ func TestGitSvc_EnableProject(t *testing.T) {
 	p.EXPECT().GetName().Return("n").Times(2)
 	p.EXPECT().GetDefaultBranch().Return("dex")
 
-	testutil.AssertAuditLogFired(m, app)
+	testutil.AssertAuditLogFiredWithMsg(m, app, "关闭项目: n")
 
 	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",

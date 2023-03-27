@@ -60,7 +60,7 @@ var showBootTagsCmd = &cobra.Command{
 		table.SetHeader([]string{"ID", "Name", "Tags"})
 		table.SetRowLine(true)
 
-		for i, boot := range ServerBootstrappers {
+		for i, boot := range serverBootstrappers {
 			s := strings.Split(reflect.TypeOf(boot).String(), ".")
 			name := s[len(s)-1]
 			tags := strings.Join(boot.Tags(), ",")

@@ -66,7 +66,7 @@ func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 
 func TestLoadSwaggerUI(t *testing.T) {
 	r := mux.NewRouter()
-	LoadSwaggerUI(r)
+	loadSwaggerUI(r)
 
 	req, err := http.NewRequest("GET", "/doc/swagger.json", nil)
 	if err != nil {
@@ -630,4 +630,30 @@ func Test_initServer(t *testing.T) {
 	server, err := initServer(context.TODO(), &apiGateway{})
 	assert.Nil(t, err)
 	assert.NotNil(t, server)
+}
+
+func Test_middlewareList_Router(t *testing.T) {
+	var res string
+	handlerA := func(handler http.Handler) http.Handler {
+		res += "a"
+		return handler
+	}
+	handlerB := func(handler http.Handler) http.Handler {
+		res += "b"
+		return handler
+	}
+	handlerC := func(handler http.Handler) http.Handler {
+		res += "c"
+		return handler
+	}
+	mlist := middlewareList{
+		handlerA,
+		handlerB,
+		handlerC,
+	}
+	mlist.Wrap(nil)
+	assert.Equal(t, "cba", res)
+	res = ""
+	handlerA(handlerB(handlerC(nil)))
+	assert.Equal(t, "cba", res)
 }

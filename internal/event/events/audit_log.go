@@ -9,29 +9,23 @@ import (
 
 const EventAuditLog contracts.Event = "audit_log"
 
-type EventAuditLogData struct {
-	Username        string
-	Action          types.EventActionType
-	Msg, OldS, NewS string
-	FileId          int
-}
-
 func init() {
 	Register(EventAuditLog, HandleAuditLog)
 }
 
 func HandleAuditLog(data any, e contracts.Event) error {
-	logData := data.(EventAuditLogData)
+	logData := data.(contracts.AuditLogImpl)
 	var fid *int
-	if logData.FileId != 0 {
-		fid = &logData.FileId
+	if logData.GetFileID() != 0 {
+		ffid := logData.GetFileID()
+		fid = &ffid
 	}
 	app.DB().Create(&models.Event{
-		Action:   uint8(logData.Action),
-		Username: logData.Username,
-		Message:  logData.Msg,
-		Old:      logData.OldS,
-		New:      logData.NewS,
+		Action:   uint8(logData.GetAction()),
+		Username: logData.GetUsername(),
+		Message:  logData.GetMsg(),
+		Old:      logData.GetOldStr(),
+		New:      logData.GetNewStr(),
 		FileID:   fid,
 	})
 
@@ -45,7 +39,7 @@ func AuditLog(username string, action types.EventActionType, msg string, oldS, n
 	if newS == nil {
 		newS = &emptyYamlPrettier{}
 	}
-	app.Event().Dispatch(EventAuditLog, EventAuditLogData{
+	app.Event().Dispatch(EventAuditLog, &eventAuditLog{
 		Username: username,
 		Action:   action,
 		Msg:      msg,
@@ -55,7 +49,7 @@ func AuditLog(username string, action types.EventActionType, msg string, oldS, n
 }
 
 func FileAuditLog(username string, msg string, fileId int) {
-	app.Event().Dispatch(EventAuditLog, EventAuditLogData{
+	app.Event().Dispatch(EventAuditLog, &eventAuditLog{
 		Username: username,
 		Action:   types.EventActionType_Upload,
 		Msg:      msg,
@@ -66,6 +60,7 @@ func FileAuditLog(username string, msg string, fileId int) {
 type YamlPrettier interface {
 	PrettyYaml() string
 }
+
 type emptyYamlPrettier struct{}
 
 func (e *emptyYamlPrettier) PrettyYaml() string {
@@ -78,4 +73,60 @@ type StringYamlPrettier struct {
 
 func (s *StringYamlPrettier) PrettyYaml() string {
 	return s.Str
+}
+
+var _ contracts.AuditLogImpl = (*eventAuditLog)(nil)
+
+type eventAuditLog struct {
+	Username        string
+	Action          types.EventActionType
+	Msg, OldS, NewS string
+	FileId          int
+}
+
+type AuditOption func(*eventAuditLog)
+
+func AuditWithOldNewStr(o, n string) AuditOption {
+	return func(e *eventAuditLog) {
+		e.OldS = o
+		e.NewS = n
+	}
+}
+
+func AuditWithFileID(id int) AuditOption {
+	return func(e *eventAuditLog) {
+		e.FileId = id
+	}
+}
+
+func NewEventAuditLog(username string, action types.EventActionType, msg string, opts ...AuditOption) contracts.AuditLogImpl {
+	e := &eventAuditLog{Username: username, Action: action, Msg: msg}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
+}
+
+func (e *eventAuditLog) GetUsername() string {
+	return e.Username
+}
+
+func (e *eventAuditLog) GetAction() types.EventActionType {
+	return e.Action
+}
+
+func (e *eventAuditLog) GetMsg() string {
+	return e.Msg
+}
+
+func (e *eventAuditLog) GetOldStr() string {
+	return e.OldS
+}
+
+func (e *eventAuditLog) GetNewStr() string {
+	return e.NewS
+}
+
+func (e *eventAuditLog) GetFileID() int {
+	return e.FileId
 }

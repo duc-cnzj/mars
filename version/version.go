@@ -35,10 +35,12 @@ type Version struct {
 	HelmVersion    string
 }
 
+// String return version string.
 func (v Version) String() string {
 	return v.Version
 }
 
+// HasBuildInfo if BuildDate != "1970-01-01T00:00:00Z" return true.
 func (v Version) HasBuildInfo() bool {
 	return v.BuildDate != defaultDate
 }

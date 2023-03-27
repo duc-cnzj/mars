@@ -43,6 +43,15 @@ import (
 
 const maxRecvMsgSize = 1 << 20 * 20 // 20 MiB
 
+var defaultMiddlewares = middlewareList{
+	middlewares.Recovery,
+	middlewares.DeletePatternHeader,
+	middlewares.ResponseMetrics,
+	middlewares.TracingWrapper,
+	middlewares.RouteLogger,
+	middlewares.AllowCORS,
+}
+
 type ApiGatewayBootstrapper struct{}
 
 func (a *ApiGatewayBootstrapper) Tags() []string {
@@ -158,27 +167,24 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	})
 	serveWs(router)
 	frontend.LoadFrontendRoutes(router)
-	LoadSwaggerUI(router)
+	loadSwaggerUI(router)
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
-		Addr: ":" + app.Config().AppPort,
-		Handler: middlewares.Recovery(
-			middlewares.DeletePatternHeader(
-				middlewares.ResponseMetrics(
-					middlewares.TracingWrapper(
-						middlewares.RouteLogger(
-							middlewares.AllowCORS(
-								router,
-							),
-						),
-					),
-				),
-			),
-		),
+		Addr:    ":" + app.Config().AppPort,
+		Handler: defaultMiddlewares.Wrap(router),
 	}
 
 	return s, nil
+}
+
+type middlewareList []func(handler http.Handler) http.Handler
+
+func (m middlewareList) Wrap(r http.Handler) (h http.Handler) {
+	for i := len(m) - 1; i >= 0; i-- {
+		h = m[i](r)
+	}
+	return
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
@@ -439,7 +445,7 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 	download(w, "mars-config.json", bytes.NewReader(marshal))
 }
 
-func LoadSwaggerUI(mux *mux.Router) {
+func loadSwaggerUI(mux *mux.Router) {
 	subrouter := mux.PathPrefix("").Subrouter()
 	subrouter.Use(middlewares.HttpCache)
 

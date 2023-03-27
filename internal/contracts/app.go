@@ -82,7 +82,9 @@ type ApplicationInterface interface {
 
 	// AddServer add boot server
 	AddServer(Server)
+	// Run servers.
 	Run() context.Context
+	// Shutdown all servers.
 	Shutdown()
 
 	Done() <-chan struct{}

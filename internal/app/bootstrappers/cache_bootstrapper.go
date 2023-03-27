@@ -31,9 +31,9 @@ func (a *CacheBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 
 	switch driver {
 	case "db":
-		app.SetCache(cachein.NewDBCache(app.Singleflight(), func() *gorm.DB {
+		app.SetCache(cachein.NewCache(cachein.NewDBStore(func() *gorm.DB {
 			return app.DB()
-		}))
+		}), app.Singleflight()))
 		app.SetCacheLock(cachelock.NewDatabaseLock([2]int{2, 100}, func() *gorm.DB {
 			return app.DB()
 		}))

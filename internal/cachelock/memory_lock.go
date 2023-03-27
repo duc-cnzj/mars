@@ -14,36 +14,36 @@ import (
 
 var defaultStore = NewMemStore()
 
-type memStore struct {
-	m map[string]*memItem
+type MemStore struct {
+	m map[string]*MemItem
 	sync.RWMutex
 }
 
-func (s *memStore) Add(key string, i *memItem) {
+func (s *MemStore) Add(key string, i *MemItem) {
 	s.Lock()
 	defer s.Unlock()
 	s.m[key] = i
 }
 
-func (s *memStore) Delete(key string) {
+func (s *MemStore) Delete(key string) {
 	s.Lock()
 	defer s.Unlock()
 	delete(s.m, key)
 }
 
-func (s *memStore) Get(key string) *memItem {
+func (s *MemStore) Get(key string) *MemItem {
 	s.RLock()
 	defer s.RUnlock()
 	return s.m[key]
 }
 
-func (s *memStore) Update(key string, m *memItem) {
+func (s *MemStore) Update(key string, m *MemItem) {
 	s.Lock()
 	defer s.Unlock()
 	s.m[key] = m
 }
 
-func (s *memStore) Range(fn func(string, *memItem, map[string]*memItem)) {
+func (s *MemStore) Range(fn func(string, *MemItem, map[string]*MemItem)) {
 	s.Lock()
 	defer s.Unlock()
 	for k, item := range s.m {
@@ -51,19 +51,19 @@ func (s *memStore) Range(fn func(string, *memItem, map[string]*memItem)) {
 	}
 }
 
-func (s *memStore) Count() int {
+func (s *MemStore) Count() int {
 	s.RLock()
 	defer s.RUnlock()
 	return len(s.m)
 }
 
-func NewMemStore() *memStore {
-	return &memStore{
-		m: make(map[string]*memItem),
+func NewMemStore() *MemStore {
+	return &MemStore{
+		m: make(map[string]*MemItem),
 	}
 }
 
-type memItem struct {
+type MemItem struct {
 	owner     string
 	expiresAt int64
 }
@@ -74,10 +74,10 @@ type memoryLock struct {
 	owner   string
 	lottery [2]int
 	timer   timer
-	locks   *memStore
+	locks   *MemStore
 }
 
-func NewMemoryLock(lottery [2]int, s *memStore) contracts.Locker {
+func NewMemoryLock(lottery [2]int, s *MemStore) contracts.Locker {
 	if s == nil {
 		s = defaultStore
 	}
@@ -95,7 +95,7 @@ func (m *memoryLock) Type() string {
 func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
-		item     *memItem
+		item     *MemItem
 
 		unix       = m.timer.Unix()
 		expiration = unix + seconds
@@ -105,7 +105,7 @@ func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	defer m.Unlock()
 
 	if item = m.locks.Get(key); item == nil {
-		m.locks.Add(key, &memItem{
+		m.locks.Add(key, &MemItem{
 			owner:     m.owner,
 			expiresAt: expiration,
 		})
@@ -113,7 +113,7 @@ func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	}
 	if !acquired {
 		if item.expiresAt <= unix {
-			m.locks.Update(key, &memItem{
+			m.locks.Update(key, &MemItem{
 				owner:     m.owner,
 				expiresAt: expiration,
 			})
@@ -122,7 +122,7 @@ func (m *memoryLock) Acquire(key string, seconds int64) bool {
 	}
 
 	if rand.Intn(m.lottery[1]) < m.lottery[0] {
-		m.locks.Range(func(k string, l *memItem, m map[string]*memItem) {
+		m.locks.Range(func(k string, l *MemItem, m map[string]*MemItem) {
 			if l.expiresAt < unix-60 {
 				delete(m, k)
 			}
@@ -193,7 +193,7 @@ func (m *memoryLock) renewalExistKey(key string, seconds int64) bool {
 
 	var (
 		acquired bool
-		item     *memItem
+		item     *MemItem
 
 		unix       = m.timer.Unix()
 		expiration = unix + seconds
@@ -204,7 +204,7 @@ func (m *memoryLock) renewalExistKey(key string, seconds int64) bool {
 	}
 
 	if item.owner == m.owner {
-		m.locks.Update(key, &memItem{
+		m.locks.Update(key, &MemItem{
 			owner:     m.owner,
 			expiresAt: expiration,
 		})

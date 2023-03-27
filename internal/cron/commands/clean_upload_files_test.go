@@ -102,5 +102,5 @@ func TestCleanUploadFiles(t *testing.T) {
 	}, nil)
 	localUp.EXPECT().Delete("/tmp/local/path1").Times(1)
 	testutil.AssertAuditLogFired(m, app)
-	assert.Nil(t, CleanUploadFiles())
+	assert.Nil(t, cleanUploadFiles())
 }

@@ -1306,7 +1306,7 @@ func TestVariableLoader_Load(t *testing.T) {
 	pipe.EXPECT().GetRef().Return("dev")
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(pipe, nil)
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)
@@ -1374,7 +1374,7 @@ func TestVariableLoader_Load_ok(t *testing.T) {
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)
@@ -1422,7 +1422,7 @@ func TestVariableLoader_Load_fail(t *testing.T) {
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)

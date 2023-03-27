@@ -15,6 +15,7 @@ var pictureOnce = sync.Once{}
 type PictureInterface interface {
 	contracts.PluginInterface
 
+	// Get picture.
 	Get(ctx context.Context, random bool) (*contracts.Picture, error)
 }
 

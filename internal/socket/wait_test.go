@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewWaitSocketExit(t *testing.T) {
-	assert.IsType(t, (*WaitSocketExit)(nil), NewWaitSocketExit())
+	assert.IsType(t, (*waitSocketExit)(nil), NewWaitSocketExit())
 }
 
 func TestWaitSocketExit_Count(t *testing.T) {

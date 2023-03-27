@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	ErrCancel       = errors.New("取消本次部署，自动回滚到上一个版本！")
-	ErrSignalExists = errors.New("项目已经存在")
+	errCancel       = errors.New("取消本次部署，自动回滚到上一个版本！")
+	errSignalExists = errors.New("项目已经存在")
 )
 
 type CancelSignals struct {
@@ -34,7 +34,7 @@ func (cs *CancelSignals) Cancel(id string) {
 	cs.Lock()
 	defer cs.Unlock()
 	if fn, ok := cs.cs[id]; ok {
-		fn(ErrCancel)
+		fn(errCancel)
 	}
 }
 
@@ -42,7 +42,7 @@ func (cs *CancelSignals) Add(id string, fn func(error)) error {
 	cs.Lock()
 	defer cs.Unlock()
 	if _, ok := cs.cs[id]; ok {
-		return ErrSignalExists
+		return errSignalExists
 	}
 	cs.cs[id] = fn
 	return nil
@@ -52,6 +52,6 @@ func (cs *CancelSignals) CancelAll() {
 	cs.Lock()
 	defer cs.Unlock()
 	for _, f := range cs.cs {
-		f(ErrCancel)
+		f(errCancel)
 	}
 }

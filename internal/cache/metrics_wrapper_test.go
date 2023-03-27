@@ -50,3 +50,16 @@ func TestMetricsForCache_SetWithTTL(t *testing.T) {
 	mc := &MetricsForCache{Cache: c}
 	mc.SetWithTTL(NewKey("a"), []byte("aaa"), int(1))
 }
+
+type mockStore struct {
+	contracts.Store
+}
+
+func TestMetricsForCache_Store(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	c := mock.NewMockCacheInterface(m)
+	c.EXPECT().Store().Return(&mockStore{}).Times(2)
+	mc := &MetricsForCache{Cache: c}
+	assert.Same(t, c.Store(), mc.Store())
+}

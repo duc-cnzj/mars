@@ -35,9 +35,9 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetGitServer()
 	plugins.GetDomainManager()
 
-	app.BeforeServerRunHooks(ProjectPodEventListener)
+	app.BeforeServerRunHooks(projectPodEventListener)
 	app.BeforeServerRunHooks(updateCerts)
-	app.BeforeServerRunHooks(SyncImagePullSecrets)
+	app.BeforeServerRunHooks(syncImagePullSecrets)
 
 	return nil
 }
@@ -46,7 +46,7 @@ func updateCerts(app contracts.ApplicationInterface) {
 	tls.UpdateCertTls(plugins.GetDomainManager().GetCerts())
 }
 
-// SyncImagePullSecrets
+// syncImagePullSecrets
 // 少了自动加上，更新了自动修改
 // 自动同步包括
 // 1. db image_pull_secrets 丢失(不会自动删除之前的 secret)
@@ -54,7 +54,7 @@ func updateCerts(app contracts.ApplicationInterface) {
 // 3. 密码更新
 // 4. 删除 config
 // 4. 新增 config
-func SyncImagePullSecrets(app contracts.ApplicationInterface) {
+func syncImagePullSecrets(app contracts.ApplicationInterface) {
 	var (
 		namespaceList       []models.Namespace
 		cfgImagePullSecrets = app.Config().ImagePullSecrets
@@ -77,7 +77,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		for _, secretName := range ns.ImagePullSecretsArray() {
 			secret, err := k8sClient.SecretLister.Secrets(ns.Name).Get(secretName)
 			if err != nil {
-				mlog.Warningf("[SyncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
+				mlog.Warningf("[syncImagePullSecrets]: error get secret '%s', err %v", secretName, err)
 				if apierrors.IsNotFound(err) {
 					deleteSecret(app, k8sClient.Client, &ns, secretName)
 				}
@@ -87,7 +87,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 				var dockerJsonKeyData []byte = secret.Data[v1.DockerConfigJsonKey]
 				res, err := utils.DecodeDockerConfigJSON(dockerJsonKeyData)
 				if err != nil {
-					mlog.Warningf("[SyncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
+					mlog.Warningf("[syncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
 					continue
 				}
 				var newConfigJson = utils.DockerConfigJSON{
@@ -109,7 +109,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 				}
 
 				if !reflect.DeepEqual(newConfigJson.Auths, res.Auths) {
-					mlog.Warningf("[SyncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
+					mlog.Warningf("[syncImagePullSecrets]: Find Diff, Auto Sync: '%s'", secretName)
 					marshal, _ := json.Marshal(&newConfigJson)
 					secret.Data[v1.DockerConfigJsonKey] = marshal
 					k8sClient.Client.CoreV1().Secrets(ns.Name).Update(context.TODO(), secret, metav1.UpdateOptions{})
@@ -131,7 +131,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 		if len(missing) > 0 {
 			secret, err := utils.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
 			if err == nil {
-				mlog.Warningf("[SyncImagePullSecrets]: Missing %v", missing)
+				mlog.Warningf("[syncImagePullSecrets]: Missing %v", missing)
 
 				app.DB().Model(&ns).Updates(map[string]any{
 					"image_pull_secrets": strings.Join(append(ns.ImagePullSecretsArray(), secret.Name), ","),
@@ -142,7 +142,7 @@ func SyncImagePullSecrets(app contracts.ApplicationInterface) {
 }
 
 func deleteSecret(app contracts.ApplicationInterface, client kubernetes.Interface, ns *models.Namespace, secretName string) {
-	mlog.Warningf("[SyncImagePullSecrets]: DELETE: %s", secretName)
+	mlog.Warningf("[syncImagePullSecrets]: DELETE: %s", secretName)
 
 	client.CoreV1().Secrets(ns.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	var newNsArray []string
@@ -156,7 +156,7 @@ func deleteSecret(app contracts.ApplicationInterface, client kubernetes.Interfac
 	})
 }
 
-func ProjectPodEventListener(app contracts.ApplicationInterface) {
+func projectPodEventListener(app contracts.ApplicationInterface) {
 	ch := make(chan contracts.Obj[*v1.Pod], 100)
 	listener := "pod-watcher"
 	namespacePublisher := plugins.GetWsSender().New("", "").(contracts.ProjectPodEventPublisher)

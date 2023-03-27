@@ -18,17 +18,12 @@ func TestVarFunc(t *testing.T) {
 	// 一次 listen，一次 dispatch
 	d := mock.NewMockDispatcherInterface(ctrl)
 	app.EXPECT().EventDispatcher().Return(d).AnyTimes()
-	d.EXPECT().Dispatch(events.EventAuditLog, events.EventAuditLogData{
-		Username: "duc",
-		Action:   1,
-		Msg:      "aa",
-	})
+	d.EXPECT().Dispatch(events.EventAuditLog, events.NewEventAuditLog("duc", 1, "aa"))
 	AuditLog("duc", 1, "aa")
-	d.EXPECT().Dispatch(events.EventAuditLog, events.EventAuditLogData{
-		Username: "abc",
-		Action:   types.EventActionType_Upload,
-		Msg:      "aa",
-		FileId:   1,
-	})
+	d.EXPECT().Dispatch(events.EventAuditLog, events.NewEventAuditLog(
+		"abc",
+		types.EventActionType_Upload,
+		"aa",
+		events.AuditWithFileID(1)))
 	FileAuditLog("abc", "aa", 1)
 }

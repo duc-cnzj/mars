@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-var ServerBootstrappers = []contracts.Bootstrapper{
+var serverBootstrappers = []contracts.Bootstrapper{
 	&bootstrappers.EventBootstrapper{},
 	&bootstrappers.PluginsBootstrapper{},
 	&bootstrappers.AuthBootstrapper{},
@@ -39,7 +39,7 @@ var apiGatewayCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		app := app.NewApplication(
 			config.Init(cfgFile),
-			app.WithBootstrappers(ServerBootstrappers...),
+			app.WithBootstrappers(serverBootstrappers...),
 		)
 		if err := app.Bootstrap(); err != nil {
 			mlog.Fatal(err)

@@ -71,7 +71,7 @@ func TestAuthSvc_Login(t *testing.T) {
 	authSvc := auth2.NewJwtAuth(key, key.Public().(*rsa.PublicKey))
 	svc := NewAuthSvc(authSvc, nil, "admin", nil)
 	app := testutil.MockApp(m)
-	testutil.AssertAuditLogFired(m, app)
+	testutil.AssertAuditLogFiredWithMsg(m, app, "用户 '管理员' email: '1025434218@qq.com' 登录了系统")
 	login, err := svc.Login(context.TODO(), &auth.LoginRequest{
 		Username: "admin",
 		Password: "admin",

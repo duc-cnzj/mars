@@ -17,26 +17,26 @@ var (
 	maxDomainLength = 64
 )
 
-var _ plugins.DomainManager = (*CertManager)(nil)
+var _ plugins.DomainManager = (*certManager)(nil)
 
 func init() {
-	dr := &CertManager{}
+	dr := &certManager{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
-// CertManager 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
-type CertManager struct {
+// certManager 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
+type certManager struct {
 	nsPrefix       string
 	clusterIssuer  string
 	wildcardDomain string
 	domainSuffix   string
 }
 
-func (d *CertManager) Name() string {
+func (d *certManager) Name() string {
 	return name
 }
 
-func (d *CertManager) Initialize(args map[string]any) error {
+func (d *certManager) Initialize(args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -58,20 +58,20 @@ func (d *CertManager) Initialize(args map[string]any) error {
 	return nil
 }
 
-func (d *CertManager) Destroy() error {
+func (d *certManager) Destroy() error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (d *CertManager) GetCertSecretName(projectName string, index int) string {
+func (d *certManager) GetCertSecretName(projectName string, index int) string {
 	return fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", projectName, index)))
 }
 
-func (d *CertManager) GetClusterIssuer() string {
+func (d *certManager) GetClusterIssuer() string {
 	return d.clusterIssuer
 }
 
-func (d *CertManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
+func (d *certManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -82,7 +82,7 @@ func (d *CertManager) GetDomainByIndex(projectName, namespace string, index, pre
 	}.SubStr()
 }
 
-func (d *CertManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
+func (d *certManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -93,7 +93,7 @@ func (d *CertManager) GetDomain(projectName, namespace string, preOccupiedLen in
 	}.SubStr()
 }
 
-func (d *CertManager) GetCerts() (name, key, crt string) {
+func (d *certManager) GetCerts() (name, key, crt string) {
 	return "", "", ""
 }
 

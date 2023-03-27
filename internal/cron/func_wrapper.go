@@ -18,7 +18,7 @@ const (
 	defaultRenewSeconds int64 = 20
 )
 
-func Wrap(name string, fn func() error, lockerFn func() contracts.Locker) func() {
+func wrap(name string, fn func() error, lockerFn func() contracts.Locker) func() {
 	label := prometheus.Labels{"cron_name": name}
 	return func() {
 		defer recovery.HandlePanicWithCallback("[CRON]: "+name, func(err error) {

@@ -15,3 +15,7 @@ func (n *NoCache) Clear(key contracts.CacheKeyInterface) error {
 func (n *NoCache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
 	return nil
 }
+
+func (n *NoCache) Store() contracts.Store {
+	return nil
+}

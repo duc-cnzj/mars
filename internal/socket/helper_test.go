@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewTimeOrderedSetString(t *testing.T) {
-	assert.IsType(t, (*timeOrderedSetString)(nil), NewTimeOrderedSetString(time.Now))
+	assert.IsType(t, (*timeOrderedSetString)(nil), newTimeOrderedSetString(time.Now))
 }
 
 func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
@@ -344,7 +344,7 @@ func Test_timeOrderedSetString_add(t *testing.T) {
 
 		return parse.Add(-10 * time.Duration(called) * time.Second)
 	}
-	o := NewTimeOrderedSetString(fn)
+	o := newTimeOrderedSetString(fn)
 	o.add("a")
 	o.add("b")
 	o.add("b")
@@ -354,7 +354,7 @@ func Test_timeOrderedSetString_add(t *testing.T) {
 }
 
 func Test_timeOrderedSetString_has(t *testing.T) {
-	o := NewTimeOrderedSetString(time.Now)
+	o := newTimeOrderedSetString(time.Now)
 	o.add("a")
 	assert.True(t, o.has("a"))
 	assert.False(t, o.has("c"))

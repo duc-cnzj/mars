@@ -5,30 +5,34 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
-var _ plugins.DomainManager = (*DefaultDomainManager)(nil)
+var _ plugins.DomainManager = (*defaultDomainManager)(nil)
 
 func init() {
-	dr := &DefaultDomainManager{}
+	dr := &defaultDomainManager{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
-type DefaultDomainManager struct{}
+type defaultDomainManager struct{}
 
-func (d *DefaultDomainManager) Name() string {
+func NewDefaultDomainManager() plugins.DomainManager {
+	return &defaultDomainManager{}
+}
+
+func (d *defaultDomainManager) Name() string {
 	return "default_domain_manager"
 }
 
-func (d *DefaultDomainManager) Initialize(args map[string]any) error {
+func (d *defaultDomainManager) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
-func (d *DefaultDomainManager) Destroy() error {
+func (d *defaultDomainManager) Destroy() error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (d *DefaultDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
+func (d *defaultDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -39,7 +43,7 @@ func (d *DefaultDomainManager) GetDomainByIndex(projectName, namespace string, i
 	}.SubStr()
 }
 
-func (d *DefaultDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
+func (d *defaultDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -50,14 +54,14 @@ func (d *DefaultDomainManager) GetDomain(projectName, namespace string, preOccup
 	}.SubStr()
 }
 
-func (d *DefaultDomainManager) GetCertSecretName(projectName string, index int) string {
+func (d *defaultDomainManager) GetCertSecretName(projectName string, index int) string {
 	return ""
 }
 
-func (d *DefaultDomainManager) GetClusterIssuer() string {
+func (d *defaultDomainManager) GetClusterIssuer() string {
 	return ""
 }
 
-func (d *DefaultDomainManager) GetCerts() (name, key, crt string) {
+func (d *defaultDomainManager) GetCerts() (name, key, crt string) {
 	return "", "", ""
 }

@@ -17,12 +17,12 @@ import (
 
 var DefaultRootDir = "/tmp/mars-uploads"
 
-type Uploader struct {
+type diskUploader struct {
 	rootDir string
 	disk    string
 }
 
-func NewUploader(rootDir string, disk string) (*Uploader, error) {
+func NewUploader(rootDir string, disk string) (contracts.Uploader, error) {
 	var err error
 	if rootDir == "" {
 		rootDir = DefaultRootDir
@@ -38,17 +38,17 @@ func NewUploader(rootDir string, disk string) (*Uploader, error) {
 		return nil, err
 	}
 
-	return &Uploader{rootDir: rootDir, disk: disk}, nil
+	return &diskUploader{rootDir: rootDir, disk: disk}, nil
 }
 
-func (u *Uploader) getPath(path string) string {
+func (u *diskUploader) getPath(path string) string {
 	if strings.HasPrefix(path, u.root()) {
 		return path
 	}
 	return filepath.Join(u.root(), path)
 }
 
-func (u *Uploader) root() string {
+func (u *diskUploader) root() string {
 	if u.disk != "" {
 		return filepath.Join(u.rootDir, u.disk)
 	}
@@ -56,22 +56,22 @@ func (u *Uploader) root() string {
 	return u.rootDir
 }
 
-func (u *Uploader) Type() contracts.UploadType {
+func (u *diskUploader) Type() contracts.UploadType {
 	return contracts.Local
 }
 
-func (u *Uploader) Disk(s string) contracts.Uploader {
-	return &Uploader{
+func (u *diskUploader) Disk(s string) contracts.Uploader {
+	return &diskUploader{
 		rootDir: u.root(),
 		disk:    s,
 	}
 }
 
-func (u *Uploader) AbsolutePath(path string) string {
+func (u *diskUploader) AbsolutePath(path string) string {
 	return u.getPath(path)
 }
 
-func (u *Uploader) DeleteDir(dir string) error {
+func (u *diskUploader) DeleteDir(dir string) error {
 	dir = u.getPath(dir)
 	if !u.DirExists(dir) {
 		return fmt.Errorf("dir not exists : '%s'", dir)
@@ -80,11 +80,11 @@ func (u *Uploader) DeleteDir(dir string) error {
 	return os.RemoveAll(dir)
 }
 
-func (u *Uploader) Delete(path string) error {
+func (u *diskUploader) Delete(path string) error {
 	return os.Remove(u.getPath(path))
 }
 
-func (u *Uploader) DirSize() (int64, error) {
+func (u *diskUploader) DirSize() (int64, error) {
 	var size int64
 	dir := u.root()
 	if err := filepath.Walk(u.getPath(dir), func(path string, info fs.FileInfo, err error) error {
@@ -99,12 +99,12 @@ func (u *Uploader) DirSize() (int64, error) {
 	return size, nil
 }
 
-func (u *Uploader) Exists(path string) bool {
+func (u *diskUploader) Exists(path string) bool {
 	_, err := os.Stat(u.getPath(path))
 	return err == nil
 }
 
-func (u *Uploader) MkDir(path string, recursive bool) error {
+func (u *diskUploader) MkDir(path string, recursive bool) error {
 	dir := u.getPath(path)
 	if recursive {
 		return os.MkdirAll(dir, 0755)
@@ -113,7 +113,7 @@ func (u *Uploader) MkDir(path string, recursive bool) error {
 	return os.Mkdir(dir, 0755)
 }
 
-func (u *Uploader) DirExists(dir string) bool {
+func (u *diskUploader) DirExists(dir string) bool {
 	return dirExists(u.getPath(dir))
 }
 
@@ -146,11 +146,11 @@ func (f *fileInfo) LastModified() time.Time {
 	return f.lastModified
 }
 
-func (u *Uploader) Read(file string) (io.ReadCloser, error) {
+func (u *diskUploader) Read(file string) (io.ReadCloser, error) {
 	return os.Open(u.getPath(file))
 }
 
-func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
+func (u *diskUploader) Stat(file string) (contracts.FileInfo, error) {
 	fpath := u.getPath(file)
 	stat, err := os.Stat(fpath)
 	if err != nil {
@@ -160,7 +160,7 @@ func (u *Uploader) Stat(file string) (contracts.FileInfo, error) {
 	return NewFileInfo(fpath, stat.Size(), stat.ModTime()), nil
 }
 
-func (u *Uploader) RemoveEmptyDir() error {
+func (u *diskUploader) RemoveEmptyDir() error {
 	var dirs []string
 	dir := u.root()
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
@@ -184,7 +184,7 @@ func (u *Uploader) RemoveEmptyDir() error {
 	return nil
 }
 
-func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
+func (u *diskUploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	var files []contracts.FileInfo
 	err := filepath.Walk(u.getPath(dir),
 		func(path string, info os.FileInfo, err error) error {
@@ -202,7 +202,7 @@ func (u *Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	return files, nil
 }
 
-func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, error) {
+func (u *diskUploader) Put(path string, content io.Reader) (contracts.FileInfo, error) {
 	fullpath := u.getPath(path)
 
 	if u.Exists(fullpath) {
@@ -228,7 +228,7 @@ func (u *Uploader) Put(path string, content io.Reader) (contracts.FileInfo, erro
 	return NewFileInfo(create.Name(), stat.Size(), stat.ModTime()), nil
 }
 
-func (u *Uploader) NewFile(path string) (contracts.File, error) {
+func (u *diskUploader) NewFile(path string) (contracts.File, error) {
 	fullpath := u.getPath(path)
 
 	if u.Exists(fullpath) {

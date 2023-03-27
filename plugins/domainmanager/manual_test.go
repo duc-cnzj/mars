@@ -72,8 +72,8 @@ func TestManualDomainManager_Destroy(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Destroy...").Times(1)
-	mm := &ManualDomainManager{}
+	l.EXPECT().Info("[Plugin]: " + (&manualDomainManager{}).Name() + " plugin Destroy...").Times(1)
+	mm := &manualDomainManager{}
 	mm.Destroy()
 }
 
@@ -83,7 +83,7 @@ func TestManualDomainManager_GetCertSecretName(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	mm := &ManualDomainManager{}
+	mm := &manualDomainManager{}
 	l.EXPECT().Info("[Plugin]: " + mm.Name() + " plugin Initialize...").Times(1)
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
@@ -95,7 +95,7 @@ func TestManualDomainManager_GetCertSecretName(t *testing.T) {
 }
 
 func TestManualDomainManager_GetCerts(t *testing.T) {
-	mm := &ManualDomainManager{}
+	mm := &manualDomainManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -115,7 +115,7 @@ func TestManualDomainManager_GetCerts(t *testing.T) {
 }
 
 func TestManualDomainManager_GetClusterIssuer(t *testing.T) {
-	mm := &ManualDomainManager{}
+	mm := &manualDomainManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -132,7 +132,7 @@ func TestManualDomainManager_GetClusterIssuer(t *testing.T) {
 }
 
 func TestManualDomainManager_GetDomain(t *testing.T) {
-	mm := &ManualDomainManager{}
+	mm := &manualDomainManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -159,7 +159,7 @@ func TestManualDomainManager_GetDomain(t *testing.T) {
 }
 
 func TestManualDomainManager_GetDomainByIndex(t *testing.T) {
-	mm := &ManualDomainManager{}
+	mm := &manualDomainManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -192,8 +192,8 @@ func TestManualDomainManager_Initialize(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&ManualDomainManager{}).Name() + " plugin Initialize...").Times(1)
-	mm := &ManualDomainManager{}
+	l.EXPECT().Info("[Plugin]: " + (&manualDomainManager{}).Name() + " plugin Initialize...").Times(1)
+	mm := &manualDomainManager{}
 	mm.Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"tls_crt":         tlsCrt,
@@ -220,5 +220,5 @@ func TestManualDomainManager_Initialize(t *testing.T) {
 }
 
 func TestManualDomainManager_Name(t *testing.T) {
-	assert.Equal(t, "manual_domain_manager", (&ManualDomainManager{}).Name())
+	assert.Equal(t, "manual_domain_manager", (&manualDomainManager{}).Name())
 }

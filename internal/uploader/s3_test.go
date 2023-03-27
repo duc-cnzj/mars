@@ -17,8 +17,8 @@ func TestNewS3(t *testing.T) {
 		t.Skip()
 	}
 	assert.Implements(t, (*contracts.Uploader)(nil), NewS3(nil, "bkt", nil, "root"))
-	assert.Equal(t, "root", NewS3(nil, "bkt", nil, "root").rootDir)
-	assert.Equal(t, "data", NewS3(nil, "bkt", nil, "").rootDir)
+	assert.Equal(t, "root", NewS3(nil, "bkt", nil, "root").(*s3Uploader).rootDir)
+	assert.Equal(t, "data", NewS3(nil, "bkt", nil, "").(*s3Uploader).rootDir)
 }
 
 func TestS3_AbsolutePath(t *testing.T) {
@@ -37,8 +37,8 @@ func TestS3_AllDirectoryFiles(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "AllDirectoryFiles").Disk("sub")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "AllDirectoryFiles").Disk("sub")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
 	s3Cli.Put("bbb/bbb", strings.NewReader("bbb"))
@@ -61,8 +61,8 @@ func TestS3_Delete(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("aaa"))
@@ -74,8 +74,8 @@ func TestS3_DeleteDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("cc/c.txt"))
@@ -87,8 +87,8 @@ func TestS3_DirSize(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "dirsize")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "dirsize")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("dirsize/cc/c.txt", strings.NewReader("aaa"))
 	size, _ := s3Cli.DirSize()
@@ -106,17 +106,17 @@ func TestS3_Disk(t *testing.T) {
 	localUp.EXPECT().Disk("bb").Times(1).Return(localUp)
 	up := NewS3(nil, "bkt", localUp, "root")
 	disk := up.Disk("aa")
-	assert.Equal(t, "root/aa", disk.(*S3).root())
+	assert.Equal(t, "root/aa", disk.(*s3Uploader).root())
 	c := disk.Disk("bb")
-	assert.Equal(t, "root/aa/bb", c.(*S3).root())
+	assert.Equal(t, "root/aa/bb", c.(*s3Uploader).root())
 }
 
 func TestS3_Exists(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "data")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	s3Cli.Put("cc/c.txt", strings.NewReader("aaa"))
 	assert.True(t, s3Cli.Exists("cc/c.txt"))
@@ -136,8 +136,8 @@ func TestS3_NewFile(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -156,12 +156,12 @@ func TestS3_Put(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	put, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
-	assert.Equal(t, s3Cli.getPath("aaa"), put.Path())
+	assert.Equal(t, s3Cli.(*s3Uploader).getPath("aaa"), put.Path())
 
 	diskOne := s3Cli.Disk("one")
 	info, _ := diskOne.Put("one.txt", strings.NewReader("one"))
@@ -176,8 +176,8 @@ func TestS3_Read(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Read("aaa")
 	assert.Error(t, err)
@@ -194,8 +194,8 @@ func TestS3_RemoveEmptyDir(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -206,8 +206,8 @@ func TestS3_Stat(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "")
 	s3Cli.DeleteDir("")
 	_, err := s3Cli.Put("aaa", strings.NewReader("aaa"))
 	assert.Nil(t, err)
@@ -233,7 +233,7 @@ func TestS3_getPath(t *testing.T) {
 	}
 	up := NewS3(nil, "bkt", nil, "root")
 
-	assert.Equal(t, "root/666", up.getPath("666"))
+	assert.Equal(t, "root/666", up.(*s3Uploader).getPath("666"))
 }
 
 func TestS3_root(t *testing.T) {
@@ -242,15 +242,15 @@ func TestS3_root(t *testing.T) {
 	}
 	up := NewS3(nil, "bkt", nil, "root")
 
-	assert.Equal(t, "root", up.root())
+	assert.Equal(t, "root", up.(*s3Uploader).root())
 }
 
 func Test_s3File_Close(t *testing.T) {
 	if skipS3 {
 		t.Skip()
 	}
-	uploader, _ := NewUploader("", "")
-	s3Cli := NewS3(s3, testBucketName, uploader, "data")
+	up, _ := NewUploader("", "")
+	s3Cli := NewS3(s3Client, testBucketName, up, "data")
 	s3Cli.DeleteDir("")
 	file, err := s3Cli.NewFile("s3file_close.txt")
 	assert.Nil(t, err)
@@ -258,11 +258,11 @@ func Test_s3File_Close(t *testing.T) {
 	stat, err := file.Stat()
 	file.Close()
 	assert.Nil(t, err)
-	assert.Equal(t, s3Cli.getPath("s3file_close.txt"), stat.Name())
-	assert.Equal(t, s3Cli.getPath("s3file_close.txt"), file.Name())
+	assert.Equal(t, s3Cli.(*s3Uploader).getPath("s3file_close.txt"), stat.Name())
+	assert.Equal(t, s3Cli.(*s3Uploader).getPath("s3file_close.txt"), file.Name())
 
 	assert.Equal(t, int64(3), stat.Size())
-	assert.True(t, s3Cli.Exists(s3Cli.getPath("s3file_close.txt")))
+	assert.True(t, s3Cli.Exists(s3Cli.(*s3Uploader).getPath("s3file_close.txt")))
 }
 
 func Test_s3File_Name(t *testing.T) {

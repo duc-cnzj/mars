@@ -553,7 +553,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	app.EXPECT().GetPluginByName("test_git_server").Return(gitS).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gitS.EXPECT().Initialize(gomock.Any()).AnyTimes()
-	app.EXPECT().GetPluginByName("test_domain_plugin_driver").AnyTimes().Return(&domainmanager.DefaultDomainManager{})
+	app.EXPECT().GetPluginByName("test_domain_plugin_driver").AnyTimes().Return(domainmanager.NewDefaultDomainManager())
 	p := mock.NewMockProjectInterface(m)
 	gitS.EXPECT().GetProject("999").Return(p, nil)
 	db, closeFn := testutil.SetGormDB(m, app)

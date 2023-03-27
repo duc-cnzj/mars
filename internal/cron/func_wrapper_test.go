@@ -20,7 +20,7 @@ func TestWrap_Recovery(t *testing.T) {
 	l := mock.NewMockLocker(m)
 	l.EXPECT().ID().Return("1").AnyTimes()
 	l.EXPECT().RenewalAcquire(lockKey("duc"), defaultLockSeconds, defaultRenewSeconds).Times(1).Return(func() {}, true)
-	Wrap("duc", func() error {
+	wrap("duc", func() error {
 		panic("err")
 	}, func() contracts.Locker {
 		return l
@@ -35,7 +35,7 @@ func TestWrap(t *testing.T) {
 	l.EXPECT().ID().Return("1").AnyTimes()
 	l.EXPECT().RenewalAcquire(lockKey("duc"), defaultLockSeconds, defaultRenewSeconds).Times(1).Return(nil, false)
 	called := false
-	Wrap("duc", func() error {
+	wrap("duc", func() error {
 		called = true
 		return nil
 	}, func() contracts.Locker {
@@ -53,7 +53,7 @@ func TestWrap_FuncErrorReturn(t *testing.T) {
 	l.EXPECT().RenewalAcquire(lockKey("duc"), defaultLockSeconds, defaultRenewSeconds).Times(1).Return(func() {
 		called++
 	}, true)
-	Wrap("duc", func() error {
+	wrap("duc", func() error {
 		called++
 		return errors.New("xxx")
 	}, func() contracts.Locker {

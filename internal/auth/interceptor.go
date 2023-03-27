@@ -43,14 +43,14 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-type CtxTokenInfo struct{}
+type ctxTokenInfo struct{}
 
 func SetUser(ctx context.Context, info *contracts.UserInfo) context.Context {
-	return context.WithValue(ctx, &CtxTokenInfo{}, info)
+	return context.WithValue(ctx, &ctxTokenInfo{}, info)
 }
 
 func GetUser(ctx context.Context) (*contracts.UserInfo, error) {
-	if info, ok := ctx.Value(&CtxTokenInfo{}).(*contracts.UserInfo); ok {
+	if info, ok := ctx.Value(&ctxTokenInfo{}).(*contracts.UserInfo); ok {
 		return info, nil
 	}
 
@@ -58,6 +58,6 @@ func GetUser(ctx context.Context) (*contracts.UserInfo, error) {
 }
 
 func MustGetUser(ctx context.Context) *contracts.UserInfo {
-	info, _ := ctx.Value(&CtxTokenInfo{}).(*contracts.UserInfo)
+	info, _ := ctx.Value(&ctxTokenInfo{}).(*contracts.UserInfo)
 	return info
 }

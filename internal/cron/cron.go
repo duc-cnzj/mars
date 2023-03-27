@@ -15,11 +15,11 @@ type Manager struct {
 	app    contracts.ApplicationInterface
 
 	sync.RWMutex
-	commands map[string]*Command
+	commands map[string]*command
 }
 
 func NewManager(runner contracts.CronRunner, app contracts.ApplicationInterface) *Manager {
-	return &Manager{commands: make(map[string]*Command), runner: runner, app: app}
+	return &Manager{commands: make(map[string]*command), runner: runner, app: app}
 }
 
 func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
@@ -28,7 +28,7 @@ func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
 	if _, ok := m.commands[name]; ok {
 		panic(fmt.Sprintf("[CRON]: job %s already exists", name))
 	}
-	cmd := &Command{expression: expression, name: name, fn: Wrap(name, fn, func() contracts.Locker {
+	cmd := &command{expression: expression, name: name, fn: wrap(name, fn, func() contracts.Locker {
 		return m.app.CacheLock()
 	})}
 	m.commands[name] = cmd
@@ -54,7 +54,7 @@ func (m *Manager) List() []contracts.Command {
 	defer m.RUnlock()
 	var cmds []contracts.Command
 	for _, c := range m.commands {
-		cmds = append(cmds, &Command{
+		cmds = append(cmds, &command{
 			name:       c.name,
 			expression: c.expression,
 			fn:         c.fn,

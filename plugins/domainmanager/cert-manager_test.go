@@ -67,26 +67,26 @@ func TestCertManager_Destroy(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&CertManager{}).Name() + " plugin Destroy...")
-	(&CertManager{}).Destroy()
+	l.EXPECT().Info("[Plugin]: " + (&certManager{}).Name() + " plugin Destroy...")
+	(&certManager{}).Destroy()
 }
 
 func TestCertManager_GetCertSecretName(t *testing.T) {
 	assert.Equal(t,
 		fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", "", 1))),
-		(&CertManager{}).GetCertSecretName("", 1),
+		(&certManager{}).GetCertSecretName("", 1),
 	)
 }
 
 func TestCertManager_GetCerts(t *testing.T) {
-	name, key, crt := (&CertManager{}).GetCerts()
+	name, key, crt := (&certManager{}).GetCerts()
 	assert.Empty(t, name)
 	assert.Empty(t, key)
 	assert.Empty(t, crt)
 }
 
 func TestCertManager_GetClusterIssuer(t *testing.T) {
-	cm := &CertManager{}
+	cm := &certManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -98,7 +98,7 @@ func TestCertManager_GetClusterIssuer(t *testing.T) {
 }
 
 func TestCertManager_Initialize(t *testing.T) {
-	cm := &CertManager{}
+	cm := &certManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -116,7 +116,7 @@ func TestCertManager_Initialize(t *testing.T) {
 }
 
 func TestCertManager_Name(t *testing.T) {
-	assert.Equal(t, name, (&CertManager{}).Name())
+	assert.Equal(t, name, (&certManager{}).Name())
 }
 
 func TestCertManager_GetDomainByIndex(t *testing.T) {
@@ -127,7 +127,7 @@ func TestCertManager_GetDomainByIndex(t *testing.T) {
 		index:        1,
 		nsPrefix:     "",
 		domainSuffix: "",
-	}.SubStr(), (&CertManager{}).GetDomainByIndex("pro", "ns", 1, 1))
+	}.SubStr(), (&certManager{}).GetDomainByIndex("pro", "ns", 1, 1))
 }
 
 func TestCertManager_GetDomain(t *testing.T) {
@@ -138,7 +138,7 @@ func TestCertManager_GetDomain(t *testing.T) {
 		index:        -1,
 		nsPrefix:     "",
 		domainSuffix: "",
-	}.SubStr(), (&CertManager{}).GetDomain("pro", "ns", 1))
+	}.SubStr(), (&certManager{}).GetDomain("pro", "ns", 1))
 }
 
 func Test_SubStr(t *testing.T) {

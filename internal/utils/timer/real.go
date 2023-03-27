@@ -8,7 +8,7 @@ type Timer interface {
 
 type realTimer struct{}
 
-func NewRealTimer() *realTimer {
+func NewRealTimer() Timer {
 	return &realTimer{}
 }
 

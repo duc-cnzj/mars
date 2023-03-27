@@ -13,7 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
-var AllGitProjectCache = func() error {
+var allGitProjectCache = func() error {
 	var gitServer plugins.GitServer = plugins.GetGitServer()
 	if cache, ok := gitServer.(plugins.GitCacheServer); ok {
 		return cache.ReCacheAllProjects()
@@ -21,7 +21,7 @@ var AllGitProjectCache = func() error {
 	return nil
 }
 
-var AllBranchCache = func() error {
+var allBranchCache = func() error {
 	var (
 		enabledGitProjects []*models.GitProject
 		wg                 = &sync.WaitGroup{}
@@ -61,8 +61,8 @@ var AllBranchCache = func() error {
 func init() {
 	cron.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
 		if app.Config().GitServerCached {
-			manager.NewCommand("all_git_project_cache", AllGitProjectCache).EveryFiveMinutes()
-			manager.NewCommand("all_branch_cache", AllBranchCache).EveryTwoMinutes()
+			manager.NewCommand("all_git_project_cache", allGitProjectCache).EveryFiveMinutes()
+			manager.NewCommand("all_branch_cache", allBranchCache).EveryTwoMinutes()
 		}
 	})
 }

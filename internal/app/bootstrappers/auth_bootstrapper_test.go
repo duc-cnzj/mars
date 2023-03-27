@@ -56,8 +56,8 @@ func TestAuthBootstrapper_Bootstrap(t *testing.T) {
 	_, b := app.auth.VerifyToken(sign.Token)
 	assert.True(t, b)
 	assert.Len(t, app.auth.(*auth.Authn).Authns, 2)
-	assert.IsType(t, &auth.JwtAuth{}, app.auth.(*auth.Authn).Authns[0])
-	assert.IsType(t, &auth.AccessTokenAuth{}, app.auth.(*auth.Authn).Authns[1])
+	assert.IsType(t, auth.NewJwtAuth(nil, nil), app.auth.(*auth.Authn).Authns[0])
+	assert.IsType(t, auth.NewAccessTokenAuth(nil), app.auth.(*auth.Authn).Authns[1])
 }
 
 func TestAuthBootstrapper_Tags(t *testing.T) {

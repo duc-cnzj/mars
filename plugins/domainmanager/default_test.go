@@ -17,23 +17,23 @@ func TestDefaultDomainManager_Destroy(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Destroy...").Times(1)
-	(&DefaultDomainManager{}).Destroy()
+	l.EXPECT().Info("[Plugin]: " + (&defaultDomainManager{}).Name() + " plugin Destroy...").Times(1)
+	(&defaultDomainManager{}).Destroy()
 }
 
 func TestDefaultDomainManager_GetCertSecretName(t *testing.T) {
-	assert.Equal(t, "", (&DefaultDomainManager{}).GetCertSecretName("", 0))
+	assert.Equal(t, "", (&defaultDomainManager{}).GetCertSecretName("", 0))
 }
 
 func TestDefaultDomainManager_GetCerts(t *testing.T) {
-	n, key, crt := (&DefaultDomainManager{}).GetCerts()
+	n, key, crt := (&defaultDomainManager{}).GetCerts()
 	assert.Equal(t, "", n)
 	assert.Equal(t, "", key)
 	assert.Equal(t, "", crt)
 }
 
 func TestDefaultDomainManager_GetClusterIssuer(t *testing.T) {
-	assert.Equal(t, "", (&DefaultDomainManager{}).GetClusterIssuer())
+	assert.Equal(t, "", (&defaultDomainManager{}).GetClusterIssuer())
 }
 
 func TestDefaultDomainManager_GetDomain(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDefaultDomainManager_GetDomain(t *testing.T) {
 		index:        -1,
 		nsPrefix:     "devops",
 		domainSuffix: "faker-domain.local",
-	}.SubStr(), (&DefaultDomainManager{}).GetDomain(projectName, namespace, preOccupiedLen))
+	}.SubStr(), (&defaultDomainManager{}).GetDomain(projectName, namespace, preOccupiedLen))
 }
 
 func TestDefaultDomainManager_GetDomainByIndex(t *testing.T) {
@@ -62,7 +62,7 @@ func TestDefaultDomainManager_GetDomainByIndex(t *testing.T) {
 		index:        idx,
 		nsPrefix:     "devops",
 		domainSuffix: "faker-domain.local",
-	}.SubStr(), (&DefaultDomainManager{}).GetDomainByIndex(projectName, namespace, idx, preOccupiedLen))
+	}.SubStr(), (&defaultDomainManager{}).GetDomainByIndex(projectName, namespace, idx, preOccupiedLen))
 }
 
 func TestDefaultDomainManager_Initialize(t *testing.T) {
@@ -71,10 +71,10 @@ func TestDefaultDomainManager_Initialize(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&DefaultDomainManager{}).Name() + " plugin Initialize...").Times(1)
-	(&DefaultDomainManager{}).Initialize(map[string]any{})
+	l.EXPECT().Info("[Plugin]: " + (&defaultDomainManager{}).Name() + " plugin Initialize...").Times(1)
+	(&defaultDomainManager{}).Initialize(map[string]any{})
 }
 
 func TestDefaultDomainManager_Name(t *testing.T) {
-	assert.Equal(t, "default_domain_manager", (&DefaultDomainManager{}).Name())
+	assert.Equal(t, "default_domain_manager", (&defaultDomainManager{}).Name())
 }

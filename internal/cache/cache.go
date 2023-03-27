@@ -8,21 +8,22 @@ import (
 )
 
 type Cache struct {
-	fc contracts.Store
-	sf *singleflight.Group
+	store contracts.Store
+	sf    *singleflight.Group
 }
 
-func NewCache(fc contracts.Store, sf *singleflight.Group) *Cache {
-	return &Cache{fc: fc, sf: sf}
+func NewCache(store contracts.Store, sf *singleflight.Group) contracts.CacheInterface {
+	return &Cache{store: store, sf: sf}
 }
 
+// Remember TODO
 func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
 	do, err, _ := c.sf.Do("CacheRemember:"+key.String(), func() (any, error) {
 		if seconds <= 0 {
 			return fn()
 		}
 
-		res, err := c.fc.Get(key.String())
+		res, err := c.store.Get(key.String())
 		mlog.Debugf("CacheRemember: %s, from cache: %t", key, err == nil)
 		if err == nil {
 			return res, nil
@@ -46,10 +47,17 @@ func (c *Cache) Remember(key contracts.CacheKeyInterface, seconds int, fn func()
 	return do.([]byte), err
 }
 
+// SetWithTTL TODO
 func (c *Cache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
-	return c.fc.Set(key.String(), value, seconds)
+	return c.store.Set(key.String(), value, seconds)
 }
 
+// Clear TODO
 func (c *Cache) Clear(key contracts.CacheKeyInterface) error {
-	return c.fc.Delete(key.String())
+	return c.store.Delete(key.String())
+}
+
+// Store TODO
+func (c *Cache) Store() contracts.Store {
+	return c.store
 }

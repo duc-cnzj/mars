@@ -27,7 +27,7 @@ const ephemeralBroadcastRoom = wssender.BroadcastRoom + "#ephemeral"
 var nsqSenderName = "ws_sender_nsq"
 
 func init() {
-	dr := &NsqSender{}
+	dr := &nsqSender{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
@@ -35,18 +35,18 @@ func getNsqProjectEventRoom[T int64 | int](nsID T) string {
 	return fmt.Sprintf("project-pod-events-%d#ephemeral", nsID)
 }
 
-type NsqSender struct {
+type nsqSender struct {
 	producer    *gonsq.Producer
 	cfg         *gonsq.Config
 	lookupdAddr string
 	addr        string
 }
 
-func (n *NsqSender) Name() string {
+func (n *nsqSender) Name() string {
 	return nsqSenderName
 }
 
-func (n *NsqSender) Initialize(args map[string]any) (err error) {
+func (n *nsqSender) Initialize(args map[string]any) (err error) {
 	n.cfg = gonsq.NewConfig()
 	// 坑:
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
@@ -76,13 +76,13 @@ func (n *NsqSender) Initialize(args map[string]any) (err error) {
 	return
 }
 
-func (n *NsqSender) Destroy() error {
+func (n *nsqSender) Destroy() error {
 	n.producer.Stop()
 	mlog.Info("[Plugin]: " + n.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (n *NsqSender) New(uid, id string) contracts.PubSub {
+func (n *nsqSender) New(uid, id string) contracts.PubSub {
 	return &nsq{
 		addr:         n.addr,
 		lookupdAddr:  n.lookupdAddr,
