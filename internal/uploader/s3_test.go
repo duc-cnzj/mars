@@ -272,3 +272,19 @@ func Test_s3File_Name(t *testing.T) {
 	s3f := &s3File{name: "aaa"}
 	assert.Equal(t, "aaa", s3f.Name())
 }
+
+func Test_s3File_Seek(t *testing.T) {
+	if skipS3 {
+		t.Skip()
+	}
+	m := gomock.NewController(t)
+	defer m.Finish()
+	f := mock.NewMockFile(m)
+	s := &s3File{
+		File: f,
+	}
+	f.EXPECT().Seek(int64(10), 1).Times(1).Return(int64(1), nil)
+	ret, err := s.Seek(int64(10), 1)
+	assert.Equal(t, int64(1), ret)
+	assert.Nil(t, err)
+}
