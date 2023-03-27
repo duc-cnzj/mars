@@ -30,6 +30,9 @@ func TestHttpCache(t *testing.T) {
 }
 
 func Test_setEtag(t *testing.T) {
+	defer func(t string) {
+		Etag = t
+	}(Etag)
 	Etag = ""
 	setEtag(version.GetVersion())
 	assert.Empty(t, Etag)

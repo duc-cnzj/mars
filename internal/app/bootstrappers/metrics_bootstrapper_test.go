@@ -28,7 +28,7 @@ func TestMetricsBootstrapper_Tags(t *testing.T) {
 }
 
 func Test_metricsRunner_Shutdown(t *testing.T) {
-	assert.Nil(t, (&metricsRunner{}).Shutdown(context.TODO()))
+	assert.Nil(t, (&metricsRunner{s: &http.Server{}}).Shutdown(context.TODO()))
 }
 
 func Test_metricsRunner_Run(t *testing.T) {

@@ -12,12 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/socket"
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
-
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,13 +21,17 @@ import (
 	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
 	"github.com/duc-cnzj/mars/v4/internal/utils/executor"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
 )
 
 func init() {
