@@ -23,11 +23,11 @@ import (
 )
 
 func TestTracingIgnoreFn(t *testing.T) {
-	assert.False(t, TracingIgnoreFn("/api/xxx"))
-	assert.True(t, TracingIgnoreFn("/xxx"))
-	assert.True(t, TracingIgnoreFn("/ws"))
-	assert.True(t, TracingIgnoreFn("/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"))
-	assert.True(t, TracingIgnoreFn("/api/metrics/namespace/{namespace}/pods/{pod}/stream"))
+	assert.False(t, tracingIgnoreFn("/api/xxx"))
+	assert.True(t, tracingIgnoreFn("/xxx"))
+	assert.True(t, tracingIgnoreFn("/ws"))
+	assert.True(t, tracingIgnoreFn("/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"))
+	assert.True(t, tracingIgnoreFn("/api/metrics/namespace/{namespace}/pods/{pod}/stream"))
 }
 
 type testHandler struct {
@@ -94,7 +94,7 @@ func TestTracingWrapper2(t *testing.T) {
 }
 
 func TestGatewayCarrier(t *testing.T) {
-	gc := &GatewayCarrier{}
+	gc := &gatewayCarrier{}
 	assert.Empty(t, gc.Get("key"))
 	gc.Set("key", "value")
 	assert.Equal(t, "value", gc.Get("key"))
@@ -218,7 +218,7 @@ func TestTraceUnaryServerInterceptor1(t *testing.T) {
 
 	ctxt := propagation.TraceContext{}
 	md := metadata.MD{}
-	ctxt.Inject(start, GatewayCarrier(md))
+	ctxt.Inject(start, gatewayCarrier(md))
 
 	res, err := TraceUnaryServerInterceptor(metadata.NewIncomingContext(context.TODO(), md), nil, &grpc.UnaryServerInfo{
 		FullMethod: "test",

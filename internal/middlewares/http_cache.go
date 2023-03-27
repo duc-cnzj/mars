@@ -20,10 +20,6 @@ func setEtag(v version.Version) {
 	}
 }
 
-type HttpCacheBody struct {
-	Etag string
-}
-
 func HttpCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if Etag != "" {
