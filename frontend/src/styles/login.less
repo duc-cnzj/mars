@@ -22,19 +22,13 @@
     font-size: 14px;
 
     border: none;
-    background-image: linear-gradient(
-      to right,
-      @main-color 0%,
-      @light-main-color 51%,
-      @main-color 100%
-    );
+    background-color: @main-color;
     transition: 0.5s;
-    background-size: 200% auto;
     color: white;
     border-radius: 2px;
 
     &:hover {
-      background-position: right center;
+      background-color: @deep-color;
       color: #fff;
       text-decoration: none;
     }

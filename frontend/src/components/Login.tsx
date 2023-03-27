@@ -72,9 +72,11 @@ const Login: React.FC = () => {
                 登录
               </button>
             </Form.Item>
-            <Divider style={{ fontWeight: "normal", fontSize: 12 }}>
-              或者
-            </Divider>
+            {settings?.items && settings?.items.length > 0 && (
+              <Divider style={{ fontWeight: "normal", fontSize: 12 }}>
+                或者
+              </Divider>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column" }}>
               {settings?.items.map((item) => (
