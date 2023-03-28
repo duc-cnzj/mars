@@ -32,7 +32,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
-		events   []EventDiff
+		events   []eventDiff
 	)
 
 	queryScope := func(db *gorm.DB) *gorm.DB {
@@ -91,11 +91,11 @@ func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (contex
 	return ctx, nil
 }
 
-type EventDiff struct {
+type eventDiff struct {
 	models.Event
 	HasDiff bool `json:"has_diff"`
 }
 
-func (EventDiff) TableName() string {
+func (eventDiff) TableName() string {
 	return "events"
 }

@@ -94,10 +94,12 @@ func Test_apiGateway_Run(t *testing.T) {
 }
 
 type mockHttpServer struct {
-	wg sync.WaitGroup
+	wg             sync.WaitGroup
+	shutdownCalled bool
 }
 
 func (m *mockHttpServer) Shutdown(ctx context.Context) error {
+	m.shutdownCalled = true
 	return nil
 }
 
