@@ -7,13 +7,16 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/duc-cnzj/mars-client/v4/token"
-
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/duc-cnzj/mars-client/v4/auth"
 	"github.com/duc-cnzj/mars-client/v4/changelog"
@@ -28,13 +31,8 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/picture"
 	"github.com/duc-cnzj/mars-client/v4/project"
+	"github.com/duc-cnzj/mars-client/v4/token"
 	"github.com/duc-cnzj/mars-client/v4/version"
-
-	"github.com/cenkalti/backoff/v4"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 )
 
 type Interface interface {

@@ -1,6 +1,6 @@
 module github.com/duc-cnzj/mars/v4
 
-go 1.19
+go 1.20
 
 replace github.com/duc-cnzj/mars-client/v4 => ./pkg
 
