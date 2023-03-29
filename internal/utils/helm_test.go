@@ -376,6 +376,12 @@ func Test_watchPodStatus(t *testing.T) {
 		atomic.AddInt64(&called, 1)
 	})
 	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
+
+	podCh2 := make(chan contracts.Obj[*v1.Pod], 10)
+	close(podCh2)
+	assert.NotPanics(t, func() {
+		watchPodStatus(context.TODO(), podCh2, nil, nil)
+	})
 }
 
 func Test_watchPodStatus_Error1(t *testing.T) {

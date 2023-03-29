@@ -12,9 +12,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 )
 
@@ -24,7 +26,42 @@ func TestGenMyPtyHandlerId(t *testing.T) {
 	assert.Len(t, id, 36)
 }
 
-func TestHandleExecShell(t *testing.T) {}
+func TestHandleExecShell(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:     nil,
+		RestConfig: nil,
+	}).AnyTimes()
+
+	sess := mock.NewMockSessionMapper(m)
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return nil
+		},
+		user:   contracts.UserInfo{Name: "duc"},
+		pubSub: &plugins.EmptyPubSub{},
+	}
+	c.terminalSessions = sess
+	pty := mock.NewMockPtyHandler(m)
+	sess.EXPECT().Set(gomock.Any(), gomock.Any()).Times(1)
+	sess.EXPECT().Get(gomock.Any()).Return(pty, true).AnyTimes()
+	pty.EXPECT().IsClosed().Return(true).AnyTimes()
+	sess.EXPECT().Close(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+	shell, e := HandleExecShell(&websocket_pb.WsHandleExecShellInput{
+		Type: 0,
+		Container: &types.Container{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "c",
+		},
+	}, c)
+	assert.Nil(t, e)
+	assert.NotEmpty(t, shell)
+	time.Sleep(1 * time.Second)
+}
 
 func TestMyPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
