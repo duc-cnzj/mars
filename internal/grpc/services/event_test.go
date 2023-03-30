@@ -43,7 +43,7 @@ func TestEventSvc_List(t *testing.T) {
 	e := new(eventSvc)
 	_, err := e.List(context.TODO(), &event.ListRequest{})
 	assert.Error(t, err)
-	db.AutoMigrate(&models.Event{}, &models.File{})
+	assert.Nil(t, db.AutoMigrate(&models.Event{}, &models.File{}))
 	f := seedEvents(db)
 	list, _ := e.List(context.TODO(), &event.ListRequest{Page: 1, PageSize: 1})
 	assert.Len(t, list.Items, 1)

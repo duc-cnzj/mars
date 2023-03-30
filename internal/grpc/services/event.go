@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
-
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/scopes"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -48,7 +48,7 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		return db
 	}
 
-	if err := app.DB().Preload("fileSvc", func(db *gorm.DB) *gorm.DB {
+	if err := app.DB().Table("events").Preload("File", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID", "Size")
 	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Select([]string{
 		"id", "action", "username", "message", "duration", "file_id", "created_at", "updated_at",
