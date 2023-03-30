@@ -9,13 +9,13 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-type S3UploaderBootstraper struct{}
+type S3UploaderBootstrapper struct{}
 
-func (s *S3UploaderBootstraper) Tags() []string {
+func (s *S3UploaderBootstrapper) Tags() []string {
 	return []string{"s3", "uploader"}
 }
 
-func (s *S3UploaderBootstraper) Bootstrap(app contracts.ApplicationInterface) error {
+func (s *S3UploaderBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	var (
 		endpoint        = app.Config().S3Endpoint
 		accessKeyID     = app.Config().S3AccessKeyID

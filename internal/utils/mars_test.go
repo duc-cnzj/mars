@@ -109,6 +109,7 @@ func TestParseInputConfig(t *testing.T) {
 		input       string
 		wants       string
 		ValuesYaml  string
+		wantsError  bool
 	}{
 		{
 			IsSimpleEnv: false,
@@ -233,6 +234,42 @@ func TestParseInputConfig(t *testing.T) {
 					- b
 				`),
 		},
+		{
+			input: "",
+			wants: "",
+		},
+		{
+			IsSimpleEnv: true,
+			ConfigField: "->command",
+			input:       "xxx",
+			wants:       "",
+			wantsError:  true,
+		},
+		{
+			IsSimpleEnv: true,
+			ConfigField: "command->",
+			input:       "xxx",
+			wants:       "",
+			wantsError:  true,
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "->command",
+			input:       "xxx",
+			wants:       "",
+			wantsError:  true,
+		},
+		{
+			IsSimpleEnv: false,
+			ConfigField: "->command",
+			input: dedent.Dedent(`
+				   command:
+				   - a
+				   - b
+				`),
+			wants:      "",
+			wantsError: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -244,7 +281,11 @@ func TestParseInputConfig(t *testing.T) {
 				ValuesYaml:  tt.ValuesYaml,
 				ConfigField: tt.ConfigField,
 			}, strings.Trim(tt.input, "\n"))
-			assert.Nil(t, err)
+			if tt.wantsError {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
 			assert.Equal(t, strings.Trim(tt.wants, "\n"), strings.Trim(res, "\n"))
 		})
 	}

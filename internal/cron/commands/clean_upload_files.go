@@ -18,7 +18,7 @@ import (
 
 func init() {
 	cron.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
-		manager.NewCommand("clean_upload_files", CleanUploadFiles).DailyAt("2:00")
+		manager.NewCommand("clean_upload_files", cleanUploadFiles).DailyAt("2:00")
 	})
 }
 
@@ -41,13 +41,13 @@ func (l listFiles) PrettyYaml() string {
 	return string(marshal)
 }
 
-// CleanUploadFiles
+// cleanUploadFiles
 //
 // 1. 删除在数据库中存在，但是磁盘里面没有的文件
 // 2. 删除本地磁盘有的，但是不存在于数据库中的文件
 //
 // dangerous !
-func CleanUploadFiles() error {
+func cleanUploadFiles() error {
 	var (
 		files []models.File
 

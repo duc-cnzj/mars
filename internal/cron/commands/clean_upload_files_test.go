@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"errors"
+
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
@@ -89,7 +91,7 @@ func TestCleanUploadFiles(t *testing.T) {
 		uploader.NewFileInfo("/tmp/up/path4", 100, time.Now().Add(-24*time.Hour)),
 	}, nil)
 	up.EXPECT().Delete("/tmp/up/path4").Times(1)
-	up.EXPECT().Delete("/tmp/up/path1").Times(1)
+	up.EXPECT().Delete("/tmp/up/path1").Times(1).Return(errors.New("xxx"))
 	up.EXPECT().Delete("/tmp/up/path2").Times(0)
 	up.EXPECT().Delete("/tmp/up/path3").Times(0)
 
@@ -101,6 +103,6 @@ func TestCleanUploadFiles(t *testing.T) {
 		uploader.NewFileInfo("/tmp/local/path4", 100, time.Now().Add(-24*time.Hour)),
 	}, nil)
 	localUp.EXPECT().Delete("/tmp/local/path1").Times(1)
-	testutil.AssertAuditLogFired(m, app)
-	assert.Nil(t, CleanUploadFiles())
+	testutil.AssertAuditLogFiredWithMsg(m, app, "删除未被记录的文件")
+	assert.Nil(t, cleanUploadFiles())
 }

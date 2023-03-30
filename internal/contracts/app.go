@@ -16,13 +16,19 @@ import (
 
 type Callback func(ApplicationInterface)
 
+// Server define booting server.
 type Server interface {
+	// Run server.
 	Run(context.Context) error
+	// Shutdown server.
 	Shutdown(context.Context) error
 }
 
+// Bootstrapper boots.
 type Bootstrapper interface {
+	// Bootstrap when app start.
 	Bootstrap(ApplicationInterface) error
+	// Tags boot tags.
 	Tags() []string
 }
 
@@ -31,34 +37,54 @@ type OidcConfigItem struct {
 	Config             oauth2.Config
 	EndSessionEndpoint string
 }
+
 type OidcConfig map[string]OidcConfigItem
 
+// ApplicationInterface app.
 type ApplicationInterface interface {
+	// IsDebug bool.
 	IsDebug() bool
 
+	// K8sClient return *K8sClient
 	K8sClient() *K8sClient
+	// SetK8sClient set *K8sClient
 	SetK8sClient(*K8sClient)
 
+	// Auth return AuthInterface.
 	Auth() AuthInterface
+	// SetAuth set AuthInterface.
 	SetAuth(AuthInterface)
 
+	// SetLocalUploader set local Uploader
 	SetLocalUploader(Uploader)
+	// LocalUploader get local Uploader
 	LocalUploader() Uploader
 
+	// SetUploader setter
 	SetUploader(Uploader)
+	// Uploader getter
 	Uploader() Uploader
 
+	// Bootstrap boots all.
 	Bootstrap() error
+	// Config app configuration.
 	Config() *config.Config
 
+	// DBManager db.
 	DBManager() DBManager
+	// DB instance.
 	DB() *gorm.DB
 
+	// Oidc sso cfg
 	Oidc() OidcConfig
+	// SetOidc setter
 	SetOidc(OidcConfig)
 
+	// AddServer add boot server
 	AddServer(Server)
+	// Run servers.
 	Run() context.Context
+	// Shutdown all servers.
 	Shutdown()
 
 	Done() <-chan struct{}

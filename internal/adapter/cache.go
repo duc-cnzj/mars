@@ -4,18 +4,22 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+
 	"github.com/patrickmn/go-cache"
 )
 
-type GoCacheAdapter struct {
+type goCacheAdapter struct {
 	c *cache.Cache
 }
 
-func NewGoCacheAdapter(c *cache.Cache) *GoCacheAdapter {
-	return &GoCacheAdapter{c: c}
+// NewGoCacheAdapter return Store instance.
+func NewGoCacheAdapter(c *cache.Cache) contracts.Store {
+	return &goCacheAdapter{c: c}
 }
 
-func (g *GoCacheAdapter) Get(key string) (value []byte, err error) {
+// Get return val from cache.
+func (g *goCacheAdapter) Get(key string) (value []byte, err error) {
 	v, b := g.c.Get(key)
 	if !b {
 		return nil, fmt.Errorf("key %s not found", key)
@@ -23,13 +27,15 @@ func (g *GoCacheAdapter) Get(key string) (value []byte, err error) {
 	return v.([]byte), nil
 }
 
-func (g *GoCacheAdapter) Set(key string, value []byte, expireSeconds int) (err error) {
+// Set val for key.
+func (g *goCacheAdapter) Set(key string, value []byte, expireSeconds int) (err error) {
 	g.c.Set(key, value, time.Second*time.Duration(expireSeconds))
 
 	return nil
 }
 
-func (g *GoCacheAdapter) Delete(key string) error {
+// Delete key from cache.
+func (g *goCacheAdapter) Delete(key string) error {
 	g.c.Delete(key)
 
 	return nil

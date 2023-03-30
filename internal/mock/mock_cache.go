@@ -76,3 +76,17 @@ func (mr *MockCacheInterfaceMockRecorder) SetWithTTL(arg0, arg1, arg2 any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithTTL", reflect.TypeOf((*MockCacheInterface)(nil).SetWithTTL), arg0, arg1, arg2)
 }
+
+// Store mocks base method.
+func (m *MockCacheInterface) Store() contracts.Store {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Store")
+	ret0, _ := ret[0].(contracts.Store)
+	return ret0
+}
+
+// Store indicates an expected call of Store.
+func (mr *MockCacheInterfaceMockRecorder) Store() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockCacheInterface)(nil).Store))
+}

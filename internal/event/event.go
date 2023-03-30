@@ -6,18 +6,20 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
-type Dispatcher struct {
+type dispatcher struct {
 	sync.RWMutex
 
 	app       contracts.ApplicationInterface
 	listeners map[contracts.Event][]contracts.Listener
 }
 
-func NewDispatcher(app contracts.ApplicationInterface) *Dispatcher {
-	return &Dispatcher{listeners: map[contracts.Event][]contracts.Listener{}, app: app}
+// NewDispatcher return contracts.DispatcherInterface.
+func NewDispatcher(app contracts.ApplicationInterface) contracts.DispatcherInterface {
+	return &dispatcher{listeners: map[contracts.Event][]contracts.Listener{}, app: app}
 }
 
-func (d *Dispatcher) Listen(event contracts.Event, listener contracts.Listener) {
+// Listen Register an event listener with the dispatcher.
+func (d *dispatcher) Listen(event contracts.Event, listener contracts.Listener) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -28,7 +30,8 @@ func (d *Dispatcher) Listen(event contracts.Event, listener contracts.Listener) 
 	}
 }
 
-func (d *Dispatcher) HasListeners(event contracts.Event) bool {
+// HasListeners Determine if a given event has listeners.
+func (d *dispatcher) HasListeners(event contracts.Event) bool {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -39,7 +42,8 @@ func (d *Dispatcher) HasListeners(event contracts.Event) bool {
 	return false
 }
 
-func (d *Dispatcher) Dispatch(event contracts.Event, payload any) error {
+// Dispatch Fire an event and call the listeners.
+func (d *dispatcher) Dispatch(event contracts.Event, payload any) error {
 	d.RLock()
 	defer d.RUnlock()
 	if listeners, ok := d.listeners[event]; ok {
@@ -53,13 +57,15 @@ func (d *Dispatcher) Dispatch(event contracts.Event, payload any) error {
 	return nil
 }
 
-func (d *Dispatcher) Forget(event contracts.Event) {
+// Forget Remove a set of listeners from the dispatcher.
+func (d *dispatcher) Forget(event contracts.Event) {
 	d.Lock()
 	defer d.Unlock()
 	delete(d.listeners, event)
 }
 
-func (d *Dispatcher) GetListeners(event contracts.Event) []contracts.Listener {
+// GetListeners get all listeners by event.
+func (d *dispatcher) GetListeners(event contracts.Event) []contracts.Listener {
 	d.RLock()
 	defer d.RUnlock()
 

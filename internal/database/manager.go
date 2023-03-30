@@ -9,24 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
-type Manager struct {
+type dbManager struct {
 	app contracts.ApplicationInterface
 	db  *gorm.DB
 }
 
-func NewManager(app contracts.ApplicationInterface) *Manager {
-	return &Manager{app: app}
+func NewManager(app contracts.ApplicationInterface) contracts.DBManager {
+	return &dbManager{app: app}
 }
 
-func (m *Manager) DB() *gorm.DB {
+func (m *dbManager) DB() *gorm.DB {
 	return m.db
 }
 
-func (m *Manager) SetDB(db *gorm.DB) {
+func (m *dbManager) SetDB(db *gorm.DB) {
 	m.db = db
 }
 
-func (m *Manager) AutoMigrate(dst ...any) error {
+func (m *dbManager) AutoMigrate(dst ...any) error {
 	gm := gormigrate.New(m.db, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		{
 			ID: "1970-01-01",

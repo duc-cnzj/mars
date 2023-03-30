@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -43,11 +44,12 @@ func (receiver *mockApp) RegisterAfterShutdownFunc(callback contracts.Callback) 
 type testDm struct {
 	DomainManager
 	initialized bool
+	err         error
 }
 
 func (t *testDm) Initialize(args map[string]any) error {
 	t.initialized = true
-	return nil
+	return t.err
 }
 
 func TestGetDomainManager(t *testing.T) {
@@ -59,5 +61,20 @@ func TestGetDomainManager(t *testing.T) {
 	domainManagerOnce = sync.Once{}
 	GetDomainManager()
 	assert.Equal(t, 1, ma.callback)
+	assert.True(t, dm.initialized)
+}
+func TestGetDomainManager2(t *testing.T) {
+	dm := &testDm{
+		err: errors.New("xxx"),
+	}
+	ma := &mockApp{
+		p: map[string]contracts.PluginInterface{"test": dm},
+	}
+	instance.SetInstance(ma)
+	domainManagerOnce = sync.Once{}
+	assert.Panics(t, func() {
+		GetDomainManager()
+	})
+	assert.Equal(t, 0, ma.callback)
 	assert.True(t, dm.initialized)
 }

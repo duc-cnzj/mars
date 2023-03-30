@@ -21,13 +21,13 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		auth.RegisterAuthServer(s, NewAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword, NewDefaultAuthProvider))
+		auth.RegisterAuthServer(s, newAuthSvc(app.Auth(), app.Oidc(), app.Config().AdminPassword, NewDefaultAuthProvider))
 	})
 	RegisterEndpoint(auth.RegisterAuthHandlerFromEndpoint)
 }
 
-type AuthSvc struct {
-	Guest
+type authSvc struct {
+	guest
 
 	cfg             contracts.OidcConfig
 	adminPwd        string
@@ -37,20 +37,20 @@ type AuthSvc struct {
 	auth.UnimplementedAuthServer
 }
 
-func NewAuthSvc(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string, NewProviderFunc func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider) *AuthSvc {
-	return &AuthSvc{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd, NewProviderFunc: NewProviderFunc}
+func newAuthSvc(authsvc contracts.AuthInterface, cfg contracts.OidcConfig, adminPwd string, NewProviderFunc func(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider) *authSvc {
+	return &authSvc{authsvc: authsvc, cfg: cfg, adminPwd: adminPwd, NewProviderFunc: NewProviderFunc}
 }
 
 type OidcAuthProvider interface {
 	Exchange(ctx context.Context, code string) (string, error)
-	Verify(ctx context.Context, token string) (IDToken, error)
+	Verify(ctx context.Context, token string) (idToken, error)
 }
 
-type IDToken interface {
+type idToken interface {
 	Claims(any) error
 }
 
-func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
+func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.LoginResponse, error) {
 	if request.Username == "admin" && request.Password == a.adminPwd {
 		userinfo := contracts.UserInfo{
 			LogoutUrl: "",
@@ -74,7 +74,7 @@ func (a *AuthSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *AuthSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoResponse, error) {
+func (a *authSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoResponse, error) {
 	incomingContext, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		tokenSlice := incomingContext.Get("Authorization")
@@ -95,7 +95,7 @@ func (a *AuthSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoRe
 	return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated.")
 }
 
-func (a *AuthSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (*auth.SettingsResponse, error) {
+func (a *authSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (*auth.SettingsResponse, error) {
 	var items = make([]*auth.SettingsResponse_OidcSetting, 0, len(a.cfg))
 	for name, setting := range a.cfg {
 		state := utils.RandomString(32)
@@ -116,7 +116,7 @@ func (a *AuthSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (
 	return &auth.SettingsResponse{Items: items}, nil
 }
 
-func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
+func (a *authSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (*auth.ExchangeResponse, error) {
 	var (
 		oidcClaims contracts.OidcClaims
 		parsed     bool
@@ -126,7 +126,7 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 		var (
 			token   string
 			err     error
-			idtoken IDToken
+			idtoken idToken
 		)
 		p := a.NewProviderFunc(item.Config, item.Provider)
 		token, err = p.Exchange(context.TODO(), request.Code)
@@ -165,16 +165,16 @@ func (a *AuthSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 	}, nil
 }
 
-type DefaultAuthProvider struct {
+type defaultAuthProvider struct {
 	cfg      oauth2.Config
 	provider *oidc.Provider
 }
 
 func NewDefaultAuthProvider(cfg oauth2.Config, provider *oidc.Provider) OidcAuthProvider {
-	return &DefaultAuthProvider{cfg: cfg, provider: provider}
+	return &defaultAuthProvider{cfg: cfg, provider: provider}
 }
 
-func (d *DefaultAuthProvider) Exchange(ctx context.Context, code string) (string, error) {
+func (d *defaultAuthProvider) Exchange(ctx context.Context, code string) (string, error) {
 	token, err := d.cfg.Exchange(ctx, code)
 	if err != nil {
 		return "", err
@@ -186,6 +186,6 @@ func (d *DefaultAuthProvider) Exchange(ctx context.Context, code string) (string
 	return rawIDToken, nil
 }
 
-func (d *DefaultAuthProvider) Verify(ctx context.Context, token string) (IDToken, error) {
+func (d *defaultAuthProvider) Verify(ctx context.Context, token string) (idToken, error) {
 	return d.provider.Verifier(&oidc.Config{ClientID: d.cfg.ClientID}).Verify(ctx, token)
 }

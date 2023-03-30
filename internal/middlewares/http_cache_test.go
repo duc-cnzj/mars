@@ -1,9 +1,13 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/version"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,4 +27,19 @@ func TestHttpCache(t *testing.T) {
 		},
 	})
 	assert.Equal(t, 304, rw.code)
+}
+
+func Test_setEtag(t *testing.T) {
+	defer func(t string) {
+		Etag = t
+	}(Etag)
+	Etag = ""
+	setEtag(version.GetVersion())
+	assert.Empty(t, Etag)
+	v := version.Version{
+		GitCommit: "xxx",
+		BuildDate: time.Now().Format("2006-01-02T15:04:05Z"),
+	}
+	setEtag(v)
+	assert.Equal(t, utils.MD5(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate)), Etag)
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/grpc/services"
 	"github.com/duc-cnzj/mars/v4/internal/middlewares"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/validator"
 )
 
 type GrpcBootstrapper struct{}
@@ -82,18 +81,18 @@ func (g *grpcRunner) Run(ctx context.Context) error {
 func (g *grpcRunner) initServer() *grpc.Server {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			grpc_auth.StreamServerInterceptor(Authenticate),
+			grpc_auth.StreamServerInterceptor(authenticate),
 			marsauthorizor.StreamServerInterceptor(),
-			validator.StreamServerInterceptor(),
+			middlewares.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(recoveryHandler)),
 			middlewares.MetricsStreamServerInterceptor,
 		),
 		grpc.ChainUnaryInterceptor(
-			grpc_auth.UnaryServerInterceptor(Authenticate),
+			grpc_auth.UnaryServerInterceptor(authenticate),
 			middlewares.MetricsServerInterceptor,
 			middlewares.TraceUnaryServerInterceptor,
 			marsauthorizor.UnaryServerInterceptor(),
-			validator.UnaryServerInterceptor(),
+			middlewares.UnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(recoveryHandler)),
 		),
 	)
@@ -112,7 +111,7 @@ func recoveryHandler(p any) error {
 	return nil
 }
 
-func Authenticate(ctx context.Context) (context.Context, error) {
+func authenticate(ctx context.Context) (context.Context, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
 	if err != nil {
 		return nil, err

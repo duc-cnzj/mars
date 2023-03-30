@@ -62,7 +62,7 @@ func TestNsqSender_Destroy(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	ns := &NsqSender{
+	ns := &nsqSender{
 		producer: NewNsqProducer(),
 	}
 	assert.Nil(t, ns.Destroy())
@@ -72,7 +72,7 @@ func TestNsqSender_Initialize(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	ns := &NsqSender{}
+	ns := &nsqSender{}
 	assert.Nil(t, ns.Initialize(map[string]any{
 		"addr":         addr,
 		"lookupd_addr": lookupdAddr,
@@ -91,7 +91,7 @@ func TestNsqSender_Name(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	assert.Equal(t, nsqSenderName, (&NsqSender{}).Name())
+	assert.Equal(t, nsqSenderName, (&nsqSender{}).Name())
 }
 
 func TestNsqSender_New(t *testing.T) {
@@ -99,7 +99,7 @@ func TestNsqSender_New(t *testing.T) {
 		t.Skip()
 	}
 	cfg := newNsqConfig()
-	sub := (&NsqSender{
+	sub := (&nsqSender{
 		addr:        "xxx",
 		lookupdAddr: "yyy",
 		producer:    NewNsqProducer(),
@@ -309,7 +309,7 @@ func Test_nsq_Run(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	ns := &NsqSender{
+	ns := &nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,
@@ -325,7 +325,7 @@ func Test_nsq_Subscribe(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	ns := &NsqSender{
+	ns := &nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,
@@ -356,7 +356,7 @@ func Test_nsq_ToAll(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	nss := &NsqSender{
+	nss := &nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,
@@ -390,7 +390,7 @@ func Test_nsq_ToOthers(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	nss := &NsqSender{
+	nss := &nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,
@@ -429,7 +429,7 @@ func Test_nsq_ToSelf(t *testing.T) {
 	if skip {
 		t.Skip()
 	}
-	nss := &NsqSender{
+	nss := &nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,
@@ -527,7 +527,7 @@ func Test_nsq_Publish(t *testing.T) {
 		NamespaceId:  namespace.ID,
 	}
 	assert.Nil(t, db.Create(pmodel).Error)
-	ns := NsqSender{
+	ns := nsqSender{
 		producer: NewNsqProducer(),
 		cfg:      newNsqConfig(),
 		addr:     addr,

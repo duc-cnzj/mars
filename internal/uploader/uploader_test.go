@@ -21,7 +21,7 @@ var (
 	pwd, _         = os.Getwd()
 	testDir        = filepath.Join(pwd, "testdir")
 	testBucketName = "testbucket"
-	s3             *minio.Client
+	s3Client       *minio.Client
 )
 
 var (
@@ -43,15 +43,15 @@ func TestMain(m *testing.M) {
 	if s3SecretID == "" {
 		s3SecretID = "minioadmin"
 	}
-	s3, _ = minio.New(s3Endpoint, &minio.Options{
+	s3Client, _ = minio.New(s3Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(s3KeyID, s3SecretID, ""),
 		Secure: false,
 	})
-	exists, _ := s3.BucketExists(context.TODO(), testBucketName)
+	exists, _ := s3Client.BucketExists(context.TODO(), testBucketName)
 	if exists {
-		s3.RemoveBucketWithOptions(context.TODO(), testBucketName, minio.RemoveBucketOptions{ForceDelete: true})
+		s3Client.RemoveBucketWithOptions(context.TODO(), testBucketName, minio.RemoveBucketOptions{ForceDelete: true})
 	}
-	err := s3.MakeBucket(context.TODO(), testBucketName, minio.MakeBucketOptions{})
+	err := s3Client.MakeBucket(context.TODO(), testBucketName, minio.MakeBucketOptions{})
 	if err == nil {
 		skipS3 = false
 	}
@@ -63,16 +63,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewUploader(t *testing.T) {
-	uploader, err := NewUploader("/", "disk")
+	up, err := NewUploader("/", "disk")
 	assert.Nil(t, err)
-	assert.Equal(t, "/", uploader.rootDir)
-	assert.Equal(t, "disk", uploader.disk)
+	assert.Equal(t, "/", up.(*diskUploader).rootDir)
+	assert.Equal(t, "disk", up.(*diskUploader).disk)
 }
 
 func TestFileInfo_Path(t *testing.T) {
-	uploader, _ := NewUploader("/", "disk")
-	assert.Equal(t, "/disk/aaa", uploader.getPath("aaa"))
-	assert.Equal(t, "/disk/aaa", uploader.getPath("/disk/aaa"))
+	up, _ := NewUploader("/", "disk")
+	assert.Equal(t, "/disk/aaa", up.(*diskUploader).getPath("aaa"))
+	assert.Equal(t, "/disk/aaa", up.(*diskUploader).getPath("/disk/aaa"))
 }
 
 func TestUploader_AbsolutePath(t *testing.T) {
@@ -81,19 +81,19 @@ func TestUploader_AbsolutePath(t *testing.T) {
 }
 
 func TestUploader_Disk(t *testing.T) {
-	uploader, _ := NewUploader("/", "disk")
-	assert.Equal(t, "/disk/aa", uploader.Disk("/aa").AbsolutePath("/"))
-	disk := uploader.Disk("1").Disk("2").Disk("3")
-	d := disk.(*Uploader)
+	up, _ := NewUploader("/", "disk")
+	assert.Equal(t, "/disk/aa", up.Disk("/aa").AbsolutePath("/"))
+	disk := up.Disk("1").Disk("2").Disk("3")
+	d := disk.(*diskUploader)
 	assert.Equal(t, "/disk/1/2", d.rootDir)
 	assert.Equal(t, "3", d.disk)
 }
 
 func TestUploader_root(t *testing.T) {
-	uploader, _ := NewUploader("/", "disk")
-	assert.Equal(t, "/disk", uploader.root())
+	up, _ := NewUploader("/", "disk")
+	assert.Equal(t, "/disk", up.(*diskUploader).root())
 
-	assert.Equal(t, "/tmp/xxx", (&Uploader{rootDir: "/tmp/xxx"}).root())
+	assert.Equal(t, "/tmp/xxx", (&diskUploader{rootDir: "/tmp/xxx"}).root())
 }
 
 func TestFileInfo(t *testing.T) {
@@ -142,11 +142,11 @@ func TestUploader_DirExists(t *testing.T) {
 	up, _ := NewUploader("", "aaa")
 	assert.Nil(t, up.MkDir("/b/c", true))
 
-	assert.True(t, up.DirExists("/b/c"))
-	assert.False(t, up.DirExists("/b/c/d"))
+	assert.True(t, up.(*diskUploader).DirExists("/b/c"))
+	assert.False(t, up.(*diskUploader).DirExists("/b/c/d"))
 
 	up2, _ := NewUploader("", "")
-	assert.True(t, up2.DirExists("/aaa/b/c"))
+	assert.True(t, up2.(*diskUploader).DirExists("/aaa/b/c"))
 }
 
 func TestUploader_RemoveEmptyDir(t *testing.T) {
@@ -154,9 +154,9 @@ func TestUploader_RemoveEmptyDir(t *testing.T) {
 	assert.Nil(t, up.MkDir("/b/c", true))
 
 	assert.Nil(t, up.RemoveEmptyDir())
-	assert.False(t, up.DirExists("/b/c"))
-	assert.False(t, up.DirExists("/b"))
-	assert.True(t, up.DirExists(""))
+	assert.False(t, up.(*diskUploader).DirExists("/b/c"))
+	assert.False(t, up.(*diskUploader).DirExists("/b"))
+	assert.True(t, up.(*diskUploader).DirExists(""))
 }
 
 func TestUploader_AllDirectoryFiles(t *testing.T) {

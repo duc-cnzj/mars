@@ -21,10 +21,10 @@ var (
 	bingname = "picture_bing"
 )
 
-var _ plugins.PictureInterface = (*Bing)(nil)
+var _ plugins.PictureInterface = (*bing)(nil)
 
 func init() {
-	p := &Bing{}
+	p := &bing{}
 	plugins.RegisterPlugin(p.Name(), p)
 }
 
@@ -50,27 +50,27 @@ type Res struct {
 	Images []Item `json:"images"`
 }
 
-type Bing struct {
+type bing struct {
 	sync.RWMutex
 	cacheItems []Item
 	cacheDay   string
 }
 
-func (b *Bing) Name() string {
+func (b *bing) Name() string {
 	return bingname
 }
 
-func (b *Bing) Initialize(args map[string]any) error {
+func (b *bing) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + b.Name() + " plugin Initialize...")
 	return nil
 }
 
-func (b *Bing) Destroy() error {
+func (b *bing) Destroy() error {
 	mlog.Info("[Plugin]: " + b.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (b *Bing) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
+func (b *bing) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
 	key, n := 0, 8
 	if random {
 		key = rand.Intn(n - 1)

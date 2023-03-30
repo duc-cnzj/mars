@@ -12,10 +12,12 @@ type MetricsForCache struct {
 	Cache contracts.CacheInterface
 }
 
-func NewMetricsForCache(c contracts.CacheInterface) *MetricsForCache {
+// NewMetricsForCache impl contracts.CacheInterface
+func NewMetricsForCache(c contracts.CacheInterface) contracts.CacheInterface {
 	return &MetricsForCache{Cache: c}
 }
 
+// Remember TODO.
 func (m *MetricsForCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
 	labels := prometheus.Labels{"key": key.Slug()}
 	defer func(t time.Time) {
@@ -29,10 +31,17 @@ func (m *MetricsForCache) Remember(key contracts.CacheKeyInterface, seconds int,
 	return bytes, err
 }
 
+// Clear TODO.
 func (m *MetricsForCache) Clear(key contracts.CacheKeyInterface) error {
 	return m.Cache.Clear(key)
 }
 
+// Store TODO.
+func (m *MetricsForCache) Store() contracts.Store {
+	return m.Cache.Store()
+}
+
+// SetWithTTL TODO.
 func (m *MetricsForCache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
 	return m.Cache.SetWithTTL(key, value, seconds)
 }

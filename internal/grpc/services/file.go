@@ -25,16 +25,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		file.RegisterFileServer(s, new(File))
+		file.RegisterFileServer(s, new(fileSvc))
 	})
 	RegisterEndpoint(file.RegisterFileHandlerFromEndpoint)
 }
 
-type File struct {
+type fileSvc struct {
 	file.UnimplementedFileServer
 }
 
-func (m *File) List(ctx context.Context, request *file.ListRequest) (*file.ListResponse, error) {
+func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -67,7 +67,7 @@ func (m *File) List(ctx context.Context, request *file.ListRequest) (*file.ListR
 	}, nil
 }
 
-func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
+func (m *fileSvc) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*file.DiskInfoResponse, error) {
 	size, err := app.Uploader().DirSize()
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (m *File) DiskInfo(ctx context.Context, request *file.DiskInfoRequest) (*fi
 	}, nil
 }
 
-func (m *File) ShowRecords(ctx context.Context, request *file.ShowRecordsRequest) (*file.ShowRecordsResponse, error) {
+func (m *fileSvc) ShowRecords(ctx context.Context, request *file.ShowRecordsRequest) (*file.ShowRecordsResponse, error) {
 	var f models.File
 	if err := app.DB().First(&f, request.Id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -126,7 +126,7 @@ func transformToRecords(rd io.Reader) []string {
 	return lists
 }
 
-func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {
+func (*fileSvc) Delete(ctx context.Context, request *file.DeleteRequest) (*file.DeleteResponse, error) {
 	var f = &models.File{ID: int(request.Id)}
 	if err := app.DB().First(&f).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -143,14 +143,14 @@ func (*File) Delete(ctx context.Context, request *file.DeleteRequest) (*file.Del
 	return &file.DeleteResponse{}, nil
 }
 
-func (*File) MaxUploadSize(ctx context.Context, request *file.MaxUploadSizeRequest) (*file.MaxUploadSizeResponse, error) {
+func (*fileSvc) MaxUploadSize(ctx context.Context, request *file.MaxUploadSizeRequest) (*file.MaxUploadSizeResponse, error) {
 	return &file.MaxUploadSizeResponse{
 		HumanizeSize: humanize.Bytes(app.Config().MaxUploadSize()),
 		Bytes:        app.Config().MaxUploadSize(),
 	}, nil
 }
 
-func (m *File) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (m *fileSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if strings.Contains(fullMethodName, "MaxUploadSize") {
 		return ctx, nil
 	}

@@ -2,74 +2,47 @@ package cache
 
 import (
 	"encoding/base64"
-	"fmt"
 	"time"
 
-	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 )
 
-type DBCache struct {
-	sf     *singleflight.Group
-	dbFunc func() *gorm.DB
+type dbStore struct {
+	db func() *gorm.DB
 }
 
-func NewDBCache(sf *singleflight.Group, dbFunc func() *gorm.DB) *DBCache {
-	return &DBCache{sf: sf, dbFunc: dbFunc}
+func NewDBStore(db func() *gorm.DB) contracts.Store {
+	return &dbStore{db: db}
 }
 
-func (c *DBCache) Remember(key contracts.CacheKeyInterface, seconds int, fn func() ([]byte, error)) ([]byte, error) {
-	do, err, _ := c.sf.Do(c.cacheKey(key.String()), func() (any, error) {
-		if seconds <= 0 {
-			return fn()
-		}
-
-		var cache models.DBCache
-		c.dbFunc().Where("`key` = ? and `expired_at` >= ?", key.String(), time.Now()).First(&cache)
-		if cache.Key != "" {
-			bs, err := base64.StdEncoding.DecodeString(cache.Value)
-			if err == nil {
-				return bs, nil
-			}
-		}
-		bytes, err := fn()
-		if err != nil {
-			return nil, err
-		}
-		if err := c.SetWithTTL(key, bytes, seconds); err != nil {
-			mlog.Error(err)
-		}
-		return bytes, nil
-	})
+func (d *dbStore) Get(key string) (value []byte, err error) {
+	var cache models.DBCache
+	err = d.db().Where("`key` = ? and `expired_at` >= ?", key, time.Now()).First(&cache).Error
 	if err != nil {
 		return nil, err
 	}
-	return do.([]byte), nil
+
+	return base64.StdEncoding.DecodeString(cache.Value)
 }
 
-func (c *DBCache) Clear(key contracts.CacheKeyInterface) error {
-	return c.dbFunc().Where("`key` = ?", key.String()).Delete(&models.DBCache{}).Error
-}
-
-func (c *DBCache) SetWithTTL(key contracts.CacheKeyInterface, value []byte, seconds int) error {
+func (d *dbStore) Set(key string, value []byte, seconds int) (err error) {
 	toString := base64.StdEncoding.EncodeToString(value)
 	cache := models.DBCache{
-		Key:       key.String(),
+		Key:       key,
 		Value:     toString,
 		ExpiredAt: time.Now().Add(time.Duration(seconds) * time.Second),
 	}
 
-	return c.dbFunc().Clauses(clause.OnConflict{
+	return d.db().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "key"}},
 		DoUpdates: clause.AssignmentColumns([]string{"value", "expired_at"}),
 	}).Create(&cache).Error
 }
 
-func (c *DBCache) cacheKey(key string) string {
-	return fmt.Sprintf("cache-remember-%s", key)
+func (d *dbStore) Delete(key string) error {
+	return d.db().Where("`key` = ?", key).Delete(&models.DBCache{}).Error
 }

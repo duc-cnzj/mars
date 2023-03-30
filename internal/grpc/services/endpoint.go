@@ -17,16 +17,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		endpoint.RegisterEndpointServer(s, new(EndpointSvc))
+		endpoint.RegisterEndpointServer(s, new(endpointSvc))
 	})
 	RegisterEndpoint(endpoint.RegisterEndpointHandlerFromEndpoint)
 }
 
-type EndpointSvc struct {
+type endpointSvc struct {
 	endpoint.UnimplementedEndpointServer
 }
 
-func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
+func (e *endpointSvc) InNamespace(ctx context.Context, request *endpoint.InNamespaceRequest) (*endpoint.InNamespaceResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "manifest", "namespace_id", "name")
@@ -37,7 +37,7 @@ func (e *EndpointSvc) InNamespace(ctx context.Context, request *endpoint.InNames
 	return &endpoint.InNamespaceResponse{Items: e.endpoints(ns.Name, ns.Projects...)}, nil
 }
 
-func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.InProjectRequest) (*endpoint.InProjectResponse, error) {
+func (e *endpointSvc) InProject(ctx context.Context, request *endpoint.InProjectRequest) (*endpoint.InProjectResponse, error) {
 	var p models.Project
 	if err := app.DB().
 		Preload("Namespace").
@@ -53,7 +53,7 @@ func (e *EndpointSvc) InProject(ctx context.Context, request *endpoint.InProject
 	return &endpoint.InProjectResponse{Items: e.endpoints(p.Namespace.Name, p)}, nil
 }
 
-func (e *EndpointSvc) endpoints(ns string, projects ...models.Project) []*types.ServiceEndpoint {
+func (e *endpointSvc) endpoints(ns string, projects ...models.Project) []*types.ServiceEndpoint {
 	var res = []*types.ServiceEndpoint{}
 	nodePortMapping := utils.GetNodePortMappingByProjects(ns, projects...)
 	ingMapping := utils.GetIngressMappingByProjects(ns, projects...)

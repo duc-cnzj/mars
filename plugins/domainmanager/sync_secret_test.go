@@ -27,17 +27,17 @@ func TestSyncSecretDomainManager_Destroy(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&SyncSecretDomainManager{}).Name() + " plugin Destroy...").Times(1)
-	mm := &SyncSecretDomainManager{}
+	l.EXPECT().Info("[Plugin]: " + (&syncSecretDomainManager{}).Name() + " plugin Destroy...").Times(1)
+	mm := &syncSecretDomainManager{}
 	mm.Destroy()
 }
 
 func TestSyncSecretDomainManager_GetCertSecretName(t *testing.T) {
-	assert.Equal(t, SyncSecretSecretName, (&SyncSecretDomainManager{}).GetCertSecretName("", 1))
+	assert.Equal(t, SyncSecretSecretName, (&syncSecretDomainManager{}).GetCertSecretName("", 1))
 }
 
 func TestSyncSecretDomainManager_GetCerts(t *testing.T) {
-	mm := &SyncSecretDomainManager{}
+	mm := &syncSecretDomainManager{}
 	m := gomock.NewController(t)
 	defer m.Finish()
 	l := mock.NewMockLoggerInterface(m)
@@ -86,11 +86,11 @@ func (i *testInf) AddEventHandler(handler cache.ResourceEventHandler) (cache.Res
 }
 
 func TestSyncSecretDomainManager_GetClusterIssuer(t *testing.T) {
-	assert.Equal(t, "", (&SyncSecretDomainManager{}).GetClusterIssuer())
+	assert.Equal(t, "", (&syncSecretDomainManager{}).GetClusterIssuer())
 }
 
 func TestSyncSecretDomainManager_GetDomain(t *testing.T) {
-	mm := &SyncSecretDomainManager{}
+	mm := &syncSecretDomainManager{}
 	preOccupiedLen := 0
 	projectName := "pj"
 	namespace := "ns"
@@ -105,7 +105,7 @@ func TestSyncSecretDomainManager_GetDomain(t *testing.T) {
 }
 
 func TestSyncSecretDomainManager_GetDomainByIndex(t *testing.T) {
-	mm := &SyncSecretDomainManager{}
+	mm := &syncSecretDomainManager{}
 	idx := 0
 	preOccupiedLen := 0
 	projectName := "pj"
@@ -126,8 +126,8 @@ func TestSyncSecretDomainManager_Initialize(t *testing.T) {
 	l := mock.NewMockLoggerInterface(m)
 	mlog.SetLogger(l)
 	defer mlog.SetLogger(logrus.New())
-	l.EXPECT().Info("[Plugin]: " + (&SyncSecretDomainManager{}).Name() + " plugin Initialize...").Times(1)
-	mm := &SyncSecretDomainManager{}
+	l.EXPECT().Info("[Plugin]: " + (&syncSecretDomainManager{}).Name() + " plugin Initialize...").Times(1)
+	mm := &syncSecretDomainManager{}
 	app := testutil.MockApp(m)
 	sec := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -166,7 +166,7 @@ func TestSyncSecretDomainManager_Initialize(t *testing.T) {
 func TestSyncSecretDomainManager_Initialize_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	mm := &SyncSecretDomainManager{}
+	mm := &syncSecretDomainManager{}
 	app := testutil.MockApp(m)
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{SecretLister: testutil.NewSecretLister()}).Times(1)
 
@@ -216,17 +216,17 @@ func TestSyncSecretDomainManager_Initialize_Error(t *testing.T) {
 		"secret_namespace": "test",
 	}).Error())
 
-	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&SyncSecretDomainManager{}).Initialize(map[string]any{
+	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&syncSecretDomainManager{}).Initialize(map[string]any{
 		"ns_prefix":        "pfx",
 		"secret_name":      "my-secret",
 		"secret_namespace": "test",
 	}))
-	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&SyncSecretDomainManager{}).Initialize(map[string]any{
+	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&syncSecretDomainManager{}).Initialize(map[string]any{
 		"ns_prefix":        "pfx",
 		"wildcard_domain":  testDomain,
 		"secret_namespace": "test",
 	}))
-	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&SyncSecretDomainManager{}).Initialize(map[string]any{
+	assert.Equal(t, errors.New("secret_namespace, secret_name, wildcard_domain required"), (&syncSecretDomainManager{}).Initialize(map[string]any{
 		"ns_prefix":       "pfx",
 		"wildcard_domain": testDomain,
 		"secret_name":     "my-secret",
@@ -234,7 +234,7 @@ func TestSyncSecretDomainManager_Initialize_Error(t *testing.T) {
 }
 
 func TestSyncSecretDomainManager_Name(t *testing.T) {
-	assert.Equal(t, "sync_secret_domain_manager", (&SyncSecretDomainManager{}).Name())
+	assert.Equal(t, "sync_secret_domain_manager", (&syncSecretDomainManager{}).Name())
 }
 
 func TestSyncSecretDomainManager_eventHandler(t *testing.T) {
@@ -264,7 +264,7 @@ func TestSyncSecretDomainManager_eventHandler(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 			called := 0
-			m := (&SyncSecretDomainManager{
+			m := (&syncSecretDomainManager{
 				secretName:      "sec",
 				secretNamespace: "ns",
 			}).eventHandler(func(oldObj, newObj any) {
@@ -284,7 +284,7 @@ func TestSyncSecretDomainManager_eventHandler(t *testing.T) {
 }
 
 func TestSyncSecretDomainManager_handleSecretChange(t *testing.T) {
-	m := &SyncSecretDomainManager{
+	m := &syncSecretDomainManager{
 		secretName:      "sec",
 		secretNamespace: "ns",
 	}

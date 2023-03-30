@@ -60,7 +60,7 @@ var showBootTagsCmd = &cobra.Command{
 		table.SetHeader([]string{"ID", "Name", "Tags"})
 		table.SetRowLine(true)
 
-		for i, boot := range ServerBootstrappers {
+		for i, boot := range serverBootstrappers {
 			s := strings.Split(reflect.TypeOf(boot).String(), ".")
 			name := s[len(s)-1]
 			tags := strings.Join(boot.Tags(), ",")
@@ -72,11 +72,13 @@ var showBootTagsCmd = &cobra.Command{
 
 type loggerBootstrapper struct{}
 
+// Bootstrap boot logger.
 func (l *loggerBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	mlog.SetLogger(adapter.NewEmptyLogger())
 	return nil
 }
 
+// Tags boot tags.
 func (l *loggerBootstrapper) Tags() []string {
 	return []string{}
 }
@@ -117,7 +119,7 @@ var showEventsCmd = &cobra.Command{
 			i++
 			var listenerNames []string
 			for _, listener := range listeners {
-				s := strings.Split(GetFunctionName(listener), ".")
+				s := strings.Split(getFunctionName(listener), ".")
 				listenerNames = append(listenerNames, s[len(s)-1])
 			}
 			table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
@@ -193,6 +195,7 @@ var showConfigCmd = &cobra.Command{
 	},
 }
 
-func GetFunctionName(i any) string {
+// getFunctionName return fn name
+func getFunctionName(i any) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }

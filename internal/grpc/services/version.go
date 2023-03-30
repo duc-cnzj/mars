@@ -12,18 +12,18 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		version.RegisterVersionServer(s, new(VersionSvc))
+		version.RegisterVersionServer(s, new(versionSvc))
 	})
 	RegisterEndpoint(version.RegisterVersionHandlerFromEndpoint)
 }
 
-type VersionSvc struct {
-	Guest
+type versionSvc struct {
+	guest
 
-	version.UnsafeVersionServer
+	version.UnimplementedVersionServer
 }
 
-func (*VersionSvc) Version(ctx context.Context, request *version.Request) (*version.Response, error) {
+func (*versionSvc) Version(ctx context.Context, request *version.Request) (*version.Response, error) {
 	vv := marsVersion.GetVersion()
 
 	return &version.Response{

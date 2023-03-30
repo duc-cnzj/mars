@@ -10,11 +10,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type LogrusLogger struct {
+type logrusLogger struct {
 	app    contracts.ApplicationInterface
 	logrus *logrus.Logger
 }
 
+// NewLogrusLogger return contracts.LoggerInterface
 func NewLogrusLogger(app contracts.ApplicationInterface) contracts.LoggerInterface {
 	logger := logrus.New()
 
@@ -31,52 +32,63 @@ func NewLogrusLogger(app contracts.ApplicationInterface) contracts.LoggerInterfa
 		logger.SetLevel(logrus.InfoLevel)
 	}
 
-	return &LogrusLogger{
+	return &logrusLogger{
 		app:    app,
 		logrus: logger,
 	}
 }
 
-func (z *LogrusLogger) Debug(v ...any) {
+// Debug print debug msg
+func (z *logrusLogger) Debug(v ...any) {
 	z.logrus.WithField(callerField()).Debug(v...)
 }
 
-func (z *LogrusLogger) Debugf(format string, v ...any) {
+// Debugf printf debug msg
+func (z *logrusLogger) Debugf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Debugf(format, v...)
 }
 
-func (z *LogrusLogger) Warning(v ...any) {
+// Warning print Warning msg
+func (z *logrusLogger) Warning(v ...any) {
 	z.logrus.WithField(callerField()).Warn(v...)
 }
 
-func (z *LogrusLogger) Warningf(format string, v ...any) {
+// Warningf prints Warning msg
+func (z *logrusLogger) Warningf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Warnf(format, v...)
 }
 
-func (z *LogrusLogger) Info(v ...any) {
+// Info print info msg
+func (z *logrusLogger) Info(v ...any) {
 	z.logrus.WithField(callerField()).Info(v...)
 }
 
-func (z *LogrusLogger) Infof(format string, v ...any) {
+// Infof printf info msg
+func (z *logrusLogger) Infof(format string, v ...any) {
 	z.logrus.WithField(callerField()).Infof(format, v...)
 }
 
-func (z *LogrusLogger) Error(v ...any) {
+// Error print err msg
+func (z *logrusLogger) Error(v ...any) {
 	z.logrus.WithField(callerField()).Error(v...)
 }
 
-func (z *LogrusLogger) Errorf(format string, v ...any) {
+// Errorf printf err msg
+func (z *logrusLogger) Errorf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Errorf(format, v...)
 }
 
-func (z *LogrusLogger) Fatal(v ...any) {
+// Fatal fatal err.
+func (z *logrusLogger) Fatal(v ...any) {
 	z.logrus.WithField(callerField()).Fatal(v...)
 }
 
-func (z *LogrusLogger) Fatalf(format string, v ...any) {
+// Fatalf fatalf err.
+func (z *logrusLogger) Fatalf(format string, v ...any) {
 	z.logrus.WithField(callerField()).Fatalf(format, v...)
 }
 
+// callerField return caller key and file line.
 func callerField() (string, string) {
 	pc, _, _, _ := runtime.Caller(3)
 	file, line := runtime.FuncForPC(pc).FileLine(pc)

@@ -22,7 +22,7 @@ import (
 )
 
 func TestClusterSvc_AuthFuncOverride(t *testing.T) {
-	c := new(ClusterSvc)
+	c := new(clusterSvc)
 	_, err := c.AuthFuncOverride(context.TODO(), "")
 	assert.Nil(t, err)
 }
@@ -155,7 +155,7 @@ func TestClusterSvc_ClusterInfo(t *testing.T) {
 		}, nil
 	})
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{Client: fc, MetricsClient: fcm})
-	c := new(ClusterSvc)
+	c := new(clusterSvc)
 	info, err := c.ClusterInfo(context.TODO(), &cluster.InfoRequest{})
 	assert.Nil(t, err)
 	// 2 个 node(10G memory 3 core) 20G 6 core

@@ -6,6 +6,7 @@ import (
 
 const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+// RandomString [0-9a-zA-Z]*
 func RandomString(length int) string {
 	if length <= 0 {
 		return ""

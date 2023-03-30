@@ -25,7 +25,7 @@ func TestAuditLog(t *testing.T) {
 	app.EXPECT().EventDispatcher().Times(2).Return(event.NewDispatcher(app))
 	var called bool
 	app.EventDispatcher().Listen(EventAuditLog, func(a any, e contracts.Event) error {
-		data := a.(EventAuditLogData)
+		data := a.(*eventAuditLog)
 		assert.Equal(t, "duc", data.Username)
 		assert.Equal(t, "hello", data.Msg)
 		assert.Equal(t, types.EventActionType_Shell, data.Action)
@@ -47,7 +47,7 @@ func TestFileAuditLog(t *testing.T) {
 	app.EXPECT().EventDispatcher().Times(2).Return(event.NewDispatcher(app))
 	var called bool
 	app.EventDispatcher().Listen(EventAuditLog, func(a any, e contracts.Event) error {
-		data := a.(EventAuditLogData)
+		data := a.(*eventAuditLog)
 		assert.Equal(t, "duc", data.Username)
 		assert.Equal(t, "hello", data.Msg)
 		assert.Equal(t, types.EventActionType_Upload, data.Action)
@@ -90,4 +90,13 @@ func TestStringYamlPrettier_PrettyYaml(t *testing.T) {
 
 func Test_emptyYamlPrettier_PrettyYaml(t *testing.T) {
 	assert.Equal(t, (&emptyYamlPrettier{}).PrettyYaml(), "")
+}
+
+func TestNewEventAuditLog(t *testing.T) {
+	e := NewEventAuditLog("duc", types.EventActionType_Update, "hahaha", AuditWithFileID(1), AuditWithOldNewStr("old", "new"))
+	assert.Equal(t, types.EventActionType_Update, e.GetAction())
+	assert.Equal(t, "hahaha", e.GetMsg())
+	assert.Equal(t, int(1), e.GetFileID())
+	assert.Equal(t, "old", e.GetOldStr())
+	assert.Equal(t, "new", e.GetNewStr())
 }

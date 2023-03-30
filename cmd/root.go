@@ -19,6 +19,7 @@ var (
 	configExampleFile []byte
 )
 
+// Execute root cmd.
 func Execute(configFile []byte) {
 	configExampleFile = configFile
 	if !version.GetVersion().HasBuildInfo() {

@@ -34,7 +34,7 @@ func TestAccessToken_List(t *testing.T) {
 		assert.Nil(t, db.Create(accessToken).Error)
 	}
 	ctx := auth.SetUser(context.TODO(), uinfo)
-	list, err := (&AccessToken{}).List(ctx, &token.ListRequest{
+	list, err := (&accessTokenSvc{}).List(ctx, &token.ListRequest{
 		Page:     1,
 		PageSize: 10,
 	})
@@ -44,7 +44,7 @@ func TestAccessToken_List(t *testing.T) {
 	assert.Equal(t, "token 2", list.Items[0].Usage)
 	assert.Equal(t, "token 1", list.Items[1].Usage)
 	db.Where("`token`= ?", list.Items[0].Token).Delete(&models.AccessToken{})
-	list, _ = (&AccessToken{}).List(ctx, &token.ListRequest{
+	list, _ = (&accessTokenSvc{}).List(ctx, &token.ListRequest{
 		Page:     1,
 		PageSize: 10,
 	})
@@ -68,7 +68,7 @@ func TestAccessToken_Grant(t *testing.T) {
 
 	ctx := auth.SetUser(context.TODO(), uinfo)
 	testutil.AssertAuditLogFired(m, app)
-	grant, err := (&AccessToken{nowFunc: func() time.Time { return testTime }}).Grant(ctx, &token.GrantRequest{
+	grant, err := (&accessTokenSvc{nowFunc: func() time.Time { return testTime }}).Grant(ctx, &token.GrantRequest{
 		ExpireSeconds: 5,
 		Usage:         "my token",
 	})
@@ -88,7 +88,7 @@ func TestAccessToken_Lease(t *testing.T) {
 	uinfo := &contracts.UserInfo{Email: "admin@admin.com"}
 	ctx := auth.SetUser(context.TODO(), uinfo)
 
-	_, err := (&AccessToken{}).Lease(ctx, &token.LeaseRequest{
+	_, err := (&accessTokenSvc{}).Lease(ctx, &token.LeaseRequest{
 		Token:         "token-not-exists",
 		ExpireSeconds: 100,
 	})
@@ -99,7 +99,7 @@ func TestAccessToken_Lease(t *testing.T) {
 	at := models.NewAccessToken("expired", time.Now().Add(-10*time.Second), uinfo)
 	db.Create(at)
 
-	_, err = (&AccessToken{nowFunc: func() time.Time { return testTime }}).Lease(ctx, &token.LeaseRequest{
+	_, err = (&accessTokenSvc{nowFunc: func() time.Time { return testTime }}).Lease(ctx, &token.LeaseRequest{
 		Token:         at.Token,
 		ExpireSeconds: 100,
 	})
@@ -111,7 +111,7 @@ func TestAccessToken_Lease(t *testing.T) {
 	nt := models.NewAccessToken("my token", n, uinfo)
 	db.Create(nt)
 	testutil.AssertAuditLogFired(m, app)
-	lease, _ := (&AccessToken{}).Lease(ctx, &token.LeaseRequest{
+	lease, _ := (&accessTokenSvc{}).Lease(ctx, &token.LeaseRequest{
 		Token:         nt.Token,
 		ExpireSeconds: 100,
 	})
@@ -120,7 +120,7 @@ func TestAccessToken_Lease(t *testing.T) {
 
 	nt2 := models.NewAccessToken("user token", time.Now().Add(10*time.Second), &contracts.UserInfo{Email: "user@user.com"})
 	db.Create(nt2)
-	_, err = (&AccessToken{}).Lease(ctx, &token.LeaseRequest{
+	_, err = (&accessTokenSvc{}).Lease(ctx, &token.LeaseRequest{
 		Token:         nt2.Token,
 		ExpireSeconds: 100,
 	})
@@ -143,7 +143,7 @@ func TestAccessToken_Revoke(t *testing.T) {
 	dispatcher := testutil.AssertAuditLogFired(m, app)
 	accessToken := models.NewAccessToken("my token", time.Now(), uinfo)
 	db.Create(accessToken)
-	_, err := (&AccessToken{}).Revoke(ctx, &token.RevokeRequest{
+	_, err := (&accessTokenSvc{}).Revoke(ctx, &token.RevokeRequest{
 		Token: accessToken.Token,
 	})
 	assert.Nil(t, err)
@@ -154,7 +154,7 @@ func TestAccessToken_Revoke(t *testing.T) {
 	userAccessToken := models.NewAccessToken("my token", time.Now(), &contracts.UserInfo{Email: "user@user.com"})
 	db.Create(userAccessToken)
 	dispatcher.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
-	(&AccessToken{}).Revoke(ctx, &token.RevokeRequest{
+	(&accessTokenSvc{}).Revoke(ctx, &token.RevokeRequest{
 		Token: userAccessToken.Token,
 	})
 

@@ -24,14 +24,14 @@ var (
 	}
 )
 
-var _ plugins.PictureInterface = (*Cartoon)(nil)
+var _ plugins.PictureInterface = (*cartoon)(nil)
 
 func init() {
-	p := &Cartoon{}
+	p := &cartoon{}
 	plugins.RegisterPlugin(p.Name(), p)
 }
 
-type Cartoon struct{}
+type cartoon struct{}
 
 var client = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -39,7 +39,7 @@ var client = http.Client{
 	},
 }
 
-func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
+func (c *cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
 	day := time.Now().Format("2006-01-02")
 	seconds := 0
 	if !random {
@@ -76,16 +76,16 @@ func (c *Cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, err
 	}, nil
 }
 
-func (c *Cartoon) Name() string {
+func (c *cartoon) Name() string {
 	return nameCartoon
 }
 
-func (c *Cartoon) Initialize(args map[string]any) error {
+func (c *cartoon) Initialize(args map[string]any) error {
 	mlog.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
 	return nil
 }
 
-func (c *Cartoon) Destroy() error {
+func (c *cartoon) Destroy() error {
 	mlog.Info("[Plugin]: " + c.Name() + " plugin Destroy...")
 	return nil
 }

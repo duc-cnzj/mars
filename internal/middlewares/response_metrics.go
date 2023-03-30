@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var MetricsIgnoreFn = TracingIgnoreFn
+var metricsIgnoreFn = tracingIgnoreFn
 
 type CustomResponseWriter struct {
 	http.ResponseWriter
@@ -23,7 +23,7 @@ func (c *CustomResponseWriter) Write(bytes []byte) (int, error) {
 func ResponseMetrics(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		if MetricsIgnoreFn(path) {
+		if metricsIgnoreFn(path) {
 			h.ServeHTTP(w, r)
 			return
 		}

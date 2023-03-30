@@ -10,13 +10,13 @@ import (
 )
 
 func TestVersionSvc_AuthFuncOverride(t *testing.T) {
-	v := new(VersionSvc)
+	v := new(versionSvc)
 	_, err := v.AuthFuncOverride(context.TODO(), "")
 	assert.Nil(t, err)
 }
 
 func TestVersionSvc_Version(t *testing.T) {
-	v := new(VersionSvc)
+	v := new(versionSvc)
 	response, _ := v.Version(context.TODO(), &version.Request{})
 	vv := marsVersion.GetVersion()
 	assert.Equal(t, &version.Response{

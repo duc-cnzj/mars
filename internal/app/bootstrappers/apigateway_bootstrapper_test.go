@@ -66,7 +66,7 @@ func TestApiGatewayBootstrapper_Bootstrap(t *testing.T) {
 
 func TestLoadSwaggerUI(t *testing.T) {
 	r := mux.NewRouter()
-	LoadSwaggerUI(r)
+	loadSwaggerUI(r)
 
 	req, err := http.NewRequest("GET", "/doc/swagger.json", nil)
 	if err != nil {
@@ -94,10 +94,12 @@ func Test_apiGateway_Run(t *testing.T) {
 }
 
 type mockHttpServer struct {
-	wg sync.WaitGroup
+	wg             sync.WaitGroup
+	shutdownCalled bool
 }
 
 func (m *mockHttpServer) Shutdown(ctx context.Context) error {
+	m.shutdownCalled = true
 	return nil
 }
 
@@ -378,16 +380,16 @@ func TestHeaderMatcher(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.input, func(t *testing.T) {
-			matcher, _ := HeaderMatcher(tt.input)
+			matcher, _ := headerMatcher(tt.input)
 			assert.Equal(t, tt.want(), matcher)
 		})
 	}
 }
 
 func TestMaxRecvSize(t *testing.T) {
-	assert.Equal(t, 20*1024*1024, MaxRecvMsgSize)
+	assert.Equal(t, 20*1024*1024, maxRecvMsgSize)
 	bytes, _ := humanize.ParseBytes("20Mib")
-	assert.Equal(t, int(bytes), MaxRecvMsgSize)
+	assert.Equal(t, int(bytes), maxRecvMsgSize)
 }
 
 func Test_exportMarsConfig(t *testing.T) {
@@ -627,7 +629,33 @@ func Test_initServer(t *testing.T) {
 	app := testutil.MockApp(m)
 	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	server, err := initServer(context.TODO(), &apiGateway{})
+	server, err := initServer(context.TODO(), &apiGateway{endpoint: "fake-endpoint"})
 	assert.Nil(t, err)
 	assert.NotNil(t, server)
+}
+
+func Test_middlewareList_Router(t *testing.T) {
+	var res string
+	handlerA := func(handler http.Handler) http.Handler {
+		res += "a"
+		return handler
+	}
+	handlerB := func(handler http.Handler) http.Handler {
+		res += "b"
+		return handler
+	}
+	handlerC := func(handler http.Handler) http.Handler {
+		res += "c"
+		return handler
+	}
+	mlist := middlewareList{
+		handlerA,
+		handlerB,
+		handlerC,
+	}
+	mlist.Wrap(nil)
+	assert.Equal(t, "cba", res)
+	res = ""
+	handlerA(handlerB(handlerC(nil)))
+	assert.Equal(t, "cba", res)
 }

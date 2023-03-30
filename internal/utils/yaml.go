@@ -29,14 +29,13 @@ func deepSet(key string, data any) map[string]any {
 }
 
 /*
-```
+deepGet: get val
 
 	a:
-		b:
-			c: d
+	  b:
+	    c: d
 
-```
-a->b->c
+	a->b->c => d
 */
 func deepGet(key string, data map[any]any) (any, bool) {
 	var item any = data

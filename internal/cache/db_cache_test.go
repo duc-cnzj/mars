@@ -21,10 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newCacheByApp(app contracts.ApplicationInterface) *DBCache {
-	return NewDBCache(app.Singleflight(), func() *gorm.DB {
+func newCacheByApp(app contracts.ApplicationInterface) contracts.CacheInterface {
+	return NewCache(NewDBStore(func() *gorm.DB {
 		return app.DB()
-	})
+	}), app.Singleflight())
 }
 
 func TestDBCache_Remember(t *testing.T) {
@@ -101,7 +101,7 @@ func TestName(t *testing.T) {
 	app.EXPECT().Singleflight().Return(&sf).AnyTimes()
 	db.AutoMigrate(&models.DBCache{})
 	called := 0
-	NewDBCache(app.Singleflight(), func() *gorm.DB {
+	NewCache(NewDBStore(func() *gorm.DB {
 		if called > 0 {
 			db.Migrator().DropTable(&models.DBCache{})
 			assert.False(t, db.Migrator().HasTable(&models.DBCache{}))
@@ -109,13 +109,13 @@ func TestName(t *testing.T) {
 		}
 		called++
 		return db
-	}).Remember(NewKey("aaaa-xx"), 1, func() ([]byte, error) {
+	}), app.Singleflight()).Remember(NewKey("aaaa-xx"), 1, func() ([]byte, error) {
 		return []byte("xxx"), nil
 	})
 }
 
 func TestNewDBCache(t *testing.T) {
-	assert.Implements(t, (*contracts.CacheInterface)(nil), NewDBCache(nil, nil))
+	assert.Implements(t, (*contracts.CacheInterface)(nil), NewCache(NewDBStore(nil), nil))
 }
 
 func TestDBCache_Clear(t *testing.T) {

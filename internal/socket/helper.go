@@ -152,7 +152,7 @@ type timeOrderedSetString struct {
 	nowFunc func() time.Time
 }
 
-func NewTimeOrderedSetString(nowFunc func() time.Time) *timeOrderedSetString {
+func newTimeOrderedSetString(nowFunc func() time.Time) *timeOrderedSetString {
 	return &timeOrderedSetString{items: make(map[string]time.Time), nowFunc: nowFunc}
 }
 

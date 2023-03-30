@@ -6,22 +6,26 @@ import (
 )
 
 var (
-	ErrCancel       = errors.New("取消本次部署，自动回滚到上一个版本！")
-	ErrSignalExists = errors.New("项目已经存在")
+	errCancel       = errors.New("取消本次部署，自动回滚到上一个版本！")
+	errSignalExists = errors.New("项目已经存在")
 )
 
-type CancelSignals struct {
+type cancelSignals struct {
 	cs map[string]func(error)
 	sync.RWMutex
 }
 
-func (cs *CancelSignals) Remove(id string) {
+func newCancelSignals() *cancelSignals {
+	return &cancelSignals{cs: map[string]func(error){}}
+}
+
+func (cs *cancelSignals) Remove(id string) {
 	cs.Lock()
 	defer cs.Unlock()
 	delete(cs.cs, id)
 }
 
-func (cs *CancelSignals) Has(id string) bool {
+func (cs *cancelSignals) Has(id string) bool {
 	cs.RLock()
 	defer cs.RUnlock()
 
@@ -30,28 +34,28 @@ func (cs *CancelSignals) Has(id string) bool {
 	return ok
 }
 
-func (cs *CancelSignals) Cancel(id string) {
+func (cs *cancelSignals) Cancel(id string) {
 	cs.Lock()
 	defer cs.Unlock()
 	if fn, ok := cs.cs[id]; ok {
-		fn(ErrCancel)
+		fn(errCancel)
 	}
 }
 
-func (cs *CancelSignals) Add(id string, fn func(error)) error {
+func (cs *cancelSignals) Add(id string, fn func(error)) error {
 	cs.Lock()
 	defer cs.Unlock()
 	if _, ok := cs.cs[id]; ok {
-		return ErrSignalExists
+		return errSignalExists
 	}
 	cs.cs[id] = fn
 	return nil
 }
 
-func (cs *CancelSignals) CancelAll() {
+func (cs *cancelSignals) CancelAll() {
 	cs.Lock()
 	defer cs.Unlock()
 	for _, f := range cs.cs {
-		f(ErrCancel)
+		f(errCancel)
 	}
 }

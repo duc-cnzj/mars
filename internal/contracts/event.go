@@ -1,5 +1,7 @@
 package contracts
 
+import "github.com/duc-cnzj/mars-client/v4/types"
+
 //go:generate mockgen -destination ../mock/mock_event.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts DispatcherInterface
 
 type Listener func(any, Event) error
@@ -27,5 +29,21 @@ type DispatcherInterface interface {
 	// Forget Remove a set of listeners from the dispatcher.
 	Forget(Event)
 
+	// GetListeners get all listeners by event.
 	GetListeners(Event) []Listener
+}
+
+type AuditLogImpl interface {
+	// GetUsername 获取用户
+	GetUsername() string
+	// GetAction 行为
+	GetAction() types.EventActionType
+	// GetMsg desc
+	GetMsg() string
+	// GetOldStr old config str
+	GetOldStr() string
+	// GetNewStr new config str
+	GetNewStr() string
+	// GetFileID file id
+	GetFileID() int
 }

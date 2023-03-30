@@ -26,7 +26,7 @@ func TestChangelogSvc_Show(t *testing.T) {
 	db, f := testutil.SetGormDB(ctrl, app)
 	defer f()
 
-	c := new(ChangelogSvc)
+	c := new(changelogSvc)
 	_, err := c.Show(context.TODO(), &changelog.ShowRequest{
 		ProjectId:   int64(9999),
 		OnlyChanged: false,

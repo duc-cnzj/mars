@@ -26,6 +26,7 @@ var _ contracts.WebsocketMessage = (*websocket_pb.WsMetadataResponse)(nil)
 type WsSender interface {
 	contracts.PluginInterface
 
+	// New contracts.PubSub
 	New(uid, id string) contracts.PubSub
 }
 

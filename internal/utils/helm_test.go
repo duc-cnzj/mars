@@ -38,7 +38,7 @@ import (
 )
 
 func TestGetSlugName(t *testing.T) {
-	assert.Equal(t, Md5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
+	assert.Equal(t, MD5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
 }
 
 func TestNewCloser(t *testing.T) {
@@ -83,9 +83,23 @@ func TestReleaseList_GetStatus(t *testing.T) {
 	assert.Equal(t, "unknown", rl.GetStatus("dev", "xxx"))
 }
 
-func TestReleaseStatus(t *testing.T) {}
+func TestReleaseStatus(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	status := ReleaseStatus("test", "ns")
+	assert.Equal(t, types.Deploy_StatusUnknown, status)
+}
 
-func TestRollback(t *testing.T) {}
+func TestRollback(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	err := Rollback("test", "ns", false, nil, false)
+	assert.Error(t, err)
+}
 
 func TestUninstallRelease(t *testing.T) {
 	m := gomock.NewController(t)
@@ -147,8 +161,7 @@ func Test_getActionConfigAndSettings(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
-	assert.Nil(t, err)
+	settings := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.NotNil(t, settings)
 }
 
@@ -158,8 +171,7 @@ func Test_getActionConfigAndSettings1(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{KubeConfig: "xxx"}).Times(2)
-	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
-	assert.Nil(t, err)
+	settings := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.NotNil(t, settings)
 }
 
@@ -376,6 +388,12 @@ func Test_watchPodStatus(t *testing.T) {
 		atomic.AddInt64(&called, 1)
 	})
 	assert.Equal(t, int64(2), atomic.LoadInt64(&called))
+
+	podCh2 := make(chan contracts.Obj[*v1.Pod], 10)
+	close(podCh2)
+	assert.NotPanics(t, func() {
+		watchPodStatus(context.TODO(), podCh2, nil, nil)
+	})
 }
 
 func Test_watchPodStatus_Error1(t *testing.T) {

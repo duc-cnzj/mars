@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var Models = []any{
+var initModels = []any{
 	&models.Namespace{},
 	&models.Project{},
 	&models.GitProject{},
@@ -83,5 +83,5 @@ func (d *DBBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	})
 	app.DBManager().SetDB(db)
 
-	return app.DBManager().AutoMigrate(Models...)
+	return app.DBManager().AutoMigrate(initModels...)
 }

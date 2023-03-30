@@ -37,6 +37,7 @@ func ToHumanizeDatetimeString(t *time.Time) string {
 	return humanize.CustomRelTime(*t, nowFunc(), "以前", "以后", magnitudes)
 }
 
+// ToRFC3339DatetimeString "2006-01-02T15:04:05Z07:00"
 func ToRFC3339DatetimeString(t *time.Time) string {
 	if t == nil {
 		t = &time.Time{}

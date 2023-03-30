@@ -46,7 +46,7 @@ func TestZapLogger_Debugf(t *testing.T) {
 
 func TestZapLogger_Error(t *testing.T) {
 	a := &app{isDebug: true}
-	NewZapLogger(a).Debugf("aaa")
+	NewZapLogger(a).Error("aaa")
 	a.cb(a)
 }
 

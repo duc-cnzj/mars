@@ -21,7 +21,7 @@ import (
 )
 
 func TestAuthenticate(t *testing.T) {
-	_, err := Authenticate(context.TODO())
+	_, err := authenticate(context.TODO())
 	assert.Error(t, err)
 	md := metadata.New(map[string]string{"authorization": "Bearer xxx"})
 
@@ -32,7 +32,7 @@ func TestAuthenticate(t *testing.T) {
 	app.EXPECT().Auth().Return(auth).Times(2)
 	auth.EXPECT().VerifyToken("xxx").Return(nil, false)
 	incomingContext := metadata.NewIncomingContext(context.TODO(), md)
-	_, err = Authenticate(incomingContext)
+	_, err = authenticate(incomingContext)
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Unauthenticated, fromError.Code())
 
@@ -41,7 +41,7 @@ func TestAuthenticate(t *testing.T) {
 			Name: "duc",
 		},
 	}, true)
-	ctx2, err := Authenticate(incomingContext)
+	ctx2, err := authenticate(incomingContext)
 	assert.Nil(t, err)
 	assert.Equal(t, "duc", auth2.MustGetUser(ctx2).Name)
 }
