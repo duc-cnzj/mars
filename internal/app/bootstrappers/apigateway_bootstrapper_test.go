@@ -629,7 +629,7 @@ func Test_initServer(t *testing.T) {
 	app := testutil.MockApp(m)
 	app.EXPECT().BeforeServerRunHooks(gomock.Any()).Times(1)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	server, err := initServer(context.TODO(), &apiGateway{})
+	server, err := initServer(context.TODO(), &apiGateway{endpoint: "fake-endpoint"})
 	assert.Nil(t, err)
 	assert.NotNil(t, server)
 }
