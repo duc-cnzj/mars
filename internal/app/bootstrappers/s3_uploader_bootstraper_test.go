@@ -11,7 +11,7 @@ import (
 )
 
 func TestS3UploaderBootstraper_Bootstrap(t *testing.T) {
-	assert.Equal(t, []string{"s3", "uploader"}, (&S3UploaderBootstraper{}).Tags())
+	assert.Equal(t, []string{"s3", "uploader"}, (&S3UploaderBootstrapper{}).Tags())
 }
 
 func TestS3UploaderBootstraper_Boot1(t *testing.T) {
@@ -25,7 +25,7 @@ func TestS3UploaderBootstraper_Boot1(t *testing.T) {
 		S3AccessKeyID:     "",
 	}).AnyTimes()
 	app.EXPECT().SetUploader(gomock.Any()).Times(0)
-	(&S3UploaderBootstraper{}).Bootstrap(app)
+	(&S3UploaderBootstrapper{}).Bootstrap(app)
 }
 
 func TestS3UploaderBootstraper_Boot2(t *testing.T) {
@@ -40,5 +40,5 @@ func TestS3UploaderBootstraper_Boot2(t *testing.T) {
 	}).AnyTimes()
 	app.EXPECT().SetUploader(gomock.Any()).Times(1)
 	app.EXPECT().LocalUploader().Return(nil).Times(1)
-	(&S3UploaderBootstraper{}).Bootstrap(app)
+	(&S3UploaderBootstrapper{}).Bootstrap(app)
 }
