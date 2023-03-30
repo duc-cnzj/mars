@@ -26,7 +26,7 @@ import (
 )
 
 func TestAuthSvc_AuthFuncOverride(t *testing.T) {
-	svc := NewAuthSvc(nil, nil, "", nil)
+	svc := newAuthSvc(nil, nil, "", nil)
 	_, err := svc.AuthFuncOverride(context.TODO(), "")
 	assert.Nil(t, err)
 }
@@ -45,7 +45,7 @@ func TestAuthSvc_Info(t *testing.T) {
 		Email:     "1025434218@qq.com",
 		Picture:   "avatar.png",
 	})
-	svc := NewAuthSvc(authSvc, nil, "", nil)
+	svc := newAuthSvc(authSvc, nil, "", nil)
 	ctx := context.TODO()
 	info, err := svc.Info(ctx, &auth.InfoRequest{})
 	assert.Nil(t, info)
@@ -69,7 +69,7 @@ func TestAuthSvc_Login(t *testing.T) {
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})
 	authSvc := auth2.NewJwtAuth(key, key.Public().(*rsa.PublicKey))
-	svc := NewAuthSvc(authSvc, nil, "admin", nil)
+	svc := newAuthSvc(authSvc, nil, "admin", nil)
 	app := testutil.MockApp(m)
 	testutil.AssertAuditLogFiredWithMsg(m, app, "用户 '管理员' email: '1025434218@qq.com' 登录了系统")
 	login, err := svc.Login(context.TODO(), &auth.LoginRequest{
@@ -94,7 +94,7 @@ func TestAuthSvc_Login_Error(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	asvc := mock.NewMockAuthInterface(m)
-	svc := NewAuthSvc(asvc, nil, "admin", nil)
+	svc := newAuthSvc(asvc, nil, "admin", nil)
 	asvc.EXPECT().Sign(gomock.Any()).Return(nil, errors.New("xx")).Times(1)
 	_, err := svc.Login(context.TODO(), &auth.LoginRequest{
 		Username: "admin",
@@ -105,11 +105,11 @@ func TestAuthSvc_Login_Error(t *testing.T) {
 }
 
 func TestNewAuthSvc(t *testing.T) {
-	assert.Implements(t, (*auth.AuthServer)(nil), NewAuthSvc(nil, nil, "", nil))
+	assert.Implements(t, (*auth.AuthServer)(nil), newAuthSvc(nil, nil, "", nil))
 }
 
 func TestAuthSvc_Settings(t *testing.T) {
-	settings, err := (&AuthSvc{
+	settings, err := (&authSvc{
 		cfg: contracts.OidcConfig{
 			"svc1": contracts.OidcConfigItem{
 				Config: oauth2.Config{
@@ -152,7 +152,7 @@ func (m *mockProvider) Exchange(ctx context.Context, code string) (string, error
 	return "", nil
 }
 
-func (m *mockProvider) Verify(ctx context.Context, token string) (IDToken, error) {
+func (m *mockProvider) Verify(ctx context.Context, token string) (idToken, error) {
 	defer func() {
 		m.verifyError = nil
 	}()
@@ -186,7 +186,7 @@ func TestAuthSvc_Exchange(t *testing.T) {
 	}, nil).Times(1)
 	app := testutil.MockApp(m)
 	testutil.AssertAuditLogFired(m, app)
-	exchange, err := NewAuthSvc(asvc, contracts.OidcConfig{
+	exchange, err := newAuthSvc(asvc, contracts.OidcConfig{
 		"a": {
 			Provider:           nil,
 			Config:             oauth2.Config{},
@@ -212,7 +212,7 @@ func TestAuthSvc_Exchange_SignError(t *testing.T) {
 	defer m.Finish()
 	asvc := mock.NewMockAuthInterface(m)
 	asvc.EXPECT().Sign(gomock.Any()).Return(nil, errors.New("xxx")).Times(1)
-	_, err := NewAuthSvc(asvc, contracts.OidcConfig{
+	_, err := newAuthSvc(asvc, contracts.OidcConfig{
 		"a": {
 			Provider:           nil,
 			Config:             oauth2.Config{},
@@ -255,7 +255,7 @@ func TestAuthSvc_Exchange_Error1(t *testing.T) {
 		fn1, fn2, fn3,
 	}
 	for _, f := range fnlist {
-		_, err := NewAuthSvc(nil, contracts.OidcConfig{
+		_, err := newAuthSvc(nil, contracts.OidcConfig{
 			"a": {
 				Provider:           nil,
 				Config:             oauth2.Config{},

@@ -16,7 +16,7 @@ import (
 )
 
 func TestPictureSvc_AuthFuncOverride(t *testing.T) {
-	_, err := new(PictureSvc).AuthFuncOverride(context.TODO(), "")
+	_, err := new(pictureSvc).AuthFuncOverride(context.TODO(), "")
 	assert.Nil(t, err)
 }
 
@@ -55,7 +55,7 @@ func (t *testPicturePlugin) Get(ctx context.Context, random bool) (*contracts.Pi
 }
 
 func TestPictureSvc_Background(t *testing.T) {
-	p := new(PictureSvc)
+	p := new(pictureSvc)
 	ctrl := gomock.NewController(t)
 	app := mock.NewMockApplicationInterface(ctrl)
 	defer ctrl.Finish()

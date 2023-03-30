@@ -23,20 +23,20 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		token.RegisterAccessTokenServer(s, &AccessToken{
+		token.RegisterAccessTokenServer(s, &accessTokenSvc{
 			nowFunc: func() time.Time { return time.Now() },
 		})
 	})
 	RegisterEndpoint(token.RegisterAccessTokenHandlerFromEndpoint)
 }
 
-type AccessToken struct {
+type accessTokenSvc struct {
 	token.UnimplementedAccessTokenServer
 
 	nowFunc func() time.Time
 }
 
-func (a *AccessToken) List(ctx context.Context, request *token.ListRequest) (*token.ListResponse, error) {
+func (a *accessTokenSvc) List(ctx context.Context, request *token.ListRequest) (*token.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -66,17 +66,17 @@ func (a *AccessToken) List(ctx context.Context, request *token.ListRequest) (*to
 	}, nil
 }
 
-func (a *AccessToken) Grant(ctx context.Context, request *token.GrantRequest) (*token.GrantResponse, error) {
+func (a *accessTokenSvc) Grant(ctx context.Context, request *token.GrantRequest) (*token.GrantResponse, error) {
 	var (
 		user = MustGetUser(ctx)
 		at   = models.NewAccessToken(request.Usage, a.nowFunc().Add(time.Second*time.Duration(request.ExpireSeconds)), user)
 	)
 	app.DB().Create(&at)
-	AuditLog(user.Name, types.EventActionType_Create, fmt.Sprintf(`[AccessToken]: 用户 "%s" 创建了一个 token "%s", 过期时间是 "%s".`, user.Name, at.Token, at.ExpiredAt.Format("2006-01-02 15:04:05")))
+	AuditLog(user.Name, types.EventActionType_Create, fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 创建了一个 token "%s", 过期时间是 "%s".`, user.Name, at.Token, at.ExpiredAt.Format("2006-01-02 15:04:05")))
 	return &token.GrantResponse{Token: at.ProtoTransform()}, nil
 }
 
-func (a *AccessToken) Lease(ctx context.Context, request *token.LeaseRequest) (*token.LeaseResponse, error) {
+func (a *accessTokenSvc) Lease(ctx context.Context, request *token.LeaseRequest) (*token.LeaseResponse, error) {
 	var (
 		at   models.AccessToken
 		user = MustGetUser(ctx)
@@ -91,15 +91,15 @@ func (a *AccessToken) Lease(ctx context.Context, request *token.LeaseRequest) (*
 		return nil, status.Error(codes.Aborted, "token 已经过期")
 	}
 	app.DB().Model(&at).Update("expired_at", at.ExpiredAt.Add(time.Duration(request.ExpireSeconds)*time.Second))
-	AuditLog(user.Name, types.EventActionType_Update, fmt.Sprintf(`[AccessToken]: 用户 "%s" 续租了 token "%s", 增加了 "%s", 过期时间是 "%s".`, user.Name, at.Token, date.HumanDuration(time.Second*time.Duration(request.ExpireSeconds)), at.ExpiredAt.Format("2006-01-02 15:04:05")))
+	AuditLog(user.Name, types.EventActionType_Update, fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 续租了 token "%s", 增加了 "%s", 过期时间是 "%s".`, user.Name, at.Token, date.HumanDuration(time.Second*time.Duration(request.ExpireSeconds)), at.ExpiredAt.Format("2006-01-02 15:04:05")))
 
 	return &token.LeaseResponse{Token: at.ProtoTransform()}, nil
 }
 
-func (a *AccessToken) Revoke(ctx context.Context, request *token.RevokeRequest) (*token.RevokeResponse, error) {
+func (a *accessTokenSvc) Revoke(ctx context.Context, request *token.RevokeRequest) (*token.RevokeResponse, error) {
 	var user = MustGetUser(ctx)
 	app.DB().Where("`email` = ? AND `token` = ?", user.Email, request.Token).Delete(&models.AccessToken{})
-	AuditLog(user.Name, types.EventActionType_Delete, fmt.Sprintf(`[AccessToken]: 用户 "%s" 删除 token "%s".`, user.Name, request.Token))
+	AuditLog(user.Name, types.EventActionType_Delete, fmt.Sprintf(`[accessTokenSvc]: 用户 "%s" 删除 token "%s".`, user.Name, request.Token))
 
 	return &token.RevokeResponse{}, nil
 }

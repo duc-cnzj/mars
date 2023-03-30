@@ -73,7 +73,7 @@ func TestCertManager_Destroy(t *testing.T) {
 
 func TestCertManager_GetCertSecretName(t *testing.T) {
 	assert.Equal(t,
-		fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", "", 1))),
+		fmt.Sprintf("mars-tls-%s", utils.MD5(fmt.Sprintf("%s-%d", "", 1))),
 		(&certManager{}).GetCertSecretName("", 1),
 	)
 }

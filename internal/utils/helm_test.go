@@ -38,7 +38,7 @@ import (
 )
 
 func TestGetSlugName(t *testing.T) {
-	assert.Equal(t, Md5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
+	assert.Equal(t, MD5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
 }
 
 func TestNewCloser(t *testing.T) {

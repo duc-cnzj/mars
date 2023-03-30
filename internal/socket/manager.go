@@ -88,25 +88,25 @@ func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjects
 
 type WsResponse = websocket_pb.WsMetadataResponse
 
-type SafeWriteMessageCh struct {
+type safeWriteMessageCh struct {
 	closeable utils.Closeable
 
 	chMu sync.Mutex
 	ch   chan contracts.MessageItem
 }
 
-func (s *SafeWriteMessageCh) Close() {
-	mlog.Debug("SafeWriteMessageCh closed")
+func (s *safeWriteMessageCh) Close() {
+	mlog.Debug("safeWriteMessageCh closed")
 	if s.closeable.Close() {
 		close(s.ch)
 	}
 }
 
-func (s *SafeWriteMessageCh) Chan() <-chan contracts.MessageItem {
+func (s *safeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 	return s.ch
 }
 
-func (s *SafeWriteMessageCh) Send(m contracts.MessageItem) {
+func (s *safeWriteMessageCh) Send(m contracts.MessageItem) {
 	if s.closeable.IsClosed() {
 		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
@@ -129,7 +129,7 @@ func (v vars) MustGetString(key string) string {
 	return ""
 }
 
-type Jober struct {
+type jobRunner struct {
 	err error
 
 	helmer contracts.Helmer
@@ -178,10 +178,10 @@ type Jober struct {
 	timeoutSeconds int64
 }
 
-type Option func(*Jober)
+type Option func(*jobRunner)
 
 func WithDryRun() Option {
-	return func(j *Jober) {
+	return func(j *jobRunner) {
 		j.dryRun = true
 	}
 }
@@ -218,7 +218,7 @@ func NewJober(
 	timeoutSeconds int64,
 	opts ...Option,
 ) contracts.Job {
-	jb := &Jober{
+	jb := &jobRunner{
 		helmer:         &DefaultHelmer{},
 		loaders:        defaultLoaders(),
 		user:           user,
@@ -230,7 +230,7 @@ func NewJober(
 		input:          input,
 		timeoutSeconds: timeoutSeconds,
 		locker:         app.CacheLock(),
-		messageCh:      &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
+		messageCh:      &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
 		percenter:      newProcessPercent(messager, &realSleeper{}),
 	}
 	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
@@ -241,15 +241,15 @@ func NewJober(
 	return jb
 }
 
-func (j *Jober) ID() string {
+func (j *jobRunner) ID() string {
 	return j.slugName
 }
 
-func (j *Jober) IsNotDryRun() bool {
+func (j *jobRunner) IsNotDryRun() bool {
 	return !j.IsDryRun()
 }
 
-func (j *Jober) GlobalLock() contracts.Job {
+func (j *jobRunner) GlobalLock() contracts.Job {
 	if j.HasError() {
 		return j
 	}
@@ -264,7 +264,7 @@ func (j *Jober) GlobalLock() contracts.Job {
 	})
 }
 
-func (j *Jober) Validate() contracts.Job {
+func (j *jobRunner) Validate() contracts.Job {
 	var err error
 	if j.HasError() {
 		return j
@@ -354,11 +354,11 @@ func (j *Jober) Validate() contracts.Job {
 	return j.SetError(err)
 }
 
-func (j *Jober) WsTypeValidated() bool {
+func (j *jobRunner) WsTypeValidated() bool {
 	return j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject
 }
 
-func (j *Jober) LoadConfigs() contracts.Job {
+func (j *jobRunner) LoadConfigs() contracts.Job {
 	if j.HasError() {
 		return j
 	}
@@ -397,7 +397,7 @@ func (j *Jober) LoadConfigs() contracts.Job {
 	return j.SetError(err)
 }
 
-func (j *Jober) Run() contracts.Job {
+func (j *jobRunner) Run() contracts.Job {
 	if j.HasError() {
 		return j
 	}
@@ -407,7 +407,7 @@ func (j *Jober) Run() contracts.Job {
 			done <- struct{}{}
 			close(done)
 		}()
-		defer recovery.HandlePanic("[Websocket]: Jober Run")
+		defer recovery.HandlePanic("[Websocket]: jobRunner Run")
 		j.HandleMessage()
 	}()
 
@@ -533,7 +533,7 @@ func (j *Jober) Run() contracts.Job {
 	return j.SetError(err)
 }
 
-func (j *Jober) Finish() contracts.Job {
+func (j *jobRunner) Finish() contracts.Job {
 	mlog.Debug("finished")
 
 	var callbacks []func(err error, next func())
@@ -572,76 +572,76 @@ func (j *Jober) Finish() contracts.Job {
 	return j
 }
 
-func (j *Jober) Manifests() []string {
+func (j *jobRunner) Manifests() []string {
 	return j.manifests
 }
 
-func (j *Jober) Stop(err error) {
+func (j *jobRunner) Stop(err error) {
 	j.messager.SendMsg("收到取消信号, 开始停止部署~")
-	mlog.Debugf("stop deploy job, because '%v'", err)
+	mlog.Debugf("stop deploy jobRunner, because '%v'", err)
 	j.stopFn(err)
 }
 
-func (j *Jober) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+func (j *jobRunner) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
 	j.errorCallback.Add(p, fn)
 	return j
 }
 
-func (j *Jober) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+func (j *jobRunner) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
 	j.successCallback.Add(p, fn)
 	return j
 }
 
-func (j *Jober) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
+func (j *jobRunner) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
 	j.finallyCallback.Add(p, fn)
 	return j
 }
 
-func (j *Jober) Error() error {
+func (j *jobRunner) Error() error {
 	return j.err
 }
 
-func (j *Jober) SetError(err error) *Jober {
+func (j *jobRunner) SetError(err error) *jobRunner {
 	j.err = err
 	return j
 }
 
-func (j *Jober) HasError() bool {
+func (j *jobRunner) HasError() bool {
 	return j.err != nil
 }
 
-func (j *Jober) IsNew() bool {
+func (j *jobRunner) IsNew() bool {
 	return j.isNew
 }
 
-func (j *Jober) IsDryRun() bool {
+func (j *jobRunner) IsDryRun() bool {
 	return j.dryRun
 }
 
-func (j *Jober) Commit() contracts.CommitInterface {
+func (j *jobRunner) Commit() contracts.CommitInterface {
 	return j.commit
 }
 
-func (j *Jober) User() contracts.UserInfo {
+func (j *jobRunner) User() contracts.UserInfo {
 	return j.user
 }
 
-func (j *Jober) ProjectModel() *types.ProjectModel {
+func (j *jobRunner) ProjectModel() *types.ProjectModel {
 	if j.project == nil {
 		return nil
 	}
 	return j.project.ProtoTransform()
 }
 
-func (j *Jober) Project() *models.Project {
+func (j *jobRunner) Project() *models.Project {
 	return j.project
 }
 
-func (j *Jober) Namespace() *models.Namespace {
+func (j *jobRunner) Namespace() *models.Namespace {
 	return j.ns
 }
 
-func (j *Jober) IsStopped() bool {
+func (j *jobRunner) IsStopped() bool {
 	select {
 	case <-j.stopCtx.Done():
 		return true
@@ -692,7 +692,7 @@ func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.P
 	d.set = true
 }
 
-func (j *Jober) HandleMessage() {
+func (j *jobRunner) HandleMessage() {
 	defer mlog.Debug("HandleMessage exit")
 	ch := j.messageCh.Chan()
 	for {
@@ -797,30 +797,30 @@ func toUpdatesMap(p *models.Project) map[string]any {
 	}
 }
 
-func (j *Jober) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
+func (j *jobRunner) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
 	j.deployResult.Set(t, msg, model)
 }
 
-func (j *Jober) GetStoppedErrorIfHas() error {
+func (j *jobRunner) GetStoppedErrorIfHas() error {
 	if j.IsStopped() {
 		return j.stopCtx.Err()
 	}
 	return nil
 }
 
-func (j *Jober) ReleaseInstaller() contracts.ReleaseInstaller {
+func (j *jobRunner) ReleaseInstaller() contracts.ReleaseInstaller {
 	return j.installer
 }
 
-func (j *Jober) Messager() contracts.DeployMsger {
+func (j *jobRunner) Messager() contracts.DeployMsger {
 	return j.messager
 }
 
-func (j *Jober) PubSub() contracts.PubSub {
+func (j *jobRunner) PubSub() contracts.PubSub {
 	return j.pubsub
 }
 
-func (j *Jober) Percenter() contracts.Percentable {
+func (j *jobRunner) Percenter() contracts.Percentable {
 	return j.percenter
 }
 
@@ -839,7 +839,7 @@ func defaultLoaders() []Loader {
 }
 
 type Loader interface {
-	Load(*Jober) error
+	Load(*jobRunner) error
 }
 
 type helmChartLoader interface {
@@ -884,7 +884,7 @@ type ChartFileLoader struct {
 	fileOpener  fileOpener
 }
 
-func (c *ChartFileLoader) Load(j *Jober) error {
+func (c *ChartFileLoader) Load(j *jobRunner) error {
 	const loaderName = "[ChartFileLoader]: "
 	j.Messager().SendMsg(loaderName + "加载 helm chart 文件")
 	j.Percenter().To(20)
@@ -974,7 +974,7 @@ func (c *ChartFileLoader) Load(j *Jober) error {
 
 type DynamicLoader struct{}
 
-func (d *DynamicLoader) Load(j *Jober) error {
+func (d *DynamicLoader) Load(j *jobRunner) error {
 	const loaderName = "[DynamicLoader]: "
 
 	j.Percenter().To(50)
@@ -996,7 +996,7 @@ func (d *DynamicLoader) Load(j *Jober) error {
 
 type ExtraValuesLoader struct{}
 
-func (d *ExtraValuesLoader) Load(j *Jober) error {
+func (d *ExtraValuesLoader) Load(j *jobRunner) error {
 	const loaderName = "[ExtraValuesLoader]: "
 
 	j.Percenter().To(60)
@@ -1125,7 +1125,7 @@ type VariableLoader struct {
 	values vars
 }
 
-func (v *VariableLoader) Load(j *Jober) error {
+func (v *VariableLoader) Load(j *jobRunner) error {
 	const loaderName = "[VariableLoader]: "
 	j.Percenter().To(40)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "注入内置环境变量"))
@@ -1206,7 +1206,7 @@ type MergeValuesLoader struct{}
 
 // Load
 // imagePullSecrets 会自动注入到 imagePullSecrets 中
-func (m *MergeValuesLoader) Load(j *Jober) error {
+func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	const loaderName = "[MergeValuesLoader]: "
 	j.Percenter().To(70)
 	j.Messager().SendMsg(fmt.Sprintf(loaderName+"%v", "合并配置文件到 values.yaml"))
@@ -1277,7 +1277,7 @@ func (m *MergeValuesLoader) Load(j *Jober) error {
 
 type ReleaseInstallerLoader struct{}
 
-func (r *ReleaseInstallerLoader) Load(j *Jober) error {
+func (r *ReleaseInstallerLoader) Load(j *jobRunner) error {
 	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)

@@ -70,7 +70,7 @@ func Test_releaseInstaller_logger(t *testing.T) {
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendProcessPercent(int64(1)).Times(1)
 	installer := newReleaseInstaller("app", "dev", nil, nil, true, 10, true)
-	installer.messageCh = &SafeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)}
+	installer.messageCh = &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)}
 	installer.startTime = time.Now().Add(-5 * time.Minute)
 	installer.percenter = newProcessPercent(msger, &fakeSleeper{})
 	installer.logger()(nil, "test: %s", "aaa")

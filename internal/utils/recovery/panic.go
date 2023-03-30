@@ -8,6 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
+// HandlePanic handle panic.
 func HandlePanic(title string) {
 	bf := make([]byte, 1024*5)
 	n := runtime.Stack(bf, false)
@@ -22,6 +23,7 @@ func HandlePanic(title string) {
 	}
 }
 
+// HandlePanicWithCallback handle panic with custom callback.
 func HandlePanicWithCallback(title string, callback func(error)) {
 	bf := make([]byte, 1024*5)
 	n := runtime.Stack(bf, false)

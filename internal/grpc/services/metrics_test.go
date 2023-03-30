@@ -37,7 +37,7 @@ func TestMetricsSvc_CpuMemoryInNamespace(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
-	_, err := new(MetricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: 1})
+	_, err := new(metricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: 1})
 	assert.Error(t, err)
 	p := &models.Project{
 		Name: "p",
@@ -94,7 +94,7 @@ func TestMetricsSvc_CpuMemoryInNamespace(t *testing.T) {
 		return true, res, nil
 	})
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{MetricsClient: mk}).AnyTimes()
-	namespace, err := new(MetricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: int64(p.Namespace.ID)})
+	namespace, err := new(metricsSvc).CpuMemoryInNamespace(context.TODO(), &metrics.CpuMemoryInNamespaceRequest{NamespaceId: int64(p.Namespace.ID)})
 	assert.Nil(t, err)
 	assert.Equal(t, "8 m", namespace.Cpu)
 	assert.Equal(t, "10 MB", namespace.Memory)
@@ -107,7 +107,7 @@ func TestMetricsSvc_CpuMemoryInProject(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
-	_, err := new(MetricsSvc).CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{ProjectId: int64(999999)})
+	_, err := new(metricsSvc).CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{ProjectId: int64(999999)})
 	assert.Equal(t, "record not found", err.Error())
 
 	p := &models.Project{
@@ -172,7 +172,7 @@ func TestMetricsSvc_CpuMemoryInProject(t *testing.T) {
 		return true, res, nil
 	})
 	app.EXPECT().K8sClient().Return(&contracts.K8sClient{MetricsClient: mk}).AnyTimes()
-	namespace, err := new(MetricsSvc).CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{ProjectId: int64(p.ID)})
+	namespace, err := new(metricsSvc).CpuMemoryInProject(context.TODO(), &metrics.CpuMemoryInProjectRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	assert.Equal(t, "4 m", namespace.Cpu)
 	assert.Equal(t, "5.0 MB", namespace.Memory)
@@ -255,7 +255,7 @@ func TestMetricsSvc_StreamTopPod(t *testing.T) {
 	tsm := &topServerMock{ctx: ctx}
 	go func() {
 		defer close(done)
-		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
@@ -300,7 +300,7 @@ func TestMetricsSvc_StreamTopPod_error(t *testing.T) {
 		MetricsClient: mk,
 		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
-	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+	err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 		Namespace: "ns",
 		Pod:       "pod",
 	}, nil)
@@ -355,7 +355,7 @@ func TestMetricsSvc_StreamTopPod_error2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	tsm := &topServerMock{ctx: ctx}
-	err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+	err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 		Namespace: "ns",
 		Pod:       "pod",
 	}, tsm)
@@ -424,7 +424,7 @@ func TestMetricsSvc_StreamTopPod2(t *testing.T) {
 	tsm := &topServerMock{ctx: ctx}
 	go func() {
 		defer close(done)
-		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
@@ -470,7 +470,7 @@ func TestMetricsSvc_StreamTopPod_Error(t *testing.T) {
 	tsm := &topServerMock{ctx: ctx}
 	go func() {
 		defer close(done)
-		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
@@ -533,7 +533,7 @@ func TestMetricsSvc_StreamTopPod_Error2(t *testing.T) {
 	tsm := &topServerMock{ctx: ctx, sendError: true}
 	go func() {
 		defer close(done)
-		err := new(MetricsSvc).StreamTopPod(&metrics.TopPodRequest{
+		err := new(metricsSvc).StreamTopPod(&metrics.TopPodRequest{
 			Namespace: "ns",
 			Pod:       "pod",
 		}, tsm)
@@ -560,7 +560,7 @@ func TestMetricsSvc_TopPod(t *testing.T) {
 		MetricsClient: mk,
 		PodLister:     testutil.NewPodLister(),
 	}).AnyTimes()
-	ms := new(MetricsSvc)
+	ms := new(metricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
 		Namespace: "ns",
 		Pod:       "pod",
@@ -593,7 +593,7 @@ func TestMetricsSvc_TopPod2(t *testing.T) {
 		MetricsClient: mk,
 		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
-	ms := new(MetricsSvc)
+	ms := new(metricsSvc)
 	_, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
 		Namespace: "ns",
 		Pod:       "pod",
@@ -649,7 +649,7 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 		MetricsClient: mk,
 		PodLister:     testutil.NewPodLister(pod),
 	}).AnyTimes()
-	ms := new(MetricsSvc)
+	ms := new(metricsSvc)
 	res, err := ms.TopPod(context.TODO(), &metrics.TopPodRequest{
 		Namespace: "ns",
 		Pod:       "pod",
@@ -672,7 +672,7 @@ func TestMetricsSvc_TopPod3(t *testing.T) {
 }
 
 func TestMetricsSvc_metrics(t *testing.T) {
-	response := new(MetricsSvc).metrics(&v1beta1.PodMetrics{
+	response := new(metricsSvc).metrics(&v1beta1.PodMetrics{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod",
 			Namespace: "ns",

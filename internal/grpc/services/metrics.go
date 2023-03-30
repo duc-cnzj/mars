@@ -22,12 +22,12 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		metrics.RegisterMetricsServer(s, new(MetricsSvc))
+		metrics.RegisterMetricsServer(s, new(metricsSvc))
 	})
 	RegisterEndpoint(metrics.RegisterMetricsHandlerFromEndpoint)
 }
 
-type MetricsSvc struct {
+type metricsSvc struct {
 	metrics.UnimplementedMetricsServer
 }
 
@@ -41,7 +41,7 @@ var now = func() string {
 	return time.Now().Format("15:04:05")
 }
 
-func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest) (*metrics.TopPodResponse, error) {
+func (m *metricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest) (*metrics.TopPodResponse, error) {
 	podMetrics, err := app.K8sMetrics().MetricsV1beta1().PodMetricses(request.Namespace).Get(context.TODO(), request.Pod, metav1.GetOptions{})
 	if err != nil {
 		running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
@@ -54,7 +54,7 @@ func (m *MetricsSvc) TopPod(ctx context.Context, request *metrics.TopPodRequest)
 	return m.metrics(podMetrics), nil
 }
 
-func (m *MetricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
+func (m *metricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics.Metrics_StreamTopPodServer) error {
 	ticker := time.NewTicker(tickDuration)
 	defer ticker.Stop()
 	defer mlog.Debug("ProjectByID exit")
@@ -93,7 +93,7 @@ func (m *MetricsSvc) StreamTopPod(request *metrics.TopPodRequest, server metrics
 	}
 }
 
-func (m *MetricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.CpuMemoryInProjectRequest) (*metrics.CpuMemoryInProjectResponse, error) {
+func (m *metricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.CpuMemoryInProjectRequest) (*metrics.CpuMemoryInProjectResponse, error) {
 	var p models.Project
 	if err := app.DB().Where("`id` = ?", request.ProjectId).First(&p).Error; err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (m *MetricsSvc) CpuMemoryInProject(ctx context.Context, request *metrics.Cp
 	}, nil
 }
 
-func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.CpuMemoryInNamespaceRequest) (*metrics.CpuMemoryInNamespaceResponse, error) {
+func (m *metricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.CpuMemoryInNamespaceRequest) (*metrics.CpuMemoryInNamespaceResponse, error) {
 	var ns models.Namespace
 	if err := app.DB().Preload("Projects").Where("`id` = ?", request.NamespaceId).First(&ns).Error; err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (m *MetricsSvc) CpuMemoryInNamespace(ctx context.Context, request *metrics.
 	}, nil
 }
 
-func (m *MetricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.TopPodResponse {
+func (m *metricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.TopPodResponse {
 	cpu, memory := utils.GetCpuAndMemoryQuantity(*podMetrics)
 	cpuM := cpu.MilliValue()
 	var HumanizeCpu string = fmt.Sprintf("%v m", float64(cpu.MilliValue()))

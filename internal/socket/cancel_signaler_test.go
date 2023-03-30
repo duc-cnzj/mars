@@ -7,9 +7,7 @@ import (
 )
 
 func TestCancelSignals_Add(t *testing.T) {
-	cs := &CancelSignals{
-		cs: map[string]func(error){},
-	}
+	cs := newCancelSignals()
 	var called bool
 	cs.Add("a", func(err error) {
 		called = true
@@ -23,9 +21,7 @@ func TestCancelSignals_Add(t *testing.T) {
 }
 
 func TestCancelSignals_Cancel(t *testing.T) {
-	cs := &CancelSignals{
-		cs: map[string]func(error){},
-	}
+	cs := newCancelSignals()
 	var called bool
 	cs.Add("a", func(err error) {
 		called = true
@@ -35,9 +31,7 @@ func TestCancelSignals_Cancel(t *testing.T) {
 }
 
 func TestCancelSignals_CancelAll(t *testing.T) {
-	cs := &CancelSignals{
-		cs: map[string]func(error){},
-	}
+	cs := newCancelSignals()
 	var acalled bool
 	var bcalled bool
 	cs.Add("a", func(err error) {
@@ -52,9 +46,7 @@ func TestCancelSignals_CancelAll(t *testing.T) {
 }
 
 func TestCancelSignals_Has(t *testing.T) {
-	cs := &CancelSignals{
-		cs: map[string]func(error){},
-	}
+	cs := newCancelSignals()
 	cs.Add("a", func(err error) {
 	})
 	assert.True(t, cs.Has("a"))
@@ -62,9 +54,7 @@ func TestCancelSignals_Has(t *testing.T) {
 }
 
 func TestCancelSignals_Remove(t *testing.T) {
-	cs := &CancelSignals{
-		cs: map[string]func(error){},
-	}
+	cs := newCancelSignals()
 	cs.Add("a", func(err error) {
 	})
 	assert.True(t, cs.Has("a"))

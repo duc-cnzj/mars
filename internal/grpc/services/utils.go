@@ -22,9 +22,9 @@ var FileAuditLog = func(username string, msg string, fileID int) {
 }
 var AuditLogWithChange = events.AuditLog
 
-type Guest struct{}
+type guest struct{}
 
-func (c Guest) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (c guest) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	mlog.Debug("client is calling method:", fullMethodName)
 	return ctx, nil
 }

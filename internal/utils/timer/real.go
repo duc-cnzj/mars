@@ -8,10 +8,12 @@ type Timer interface {
 
 type realTimer struct{}
 
+// NewRealTimer return Timer
 func NewRealTimer() Timer {
 	return &realTimer{}
 }
 
+// Now equal time.Now
 func (r realTimer) Now() time.Time {
 	return time.Now()
 }

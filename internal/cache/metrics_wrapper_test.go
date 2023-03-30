@@ -38,7 +38,7 @@ func TestNewMetricsForCache(t *testing.T) {
 	defer m.Finish()
 	c := mock.NewMockCacheInterface(m)
 	cache := NewMetricsForCache(c)
-	assert.Equal(t, c, cache.Cache)
+	assert.Equal(t, c, cache.(*MetricsForCache).Cache)
 	assert.Implements(t, (*contracts.CacheInterface)(nil), cache)
 }
 

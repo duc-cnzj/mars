@@ -19,16 +19,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		event.RegisterEventServer(s, new(EventSvc))
+		event.RegisterEventServer(s, new(eventSvc))
 	})
 	RegisterEndpoint(event.RegisterEventHandlerFromEndpoint)
 }
 
-type EventSvc struct {
+type eventSvc struct {
 	event.UnimplementedEventServer
 }
 
-func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
+func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -48,7 +48,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		return db
 	}
 
-	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
+	if err := app.DB().Preload("fileSvc", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID", "Size")
 	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Select([]string{
 		"id", "action", "username", "message", "duration", "file_id", "created_at", "updated_at",
@@ -70,9 +70,9 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	}, nil
 }
 
-func (e *EventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
+func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
 	var eventModel models.Event
-	err := app.DB().Preload("File").First(&eventModel, request.Id).Error
+	err := app.DB().Preload("fileSvc").First(&eventModel, request.Id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -83,7 +83,7 @@ func (e *EventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event
 	return &event.ShowResponse{Event: eventModel.ProtoTransform()}, nil
 }
 
-func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (e *eventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}

@@ -425,7 +425,7 @@ func wrapRestConfig(config *restclient.Config) *restclient.Config {
 }
 
 func GetSlugName[T int64 | int](namespaceId T, name string) string {
-	return Md5(fmt.Sprintf("%d-%s", namespaceId, name))
+	return MD5(fmt.Sprintf("%d-%s", namespaceId, name))
 }
 
 func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {

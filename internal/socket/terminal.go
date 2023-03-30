@@ -88,7 +88,7 @@ func (s *sizeStore) Rows() uint16 {
 	return s.rows
 }
 
-type MyPtyHandler struct {
+type myPtyHandler struct {
 	container contracts.Container
 	recorder  contracts.RecorderInterface
 	id        string
@@ -106,23 +106,23 @@ type MyPtyHandler struct {
 	closed  bool
 }
 
-func (t *MyPtyHandler) SetShell(shell string) {
+func (t *myPtyHandler) SetShell(shell string) {
 	t.recorder.SetShell(shell)
 }
 
-func (t *MyPtyHandler) Container() contracts.Container {
+func (t *myPtyHandler) Container() contracts.Container {
 	return t.container
 }
 
-func (t *MyPtyHandler) Rows() uint16 {
+func (t *myPtyHandler) Rows() uint16 {
 	return t.sizeStore.Rows()
 }
 
-func (t *MyPtyHandler) Cols() uint16 {
+func (t *myPtyHandler) Cols() uint16 {
 	return t.sizeStore.Cols()
 }
 
-func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
+func (t *myPtyHandler) Read(p []byte) (n int, err error) {
 	var (
 		msg *websocket_pb.TerminalMessage
 		ok  bool
@@ -148,7 +148,7 @@ func (t *MyPtyHandler) Read(p []byte) (n int, err error) {
 	}
 }
 
-func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
+func (t *myPtyHandler) Write(p []byte) (n int, err error) {
 	select {
 	case <-t.doneChan:
 		return len(p), fmt.Errorf("[Websocket]: %v doneChan closed", t.id)
@@ -186,15 +186,15 @@ func (t *MyPtyHandler) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (t *MyPtyHandler) ResetTerminalRowCol(reset bool) {
+func (t *myPtyHandler) ResetTerminalRowCol(reset bool) {
 	t.sizeStore.ResetTerminalRowCol(reset)
 }
 
-func (t *MyPtyHandler) Recorder() contracts.RecorderInterface {
+func (t *myPtyHandler) Recorder() contracts.RecorderInterface {
 	return t.recorder
 }
 
-func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
+func (t *myPtyHandler) Next() *remotecommand.TerminalSize {
 	select {
 	case size, ok := <-t.sizeChan:
 		if !ok {
@@ -212,7 +212,7 @@ func (t *MyPtyHandler) Next() *remotecommand.TerminalSize {
 	}
 }
 
-func (t *MyPtyHandler) Send(m *websocket_pb.TerminalMessage) error {
+func (t *myPtyHandler) Send(m *websocket_pb.TerminalMessage) error {
 	t.shellMu.Lock()
 	defer t.shellMu.Unlock()
 
@@ -231,7 +231,7 @@ func (t *MyPtyHandler) Send(m *websocket_pb.TerminalMessage) error {
 	return nil
 }
 
-func (t *MyPtyHandler) Resize(size remotecommand.TerminalSize) error {
+func (t *myPtyHandler) Resize(size remotecommand.TerminalSize) error {
 	t.sizeMu.Lock()
 	defer t.sizeMu.Unlock()
 	select {
@@ -249,13 +249,13 @@ func (t *MyPtyHandler) Resize(size remotecommand.TerminalSize) error {
 	return nil
 }
 
-func (t *MyPtyHandler) IsClosed() bool {
+func (t *myPtyHandler) IsClosed() bool {
 	t.closeMu.RLock()
 	defer t.closeMu.RUnlock()
 	return t.closed
 }
 
-func (t *MyPtyHandler) CloseDoneChan() bool {
+func (t *myPtyHandler) CloseDoneChan() bool {
 	t.closeMu.Lock()
 	defer t.closeMu.Unlock()
 	if t.closed {
@@ -268,7 +268,7 @@ func (t *MyPtyHandler) CloseDoneChan() bool {
 
 }
 
-func (t *MyPtyHandler) Close(reason string) bool {
+func (t *myPtyHandler) Close(reason string) bool {
 	t.closeMu.Lock()
 	defer t.closeMu.Unlock()
 	if t.closed {
@@ -313,7 +313,7 @@ func (t *MyPtyHandler) Close(reason string) bool {
 
 // Toast can be used to send the user any OOB messages
 // hterm puts these in the center of the terminal
-func (t *MyPtyHandler) Toast(p string) error {
+func (t *myPtyHandler) Toast(p string) error {
 	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
@@ -336,7 +336,7 @@ func (t *MyPtyHandler) Toast(p string) error {
 	return nil
 }
 
-// sessionMap stores a map of all MyPtyHandler objects and a sessLock to avoid concurrent conflict
+// sessionMap stores a map of all myPtyHandler objects and a sessLock to avoid concurrent conflict
 type sessionMap struct {
 	conn *WsConn
 	wg   sync.WaitGroup
@@ -365,7 +365,7 @@ func (sm *sessionMap) Get(sessionId string) (contracts.PtyHandler, bool) {
 	return h, ok
 }
 
-// Set store a MyPtyHandler to sessionMap
+// Set store a myPtyHandler to sessionMap
 func (sm *sessionMap) Set(sessionId string, session contracts.PtyHandler) {
 	sm.sessLock.Lock()
 	defer sm.sessLock.Unlock()
@@ -512,10 +512,10 @@ func resetSession(session contracts.PtyHandler) contracts.PtyHandler {
 	}()
 	mlog.Debug("done....")
 
-	spty := session.(*MyPtyHandler)
+	spty := session.(*myPtyHandler)
 	var newSession contracts.PtyHandler = session
 	if spty.CloseDoneChan() {
-		newSession = &MyPtyHandler{
+		newSession = &myPtyHandler{
 			container: spty.container,
 			recorder:  spty.recorder,
 			id:        spty.id,
@@ -548,7 +548,7 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 
 	sessionID := GenMyPtyHandlerId()
 	r := NewRecorder(types.EventActionType_Shell, conn.GetUser(), timer2.NewRealTimer(), c)
-	pty := &MyPtyHandler{
+	pty := &myPtyHandler{
 		container: c,
 		id:        sessionID,
 		conn:      conn,

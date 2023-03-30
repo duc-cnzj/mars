@@ -59,7 +59,7 @@ func TestNamespaceSvc_All(t *testing.T) {
 			},
 		},
 	})
-	all, _ := new(NamespaceSvc).All(context.TODO(), &namespace.AllRequest{})
+	all, _ := new(namespaceSvc).All(context.TODO(), &namespace.AllRequest{})
 	assert.Equal(t, "ns1", all.Items[0].Name)
 	assert.Equal(t, "ns2", all.Items[1].Name)
 	assert.Len(t, all.Items[0].ImagePullSecrets, 0)
@@ -86,13 +86,13 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	db.Create(&models.Namespace{
 		Name: "dev-aaa",
 	})
-	_, err := new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+	_, err := new(namespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace:      "aaa",
 		IgnoreIfExists: false,
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.AlreadyExists, fromError.Code())
-	res, err := new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+	res, err := new(namespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace:      "aaa",
 		IgnoreIfExists: true,
 	})
@@ -112,7 +112,7 @@ func TestNamespaceSvc_Create(t *testing.T) {
 
 	d := testutil.AssertAuditLogFired(m, app)
 	d.EXPECT().Dispatch(events.EventNamespaceCreated, gomock.Any())
-	res, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+	res, err = new(namespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace: "bbb",
 	})
 	assert.Nil(t, err)
@@ -123,7 +123,7 @@ func TestNamespaceSvc_Create(t *testing.T) {
 	assert.NotEmpty(t, list.Items[0].Name)
 	assert.Len(t, list.Items[0].Name, 15)
 
-	_, err = new(NamespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
+	_, err = new(namespaceSvc).Create(adminCtx(), &namespace.CreateRequest{
 		Namespace: "terminating-ns",
 	})
 	s, _ := status.FromError(err)
@@ -171,7 +171,7 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 	h := mock.NewMockHelmer(m)
 	h.EXPECT().Uninstall("duc", "dev-aaa", gomock.Any()).Times(1)
 	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1).Return(errors.New("xxx"))
-	_, err := (&NamespaceSvc{helmer: h}).Delete(adminCtx(), &namespace.DeleteRequest{
+	_, err := (&namespaceSvc{helmer: h}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Nil(t, err)
@@ -192,7 +192,7 @@ func TestNamespaceSvc_IsExists(t *testing.T) {
 	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
 	app.EXPECT().Config().Return(&config.Config{NsPrefix: "dev-"}).AnyTimes()
-	_, err := new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+	_, err := new(namespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
 		Name: "dev-not-exists",
 	})
 	fromError, _ := status.FromError(err)
@@ -202,15 +202,15 @@ func TestNamespaceSvc_IsExists(t *testing.T) {
 	db.Create(&models.Namespace{
 		Name: "dev-aaa",
 	})
-	exists, _ := new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+	exists, _ := new(namespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
 		Name: "aaa",
 	})
 	assert.True(t, exists.Exists)
-	exists, _ = new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+	exists, _ = new(namespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
 		Name: "dev-aaa",
 	})
 	assert.True(t, exists.Exists)
-	exists, err = new(NamespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
+	exists, err = new(namespaceSvc).IsExists(context.TODO(), &namespace.IsExistsRequest{
 		Name: "dev-not-exists",
 	})
 	assert.False(t, exists.Exists)
@@ -223,7 +223,7 @@ func TestNamespaceSvc_Show(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, closeFn := testutil.SetGormDB(m, app)
 	defer closeFn()
-	_, err := new(NamespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
+	_, err := new(namespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
 		NamespaceId: 678,
 	})
 	fromError, _ := status.FromError(err)
@@ -240,12 +240,12 @@ func TestNamespaceSvc_Show(t *testing.T) {
 		},
 	}
 	db.Create(ns)
-	show, _ := new(NamespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
+	show, _ := new(namespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Equal(t, "dev-aaa", show.Namespace.Name)
 	assert.Equal(t, "duc", show.Namespace.Projects[0].Name)
-	_, err = new(NamespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
+	_, err = new(namespaceSvc).Show(context.TODO(), &namespace.ShowRequest{
 		NamespaceId: 678,
 	})
 	fromError, _ = status.FromError(err)

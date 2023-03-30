@@ -64,7 +64,7 @@ func (d *certManager) Destroy() error {
 }
 
 func (d *certManager) GetCertSecretName(projectName string, index int) string {
-	return fmt.Sprintf("mars-tls-%s", utils.Md5(fmt.Sprintf("%s-%d", projectName, index)))
+	return fmt.Sprintf("mars-tls-%s", utils.MD5(fmt.Sprintf("%s-%d", projectName, index)))
 }
 
 func (d *certManager) GetClusterIssuer() string {

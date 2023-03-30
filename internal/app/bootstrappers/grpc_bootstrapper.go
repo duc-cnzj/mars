@@ -18,7 +18,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/grpc/services"
 	"github.com/duc-cnzj/mars/v4/internal/middlewares"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/validator"
 )
 
 type GrpcBootstrapper struct{}
@@ -84,7 +83,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 		grpc.ChainStreamInterceptor(
 			grpc_auth.StreamServerInterceptor(authenticate),
 			marsauthorizor.StreamServerInterceptor(),
-			validator.StreamServerInterceptor(),
+			middlewares.StreamServerInterceptor(),
 			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(recoveryHandler)),
 			middlewares.MetricsStreamServerInterceptor,
 		),
@@ -93,7 +92,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 			middlewares.MetricsServerInterceptor,
 			middlewares.TraceUnaryServerInterceptor,
 			marsauthorizor.UnaryServerInterceptor(),
-			validator.UnaryServerInterceptor(),
+			middlewares.UnaryServerInterceptor(),
 			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(recoveryHandler)),
 		),
 	)

@@ -146,7 +146,7 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 		Client:    fk,
 		PodLister: testutil.NewPodLister(pod1, pod2, pod3, pod4),
 	}).AnyTimes()
-	containers, err := new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(p.ID)})
+	containers, err := new(projectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	t.Log(containers.Items)
 	assert.Len(t, containers.Items, 2)
@@ -154,7 +154,7 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 	assert.Equal(t, "c5", containers.Items[0].Container)
 	assert.Equal(t, "pod4", containers.Items[1].Pod)
 	assert.Equal(t, "c4-2", containers.Items[1].Container)
-	_, err = new(ProjectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
+	_, err = new(projectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
 	assert.Equal(t, "record not found", err.Error())
 }
 
@@ -165,13 +165,13 @@ func TestProjectSvc_Show(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
-	_, err := new(ProjectSvc).Show(adminCtx(), &project.ShowRequest{
+	_, err := new(projectSvc).Show(adminCtx(), &project.ShowRequest{
 		ProjectId: 990,
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
 	db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.GitProject{})
-	_, err = new(ProjectSvc).Show(adminCtx(), &project.ShowRequest{
+	_, err = new(projectSvc).Show(adminCtx(), &project.ShowRequest{
 		ProjectId: 990,
 	})
 	fromError, _ = status.FromError(err)
@@ -326,7 +326,7 @@ func TestProjectSvc_Show(t *testing.T) {
 	}).AnyTimes()
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
 
-	show, err := new(ProjectSvc).Show(adminCtx(), &project.ShowRequest{
+	show, err := new(projectSvc).Show(adminCtx(), &project.ShowRequest{
 		ProjectId: int64(p.ID),
 	})
 	assert.Nil(t, err)
@@ -355,14 +355,14 @@ func TestProjectSvc_Delete(t *testing.T) {
 	d.EXPECT().Dispatch(events.EventProjectDeleted, gomock.Any()).Times(1)
 	h := mock.NewMockHelmer(m)
 	h.EXPECT().Uninstall("app", "test", gomock.Any()).Times(1).Return(errors.New("xxx"))
-	_, err := (&ProjectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
+	_, err := (&projectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
 		ProjectId: int64(p.ID),
 	})
 	assert.Nil(t, err)
 	db.Unscoped().First(&p)
 	assert.True(t, p.DeletedAt.Valid)
 
-	_, err = (&ProjectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
+	_, err = (&projectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
 		ProjectId: int64(999999),
 	})
 	assert.Error(t, err)
@@ -374,7 +374,7 @@ func TestProjectSvc_List(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
-	_, err := new(ProjectSvc).List(context.TODO(), &project.ListRequest{
+	_, err := new(projectSvc).List(context.TODO(), &project.ListRequest{
 		Page:     1,
 		PageSize: 2,
 	})
@@ -402,7 +402,7 @@ func TestProjectSvc_List(t *testing.T) {
 		},
 	}
 	db.Create(p)
-	list, _ := new(ProjectSvc).List(context.TODO(), &project.ListRequest{
+	list, _ := new(projectSvc).List(context.TODO(), &project.ListRequest{
 		Page:     1,
 		PageSize: 2,
 	})
@@ -419,10 +419,10 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	gits := mockGitServer(m, app)
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
-	new(ProjectSvc).completeInput(req, msger)
+	new(projectSvc).completeInput(req, msger)
 	req.GitCommit = ""
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-	err := new(ProjectSvc).completeInput(req, msger)
+	err := new(projectSvc).completeInput(req, msger)
 	assert.Equal(t, "没有可用的 commit", err.Error())
 	commit := mock.NewMockCommitInterface(m)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return([]contracts.CommitInterface{commit}, nil).Times(1)
@@ -430,7 +430,7 @@ func TestProjectSvc_completeInput(t *testing.T) {
 	commit.EXPECT().GetTitle().Return("").Times(1)
 	commit.EXPECT().GetWebURL().Return("").Times(1)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(1)
-	err = new(ProjectSvc).completeInput(req, msger)
+	err = new(projectSvc).completeInput(req, msger)
 	assert.Nil(t, err)
 	assert.Equal(t, "1", req.GitCommit)
 }
@@ -570,7 +570,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	}
 	db.Create(gp)
 	p.EXPECT().GetName().Return("pppp")
-	variables, err := new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+	variables, err := new(projectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		Namespace:    "ns",
 		GitProjectId: 999,
 		GitBranch:    "dev",
@@ -588,7 +588,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	assert.Equal(t, "pppp-duc-ns-9.faker-domain.local", variables.Hosts["Host9"])
 	assert.Equal(t, "pppp-duc-ns-10.faker-domain.local", variables.Hosts["Host10"])
 
-	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+	variables, _ = new(projectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		ProjectName:  "duc",
 		Namespace:    "ns",
 		GitProjectId: 999,
@@ -601,7 +601,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	}
 	marshal1, _ := json.Marshal(&mc1)
 	db.Model(&gp).UpdateColumn("global_config", string(marshal1))
-	variables, _ = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+	variables, _ = new(projectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		Namespace:    "ns",
 		GitProjectId: 999,
 		GitBranch:    "dev",
@@ -609,7 +609,7 @@ func TestProjectSvc_HostVariables(t *testing.T) {
 	assert.Equal(t, "app-duc-ns-1.faker-domain.local", variables.Hosts["Host1"])
 
 	gitS.EXPECT().GetFileContentWithBranch("99999999", "dev-xxx", ".mars.yaml").Return("", errors.New("xxx"))
-	_, err = new(ProjectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
+	_, err = new(projectSvc).HostVariables(context.TODO(), &project.HostVariablesRequest{
 		Namespace:    "ns-xxx",
 		GitProjectId: 99999999,
 		GitBranch:    "dev-xxx",
@@ -654,7 +654,7 @@ func TestProjectSvc_Apply(t *testing.T) {
 	}
 	job.EXPECT().Stop(gomock.Any()).Times(0)
 	ma := &mockApplyServer{}
-	err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	err := (&projectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		assert.Equal(t, &socket.JobInput{
 			Type:         websocket.Type_ApplyProject,
 			NamespaceId:  req.NamespaceId,
@@ -701,7 +701,7 @@ func TestProjectSvc_Apply_WithClientStop(t *testing.T) {
 	ctx := auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"})
 	ma := &mockApplyServer{ctx: ctx}
 	job.EXPECT().Stop(errors.New("context canceled")).Times(1)
-	(&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	(&projectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		return job
 	}}).Apply(req, ma)
 }
@@ -712,7 +712,7 @@ func TestProjectSvc_ApplyDryRun_CompleteError(t *testing.T) {
 	app := testutil.MockApp(m)
 	gits := testutil.MockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
-	_, err := (&ProjectSvc{}).ApplyDryRun(context.TODO(), &project.ApplyRequest{
+	_, err := (&projectSvc{}).ApplyDryRun(context.TODO(), &project.ApplyRequest{
 		GitCommit: "",
 	})
 	assert.Equal(t, "没有可用的 commit", err.Error())
@@ -724,7 +724,7 @@ func TestProjectSvc_Apply_CompleteError(t *testing.T) {
 	app := testutil.MockApp(m)
 	gits := testutil.MockGitServer(m, app)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
-	err := (&ProjectSvc{}).Apply(&project.ApplyRequest{
+	err := (&projectSvc{}).Apply(&project.ApplyRequest{
 		GitCommit: "",
 	}, nil)
 	assert.Equal(t, "没有可用的 commit", err.Error())
@@ -751,7 +751,7 @@ func TestProjectSvc_ApplyDryRun(t *testing.T) {
 		Config:        "cfg",
 		WebsocketSync: true,
 	}
-	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	run, err := (&projectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		assert.Len(t, opts, 1)
 		return job
 	}}).ApplyDryRun(auth.SetUser(context.TODO(), &contracts.UserInfo{Name: "duc"}), req)
@@ -783,7 +783,7 @@ func TestProjectSvc_ApplyDryRun_WithClientStop(t *testing.T) {
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
 	job.EXPECT().Stop(stopErr).Times(1)
-	run, err := (&ProjectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
+	run, err := (&projectSvc{NewJobFunc: func(input *socket.JobInput, user contracts.UserInfo, slugName string, messager contracts.DeployMsger, pubsub contracts.PubSub, timeoutSeconds int64, opts ...socket.Option) contracts.Job {
 		assert.Len(t, opts, 1)
 		return job
 	}}).ApplyDryRun(auth.SetUser(cancel, &contracts.UserInfo{Name: "duc"}), req)
@@ -800,12 +800,12 @@ func TestProjectSvc_Version(t *testing.T) {
 	db.AutoMigrate(&models.Project{}, &models.Namespace{})
 	p := &models.Project{Name: "app", Namespace: models.Namespace{Name: "ns"}}
 	assert.Nil(t, db.Create(p).Error)
-	version, err := (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	version, err := (&projectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(p.Version), version.Version)
 	assert.Equal(t, int64(1), version.Version)
 	db.Delete(&p)
-	version, err = (&ProjectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
+	version, err = (&projectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), version.Version)
 }

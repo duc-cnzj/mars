@@ -15,16 +15,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		changelog.RegisterChangelogServer(s, new(ChangelogSvc))
+		changelog.RegisterChangelogServer(s, new(changelogSvc))
 	})
 	RegisterEndpoint(changelog.RegisterChangelogHandlerFromEndpoint)
 }
 
-type ChangelogSvc struct {
+type changelogSvc struct {
 	changelog.UnimplementedChangelogServer
 }
 
-func (c *ChangelogSvc) Show(ctx context.Context, request *changelog.ShowRequest) (*changelog.ShowResponse, error) {
+func (c *changelogSvc) Show(ctx context.Context, request *changelog.ShowRequest) (*changelog.ShowResponse, error) {
 	var logs []models.Changelog
 	err := app.DB().
 		Scopes(func(db *gorm.DB) *gorm.DB {

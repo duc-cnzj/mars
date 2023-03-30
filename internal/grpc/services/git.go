@@ -29,16 +29,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		git.RegisterGitServer(s, new(GitSvc))
+		git.RegisterGitServer(s, new(gitSvc))
 	})
 	RegisterEndpoint(git.RegisterGitHandlerFromEndpoint)
 }
 
-type GitSvc struct {
+type gitSvc struct {
 	git.UnimplementedGitServer
 }
 
-func (g *GitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRequest) (*git.EnableProjectResponse, error) {
+func (g *gitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRequest) (*git.EnableProjectResponse, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -65,7 +65,7 @@ func (g *GitSvc) EnableProject(ctx context.Context, request *git.EnableProjectRe
 	return &git.EnableProjectResponse{}, nil
 }
 
-func (g *GitSvc) DisableProject(ctx context.Context, request *git.DisableProjectRequest) (*git.DisableProjectResponse, error) {
+func (g *gitSvc) DisableProject(ctx context.Context, request *git.DisableProjectRequest) (*git.DisableProjectResponse, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -91,7 +91,7 @@ func (g *GitSvc) DisableProject(ctx context.Context, request *git.DisableProject
 	return &git.DisableProjectResponse{}, nil
 }
 
-func (g *GitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse, error) {
+func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse, error) {
 	projects, err := plugins.GetGitServer().AllProjects()
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ const (
 
 const ProjectOptionsCacheKey = "ProjectOptions"
 
-func (g *GitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
+func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptionsRequest) (*git.ProjectOptionsResponse, error) {
 	remember, err := app.Cache().Remember(cache.NewKey(ProjectOptionsCacheKey), 30, func() ([]byte, error) {
 		var (
 			enabledProjects []models.GitProject
@@ -216,7 +216,7 @@ func (s sortableOption) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (g *GitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
+func (g *gitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRequest) (*git.BranchOptionsResponse, error) {
 	branches, err := plugins.GetGitServer().AllBranches(request.GitProjectId)
 	if err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ func (g *GitSvc) BranchOptions(ctx context.Context, request *git.BranchOptionsRe
 	return &git.BranchOptionsResponse{Items: filteredRes}, nil
 }
 
-func (g *GitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {
+func (g *gitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRequest) (*git.CommitOptionsResponse, error) {
 	commits, err := plugins.GetGitServer().ListCommits(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (g *GitSvc) CommitOptions(ctx context.Context, request *git.CommitOptionsRe
 	return &git.CommitOptionsResponse{Items: res}, nil
 }
 
-func (g *GitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.CommitResponse, error) {
+func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.CommitResponse, error) {
 	commit, err := plugins.GetGitServer().GetCommit(request.GitProjectId, request.Commit)
 	if err != nil {
 		return nil, err
@@ -304,7 +304,7 @@ func (g *GitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 	}, nil
 }
 
-func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
+func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
 	pipeline, err := plugins.GetGitServer().GetCommitPipeline(request.GitProjectId, request.Commit)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -316,7 +316,7 @@ func (g *GitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequ
 	}, nil
 }
 
-func (g *GitSvc) MarsConfigFile(ctx context.Context, request *git.MarsConfigFileRequest) (*git.MarsConfigFileResponse, error) {
+func (g *gitSvc) MarsConfigFile(ctx context.Context, request *git.MarsConfigFileRequest) (*git.MarsConfigFileResponse, error) {
 	marsC, err := GetProjectMarsConfig(request.GitProjectId, request.Branch)
 	if err != nil {
 		return nil, err

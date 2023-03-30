@@ -23,7 +23,7 @@ import (
 )
 
 func TestGitConfigSvc_Authorize(t *testing.T) {
-	e := new(GitConfigSvc)
+	e := new(gitConfigSvc)
 	ctx := context.TODO()
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{})
 	_, err := e.Authorize(ctx, "")
@@ -78,26 +78,26 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal3),
 	})
-	_, err := new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+	_, err := new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 10,
 		Branch:       "dev",
 	})
 	assert.Nil(t, err)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "charts/values.yaml").Times(1).Return("", errors.New("xxx"))
-	_, err = new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+	_, err = new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 11,
 		Branch:       "dev",
 	})
 	assert.Equal(t, "xxx", err.Error())
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "charts/values.yaml").Times(1).Return("xxx", nil)
-	res, _ := new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+	res, _ := new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 11,
 		Branch:       "dev",
 	})
 	assert.Equal(t, "xxx", res.Value)
 	gits.EXPECT().GetFileContentWithBranch("12", "dev", "charts/values.yaml").Times(1).Return("aaa", nil)
-	res, _ = new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+	res, _ = new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 12,
 		Branch:       "dev",
 	})
@@ -105,7 +105,7 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 
 	gits.EXPECT().GetFileContentWithBranch("12", "master", "charts/values.yaml").Times(1).Return("", errors.New("bbb"))
 
-	_, err = new(GitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
+	_, err = new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 12,
 		Branch:       "",
 	})
@@ -119,7 +119,7 @@ func TestGitConfigSvc_GlobalConfig(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
-	config, err := new(GitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
+	config, err := new(gitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
 		GitProjectId: 11,
 	})
 	assert.Nil(t, err)
@@ -153,7 +153,7 @@ func TestGitConfigSvc_GlobalConfig(t *testing.T) {
 		GlobalConfig:  string(marshal),
 	})
 
-	config, err = new(GitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
+	config, err = new(gitConfigSvc).GlobalConfig(context.TODO(), &gitconfig.GlobalConfigRequest{
 		GitProjectId: 11,
 	})
 	assert.Nil(t, err)
@@ -188,7 +188,7 @@ func TestGitConfigSvc_Show(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal),
 	})
-	show, err := new(GitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
+	show, err := new(gitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
 		GitProjectId: 11,
 		Branch:       "dev",
 	})
@@ -198,7 +198,7 @@ func TestGitConfigSvc_Show(t *testing.T) {
 	p := mock.NewMockProjectInterface(m)
 	gits.EXPECT().GetProject(gomock.Any()).Return(p, nil)
 	p.EXPECT().GetDefaultBranch().Return("abc")
-	show, err = new(GitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
+	show, err = new(gitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
 		GitProjectId: 12,
 		Branch:       "",
 	})
@@ -206,7 +206,7 @@ func TestGitConfigSvc_Show(t *testing.T) {
 	assert.Equal(t, "abc", show.Branch)
 
 	gits.EXPECT().GetFileContentWithBranch("199", "dev199", ".mars.yaml").Return("", errors.New("xxx"))
-	show, err = new(GitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
+	show, err = new(gitConfigSvc).Show(context.TODO(), &gitconfig.ShowRequest{
 		GitProjectId: 199,
 		Branch:       "dev199",
 	})
@@ -236,14 +236,14 @@ func TestGitConfigSvc_ToggleGlobalStatus(t *testing.T) {
 	}
 	db.Create(p)
 	testutil.AssertAuditLogFired(m, app)
-	_, err := new(GitConfigSvc).ToggleGlobalStatus(adminCtx(), &gitconfig.ToggleGlobalStatusRequest{
+	_, err := new(gitConfigSvc).ToggleGlobalStatus(adminCtx(), &gitconfig.ToggleGlobalStatusRequest{
 		GitProjectId: 11,
 		Enabled:      false,
 	})
 	assert.Nil(t, err)
 	db.First(p)
 	assert.False(t, p.GlobalEnabled)
-	_, err = new(GitConfigSvc).ToggleGlobalStatus(adminCtx(), &gitconfig.ToggleGlobalStatusRequest{
+	_, err = new(gitConfigSvc).ToggleGlobalStatus(adminCtx(), &gitconfig.ToggleGlobalStatusRequest{
 		GitProjectId: 12,
 		Enabled:      false,
 	})
@@ -285,7 +285,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 		Elements:         nil,
 	}
 	d := testutil.AssertAuditLogFired(m, app)
-	update, err := new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	update, err := new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,
 	})
@@ -293,7 +293,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Equal(t, mc.String(), update.Config.String())
 	mc.Branches = nil
 	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
-	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	update, _ = new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,
 	})
@@ -304,17 +304,17 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	mc.DisplayName = "app"
 	cache.EXPECT().Clear(cache2.NewKey("ProjectOptions")).Times(2)
 	d.EXPECT().Dispatch(gomock.Any(), gomock.Any()).Times(2)
-	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	update, _ = new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config:       mc,
 	})
 	assert.Equal(t, "app", update.Config.DisplayName)
-	_, err = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	_, err = new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 9999999,
 		Config:       mc,
 	})
 	assert.Equal(t, "record not found", err.Error())
-	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	update, _ = new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config: &mars.Config{
 			ConfigField:      "",
@@ -326,7 +326,7 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Equal(t, " aa", update.Config.ConfigFileValues)
 	assert.Equal(t, " bb", update.Config.ValuesYaml)
 	assert.Equal(t, true, update.Config.IsSimpleEnv)
-	update, _ = new(GitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
+	update, _ = new(gitConfigSvc).Update(adminCtx(), &gitconfig.UpdateRequest{
 		GitProjectId: 11,
 		Config: &mars.Config{
 			ConfigField: "xxxx",

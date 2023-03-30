@@ -29,12 +29,12 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
-	_, err := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
+	_, err := new(endpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
 	assert.Error(t, err)
 	db.AutoMigrate(&models.Namespace{}, &models.Project{})
-	_, err = new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
+	_, err = new(endpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: 123,
 	})
 	ing1 := v12.Ingress{
@@ -168,7 +168,7 @@ func TestEndpointSvc_InNamespace(t *testing.T) {
 		IngressLister: testutil.NewIngressLister(&ing1, &ing2),
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"})
-	res, _ := new(EndpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
+	res, _ := new(endpointSvc).InNamespace(context.TODO(), &endpoint.InNamespaceRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Len(t, res.Items, 4)
@@ -191,7 +191,7 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
-	_, err := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
+	_, err := new(endpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: 11,
 	})
 	assert.Error(t, err)
@@ -200,7 +200,7 @@ func TestEndpointSvc_InProject(t *testing.T) {
 	p1 := &models.Project{Namespace: models.Namespace{Name: "app-ns"}, Name: "app"}
 	assert.Nil(t, db.Create(p1).Error)
 	assert.Nil(t, db.Where("`id` = ?", p1.Namespace.ID).Delete(&models.Namespace{}).Error)
-	_, err = new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
+	_, err = new(endpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: int64(p1.ID),
 	})
 	assert.Equal(t, "namespace not exists", err.Error())
@@ -294,7 +294,7 @@ func TestEndpointSvc_InProject(t *testing.T) {
 		IngressLister: testutil.NewIngressLister(&ing1, &ing2),
 	})
 	app.EXPECT().Config().Return(&config.Config{ExternalIp: "127.0.0.1"}).AnyTimes()
-	res, _ := new(EndpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
+	res, _ := new(endpointSvc).InProject(context.TODO(), &endpoint.InProjectRequest{
 		ProjectId: int64(p.ID),
 	})
 	assert.Len(t, res.Items, 2)

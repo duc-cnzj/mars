@@ -54,7 +54,7 @@ func TestGitSvc_All(t *testing.T) {
 		GlobalEnabled: true,
 	})
 
-	all, err := new(GitSvc).All(context.TODO(), &git.AllRequest{})
+	all, err := new(gitSvc).All(context.TODO(), &git.AllRequest{})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), all.Items[0].Id)
 	assert.Equal(t, false, all.Items[0].Enabled)
@@ -64,7 +64,7 @@ func TestGitSvc_All(t *testing.T) {
 	assert.Equal(t, true, all.Items[1].GlobalEnabled)
 
 	gits.EXPECT().AllProjects().Return(nil, errors.New("xxx")).Times(1)
-	_, err = new(GitSvc).All(context.TODO(), &git.AllRequest{})
+	_, err = new(gitSvc).All(context.TODO(), &git.AllRequest{})
 	assert.Equal(t, "xxx", err.Error())
 }
 
@@ -78,7 +78,7 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	b2 := mock.NewMockBranchInterface(m)
 	b2.EXPECT().GetName().Return("b2").MinTimes(2)
 	gits.EXPECT().AllBranches("1").Return([]contracts.BranchInterface{b1, b2}, nil).Times(1)
-	options, err := new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+	options, err := new(gitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "1",
 		All:          true,
 	})
@@ -104,14 +104,14 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	b1.EXPECT().IsDefault().Return(true).Times(1)
 	b2.EXPECT().IsDefault().Return(false).Times(1)
 	gits.EXPECT().AllBranches("10").Return(nil, errors.New("xxx")).Times(1)
-	_, err = new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+	_, err = new(gitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "10",
 		All:          true,
 	})
 	assert.Equal(t, "xxx", err.Error())
 	assert.Error(t, err)
 	gits.EXPECT().AllBranches("10").Return([]contracts.BranchInterface{b1, b2}, nil)
-	options, _ = new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+	options, _ = new(gitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "10",
 		All:          false,
 	})
@@ -120,7 +120,7 @@ func TestGitSvc_BranchOptions(t *testing.T) {
 	gits.EXPECT().AllBranches("100").Return([]contracts.BranchInterface{b1}, nil).Times(1)
 	b1.EXPECT().IsDefault().Return(false)
 	gits.EXPECT().GetFileContentWithBranch("100", "", ".mars.yaml").Return("", errors.New("xx")).Times(1)
-	res, err := new(GitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
+	res, err := new(gitSvc).BranchOptions(context.TODO(), &git.BranchOptionsRequest{
 		GitProjectId: "100",
 		All:          false,
 	})
@@ -134,7 +134,7 @@ func TestGitSvc_Commit(t *testing.T) {
 	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("")).Times(1)
-	_, err := new(GitSvc).Commit(context.TODO(), &git.CommitRequest{})
+	_, err := new(gitSvc).Commit(context.TODO(), &git.CommitRequest{})
 	assert.Error(t, err)
 	cm := mock.NewMockCommitInterface(m)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(cm, nil).Times(1)
@@ -150,7 +150,7 @@ func TestGitSvc_Commit(t *testing.T) {
 	cm.EXPECT().GetMessage().Return("msg").Times(1)
 	cm.EXPECT().GetCommittedDate().Return(nil).Times(1)
 	cm.EXPECT().GetCreatedAt().Return(nil).Times(1)
-	res, _ := new(GitSvc).Commit(context.TODO(), &git.CommitRequest{
+	res, _ := new(gitSvc).Commit(context.TODO(), &git.CommitRequest{
 		GitProjectId: "11",
 		Branch:       "dev",
 		Commit:       "xxx",
@@ -172,14 +172,14 @@ func TestGitSvc_CommitOptions(t *testing.T) {
 	m2.EXPECT().GetTitle().Return("zzz")
 	m2.EXPECT().GetCommittedDate().Return(nil)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return([]contracts.CommitInterface{m1, m2}, nil).Times(1)
-	options, err := new(GitSvc).CommitOptions(context.TODO(), &git.CommitOptionsRequest{
+	options, err := new(gitSvc).CommitOptions(context.TODO(), &git.CommitOptionsRequest{
 		GitProjectId: "",
 		Branch:       "",
 	})
 	assert.Nil(t, err)
 	assert.Len(t, options.Items, 2)
 	gits.EXPECT().ListCommits(gomock.Any(), gomock.Any()).Return(nil, errors.New("")).Times(1)
-	_, err = new(GitSvc).CommitOptions(context.TODO(), &git.CommitOptionsRequest{
+	_, err = new(gitSvc).CommitOptions(context.TODO(), &git.CommitOptionsRequest{
 		GitProjectId: "",
 		Branch:       "",
 	})
@@ -204,11 +204,11 @@ func TestGitSvc_DisableProject(t *testing.T) {
 
 	testutil.AssertAuditLogFired(m, app)
 
-	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
+	_, err := new(gitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
 	})
 	assert.Nil(t, err)
-	_, err = new(GitSvc).DisableProject(auth.SetUser(context.TODO(), &contracts.UserInfo{}), &git.DisableProjectRequest{
+	_, err = new(gitSvc).DisableProject(auth.SetUser(context.TODO(), &contracts.UserInfo{}), &git.DisableProjectRequest{
 		GitProjectId: "123",
 	})
 	fromError, _ := status.FromError(err)
@@ -237,7 +237,7 @@ func TestGitSvc_DisableProject2(t *testing.T) {
 
 	testutil.AssertAuditLogFired(m, app)
 
-	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
+	_, err := new(gitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
 	})
 	assert.Nil(t, err)
@@ -263,11 +263,11 @@ func TestGitSvc_EnableProject(t *testing.T) {
 
 	testutil.AssertAuditLogFiredWithMsg(m, app, "关闭项目: n")
 
-	_, err := new(GitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
+	_, err := new(gitSvc).DisableProject(adminCtx(), &git.DisableProjectRequest{
 		GitProjectId: "123",
 	})
 	assert.Nil(t, err)
-	_, err = new(GitSvc).EnableProject(auth.SetUser(context.TODO(), &contracts.UserInfo{}), &git.EnableProjectRequest{
+	_, err = new(gitSvc).EnableProject(auth.SetUser(context.TODO(), &contracts.UserInfo{}), &git.EnableProjectRequest{
 		GitProjectId: "123",
 	})
 	fromError, _ := status.FromError(err)
@@ -296,7 +296,7 @@ func TestGitSvc_EnableProject2(t *testing.T) {
 
 	testutil.AssertAuditLogFired(m, app)
 
-	_, err := new(GitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
+	_, err := new(gitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
 		GitProjectId: "123",
 	})
 	assert.Nil(t, err)
@@ -321,7 +321,7 @@ func TestGitSvc_EnableProject_NotExistsInDB(t *testing.T) {
 
 	testutil.AssertAuditLogFired(m, app)
 
-	_, err := new(GitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
+	_, err := new(gitSvc).EnableProject(adminCtx(), &git.EnableProjectRequest{
 		GitProjectId: "123",
 	})
 	assert.Nil(t, err)
@@ -383,7 +383,7 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 		GlobalEnabled: true,
 		GlobalConfig:  string(marshal3),
 	})
-	file, err := new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	file, err := new(gitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "10",
 		Branch:       "dev",
 	})
@@ -392,26 +392,26 @@ func TestGitSvc_MarsConfigFile(t *testing.T) {
 	assert.Equal(t, "", file.Data)
 	gits := mockGitServer(m, app)
 	gits.EXPECT().GetFileContentWithBranch("11", "dev", "cfg.yaml").Return("", errors.New("aaa")).Times(1)
-	file, _ = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	file, _ = new(gitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "11",
 		Branch:       "dev",
 	})
 	assert.Equal(t, "", file.Data)
 	gits.EXPECT().GetFileContentWithBranch("11", "dev", "cfg.yaml").Return("aaa", nil).Times(1)
-	file, _ = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	file, _ = new(gitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "11",
 		Branch:       "dev",
 	})
 	assert.Equal(t, "aaa", file.Data)
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "cfg.yaml").Return("aaa", nil).Times(1)
 
-	new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	new(gitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "12",
 		Branch:       "dev",
 	})
 
 	gits.EXPECT().GetFileContentWithBranch("9999", "dev", ".mars.yaml").Return("", errors.New("aaa")).Times(1)
-	_, err = new(GitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
+	_, err = new(gitSvc).MarsConfigFile(context.TODO(), &git.MarsConfigFileRequest{
 		GitProjectId: "9999",
 		Branch:       "dev",
 	})
@@ -428,7 +428,7 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 	gitS.EXPECT().GetCommitPipeline("1", "xxx").Times(1).Return(pipe, nil)
 	pipe.EXPECT().GetStatus().Times(1).Return("status")
 	pipe.EXPECT().GetWebURL().Times(1).Return("weburl")
-	info, _ := new(GitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
+	info, _ := new(gitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
 		GitProjectId: "1",
 		Branch:       "dev",
 		Commit:       "xxx",
@@ -436,7 +436,7 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 	assert.Equal(t, "status", info.Status)
 	assert.Equal(t, "weburl", info.WebUrl)
 	gitS.EXPECT().GetCommitPipeline("1", "xxx").Times(1).Return(nil, errors.New("xxx"))
-	_, err := new(GitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
+	_, err := new(gitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
 		GitProjectId: "1",
 		Branch:       "dev",
 		Commit:       "xxx",
@@ -453,7 +453,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	c := mock.NewMockCacheInterface(m)
 	app.EXPECT().Cache().Return(c)
 	c.EXPECT().Remember(cache.NewKey("ProjectOptions"), 30, gomock.Any()).Return(nil, errors.New("xxx"))
-	_, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
+	_, err := new(gitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Equal(t, "xxx", err.Error())
 
 	db, f := testutil.SetGormDB(m, app)
@@ -489,7 +489,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	server.EXPECT().GetFileContentWithBranch("3", "dev2", ".mars.yaml").Return("", errors.New("xxx"))
 	db.CreateInBatches([]*models.GitProject{p1, p2, p3}, 2)
 	app.EXPECT().Cache().Return(&cache.NoCache{}).Times(1)
-	res, err := new(GitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
+	res, err := new(gitSvc).ProjectOptions(context.TODO(), &git.ProjectOptionsRequest{})
 	assert.Nil(t, err)
 	assert.Len(t, res.Items, 2)
 	assert.Equal(t, "a(app)", res.Items[0].Label)

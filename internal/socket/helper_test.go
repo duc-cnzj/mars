@@ -126,7 +126,7 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 				  template:
 				    metadata:
 				      labels:
-				        app: job-one
+				        app: jobRunner-one
 				    spec:
 				      containers:
 				      - name: pi
@@ -135,7 +135,7 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 				      restartPolicy: Never
 				  backoffLimit: 4
 				`),
-			out: "app=job-one",
+			out: "app=jobRunner-one",
 		},
 		{
 			in: dedent.Dedent(`

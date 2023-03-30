@@ -41,5 +41,5 @@ func Test_setEtag(t *testing.T) {
 		BuildDate: time.Now().Format("2006-01-02T15:04:05Z"),
 	}
 	setEtag(v)
-	assert.Equal(t, utils.Md5(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate)), Etag)
+	assert.Equal(t, utils.MD5(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate)), Etag)
 }

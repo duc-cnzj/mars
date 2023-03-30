@@ -28,7 +28,7 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		project.RegisterProjectServer(s, &ProjectSvc{
+		project.RegisterProjectServer(s, &projectSvc{
 			helmer:     &socket.DefaultHelmer{},
 			NewJobFunc: socket.NewJober,
 		})
@@ -36,13 +36,13 @@ func init() {
 	RegisterEndpoint(project.RegisterProjectHandlerFromEndpoint)
 }
 
-type ProjectSvc struct {
+type projectSvc struct {
 	helmer     contracts.Helmer
 	NewJobFunc socket.NewJobFunc
 	project.UnimplementedProjectServer
 }
 
-func (p *ProjectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
+func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
@@ -66,7 +66,7 @@ func (p *ProjectSvc) List(ctx context.Context, request *project.ListRequest) (*p
 	}, nil
 }
 
-func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
+func (p *projectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyRequest) (*project.DryRunApplyResponse, error) {
 	var pubsub contracts.PubSub = &plugins.EmptyPubSub{}
 	t := websocket.Type_ApplyProject
 	msger := newEmptyMessager()
@@ -105,7 +105,7 @@ func (p *ProjectSvc) ApplyDryRun(ctx context.Context, input *project.ApplyReques
 	return &project.DryRunApplyResponse{Results: job.Manifests()}, nil
 }
 
-func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
+func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_ApplyServer) error {
 	var pubsub contracts.PubSub = &plugins.EmptyPubSub{}
 	if input.WebsocketSync {
 		pubsub = plugins.GetWsSender().New("", "")
@@ -149,7 +149,7 @@ func (p *ProjectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	return err
 }
 
-func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger contracts.Msger) error {
+func (p *projectSvc) completeInput(input *project.ApplyRequest, msger contracts.Msger) error {
 	if input.GitCommit == "" {
 		commits, _ := plugins.GetGitServer().ListCommits(fmt.Sprintf("%d", input.GitProjectId), input.GitBranch)
 		if len(commits) < 1 {
@@ -162,7 +162,7 @@ func (p *ProjectSvc) completeInput(input *project.ApplyRequest, msger contracts.
 	return nil
 }
 
-func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
+func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest) (*project.DeleteResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (p *ProjectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	return &project.DeleteResponse{}, nil
 }
 
-func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
+func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*project.ShowResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -208,14 +208,14 @@ func (p *ProjectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 	}, nil
 }
 
-func (p *ProjectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
+func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
 	var pm = models.Project{ID: int(req.ProjectId)}
 	app.DB().Select("id", "version").First(&pm)
 
 	return &project.VersionResponse{Version: int64(pm.Version)}, nil
 }
 
-func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
+func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
 	var projectModel models.Project
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
@@ -252,7 +252,7 @@ func (p *ProjectSvc) AllContainers(ctx context.Context, request *project.AllCont
 	return &project.AllContainersResponse{Items: containerList}, nil
 }
 
-func (p *ProjectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {
+func (p *projectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {
 	marsC, err := utils.GetProjectMarsConfig(req.GitProjectId, req.GitBranch)
 	if err != nil {
 		return nil, err

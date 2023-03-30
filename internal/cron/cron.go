@@ -10,7 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
-type Manager struct {
+type cronManager struct {
 	runner contracts.CronRunner
 	app    contracts.ApplicationInterface
 
@@ -18,11 +18,11 @@ type Manager struct {
 	commands map[string]*command
 }
 
-func NewManager(runner contracts.CronRunner, app contracts.ApplicationInterface) *Manager {
-	return &Manager{commands: make(map[string]*command), runner: runner, app: app}
+func NewManager(runner contracts.CronRunner, app contracts.ApplicationInterface) contracts.CronManager {
+	return &cronManager{commands: make(map[string]*command), runner: runner, app: app}
 }
 
-func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
+func (m *cronManager) NewCommand(name string, fn func() error) contracts.Command {
 	m.Lock()
 	defer m.Unlock()
 	if _, ok := m.commands[name]; ok {
@@ -35,7 +35,7 @@ func (m *Manager) NewCommand(name string, fn func() error) contracts.Command {
 	return cmd
 }
 
-func (m *Manager) Run(ctx context.Context) error {
+func (m *cronManager) Run(ctx context.Context) error {
 	mlog.Info("[Server]: start cron.")
 	for _, callback := range RegisteredCronJobs() {
 		callback(m, m.app)
@@ -49,7 +49,7 @@ func (m *Manager) Run(ctx context.Context) error {
 	return m.runner.Run(ctx)
 }
 
-func (m *Manager) List() []contracts.Command {
+func (m *cronManager) List() []contracts.Command {
 	m.RLock()
 	defer m.RUnlock()
 	var cmds []contracts.Command
@@ -65,7 +65,7 @@ func (m *Manager) List() []contracts.Command {
 	return cmds
 }
 
-func (m *Manager) Shutdown(ctx context.Context) error {
+func (m *cronManager) Shutdown(ctx context.Context) error {
 	mlog.Info("[Server]: shutdown cron manager.")
 	return m.runner.Shutdown(ctx)
 }
