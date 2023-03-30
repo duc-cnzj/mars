@@ -35,10 +35,12 @@ func NewAccessToken(usage string, expiredAt time.Time, user *contracts.UserInfo)
 	return &AccessToken{Usage: usage, Email: user.Email, ExpiredAt: expiredAt, Token: uuid.New().String(), UserInfo: user.Json()}
 }
 
+// Expired token is expired.
 func (at *AccessToken) Expired() bool {
 	return time.Now().After(at.ExpiredAt)
 }
 
+// GetUserInfo return token userinfo.
 func (at *AccessToken) GetUserInfo() contracts.UserInfo {
 	var info contracts.UserInfo
 	json.Unmarshal([]byte(at.UserInfo), &info)

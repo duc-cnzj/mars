@@ -29,125 +29,125 @@ const (
 	SATURDAY
 )
 
-type Command struct {
+type command struct {
 	name       string
 	expression string
 
 	fn func()
 }
 
-func (c *Command) Func() func() {
+func (c *command) Func() func() {
 	return c.fn
 }
 
-func (c *Command) Expression() string {
+func (c *command) Expression() string {
 	return c.expression
 }
 
-func (c *Command) Name() string {
+func (c *command) Name() string {
 	return c.name
 }
 
-func (c *Command) Cron(expression string) contracts.Command {
+func (c *command) Cron(expression string) contracts.Command {
 	c.expression = expression
 	return c
 }
 
-func (c *Command) EverySecond() contracts.Command {
+func (c *command) EverySecond() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*")
 	return c
 }
 
-func (c *Command) EveryTwoSeconds() contracts.Command {
+func (c *command) EveryTwoSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/2")
 	return c
 }
 
-func (c *Command) EveryThreeSeconds() contracts.Command {
+func (c *command) EveryThreeSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/3")
 	return c
 }
 
-func (c *Command) EveryFourSeconds() contracts.Command {
+func (c *command) EveryFourSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/4")
 	return c
 }
 
-func (c *Command) EveryFiveSeconds() contracts.Command {
+func (c *command) EveryFiveSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/5")
 	return c
 }
 
-func (c *Command) EveryTenSeconds() contracts.Command {
+func (c *command) EveryTenSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/10")
 	return c
 }
 
-func (c *Command) EveryFifteenSeconds() contracts.Command {
+func (c *command) EveryFifteenSeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "*/15")
 	return c
 }
 
-func (c *Command) EveryThirtySeconds() contracts.Command {
+func (c *command) EveryThirtySeconds() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0,30")
 	return c
 }
 
-func (c *Command) EveryMinute() contracts.Command {
+func (c *command) EveryMinute() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*")
 	return c
 }
 
-func (c *Command) EveryTwoMinutes() contracts.Command {
+func (c *command) EveryTwoMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/2")
 	return c
 }
 
-func (c *Command) EveryThreeMinutes() contracts.Command {
+func (c *command) EveryThreeMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/3")
 	return c
 }
 
-func (c *Command) EveryFourMinutes() contracts.Command {
+func (c *command) EveryFourMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/4")
 	return c
 }
 
-func (c *Command) EveryFiveMinutes() contracts.Command {
+func (c *command) EveryFiveMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/5")
 	return c
 }
 
-func (c *Command) EveryTenMinutes() contracts.Command {
+func (c *command) EveryTenMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/10")
 	return c
 }
 
-func (c *Command) EveryFifteenMinutes() contracts.Command {
+func (c *command) EveryFifteenMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "*/15")
 	return c
 }
 
-func (c *Command) EveryThirtyMinutes() contracts.Command {
+func (c *command) EveryThirtyMinutes() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0,30")
 	return c
 }
 
-func (c *Command) Hourly() contracts.Command {
+func (c *command) Hourly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	return c
 }
 
-func (c *Command) HourlyAt(minutes []int) contracts.Command {
+func (c *command) HourlyAt(minutes []int) contracts.Command {
 	var minsStr []string
 	for _, day := range minutes {
 		minsStr = append(minsStr, strconv.Itoa(day))
@@ -160,46 +160,46 @@ func (c *Command) HourlyAt(minutes []int) contracts.Command {
 	return c
 }
 
-func (c *Command) EveryTwoHours() contracts.Command {
+func (c *command) EveryTwoHours() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "*/2")
 	return c
 }
 
-func (c *Command) EveryThreeHours() contracts.Command {
+func (c *command) EveryThreeHours() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "*/3")
 	return c
 }
 
-func (c *Command) EveryFourHours() contracts.Command {
+func (c *command) EveryFourHours() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "*/4")
 	return c
 }
 
-func (c *Command) EverySixHours() contracts.Command {
+func (c *command) EverySixHours() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "*/6")
 	return c
 }
 
-func (c *Command) Daily() contracts.Command {
+func (c *command) Daily() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
 	return c
 }
 
-func (c *Command) At(time string) contracts.Command {
+func (c *command) At(time string) contracts.Command {
 	return c.DailyAt(time)
 }
 
-func (c *Command) DailyAt(time string) contracts.Command {
+func (c *command) DailyAt(time string) contracts.Command {
 	hour, minute := "0", "0"
 	if time != "" {
 		split := strings.Split(time, ":")
@@ -214,51 +214,51 @@ func (c *Command) DailyAt(time string) contracts.Command {
 	return c
 }
 
-func (c *Command) Weekdays() contracts.Command {
+func (c *command) Weekdays() contracts.Command {
 	return c.Days([]int{MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY})
 }
 
-func (c *Command) Weekends() contracts.Command {
+func (c *command) Weekends() contracts.Command {
 	c.Days([]int{SATURDAY, SUNDAY})
 	return c
 }
 
-func (c *Command) Mondays() contracts.Command {
+func (c *command) Mondays() contracts.Command {
 	c.Days([]int{MONDAY})
 	return c
 }
 
-func (c *Command) Tuesdays() contracts.Command {
+func (c *command) Tuesdays() contracts.Command {
 	c.Days([]int{TUESDAY})
 	return c
 }
 
-func (c *Command) Wednesdays() contracts.Command {
+func (c *command) Wednesdays() contracts.Command {
 	c.Days([]int{WEDNESDAY})
 	return c
 }
 
-func (c *Command) Thursdays() contracts.Command {
+func (c *command) Thursdays() contracts.Command {
 	c.Days([]int{THURSDAY})
 	return c
 }
 
-func (c *Command) Fridays() contracts.Command {
+func (c *command) Fridays() contracts.Command {
 	c.Days([]int{FRIDAY})
 	return c
 }
 
-func (c *Command) Saturdays() contracts.Command {
+func (c *command) Saturdays() contracts.Command {
 	c.Days([]int{SATURDAY})
 	return c
 }
 
-func (c *Command) Sundays() contracts.Command {
+func (c *command) Sundays() contracts.Command {
 	c.Days([]int{SUNDAY})
 	return c
 }
 
-func (c *Command) Weekly() contracts.Command {
+func (c *command) Weekly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
@@ -266,7 +266,7 @@ func (c *Command) Weekly() contracts.Command {
 	return c
 }
 
-func (c *Command) WeeklyOn(day int, time string) contracts.Command {
+func (c *command) WeeklyOn(day int, time string) contracts.Command {
 	if time == "" {
 		time = "0:0"
 	}
@@ -275,7 +275,7 @@ func (c *Command) WeeklyOn(day int, time string) contracts.Command {
 	return c
 }
 
-func (c *Command) Monthly() contracts.Command {
+func (c *command) Monthly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
@@ -283,7 +283,7 @@ func (c *Command) Monthly() contracts.Command {
 	return c
 }
 
-func (c *Command) MonthlyOn(dayOfMonth string, time string) contracts.Command {
+func (c *command) MonthlyOn(dayOfMonth string, time string) contracts.Command {
 	if dayOfMonth == "" {
 		dayOfMonth = "1"
 	}
@@ -295,13 +295,13 @@ func (c *Command) MonthlyOn(dayOfMonth string, time string) contracts.Command {
 	return c
 }
 
-func (c *Command) LastDayOfMonth(time string) contracts.Command {
+func (c *command) LastDayOfMonth(time string) contracts.Command {
 	c.DailyAt(time)
 	c.spliceIntoPosition(POS_DAY_OF_MONTH, "L")
 	return c
 }
 
-func (c *Command) Quarterly() contracts.Command {
+func (c *command) Quarterly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
@@ -310,7 +310,7 @@ func (c *Command) Quarterly() contracts.Command {
 	return c
 }
 
-func (c *Command) QuarterlyOn(dayOfQuarter string, time string) contracts.Command {
+func (c *command) QuarterlyOn(dayOfQuarter string, time string) contracts.Command {
 	if dayOfQuarter == "" {
 		dayOfQuarter = "1"
 	}
@@ -320,7 +320,7 @@ func (c *Command) QuarterlyOn(dayOfQuarter string, time string) contracts.Comman
 	return c
 }
 
-func (c *Command) Yearly() contracts.Command {
+func (c *command) Yearly() contracts.Command {
 	c.spliceIntoPosition(POS_SECOND, "0")
 	c.spliceIntoPosition(POS_MINUTE, "0")
 	c.spliceIntoPosition(POS_HOUR, "0")
@@ -329,14 +329,14 @@ func (c *Command) Yearly() contracts.Command {
 	return c
 }
 
-func (c *Command) YearlyOn(month string, dayOfMonth string, time string) contracts.Command {
+func (c *command) YearlyOn(month string, dayOfMonth string, time string) contracts.Command {
 	c.DailyAt(time)
 	c.spliceIntoPosition(POS_DAY_OF_MONTH, dayOfMonth)
 	c.spliceIntoPosition(POS_MONTH, month)
 	return c
 }
 
-func (c *Command) Days(days []int) contracts.Command {
+func (c *command) Days(days []int) contracts.Command {
 	var daysStr []string
 	for _, day := range days {
 		daysStr = append(daysStr, strconv.Itoa(day))
@@ -346,7 +346,7 @@ func (c *Command) Days(days []int) contracts.Command {
 	return c
 }
 
-func (c *Command) spliceIntoPosition(pos int, val string) {
+func (c *command) spliceIntoPosition(pos int, val string) {
 	split := strings.Split(c.expression, " ")
 	split[pos] = val
 	c.expression = strings.Join(split, " ")

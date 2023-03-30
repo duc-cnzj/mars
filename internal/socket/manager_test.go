@@ -64,7 +64,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 	defer m.Finish()
 	em := &emptyMsger{}
 	h := mock.NewMockHelmer(m)
-	job := &Jober{
+	job := &jobRunner{
 		helmer: h,
 		input: &JobInput{
 			GitCommit:    "commit",
@@ -99,7 +99,7 @@ func TestChartFileLoader_Load2(t *testing.T) {
 
 func TestDynamicLoader_Load(t *testing.T) {
 	em := &emptyMsger{}
-	job := &Jober{
+	job := &jobRunner{
 		input: &JobInput{
 			Config: "xxxx",
 		},
@@ -115,7 +115,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 		`app:
   config: xxxx
 `, job.dynamicConfigYaml)
-	job2 := &Jober{
+	job2 := &jobRunner{
 		input: &JobInput{
 			Config: "name: duc\nage: 17",
 		},
@@ -135,7 +135,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 `, job2.dynamicConfigYaml)
 
 	em.msgs = []string{}
-	job3 := &Jober{
+	job3 := &jobRunner{
 		input:     &JobInput{},
 		messager:  em,
 		percenter: &emptyPercenter{},
@@ -147,7 +147,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 
 func TestExtraValuesLoader_Load(t *testing.T) {
 	em := &emptyMsger{}
-	job := &Jober{
+	job := &jobRunner{
 		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
@@ -190,7 +190,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 `,
 		job.extraValues[1])
 
-	err := (&ExtraValuesLoader{}).Load(&Jober{
+	err := (&ExtraValuesLoader{}).Load(&jobRunner{
 		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
@@ -216,7 +216,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "app->config 必须在 '1,2,3' 里面, 你传的是 4", err.Error())
 
-	j := &Jober{
+	j := &jobRunner{
 		input: &JobInput{
 			ExtraValues: []*types.ExtraValue{
 				{
@@ -246,7 +246,7 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	assert.True(t, strings.Contains(strings.Join(em.msgs, " "), "不允许自定义字段 app->config"))
 	assert.Equal(t, []string{"duc: xxx\n"}, j.extraValues)
 
-	j2 := &Jober{
+	j2 := &jobRunner{
 		input:     &JobInput{},
 		messager:  em,
 		percenter: &emptyPercenter{},
@@ -390,7 +390,7 @@ func TestJober_Commit(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	c := mock.NewMockCommitInterface(m)
-	j := &Jober{
+	j := &jobRunner{
 		commit: c,
 	}
 	assert.Same(t, c, j.Commit())
@@ -402,7 +402,7 @@ func TestJober_GetStoppedErrorIfHas(t *testing.T) {
 	msg := mock.NewMockDeployMsger(m)
 	msg.EXPECT().SendMsg(gomock.Any())
 	context, f := utils.NewCustomErrorContext()
-	j := &Jober{
+	j := &jobRunner{
 		slugName: "aaa",
 		messager: msg,
 		stopCtx:  context,
@@ -422,9 +422,9 @@ func TestJober_HandleMessage_AppDoneClosed(t *testing.T) {
 	app.EXPECT().Done().Return(done)
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
-	j := &Jober{
+	j := &jobRunner{
 		messager: msger,
-		messageCh: &SafeWriteMessageCh{
+		messageCh: &safeWriteMessageCh{
 			ch: ch,
 		},
 	}
@@ -438,9 +438,9 @@ func TestJober_HandleMessage_TextMessage(t *testing.T) {
 	app.EXPECT().Done().Return(nil).AnyTimes()
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
-	j := &Jober{
+	j := &jobRunner{
 		messager: msger,
-		messageCh: &SafeWriteMessageCh{
+		messageCh: &safeWriteMessageCh{
 			ch: ch,
 		},
 	}
@@ -466,12 +466,12 @@ func TestJober_HandleMessage_ErrorMessage(t *testing.T) {
 	app.EXPECT().Done().Return(nil).AnyTimes()
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
-	j := &Jober{
+	j := &jobRunner{
 		project:  &models.Project{},
 		stopCtx:  context.TODO(),
 		dryRun:   true,
 		messager: msger,
-		messageCh: &SafeWriteMessageCh{
+		messageCh: &safeWriteMessageCh{
 			ch: ch,
 		},
 	}
@@ -494,12 +494,12 @@ func TestJober_HandleMessage_SuccessMessage(t *testing.T) {
 	app.EXPECT().Done().Return(nil).AnyTimes()
 	ch := make(chan contracts.MessageItem, 10)
 	msger := mock.NewMockDeployMsger(m)
-	j := &Jober{
+	j := &jobRunner{
 		project:  &models.Project{},
 		stopCtx:  context.TODO(),
 		dryRun:   true,
 		messager: msger,
-		messageCh: &SafeWriteMessageCh{
+		messageCh: &safeWriteMessageCh{
 			ch: ch,
 		},
 	}
@@ -536,13 +536,13 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 	}
 	db.Create(&p)
 	assert.Greater(t, p.ID, 0)
-	j := &Jober{
+	j := &jobRunner{
 		project:  p,
 		stopCtx:  ctx,
 		dryRun:   false,
 		isNew:    true,
 		messager: msger,
-		messageCh: &SafeWriteMessageCh{
+		messageCh: &safeWriteMessageCh{
 			ch: ch,
 		},
 	}
@@ -558,34 +558,34 @@ func TestJober_HandleMessage_UserCanceled(t *testing.T) {
 }
 
 func TestJober_ID(t *testing.T) {
-	j := &Jober{
+	j := &jobRunner{
 		slugName: "aaa",
 	}
 	assert.Equal(t, "aaa", j.ID())
 }
 
 func TestJober_IsDryRun(t *testing.T) {
-	j := &Jober{
+	j := &jobRunner{
 		dryRun: true,
 	}
 	assert.True(t, j.IsDryRun())
 }
 
 func TestJober_IsNew(t *testing.T) {
-	j := &Jober{
+	j := &jobRunner{
 		isNew: true,
 	}
 	assert.True(t, j.IsNew())
 }
 
 func TestJober_IsStopped(t *testing.T) {
-	j := &Jober{
+	j := &jobRunner{
 		stopCtx: context.TODO(),
 	}
 	assert.False(t, j.IsStopped())
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	j2 := &Jober{
+	j2 := &jobRunner{
 		stopCtx: cancel,
 	}
 	assert.True(t, j2.IsStopped())
@@ -597,7 +597,7 @@ type emptyLoader struct {
 	sync.Mutex
 }
 
-func (e *emptyLoader) Load(jober *Jober) error {
+func (e *emptyLoader) Load(jober *jobRunner) error {
 	e.Lock()
 	defer e.Unlock()
 	e.called = true
@@ -615,7 +615,7 @@ func TestJober_LoadConfigs1(t *testing.T) {
 	ctx, fn := context.WithCancel(context.TODO())
 	fn()
 	l := &emptyLoader{}
-	assert.Equal(t, "context canceled", (&Jober{
+	assert.Equal(t, "context canceled", (&jobRunner{
 		messager: &emptyMsger{},
 		stopCtx:  ctx,
 		loaders:  []Loader{l},
@@ -624,13 +624,13 @@ func TestJober_LoadConfigs1(t *testing.T) {
 }
 
 func TestJober_LoadConfigs(t *testing.T) {
-	assert.Equal(t, "xxx", (&Jober{
+	assert.Equal(t, "xxx", (&jobRunner{
 		err:     errors.New("xxx"),
 		loaders: []Loader{},
 	}).LoadConfigs().Error().Error())
 
 	l := &emptyLoader{}
-	assert.Nil(t, (&Jober{
+	assert.Nil(t, (&jobRunner{
 		messager: &emptyMsger{},
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l},
@@ -640,7 +640,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	l2 := &emptyLoader{}
 	cancel, cancelFunc := context.WithCancel(context.TODO())
 	cancelFunc()
-	assert.Equal(t, "context canceled", (&Jober{
+	assert.Equal(t, "context canceled", (&jobRunner{
 		messager: &emptyMsger{},
 		stopCtx:  cancel,
 		loaders:  []Loader{l2},
@@ -650,7 +650,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 	l3 := &emptyLoader{
 		err: errors.New("xxx"),
 	}
-	assert.Equal(t, "xxx", (&Jober{
+	assert.Equal(t, "xxx", (&jobRunner{
 		messager: &emptyMsger{},
 		stopCtx:  context.TODO(),
 		loaders:  []Loader{l3},
@@ -659,7 +659,7 @@ func TestJober_LoadConfigs(t *testing.T) {
 }
 
 func TestJober_Manifests(t *testing.T) {
-	j := &Jober{
+	j := &jobRunner{
 		manifests: []string{"xxx"},
 	}
 	assert.Equal(t, []string{"xxx"}, j.Manifests())
@@ -667,7 +667,7 @@ func TestJober_Manifests(t *testing.T) {
 
 func TestJober_Messager(t *testing.T) {
 	m := NewMessageSender(nil, "", 0)
-	j := &Jober{
+	j := &jobRunner{
 		messager: m,
 	}
 	assert.Same(t, m, j.Messager())
@@ -675,7 +675,7 @@ func TestJober_Messager(t *testing.T) {
 
 func TestJober_Namespace(t *testing.T) {
 	ns := &models.Namespace{Name: "aaa"}
-	j := &Jober{
+	j := &jobRunner{
 		ns: ns,
 	}
 	assert.Same(t, ns, j.Namespace())
@@ -683,7 +683,7 @@ func TestJober_Namespace(t *testing.T) {
 
 func TestJober_Percenter(t *testing.T) {
 	p := newProcessPercent(nil, nil)
-	j := &Jober{
+	j := &jobRunner{
 		percenter: p,
 	}
 	assert.Same(t, p, j.Percenter())
@@ -691,14 +691,14 @@ func TestJober_Percenter(t *testing.T) {
 
 func TestJober_Project(t *testing.T) {
 	p := &models.Project{}
-	j := &Jober{
+	j := &jobRunner{
 		project: p,
 	}
 	assert.Same(t, p, j.Project())
 }
 
 func TestJober_ProjectModel(t *testing.T) {
-	j := &Jober{}
+	j := &jobRunner{}
 	assert.Nil(t, j.ProjectModel())
 	j.project = &models.Project{Name: "aa"}
 	assert.NotNil(t, j.ProjectModel())
@@ -709,7 +709,7 @@ func TestJober_PubSub(t *testing.T) {
 	defer m.Finish()
 
 	ps := mock.NewMockPubSub(m)
-	j := &Jober{
+	j := &jobRunner{
 		pubsub: ps,
 	}
 	assert.Same(t, ps, j.PubSub())
@@ -717,7 +717,7 @@ func TestJober_PubSub(t *testing.T) {
 
 func TestJober_ReleaseInstaller(t *testing.T) {
 	ri := &releaseInstaller{}
-	j := &Jober{
+	j := &jobRunner{
 		installer: ri,
 	}
 	assert.Same(t, ri, j.ReleaseInstaller())
@@ -734,7 +734,7 @@ func TestJober_Run_Fail(t *testing.T) {
 	defer closeFn()
 	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Event{}, &models.Changelog{}))
 
-	msgCh := &SafeWriteMessageCh{
+	msgCh := &safeWriteMessageCh{
 		ch: make(chan contracts.MessageItem, 100),
 	}
 	proj := &models.Project{
@@ -752,7 +752,7 @@ func TestJober_Run_Fail(t *testing.T) {
 	commit := mock.NewMockCommitInterface(m)
 	commit.EXPECT().GetTitle().Return("xxx").Times(1)
 	rinstaller.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "xxx").Return(nil, errors.New("xxx"))
-	job := &Jober{
+	job := &jobRunner{
 		project:   proj,
 		isNew:     true,
 		dryRun:    false,
@@ -776,7 +776,7 @@ func TestJober_Run_Success(t *testing.T) {
 	defer closeFn()
 	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Event{}, &models.Changelog{}, &models.GitProject{}))
 
-	msgCh := &SafeWriteMessageCh{
+	msgCh := &safeWriteMessageCh{
 		ch: make(chan contracts.MessageItem, 100),
 	}
 	proj := &models.Project{
@@ -859,7 +859,7 @@ spec:
 	d.Listen(events.EventAuditLog, events.HandleAuditLog)
 	app.EXPECT().EventDispatcher().Return(d).AnyTimes()
 
-	job := &Jober{
+	job := &jobRunner{
 		percenter: &emptyPercenter{},
 		user: contracts.UserInfo{
 			Name: "duc",
@@ -952,7 +952,7 @@ func TestJober_Stop(t *testing.T) {
 	msg := mock.NewMockDeployMsger(m)
 	msg.EXPECT().SendMsg(gomock.Any()).Times(3)
 	var called int64 = 0
-	j := &Jober{messager: msg, stopFn: func(err error) {
+	j := &jobRunner{messager: msg, stopFn: func(err error) {
 		atomic.AddInt64(&called, 1)
 	}}
 	wg := sync.WaitGroup{}
@@ -969,7 +969,7 @@ func TestJober_Stop(t *testing.T) {
 }
 
 func TestJober_User(t *testing.T) {
-	j := &Jober{}
+	j := &jobRunner{}
 	assert.IsType(t, contracts.UserInfo{}, j.User())
 }
 
@@ -1009,7 +1009,7 @@ func TestJober_Validate_VersionMatch(t *testing.T) {
 	gits.EXPECT().GetFileContentWithBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	h := mock.NewMockHelmer(m)
 	ps := mock.NewMockPubSub(m)
-	job := &Jober{
+	job := &jobRunner{
 		pubsub: ps,
 		helmer: h,
 		input: &JobInput{
@@ -1119,7 +1119,7 @@ app:
 app:
   four: 4
 `
-	job := &Jober{
+	job := &jobRunner{
 		dynamicConfigYaml: dcy,
 		imagePullSecrets:  []string{"secret"},
 		valuesYaml:        vy,
@@ -1132,7 +1132,7 @@ app:
 	assert.Nil(t, (&MergeValuesLoader{}).Load(job))
 	assert.Equal(t, "/app/config.yaml", job.valuesOptions.ValueFiles[0])
 
-	job2 := &Jober{
+	job2 := &jobRunner{
 		dynamicConfigYaml: "",
 		imagePullSecrets:  nil,
 		valuesYaml:        "",
@@ -1154,7 +1154,7 @@ func TestNewJober(t *testing.T) {
 	testutil.MockApp(m).EXPECT().CacheLock().Return(l).Times(2)
 	input := &JobInput{}
 	user := contracts.UserInfo{Name: "duc"}
-	job := NewJober(input, user, "x", msg, ps, 10, WithDryRun()).(*Jober)
+	job := NewJober(input, user, "x", msg, ps, 10, WithDryRun()).(*jobRunner)
 	assert.False(t, job.IsNotDryRun())
 
 	assert.Equal(t, &DefaultHelmer{}, job.helmer)
@@ -1169,7 +1169,7 @@ func TestNewJober(t *testing.T) {
 	assert.Equal(t, int64(10), job.timeoutSeconds)
 	assert.Same(t, l, job.locker)
 	assert.NotNil(t, job.messageCh)
-	assert.Equal(t, 100, cap(job.messageCh.(*SafeWriteMessageCh).ch))
+	assert.Equal(t, 100, cap(job.messageCh.(*safeWriteMessageCh).ch))
 	assert.Equal(t, newProcessPercent(msg, &realSleeper{}), job.percenter)
 
 	assert.Implements(t, (*contracts.Job)(nil), NewJober(&JobInput{}, contracts.UserInfo{}, "", nil, nil, 10))
@@ -1215,7 +1215,7 @@ func (e *emptyPercenter) To(percent int64) {
 func TestReleaseInstallerLoader_Load(t *testing.T) {
 	ep := &emptyPercenter{}
 	em := &emptyMsger{}
-	job := &Jober{
+	job := &jobRunner{
 		chart:          &chart.Chart{},
 		valuesOptions:  &values.Options{},
 		percenter:      ep,
@@ -1247,7 +1247,7 @@ func TestReleaseInstallerLoader_Load(t *testing.T) {
 
 func TestSafeWriteMessageCh_Chan(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
-	sc := &SafeWriteMessageCh{
+	sc := &safeWriteMessageCh{
 		ch: ch,
 	}
 	fn := func() <-chan contracts.MessageItem {
@@ -1258,7 +1258,7 @@ func TestSafeWriteMessageCh_Chan(t *testing.T) {
 
 func TestSafeWriteMessageCh_Closed(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
-	sc := &SafeWriteMessageCh{
+	sc := &safeWriteMessageCh{
 		ch: ch,
 	}
 	sc.Close()
@@ -1268,7 +1268,7 @@ func TestSafeWriteMessageCh_Closed(t *testing.T) {
 
 func TestSafeWriteMessageCh_Send(t *testing.T) {
 	ch := make(chan contracts.MessageItem, 10)
-	sc := &SafeWriteMessageCh{
+	sc := &safeWriteMessageCh{
 		ch: ch,
 	}
 	wg := sync.WaitGroup{}
@@ -1306,12 +1306,12 @@ func TestVariableLoader_Load(t *testing.T) {
 	pipe.EXPECT().GetRef().Return("dev")
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(pipe, nil)
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)
 	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
-	job := &Jober{
+	job := &jobRunner{
 		commit: commit,
 		config: &mars.Config{
 			ValuesYaml: `
@@ -1340,7 +1340,7 @@ image: 9999-dev
 	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
 
 	em2 := &emptyMsger{}
-	job2 := &Jober{
+	job2 := &jobRunner{
 		commit: commit,
 		config: &mars.Config{
 			ValuesYaml: "",
@@ -1374,12 +1374,12 @@ func TestVariableLoader_Load_ok(t *testing.T) {
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)
 	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
-	job := &Jober{
+	job := &jobRunner{
 		commit: commit,
 		config: &mars.Config{
 			ValuesYaml: `
@@ -1422,12 +1422,12 @@ func TestVariableLoader_Load_fail(t *testing.T) {
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
 	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
-	app.EXPECT().GetPluginByName("domain").Return(&domainmanager.DefaultDomainManager{}).AnyTimes()
+	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
 	em := &emptyMsger{}
 	commit := mock.NewMockCommitInterface(m)
 	commit.EXPECT().GetShortID().Return("short_id").AnyTimes()
-	job := &Jober{
+	job := &jobRunner{
 		commit: commit,
 		config: &mars.Config{
 			ValuesYaml: `
@@ -1449,7 +1449,7 @@ image: <.Pipeline>-<.Branch>
 }
 
 func TestWithDryRun(t *testing.T) {
-	j := &Jober{dryRun: false}
+	j := &jobRunner{dryRun: false}
 	WithDryRun()(j)
 	assert.True(t, j.dryRun)
 }
@@ -1587,9 +1587,9 @@ func Test_defaultFileOpener_Open(t *testing.T) {
 
 func TestJober_GlobalLock(t *testing.T) {
 	l := cachelock.NewMemoryLock([2]int{2, 100}, cachelock.NewMemStore())
-	job := &Jober{locker: l, slugName: "id"}
+	job := &jobRunner{locker: l, slugName: "id"}
 	assert.Nil(t, job.GlobalLock().Error())
-	assert.Equal(t, "正在部署中，请稍后再试", (&Jober{locker: l, slugName: "id"}).GlobalLock().Error().Error())
+	assert.Equal(t, "正在部署中，请稍后再试", (&jobRunner{locker: l, slugName: "id"}).GlobalLock().Error().Error())
 	assert.Len(t, job.finallyCallback.Sort(), 1)
 	called := 0
 	pipeline.NewPipeline[error]().Send(nil).Through(job.finallyCallback.Sort()...).Then(func(e error) {
@@ -1604,7 +1604,7 @@ func TestJober_GlobalLock(t *testing.T) {
 	defer m.Finish()
 	ml := mock.NewMockLocker(m)
 	ml.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
+	assert.Equal(t, "xxx", (&jobRunner{err: errors.New("xxx"), locker: ml}).GlobalLock().Error().Error())
 }
 
 func TestJober_Validate_Error(t *testing.T) {
@@ -1612,9 +1612,9 @@ func TestJober_Validate_Error(t *testing.T) {
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendMsg(gomock.Any()).Times(0)
-	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx"), messager: msger}).Validate().Error().Error())
+	assert.Equal(t, "xxx", (&jobRunner{err: errors.New("xxx"), messager: msger}).Validate().Error().Error())
 
-	assert.Equal(t, errors.New("type error: "+websocket_pb.Type_TypeUnknown.String()), (&Jober{messager: msger, input: &JobInput{Type: websocket_pb.Type_TypeUnknown}}).Validate().Error())
+	assert.Equal(t, errors.New("type error: "+websocket_pb.Type_TypeUnknown.String()), (&jobRunner{messager: msger, input: &JobInput{Type: websocket_pb.Type_TypeUnknown}}).Validate().Error())
 }
 
 func TestJober_Validate_NamespaceNotExists(t *testing.T) {
@@ -1624,7 +1624,7 @@ func TestJober_Validate_NamespaceNotExists(t *testing.T) {
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.Namespace{})
-	err := (&Jober{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: 100}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
+	err := (&jobRunner{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: 100}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
 	assert.Equal(t, "[FAILED]: 校验名称空间: record not found", err.Error())
 }
 
@@ -1639,7 +1639,7 @@ func TestJober_Validate_GetProjectMarsConfigError(t *testing.T) {
 	db.Create(ns)
 	gits := testutil.MockGitServer(m, app)
 	gits.EXPECT().GetFileContentWithBranch("100", "dev", ".mars.yaml").Return("", errors.New("xxx"))
-	err := (&Jober{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
+	err := (&jobRunner{input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}).Validate().Error()
 	assert.Equal(t, "xxx", err.Error())
 }
 
@@ -1660,7 +1660,7 @@ func TestJober_Validate_Create(t *testing.T) {
 	pubsub := mock.NewMockPubSub(m)
 	pubsub.EXPECT().ToAll(reloadProjectsMessage(ns.ID)).Times(1)
 	gits.EXPECT().GetCommit(gomock.Any(), gomock.Any()).Return(nil, errors.New("commit err"))
-	job := &Jober{pubsub: pubsub, input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	job := &jobRunner{pubsub: pubsub, input: &JobInput{Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
 	err := job.
 		Validate().
 		Error()
@@ -1710,7 +1710,7 @@ func TestJober_Validate_Update(t *testing.T) {
 	p := &models.Project{Name: "app", NamespaceId: ns.ID}
 	db.Create(p)
 	assert.Equal(t, 1, p.Version)
-	job := &Jober{pubsub: pubsub, input: &JobInput{Version: int64(p.Version), Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	job := &jobRunner{pubsub: pubsub, input: &JobInput{Version: int64(p.Version), Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
 	err := job.
 		Validate().
 		Error()
@@ -1750,7 +1750,7 @@ func TestJober_Validate_ErrVersionNotMatched(t *testing.T) {
 	p := &models.Project{Name: "app", NamespaceId: ns.ID}
 	db.Create(p)
 	assert.Equal(t, 1, p.Version)
-	job := &Jober{input: &JobInput{Version: int64(p.Version) + 1, Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
+	job := &jobRunner{input: &JobInput{Version: int64(p.Version) + 1, Name: "app", Type: websocket_pb.Type_ApplyProject, NamespaceId: int64(ns.ID), GitProjectId: 100, GitBranch: "dev"}, messager: &emptyMsger{}, percenter: &emptyPercenter{}}
 	err := job.
 		Validate().
 		Error()
@@ -1782,13 +1782,13 @@ func TestJober_WsTypeValidated(t *testing.T) {
 		tt := test
 		t.Run(fmt.Sprintf("WsTypeValidated: %v %t", tt.t.String(), tt.result), func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.result, (&Jober{input: &JobInput{Type: tt.t}}).WsTypeValidated())
+			assert.Equal(t, tt.result, (&jobRunner{input: &JobInput{Type: tt.t}}).WsTypeValidated())
 		})
 	}
 }
 
 func TestJober_Run(t *testing.T) {
-	assert.Equal(t, "xxx", (&Jober{err: errors.New("xxx")}).Run().Error().Error())
+	assert.Equal(t, "xxx", (&jobRunner{err: errors.New("xxx")}).Run().Error().Error())
 }
 
 func TestJober_Finish_WhenError(t *testing.T) {
@@ -1797,7 +1797,7 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	msger := mock.NewMockDeployMsger(m)
 	stopCtx, stopFn := utils.NewCustomErrorContext()
 	stopFn(errors.New("stopped"))
-	job := &Jober{err: errors.New("xxx"), messager: msger, stopCtx: stopCtx, stopFn: stopFn}
+	job := &jobRunner{err: errors.New("xxx"), messager: msger, stopCtx: stopCtx, stopFn: stopFn}
 	successCalled := 0
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
@@ -1821,7 +1821,7 @@ func TestJober_Finish_WhenError(t *testing.T) {
 	assert.Equal(t, 1, errorCalled)
 
 	// failed
-	job2 := &Jober{err: errors.New("xxx"), messager: msger, stopCtx: context.TODO()}
+	job2 := &jobRunner{err: errors.New("xxx"), messager: msger, stopCtx: context.TODO()}
 	msger.EXPECT().SendDeployedResult(websocket_pb.ResultType_DeployedFailed, "xxx", nil).Times(1)
 	job2.Finish()
 }
@@ -1829,7 +1829,7 @@ func TestJober_Finish_WhenSuccess(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
-	job := &Jober{messager: msger}
+	job := &jobRunner{messager: msger}
 	successCalled := 0
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
 		sendResultToUser()
@@ -1855,7 +1855,7 @@ func TestJober_Finish_WhenSuccess(t *testing.T) {
 }
 
 func TestJober_OnError(t *testing.T) {
-	job := &Jober{err: errors.New("xxx")}
+	job := &jobRunner{err: errors.New("xxx")}
 	job.OnError(1, func(err error, sendResultToUser func()) {
 		assert.Equal(t, "xxx", err.Error())
 		sendResultToUser()
@@ -1870,7 +1870,7 @@ func TestJober_OnError(t *testing.T) {
 }
 
 func TestJober_OnSuccess(t *testing.T) {
-	job := &Jober{}
+	job := &jobRunner{}
 	job.OnSuccess(1, func(err error, sendResultToUser func()) {
 		assert.Nil(t, err)
 		sendResultToUser()
@@ -1893,7 +1893,7 @@ func TestJober_OnFinally(t *testing.T) {
 		tt := test
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
-			job := &Jober{err: tt}
+			job := &jobRunner{err: tt}
 			job.OnFinally(1, func(err error, sendResultToUser func()) {
 				assert.Equal(t, tt, err)
 				sendResultToUser()
@@ -1913,7 +1913,7 @@ func TestChartFileLoader_Load(t *testing.T) {
 	defer m.Finish()
 	em := &emptyMsger{}
 	h := mock.NewMockHelmer(m)
-	job := &Jober{
+	job := &jobRunner{
 		helmer: h,
 		input: &JobInput{
 			GitProjectId: 100,

@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 )
 
-func Md5(data string) string {
+// MD5 md5
+func MD5(data string) string {
 	hash := md5.New()
 	hash.Write([]byte(data))
 

@@ -25,6 +25,7 @@ type gormLoggerAdapter struct {
 
 type GormLoggerOption func(*gormLoggerAdapter)
 
+// GormLoggerWithSlowLog slow log switch.
 func GormLoggerWithSlowLog(enabled bool, slowThreshold time.Duration) func(*gormLoggerAdapter) {
 	return func(l *gormLoggerAdapter) {
 		l.slowLogEnabled = enabled
@@ -32,7 +33,8 @@ func GormLoggerWithSlowLog(enabled bool, slowThreshold time.Duration) func(*gorm
 	}
 }
 
-func NewGormLoggerAdapter(opts ...GormLoggerOption) *gormLoggerAdapter {
+// NewGormLoggerAdapter return logger.Interface.
+func NewGormLoggerAdapter(opts ...GormLoggerOption) logger.Interface {
 	l := &gormLoggerAdapter{level: logger.Warn, slowLogEnabled: false, slowLogThreshold: defaultSlowThreshold}
 	for _, opt := range opts {
 		opt(l)
@@ -40,30 +42,35 @@ func NewGormLoggerAdapter(opts ...GormLoggerOption) *gormLoggerAdapter {
 	return l
 }
 
+// LogMode log mode
 func (g *gormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
 	g.level = level
 
 	return g
 }
 
+// Info print info
 func (g *gormLoggerAdapter) Info(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Info {
 		mlog.Infof(s, i...)
 	}
 }
 
+// Warn print warn messages
 func (g *gormLoggerAdapter) Warn(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Warn {
 		mlog.Warningf(s, i...)
 	}
 }
 
+// Error print error messages
 func (g *gormLoggerAdapter) Error(ctx context.Context, s string, i ...any) {
 	if g.level >= logger.Error {
 		mlog.Errorf(s, i...)
 	}
 }
 
+// Trace print sql message
 func (g *gormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	const (
 		traceStr     = "[SQL]: [%.3fms] [rows:%v] %s %s"

@@ -52,7 +52,7 @@ func TestContainer_ContainerLog(t *testing.T) {
 		PodLister: testutil.NewPodLister(pod),
 	})
 
-	_, err := new(Container).ContainerLog(context.TODO(), &container.LogRequest{
+	_, err := new(containerSvc).ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "naas",
 		Pod:       "poaaa",
 		Container: "app",
@@ -60,7 +60,7 @@ func TestContainer_ContainerLog(t *testing.T) {
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
 
-	log, err := new(Container).ContainerLog(context.TODO(), &container.LogRequest{
+	log, err := new(containerSvc).ContainerLog(context.TODO(), &container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -102,7 +102,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 		ContainerPath: "/tmp/aa.txt",
 		FileName:      "aa.txt",
 	}, nil)
-	res, err := (&Container{
+	res, err := (&containerSvc{
 		PodFileCopier: pfc,
 	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    int64(file.ID),
@@ -114,7 +114,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 	assert.Equal(t, "/tmp", res.PodFilePath)
 	assert.Equal(t, "aa.txt", res.FileName)
 
-	_, err = (&Container{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+	_, err = (&containerSvc{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    int64(file.ID),
 		Namespace: "xxx",
 		Pod:       "xxx",
@@ -122,7 +122,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
-	_, err = (&Container{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
+	_, err = (&containerSvc{}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    1111111,
 		Namespace: "dev",
 		Pod:       "po1",
@@ -131,7 +131,7 @@ func TestContainer_CopyToPod(t *testing.T) {
 	assert.Error(t, err)
 
 	pfc.EXPECT().Copy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
-	_, err = (&Container{
+	_, err = (&containerSvc{
 		PodFileCopier: pfc,
 	}).CopyToPod(adminCtx(), &container.CopyToPodRequest{
 		FileId:    int64(file.ID),
@@ -181,7 +181,7 @@ func TestContainer_Exec(t *testing.T) {
 		PodLister: testutil.NewPodLister(pod),
 	})
 
-	err := (&Container{}).Exec(&container.ExecRequest{
+	err := (&containerSvc{}).Exec(&container.ExecRequest{
 		Namespace: "ducxx",
 		Pod:       "not_exists",
 		Container: "app",
@@ -200,7 +200,7 @@ func TestContainer_Exec(t *testing.T) {
 	r.EXPECT().Write("mars@app:/# sh -c ls").Times(1)
 	r.EXPECT().Write("\r\n").Times(1)
 	r.EXPECT().Close().Times(1)
-	err = (&Container{
+	err = (&containerSvc{
 		Executor: re,
 		NewRecorderFunc: func(action types.EventActionType, user contracts.UserInfo, timer timer.Timer, container contracts.Container) contracts.RecorderInterface {
 			assert.Equal(t, "duc", user.Name)
@@ -278,7 +278,7 @@ func TestContainer_Exec_Success(t *testing.T) {
 	r.EXPECT().Close().Times(1)
 	var mu sync.Mutex
 	var result []*container.ExecResponse
-	err := (&Container{
+	err := (&containerSvc{
 		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			assert.Equal(t, "duc", info.Name)
 			return r
@@ -320,7 +320,7 @@ func TestContainer_Exec_SuccessWithDefaultContainer(t *testing.T) {
 			Name:      "pod1",
 			Namespace: "duc",
 			Annotations: map[string]string{
-				DefaultContainerAnnotationName: "app-default",
+				defaultContainerAnnotationName: "app-default",
 			},
 		},
 		Spec: v1.PodSpec{Containers: []v1.Container{
@@ -343,7 +343,7 @@ func TestContainer_Exec_SuccessWithDefaultContainer(t *testing.T) {
 	r.EXPECT().Close().Times(1)
 	var mu sync.Mutex
 	var result []*container.ExecResponse
-	err := (&Container{
+	err := (&containerSvc{
 		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			assert.Equal(t, "app-default", c.Container)
 			assert.Equal(t, "duc", info.Name)
@@ -400,7 +400,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 	r.EXPECT().Write("\r\n").Times(1)
 	r.EXPECT().Close().Times(1)
 	var result []*container.ExecResponse
-	err := (&Container{
+	err := (&containerSvc{
 		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r
 		},
@@ -436,7 +436,7 @@ func TestContainer_Exec_Error(t *testing.T) {
 	r2.EXPECT().Write("\r\n").Times(1)
 	r2.EXPECT().Write("aaa").Times(1)
 	r2.EXPECT().Close().Times(1)
-	err = (&Container{
+	err = (&containerSvc{
 		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r2
 		},
@@ -487,7 +487,7 @@ func TestContainer_Exec_ErrorWithClientCtxDone(t *testing.T) {
 	r := mock.NewMockRecorderInterface(m)
 	r.EXPECT().Write(gomock.Any()).AnyTimes()
 	r.EXPECT().Close().Times(1)
-	err := (&Container{
+	err := (&containerSvc{
 		NewRecorderFunc: func(actionType types.EventActionType, info contracts.UserInfo, timer timer.Timer, c contracts.Container) contracts.RecorderInterface {
 			return r
 		},
@@ -529,12 +529,12 @@ func TestContainer_IsPodExists(t *testing.T) {
 		Client:    fake.NewSimpleClientset(pod1),
 		PodLister: testutil.NewPodLister(pod1),
 	})
-	exist, _ := new(Container).IsPodExists(context.TODO(), &container.IsPodExistsRequest{
+	exist, _ := new(containerSvc).IsPodExists(context.TODO(), &container.IsPodExistsRequest{
 		Namespace: "nsxx",
 		Pod:       "podxxx",
 	})
 	assert.Equal(t, false, exist.Exists)
-	exist, _ = new(Container).IsPodExists(context.TODO(), &container.IsPodExistsRequest{
+	exist, _ = new(containerSvc).IsPodExists(context.TODO(), &container.IsPodExistsRequest{
 		Namespace: "ns",
 		Pod:       "pod",
 	})
@@ -557,12 +557,12 @@ func TestContainer_IsPodRunning(t *testing.T) {
 		},
 	}
 	app.EXPECT().K8sClient().Times(2).Return(&contracts.K8sClient{Client: fake.NewSimpleClientset(pod), PodLister: testutil.NewPodLister(pod)})
-	running, _ := new(Container).IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
+	running, _ := new(containerSvc).IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
 		Namespace: "nsxx",
 		Pod:       "podxxx",
 	})
 	assert.Equal(t, false, running.Running)
-	running, _ = new(Container).IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
+	running, _ = new(containerSvc).IsPodRunning(context.TODO(), &container.IsPodRunningRequest{
 		Namespace: "ns",
 		Pod:       "pod",
 	})
@@ -652,7 +652,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 		Client:    fk,
 		PodLister: testutil.NewPodLister(pod, podSuccessed),
 	})
-	err := (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
+	err := (&containerSvc{Steamer: &defaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "naas",
 		Pod:       "poaaa",
 		Container: "app",
@@ -660,7 +660,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
 
-	err = (&Container{Steamer: &errorStreamer{}}).StreamContainerLog(&container.LogRequest{
+	err = (&containerSvc{Steamer: &errorStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -669,7 +669,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 
 	var mu sync.Mutex
 	var result []*container.LogResponse
-	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
+	err = (&containerSvc{Steamer: &defaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -684,7 +684,7 @@ func TestContainer_StreamContainerLog(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	result = nil
-	err = (&Container{Steamer: &DefaultStreamer{}}).StreamContainerLog(&container.LogRequest{
+	err = (&containerSvc{Steamer: &defaultStreamer{}}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod-succeeded",
 		Container: "app",
@@ -726,7 +726,7 @@ func TestContainer_StreamContainerLog_AppDone(t *testing.T) {
 	app.EXPECT().Done().Return(done).AnyTimes()
 
 	ms := &myStreamer{}
-	err := (&Container{Steamer: ms}).StreamContainerLog(&container.LogRequest{
+	err := (&containerSvc{Steamer: ms}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -765,7 +765,7 @@ func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
 	var mu sync.Mutex
 	var result []*container.LogResponse
 	ms := &myStreamer{}
-	err := (&Container{Steamer: ms}).StreamContainerLog(&container.LogRequest{
+	err := (&containerSvc{Steamer: ms}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -783,7 +783,7 @@ func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
 	assert.True(t, ms.s.(*streamReadClose).closed)
 
 	ms2 := &myStreamer{}
-	err = (&Container{Steamer: ms2}).StreamContainerLog(&container.LogRequest{
+	err = (&containerSvc{Steamer: ms2}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -799,7 +799,7 @@ func TestContainer_StreamContainerLog_ServerSend(t *testing.T) {
 	ms3 := &myStreamer{}
 	c, cn := context.WithCancel(context.TODO())
 	cn()
-	err = (&Container{Steamer: ms3}).StreamContainerLog(&container.LogRequest{
+	err = (&containerSvc{Steamer: ms3}).StreamContainerLog(&container.LogRequest{
 		Namespace: "duc",
 		Pod:       "pod1",
 		Container: "app",
@@ -927,7 +927,7 @@ func TestContainer_StreamCopyToPod(t *testing.T) {
 		ContainerPath: "/tmp/aa.txt",
 		FileName:      "aa.txt",
 	}, nil)
-	err := (&Container{
+	err := (&containerSvc{
 		PodFileCopier: pfc,
 	}).StreamCopyToPod(s)
 	assert.Nil(t, err)
@@ -964,7 +964,7 @@ func TestFindDefaultContainer(t *testing.T) {
 			Name:      "xx",
 			Namespace: "ns",
 			Annotations: map[string]string{
-				DefaultContainerAnnotationName: "app2",
+				defaultContainerAnnotationName: "app2",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -984,7 +984,7 @@ func TestFindDefaultContainer(t *testing.T) {
 			Name:      "xx",
 			Namespace: "ns",
 			Annotations: map[string]string{
-				DefaultContainerAnnotationName: "app3",
+				defaultContainerAnnotationName: "app3",
 			},
 		},
 		Spec: v1.PodSpec{

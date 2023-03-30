@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
+	"math/big"
 	"testing"
 	"time"
 
@@ -37,6 +38,22 @@ func TestAuth_Sign(t *testing.T) {
 	assert.Equal(t, "1025434218@qq.com", token.StandardClaims.Subject)
 	assert.Equal(t, []string{"admin"}, token.UserInfo.Roles)
 	assert.Equal(t, "xxx", token.UserInfo.LogoutUrl)
+
+	pk := &rsa.PrivateKey{
+		PublicKey: rsa.PublicKey{
+			N: big.NewInt(1),
+		},
+	}
+	assert.Less(t, pk.Size(), 11)
+	authError := NewJwtAuth(pk, nil)
+	_, err = authError.Sign(contracts.UserInfo{
+		LogoutUrl: "xxx",
+		Roles:     []string{"admin"},
+		ID:        "1",
+		Email:     "1025434218@qq.com",
+		Name:      "duc",
+	})
+	assert.Error(t, err)
 }
 
 func TestAuth_VerifyToken(t *testing.T) {

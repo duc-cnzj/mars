@@ -23,7 +23,7 @@ func TestManager_SetDB(t *testing.T) {
 	manager := NewManager(nil)
 	db := gorm.DB{}
 	manager.SetDB(&db)
-	assert.Same(t, &db, manager.db)
+	assert.Same(t, &db, manager.(*dbManager).db)
 }
 
 func TestNewManager(t *testing.T) {
@@ -141,7 +141,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	s, _ := db.DB()
 	defer s.Close()
 
-	ma := &Manager{db: db}
+	ma := &dbManager{db: db}
 	assert.Nil(t, db.AutoMigrate(&Changelog{}, &GitlabProject{}, &Project{}, &Commands{}, &Event{}, &File{}, &Namespace{}))
 	assert.True(t, db.Migrator().HasColumn(&Changelog{}, "gitlab_project_id"))
 	assert.True(t, db.Migrator().HasTable("gitlab_projects"))
@@ -244,7 +244,7 @@ func TestManager_AutoMigrate2(t *testing.T) {
 	s, _ := db.DB()
 	defer s.Close()
 
-	ma := &Manager{db: db}
+	ma := &dbManager{db: db}
 	assert.Nil(t, db.AutoMigrate(&models.Project{}, &models.Namespace{}, &models.Changelog{}, &models.GitProject{}, &models.Event{}))
 
 	p := &models.Project{

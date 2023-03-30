@@ -104,19 +104,19 @@ func TestManager_Shutdown(t *testing.T) {
 
 func TestNewManager(t *testing.T) {
 	manager := NewManager(nil, nil)
-	assert.NotNil(t, manager.commands)
+	assert.NotNil(t, manager.(*cronManager).commands)
 	assert.Implements(t, (*contracts.CronManager)(nil), manager)
 }
 
 func Test_sortCommand(t *testing.T) {
 	cmds := []contracts.Command{
-		&Command{
+		&command{
 			name: "c",
 		},
-		&Command{
+		&command{
 			name: "a",
 		},
-		&Command{
+		&command{
 			name: "b",
 		},
 	}

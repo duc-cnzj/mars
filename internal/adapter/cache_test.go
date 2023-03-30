@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/duc-cnzj/mars/v4/internal/cache"
 )
 
 func TestNewGoCacheAdapter(t *testing.T) {
-	assert.Implements(t, (*cache.Store)(nil), NewGoCacheAdapter(nil))
+	assert.Implements(t, (*contracts.Store)(nil), NewGoCacheAdapter(nil))
 }
 
 func TestGoCacheAdapter_Get_Set_Delete(t *testing.T) {

@@ -24,18 +24,20 @@ func (m *MetricsBootstrapper) Bootstrap(app contracts.ApplicationInterface) erro
 
 type metricsRunner struct {
 	port string
+	s    httpServer
 }
 
 func (m *metricsRunner) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mlog.Infof("[Server]: metrics running at :%s/metrics", m.port)
 	mux.Handle("/metrics", promhttp.Handler())
+	m.s = &http.Server{Addr: ":" + m.port, Handler: mux}
 	go func() {
-		http.ListenAndServe(":"+m.port, mux)
+		m.s.ListenAndServe()
 	}()
 	return nil
 }
 
 func (m *metricsRunner) Shutdown(ctx context.Context) error {
-	return nil
+	return m.s.Shutdown(ctx)
 }

@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -45,11 +46,12 @@ func TestEmptyPubSub_Uid(t *testing.T) {
 type senderPlugin struct {
 	called bool
 	WsSender
+	err error
 }
 
 func (s *senderPlugin) Initialize(args map[string]any) error {
 	s.called = true
-	return nil
+	return s.err
 }
 
 func TestGetWsSender(t *testing.T) {
@@ -61,6 +63,21 @@ func TestGetWsSender(t *testing.T) {
 	wsSenderOnce = sync.Once{}
 	GetWsSender()
 	assert.Equal(t, 1, ma.callback)
+	assert.True(t, p.called)
+}
+func TestGetWsSender2(t *testing.T) {
+	p := &senderPlugin{
+		err: errors.New("xx"),
+	}
+	ma := &mockApp{
+		p: map[string]contracts.PluginInterface{"sender": p},
+	}
+	instance.SetInstance(ma)
+	wsSenderOnce = sync.Once{}
+	assert.Panics(t, func() {
+		GetWsSender()
+	})
+	assert.Equal(t, 0, ma.callback)
 	assert.True(t, p.called)
 }
 

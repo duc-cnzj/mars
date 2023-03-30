@@ -30,19 +30,19 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		namespace.RegisterNamespaceServer(s, &NamespaceSvc{
+		namespace.RegisterNamespaceServer(s, &namespaceSvc{
 			helmer: &socket.DefaultHelmer{},
 		})
 	})
 	RegisterEndpoint(namespace.RegisterNamespaceHandlerFromEndpoint)
 }
 
-type NamespaceSvc struct {
+type namespaceSvc struct {
 	helmer contracts.Helmer
 	namespace.UnimplementedNamespaceServer
 }
 
-func (n *NamespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
+func (n *namespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (*namespace.AllResponse, error) {
 	var namespaces []*models.Namespace
 	app.DB().Preload("Projects", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID", "Name", "DeployStatus", "NamespaceId")
@@ -57,7 +57,7 @@ func (n *NamespaceSvc) All(ctx context.Context, request *namespace.AllRequest) (
 	return res, nil
 }
 
-func (n *NamespaceSvc) Create(ctx context.Context, request *namespace.CreateRequest) (*namespace.CreateResponse, error) {
+func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequest) (*namespace.CreateResponse, error) {
 	request.Namespace = utils.GetMarsNamespace(request.Namespace)
 
 	preCheckNs := &models.Namespace{}
@@ -105,7 +105,7 @@ func (n *NamespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 	}, nil
 }
 
-func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
+func (n *namespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
 	var ns models.Namespace
 	var deletedProjectNames []string
 	// 删除空间前，要先删除空间下的项目
@@ -116,7 +116,7 @@ func (n *NamespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 			deletedProjectNames = append(deletedProjectNames, project.Name)
 			go func(releaseName, namespace string) {
 				defer wg.Done()
-				defer recovery.HandlePanic("NamespaceSvc.Delete")
+				defer recovery.HandlePanic("namespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
 				if err := n.helmer.Uninstall(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)
@@ -160,7 +160,7 @@ loop:
 	return &namespace.DeleteResponse{}, nil
 }
 
-func (n *NamespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRequest) (*namespace.IsExistsResponse, error) {
+func (n *namespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRequest) (*namespace.IsExistsResponse, error) {
 	var ns models.Namespace
 
 	err := app.DB().Select("ID", "Name").Where("`name` = ?", utils.GetMarsNamespace(input.Name)).First(&ns).Error
@@ -175,7 +175,7 @@ func (n *NamespaceSvc) IsExists(ctx context.Context, input *namespace.IsExistsRe
 	return &namespace.IsExistsResponse{Exists: true, Id: int64(ns.ID)}, nil
 }
 
-func (n *NamespaceSvc) Show(ctx context.Context, id *namespace.ShowRequest) (*namespace.ShowResponse, error) {
+func (n *namespaceSvc) Show(ctx context.Context, id *namespace.ShowRequest) (*namespace.ShowResponse, error) {
 	var ns models.Namespace
 
 	err := app.DB().Preload("Projects").Where("`id` = ?", id.NamespaceId).First(&ns).Error

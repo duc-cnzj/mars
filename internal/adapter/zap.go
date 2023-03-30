@@ -7,11 +7,12 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
-type ZapLogger struct {
+type zapLogger struct {
 	app   contracts.ApplicationInterface
 	sugar *zap.SugaredLogger
 }
 
+// NewZapLogger impl contracts.LoggerInterface.
 func NewZapLogger(app contracts.ApplicationInterface) contracts.LoggerInterface {
 	var (
 		logger *zap.Logger
@@ -35,45 +36,55 @@ func NewZapLogger(app contracts.ApplicationInterface) contracts.LoggerInterface 
 		logger.Sync()
 	})
 
-	return &ZapLogger{app: app, sugar: logger.Sugar()}
+	return &zapLogger{app: app, sugar: logger.Sugar()}
 }
 
-func (z *ZapLogger) Debug(v ...any) {
+// Debug print debug msg
+func (z *zapLogger) Debug(v ...any) {
 	z.sugar.Debug(v...)
 }
 
-func (z *ZapLogger) Debugf(format string, v ...any) {
+// Debugf printf debug msg
+func (z *zapLogger) Debugf(format string, v ...any) {
 	z.sugar.Debugf(format, v...)
 }
 
-func (z *ZapLogger) Warning(v ...any) {
+// Warning print Warning msg
+func (z *zapLogger) Warning(v ...any) {
 	z.sugar.Warn(v...)
 }
 
-func (z *ZapLogger) Warningf(format string, v ...any) {
+// Warningf prints Warning msg
+func (z *zapLogger) Warningf(format string, v ...any) {
 	z.sugar.Warnf(format, v...)
 }
 
-func (z *ZapLogger) Info(v ...any) {
+// Info print info msg
+func (z *zapLogger) Info(v ...any) {
 	z.sugar.Info(v...)
 }
 
-func (z *ZapLogger) Infof(format string, v ...any) {
+// Infof printf info msg
+func (z *zapLogger) Infof(format string, v ...any) {
 	z.sugar.Infof(format, v...)
 }
 
-func (z *ZapLogger) Error(v ...any) {
+// Error print err msg
+func (z *zapLogger) Error(v ...any) {
 	z.sugar.Error(v...)
 }
 
-func (z *ZapLogger) Errorf(format string, v ...any) {
+// Errorf printf err msg
+func (z *zapLogger) Errorf(format string, v ...any) {
 	z.sugar.Errorf(format, v...)
 }
 
-func (z *ZapLogger) Fatal(v ...any) {
+// Fatal fatal err.
+func (z *zapLogger) Fatal(v ...any) {
 	z.sugar.Fatal(v...)
 }
 
-func (z *ZapLogger) Fatalf(format string, v ...any) {
+// Fatalf fatalf err.
+func (z *zapLogger) Fatalf(format string, v ...any) {
 	z.sugar.Fatalf(format, v...)
 }

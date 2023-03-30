@@ -12,9 +12,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 )
 
@@ -24,7 +26,42 @@ func TestGenMyPtyHandlerId(t *testing.T) {
 	assert.Len(t, id, 36)
 }
 
-func TestHandleExecShell(t *testing.T) {}
+func TestHandleExecShell(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().K8sClient().Return(&contracts.K8sClient{
+		Client:     nil,
+		RestConfig: nil,
+	}).AnyTimes()
+
+	sess := mock.NewMockSessionMapper(m)
+	c := &WsConn{
+		newExecutorFunc: func() contracts.RemoteExecutor {
+			return nil
+		},
+		user:   contracts.UserInfo{Name: "duc"},
+		pubSub: &plugins.EmptyPubSub{},
+	}
+	c.terminalSessions = sess
+	pty := mock.NewMockPtyHandler(m)
+	sess.EXPECT().Set(gomock.Any(), gomock.Any()).Times(1)
+	sess.EXPECT().Get(gomock.Any()).Return(pty, true).AnyTimes()
+	pty.EXPECT().IsClosed().Return(true).AnyTimes()
+	sess.EXPECT().Close(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+	shell, e := HandleExecShell(&websocket_pb.WsHandleExecShellInput{
+		Type: 0,
+		Container: &types.Container{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "c",
+		},
+	}, c)
+	assert.Nil(t, e)
+	assert.NotEmpty(t, shell)
+	time.Sleep(1 * time.Second)
+}
 
 func TestMyPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
@@ -33,7 +70,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	app.EXPECT().Uploader().Return(nil).AnyTimes()
 	app.EXPECT().LocalUploader().Return(nil).AnyTimes()
 	ps := mock.NewMockPubSub(m)
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		id:       "duc",
 		conn:     &WsConn{pubSub: ps},
 		recorder: &recorder{},
@@ -85,7 +122,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	r := mock.NewMockRecorderInterface(m)
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		recorder: r,
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
@@ -114,7 +151,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	assert.Equal(t, uint16(100), p.sizeStore.Cols())
 	assert.Equal(t, uint16(200), p.sizeStore.Rows())
 
-	p2 := &MyPtyHandler{
+	p2 := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
@@ -122,7 +159,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 	p2.Resize(remotecommand.TerminalSize{})
 	assert.Len(t, p2.sizeChan, 0)
 
-	p3 := &MyPtyHandler{
+	p3 := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
 	}
@@ -134,7 +171,7 @@ func TestMyPtyHandler_Next(t *testing.T) {
 }
 
 func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}),
@@ -145,7 +182,7 @@ func TestMyPtyHandler_Next_DoneChan(t *testing.T) {
 }
 
 func TestMyPtyHandler_Read(t *testing.T) {
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		id:       "duc",
 		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
@@ -187,7 +224,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Error(t, err)
 	assert.Greater(t, n, 0)
 
-	p2 := &MyPtyHandler{
+	p2 := &myPtyHandler{
 		id:       "duc",
 		recorder: &recorder{},
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
@@ -200,7 +237,7 @@ func TestMyPtyHandler_Read(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, END_OF_TRANSMISSION, bv[:i])
 
-	p3 := &MyPtyHandler{
+	p3 := &myPtyHandler{
 		id:       "duc",
 		recorder: &recorder{},
 		shellCh:  make(chan *websocket_pb.TerminalMessage, 1),
@@ -215,14 +252,14 @@ func TestMyPtyHandler_Read(t *testing.T) {
 }
 
 func TestMyPtyHandler_Recorder(t *testing.T) {
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		recorder: &recorder{},
 	}
 	assert.Implements(t, (*contracts.RecorderInterface)(nil), p.Recorder())
 }
 
 func TestMyPtyHandler_SetShell(t *testing.T) {
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		recorder: &recorder{},
 	}
 	p.SetShell("xxx")
@@ -233,7 +270,7 @@ func TestMyPtyHandler_Toast(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	ps := mock.NewMockPubSub(m)
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		conn: &WsConn{pubSub: ps},
 		id:   "aaa",
 	}
@@ -246,7 +283,7 @@ func TestMyPtyHandler_Write(t *testing.T) {
 	defer m.Finish()
 	ps := mock.NewMockPubSub(m)
 	r := mock.NewMockRecorderInterface(m)
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		sizeStore: sizeStore{
 			cols:  106,
@@ -285,7 +322,7 @@ func TestMyPtyHandler_Write_with_chan_full(t *testing.T) {
 	defer m.Finish()
 	ps := mock.NewMockPubSub(m)
 	r := mock.NewMockRecorderInterface(m)
-	p := &MyPtyHandler{
+	p := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize),
 		sizeStore: sizeStore{
 			cols:  106,
@@ -349,7 +386,7 @@ func TestSessionMap_Send(t *testing.T) {
 		Sessions: map[string]contracts.PtyHandler{},
 	}
 	ch := make(chan *websocket_pb.TerminalMessage, 1)
-	sm.Set("a", &MyPtyHandler{
+	sm.Set("a", &myPtyHandler{
 		shellCh: ch,
 	})
 	assert.Len(t, ch, 0)
@@ -371,7 +408,7 @@ func TestSessionMap_Set(t *testing.T) {
 		sessLock: sync.RWMutex{},
 		Sessions: map[string]contracts.PtyHandler{},
 	}
-	p := &MyPtyHandler{}
+	p := &myPtyHandler{}
 	sm.Set("a", p)
 	get, _ := sm.Get("a")
 	assert.Same(t, p, get)
@@ -522,19 +559,19 @@ func Test_sizeStore_Changed(t *testing.T) {
 
 func TestMyPtyHandler_Rows(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, uint16(0), (&MyPtyHandler{}).Rows())
-	assert.Equal(t, uint16(100), (&MyPtyHandler{sizeStore: sizeStore{rows: 100}}).Rows())
+	assert.Equal(t, uint16(0), (&myPtyHandler{}).Rows())
+	assert.Equal(t, uint16(100), (&myPtyHandler{sizeStore: sizeStore{rows: 100}}).Rows())
 }
 
 func TestMyPtyHandler_Cols(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, uint16(0), (&MyPtyHandler{}).Cols())
-	assert.Equal(t, uint16(100), (&MyPtyHandler{sizeStore: sizeStore{cols: 100}}).Cols())
+	assert.Equal(t, uint16(0), (&myPtyHandler{}).Cols())
+	assert.Equal(t, uint16(100), (&myPtyHandler{sizeStore: sizeStore{cols: 100}}).Cols())
 }
 
 func Test_resetSession(t *testing.T) {
 	t.Parallel()
-	old := &MyPtyHandler{
+	old := &myPtyHandler{
 		container: contracts.Container{
 			Namespace: "a",
 			Pod:       "b",
@@ -548,7 +585,7 @@ func Test_resetSession(t *testing.T) {
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: sizeStore{cols: 10, rows: 10},
 	}
-	session := resetSession(old).(*MyPtyHandler)
+	session := resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, old.id, session.id)
 	assert.Equal(t, old.container, session.container)
@@ -565,7 +602,7 @@ func Test_resetSession(t *testing.T) {
 }
 func Test_resetSession4(t *testing.T) {
 	t.Parallel()
-	old := &MyPtyHandler{
+	old := &myPtyHandler{
 		container: contracts.Container{
 			Namespace: "a",
 			Pod:       "b",
@@ -579,16 +616,16 @@ func Test_resetSession4(t *testing.T) {
 		shellCh:   make(chan *websocket_pb.TerminalMessage, 10),
 		sizeStore: sizeStore{cols: 10, rows: 10},
 	}
-	session := resetSession(old).(*MyPtyHandler)
+	session := resetSession(old).(*myPtyHandler)
 	assert.NotSame(t, session, old)
 	old.CloseDoneChan()
-	session = resetSession(old).(*MyPtyHandler)
+	session = resetSession(old).(*myPtyHandler)
 	assert.Same(t, session, old)
 }
 
 func Test_resetSession1(t *testing.T) {
 	t.Parallel()
-	old := &MyPtyHandler{
+	old := &myPtyHandler{
 		container: contracts.Container{
 			Namespace: "a",
 			Pod:       "b",
@@ -605,7 +642,7 @@ func Test_resetSession1(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		old.sizeStore.Set(100, 100)
 	}()
-	session := resetSession(old).(*MyPtyHandler)
+	session := resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, uint16(100), session.sizeStore.Cols())
 	assert.Equal(t, uint16(100), session.sizeStore.Rows())
@@ -613,7 +650,7 @@ func Test_resetSession1(t *testing.T) {
 
 func Test_resetSession2(t *testing.T) {
 	t.Parallel()
-	old := &MyPtyHandler{
+	old := &myPtyHandler{
 		container: contracts.Container{
 			Namespace: "a",
 			Pod:       "b",
@@ -630,14 +667,14 @@ func Test_resetSession2(t *testing.T) {
 		time.Sleep(4 * time.Second)
 		old.sizeStore.Set(100, 100)
 	}()
-	session := resetSession(old).(*MyPtyHandler)
+	session := resetSession(old).(*myPtyHandler)
 
 	assert.Equal(t, uint16(106), session.sizeStore.Cols())
 	assert.Equal(t, uint16(25), session.sizeStore.Rows())
 }
 
 func TestMyPtyHandler_ResetTerminalRowCol(t *testing.T) {
-	pty := &MyPtyHandler{}
+	pty := &myPtyHandler{}
 	pty.ResetTerminalRowCol(true)
 	assert.True(t, pty.sizeStore.TerminalRowColNeedReset())
 	pty.ResetTerminalRowCol(false)
@@ -645,7 +682,7 @@ func TestMyPtyHandler_ResetTerminalRowCol(t *testing.T) {
 }
 
 func TestMyPtyHandler_ClosePreviousChannels(t *testing.T) {
-	pty := &MyPtyHandler{
+	pty := &myPtyHandler{
 		sizeChan: make(chan remotecommand.TerminalSize, 1),
 		doneChan: make(chan struct{}, 1),
 		shellCh:  make(chan *websocket_pb.TerminalMessage),
@@ -686,7 +723,7 @@ func Test_startProcess1(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
 	e := mock.NewMockRemoteExecutor(m)
-	pty := &MyPtyHandler{}
+	pty := &myPtyHandler{}
 	cfg := &rest.Config{}
 	e.EXPECT().WithMethod("POST").Return(e)
 	e.EXPECT().WithCommand([]string{"ls"}).Return(e)

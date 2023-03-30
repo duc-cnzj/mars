@@ -8,6 +8,7 @@ import (
 
 type NsqLoggerAdapter struct{}
 
+// Output impl nsq.logger
 func (*NsqLoggerAdapter) Output(calldepth int, s string) error {
 	if strings.Contains(s, "TOPIC_NOT_FOUND") {
 		mlog.Debug(s)

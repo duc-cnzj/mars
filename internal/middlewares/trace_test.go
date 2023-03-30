@@ -23,19 +23,19 @@ import (
 )
 
 func TestTracingIgnoreFn(t *testing.T) {
-	assert.False(t, TracingIgnoreFn("/api/xxx"))
-	assert.True(t, TracingIgnoreFn("/xxx"))
-	assert.True(t, TracingIgnoreFn("/ws"))
-	assert.True(t, TracingIgnoreFn("/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"))
-	assert.True(t, TracingIgnoreFn("/api/metrics/namespace/{namespace}/pods/{pod}/stream"))
+	assert.False(t, tracingIgnoreFn("/api/xxx"))
+	assert.True(t, tracingIgnoreFn("/xxx"))
+	assert.True(t, tracingIgnoreFn("/ws"))
+	assert.True(t, tracingIgnoreFn("/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"))
+	assert.True(t, tracingIgnoreFn("/api/metrics/namespace/{namespace}/pods/{pod}/stream"))
 }
 
 type testHandler struct {
-	requestHandler func(*http.Request)
+	requestHandler func(http.ResponseWriter, *http.Request)
 }
 
 func (t *testHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	t.requestHandler(request)
+	t.requestHandler(writer, request)
 }
 
 func TestTracingWrapper(t *testing.T) {
@@ -46,12 +46,14 @@ func TestTracingWrapper(t *testing.T) {
 	tracer := tp.Tracer("test")
 	app.EXPECT().GetTracer().Return(tracer)
 	w := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/version", nil)
+	request, _ := http.NewRequest("GET", "/api/users/1", nil)
+	var rwSpan trace.ReadWriteSpan
 	TracingWrapper(&testHandler{
-		requestHandler: func(request *http.Request) {
+		requestHandler: func(w http.ResponseWriter, request *http.Request) {
+			SetPatternHeader(w, "[GET]: /api/users/{id}")
 			span := trace2.SpanFromContext(request.Context())
-			rwSpan := span.(trace.ReadWriteSpan)
-			assert.Equal(t, "[GET]: /api/version", rwSpan.Name())
+			rwSpan = span.(trace.ReadWriteSpan)
+			assert.Equal(t, "[GET]: /api/users/1", rwSpan.Name())
 			var m = make(map[string]struct{})
 			for _, value := range rwSpan.Attributes() {
 				m[string(value.Key)] = struct{}{}
@@ -67,6 +69,7 @@ func TestTracingWrapper(t *testing.T) {
 			assert.True(t, ok)
 		},
 	}).ServeHTTP(w, request)
+	assert.Equal(t, "[GET]: /api/users/{id}", rwSpan.Name())
 }
 
 func TestTracingWrapper2(t *testing.T) {
@@ -80,7 +83,7 @@ func TestTracingWrapper2(t *testing.T) {
 	request, _ := http.NewRequest("GET", "/api/version", nil)
 	request.Header.Set("traceparent", "00-873ef9392cbadea7563141ed35098771-ea43520520f4cb4c-01")
 	TracingWrapper(&testHandler{
-		requestHandler: func(request *http.Request) {
+		requestHandler: func(w http.ResponseWriter, request *http.Request) {
 			span := trace2.SpanFromContext(request.Context())
 			rwSpan := span.(trace.ReadWriteSpan)
 			assert.Equal(t, "873ef9392cbadea7563141ed35098771", rwSpan.Parent().TraceID().String())
@@ -91,7 +94,7 @@ func TestTracingWrapper2(t *testing.T) {
 }
 
 func TestGatewayCarrier(t *testing.T) {
-	gc := &GatewayCarrier{}
+	gc := &gatewayCarrier{}
 	assert.Empty(t, gc.Get("key"))
 	gc.Set("key", "value")
 	assert.Equal(t, "value", gc.Get("key"))
@@ -215,7 +218,7 @@ func TestTraceUnaryServerInterceptor1(t *testing.T) {
 
 	ctxt := propagation.TraceContext{}
 	md := metadata.MD{}
-	ctxt.Inject(start, GatewayCarrier(md))
+	ctxt.Inject(start, gatewayCarrier(md))
 
 	res, err := TraceUnaryServerInterceptor(metadata.NewIncomingContext(context.TODO(), md), nil, &grpc.UnaryServerInfo{
 		FullMethod: "test",

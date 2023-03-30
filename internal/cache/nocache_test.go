@@ -30,3 +30,7 @@ func TestNoCache_SetWithTTL(t *testing.T) {
 	cache := &NoCache{}
 	assert.Nil(t, cache.SetWithTTL(NewKey("aaa"), []byte("x"), 1))
 }
+
+func TestNoCache_Store(t *testing.T) {
+	assert.Nil(t, (&NoCache{}).Store())
+}

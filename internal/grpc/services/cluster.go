@@ -12,18 +12,18 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		cluster.RegisterClusterServer(s, new(ClusterSvc))
+		cluster.RegisterClusterServer(s, new(clusterSvc))
 	})
 	RegisterEndpoint(cluster.RegisterClusterHandlerFromEndpoint)
 }
 
-type ClusterSvc struct {
-	Guest
+type clusterSvc struct {
+	guest
 
 	cluster.UnimplementedClusterServer
 }
 
-func (c *ClusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) (*cluster.InfoResponse, error) {
+func (c *clusterSvc) ClusterInfo(ctx context.Context, req *cluster.InfoRequest) (*cluster.InfoResponse, error) {
 	info := utils.ClusterInfo()
 
 	return &cluster.InfoResponse{

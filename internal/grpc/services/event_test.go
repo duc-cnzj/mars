@@ -21,7 +21,7 @@ import (
 )
 
 func TestEventSvc_Authorize(t *testing.T) {
-	e := new(EventSvc)
+	e := new(eventSvc)
 	ctx := context.TODO()
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{})
 	_, err := e.Authorize(ctx, "")
@@ -40,10 +40,10 @@ func TestEventSvc_List(t *testing.T) {
 	instance.SetInstance(app)
 	db, c := testutil.SetGormDB(ctrl, app)
 	defer c()
-	e := new(EventSvc)
+	e := new(eventSvc)
 	_, err := e.List(context.TODO(), &event.ListRequest{})
 	assert.Error(t, err)
-	db.AutoMigrate(&models.Event{}, &models.File{})
+	assert.Nil(t, db.AutoMigrate(&models.Event{}, &models.File{}))
 	f := seedEvents(db)
 	list, _ := e.List(context.TODO(), &event.ListRequest{Page: 1, PageSize: 1})
 	assert.Len(t, list.Items, 1)
@@ -149,13 +149,13 @@ func TestEventSvc_Show(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	app.EXPECT().IsDebug().Return(false).AnyTimes()
-	_, err := new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+	_, err := new(eventSvc).Show(adminCtx(), &event.ShowRequest{
 		Id: 1,
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
 	assert.Nil(t, db.AutoMigrate(&models.Event{}, &models.File{}))
-	_, err = new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+	_, err = new(eventSvc).Show(adminCtx(), &event.ShowRequest{
 		Id: 1,
 	})
 	fromError, _ = status.FromError(err)
@@ -178,7 +178,7 @@ func TestEventSvc_Show(t *testing.T) {
 		FileID:   &f.ID,
 	}
 	db.Create(ev)
-	r, err := new(EventSvc).Show(adminCtx(), &event.ShowRequest{
+	r, err := new(eventSvc).Show(adminCtx(), &event.ShowRequest{
 		Id: int64(ev.ID),
 	})
 	assert.Nil(t, err)

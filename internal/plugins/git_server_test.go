@@ -20,11 +20,12 @@ import (
 type gitPlugin struct {
 	called bool
 	GitServer
+	err error
 }
 
 func (g *gitPlugin) Initialize(args map[string]any) error {
 	g.called = true
-	return nil
+	return g.err
 }
 
 func TestGetGitServer(t *testing.T) {
@@ -36,6 +37,22 @@ func TestGetGitServer(t *testing.T) {
 	gitServerOnce = sync.Once{}
 	GetGitServer()
 	assert.Equal(t, 1, ma.callback)
+	assert.True(t, p.called)
+}
+
+func TestGetGitServer2(t *testing.T) {
+	p := &gitPlugin{
+		err: errors.New("xxx"),
+	}
+	ma := &mockApp{
+		p: map[string]contracts.PluginInterface{"git": p},
+	}
+	instance.SetInstance(ma)
+	gitServerOnce = sync.Once{}
+	assert.Panics(t, func() {
+		GetGitServer()
+	})
+	assert.Equal(t, 0, ma.callback)
 	assert.True(t, p.called)
 }
 

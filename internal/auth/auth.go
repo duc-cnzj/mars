@@ -35,16 +35,16 @@ func (a *Authn) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	return a.signFunc(info)
 }
 
-type JwtAuth struct {
+type jwtAuth struct {
 	priKey *rsa.PrivateKey
 	pubKey *rsa.PublicKey
 }
 
-func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) *JwtAuth {
-	return &JwtAuth{priKey: priKey, pubKey: pubKey}
+func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) contracts.AuthInterface {
+	return &jwtAuth{priKey: priKey, pubKey: pubKey}
 }
 
-func (a *JwtAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
+func (a *jwtAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 	var token string = t
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])
@@ -61,7 +61,7 @@ func (a *JwtAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 	return nil, false
 }
 
-func (a *JwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
+func (a *jwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &contracts.JwtClaims{
 		StandardClaims: &jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(contracts.Expired).Unix(),
@@ -82,15 +82,15 @@ func (a *JwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	}, nil
 }
 
-type AccessTokenAuth struct {
+type accessTokenAuth struct {
 	app contracts.ApplicationInterface
 }
 
-func NewAccessTokenAuth(app contracts.ApplicationInterface) *AccessTokenAuth {
-	return &AccessTokenAuth{app: app}
+func NewAccessTokenAuth(app contracts.ApplicationInterface) contracts.Authenticator {
+	return &accessTokenAuth{app: app}
 }
 
-func (a *AccessTokenAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
+func (a *accessTokenAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
 	var token string = t
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])

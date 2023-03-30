@@ -36,14 +36,6 @@ func MockApp(m *gomock.Controller) *mock.MockApplicationInterface {
 	return app
 }
 
-func AssertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDispatcherInterface {
-	e := mock.NewMockDispatcherInterface(m)
-	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
-	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
-
-	return e
-}
-
 func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
 	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	for _, po := range pods {
@@ -112,6 +104,7 @@ func MockWsServer(m *gomock.Controller, app *mock.MockApplicationInterface) *moc
 }
 
 type ValueMatcher struct {
+	gomock.Matcher
 	Value any
 }
 
@@ -120,6 +113,25 @@ func (v *ValueMatcher) Matches(x any) bool {
 	return true
 }
 
-func (v *ValueMatcher) String() string {
-	return ""
+type auditLogEqMatcher struct {
+	gomock.Matcher
+	msg string
+}
+
+func (a *auditLogEqMatcher) Matches(x any) bool {
+	return a.msg == x.(contracts.AuditLogImpl).GetMsg()
+}
+
+func AssertAuditLogFiredWithMsg(m *gomock.Controller, app *mock.MockApplicationInterface, msg string) {
+	e := mock.NewMockDispatcherInterface(m)
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), &auditLogEqMatcher{msg: msg}).Times(1)
+	app.EXPECT().EventDispatcher().Return(e).Times(1)
+}
+
+func AssertAuditLogFired(m *gomock.Controller, app *mock.MockApplicationInterface) *mock.MockDispatcherInterface {
+	e := mock.NewMockDispatcherInterface(m)
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), gomock.Any()).Times(1)
+	app.EXPECT().EventDispatcher().Return(e).AnyTimes()
+
+	return e
 }

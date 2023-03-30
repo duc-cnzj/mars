@@ -14,17 +14,17 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-var _ plugins.DomainManager = (*SyncSecretDomainManager)(nil)
+var _ plugins.DomainManager = (*syncSecretDomainManager)(nil)
 
 // SyncSecretSecretName 和 manual 方式保持名称一致，避免两种方式之间切换时需要手动部署才能生效的问题
 const SyncSecretSecretName = ManualCertSecretName
 
 func init() {
-	dr := &SyncSecretDomainManager{updateCertTlsFunc: tls.UpdateCertTls}
+	dr := &syncSecretDomainManager{updateCertTlsFunc: tls.UpdateCertTls}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
-type SyncSecretDomainManager struct {
+type syncSecretDomainManager struct {
 	updateCertTlsFunc func(name, key, crt string)
 	nsPrefix          string
 	wildcardDomain    string
@@ -37,23 +37,23 @@ type SyncSecretDomainManager struct {
 	secret *v1.Secret
 }
 
-func (d *SyncSecretDomainManager) SetSecret(s *v1.Secret) {
+func (d *syncSecretDomainManager) SetSecret(s *v1.Secret) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.secret = s
 }
 
-func (d *SyncSecretDomainManager) GetSecret() *v1.Secret {
+func (d *syncSecretDomainManager) GetSecret() *v1.Secret {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.secret
 }
 
-func (d *SyncSecretDomainManager) Name() string {
+func (d *syncSecretDomainManager) Name() string {
 	return "sync_secret_domain_manager"
 }
 
-func (d *SyncSecretDomainManager) Initialize(args map[string]any) error {
+func (d *syncSecretDomainManager) Initialize(args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -100,7 +100,7 @@ func (d *SyncSecretDomainManager) Initialize(args map[string]any) error {
 	return nil
 }
 
-func (d *SyncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj any)) cache.FilteringResourceEventHandler {
+func (d *syncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj any)) cache.FilteringResourceEventHandler {
 	return cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj any) bool {
 			sec := obj.(*v1.Secret)
@@ -115,7 +115,7 @@ func (d *SyncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj an
 	}
 }
 
-func (d *SyncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
+func (d *syncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
 	if oldObj == nil && newObj != nil {
 		d.SetSecret(newObj.(*v1.Secret))
 		d.updateCertTlsFunc(d.GetCerts())
@@ -140,12 +140,12 @@ func (d *SyncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
 	}
 }
 
-func (d *SyncSecretDomainManager) Destroy() error {
+func (d *syncSecretDomainManager) Destroy() error {
 	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (d *SyncSecretDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
+func (d *syncSecretDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -156,7 +156,7 @@ func (d *SyncSecretDomainManager) GetDomainByIndex(projectName, namespace string
 	}.SubStr()
 }
 
-func (d *SyncSecretDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
+func (d *syncSecretDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -167,15 +167,15 @@ func (d *SyncSecretDomainManager) GetDomain(projectName, namespace string, preOc
 	}.SubStr()
 }
 
-func (d *SyncSecretDomainManager) GetCertSecretName(projectName string, index int) string {
+func (d *syncSecretDomainManager) GetCertSecretName(projectName string, index int) string {
 	return SyncSecretSecretName
 }
 
-func (d *SyncSecretDomainManager) GetClusterIssuer() string {
+func (d *syncSecretDomainManager) GetClusterIssuer() string {
 	return ""
 }
 
-func (d *SyncSecretDomainManager) GetCerts() (name, key, crt string) {
+func (d *syncSecretDomainManager) GetCerts() (name, key, crt string) {
 	sec := d.GetSecret()
 	return SyncSecretSecretName, string(sec.Data["tls.key"]), string(sec.Data["tls.crt"])
 }

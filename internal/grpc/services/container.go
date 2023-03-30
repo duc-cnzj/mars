@@ -12,12 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-
-	"github.com/duc-cnzj/mars/v4/internal/auth"
-	"github.com/duc-cnzj/mars/v4/internal/socket"
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
-
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,22 +21,26 @@ import (
 	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
+	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
 	"github.com/duc-cnzj/mars/v4/internal/utils/executor"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
+	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
 )
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		ex := executor.NewDefaultRemoteExecutor()
 
-		container.RegisterContainerServer(s, &Container{
+		container.RegisterContainerServer(s, &containerSvc{
 			NewRecorderFunc: socket.NewRecorder,
-			Steamer:         &DefaultStreamer{},
+			Steamer:         &defaultStreamer{},
 			Executor:        ex,
 			PodFileCopier:   utils.NewFileCopier(ex, utils.NewDefaultArchiver()),
 		})
@@ -50,22 +48,22 @@ func init() {
 	RegisterEndpoint(container.RegisterContainerHandlerFromEndpoint)
 }
 
-type Container struct {
+type containerSvc struct {
 	Steamer         Steamer
 	Executor        contracts.RemoteExecutor
 	PodFileCopier   contracts.PodFileCopier
 	NewRecorderFunc func(types.EventActionType, contracts.UserInfo, timer.Timer, contracts.Container) contracts.RecorderInterface
 
-	container.UnsafeContainerServer
+	container.UnimplementedContainerServer
 }
 
-func (c *Container) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
+func (c *containerSvc) IsPodRunning(_ context.Context, request *container.IsPodRunningRequest) (*container.IsPodRunningResponse, error) {
 	running, reason := utils.IsPodRunning(request.GetNamespace(), request.GetPod())
 
 	return &container.IsPodRunningResponse{Running: running, Reason: reason}, nil
 }
 
-func (c *Container) IsPodExists(_ context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
+func (c *containerSvc) IsPodExists(_ context.Context, request *container.IsPodExistsRequest) (*container.IsPodExistsResponse, error) {
 	_, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if err != nil && apierrors.IsNotFound(err) {
 		return &container.IsPodExistsResponse{Exists: false}, nil
@@ -79,7 +77,7 @@ type exitCodeStatus struct {
 	code    int
 }
 
-func (c *Container) Exec(request *container.ExecRequest, server container.Container_ExecServer) error {
+func (c *containerSvc) Exec(request *container.ExecRequest, server container.Container_ExecServer) error {
 	running, reason := utils.IsPodRunning(request.Namespace, request.Pod)
 	if !running {
 		return errors.New(reason)
@@ -114,7 +112,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 			Execute(context.TODO(), clientSet, restConfig, nil, writer, writer, true, nil)
 		if err != nil {
 			if exitError, ok := err.(clientgoexec.ExitError); ok && exitError.Exited() {
-				mlog.Debugf("[Container]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
+				mlog.Debugf("[containerSvc]: exit %v, exit code: %d, err: %v", exitError.Exited(), exitError.ExitStatus(), exitError.Error())
 				exitCode.Store(&exitCodeStatus{
 					message: exitError.Error(),
 					code:    exitError.ExitStatus(),
@@ -157,7 +155,7 @@ func (c *Container) Exec(request *container.ExecRequest, server container.Contai
 	}
 }
 
-func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
+func (c *containerSvc) CopyToPod(ctx context.Context, request *container.CopyToPodRequest) (*container.CopyToPodResponse, error) {
 	if running, reason := utils.IsPodRunning(request.Namespace, request.Pod); !running {
 		return nil, status.Error(codes.NotFound, reason)
 	}
@@ -194,7 +192,7 @@ func (c *Container) CopyToPod(ctx context.Context, request *container.CopyToPodR
 	}, err
 }
 
-func (c *Container) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
+func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPodServer) error {
 	var (
 		fpath         string
 		namespace     string
@@ -291,7 +289,7 @@ func podHasLog(pod *v1.Pod) bool {
 
 var tailLines int64 = 1000
 
-func (c *Container) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
+func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if err != nil || !podHasLog(podInfo) {
 		return nil, status.Error(codes.NotFound, "未找到日志")
@@ -324,9 +322,9 @@ type Steamer interface {
 	Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error)
 }
 
-type DefaultStreamer struct{}
+type defaultStreamer struct{}
 
-func (d *DefaultStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
+func (d *defaultStreamer) Stream(ctx context.Context, namespace, pod, container string) (io.ReadCloser, error) {
 	logs := app.K8sClientSet().CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{
 		Follow:    true,
 		Container: container,
@@ -345,7 +343,7 @@ func scannerText(text string, fn func(s string)) error {
 	return scanner.Err()
 }
 
-func (c *Container) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
+func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
 	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if err != nil || !podHasLog(podInfo) {
 		return status.Error(codes.NotFound, "未找到日志")
@@ -465,10 +463,10 @@ func (rw *execWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-const DefaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
+const defaultContainerAnnotationName = "kubectl.kubernetes.io/default-container"
 
 func FindDefaultContainer(pod *v1.Pod) string {
-	if name := pod.Annotations[DefaultContainerAnnotationName]; len(name) > 0 {
+	if name := pod.Annotations[defaultContainerAnnotationName]; len(name) > 0 {
 		for _, co := range pod.Spec.Containers {
 			if name == co.Name {
 				return name

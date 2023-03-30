@@ -14,7 +14,7 @@ import (
 	"github.com/minio/minio-go/v7"
 )
 
-type S3 struct {
+type s3Uploader struct {
 	localUploader contracts.Uploader
 	client        *minio.Client
 	bucket        string
@@ -24,19 +24,19 @@ type S3 struct {
 
 // NewS3
 // rootDir 必须要，不然在 DeleteDir 的时候如果传空会报错
-func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, rootDir string) *S3 {
+func NewS3(client *minio.Client, bucket string, uploader contracts.Uploader, rootDir string) contracts.Uploader {
 	if rootDir == "" {
 		rootDir = "data"
 	}
-	return &S3{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
+	return &s3Uploader{client: client, bucket: bucket, localUploader: uploader, rootDir: rootDir}
 }
 
-func (s *S3) Type() contracts.UploadType {
+func (s *s3Uploader) Type() contracts.UploadType {
 	return contracts.S3
 }
 
-func (s *S3) Disk(disk string) contracts.Uploader {
-	return &S3{
+func (s *s3Uploader) Disk(disk string) contracts.Uploader {
+	return &s3Uploader{
 		localUploader: s.localUploader.Disk(disk),
 		client:        s.client,
 		bucket:        s.bucket,
@@ -45,13 +45,13 @@ func (s *S3) Disk(disk string) contracts.Uploader {
 	}
 }
 
-func (s *S3) DeleteDir(dir string) error {
+func (s *s3Uploader) DeleteDir(dir string) error {
 	dir = s.getPath(dir)
 	s.localUploader.DeleteDir(dir)
 	return s.Delete(dir)
 }
 
-func (s *S3) DirSize() (int64, error) {
+func (s *s3Uploader) DirSize() (int64, error) {
 	dir := s.root()
 	objects := s.client.ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
@@ -65,7 +65,7 @@ func (s *S3) DirSize() (int64, error) {
 	return size, nil
 }
 
-func (s *S3) Delete(path string) error {
+func (s *s3Uploader) Delete(path string) error {
 	path = s.getPath(path)
 	s.localUploader.Delete(path)
 
@@ -74,18 +74,18 @@ func (s *S3) Delete(path string) error {
 	})
 }
 
-func (s *S3) Exists(path string) bool {
+func (s *s3Uploader) Exists(path string) bool {
 	path = s.getPath(path)
 	_, err := s.client.StatObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
 
 	return err == nil
 }
 
-func (s *S3) MkDir(path string, recursive bool) error {
+func (s *s3Uploader) MkDir(path string, recursive bool) error {
 	return nil
 }
 
-func (s *S3) Read(path string) (io.ReadCloser, error) {
+func (s *s3Uploader) Read(path string) (io.ReadCloser, error) {
 	if !s.Exists(path) {
 		return nil, os.ErrNotExist
 	}
@@ -93,11 +93,11 @@ func (s *S3) Read(path string) (io.ReadCloser, error) {
 	return s.client.GetObject(context.TODO(), s.bucket, path, minio.GetObjectOptions{})
 }
 
-func (s *S3) AbsolutePath(path string) string {
+func (s *s3Uploader) AbsolutePath(path string) string {
 	return s.getPath(path)
 }
 
-func (s *S3) Stat(file string) (contracts.FileInfo, error) {
+func (s *s3Uploader) Stat(file string) (contracts.FileInfo, error) {
 	path := s.getPath(file)
 	object, err := s.client.StatObject(context.TODO(), s.bucket, path, minio.StatObjectOptions{})
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *S3) Stat(file string) (contracts.FileInfo, error) {
 	return NewFileInfo(path, object.Size, object.LastModified), nil
 }
 
-func (s *S3) Put(path string, content io.Reader) (contracts.FileInfo, error) {
+func (s *s3Uploader) Put(path string, content io.Reader) (contracts.FileInfo, error) {
 	path = s.getPath(path)
 	put, err := s.localUploader.Put(path, content)
 	if err != nil {
@@ -118,7 +118,7 @@ func (s *S3) Put(path string, content io.Reader) (contracts.FileInfo, error) {
 	return s.put(path, put.Path())
 }
 
-func (s *S3) put(path string, localPath string) (contracts.FileInfo, error) {
+func (s *s3Uploader) put(path string, localPath string) (contracts.FileInfo, error) {
 	object, err := s.client.FPutObject(context.TODO(), s.bucket, path, localPath, minio.PutObjectOptions{})
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s *S3) put(path string, localPath string) (contracts.FileInfo, error) {
 	return NewFileInfo(object.Key, object.Size, object.LastModified), nil
 }
 
-func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
+func (s *s3Uploader) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	dir = s.getPath(dir)
 	objects := s.client.ListObjects(context.TODO(), s.bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
@@ -140,11 +140,11 @@ func (s *S3) AllDirectoryFiles(dir string) ([]contracts.FileInfo, error) {
 	return finfos, nil
 }
 
-func (s *S3) RemoveEmptyDir() error {
+func (s *s3Uploader) RemoveEmptyDir() error {
 	return s.localUploader.RemoveEmptyDir()
 }
 
-func (s *S3) NewFile(path string) (contracts.File, error) {
+func (s *s3Uploader) NewFile(path string) (contracts.File, error) {
 	file, err := s.localUploader.NewFile(s.getPath(path))
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ type s3File struct {
 	utils.Closeable
 	contracts.File
 	localUploader contracts.Uploader
-	s3            *S3
+	s3            *s3Uploader
 	name          string
 }
 
@@ -208,14 +208,14 @@ func (s *s3File) Close() error {
 	return nil
 }
 
-func (s *S3) getPath(path string) string {
+func (s *s3Uploader) getPath(path string) string {
 	if strings.HasPrefix(path, s.root()) {
 		return path
 	}
 	return filepath.Join(s.root(), path)
 }
 
-func (s *S3) root() string {
+func (s *s3Uploader) root() string {
 	if s.disk != "" {
 		return filepath.Join(s.rootDir, s.disk)
 	}

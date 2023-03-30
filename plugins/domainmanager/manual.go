@@ -10,14 +10,14 @@ import (
 
 const ManualCertSecretName = "mars-external-tls-secret"
 
-var _ plugins.DomainManager = (*ManualDomainManager)(nil)
+var _ plugins.DomainManager = (*manualDomainManager)(nil)
 
 func init() {
-	dr := &ManualDomainManager{}
+	dr := &manualDomainManager{}
 	plugins.RegisterPlugin(dr.Name(), dr)
 }
 
-type ManualDomainManager struct {
+type manualDomainManager struct {
 	nsPrefix       string
 	wildcardDomain string
 	domainSuffix   string
@@ -26,11 +26,11 @@ type ManualDomainManager struct {
 	tlsKey string
 }
 
-func (m *ManualDomainManager) Name() string {
+func (m *manualDomainManager) Name() string {
 	return "manual_domain_manager"
 }
 
-func (m *ManualDomainManager) Initialize(args map[string]any) error {
+func (m *manualDomainManager) Initialize(args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		m.nsPrefix = p.(string)
 	}
@@ -56,12 +56,12 @@ func (m *ManualDomainManager) Initialize(args map[string]any) error {
 	return nil
 }
 
-func (m *ManualDomainManager) Destroy() error {
+func (m *manualDomainManager) Destroy() error {
 	mlog.Info("[Plugin]: " + m.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (m *ManualDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
+func (m *manualDomainManager) GetDomainByIndex(projectName, namespace string, index, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -72,7 +72,7 @@ func (m *ManualDomainManager) GetDomainByIndex(projectName, namespace string, in
 	}.SubStr()
 }
 
-func (m *ManualDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
+func (m *manualDomainManager) GetDomain(projectName, namespace string, preOccupiedLen int) string {
 	return Subdomain{
 		maxLen:       maxDomainLength - preOccupiedLen,
 		projectName:  projectName,
@@ -83,14 +83,14 @@ func (m *ManualDomainManager) GetDomain(projectName, namespace string, preOccupi
 	}.SubStr()
 }
 
-func (m *ManualDomainManager) GetCertSecretName(projectName string, index int) string {
+func (m *manualDomainManager) GetCertSecretName(projectName string, index int) string {
 	return ManualCertSecretName
 }
 
-func (m *ManualDomainManager) GetClusterIssuer() string {
+func (m *manualDomainManager) GetClusterIssuer() string {
 	return ""
 }
 
-func (m *ManualDomainManager) GetCerts() (name, key, crt string) {
+func (m *manualDomainManager) GetCerts() (name, key, crt string) {
 	return ManualCertSecretName, m.tlsKey, m.tlsCrt
 }

@@ -27,16 +27,16 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		gitconfig.RegisterGitConfigServer(s, new(GitConfigSvc))
+		gitconfig.RegisterGitConfigServer(s, new(gitConfigSvc))
 	})
 	RegisterEndpoint(gitconfig.RegisterGitConfigHandlerFromEndpoint)
 }
 
-type GitConfigSvc struct {
+type gitConfigSvc struct {
 	gitconfig.UnimplementedGitConfigServer
 }
 
-func (m *GitConfigSvc) GetDefaultChartValues(ctx context.Context, request *gitconfig.DefaultChartValuesRequest) (*gitconfig.DefaultChartValuesResponse, error) {
+func (m *gitConfigSvc) GetDefaultChartValues(ctx context.Context, request *gitconfig.DefaultChartValuesRequest) (*gitconfig.DefaultChartValuesResponse, error) {
 	marsC, err := GetProjectMarsConfig(fmt.Sprintf("%v", request.GitProjectId), request.Branch)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func getDefaultBranch(projectId int) (string, error) {
 	return p.GetDefaultBranch(), nil
 }
 
-func (m *GitConfigSvc) Show(ctx context.Context, request *gitconfig.ShowRequest) (*gitconfig.ShowResponse, error) {
+func (m *gitConfigSvc) Show(ctx context.Context, request *gitconfig.ShowRequest) (*gitconfig.ShowResponse, error) {
 	var branch string = request.Branch
 	if branch == "" {
 		branch, _ = getDefaultBranch(int(request.GitProjectId))
@@ -99,7 +99,7 @@ func (m *GitConfigSvc) Show(ctx context.Context, request *gitconfig.ShowRequest)
 	}, nil
 }
 
-func (m *GitConfigSvc) GlobalConfig(ctx context.Context, request *gitconfig.GlobalConfigRequest) (*gitconfig.GlobalConfigResponse, error) {
+func (m *gitConfigSvc) GlobalConfig(ctx context.Context, request *gitconfig.GlobalConfigRequest) (*gitconfig.GlobalConfigResponse, error) {
 	var project models.GitProject
 	if app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&project).Error != nil {
 		return &gitconfig.GlobalConfigResponse{
@@ -114,7 +114,7 @@ func (m *GitConfigSvc) GlobalConfig(ctx context.Context, request *gitconfig.Glob
 	}, nil
 }
 
-func (m *GitConfigSvc) ToggleGlobalStatus(ctx context.Context, request *gitconfig.ToggleGlobalStatusRequest) (*gitconfig.ToggleGlobalStatusResponse, error) {
+func (m *gitConfigSvc) ToggleGlobalStatus(ctx context.Context, request *gitconfig.ToggleGlobalStatusRequest) (*gitconfig.ToggleGlobalStatusResponse, error) {
 	var project models.GitProject
 	if err := app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -132,7 +132,7 @@ func (m *GitConfigSvc) ToggleGlobalStatus(ctx context.Context, request *gitconfi
 	return &gitconfig.ToggleGlobalStatusResponse{}, nil
 }
 
-func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequest) (*gitconfig.UpdateResponse, error) {
+func (m *gitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequest) (*gitconfig.UpdateResponse, error) {
 	var project models.GitProject
 	if err := app.DB().Where("`git_project_id` = ?", request.GitProjectId).First(&project).Error; err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (m *GitConfigSvc) Update(ctx context.Context, request *gitconfig.UpdateRequ
 	return &gitconfig.UpdateResponse{Config: project.GlobalMarsConfig()}, nil
 }
 
-func (m *GitConfigSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (m *gitConfigSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}

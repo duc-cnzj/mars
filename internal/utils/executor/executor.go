@@ -18,7 +18,7 @@ type defaultRemoteExecutor struct {
 	cmd                       []string
 }
 
-func NewDefaultRemoteExecutor() *defaultRemoteExecutor {
+func NewDefaultRemoteExecutor() contracts.RemoteExecutor {
 	return &defaultRemoteExecutor{}
 }
 

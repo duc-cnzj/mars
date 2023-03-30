@@ -12,18 +12,18 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		picture.RegisterPictureServer(s, new(PictureSvc))
+		picture.RegisterPictureServer(s, new(pictureSvc))
 	})
 	RegisterEndpoint(picture.RegisterPictureHandlerFromEndpoint)
 }
 
-type PictureSvc struct {
-	Guest
+type pictureSvc struct {
+	guest
 
 	picture.UnimplementedPictureServer
 }
 
-func (p *PictureSvc) Background(ctx context.Context, req *picture.BackgroundRequest) (*picture.BackgroundResponse, error) {
+func (p *pictureSvc) Background(ctx context.Context, req *picture.BackgroundRequest) (*picture.BackgroundResponse, error) {
 	one, err := plugins.GetPicture().Get(ctx, req.Random)
 	if err != nil {
 		return nil, err

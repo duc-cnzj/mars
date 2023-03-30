@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -12,11 +13,12 @@ import (
 type testPicture struct {
 	PictureInterface
 	called bool
+	err    error
 }
 
 func (t *testPicture) Initialize(args map[string]any) error {
 	t.called = true
-	return nil
+	return t.err
 }
 
 func TestGetPicture(t *testing.T) {
@@ -29,4 +31,20 @@ func TestGetPicture(t *testing.T) {
 	GetPicture()
 	assert.Equal(t, 1, ma.callback)
 	assert.True(t, p.called)
+}
+func TestGetPicture2(t *testing.T) {
+	p := &testPicture{
+		err: errors.New("xxx"),
+	}
+	ma := &mockApp{
+		p: map[string]contracts.PluginInterface{"picture": p},
+	}
+	instance.SetInstance(ma)
+	pictureOnce = sync.Once{}
+	assert.Panics(t, func() {
+		GetPicture()
+	})
+	assert.Equal(t, 0, ma.callback)
+	assert.True(t, p.called)
+
 }

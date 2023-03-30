@@ -4,35 +4,35 @@ import (
 	"context"
 	"errors"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"gorm.io/gorm"
-
 	"github.com/duc-cnzj/mars-client/v4/event"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/scopes"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 )
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		event.RegisterEventServer(s, new(EventSvc))
+		event.RegisterEventServer(s, new(eventSvc))
 	})
 	RegisterEndpoint(event.RegisterEventHandlerFromEndpoint)
 }
 
-type EventSvc struct {
-	event.UnsafeEventServer
+type eventSvc struct {
+	event.UnimplementedEventServer
 }
 
-func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
+func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
 	var (
 		page     = int(request.Page)
 		pageSize = int(request.PageSize)
-		events   []EventDiff
+		events   []eventDiff
 	)
 
 	queryScope := func(db *gorm.DB) *gorm.DB {
@@ -48,7 +48,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 		return db
 	}
 
-	if err := app.DB().Preload("File", func(db *gorm.DB) *gorm.DB {
+	if err := app.DB().Table("events").Preload("File", func(db *gorm.DB) *gorm.DB {
 		return db.Select("ID", "Size")
 	}).Scopes(queryScope, scopes.Paginate(&page, &pageSize)).Select([]string{
 		"id", "action", "username", "message", "duration", "file_id", "created_at", "updated_at",
@@ -70,7 +70,7 @@ func (e *EventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 	}, nil
 }
 
-func (e *EventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
+func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
 	var eventModel models.Event
 	err := app.DB().Preload("File").First(&eventModel, request.Id).Error
 	if err != nil {
@@ -83,7 +83,7 @@ func (e *EventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event
 	return &event.ShowResponse{Event: eventModel.ProtoTransform()}, nil
 }
 
-func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (e *eventSvc) Authorize(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if !MustGetUser(ctx).IsAdmin() {
 		return nil, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error())
 	}
@@ -91,11 +91,11 @@ func (e *EventSvc) Authorize(ctx context.Context, fullMethodName string) (contex
 	return ctx, nil
 }
 
-type EventDiff struct {
+type eventDiff struct {
 	models.Event
 	HasDiff bool `json:"has_diff"`
 }
 
-func (EventDiff) TableName() string {
+func (eventDiff) TableName() string {
 	return "events"
 }

@@ -26,18 +26,18 @@ func TestFile_Authorize(t *testing.T) {
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{
 		Roles: []string{"admin"},
 	})
-	_, err := new(File).Authorize(ctx, "")
+	_, err := new(fileSvc).Authorize(ctx, "")
 	assert.Nil(t, err)
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{
 		Roles: []string{},
 	})
-	_, err = new(File).Authorize(ctx, "")
+	_, err = new(fileSvc).Authorize(ctx, "")
 	assert.Error(t, err)
 
-	_, err = new(File).Authorize(context.TODO(), "MaxUploadSize")
+	_, err = new(fileSvc).Authorize(context.TODO(), "MaxUploadSize")
 	assert.Nil(t, err)
 
-	_, err = new(File).Authorize(context.TODO(), "/file.File/MaxUploadSize")
+	_, err = new(fileSvc).Authorize(context.TODO(), "/file.fileSvc/MaxUploadSize")
 	assert.Nil(t, err)
 }
 
@@ -55,11 +55,11 @@ func TestFile_Delete(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
-	_, err := new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
+	_, err := new(fileSvc).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
 	db.AutoMigrate(&models.File{})
-	_, err = new(File).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
+	_, err = new(fileSvc).Delete(adminCtx(), &file.DeleteRequest{Id: 1})
 	fromError, _ = status.FromError(err)
 	assert.Equal(t, codes.NotFound, fromError.Code())
 	f := &models.File{
@@ -72,7 +72,7 @@ func TestFile_Delete(t *testing.T) {
 	up.EXPECT().Delete("/tmp/aa.txt").Times(1)
 	app.EXPECT().Uploader().Return(up)
 	testutil.AssertAuditLogFired(m, app)
-	_, err = new(File).Delete(adminCtx(), &file.DeleteRequest{Id: int64(f.ID)})
+	_, err = new(fileSvc).Delete(adminCtx(), &file.DeleteRequest{Id: int64(f.ID)})
 	assert.Nil(t, err)
 }
 
@@ -84,10 +84,10 @@ func TestFile_DiskInfo(t *testing.T) {
 	up := mock.NewMockUploader(m)
 	app.EXPECT().Uploader().Return(up).AnyTimes()
 	up.EXPECT().DirSize().Return(int64(0), errors.New("")).Times(1)
-	_, err := new(File).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
+	_, err := new(fileSvc).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
 	assert.Error(t, err)
 	up.EXPECT().DirSize().Return(int64(100), nil).Times(1)
-	res, _ := new(File).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
+	res, _ := new(fileSvc).DiskInfo(adminCtx(), &file.DiskInfoRequest{})
 	assert.Equal(t, "100 B", res.HumanizeUsage)
 	assert.Equal(t, int64(100), res.Usage)
 }
@@ -99,7 +99,7 @@ func TestFile_List(t *testing.T) {
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	app.EXPECT().Config().Return(&config.Config{UploadDir: "/tmp"}).AnyTimes()
-	_, err := new(File).List(context.TODO(), &file.ListRequest{
+	_, err := new(fileSvc).List(context.TODO(), &file.ListRequest{
 		Page:           1,
 		PageSize:       15,
 		WithoutDeleted: true,
@@ -127,13 +127,13 @@ func TestFile_List(t *testing.T) {
 	db.Create(f2)
 	db.Delete(f2)
 
-	list, _ := new(File).List(context.TODO(), &file.ListRequest{
+	list, _ := new(fileSvc).List(context.TODO(), &file.ListRequest{
 		Page:           1,
 		PageSize:       15,
 		WithoutDeleted: true,
 	})
 	assert.Equal(t, int64(1), list.Count)
-	list, _ = new(File).List(context.TODO(), &file.ListRequest{
+	list, _ = new(fileSvc).List(context.TODO(), &file.ListRequest{
 		Page:           1,
 		PageSize:       15,
 		WithoutDeleted: false,
@@ -146,7 +146,7 @@ func TestFile_MaxUploadSize(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{UploadMaxSize: "10M"}).AnyTimes()
-	size, err := new(File).MaxUploadSize(context.TODO(), &file.MaxUploadSizeRequest{})
+	size, err := new(fileSvc).MaxUploadSize(context.TODO(), &file.MaxUploadSizeRequest{})
 	assert.Nil(t, err)
 	assert.Equal(t, "10 MB", size.HumanizeSize)
 	assert.Equal(t, uint64(10*1000*1000), size.Bytes)
@@ -158,13 +158,13 @@ func TestFile_Show(t *testing.T) {
 	app := testutil.MockApp(m)
 	db, fn := testutil.SetGormDB(m, app)
 	defer fn()
-	_, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+	_, err := new(fileSvc).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: 1,
 	})
 	fromError, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, fromError.Code())
 	db.AutoMigrate(&models.File{})
-	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+	_, err = new(fileSvc).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: 1000,
 	})
 	fromError, _ = status.FromError(err)
@@ -182,7 +182,7 @@ func TestFile_Show(t *testing.T) {
 	app.EXPECT().Uploader().Return(up).Times(1)
 	app.EXPECT().LocalUploader().Return(localUp).Times(2)
 	localUp.EXPECT().Read("/tmp/x.txt").Return(nil, errors.New("xxx"))
-	_, err = new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+	_, err = new(fileSvc).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: int64(f.ID),
 	})
 	assert.Equal(t, "xxx", err.Error())
@@ -193,7 +193,7 @@ func TestFile_Show(t *testing.T) {
 	app.EXPECT().LocalUploader().Return(localUp).Times(2)
 	localUp.EXPECT().Read("/tmp/x.txt").Return(&rc{Reader: strings.NewReader("abc")}, nil)
 
-	res, err := new(File).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
+	res, err := new(fileSvc).ShowRecords(context.TODO(), &file.ShowRecordsRequest{
 		Id: int64(f.ID),
 	})
 	assert.Nil(t, err)

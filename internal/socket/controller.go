@@ -82,7 +82,7 @@ func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn
 			return executor.NewDefaultRemoteExecutor()
 		},
 		conn:           c,
-		cancelSignaler: &CancelSignals{cs: map[string]func(error){}},
+		cancelSignaler: newCancelSignals(),
 	}
 	wsconn.terminalSessions = NewSessionMap(wsconn)
 

@@ -11,6 +11,7 @@ func SetInstance(instance contracts.ApplicationInterface) {
 	app = instance
 }
 
+// App return contracts.ApplicationInterface, not safe.
 func App() contracts.ApplicationInterface {
 	return app
 }

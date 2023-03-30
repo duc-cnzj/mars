@@ -41,7 +41,16 @@ import (
 	"gorm.io/gorm"
 )
 
-const MaxRecvMsgSize = 1 << 20 * 20 // 20 MiB
+const maxRecvMsgSize = 1 << 20 * 20 // 20 MiB
+
+var defaultMiddlewares = middlewareList{
+	middlewares.Recovery,
+	middlewares.DeletePatternHeader,
+	middlewares.ResponseMetrics,
+	middlewares.TracingWrapper,
+	middlewares.RouteLogger,
+	middlewares.AllowCORS,
+}
 
 type ApiGatewayBootstrapper struct{}
 
@@ -82,7 +91,7 @@ type apiGateway struct {
 	newServerFunc func(ctx context.Context, a *apiGateway) (httpServer, error)
 }
 
-func HeaderMatcher(key string) (string, bool) {
+func headerMatcher(key string) (string, bool) {
 	key = strings.ToLower(key)
 	switch key {
 	case "tracestate":
@@ -116,8 +125,8 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router := mux.NewRouter()
 
 	gmux := runtime.NewServeMux(
-		runtime.WithOutgoingHeaderMatcher(HeaderMatcher),
-		runtime.WithIncomingHeaderMatcher(HeaderMatcher),
+		runtime.WithOutgoingHeaderMatcher(headerMatcher),
+		runtime.WithIncomingHeaderMatcher(headerMatcher),
 		runtime.WithForwardResponseOption(func(ctx context.Context, writer http.ResponseWriter, message proto.Message) error {
 			writer.Header().Set("X-Content-Type-Options", "nosniff")
 			pattern, ok := runtime.HTTPPathPattern(ctx)
@@ -139,7 +148,7 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		}))
 
 	opts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxRecvMsgSize)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(middlewares.TraceUnaryClientInterceptor),
 	}
@@ -158,27 +167,24 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	})
 	serveWs(router)
 	frontend.LoadFrontendRoutes(router)
-	LoadSwaggerUI(router)
+	loadSwaggerUI(router)
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
-		Addr: ":" + app.Config().AppPort,
-		Handler: middlewares.Recovery(
-			middlewares.DeletePatternHeader(
-				middlewares.ResponseMetrics(
-					middlewares.TracingWrapper(
-						middlewares.RouteLogger(
-							middlewares.AllowCORS(
-								router,
-							),
-						),
-					),
-				),
-			),
-		),
+		Addr:    ":" + app.Config().AppPort,
+		Handler: defaultMiddlewares.Wrap(router),
 	}
 
 	return s, nil
+}
+
+type middlewareList []func(handler http.Handler) http.Handler
+
+func (m middlewareList) Wrap(r http.Handler) (h http.Handler) {
+	for i := len(m) - 1; i >= 0; i-- {
+		h = m[i](r)
+	}
+	return
 }
 
 func (a *apiGateway) Shutdown(ctx context.Context) error {
@@ -439,7 +445,7 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 	download(w, "mars-config.json", bytes.NewReader(marshal))
 }
 
-func LoadSwaggerUI(mux *mux.Router) {
+func loadSwaggerUI(mux *mux.Router) {
 	subrouter := mux.PathPrefix("").Subrouter()
 	subrouter.Use(middlewares.HttpCache)
 

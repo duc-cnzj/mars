@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newCommand() *Command {
-	return &Command{expression: expression}
+func newCommand() *command {
+	return &command{expression: expression}
 }
 
 func TestCommand_At(t *testing.T) {
@@ -276,7 +276,7 @@ func TestCommand_MonthlyOn(t *testing.T) {
 }
 
 func TestCommand_Name(t *testing.T) {
-	cmd := &Command{name: "duc"}
+	cmd := &command{name: "duc"}
 	assert.Equal(t, "duc", cmd.Name())
 }
 

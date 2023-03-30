@@ -2,6 +2,9 @@ package bootstrappers
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -25,5 +28,20 @@ func TestMetricsBootstrapper_Tags(t *testing.T) {
 }
 
 func Test_metricsRunner_Shutdown(t *testing.T) {
-	assert.Nil(t, (&metricsRunner{}).Shutdown(context.TODO()))
+	h := &mockHttpServer{}
+	assert.Nil(t, (&metricsRunner{s: h}).Shutdown(context.TODO()))
+	assert.True(t, h.shutdownCalled)
+}
+
+func Test_metricsRunner_Run(t *testing.T) {
+	port, _ := config.GetFreePort()
+	mr := &metricsRunner{port: strconv.Itoa(port)}
+	mr.Run(context.TODO())
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", port))
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Nil(t, mr.Shutdown(context.TODO()))
+	_, err = http.Get(fmt.Sprintf("http://localhost:%d/metrics", port))
+	assert.Error(t, err)
 }

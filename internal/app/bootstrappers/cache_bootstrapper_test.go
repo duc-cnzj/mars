@@ -3,6 +3,8 @@ package bootstrappers
 import (
 	"testing"
 
+	"github.com/duc-cnzj/mars/v4/internal/adapter"
+
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -13,12 +15,12 @@ import (
 )
 
 type cacheMatcher struct {
-	wants any
-	t     *testing.T
+	wantsType any
+	t         *testing.T
 }
 
 func (c *cacheMatcher) Matches(x any) bool {
-	assert.IsType(c.t, c.wants, x)
+	assert.IsType(c.t, c.wantsType, x.(contracts.CacheInterface).Store())
 	return true
 }
 
@@ -49,8 +51,8 @@ func TestCacheBootstrapper_Bootstrap(t *testing.T) {
 	}).Times(1)
 	app.EXPECT().Singleflight().Times(2)
 	app.EXPECT().SetCache(&cacheMatcher{
-		wants: (*cache.Cache)(nil),
-		t:     t,
+		wantsType: adapter.NewGoCacheAdapter(nil),
+		t:         t,
 	})
 	app.EXPECT().SetCacheLock(&callbackMatcher{
 		cb: func(a any) bool {
@@ -68,8 +70,8 @@ func TestCacheBootstrapper_Bootstrap(t *testing.T) {
 		CacheDriver: "db",
 	}).Times(1)
 	app.EXPECT().SetCache(&cacheMatcher{
-		wants: (*cache.DBCache)(nil),
-		t:     t,
+		wantsType: cache.NewDBStore(nil),
+		t:         t,
 	})
 	app.EXPECT().SetCacheLock(&callbackMatcher{
 		cb: func(a any) bool {

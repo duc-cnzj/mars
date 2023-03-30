@@ -31,7 +31,7 @@ func TracingWrapper(h http.Handler) http.Handler {
 
 		ctx, span = trace2.NewNoopTracerProvider().Tracer("").Start(r.Context(), "")
 		url := r.URL.String()
-		if !TracingIgnoreFn(r.URL.Path) {
+		if !tracingIgnoreFn(r.URL.Path) {
 			ctxt := propagation.TraceContext{}
 			ctx, span = app.Tracer().Start(ctxt.Extract(r.Context(), propagation.HeaderCarrier(r.Header)), fmt.Sprintf("[%s]: %s", r.Method, url))
 			span.SetAttributes(grpcGatewayTag)
@@ -52,7 +52,7 @@ func TracingWrapper(h http.Handler) http.Handler {
 	})
 }
 
-func TracingIgnoreFn(fullMethodName string) bool {
+func tracingIgnoreFn(fullMethodName string) bool {
 	if fullMethodName == "/ws" {
 		return true
 	}
@@ -74,9 +74,9 @@ func TracingIgnoreFn(fullMethodName string) bool {
 	return false
 }
 
-type GatewayCarrier metadata.MD
+type gatewayCarrier metadata.MD
 
-func (hc GatewayCarrier) Get(key string) string {
+func (hc gatewayCarrier) Get(key string) string {
 	vals := metadata.MD(hc).Get(key)
 	if len(vals) > 0 {
 		return vals[0]
@@ -84,11 +84,11 @@ func (hc GatewayCarrier) Get(key string) string {
 	return ""
 }
 
-func (hc GatewayCarrier) Set(key string, value string) {
+func (hc gatewayCarrier) Set(key string, value string) {
 	metadata.MD(hc).Set(key, value)
 }
 
-func (hc GatewayCarrier) Keys() []string {
+func (hc gatewayCarrier) Keys() []string {
 	keys := make([]string, 0, len(hc))
 	for k := range hc {
 		keys = append(keys, k)
@@ -105,7 +105,7 @@ func TraceUnaryClientInterceptor(ctx context.Context, method string, req, reply 
 	if outMD, found := metadata.FromOutgoingContext(ctx); found {
 		md = outMD
 	}
-	ctxt.Inject(start, GatewayCarrier(md))
+	ctxt.Inject(start, gatewayCarrier(md))
 	ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
 
 	err := invoker(ctx, method, req, reply, cc, opts...)
@@ -119,7 +119,7 @@ func TraceUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryS
 	ctxt := propagation.TraceContext{}
 	md := metadata.MD{}
 	if incomingContext, b := metadata.FromIncomingContext(ctx); b {
-		ctx = ctxt.Extract(ctx, GatewayCarrier(incomingContext))
+		ctx = ctxt.Extract(ctx, gatewayCarrier(incomingContext))
 		md = incomingContext
 	}
 	start, span := app.Tracer().Start(ctx, info.FullMethod)
