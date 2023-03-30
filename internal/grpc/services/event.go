@@ -72,7 +72,7 @@ func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event
 
 func (e *eventSvc) Show(ctx context.Context, request *event.ShowRequest) (*event.ShowResponse, error) {
 	var eventModel models.Event
-	err := app.DB().Preload("fileSvc").First(&eventModel, request.Id).Error
+	err := app.DB().Preload("File").First(&eventModel, request.Id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
