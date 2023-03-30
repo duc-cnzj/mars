@@ -83,9 +83,23 @@ func TestReleaseList_GetStatus(t *testing.T) {
 	assert.Equal(t, "unknown", rl.GetStatus("dev", "xxx"))
 }
 
-func TestReleaseStatus(t *testing.T) {}
+func TestReleaseStatus(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	status := ReleaseStatus("test", "ns")
+	assert.Equal(t, types.Deploy_StatusUnknown, status)
+}
 
-func TestRollback(t *testing.T) {}
+func TestRollback(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	app.EXPECT().Config().Return(&config.Config{}).Times(1)
+	err := Rollback("test", "ns", false, nil, false)
+	assert.Error(t, err)
+}
 
 func TestUninstallRelease(t *testing.T) {
 	m := gomock.NewController(t)
@@ -147,8 +161,7 @@ func Test_getActionConfigAndSettings(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
-	assert.Nil(t, err)
+	settings := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.NotNil(t, settings)
 }
 
@@ -158,8 +171,7 @@ func Test_getActionConfigAndSettings1(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{KubeConfig: "xxx"}).Times(2)
-	settings, err := getActionConfigAndSettings("test", func(format string, v ...any) {})
-	assert.Nil(t, err)
+	settings := getActionConfigAndSettings("test", func(format string, v ...any) {})
 	assert.NotNil(t, settings)
 }
 

@@ -75,10 +75,7 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 // UpgradeOrInstall
 // 不会自动回滚
 func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string, desc string) (*release.Release, error) {
-	actionConfig, err := getActionConfigAndSettings(namespace, fn.UnWrap())
-	if err != nil {
-		return nil, err
-	}
+	actionConfig := getActionConfigAndSettings(namespace, fn.UnWrap())
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
 	client.Atomic = false
@@ -264,16 +261,10 @@ func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], release
 }
 
 func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
-	actionConfig, err := getActionConfigAndSettings(namespace, log)
-	if err != nil {
-		return err
-	}
+	actionConfig := getActionConfigAndSettings(namespace, log)
 	uninstall := action.NewUninstall(actionConfig)
-	if _, err := uninstall.Run(releaseName); err != nil {
-		mlog.Warning(err)
-		return err
-	}
-	return nil
+	_, err := uninstall.Run(releaseName)
+	return err
 }
 
 func runInstall(ctx context.Context, releaseName string, chartRequested *chart.Chart, client *action.Install, valueOpts *values.Options) (*release.Release, error) {
@@ -319,10 +310,7 @@ var (
 )
 
 func ReleaseStatus(releaseName, namespace string) types.Deploy {
-	actionConfig, err := getActionConfigAndSettings(namespace, mlog.Debugf)
-	if err != nil {
-		return types.Deploy_StatusUnknown
-	}
+	actionConfig := getActionConfigAndSettings(namespace, mlog.Debugf)
 	statusClient := action.NewStatus(actionConfig)
 	run, err := statusClient.Run(releaseName)
 	if err != nil {
@@ -408,7 +396,7 @@ func PackageChart(path string, destDir string) (string, error) {
 	return newPackage.Run(path, nil)
 }
 
-func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) (*action.Configuration, error) {
+func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) *action.Configuration {
 	actionConfig := new(action.Configuration)
 	flags := genericclioptions.NewConfigFlags(true)
 	flags = flags.WithDiscoveryQPS(-1)
@@ -426,12 +414,9 @@ func getActionConfigAndSettings(namespace string, log func(format string, v ...a
 	}
 
 	set.Parse(sets)
+	actionConfig.Init(flags, namespace, "", log)
 
-	if err := actionConfig.Init(flags, namespace, "", log); err != nil {
-		return nil, err
-	}
-
-	return actionConfig, nil
+	return actionConfig
 }
 
 func wrapRestConfig(config *restclient.Config) *restclient.Config {
@@ -444,10 +429,7 @@ func GetSlugName[T int64 | int](namespaceId T, name string) string {
 }
 
 func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
-	actionConfig, err := getActionConfigAndSettings(namespace, log)
-	if err != nil {
-		return err
-	}
+	actionConfig := getActionConfigAndSettings(namespace, log)
 	client := action.NewRollback(actionConfig)
 	client.Wait = wait
 	client.DryRun = dryRun
