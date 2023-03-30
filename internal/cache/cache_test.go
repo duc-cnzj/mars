@@ -124,3 +124,8 @@ func TestCache_SetWithTTL(t *testing.T) {
 	get, _ := cache.(*Cache).store.Get(NewKey("aaa").String())
 	assert.Equal(t, "aa", string(get))
 }
+
+func TestCache_Store(t *testing.T) {
+	s := adapter.NewGoCacheAdapter(nil)
+	assert.Same(t, s, NewCache(s, nil).Store())
+}

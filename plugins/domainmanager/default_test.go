@@ -78,3 +78,7 @@ func TestDefaultDomainManager_Initialize(t *testing.T) {
 func TestDefaultDomainManager_Name(t *testing.T) {
 	assert.Equal(t, "default_domain_manager", (&defaultDomainManager{}).Name())
 }
+
+func TestNewDefaultDomainManager(t *testing.T) {
+	assert.IsType(t, &defaultDomainManager{}, NewDefaultDomainManager())
+}
