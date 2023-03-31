@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"runtime"
 	"strings"
 
 	"github.com/duc-cnzj/mars/v4/internal/adapter"
@@ -16,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/utils/runtime"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -119,7 +119,7 @@ var showEventsCmd = &cobra.Command{
 			i++
 			var listenerNames []string
 			for _, listener := range listeners {
-				s := strings.Split(getFunctionName(listener), ".")
+				s := strings.Split(runtime.GetFunctionName(listener), ".")
 				listenerNames = append(listenerNames, s[len(s)-1])
 			}
 			table.Append([]string{fmt.Sprintf("%d", i), event.String(), strings.Join(listenerNames, " "), fmt.Sprintf("%d", len(listeners))})
@@ -193,9 +193,4 @@ var showConfigCmd = &cobra.Command{
 
 		table.Render()
 	},
-}
-
-// getFunctionName return fn name
-func getFunctionName(i any) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }

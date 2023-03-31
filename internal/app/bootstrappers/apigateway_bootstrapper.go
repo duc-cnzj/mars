@@ -183,6 +183,7 @@ type middlewareList []func(handler http.Handler) http.Handler
 func (m middlewareList) Wrap(r http.Handler) (h http.Handler) {
 	for i := len(m) - 1; i >= 0; i-- {
 		h = m[i](r)
+		r = h
 	}
 	return
 }

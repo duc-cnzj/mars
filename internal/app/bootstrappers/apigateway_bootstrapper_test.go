@@ -637,25 +637,37 @@ func Test_initServer(t *testing.T) {
 func Test_middlewareList_Router(t *testing.T) {
 	var res string
 	handlerA := func(handler http.Handler) http.Handler {
-		res += "a"
-		return handler
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			res += "a"
+			handler.ServeHTTP(writer, request)
+			res += "a1"
+		})
 	}
 	handlerB := func(handler http.Handler) http.Handler {
-		res += "b"
-		return handler
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			res += "b"
+			handler.ServeHTTP(writer, request)
+			res += "b1"
+		})
 	}
 	handlerC := func(handler http.Handler) http.Handler {
-		res += "c"
-		return handler
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			res += "c"
+			handler.ServeHTTP(writer, request)
+			res += "c1"
+		})
 	}
+	core := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		res += "d"
+	})
 	mlist := middlewareList{
 		handlerA,
 		handlerB,
 		handlerC,
 	}
-	mlist.Wrap(nil)
-	assert.Equal(t, "cba", res)
+	mlist.Wrap(core).ServeHTTP(nil, nil)
+	assert.Equal(t, "abcdc1b1a1", res)
 	res = ""
-	handlerA(handlerB(handlerC(nil)))
-	assert.Equal(t, "cba", res)
+	handlerA(handlerB(handlerC(core))).ServeHTTP(nil, nil)
+	assert.Equal(t, "abcdc1b1a1", res)
 }
