@@ -1315,6 +1315,8 @@ func TestVariableLoader_Load(t *testing.T) {
 		commit: commit,
 		config: &mars.Config{
 			ValuesYaml: `
+if-master-test: < if ne .Branch "master" >not-master/is- <- .Branch >< else >< .Branch >< end >
+if-dev-test: < if eq .Branch "dev" >dev-< .Branch >   <- end >
 VarImagePullSecrets: <.ImagePullSecrets>
 image: <.Pipeline>-<.Branch>
 `,
@@ -1330,6 +1332,8 @@ image: <.Pipeline>-<.Branch>
 	}
 	assert.Nil(t, (&VariableLoader{}).Load(job))
 	assert.Equal(t, `
+if-master-test: not-master/is-dev
+if-dev-test: dev-dev
 VarImagePullSecrets: [{name: a},{name: b},{name: c},]
 image: 9999-dev
 `,

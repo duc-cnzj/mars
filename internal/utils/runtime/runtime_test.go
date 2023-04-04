@@ -1,8 +1,9 @@
 package runtime
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetFunctionName(t *testing.T) {
