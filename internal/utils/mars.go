@@ -14,7 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 
 	goyaml "github.com/ghodss/yaml"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func BranchPass(mars *mars.Config, name string) bool {
@@ -137,8 +137,10 @@ func ParseInputConfig(mars *mars.Config, input string) (string, error) {
 			if ok {
 				value, ok := cdata.([]any)
 				if ok {
-					m := make(map[any]any)
-					yaml.Unmarshal([]byte(mars.ValuesYaml), m)
+					m := make(map[string]any)
+					if err := yaml.Unmarshal([]byte(mars.ValuesYaml), m); err != nil {
+						return "", err
+					}
 					_, hasKey := deepGet(mars.ConfigField+separator+key, m)
 					if !hasKey {
 						newData = value

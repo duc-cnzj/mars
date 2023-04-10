@@ -32,7 +32,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
 )
@@ -113,7 +113,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 	assert.Nil(t, (&DynamicLoader{}).Load(job))
 	assert.Equal(t,
 		`app:
-  config: xxxx
+    config: xxxx
 `, job.dynamicConfigYaml)
 	job2 := &jobRunner{
 		input: &JobInput{
@@ -129,9 +129,9 @@ func TestDynamicLoader_Load(t *testing.T) {
 	assert.Nil(t, (&DynamicLoader{}).Load(job2))
 	assert.Equal(t,
 		`app:
-  config:
-    age: 17
-    name: duc
+    config:
+        age: 17
+        name: duc
 `, job2.dynamicConfigYaml)
 
 	em.msgs = []string{}
@@ -181,12 +181,12 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	sort.Strings(job.extraValues)
 	assert.Equal(t,
 		`app:
-  config: "1"
+    config: "1"
 `,
 		job.extraValues[0])
 	assert.Equal(t,
 		`app:
-  xxx: true
+    xxx: true
 `,
 		job.extraValues[1])
 
@@ -264,7 +264,7 @@ func TestExtraValuesLoader_deepSetItems(t *testing.T) {
 	items = (&ExtraValuesLoader{}).deepSetItems(map[string]any{"a->b": "ab"})
 	assert.Equal(t,
 		`a:
-  b: ab
+    b: ab
 `, items[0])
 }
 
@@ -920,13 +920,13 @@ atomic: false
 web_url: weburl2
 title: title2
 extra_values:
-- path: app->config
-  value: xxx
+    - path: app->config
+      value: xxx
 final_extra_values: |
-  {}
+    {}
 env_values:
-  var-a: aaa
-  var-b: bbb
+    var-a: aaa
+    var-b: bbb
 `, adlog.Old)
 	assert.Equal(t,
 		`config: ""
@@ -936,13 +936,13 @@ atomic: false
 web_url: url
 title: title
 extra_values:
-- path: app->config
-  value: xxx
+    - path: app->config
+      value: xxx
 final_extra_values: |
-  {}
+    {}
 env_values:
-  var-a: aaa
-  var-b: bbb
+    var-a: aaa
+    var-b: bbb
 `, adlog.New)
 }
 
@@ -1095,11 +1095,11 @@ func TestMergeValuesLoader_Load(t *testing.T) {
 		all, _ := io.ReadAll(x.(io.Reader))
 		result := map[string]any{}
 		yaml.Unmarshal(all, &result)
-		assert.Equal(t, 1, result["app"].(map[any]any)["one"])
-		assert.Equal(t, "two", result["app"].(map[any]any)["two"])
-		assert.Equal(t, 3, result["app"].(map[any]any)["three"])
-		assert.Equal(t, 4, result["app"].(map[any]any)["four"])
-		assert.Equal(t, []any{map[any]any{"name": "secret"}}, result["imagePullSecrets"])
+		assert.Equal(t, 1, result["app"].(map[string]any)["one"])
+		assert.Equal(t, "two", result["app"].(map[string]any)["two"])
+		assert.Equal(t, 3, result["app"].(map[string]any)["three"])
+		assert.Equal(t, 4, result["app"].(map[string]any)["four"])
+		assert.Equal(t, []any{map[string]any{"name": "secret"}}, result["imagePullSecrets"])
 	}}).Return(finfo, nil)
 	vy := `
 app:
@@ -1483,8 +1483,8 @@ user:
 	marshalYAML, _ := s.MarshalYAML()
 	m := map[string]any{}
 	yaml.Unmarshal([]byte(marshalYAML.(string)), &m)
-	assert.Equal(t, 18, m["user"].(map[any]any)["age"])
-	assert.Equal(t, "duc", m["user"].(map[any]any)["name"])
+	assert.Equal(t, 18, m["user"].(map[string]any)["age"])
+	assert.Equal(t, "duc", m["user"].(map[string]any)["name"])
 	a, _ := mergeYamlString{}.MarshalYAML()
 	assert.Equal(t, "", a)
 }
@@ -1568,12 +1568,12 @@ atomic: false
 web_url: ""
 title: ""
 extra_values:
-- path: a
-  value: ""
-- path: b
-  value: ""
-- path: c
-  value: ""
+    - path: a
+      value: ""
+    - path: b
+      value: ""
+    - path: c
+      value: ""
 final_extra_values: ""
 env_values: {}
 `, res)

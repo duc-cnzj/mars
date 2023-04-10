@@ -1,13 +1,12 @@
 package models
 
 import (
-	"bytes"
 	"encoding/json"
 	"sort"
 	"time"
 
 	"google.golang.org/protobuf/proto"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"github.com/duc-cnzj/mars-client/v4/mars"
@@ -59,9 +58,9 @@ func (g GitProject) PrettyYaml() string {
 		Elements:         clone.Elements,
 		DisplayName:      clone.DisplayName,
 	}
-	bf := bytes.Buffer{}
-	yaml.NewEncoder(&bf).Encode(data)
-	return bf.String()
+
+	out, _ := yaml.Marshal(data)
+	return string(out)
 }
 
 type sortedElements []*mars.Element

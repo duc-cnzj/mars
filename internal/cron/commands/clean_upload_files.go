@@ -10,7 +10,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/models"
 
 	"github.com/dustin/go-humanize"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 
 	"time"
