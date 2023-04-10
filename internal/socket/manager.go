@@ -19,7 +19,7 @@ import (
 
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -748,10 +748,15 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 	var merged map[string]any
 	provider.Get("").Populate(&merged)
 
-	bf := &bytes.Buffer{}
-	yaml.NewEncoder(bf).Encode(&merged)
+	out, _ := yaml.Marshal(&merged)
 
-	return bf.String(), nil
+	return string(out), nil
+}
+
+func (u userConfig) PrettyYaml() string {
+	sort.Sort(sortableExtraItem(u.ExtraValues))
+	out, _ := yaml.Marshal(&u)
+	return string(out)
 }
 
 type sortableExtraItem []*types.ExtraValue
@@ -766,13 +771,6 @@ func (s sortableExtraItem) Less(i, j int) bool {
 
 func (s sortableExtraItem) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
-}
-
-func (u userConfig) PrettyYaml() string {
-	bf := bytes.Buffer{}
-	sort.Sort(sortableExtraItem(u.ExtraValues))
-	yaml.NewEncoder(&bf).Encode(&u)
-	return bf.String()
 }
 
 func toUpdatesMap(p *models.Project) map[string]any {
@@ -1255,14 +1253,12 @@ func (m *MergeValuesLoader) Load(j *jobRunner) error {
 		return err
 	}
 
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-	if err := encoder.Encode(&mergedDefaultAndConfigYamlValues); err != nil {
+	var fileData []byte
+	if fileData, err = yaml.Marshal(&mergedDefaultAndConfigYamlValues); err != nil {
 		return err
 	}
-	fileData := bf.String()
 	//mlog.Debug("fileData", fileData)
-	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile([]byte(fileData))
+	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile(fileData)
 	if err != nil {
 		return err
 	}

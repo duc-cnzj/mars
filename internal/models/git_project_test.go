@@ -11,7 +11,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/utils/date"
 	"github.com/stretchr/testify/assert"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
@@ -117,21 +117,21 @@ is_simple_env: true
 config_file_type: yaml
 local_chart_path: ./charts
 branches:
-- master
-- dev
+    - master
+    - dev
 values_yaml:
-  age: 27
-  name: duc
+    age: 27
+    name: duc
 elements:
-- path: conf->env
-  type: 3
-  default: dev
-  description: environment
-  selectvalues:
-  - dev
-  - master
-  - '*'
-  order: 0
+    - path: conf->env
+      type: 3
+      default: dev
+      description: environment
+      selectvalues:
+        - dev
+        - master
+        - '*'
+      order: 0
 display_name: app
 `, m.PrettyYaml())
 }

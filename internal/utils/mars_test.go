@@ -116,10 +116,10 @@ func TestParseInputConfig(t *testing.T) {
 			ConfigField: "conf->config",
 			input:       `{"name": "duc", "age": 18}`,
 			wants: dedent.Dedent(`
-					conf:
-					  config:
-					    age: 18
-					    name: duc
+                conf:
+                    config:
+                        age: 18
+                        name: duc
 				`),
 		},
 		{
@@ -127,112 +127,112 @@ func TestParseInputConfig(t *testing.T) {
 			ConfigField: "conf->config",
 			input:       "name: duc\nage: 18",
 			// 这里缩进有问题
-			wants: dedent.Dedent(`
-				conf:
-				  config: |-
-				    name: duc
-				    age: 18
-				`),
+			wants: `
+conf:
+    config: |-
+        name: duc
+        age: 18
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "command",
-			input: dedent.Dedent(`
-					command:
-					- sh
-					- -c
-					- "sleep 3600;exit"
-				`),
-			wants: dedent.Dedent(`
-					command:
-					- sh
-					- -c
-					- sleep 3600;exit
-				`),
+			input: `
+command:
+    - sh
+    - -c
+    - "sleep 3600;exit"
+`,
+			wants: `
+command:
+    - sh
+    - -c
+    - sleep 3600;exit
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "command",
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
-			wants: dedent.Dedent(`
-					command:
-					- sh
-					- -c
-					- sleep 3600;exit
-				`),
+			wants: `
+command:
+    - sh
+    - -c
+    - sleep 3600;exit
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "conf->command",
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
-			wants: dedent.Dedent(`
-					conf:
-					  command:
-					  - sh
-					  - -c
-					  - sleep 3600;exit
-				`),
+			wants: `
+conf:
+    command:
+        - sh
+        - -c
+        - sleep 3600;exit
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "",
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
-			wants: dedent.Dedent(`
-					"":
-					  command:
-					  - sh
-					  - -c
-					  - sleep 3600;exit
-				`),
+			wants: `
+"":
+    command:
+        - sh
+        - -c
+        - sleep 3600;exit
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "command",
-			input: dedent.Dedent(`
-					command:
-					  a: b
-				`),
-			wants: dedent.Dedent(`
-					command:
-					  command:
-					    a: b
-				`),
+			input: `
+command:
+    a: b
+`,
+			wants: `
+command:
+    command:
+        a: b
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "command",
-			ValuesYaml: dedent.Dedent(`
-					command:
-					  command: []
-				`),
-			input: dedent.Dedent(`
-				   command:
-				   - a
-				   - b
-				`),
-			wants: dedent.Dedent(`
-					command:
-					  command:
-					  - a
-					  - b
-				`),
+			ValuesYaml: `
+command:
+    command: []
+`,
+			input: `
+command:
+    - a
+    - b
+`,
+			wants: `
+command:
+    command:
+        - a
+        - b
+`,
 		},
 		{
 			IsSimpleEnv: false,
 			ConfigField: "command",
-			ValuesYaml: dedent.Dedent(`
-					command: []
-				`),
-			input: dedent.Dedent(`
-				   command:
-				   - a
-				   - b
-				`),
-			wants: dedent.Dedent(`
-					command:
-					- a
-					- b
-				`),
+			ValuesYaml: `
+command: []
+`,
+			input: `
+command:
+    - a
+    - b
+`,
+			wants: `
+command:
+    - a
+    - b
+`,
 		},
 		{
 			input: "",
@@ -262,11 +262,11 @@ func TestParseInputConfig(t *testing.T) {
 		{
 			IsSimpleEnv: false,
 			ConfigField: "->command",
-			input: dedent.Dedent(`
-				   command:
-				   - a
-				   - b
-				`),
+			input: `
+command:
+    - a
+    - b
+`,
 			wants:      "",
 			wantsError: true,
 		},

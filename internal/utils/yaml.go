@@ -1,12 +1,15 @@
 package utils
 
 import (
-	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/tidwall/gjson"
+
+	"gopkg.in/yaml.v3"
 )
 
 const separator = "->"
@@ -37,25 +40,16 @@ deepGet: get val
 
 	a->b->c => d
 */
-func deepGet(key string, data map[any]any) (any, bool) {
-	var item any = data
-	s := strings.Split(key, separator)
-	i := 0
-	for i < len(s) {
-		ii, ok := item.(map[any]any)
-		if ok {
-			ii, ok := ii[s[i]]
-			if ok {
-				item = ii
-				i++
-				continue
-			}
-		}
-		item = nil
-		break
-	}
+func deepGet(key string, data map[string]any) (res any, got bool) {
+	keys := strings.Split(key, "->")
 
-	return item, i == len(s)
+	marshal, err := json.Marshal(data)
+	if err != nil {
+		mlog.Error(err)
+		return nil, false
+	}
+	value := gjson.Get(string(marshal), strings.Join(keys, "."))
+	return value.Value(), value.Exists()
 }
 
 // YamlDeepSetKey 把 'user->name: duc' 设置成
@@ -67,12 +61,5 @@ func YamlDeepSetKey(field string, data any) ([]byte, error) {
 		return nil, fmt.Errorf("%w: %s", ErrorInvalidSeparator, field)
 	}
 
-	bf := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(bf)
-
-	if err := encoder.Encode(deepSet(field, data)); err != nil {
-		return nil, err
-	}
-
-	return bf.Bytes(), nil
+	return yaml.Marshal(deepSet(field, data))
 }

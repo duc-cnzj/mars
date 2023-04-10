@@ -1,12 +1,10 @@
 package utils
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestYamlDeepSetKey(t *testing.T) {
@@ -81,13 +79,12 @@ func TestYamlDeepSetKey(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
-			bf := bytes.Buffer{}
-			yaml.NewEncoder(&bf).Encode(tt.want)
-			want := bf.Bytes()
+			out, _ := yaml.Marshal(tt.want)
+			want := string(out)
 			got, err := YamlDeepSetKey(tt.args.field, tt.args.data)
 			assert.ErrorIs(t, err, tt.err)
 			if err == nil {
-				assert.Equal(t, got, want)
+				assert.Equal(t, want, string(got))
 			}
 		})
 	}
@@ -95,16 +92,16 @@ func TestYamlDeepSetKey(t *testing.T) {
 
 func Test_deepGet(t *testing.T) {
 	var tests = []struct {
-		input   map[any]any
+		input   map[string]any
 		key     string
 		wants   bool
 		wantRes any
 	}{
 		{
-			input: map[any]any{
-				"a": map[any]any{
-					"b": map[any]any{
-						"c": map[any]any{
+			input: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
+						"c": map[string]any{
 							"d": "d",
 						},
 					},
@@ -112,14 +109,14 @@ func Test_deepGet(t *testing.T) {
 			},
 			key:   "a->b->c",
 			wants: true,
-			wantRes: map[any]any{
+			wantRes: map[string]any{
 				"d": "d",
 			},
 		},
 		{
-			input: map[any]any{
-				"a": map[any]any{
-					"b": map[any]any{},
+			input: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{},
 				},
 			},
 			key:     "a->b->c",
@@ -127,9 +124,19 @@ func Test_deepGet(t *testing.T) {
 			wantRes: nil,
 		},
 		{
-			input: map[any]any{
+			input: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{},
+				},
+			},
+			key:     "",
+			wants:   false,
+			wantRes: nil,
+		},
+		{
+			input: map[string]any{
 				"a": map[any]any{
-					"b": map[any]any{},
+					"b": map[string]any{},
 				},
 			},
 			key:     "",
