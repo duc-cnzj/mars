@@ -6,7 +6,7 @@ import { get } from "lodash";
 import pb from "../api/compiled";
 import { useAsyncState } from "../utils/async";
 import { BaseOptionType } from "antd/lib/cascader";
-
+import { OmitEqual } from "../utils/obj";
 interface Option extends pb.git.Option {
   children?: Option[];
 }
@@ -28,6 +28,7 @@ const ProjectSelector: React.FC<{
     gitCommit: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate, disabled }) => {
+  console.log("ProjectSelector render");
   const [options, setOptions] = useAsyncState<Option[]>([]);
   const [value, setValue] = useState<(string | number)[]>([]);
   const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
@@ -203,4 +204,6 @@ const ProjectSelector: React.FC<{
   );
 };
 
-export default memo(ProjectSelector);
+export default memo(ProjectSelector, (prev, next) =>
+  OmitEqual(prev, next, "onChange")
+);

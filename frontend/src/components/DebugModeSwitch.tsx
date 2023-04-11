@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { Tooltip, Switch } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { OmitEqual } from "../utils/obj";
 
 const DebugModeSwitch: React.FC<{
   value?: boolean;
@@ -51,4 +52,6 @@ const DebugModeSwitch: React.FC<{
   );
 };
 
-export default memo(DebugModeSwitch);
+export default memo(DebugModeSwitch, (prev, next) =>
+  OmitEqual(prev, next, "onChange")
+);
