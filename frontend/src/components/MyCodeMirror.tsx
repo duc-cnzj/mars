@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useCallback, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { langs } from "@uiw/codemirror-extensions-langs";
@@ -8,64 +8,83 @@ import {
   startCompletion,
 } from "@codemirror/autocomplete";
 import { color } from "@uiw/codemirror-extensions-color";
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap, ViewUpdate } from "@codemirror/view";
 import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
+import { omitEqual } from "../utils/obj";
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
 export const MyCodeMirror: React.FC<{
   mode: string;
   value?: string;
   disabled?: boolean;
+  completionValues?: boolean;
   onChange?: (v: string) => void;
-}> = memo(({ mode, value, onChange, disabled }) => {
-  const langeExt = getLangs(mode);
-  const extensions = [
-    color,
-    langeExt,
-    theme,
-    keymap.of([{ key: "Alt-Enter", run: startCompletion }]),
-  ];
-  switch (mode) {
-    case "yaml":
-      extensions.push(autocompletion({ override: [yamlCompletions] }));
-      break;
-    case "json":
-      extensions.push(linter(jsonParseLinter()));
-      break;
-  }
+}> = memo(
+  ({ mode, value, onChange, disabled, completionValues }) => {
+    console.log("MyCodeMirror render");
+    const langeExt = getLangs(mode);
+    const extensions = [
+      color,
+      langeExt,
+      theme,
+      keymap.of([{ key: "Alt-Enter", run: startCompletion }]),
+    ];
+    switch (mode) {
+      case "yaml":
+        extensions.push(
+          autocompletion(
+            completionValues ? { override: [yamlCompletions] } : undefined
+          )
+        );
+        break;
+      case "json":
+        extensions.push(linter(jsonParseLinter()));
+        break;
+    }
+    const onchange = useCallback(
+      (vv: string, viewUpdate: ViewUpdate) => {
+        if (mode === "yaml") {
+          vv = vv.replace(/^[ \t]*\n/gm, "\n");
+        }
+        onChange?.(vv);
+      },
+      [mode, onChange]
+    );
 
-  return (
-    <CodeMirror
-      readOnly={disabled}
-      style={{ height: "100%" }}
-      value={value}
-      onChange={onChange}
-      theme={dracula}
-      basicSetup={{
-        lineNumbers: true,
-        highlightActiveLineGutter: false,
-        foldGutter: true,
-        dropCursor: true,
-        allowMultipleSelections: true,
-        indentOnInput: true,
-        bracketMatching: true,
-        closeBrackets: true,
-        autocompletion: true,
-        rectangularSelection: true,
-        crosshairCursor: true,
-        highlightActiveLine: false,
-        highlightSelectionMatches: true,
-        closeBracketsKeymap: true,
-        searchKeymap: true,
-        foldKeymap: true,
-        completionKeymap: true,
-        lintKeymap: true,
-      }}
-      extensions={extensions}
-    />
-  );
-});
+    return (
+      <CodeMirror
+        readOnly={disabled}
+        style={{ height: "100%" }}
+        value={value}
+        onChange={onchange}
+        theme={dracula}
+        basicSetup={{
+          lineNumbers: true,
+          highlightActiveLineGutter: false,
+          foldGutter: true,
+          dropCursor: true,
+          allowMultipleSelections: true,
+          indentOnInput: true,
+          bracketMatching: true,
+          closeBrackets: true,
+          autocompletion: true,
+          rectangularSelection: true,
+          crosshairCursor: true,
+          highlightActiveLine: false,
+          highlightSelectionMatches: true,
+          closeBracketsKeymap: true,
+          searchKeymap: true,
+          foldKeymap: true,
+          completionKeymap: true,
+          lintKeymap: true,
+        }}
+        extensions={extensions}
+      />
+    );
+  },
+  (prevProps, nextProps) => omitEqual(prevProps, nextProps, "onChange")
+);
 
 const theme = EditorView.theme(
   {
@@ -173,5 +192,3 @@ export const getMode = (mode: string): string => {
       return mode;
   }
 };
-
-export default MyCodeMirror;
