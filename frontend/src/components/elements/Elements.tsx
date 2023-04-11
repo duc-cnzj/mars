@@ -1,7 +1,7 @@
 import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
-import { OmitEqual } from "../../utils/obj";
+import { omitEqual } from "../../utils/obj";
 const Option = Select.Option;
 const { TextArea } = Input;
 
@@ -236,5 +236,5 @@ const Element: React.FC<{
 };
 
 export default memo(Elements, (prev, next) =>
-  OmitEqual(prev, next, "onChange")
+  omitEqual(prev, next, "onChange")
 );

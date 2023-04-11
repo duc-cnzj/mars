@@ -11,16 +11,17 @@ import { color } from "@uiw/codemirror-extensions-color";
 import { EditorView, keymap, ViewUpdate } from "@codemirror/view";
 import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
-import { OmitEqual } from "../utils/obj";
+import { omitEqual } from "../utils/obj";
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
 export const MyCodeMirror: React.FC<{
   mode: string;
   value?: string;
   disabled?: boolean;
+  completionValues?: boolean;
   onChange?: (v: string) => void;
 }> = memo(
-  ({ mode, value, onChange, disabled }) => {
+  ({ mode, value, onChange, disabled, completionValues }) => {
     console.log("MyCodeMirror render");
     const langeExt = getLangs(mode);
     const extensions = [
@@ -31,7 +32,11 @@ export const MyCodeMirror: React.FC<{
     ];
     switch (mode) {
       case "yaml":
-        extensions.push(autocompletion({ override: [yamlCompletions] }));
+        extensions.push(
+          autocompletion(
+            completionValues ? { override: [yamlCompletions] } : undefined
+          )
+        );
         break;
       case "json":
         extensions.push(linter(jsonParseLinter()));
@@ -78,7 +83,7 @@ export const MyCodeMirror: React.FC<{
       />
     );
   },
-  (prevProps, nextProps) => OmitEqual(prevProps, nextProps, "onChange")
+  (prevProps, nextProps) => omitEqual(prevProps, nextProps, "onChange")
 );
 
 const theme = EditorView.theme(

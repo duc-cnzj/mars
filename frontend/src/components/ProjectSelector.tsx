@@ -6,7 +6,7 @@ import { get } from "lodash";
 import pb from "../api/compiled";
 import { useAsyncState } from "../utils/async";
 import { BaseOptionType } from "antd/lib/cascader";
-import { OmitEqual } from "../utils/obj";
+import { omitEqual } from "../utils/obj";
 interface Option extends pb.git.Option {
   children?: Option[];
 }
@@ -205,5 +205,5 @@ const ProjectSelector: React.FC<{
 };
 
 export default memo(ProjectSelector, (prev, next) =>
-  OmitEqual(prev, next, "onChange")
+  omitEqual(prev, next, "onChange")
 );
