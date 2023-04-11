@@ -21,5 +21,5 @@ func TestHandleNamespaceDeleted(t *testing.T) {
 	sender := testutil.MockWsServer(ctrl, app)
 	sender.EXPECT().New("", "").Return(pubsub)
 	pubsub.EXPECT().ToAll(&EventNamespaceDeletedMatcher{nsID: 1}).Times(1)
-	HandleNamespaceDeleted(&models.Namespace{ID: 1}, EventNamespaceDeleted)
+	HandleNamespaceDeleted(NamespaceDeletedData{NsModel: &models.Namespace{ID: 1}}, EventNamespaceDeleted)
 }
