@@ -55,7 +55,11 @@ export const MyCodeMirror: React.FC<{
           try {
             if (mode === "yaml") {
               onChange?.(
-                format(String(value), { parser: "yaml", plugins: [parserYaml] })
+                format(String(value), {
+                  parser: "yaml",
+                  plugins: [parserYaml],
+                  bracketSpacing: false,
+                })
               );
             }
           } catch (e) {
