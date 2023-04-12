@@ -14,6 +14,30 @@ import { linter } from "@codemirror/lint";
 import { omitEqual } from "../utils/obj";
 import { format } from "prettier/standalone";
 import parserYaml from "prettier/parser-yaml";
+import parser from "js-yaml";
+import { Diagnostic } from "@codemirror/lint";
+
+const yamlLinter = linter((view: EditorView): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = [];
+
+  try {
+    parser.load(String(view.state.doc));
+  } catch (e: any) {
+    const loc = e.mark;
+    const from = loc ? loc.position : 0;
+    const to = from;
+    const severity = "error";
+
+    diagnostics.push({
+      from,
+      to,
+      message: e.message,
+      severity,
+    });
+  }
+
+  return diagnostics;
+});
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
 export const MyCodeMirror: React.FC<{
@@ -32,9 +56,11 @@ export const MyCodeMirror: React.FC<{
       theme,
       keymap.of([{ key: "Alt-Enter", run: startCompletion }]),
     ];
+
     switch (mode) {
       case "yaml":
         extensions.push(
+          yamlLinter,
           autocompletion(
             completionValues ? { override: [yamlCompletions] } : undefined
           )
