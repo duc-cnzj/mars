@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from "react";
+import React, { memo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 import { langs } from "@uiw/codemirror-extensions-langs";
@@ -8,10 +8,12 @@ import {
   startCompletion,
 } from "@codemirror/autocomplete";
 import { color } from "@uiw/codemirror-extensions-color";
-import { EditorView, keymap, ViewUpdate } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 import { omitEqual } from "../utils/obj";
+import { format } from "prettier/standalone";
+import parserYaml from "prettier/parser-yaml";
 
 // https://codesandbox.io/s/codemirror-6-demo-forked-mce50r?file=/src/index.js:626-692
 export const MyCodeMirror: React.FC<{
@@ -42,22 +44,24 @@ export const MyCodeMirror: React.FC<{
         extensions.push(linter(jsonParseLinter()));
         break;
     }
-    const onchange = useCallback(
-      (vv: string, viewUpdate: ViewUpdate) => {
-        if (mode === "yaml") {
-          vv = vv.replace(/^[ \t]*\n/gm, "\n");
-        }
-        onChange?.(vv);
-      },
-      [mode, onChange]
-    );
 
     return (
       <CodeMirror
         readOnly={disabled}
         style={{ height: "100%" }}
         value={value}
-        onChange={onchange}
+        onChange={onChange}
+        onBlur={() => {
+          try {
+            if (mode === "yaml") {
+              onChange?.(
+                format(String(value), { parser: "yaml", plugins: [parserYaml] })
+              );
+            }
+          } catch (e) {
+            console.log(e);
+          }
+        }}
         theme={dracula}
         basicSetup={{
           lineNumbers: true,
