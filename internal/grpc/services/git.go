@@ -126,8 +126,8 @@ func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse
 	}
 
 	sort.Slice(infos, func(i, j int) bool {
-		if infos[i].Enabled && !infos[j].Enabled {
-			return true
+		if infos[i].Enabled != infos[j].Enabled {
+			return infos[i].Enabled
 		}
 
 		return infos[i].Id < infos[j].Id
