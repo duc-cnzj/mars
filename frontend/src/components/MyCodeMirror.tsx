@@ -82,7 +82,7 @@ export const MyCodeMirror: React.FC<{
               const data = parseDocument(String(value));
               console.log(data.errors);
               if (data.errors.length === 0) {
-                onChange?.(data.toString());
+                onChange?.(data.toString({ lineWidth: 200 }));
               }
             }
           } catch (e) {
