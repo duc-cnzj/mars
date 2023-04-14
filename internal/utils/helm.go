@@ -83,6 +83,7 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 	client.Description = desc
 	client.DryRun = dryRun
 	client.DependencyUpdate = true
+	client.MaxHistory = 10
 	client.DisableOpenAPIValidation = true
 
 	if wait && !dryRun {

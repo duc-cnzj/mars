@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { dracula } from "@uiw/codemirror-theme-dracula";
-import { langs } from "@uiw/codemirror-extensions-langs";
+import { langs } from "../utils/langs";
 import {
   CompletionContext,
   autocompletion,
@@ -12,9 +12,8 @@ import { EditorView, keymap } from "@codemirror/view";
 import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 import { omitEqual } from "../utils/obj";
-import { format } from "prettier/standalone";
-import parserYaml from "prettier/parser-yaml";
 import parser from "js-yaml";
+import { parseDocument } from "yaml";
 import { Diagnostic } from "@codemirror/lint";
 
 const yamlLinter = linter((view: EditorView): Diagnostic[] => {
@@ -80,13 +79,11 @@ export const MyCodeMirror: React.FC<{
         onBlur={() => {
           try {
             if (mode === "yaml") {
-              onChange?.(
-                format(String(value), {
-                  parser: "yaml",
-                  plugins: [parserYaml],
-                  bracketSpacing: false,
-                })
-              );
+              const data = parseDocument(String(value));
+              console.log(data.errors);
+              if (data.errors.length === 0) {
+                onChange?.(data.toString());
+              }
             }
           } catch (e) {
             console.log(e);
