@@ -22,6 +22,7 @@ import {
   Radio,
   RadioChangeEvent,
 } from "antd";
+import theme from "../styles/theme";
 import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -30,12 +31,14 @@ import { showRecords } from "../api/file";
 import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "./DiffViewer";
+import { css } from "@emotion/css";
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import styled from "@emotion/styled";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -349,17 +352,23 @@ const EventList: React.FC = () => {
           <List
             dataSource={data}
             renderItem={(item: pb.types.EventModel) => (
-              <List.Item key={item.id} className="events__list-item">
+              <ListItem key={item.id}>
                 <List.Item.Meta
                   title={
                     <div>
                       {item.username}
                       {getActionStyle(item.action)}
-                      <div className="events__list-item__date">
+                      <div
+                        className={css`
+                          display: inline;
+                          font-size: 10px;
+                          font-weight: normal;
+                        `}
+                      >
                         {item.event_at}
-                        <span className="events__list-item__date--active">
+                        <DateSpan>
                           {dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss")}
-                        </span>
+                        </DateSpan>
                       </div>
                     </div>
                   }
@@ -446,7 +455,7 @@ const EventList: React.FC = () => {
                     查看改动
                   </Button>
                 )}
-              </List.Item>
+              </ListItem>
             )}
           />
         </InfiniteScroll>
@@ -551,3 +560,19 @@ const DeleteFile: React.FC<{ onDelete: () => void }> = ({ onDelete }) => {
 };
 
 export default memo(EventList);
+
+const DateSpan = styled.span`
+  opacity: 0;
+  transition: 0.3s opacity ease-in;
+  margin-left: 5px;
+`;
+
+const ListItem = styled(List.Item)`
+  padding: 14px 24px !important;
+  &:hover {
+    background-image: ${theme.lightLinear} !important;
+    ${DateSpan} {
+      opacity: 1 !important;
+    }
+  }
+`;

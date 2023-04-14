@@ -1,0 +1,66 @@
+body {
+  background: #f8fafc;
+  margin: 0;
+}
+
+.draggable-modal .ant-modal-content {
+  width: 200px !important;
+}
+
+.draggable-modal .ant-tabs-content {
+  height: 100%;
+}
+
+.asciinema-terminal {
+  font-size: 12px !important;
+}
+
+.app-header-dropdown .ant-dropdown-menu-item,
+.ant-dropdown-menu-submenu-title {
+  font-size: 12px !important;
+}
+
+.draggable-modal .ant-modal-header {
+  border: none;
+}
+
+.draggable-modal .detail-tab p {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 3px 0;
+}
+
+.draggable-modal .detail-tab .detail-data {
+  margin-left: 10px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.draggable-modal .detail-tab .detail-data a {
+  margin-right: 10px;
+}
+
+#terminal .terminal {
+  padding-left: 5px;
+  padding-top: 5px;
+}
+
+.asciinema-player {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.asciinema-terminal {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.draggable-modal .ant-tabs .ant-tabs-tab {
+  padding: 0 0 6px 0 !important;
+}
+
+.ant-tabs-content .ant-tabs-content-top {
+  height: 100% !important;
+}
+.ant-tabs-tabpane-active {
+  height: 100% !important;
+}

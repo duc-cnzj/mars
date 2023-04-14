@@ -7,6 +7,8 @@ import { useAuth } from "../contexts/auth";
 import { removeToken } from "../utils/token";
 import { useHistory } from "react-router-dom";
 import { Dropdown } from "antd";
+import theme from "../styles/theme";
+import { css } from "@emotion/css";
 import {
   LogoutOutlined,
   SettingOutlined,
@@ -114,7 +116,10 @@ const AppHeader: React.FC = () => {
     >
       <Link
         to="/"
-        className="app-title"
+        className={css`
+          color: ${theme.mainFontColor};
+          font-size: 18px;
+        `}
         style={{ color: useWsReady() ? "white" : "red" }}
       >
         Mars
@@ -128,7 +133,11 @@ const AppHeader: React.FC = () => {
       >
         <ClusterInfo />
         {user && (
-          <Dropdown menu={{ items }} trigger={["click"]}>
+          <Dropdown
+            overlayClassName="app-header-dropdown"
+            menu={{ items }}
+            trigger={["click"]}
+          >
             <a
               href="javascript(0);"
               style={{ marginLeft: 20, color: "white" }}

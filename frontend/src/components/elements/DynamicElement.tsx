@@ -5,6 +5,7 @@ import pb from "../../api/compiled";
 import TextArea from "antd/lib/input/TextArea";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { slice } from "lodash";
+import { css } from "@emotion/css";
 
 function isDefaultRequired(t: pb.mars.ElementType): boolean {
   switch (t) {
@@ -86,9 +87,27 @@ const DynamicElement: React.FC<{
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             key={field.name}
-                            className="dynamic-element"
+                            className={css`
+                              background-image: linear-gradient(
+                                to right,
+                                #a855f7,
+                                #ec4899
+                              );
+                              padding: 2px;
+                              margin-bottom: 5px;
+                              border-radius: 7px;
+                            `}
                           >
-                            <div className="dynamic-element__wrapper">
+                            <div
+                              className={css`
+                                background-color: white;
+                                overflow: hidden;
+                                border-radius: 5px;
+                                width: 100%;
+                                height: 100%;
+                                padding: 5px;
+                              `}
+                            >
                               <div style={{ display: "flex", width: "100%" }}>
                                 <Form.Item
                                   hidden

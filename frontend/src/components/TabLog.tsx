@@ -8,6 +8,7 @@ import { useSelector } from "react-redux";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import { debounce } from "lodash";
 import PodStateTag from "./PodStateTag";
+import { css } from "@emotion/css";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
@@ -84,7 +85,11 @@ const ProjectContainerLogs: React.FC<{
           </Radio.Group>
 
           <div
-            className="project-container-logs"
+            className={css`
+              pre {
+                margin: 0;
+              }
+            `}
             style={{
               fontFamily: '"Fira code", "Fira Mono", monospace',
               fontSize: 12,

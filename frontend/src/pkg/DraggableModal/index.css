@@ -10,6 +10,9 @@
   pointer-events: none;
   overflow: hidden !important;
 }
+.ant-design-draggable-modal .ant-modal-content {
+  padding: 0;
+}
 
 .ant-design-draggable-modal .ant-modal {
   display: flex;

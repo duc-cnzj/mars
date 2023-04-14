@@ -7,7 +7,9 @@ import { useHistory } from "react-router-dom";
 import { PushpinFilled, PushpinOutlined } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
 import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
-
+import { css } from "@emotion/css";
+import theme from "../styles/theme";
+import styled from "@emotion/styled";
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.picture.BackgroundResponse>();
   const [settings, setSettings] = useState<pb.auth.SettingsResponse>();
@@ -25,11 +27,31 @@ const Login: React.FC = () => {
 
   return (
     <div
-      className="login__bg"
+      className={css`
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        background-position: center center;
+        background-size: cover;
+      `}
       style={bgInfo?.url ? { backgroundImage: "url(" + bgInfo.url + ")" } : {}}
     >
       <div
-        className="login__pin"
+        className={css`
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          font-size: 16px;
+          opacity: 0.5;
+          transition: 0.5s;
+          &:hover {
+            cursor: pointer;
+            opacity: 1;
+          }
+        `}
         onClick={() => {
           setRandom(toggleRandomBg());
         }}
@@ -37,8 +59,8 @@ const Login: React.FC = () => {
       >
         {random ? <PushpinOutlined /> : <PushpinFilled />}
       </div>
-      <div className="login__card">
-        <div className="login__title">Mars Login</div>
+      <LoginCard>
+        <LoginTitle>Mars Login</LoginTitle>
         <div>
           <Form
             name="basic"
@@ -65,7 +87,33 @@ const Login: React.FC = () => {
 
             <Form.Item>
               <button
-                className="login__button"
+                className={css`
+                  line-height: 1.5715;
+                  position: relative;
+                  display: inline-block;
+                  cursor: pointer;
+                  font-weight: 400;
+                  white-space: nowrap;
+                  text-align: center;
+                  -webkit-user-select: none;
+                  user-select: none;
+                  touch-action: manipulation;
+                  height: 32px;
+                  padding: 4px 15px;
+                  font-size: 14px;
+
+                  border: none;
+                  background-color: ${theme.mainColor};
+                  transition: 0.5s;
+                  color: white;
+                  border-radius: 2px;
+
+                  &:hover {
+                    background-color: ${theme.deepColor};
+                    color: #fff;
+                    text-decoration: none;
+                  }
+                `}
                 type="submit"
                 style={{ width: "100%" }}
               >
@@ -83,7 +131,11 @@ const Login: React.FC = () => {
                 <Button
                   type="primary"
                   key={item.name}
-                  className="login__odic-btn"
+                  className={css`
+                    background-color: ${theme.deepColor};
+                    border: none;
+                    color: white;
+                  `}
                   href="javascript(0);"
                   style={{ marginBottom: 10 }}
                   onClick={(e) => {
@@ -105,10 +157,27 @@ const Login: React.FC = () => {
             </div>
           </Form>
         </div>
-      </div>
+      </LoginCard>
 
       {bgInfo?.copyright && (
-        <div className="login__copyright">
+        <div
+          className={css`
+            font-size: 15px;
+            font-weight: lighter;
+            color: white;
+            position: absolute;
+            bottom: 20px;
+            margin: 0 auto;
+            padding: 3px 15px;
+            backdrop-filter: blur(5px);
+            border-radius: 5px;
+            @media (min-width: 640px) {
+              font-size: 20px;
+              bottom: 50px;
+              right: 50px;
+            }
+          `}
+        >
           <div>{bgInfo.copyright}</div>
         </div>
       )}
@@ -117,3 +186,38 @@ const Login: React.FC = () => {
 };
 
 export default memo(Login);
+
+const LoginTitle = styled.div`
+  font-family: "Comic Sans MS";
+  text-align: center;
+  background-image: linear-gradient(
+    to bottom,
+    ${theme.deepColor},
+    ${theme.titleSecondColor}
+  );
+  -webkit-background-clip: text;
+  color: transparent;
+  margin: 10px 0 20px;
+  font-size: 50px;
+`;
+
+const LoginCard = styled.div`
+  opacity: 0.8;
+  margin: 20px;
+  padding: 10px 50px;
+  width: 400px;
+  border-radius: 8px;
+  transition: box-shadow 0.5s;
+  &:hover {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    box-shadow: 0px 0px 10px ${theme.titleSecondColor};
+    ${LoginTitle} {
+      transition: 0.5s;
+      text-shadow: 0 0 3px ${theme.titleSecondColor};
+    }
+  }
+  @media (min-width: 640px) {
+    margin: 0;
+  }
+`;

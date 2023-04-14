@@ -28,6 +28,7 @@ import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
+import { css } from "@emotion/css";
 
 const initFormValues = {
   debug: true,
@@ -271,7 +272,9 @@ const CreateProjectModal: React.FC<{
       >
         <div
           ref={setContainer}
-          className="create-project-modal"
+          className={css`
+            overflow-y: auto;
+          `}
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
           <div style={{ height: "100%" }}>

@@ -8,6 +8,8 @@ import AppFooter from "./components/AppFooter";
 import { PrivateRoute } from "./contexts/auth";
 import { GlobalScrollbar } from "mac-scrollbar";
 import "mac-scrollbar/dist/mac-scrollbar.css";
+import { css } from "@emotion/css";
+import appTheme from "./styles/theme";
 
 const { Header, Content, Footer } = Layout;
 
@@ -23,7 +25,13 @@ const App: FC = () => {
       <GlobalScrollbar />
       <Layout className="app">
         <Header
-          className="app__header"
+          className={css`
+            position: "fixed";
+            z-index: 1;
+            width: "100%";
+            overflow: "hidden";
+            background-image: ${appTheme.mainLinear};
+          `}
           style={{
             position: "fixed",
             zIndex: 1,
@@ -33,7 +41,13 @@ const App: FC = () => {
         >
           <AppHeader />
         </Header>
-        <Content className="app-content">
+        <Content
+          className={css`
+            margin-top: 64px;
+            padding: 0 50px;
+            min-height: calc(100vh - 122px) !important;
+          `}
+        >
           <Switch>
             <PrivateRoute path={`/git_project_manager`}>
               <Suspense fallback={null}>
@@ -58,7 +72,18 @@ const App: FC = () => {
             </Route>
           </Switch>
         </Content>
-        <Footer className="app-footer">
+        <Footer
+          className={css`
+            background-image: ${appTheme.footerLinear};
+            padding: 8px 50px 2px !important;
+            text-align: center;
+            .copyright {
+              font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
+                sans-serif;
+              color: ${appTheme.mainFontColor};
+            }
+          `}
+        >
           <AppFooter />
         </Footer>
       </Layout>

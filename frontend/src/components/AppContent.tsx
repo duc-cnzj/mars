@@ -10,6 +10,7 @@ import { selectReload, selectReloadNsID } from "../store/reducers/namespace";
 import pb from "../api/compiled";
 import AddNamespace from "./AddNamespace";
 import { useAsyncState } from "../utils/async";
+import styled from "@emotion/styled";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
@@ -42,7 +43,7 @@ const AppContent: React.FC = () => {
 
   return (
     <DraggableModalProvider>
-      <div className="content" style={{ marginBottom: 30 }}>
+      <Content>
         <AddNamespace onCreated={() => fetchNamespaces()} />
 
         {namespaceItems.length < 1 ? (
@@ -63,7 +64,7 @@ const AppContent: React.FC = () => {
             ))}
           </Row>
         )}
-      </div>
+      </Content>
     </DraggableModalProvider>
   );
 };
@@ -85,3 +86,8 @@ const usePreventModalBack = () => {
     };
   }, []);
 };
+
+const Content = styled.div`
+  padding-top: 15px;
+  margin-bottom: 30px;
+`;

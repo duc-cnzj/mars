@@ -19,8 +19,9 @@ import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { List as tokenList, Grant, Revoke, Lease } from "../api/access_token";
 import { useForm } from "antd/es/form/Form";
-import classNames from "classnames";
 import { copy } from "../utils/copy";
+import styled from "@emotion/styled";
+import theme from "../styles/theme";
 
 const defaultPageSize = 15;
 
@@ -255,7 +256,7 @@ const AccessTokenManager: React.FC = () => {
           <List
             dataSource={data}
             renderItem={(item: pb.types.AccessTokenModel) => (
-              <List.Item key={item.token} className="access-token__list-item">
+              <AccessTokenListItem key={item.token}>
                 <List.Item.Meta
                   title={
                     <div style={{ textDecoration: "null" }}>
@@ -264,28 +265,24 @@ const AccessTokenManager: React.FC = () => {
                     </div>
                   }
                   description={
-                    <div
-                      className={classNames({
-                        "access-token__list-item--deleted-or-expired":
-                          item.is_deleted || item.is_expired,
-                      })}
+                    <ItemWrapper
+                      lineThrough={item.is_deleted || item.is_expired}
                     >
-                      <span
+                      <TokenSpan
                         onClick={() => copy(item.token, "已复制 token！")}
                         style={{ userSelect: "all" }}
-                        className="access-token__list-item__token"
                       >
                         {item.token}
-                      </span>
+                      </TokenSpan>
                       过期时间是{" "}
-                      <span className="access-token__list-item__token-expire-date">
+                      <TokenExpireDateSpan>
                         {dayjs(item.expired_at).format("YYYY-MM-DD HH:mm:ss")}
-                      </span>
+                      </TokenExpireDateSpan>
                       &nbsp;
                       {!!item.last_used_at
                         ? item.last_used_at + "使用过"
                         : "从未使用过"}
-                    </div>
+                    </ItemWrapper>
                   }
                 />
 
@@ -320,7 +317,7 @@ const AccessTokenManager: React.FC = () => {
                     </Popconfirm>
                   </>
                 )}
-              </List.Item>
+              </AccessTokenListItem>
             )}
           />
         </InfiniteScroll>
@@ -395,3 +392,35 @@ const AccessTokenManager: React.FC = () => {
 };
 
 export default memo(AccessTokenManager);
+
+const TokenSpan = styled.span`
+  background-color: #1b1f230d;
+  padding: 3px;
+  color: #fb7185;
+  font-family: "Monaco", monospace;
+  border-radius: 5px;
+  margin-right: 5px;
+`;
+
+const TokenExpireDateSpan = styled.span`
+  background-color: #1b1f230d;
+  padding: 3px;
+  color: #fb7185;
+  font-family: "Monaco", monospace;
+  border-radius: 5px;
+  margin-right: 5px;
+`;
+
+const ItemWrapper = styled.div<{ lineThrough: boolean }>`
+  text-decoration: ${({ lineThrough }) =>
+    lineThrough ? "line-through" : "none"};
+  text-decoration-thickness: 2px;
+  text-decoration-color: black;
+`;
+
+const AccessTokenListItem = styled(List.Item)`
+  padding: 14px 24px !important;
+  &:hover {
+    background-image: linear-gradient(to right, ${theme.lightColor}, #ffffff);
+  }
+`;

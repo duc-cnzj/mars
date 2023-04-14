@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, memo, Suspense } from "react";
 import { DraggableModal } from "../pkg/DraggableModal";
 import { detailProject } from "../api/project";
+import { css } from "@emotion/css";
+import theme from "../styles/theme";
 import { Button, Tabs, Skeleton, Badge, Spin } from "antd";
 import DeployStatus from "./DeployStatus";
 import { setNamespaceReload } from "../store/actions";
@@ -57,7 +59,12 @@ const ItemDetailModal: React.FC<{
         onClick={() => {
           onOk();
         }}
-        className="project-detail__show-button"
+        className={css`
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `}
         type="dashed"
       >
         <DeployStatus status={item.deploy_status} />
@@ -90,7 +97,13 @@ const ItemDetailModal: React.FC<{
         onCancel={onCancel}
         title={
           <Badge.Ribbon
-            className="project-detail__badge"
+            className={css`
+              top: 0;
+              color: ${theme.mainColor};
+              cursor: auto;
+              font-family: '"Fira code", "Fira Mono", monospace';
+              margin-left: -16px;
+            `}
             placement="start"
             text={namespace}
           >

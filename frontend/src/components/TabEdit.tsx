@@ -20,7 +20,6 @@ import {
 import { toSlug } from "../utils/slug";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
 import { StopOutlined } from "@ant-design/icons";
-import classNames from "classnames";
 import LogOutput from "./LogOutput";
 import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
@@ -28,6 +27,7 @@ import pb from "../api/compiled";
 import TimeCost from "./TimeCost";
 import { selectTimer } from "../store/reducers/deployTimer";
 import DiffViewer from "./DiffViewer";
+import { css } from "@emotion/css";
 
 interface WatchData {
   gitProjectId: number;
@@ -207,7 +207,18 @@ const ModalSub: React.FC<{
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="edit-project" ref={setContainer}>
+    <div
+      className={css`
+        height: 100%;
+        overflow-y: auto;
+        .diff-viewer {
+          pre {
+            white-space: pre !important;
+          }
+        }
+      `}
+      ref={setContainer}
+    >
       <Form
         style={{ height: "100%" }}
         initialValues={formInitData}
@@ -247,7 +258,11 @@ const ModalSub: React.FC<{
                   alignItems: "center",
                 }}
               >
-                <div className={classNames("edit-project__footer")}>
+                <div
+                  className={css`
+                    display: flex;
+                  `}
+                >
                   <Button
                     htmlType="submit"
                     style={{ fontSize: 12, marginRight: 5 }}
@@ -366,7 +381,11 @@ const ModalSub: React.FC<{
                 </Form.Item>
               </Col>
               <Col
-                className="diff-viewer"
+                className={css`
+                  pre {
+                    line-height: 20px !important;
+                  }
+                `}
                 span={detail.config === data.config ? 0 : 12}
                 style={{ fontSize: 13 }}
               >
