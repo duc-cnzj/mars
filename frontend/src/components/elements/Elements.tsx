@@ -2,6 +2,8 @@ import React, { useCallback, useState, Fragment, useMemo, memo } from "react";
 import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
+import { css } from "@emotion/css";
+
 const Option = Select.Option;
 const { TextArea } = Input;
 
@@ -135,9 +137,14 @@ const Element: React.FC<{
     case pb.mars.ElementType.ElementTypeTextArea:
       return (
         <Form.Item
-          className="elements__form-item-textarea"
+          className={css`
+            .ant-form-item-row {
+              display: block;
+            }
+          `}
+          labelAlign={"left"}
           label={<div style={style.label}>{element.description}</div>}
-          style={{ ...style.formItem, width: "100%" }}
+          style={{ width: "100%" }}
         >
           <TextArea
             defaultValue={element.default}

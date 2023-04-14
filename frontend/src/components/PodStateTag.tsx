@@ -2,7 +2,8 @@ import React, { memo } from "react";
 import pb from "../api/compiled";
 import { Tag } from "antd";
 import { SyncOutlined, LoadingOutlined } from "@ant-design/icons";
-
+import { css } from "@emotion/css";
+import theme from "../styles/theme";
 const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
   if (pod.terminating) {
     return (
@@ -41,7 +42,14 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
   }
 
   return (
-    <Tag className="pod-running-tag" style={{ marginLeft: 5 }}>
+    <Tag
+      className={css`
+        color: white;
+        background-color: ${theme.lightMainColor};
+        border-color: transparent;
+      `}
+      style={{ marginLeft: 5 }}
+    >
       {pod.pod}
     </Tag>
   );

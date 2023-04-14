@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useState } from "react";
-import { Timeline, Button } from "antd";
+import React, { memo, useCallback, useMemo, useState } from "react";
+import { Timeline, Button, TimelineItemProps } from "antd";
 import { useSelector } from "react-redux";
 import { selectList } from "../store/reducers/createProject";
 import pb from "../api/compiled";
@@ -25,17 +25,12 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
     }
   }, []);
 
-  return (
-    <>
-      <Timeline
-        pending={
-          list[slug]?.isLoading ? (pending ? pending : "loading...") : false
-        }
-        reverse={true}
-        style={{ paddingLeft: 2 }}
-      >
-        {list[slug]?.output?.map((data, index) => (
-          <Timeline.Item key={index} color={getResultColor(data.type)}>
+  const items = useMemo(
+    () =>
+      list[slug]?.output?.map(
+        (data): TimelineItemProps => ({
+          label: "",
+          children: (
             <div style={{ display: "flex", alignItems: "center" }}>
               <span style={{ marginRight: 5 }}>{data.log}</span>
               {data.containers &&
@@ -43,10 +38,22 @@ const LogOutput: React.FC<{ slug: string; pending?: React.ReactNode }> = ({
                   <LogButton c={item} key={k} />
                 ))}
             </div>
-          </Timeline.Item>
-        ))}
-      </Timeline>
-    </>
+          ),
+          color: getResultColor(data.type),
+        })
+      ),
+    [getResultColor, list, slug]
+  );
+
+  return (
+    <Timeline
+      pending={
+        list[slug]?.isLoading ? (pending ? pending : "loading...") : false
+      }
+      reverse={true}
+      style={{ paddingLeft: 2 }}
+      items={items}
+    />
   );
 };
 

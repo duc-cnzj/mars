@@ -17,6 +17,7 @@ import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
 import pb from "../api/compiled";
 import { copy } from "../utils/copy";
+import styled from "@emotion/styled";
 
 const Item: React.FC<{
   item: pb.types.NamespaceModel;
@@ -31,20 +32,16 @@ const Item: React.FC<{
     <Card
       style={{ height: "100%" }}
       title={
-        <div className="title">
-          <div className="title-left">
+        <CardTitle>
+          <CardTitleBody>
             <Tooltip
               title={<span style={{ fontSize: 10 }}>id: {item.id}</span>}
             >
-              <div
-                className="title-namespace"
-                onClick={() => copy(item.id, "已复制 id")}
-              >
-                项目空间:{" "}
-                <span className="title-namespace__name">{item.name}</span>
-              </div>
+              <TitleNamespace onClick={() => copy(item.id, "已复制 id")}>
+                项目空间: <TitleNamespaceName>{item.name}</TitleNamespaceName>
+              </TitleNamespace>
             </Tooltip>
-            <div className="title-cpu-memory">
+            <TitleSubItem style={{ marginRight: 5 }}>
               <Tooltip
                 onOpenChange={(visible: boolean) => {
                   if (visible) {
@@ -87,12 +84,12 @@ const Item: React.FC<{
                   />
                 </svg>
               </Tooltip>
-            </div>
-            <div className="title-service-endpoint">
+            </TitleSubItem>
+            <TitleSubItem>
               <ServiceEndpoint namespaceId={item.id} />
-            </div>
-          </div>
-        </div>
+            </TitleSubItem>
+          </CardTitleBody>
+        </CardTitle>
       }
       extra={
         <Popconfirm
@@ -136,3 +133,31 @@ const Item: React.FC<{
 };
 
 export default memo(Item);
+
+const CardTitle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+const CardTitleBody = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const TitleNamespace = styled.div`
+  margin-right: 10px;
+  font-size: 12px;
+  font-weight: normal;
+`;
+
+const TitleNamespaceName = styled.span`
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+`;
+
+const TitleSubItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;

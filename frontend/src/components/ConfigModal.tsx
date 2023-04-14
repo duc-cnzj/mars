@@ -5,7 +5,7 @@ import CopyToClipboard from "./CopyToClipboard";
 import DynamicElement from "./elements/DynamicElement";
 import SelectFileType from "./SelectFileType";
 import { useAsyncState } from "../utils/async";
-
+import { css } from "@emotion/css";
 import pb from "../api/compiled";
 import { get, debounce } from "lodash";
 import yaml from "js-yaml";
@@ -326,7 +326,16 @@ const ConfigModal: React.FC<{
           &nbsp;&nbsp;{item?.name}
         </div>
       }
-      className="config-modal"
+      className={css`
+        .ant-input[disabled],
+        .ant-select-disabled.ant-select:not(.ant-select-customize-input)
+          .ant-select-selector,
+        .ant-select-disabled.ant-select-multiple .ant-select-selection-item,
+        .ant-switch-disabled {
+          color: rgba(0, 0, 0, 1);
+          opacity: 1;
+        }
+      `}
       open={configVisible}
       footer={null}
       width={"100%"}
@@ -367,7 +376,7 @@ const ConfigModal: React.FC<{
               <div>
                 <Button
                   style={{ marginRight: 10 }}
-                  type="ghost"
+                  type="dashed"
                   icon={!editMode ? <EditOutlined /> : null}
                   onClick={() => {
                     setEditMode((editMode) => {
@@ -411,7 +420,15 @@ const ConfigModal: React.FC<{
               />
             </div>
           </div>
-          <Row gutter={[3, 12]} className="config-modal__content">
+          <Row
+            gutter={[3, 12]}
+            className={css`
+              .ant-spin-nested-loading,
+              .ant-spin-container {
+                height: 100%;
+              }
+            `}
+          >
             <Col span={24}>
               <Skeleton active loading={loading}>
                 <Row

@@ -29,6 +29,11 @@ func TestGitSvc_All(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	gits := mockGitServer(m, app)
+	// p1 id: 1 enabled: false
+	// p2 id: 2 enabled: true
+	// p3 id: 3 enabled: false
+	// ->
+	// p2, p1, p3
 	p1 := mock.NewMockProjectInterface(m)
 	p1.EXPECT().GetID().Return(int64(1)).Times(2)
 	p1.EXPECT().GetName().Return("name1")
@@ -43,7 +48,14 @@ func TestGitSvc_All(t *testing.T) {
 	p2.EXPECT().GetWebURL().Return("weburl2")
 	p2.EXPECT().GetAvatarURL().Return("avatar2")
 	p2.EXPECT().GetDescription().Return("desc2")
-	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p1, p2}, nil).Times(1)
+	p3 := mock.NewMockProjectInterface(m)
+	p3.EXPECT().GetID().Return(int64(3)).Times(2)
+	p3.EXPECT().GetName().Return("name3")
+	p3.EXPECT().GetPath().Return("path3")
+	p3.EXPECT().GetWebURL().Return("weburl3")
+	p3.EXPECT().GetAvatarURL().Return("avatar3")
+	p3.EXPECT().GetDescription().Return("desc3")
+	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p3, p1, p2}, nil).Times(1)
 
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
@@ -56,12 +68,15 @@ func TestGitSvc_All(t *testing.T) {
 
 	all, err := new(gitSvc).All(context.TODO(), &git.AllRequest{})
 	assert.Nil(t, err)
-	assert.Equal(t, int64(1), all.Items[0].Id)
-	assert.Equal(t, false, all.Items[0].Enabled)
-	assert.Equal(t, false, all.Items[0].GlobalEnabled)
-	assert.Equal(t, int64(2), all.Items[1].Id)
-	assert.Equal(t, true, all.Items[1].Enabled)
-	assert.Equal(t, true, all.Items[1].GlobalEnabled)
+	assert.Equal(t, int64(2), all.Items[0].Id)
+	assert.Equal(t, true, all.Items[0].Enabled)
+	assert.Equal(t, true, all.Items[0].GlobalEnabled)
+	assert.Equal(t, int64(1), all.Items[1].Id)
+	assert.Equal(t, false, all.Items[1].Enabled)
+	assert.Equal(t, false, all.Items[1].GlobalEnabled)
+	assert.Equal(t, int64(3), all.Items[2].Id)
+	assert.Equal(t, false, all.Items[2].Enabled)
+	assert.Equal(t, false, all.Items[2].GlobalEnabled)
 
 	gits.EXPECT().AllProjects().Return(nil, errors.New("xxx")).Times(1)
 	_, err = new(gitSvc).All(context.TODO(), &git.AllRequest{})

@@ -1,4 +1,3 @@
-const CracoLessPlugin = require('craco-less');
 const plugins = process.env.NODE_ENV === "production" ? ["transform-remove-console"] : []
 
 module.exports = {
@@ -19,20 +18,7 @@ module.exports = {
       return webpackConfig
     }
   },
-  plugins: [
-    {
-      plugin: CracoLessPlugin,
-      options: {
-        lessLoaderOptions: {
-          lessOptions: {
-            // modifyVars: { '@primary-color': '#1DA57A' },
-            javascriptEnabled: true,
-          },
-        },
-      },
-    },
-  ],
   babel: {
-    plugins: plugins,
+    plugins: [...plugins, "@emotion"],
   },
 };

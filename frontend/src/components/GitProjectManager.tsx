@@ -25,6 +25,8 @@ import pb from "../api/compiled";
 import { downloadConfig } from "../api/file";
 import { getToken } from "../utils/token";
 import { RcFile } from "antd/lib/upload";
+import { css } from "@emotion/css";
+import theme from "../styles/theme";
 
 const { Option } = Select;
 const GitProjectManager: React.FC = () => {
@@ -193,7 +195,12 @@ const GitProjectManager: React.FC = () => {
           )}
           renderItem={(item: pb.git.ProjectItem) => (
             <List.Item
-              className="git__list-item"
+              className={css`
+                padding: 14px 24px !important;
+                &:hover {
+                  background-image: ${theme.lightLinear};
+                }
+              `}
               key={item.id}
               actions={[
                 item.enabled && (
@@ -209,7 +216,7 @@ const GitProjectManager: React.FC = () => {
                 <Button
                   danger={item.enabled}
                   loading={loadingList && loadingList[item.id]}
-                  type={!item.enabled ? "primary" : "ghost"}
+                  type={!item.enabled ? "primary" : "dashed"}
                   onClick={() => toggleStatus(item)}
                 >
                   {item.enabled ? "关闭" : "开启"}

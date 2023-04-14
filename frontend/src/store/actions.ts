@@ -168,7 +168,7 @@ export const handleEvents = (
                   containers
                 )
               );
-              message.warn("部署已取消");
+              message.warning("部署已取消");
               break;
             case pb.websocket.ResultType.DeployedFailed:
             default:
@@ -216,7 +216,7 @@ export const handleEvents = (
                   createContainers
                 )
               );
-              message.warn("部署已取消");
+              message.warning("部署已取消");
               break;
             case pb.websocket.ResultType.DeployedFailed:
             default:
