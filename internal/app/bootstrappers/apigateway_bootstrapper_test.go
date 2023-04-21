@@ -14,9 +14,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
 	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
@@ -429,7 +431,7 @@ func Test_exportMarsConfig(t *testing.T) {
 	}
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	r3 := httptest.NewRecorder()
-	testutil.AssertAuditLogFired(m, app)
+	testutil.AssertAuditLogFiredWithMsg(m, app, "下载配置文件: 全部")
 	exportMarsConfig(r3, req, map[string]string{})
 	assert.Equal(t, 200, r3.Code)
 	assert.Equal(t, dedent.Dedent(`
@@ -444,6 +446,12 @@ func Test_exportMarsConfig(t *testing.T) {
 				}
 			]
 `), fmt.Sprintf("\n%s\n", r3.Body.String()))
+
+	r4 := httptest.NewRecorder()
+	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
+	testutil.AssertAuditLogFiredWithMsg(m, app, "下载配置文件: app")
+	exportMarsConfig(r4, req, map[string]string{"git_project_id": "1"})
+	assert.Equal(t, 200, r4.Code)
 }
 
 func Test_exportMarsConfigWithPid(t *testing.T) {
@@ -563,13 +571,49 @@ func Test_importMarsConfig(t *testing.T) {
 		UploadMaxSize: "5Mib",
 	})
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
-	testutil.AssertAuditLogFired(m, app)
 	db, f := testutil.SetGormDB(m, app)
 	defer f()
 	db.AutoMigrate(&models.GitProject{})
 	db.Create(&models.GitProject{
 		GitProjectId: 2,
 	})
+	testutil.AssertAuditLogFiredWithLog(m,
+		app,
+		events.NewEventAuditLog(
+			"duc",
+			types.EventActionType_Upload,
+			"导入配置文件",
+			events.AuditWithOldNewStr(
+				`[
+	{
+		"default_branch": "",
+		"name": "",
+		"git_project_id": 2,
+		"enabled": false,
+		"global_enabled": false,
+		"global_config": ""
+	}
+]`,
+				`[
+	{
+		"default_branch": "dev",
+		"name": "app",
+		"git_project_id": 1,
+		"enabled": true,
+		"global_enabled": false,
+		"global_config": "xxx"
+	},
+	{
+		"default_branch": "master",
+		"name": "app2",
+		"git_project_id": 2,
+		"enabled": true,
+		"global_enabled": false,
+		"global_config": "xxx"
+	}
+]`,
+			)),
+	)
 	importMarsConfig(r4, req2, map[string]string{})
 	assert.Equal(t, 204, r4.Code)
 	var count int64
@@ -670,4 +714,63 @@ func Test_middlewareList_Router(t *testing.T) {
 	res = ""
 	handlerA(handlerB(handlerC(core))).ServeHTTP(nil, nil)
 	assert.Equal(t, "abcdc1b1a1", res)
+}
+
+func Test_gitProjectList_ExportNames(t *testing.T) {
+	g := gitProjectList{
+		{
+			Name: "a",
+		},
+		{
+			Name: "b",
+		},
+		{
+			Name: "c",
+		},
+		{
+			Name: "d",
+		},
+	}
+	assert.Equal(t, []string{"a", "b", "c", "d"}, g.ExportNames())
+}
+
+func Test_gitProjectList_ExportJsonString(t *testing.T) {
+	g := gitProjectList{
+		{
+			ID:            1,
+			DefaultBranch: "dev",
+			Name:          "a",
+			GitProjectId:  1,
+			Enabled:       false,
+			GlobalEnabled: true,
+			GlobalConfig:  "global-cfg1",
+		},
+		{
+			ID:            2,
+			DefaultBranch: "master",
+			Name:          "b",
+			GitProjectId:  2,
+			Enabled:       true,
+			GlobalEnabled: false,
+			GlobalConfig:  "global-cfg2",
+		},
+	}
+	assert.Equal(t, `[
+	{
+		"default_branch": "dev",
+		"name": "a",
+		"git_project_id": 1,
+		"enabled": false,
+		"global_enabled": true,
+		"global_config": "global-cfg1"
+	},
+	{
+		"default_branch": "master",
+		"name": "b",
+		"git_project_id": 2,
+		"enabled": true,
+		"global_enabled": false,
+		"global_config": "global-cfg2"
+	}
+]`, g.ExportJsonString())
 }

@@ -2,7 +2,6 @@ package bootstrappers
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -370,15 +369,13 @@ func importMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	e.AuditLog(user.Name,
-		types.EventActionType_Upload,
-		"导入配置文件", nil, &e.StringYamlPrettier{Str: string(all)})
 	var data []ExportProject
 	err = json.Unmarshal(all, &data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	var oldExportProjects []models.GitProject
 	for _, item := range data {
 		var p models.GitProject
 		if err := app.DB().Where("`git_project_id` = ?", item.GitProjectId).First(&p).Error; errors.Is(err, gorm.ErrRecordNotFound) {
@@ -391,6 +388,7 @@ func importMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 				GlobalConfig:  item.GlobalConfig,
 			})
 		} else {
+			oldExportProjects = append(oldExportProjects, p)
 			app.DB().Model(&p).Updates(map[string]any{
 				"default_branch": item.DefaultBranch,
 				"name":           item.Name,
@@ -401,6 +399,9 @@ func importMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 			})
 		}
 	}
+	e.AuditLog(user.Name,
+		types.EventActionType_Upload,
+		"导入配置文件", &e.StringYamlPrettier{Str: gitProjectList(oldExportProjects).ExportJsonString()}, &e.StringYamlPrettier{Str: string(all)})
 	w.WriteHeader(204)
 	w.Write([]byte(""))
 }
@@ -417,17 +418,36 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 		return
 	}
 	var db = app.DB()
-	var pname []string
 	pid := pathParams["git_project_id"]
 	if pid != "" {
 		db = db.Where("git_project_id = ?", pid)
 	}
 	var projects []models.GitProject
 	db.Find(&projects)
-	data := make([]ExportProject, 0, len(projects))
+	var pname []string = gitProjectList(projects).ExportNames()
+	jsonString := gitProjectList(projects).ExportJsonString()
+	if pid == "" {
+		pname = []string{"全部"}
+	}
+	e.AuditLog(user.Name,
+		types.EventActionType_Download,
+		fmt.Sprintf("下载配置文件: %v", strings.Join(pname, ",")), nil, &e.StringYamlPrettier{Str: jsonString})
+	download(w, "mars-config.json", strings.NewReader(jsonString))
+}
+
+type gitProjectList []models.GitProject
+
+func (projects gitProjectList) ExportNames() (res []string) {
+	for _, p := range projects {
+		res = append(res, p.Name)
+	}
+	return
+}
+
+func (projects gitProjectList) ExportJsonString() string {
+	exportData := make([]ExportProject, 0, len(projects))
 	for _, gitProject := range projects {
-		pname = append(pname, gitProject.Name)
-		data = append(data, ExportProject{
+		exportData = append(exportData, ExportProject{
 			DefaultBranch: gitProject.DefaultBranch,
 			Name:          gitProject.Name,
 			GitProjectId:  gitProject.GitProjectId,
@@ -436,14 +456,8 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 			GlobalConfig:  gitProject.GlobalConfig,
 		})
 	}
-	marshal, _ := json.MarshalIndent(&data, "", "\t")
-	if pid == "" {
-		pname = []string{"全部"}
-	}
-	e.AuditLog(user.Name,
-		types.EventActionType_Download,
-		fmt.Sprintf("下载配置文件: %v", strings.Join(pname, ",")), nil, &e.StringYamlPrettier{Str: string(marshal)})
-	download(w, "mars-config.json", bytes.NewReader(marshal))
+	marshal, _ := json.MarshalIndent(&exportData, "", "\t")
+	return string(marshal)
 }
 
 func loadSwaggerUI(mux *mux.Router) {
