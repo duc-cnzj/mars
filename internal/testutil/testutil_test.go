@@ -194,3 +194,11 @@ func Test_auditLogEqMatcher_Matches(t *testing.T) {
 	assert.False(t, m.Matches(events.NewEventAuditLog("", 1, "11")))
 	assert.True(t, m.Matches(events.NewEventAuditLog("", 1, "aaa")))
 }
+
+func TestAssertAuditLogFiredWithLog(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	a := MockApp(m)
+	AssertAuditLogFiredWithLog(m, a, events.NewEventAuditLog("duc", 1, "hello"))
+	a.EventDispatcher().Dispatch(events.EventAuditLog, events.NewEventAuditLog("duc", 1, "hello"))
+}

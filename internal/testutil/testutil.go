@@ -122,9 +122,31 @@ func (a *auditLogEqMatcher) Matches(x any) bool {
 	return a.msg == x.(contracts.AuditLogImpl).GetMsg()
 }
 
+type auditLogAllEqMatcher struct {
+	gomock.Matcher
+	msg contracts.AuditLogImpl
+}
+
+func (a *auditLogAllEqMatcher) Matches(x any) bool {
+	in := x.(contracts.AuditLogImpl)
+
+	return a.msg.GetMsg() == in.GetMsg() &&
+		a.msg.GetOldStr() == in.GetOldStr() &&
+		a.msg.GetNewStr() == in.GetNewStr() &&
+		a.msg.GetAction() == in.GetAction() &&
+		a.msg.GetFileID() == in.GetFileID() &&
+		a.msg.GetUsername() == in.GetUsername()
+}
+
 func AssertAuditLogFiredWithMsg(m *gomock.Controller, app *mock.MockApplicationInterface, msg string) {
 	e := mock.NewMockDispatcherInterface(m)
 	e.EXPECT().Dispatch(contracts.Event("audit_log"), &auditLogEqMatcher{msg: msg}).Times(1)
+	app.EXPECT().EventDispatcher().Return(e).Times(1)
+}
+
+func AssertAuditLogFiredWithLog(m *gomock.Controller, app *mock.MockApplicationInterface, msg contracts.AuditLogImpl) {
+	e := mock.NewMockDispatcherInterface(m)
+	e.EXPECT().Dispatch(contracts.Event("audit_log"), &auditLogAllEqMatcher{msg: msg}).Times(1)
 	app.EXPECT().EventDispatcher().Return(e).Times(1)
 }
 

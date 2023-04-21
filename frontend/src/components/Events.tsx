@@ -471,6 +471,7 @@ const EventList: React.FC = () => {
         <ErrorBoundary>
           <div style={{ maxHeight: "100%", overflowY: "auto" }}>
             <DiffViewer
+              showCopyButton
               styles={{
                 line: { fontSize: 12, wordBreak: "break-word" },
               }}
