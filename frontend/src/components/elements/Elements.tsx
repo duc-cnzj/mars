@@ -175,6 +175,7 @@ const Element: React.FC<{
         </Form.Item>
       );
     case pb.mars.ElementType.ElementTypeRadio:
+    case pb.mars.ElementType.ElementTypeNumberRadio:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}
@@ -198,6 +199,7 @@ const Element: React.FC<{
         </Form.Item>
       );
     case pb.mars.ElementType.ElementTypeSelect:
+    case pb.mars.ElementType.ElementTypeNumberSelect:
       return (
         <Form.Item
           label={<div style={style.label}>{element.description}</div>}

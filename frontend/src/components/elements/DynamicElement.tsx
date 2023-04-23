@@ -11,7 +11,9 @@ function isDefaultRequired(t: pb.mars.ElementType): boolean {
   switch (t) {
     case pb.mars.ElementType.ElementTypeInputNumber:
     case pb.mars.ElementType.ElementTypeRadio:
+    case pb.mars.ElementType.ElementTypeNumberRadio:
     case pb.mars.ElementType.ElementTypeSelect:
+    case pb.mars.ElementType.ElementTypeNumberSelect:
     case pb.mars.ElementType.ElementTypeSwitch:
       return true;
   }
@@ -187,10 +189,26 @@ const DynamicElement: React.FC<{
                                     </Select.Option>
                                     <Select.Option
                                       value={
+                                        pb.mars.ElementType
+                                          .ElementTypeNumberRadio
+                                      }
+                                    >
+                                      Number Radio
+                                    </Select.Option>
+                                    <Select.Option
+                                      value={
                                         pb.mars.ElementType.ElementTypeSelect
                                       }
                                     >
                                       Select
+                                    </Select.Option>
+                                    <Select.Option
+                                      value={
+                                        pb.mars.ElementType
+                                          .ElementTypeNumberSelect
+                                      }
+                                    >
+                                      Number Select
                                     </Select.Option>
                                     <Select.Option
                                       value={
@@ -235,7 +253,11 @@ const DynamicElement: React.FC<{
                                             case pb.mars.ElementType
                                               .ElementTypeSelect:
                                             case pb.mars.ElementType
+                                              .ElementTypeNumberSelect:
+                                            case pb.mars.ElementType
                                               .ElementTypeRadio:
+                                            case pb.mars.ElementType
+                                              .ElementTypeNumberRadio:
                                               if (Array.isArray(selectValues)) {
                                                 for (const key in selectValues) {
                                                   if (
@@ -290,7 +312,14 @@ const DynamicElement: React.FC<{
                                     !(
                                       type &&
                                       (type ===
-                                        pb.mars.ElementType.ElementTypeSelect ||
+                                        pb.mars.ElementType
+                                          .ElementTypeNumberSelect ||
+                                        type ===
+                                          pb.mars.ElementType
+                                            .ElementTypeSelect ||
+                                        type ===
+                                          pb.mars.ElementType
+                                            .ElementTypeNumberRadio ||
                                         type ===
                                           pb.mars.ElementType.ElementTypeRadio)
                                     )
