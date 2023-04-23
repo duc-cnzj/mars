@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 	v1 "k8s.io/api/core/v1"
@@ -399,14 +400,22 @@ func Test_nsq_ToOthers(t *testing.T) {
 	n2 := nss.New("uid-others", "id-others").(*nsq)
 	defer n.Close()
 	defer n2.Close()
-	subscribe := n2.Subscribe()
+	subscribe1 := n.Subscribe()
+	subscribe2 := n2.Subscribe()
 	assert.Nil(t, n.ToOthers(&websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
 			Message: "to others",
 		},
 	}))
 	defer n.producer.Stop()
-	data := <-subscribe
+	data := <-subscribe2
+	n1Received := false
+	select {
+	case <-subscribe1:
+		n1Received = true
+	case <-time.After(2 * time.Second):
+	}
+	assert.False(t, n1Received)
 	assert.Equal(t, websocket.To_ToOthers, decodeMsg(data).Metadata.To)
 	assert.Equal(t, "id", decodeMsg(data).Metadata.Id)
 	assert.Equal(t, "uid", decodeMsg(data).Metadata.Uid)
@@ -436,6 +445,8 @@ func Test_nsq_ToSelf(t *testing.T) {
 	}
 	n := nss.New("uid", "id").(*nsq)
 	defer n.producer.Stop()
+	n2 := nss.New("uid2", "id2").(*nsq)
+	defer n2.producer.Stop()
 	m := &websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
 			Id:      n.id,
@@ -461,17 +472,19 @@ func Test_nsq_ToSelf(t *testing.T) {
 		},
 	}
 	subscribe := n.Subscribe()
+	subscribe2 := n2.Subscribe()
 	assert.Nil(t, n.ToSelf(m))
-	var data []byte
-	for {
-		data = <-subscribe
-		var msg websocket.WsMetadataResponse
-		proto.Unmarshal(data, &msg)
-		if msg.Metadata.To == websocket.To_ToSelf {
-			break
-		}
-		t.Log(msg.Metadata.Id)
+	data := <-subscribe
+	n2Received := false
+	select {
+	case <-subscribe2:
+		n2Received = true
+	case <-time.After(2 * time.Second):
 	}
+	assert.False(t, n2Received)
+	var msg websocket.WsMetadataResponse
+	proto.Unmarshal(data, &msg)
+	assert.Equal(t, websocket.To_ToSelf, msg.Metadata.To)
 	marshal, _ := proto.Marshal(m)
 	marshal2, _ := proto.Marshal(m2)
 	assert.Equal(t, marshal, data)
