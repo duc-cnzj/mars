@@ -138,6 +138,7 @@ const Element: React.FC<{
       return (
         <Form.Item
           className={css`
+            margin-bottom: 10px;
             .ant-form-item-row {
               display: block;
             }

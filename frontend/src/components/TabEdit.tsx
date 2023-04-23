@@ -357,7 +357,7 @@ const ModalSub: React.FC<{
                   label: { fontSize: 10 },
                   textarea: { fontSize: 10 },
                   formItem: {
-                    marginBottom: 0,
+                    marginBottom: 2,
                     marginTop: 0,
                     display: "inline-block",
                     width: "calc(33.3% - 8px)",
