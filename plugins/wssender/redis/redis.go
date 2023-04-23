@@ -282,7 +282,11 @@ func (p *rdsPubSub) to(response contracts.WebsocketMessage, to websocket_pb.To) 
 	response.GetMetadata().To = to
 	response.GetMetadata().Uid = p.uid
 	response.GetMetadata().Id = p.id
-	p.rds.Publish(context.TODO(), wssender.BroadcastRoom, wssender.ProtoToMessage(response, p.id).Marshal())
+	room := wssender.BroadcastRoom
+	if to == websocket_pb.To_ToSelf {
+		room = p.id
+	}
+	p.rds.Publish(context.TODO(), room, wssender.ProtoToMessage(response, p.id).Marshal())
 	return nil
 }
 

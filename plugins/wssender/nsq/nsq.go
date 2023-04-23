@@ -294,7 +294,11 @@ func (n *nsq) to(response contracts.WebsocketMessage, to websocket_pb.To) error 
 	response.GetMetadata().To = to
 	response.GetMetadata().Uid = n.uid
 	response.GetMetadata().Id = n.id
-	return n.producer.Publish(ephemeralBroadcastRoom, wssender.ProtoToMessage(response, n.id).Marshal())
+	room := ephemeralBroadcastRoom
+	if to == websocket_pb.To_ToSelf {
+		room = n.ephemeralID()
+	}
+	return n.producer.Publish(room, wssender.ProtoToMessage(response, n.id).Marshal())
 }
 
 func (n *nsq) ephemeralID() string {

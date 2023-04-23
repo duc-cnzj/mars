@@ -294,6 +294,7 @@
         "elements": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           },
           "title": "elements 自定义字段"
@@ -340,7 +341,9 @@
         "ElementTypeSelect",
         "ElementTypeRadio",
         "ElementTypeSwitch",
-        "ElementTypeTextArea"
+        "ElementTypeTextArea",
+        "ElementTypeNumberSelect",
+        "ElementTypeNumberRadio"
       ],
       "default": "ElementTypeUnknown"
     },
@@ -366,6 +369,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }

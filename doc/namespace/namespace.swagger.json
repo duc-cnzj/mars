@@ -171,6 +171,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesNamespaceModel"
           }
         }
@@ -244,6 +245,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }
@@ -291,12 +293,14 @@
         "ImagePullSecrets": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesImagePullSecret"
           }
         },
         "projects": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesProjectModel"
           }
         },
@@ -356,6 +360,7 @@
         "extra_values": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesExtraValue"
           }
         },

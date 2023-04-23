@@ -1973,6 +1973,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/SettingsResponseOidcSetting"
           }
         }
@@ -1984,6 +1985,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesChangelogModel"
           }
         }
@@ -2173,6 +2175,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesServiceEndpoint"
           }
         }
@@ -2184,6 +2187,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesServiceEndpoint"
           }
         }
@@ -2195,6 +2199,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesEventModel"
           }
         },
@@ -2246,6 +2251,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesFileModel"
           }
         },
@@ -2288,6 +2294,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitProjectItem"
           }
         }
@@ -2299,6 +2306,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -2310,6 +2318,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -2393,6 +2402,7 @@
         "elements": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           }
         },
@@ -2475,6 +2485,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -2531,6 +2542,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         },
@@ -2572,6 +2584,7 @@
           "type": "array",
           "title": "elements 自定义字段",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           }
         },
@@ -2625,7 +2638,9 @@
         "ElementTypeSelect",
         "ElementTypeRadio",
         "ElementTypeSwitch",
-        "ElementTypeTextArea"
+        "ElementTypeTextArea",
+        "ElementTypeNumberSelect",
+        "ElementTypeNumberRadio"
       ]
     },
     "metricsCpuMemoryInNamespaceResponse": {
@@ -2682,6 +2697,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesNamespaceModel"
           }
         }
@@ -2750,6 +2766,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesStateContainer"
           }
         }
@@ -2820,6 +2837,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesProjectModel"
           }
         },
@@ -2842,6 +2860,7 @@
         "elements": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           }
         },
@@ -2854,6 +2873,7 @@
         "urls": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesServiceEndpoint"
           }
         }
@@ -2887,6 +2907,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         },
@@ -2933,6 +2954,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesAccessTokenModel"
           }
         },
@@ -3250,6 +3272,7 @@
         "ImagePullSecrets": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesImagePullSecret"
           }
         },
@@ -3269,6 +3292,7 @@
         "projects": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesProjectModel"
           }
         },
@@ -3307,6 +3331,7 @@
         "extra_values": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesExtraValue"
           }
         },

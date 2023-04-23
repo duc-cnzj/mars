@@ -333,6 +333,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitProjectItem"
           }
         }
@@ -344,6 +345,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -355,6 +357,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -441,6 +444,7 @@
         "elements": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           }
         }
@@ -520,6 +524,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/gitOption"
           }
         }
@@ -561,7 +566,9 @@
         "ElementTypeSelect",
         "ElementTypeRadio",
         "ElementTypeSwitch",
-        "ElementTypeTextArea"
+        "ElementTypeTextArea",
+        "ElementTypeNumberSelect",
+        "ElementTypeNumberRadio"
       ],
       "default": "ElementTypeUnknown"
     },
@@ -587,6 +594,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }

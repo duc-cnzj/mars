@@ -229,6 +229,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }
@@ -270,7 +271,9 @@
         "ElementTypeSelect",
         "ElementTypeRadio",
         "ElementTypeSwitch",
-        "ElementTypeTextArea"
+        "ElementTypeTextArea",
+        "ElementTypeNumberSelect",
+        "ElementTypeNumberRadio"
       ],
       "default": "ElementTypeUnknown"
     },
@@ -280,6 +283,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesStateContainer"
           }
         }
@@ -358,6 +362,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesProjectModel"
           }
         }
@@ -372,6 +377,7 @@
         "urls": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesServiceEndpoint"
           }
         },
@@ -384,6 +390,7 @@
         "elements": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/marsElement"
           }
         }
@@ -449,12 +456,14 @@
         "ImagePullSecrets": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesImagePullSecret"
           }
         },
         "projects": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesProjectModel"
           }
         },
@@ -514,6 +523,7 @@
         "extra_values": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/typesExtraValue"
           }
         },
