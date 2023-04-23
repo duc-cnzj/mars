@@ -268,7 +268,7 @@ func TestExtraValuesLoader_deepSetItems(t *testing.T) {
 `, items[0])
 }
 
-func TestExtraValuesLoader_typeValue(t *testing.T) {
+func TestExtraValuesLoader_typedValue(t *testing.T) {
 	var tests = []struct {
 		ele    *mars.Element
 		input  string
@@ -371,12 +371,50 @@ func TestExtraValuesLoader_typeValue(t *testing.T) {
 			result: "xxx",
 			err:    "",
 		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeNumberSelect,
+				SelectValues: []string{
+					"1", "2", "3",
+				},
+			},
+			input:  "1",
+			result: 1,
+			err:    "",
+		},
+		{
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeNumberRadio,
+				SelectValues: []string{
+					"1", "2", "3",
+				},
+			},
+			input:  "2",
+			result: 2,
+			err:    "",
+		},
+		{
+			// 如果输入本身不是 num 则原样返回
+			ele: &mars.Element{
+				Path: "app->config",
+				Type: mars.ElementType_ElementTypeNumberRadio,
+				SelectValues: []string{
+					"1x", "2x", "3x",
+				},
+			},
+			input:  "2x",
+			result: "2x",
+			err:    "",
+		},
 	}
+
 	for i, test := range tests {
 		tt := test
 		t.Run(fmt.Sprintf("test-%v", i), func(t *testing.T) {
 			t.Parallel()
-			value, err := (&ExtraValuesLoader{}).typeValue(tt.ele, tt.input)
+			value, err := (&ExtraValuesLoader{}).typedValue(tt.ele, tt.input)
 			if err != nil {
 				assert.Equal(t, err.Error(), tt.err)
 			} else {

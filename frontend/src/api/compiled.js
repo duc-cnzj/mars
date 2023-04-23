@@ -10672,6 +10672,8 @@ export const mars = $root.mars = (() => {
      * @property {number} ElementTypeRadio=4 ElementTypeRadio value
      * @property {number} ElementTypeSwitch=5 ElementTypeSwitch value
      * @property {number} ElementTypeTextArea=6 ElementTypeTextArea value
+     * @property {number} ElementTypeNumberSelect=7 ElementTypeNumberSelect value
+     * @property {number} ElementTypeNumberRadio=8 ElementTypeNumberRadio value
      */
     mars.ElementType = (function() {
         const valuesById = {}, values = Object.create(valuesById);
@@ -10682,6 +10684,8 @@ export const mars = $root.mars = (() => {
         values[valuesById[4] = "ElementTypeRadio"] = 4;
         values[valuesById[5] = "ElementTypeSwitch"] = 5;
         values[valuesById[6] = "ElementTypeTextArea"] = 6;
+        values[valuesById[7] = "ElementTypeNumberSelect"] = 7;
+        values[valuesById[8] = "ElementTypeNumberRadio"] = 8;
         return values;
     })();
 

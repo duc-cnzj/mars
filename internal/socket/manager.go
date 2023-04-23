@@ -1010,7 +1010,7 @@ func (d *ExtraValuesLoader) Load(j *jobRunner) error {
 	var configElementsMap = make(map[string]*mars.Element)
 	for _, element := range j.config.Elements {
 		configElementsMap[element.Path] = element
-		defaultValue, e := d.typeValue(element, element.Default)
+		defaultValue, e := d.typedValue(element, element.Default)
 		if e != nil {
 			return e
 		}
@@ -1024,7 +1024,7 @@ func (d *ExtraValuesLoader) Load(j *jobRunner) error {
 		if element, ok := configElementsMap[value.Path]; ok {
 			fieldValid = true
 			useDefaultMap[value.Path] = false
-			typeValue, err := d.typeValue(element, value.Value)
+			typeValue, err := d.typedValue(element, value.Value)
 			if err != nil {
 				return err
 			}
@@ -1049,7 +1049,7 @@ func (d *ExtraValuesLoader) Load(j *jobRunner) error {
 	return nil
 }
 
-func (d *ExtraValuesLoader) typeValue(element *mars.Element, input string) (any, error) {
+func (d *ExtraValuesLoader) typedValue(element *mars.Element, input string) (any, error) {
 	switch element.Type {
 	case mars.ElementType_ElementTypeSwitch:
 		if input == "" {
@@ -1071,9 +1071,10 @@ func (d *ExtraValuesLoader) typeValue(element *mars.Element, input string) (any,
 			return nil, fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", element.Path, input)
 		}
 		return v, nil
-	case mars.ElementType_ElementTypeRadio:
-		fallthrough
-	case mars.ElementType_ElementTypeSelect:
+	case mars.ElementType_ElementTypeRadio,
+		mars.ElementType_ElementTypeSelect,
+		mars.ElementType_ElementTypeNumberSelect,
+		mars.ElementType_ElementTypeNumberRadio:
 		var in bool
 		for _, selectValue := range element.SelectValues {
 			if input == selectValue {
@@ -1083,6 +1084,13 @@ func (d *ExtraValuesLoader) typeValue(element *mars.Element, input string) (any,
 		}
 		if !in {
 			return nil, fmt.Errorf("%s 必须在 '%v' 里面, 你传的是 %s", element.Path, strings.Join(element.SelectValues, ","), input)
+		}
+		if element.Type == mars.ElementType_ElementTypeNumberSelect ||
+			element.Type == mars.ElementType_ElementTypeNumberRadio {
+			if atoi, err := strconv.Atoi(input); err == nil {
+				return atoi, nil
+			}
+			mlog.Warning("[ExtraValuesLoader]: '%v' 非 number 类型, 无法转换", input)
 		}
 
 		return input, nil

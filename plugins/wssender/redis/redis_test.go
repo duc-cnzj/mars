@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/models"
@@ -316,7 +317,8 @@ func Test_rdsPubSub_ToOthers(t *testing.T) {
 	defer rs.rds.Close()
 	ps1 := rs.New("aaa", "a-1")
 	ps2 := rs.New("aaa", "a-2")
-	ch := ps2.Subscribe()
+	ch2 := ps2.Subscribe()
+	ch1 := ps1.Subscribe()
 
 	msg := &websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
@@ -331,7 +333,14 @@ func Test_rdsPubSub_ToOthers(t *testing.T) {
 		assert.Nil(t, ps1.ToOthers(msg))
 	}()
 	wg.Wait()
-	res := <-ch
+	res := <-ch2
+	c1Received := false
+	select {
+	case <-ch1:
+		c1Received = true
+	case <-time.After(2 * time.Second):
+	}
+	assert.False(t, c1Received)
 	assert.True(t, true)
 	assert.Equal(t, wssender.TransformToResponse(msg), res)
 	ps1.Close()
@@ -345,7 +354,9 @@ func Test_rdsPubSub_ToSelf(t *testing.T) {
 	rs := &redisSender{rds: NewRdb(3)}
 	defer rs.rds.Close()
 	ps1 := rs.New("aaa", "a-1")
-	ch := ps1.Subscribe()
+	ps2 := rs.New("bbb", "b-1")
+	ch1 := ps1.Subscribe()
+	ch2 := ps2.Subscribe()
 
 	msg := &websocket.WsMetadataResponse{
 		Metadata: &websocket.Metadata{
@@ -360,10 +371,18 @@ func Test_rdsPubSub_ToSelf(t *testing.T) {
 		assert.Nil(t, ps1.ToSelf(msg))
 	}()
 	wg.Wait()
-	res2 := <-ch
+	res1 := <-ch1
+	ch2Received := false
+	select {
+	case <-ch2:
+		ch2Received = true
+	case <-time.After(2 * time.Second):
+	}
+	assert.False(t, ch2Received)
 	assert.True(t, true)
-	assert.Equal(t, wssender.TransformToResponse(msg), res2)
+	assert.Equal(t, wssender.TransformToResponse(msg), res1)
 	ps1.Close()
+	ps2.Close()
 }
 
 func Test_rdsPubSub_Uid(t *testing.T) {
