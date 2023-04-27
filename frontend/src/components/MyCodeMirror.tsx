@@ -23,9 +23,12 @@ const yamlLinter = linter((view: EditorView): Diagnostic[] => {
     parser.load(String(view.state.doc));
   } catch (e: any) {
     const loc = e.mark;
-    const from = loc ? loc.position : 0;
-    const to = from;
+    let from = loc ? loc.position : 0;
+    let to = from;
     const severity = "error";
+    if (to > view.state.doc.length) {
+      from = to = view.state.doc.length;
+    }
 
     diagnostics.push({
       from,
