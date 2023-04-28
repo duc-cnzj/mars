@@ -220,3 +220,8 @@ func TestUploader_Stat(t *testing.T) {
 	assert.Error(t, err)
 
 }
+
+func Test_diskUploader_UnWrap(t *testing.T) {
+	up := &diskUploader{}
+	assert.Same(t, up, up.UnWrap())
+}
