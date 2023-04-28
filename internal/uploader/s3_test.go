@@ -288,3 +288,8 @@ func Test_s3File_Seek(t *testing.T) {
 	assert.Equal(t, int64(1), ret)
 	assert.Nil(t, err)
 }
+
+func Test_s3Uploader_NewFile(t *testing.T) {
+	up := &s3Uploader{}
+	assert.Same(t, up, up.UnWrap())
+}
