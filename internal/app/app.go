@@ -193,7 +193,11 @@ func (app *application) SetAuth(auth contracts.AuthInterface) {
 
 // SetLocalUploader impl contracts.ApplicationInterface SetLocalUploader.
 func (app *application) SetLocalUploader(uploader contracts.Uploader) {
-	app.localUploader = muploader.NewCacheUploader(uploader, app.Cache())
+	app.localUploader = muploader.NewCacheUploader(uploader, app.lazyCache)
+}
+
+func (app *application) lazyCache() contracts.CacheInterface {
+	return app.Cache()
 }
 
 // LocalUploader impl contracts.ApplicationInterface LocalUploader.
@@ -203,7 +207,7 @@ func (app *application) LocalUploader() contracts.Uploader {
 
 // SetUploader impl contracts.ApplicationInterface SetUploader.
 func (app *application) SetUploader(uploader contracts.Uploader) {
-	app.uploader = muploader.NewCacheUploader(uploader, app.Cache())
+	app.uploader = muploader.NewCacheUploader(uploader, app.lazyCache)
 }
 
 // Uploader impl contracts.ApplicationInterface Uploader.

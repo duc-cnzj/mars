@@ -452,3 +452,8 @@ func Test_printConfig(t *testing.T) {
 		printConfig(&application{config: &config.Config{}, excludeBoots: []contracts.Bootstrapper{&boota{}}})
 	})
 }
+
+func Test_application_lazyCache(t *testing.T) {
+	c := cache.NewMetricsForCache(nil)
+	assert.Same(t, c, (&application{cache: c}).lazyCache())
+}

@@ -39,7 +39,9 @@ func Test_cacheUploader_DirSize(t *testing.T) {
 	up := mock.NewMockUploader(m)
 	up.EXPECT().DirSize().Return(int64(10), nil)
 	ca := &cacheMock{}
-	size, err := (&cacheUploader{cache: ca, Uploader: up}).DirSize()
+	size, err := (&cacheUploader{cacheFn: func() contracts.CacheInterface {
+		return ca
+	}, Uploader: up}).DirSize()
 	assert.Equal(t, int64(10), size)
 	assert.Nil(t, err)
 	assert.Equal(t, 60, ca.seconds)

@@ -10,11 +10,11 @@ import (
 
 type cacheUploader struct {
 	contracts.Uploader
-	cache contracts.CacheInterface
+	cacheFn func() contracts.CacheInterface
 }
 
-func NewCacheUploader(uploader contracts.Uploader, cache contracts.CacheInterface) contracts.Uploader {
-	return &cacheUploader{Uploader: uploader, cache: cache}
+func NewCacheUploader(uploader contracts.Uploader, cache func() contracts.CacheInterface) contracts.Uploader {
+	return &cacheUploader{Uploader: uploader, cacheFn: cache}
 }
 
 func toByteNum(i int64) []byte {
@@ -31,7 +31,7 @@ func (ca *cacheUploader) UnWrap() contracts.Uploader {
 }
 
 func (ca *cacheUploader) DirSize() (int64, error) {
-	remember, err := ca.cache.Remember(cache.NewKey("dir-size"), 60, func() ([]byte, error) {
+	remember, err := ca.cacheFn().Remember(cache.NewKey("dir-size"), 60, func() ([]byte, error) {
 		size, err := ca.Uploader.DirSize()
 		return toByteNum(size), err
 	})
