@@ -15,9 +15,9 @@ func TestNewCacheUploader(t *testing.T) {
 	assert.IsType(t, &cacheUploader{}, uploader)
 }
 
-func Test_byteNum(t *testing.T) {
-	assert.Equal(t, int64(10), byteNum([]byte("10")))
-	assert.Equal(t, int64(20), byteNum([]byte("20")))
+func Test_byteToInt64(t *testing.T) {
+	assert.Equal(t, int64(10), byteToInt64([]byte("10")))
+	assert.Equal(t, int64(20), byteToInt64([]byte("20")))
 }
 
 type cacheMock struct {
@@ -58,6 +58,6 @@ func Test_cacheUploader_UnWrap(t *testing.T) {
 	assert.Same(t, up, c.UnWrap())
 }
 
-func Test_toByteNum(t *testing.T) {
-	assert.Equal(t, []byte("10"), toByteNum(10))
+func Test_int64ToByte(t *testing.T) {
+	assert.Equal(t, []byte("10"), int64ToByte(10))
 }

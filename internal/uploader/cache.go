@@ -19,11 +19,11 @@ func NewCacheUploader(uploader contracts.Uploader, cache func() contracts.CacheI
 	return &cacheUploader{Uploader: uploader, cacheFn: cache}
 }
 
-func toByteNum(i int64) []byte {
+func int64ToByte(i int64) []byte {
 	return []byte(fmt.Sprintf("%d", i))
 }
 
-func byteNum(remember []byte) int64 {
+func byteToInt64(remember []byte) int64 {
 	atoi, _ := strconv.Atoi(string(remember))
 	return int64(atoi)
 }
@@ -38,7 +38,7 @@ func (ca *cacheUploader) DirSize() (int64, error) {
 	remember, err := ca.cacheFn().Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
 		mlog.Debug("dir-size cache missing")
 		size, err := ca.Uploader.DirSize()
-		return toByteNum(size), err
+		return int64ToByte(size), err
 	})
-	return byteNum(remember), err
+	return byteToInt64(remember), err
 }
