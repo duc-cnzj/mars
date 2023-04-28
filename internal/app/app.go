@@ -26,6 +26,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	muploader "github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
@@ -192,7 +193,7 @@ func (app *application) SetAuth(auth contracts.AuthInterface) {
 
 // SetLocalUploader impl contracts.ApplicationInterface SetLocalUploader.
 func (app *application) SetLocalUploader(uploader contracts.Uploader) {
-	app.localUploader = uploader
+	app.localUploader = muploader.NewCacheUploader(uploader, app.Cache())
 }
 
 // LocalUploader impl contracts.ApplicationInterface LocalUploader.
@@ -202,7 +203,7 @@ func (app *application) LocalUploader() contracts.Uploader {
 
 // SetUploader impl contracts.ApplicationInterface SetUploader.
 func (app *application) SetUploader(uploader contracts.Uploader) {
-	app.uploader = uploader
+	app.uploader = muploader.NewCacheUploader(uploader, app.Cache())
 }
 
 // Uploader impl contracts.ApplicationInterface Uploader.

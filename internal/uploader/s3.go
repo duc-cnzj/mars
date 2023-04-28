@@ -144,6 +144,10 @@ func (s *s3Uploader) RemoveEmptyDir() error {
 	return s.localUploader.RemoveEmptyDir()
 }
 
+func (s *s3Uploader) UnWrap() contracts.Uploader {
+	return s
+}
+
 func (s *s3Uploader) NewFile(path string) (contracts.File, error) {
 	file, err := s.localUploader.NewFile(s.getPath(path))
 	if err != nil {

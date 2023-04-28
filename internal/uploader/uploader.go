@@ -160,6 +160,10 @@ func (u *diskUploader) Stat(file string) (contracts.FileInfo, error) {
 	return NewFileInfo(fpath, stat.Size(), stat.ModTime()), nil
 }
 
+func (u *diskUploader) UnWrap() contracts.Uploader {
+	return u
+}
+
 func (u *diskUploader) RemoveEmptyDir() error {
 	var dirs []string
 	dir := u.root()

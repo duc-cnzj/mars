@@ -46,4 +46,5 @@ type Uploader interface {
 	AllDirectoryFiles(dir string) ([]FileInfo, error)
 	NewFile(path string) (File, error)
 	RemoveEmptyDir() error
+	UnWrap() Uploader
 }

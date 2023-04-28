@@ -250,7 +250,7 @@ func TestApplication_Uploader(t *testing.T) {
 	a := NewApplication(&config.Config{})
 	up := mock.NewMockUploader(m)
 	a.SetUploader(up)
-	assert.Same(t, up, a.Uploader())
+	assert.Same(t, up, a.Uploader().UnWrap())
 }
 
 func TestApplication_LocalUploader(t *testing.T) {
@@ -259,7 +259,7 @@ func TestApplication_LocalUploader(t *testing.T) {
 	a := NewApplication(&config.Config{})
 	up := mock.NewMockUploader(m)
 	a.SetLocalUploader(up)
-	assert.Same(t, up, a.LocalUploader())
+	assert.Same(t, up, a.LocalUploader().UnWrap())
 }
 
 func TestApplication_Singleflight(t *testing.T) {

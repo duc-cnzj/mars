@@ -236,3 +236,17 @@ func (mr *MockUploaderMockRecorder) Type() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*MockUploader)(nil).Type))
 }
+
+// UnWrap mocks base method.
+func (m *MockUploader) UnWrap() contracts.Uploader {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnWrap")
+	ret0, _ := ret[0].(contracts.Uploader)
+	return ret0
+}
+
+// UnWrap indicates an expected call of UnWrap.
+func (mr *MockUploaderMockRecorder) UnWrap() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnWrap", reflect.TypeOf((*MockUploader)(nil).UnWrap))
+}
