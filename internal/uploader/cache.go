@@ -7,6 +7,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
 type cacheUploader struct {
@@ -35,6 +36,7 @@ var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
 
 func (ca *cacheUploader) DirSize() (int64, error) {
 	remember, err := ca.cacheFn().Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
+		mlog.Debug("dir-size cache missing")
 		size, err := ca.Uploader.DirSize()
 		return toByteNum(size), err
 	})
