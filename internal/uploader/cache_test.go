@@ -44,7 +44,7 @@ func Test_cacheUploader_DirSize(t *testing.T) {
 	}, Uploader: up}).DirSize()
 	assert.Equal(t, int64(10), size)
 	assert.Nil(t, err)
-	assert.Equal(t, 60, ca.seconds)
+	assert.Equal(t, 60*15, ca.seconds)
 	assert.Equal(t, "dir-size", ca.key.String())
 }
 

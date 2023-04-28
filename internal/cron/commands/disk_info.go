@@ -8,6 +8,7 @@ import (
 
 func init() {
 	cron.Register(func(manager contracts.CronManager, app contracts.ApplicationInterface) {
+		// uploader.DirSizeCacheSeconds
 		manager.NewCommand("disk_info", diskInfo).EveryFifteenMinutes()
 	})
 }

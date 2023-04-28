@@ -3,6 +3,7 @@ package uploader
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -30,8 +31,10 @@ func (ca *cacheUploader) UnWrap() contracts.Uploader {
 	return ca.Uploader
 }
 
+var DirSizeCacheSeconds = int((15 * time.Minute).Seconds())
+
 func (ca *cacheUploader) DirSize() (int64, error) {
-	remember, err := ca.cacheFn().Remember(cache.NewKey("dir-size"), 60, func() ([]byte, error) {
+	remember, err := ca.cacheFn().Remember(cache.NewKey("dir-size"), DirSizeCacheSeconds, func() ([]byte, error) {
 		size, err := ca.Uploader.DirSize()
 		return toByteNum(size), err
 	})
