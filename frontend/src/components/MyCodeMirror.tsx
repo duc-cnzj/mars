@@ -81,7 +81,7 @@ export const MyCodeMirror: React.FC<{
         onChange={onChange}
         onBlur={() => {
           try {
-            if (mode === "yaml") {
+            if (mode === "yaml" && !!String(value).trim()) {
               const data = parseDocument(String(value));
               console.log(data.errors);
               if (data.errors.length === 0) {
