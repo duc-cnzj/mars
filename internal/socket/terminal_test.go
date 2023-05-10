@@ -73,7 +73,7 @@ type closeEqualMatcher struct {
 	gomock.Matcher
 }
 
-func (c closeEqualMatcher) Matches(x interface{}) bool {
+func (c closeEqualMatcher) Matches(x any) bool {
 	response := x.(*websocket_pb.WsHandleShellResponse)
 	return response.Metadata.Type == WsHandleCloseShell
 }
