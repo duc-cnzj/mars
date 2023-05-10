@@ -379,27 +379,50 @@ const TabShell: React.FC<{
                     disabled={loading}
                     loading={loading}
                     size="small"
-                    style={{ fontSize: 12 }}
+                    style={{ fontSize: 12, marginRight: 2 }}
                     icon={<UploadOutlined />}
                   >
                     {loading ? "上传中" : "上传到容器"}
                   </Button>
                 </Upload>
-                <Button
-                  style={{ margin: "0 2px" }}
-                  size="small"
-                  disabled={canAddTerm()}
-                  icon={
-                    <MinusOutlined style={{ transform: "rotate(90deg)" }} />
-                  }
-                  onClick={() => addWebTerm("horizontal")}
-                />
-                <Button
-                  size="small"
-                  disabled={canAddTerm()}
-                  icon={<MinusOutlined />}
-                  onClick={() => addWebTerm("vertical")}
-                />
+                <div
+                  style={{
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Button
+                    style={{
+                      borderWidth: 1,
+                      borderTopRightRadius: 0,
+                      borderEndEndRadius: 0,
+                    }}
+                    className={css`
+                      :hover {
+                        z-index: 9999;
+                      }
+                    `}
+                    size="small"
+                    disabled={canAddTerm()}
+                    icon={
+                      <MinusOutlined style={{ transform: "rotate(90deg)" }} />
+                    }
+                    onClick={() => addWebTerm("horizontal")}
+                  />
+                  <Button
+                    style={{
+                      borderWidth: 1,
+                      marginLeft: -1,
+                      borderTopLeftRadius: 0,
+                      borderEndStartRadius: 0,
+                    }}
+                    size="small"
+                    disabled={canAddTerm()}
+                    icon={<MinusOutlined />}
+                    onClick={() => addWebTerm("vertical")}
+                  />
+                </div>
               </div>
               <PodMetrics
                 namespace={namespace}
