@@ -20,12 +20,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 )
 
-func TestGenMyPtyHandlerId(t *testing.T) {
-	t.Parallel()
-	id := GenMyPtyHandlerId()
-	assert.Len(t, id, 36)
-}
-
 func TestHandleExecShell(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -57,10 +51,31 @@ func TestHandleExecShell(t *testing.T) {
 			Pod:       "pod",
 			Container: "c",
 		},
+		SessionId: "ns-pod-c:xxxx",
 	}, c)
 	assert.Nil(t, e)
 	assert.NotEmpty(t, shell)
 	time.Sleep(1 * time.Second)
+
+	_, err := HandleExecShell(&websocket_pb.WsHandleExecShellInput{
+		Type: 0,
+		Container: &types.Container{
+			Namespace: "ns",
+			Pod:       "pod",
+			Container: "c",
+		},
+		SessionId: "xxxx",
+	}, c)
+	assert.Equal(t, "invalid session id, must format: '<namespace>-<pod>-<container>:<randomID>', input: 'xxxx'", err.Error())
+}
+
+type closeEqualMatcher struct {
+	gomock.Matcher
+}
+
+func (c closeEqualMatcher) Matches(x any) bool {
+	response := x.(*websocket_pb.WsHandleShellResponse)
+	return response.Metadata.Type == WsHandleCloseShell
 }
 
 func TestMyPtyHandler_Close(t *testing.T) {
@@ -80,7 +95,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	}
 	assert.False(t, p.IsClosed())
 	assert.Len(t, p.shellCh, 0)
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	ps.EXPECT().ToSelf(&closeEqualMatcher{}).Times(1)
 	p.Close("aaaa")
 	assert.True(t, p.IsClosed())
 	p.Close("aaaa")
@@ -734,4 +749,64 @@ func Test_startProcess1(t *testing.T) {
 		Pod:       "pod",
 		Container: "c",
 	}, []string{"ls"}, pty))
+}
+
+func Test_checkSessionID(t *testing.T) {
+	var tests = []struct {
+		c     *types.Container
+		id    string
+		wants bool
+	}{
+		{
+			c: &types.Container{
+				Namespace: "ns",
+				Pod:       "pod",
+				Container: "c",
+			},
+			id:    "xxxx",
+			wants: false,
+		},
+		{
+			c: &types.Container{
+				Namespace: "ns",
+				Pod:       "pod",
+				Container: "c",
+			},
+			id:    "ns-pod-c:xx",
+			wants: true,
+		},
+		{
+			c: &types.Container{
+				Namespace: "ns",
+				Pod:       "pod",
+				Container: "c",
+			},
+			id:    "ns-pod-c:",
+			wants: true,
+		},
+		{
+			c: &types.Container{
+				Namespace: "ns",
+				Pod:       "pod",
+				Container: "c",
+			},
+			id:    "ns-pod-c",
+			wants: false,
+		},
+		{
+			c: &types.Container{
+				Namespace: "ns",
+				Pod:       "pod",
+				Container: "c",
+			},
+			id:    "ns-c-pod",
+			wants: false,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			assert.Equal(t, tt.wants, checkSessionID(tt.c, tt.id))
+		})
+	}
 }

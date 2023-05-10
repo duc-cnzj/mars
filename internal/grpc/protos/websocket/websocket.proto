@@ -88,6 +88,8 @@ message WsHandleExecShellInput {
   Type type = 1;
 
   types.Container container = 2;
+  // format: "<namespace>-<pod>-<container>:<randomID>"
+  string session_id = 3;
 }
 
 message CancelInput {

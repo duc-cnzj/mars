@@ -651,6 +651,8 @@ func (m *WsHandleExecShellInput) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for SessionId
+
 	if len(errors) > 0 {
 		return WsHandleExecShellInputMultiError(errors)
 	}

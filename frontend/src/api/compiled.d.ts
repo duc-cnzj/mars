@@ -9538,6 +9538,9 @@ export namespace websocket {
 
         /** WsHandleExecShellInput container */
         container?: (types.Container|null);
+
+        /** WsHandleExecShellInput session_id */
+        session_id?: (string|null);
     }
 
     /** Represents a WsHandleExecShellInput. */
@@ -9554,6 +9557,9 @@ export namespace websocket {
 
         /** WsHandleExecShellInput container. */
         public container?: (types.Container|null);
+
+        /** WsHandleExecShellInput session_id. */
+        public session_id: string;
 
         /**
          * Encodes the specified WsHandleExecShellInput message. Does not implicitly {@link websocket.WsHandleExecShellInput.verify|verify} messages.

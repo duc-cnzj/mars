@@ -18,7 +18,6 @@ import (
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/google/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -275,12 +274,12 @@ func (t *myPtyHandler) Close(reason string) bool {
 		return false
 	}
 	t.closed = true
-	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+	NewMessageSender(t.conn, t.id, WsHandleCloseShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
 			Uid:    t.conn.uid,
 			Slug:   t.id,
-			Type:   WsHandleExecShellMsg,
+			Type:   WsHandleCloseShell,
 			Result: ResultSuccess,
 		},
 		TerminalMessage: &websocket_pb.TerminalMessage{
@@ -415,10 +414,6 @@ func startProcess(executor contracts.RemoteExecutor, client kubernetes.Interface
 		Execute(context.TODO(), client, cfg, ptyHandler, ptyHandler, ptyHandler, true, ptyHandler)
 }
 
-func GenMyPtyHandlerId() string {
-	return uuid.New().String()
-}
-
 // isValidShell checks if the shell is an allowed one
 func isValidShell(validShells []string, shell string) bool {
 	for _, validShell := range validShells {
@@ -539,6 +534,11 @@ type TerminalResponse struct {
 
 type newShellFunc func(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error)
 
+func checkSessionID(container *types.Container, id string) bool {
+	prefix := fmt.Sprintf("%s-%s-%s:", container.Namespace, container.Pod, container.Container)
+	return strings.HasPrefix(id, prefix)
+}
+
 func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (string, error) {
 	var c = contracts.Container{
 		Namespace: input.Container.Namespace,
@@ -546,7 +546,10 @@ func HandleExecShell(input *websocket_pb.WsHandleExecShellInput, conn *WsConn) (
 		Container: input.Container.Container,
 	}
 
-	sessionID := GenMyPtyHandlerId()
+	sessionID := input.SessionId
+	if !checkSessionID(input.Container, sessionID) {
+		return "", fmt.Errorf("invalid session id, must format: '<namespace>-<pod>-<container>:<randomID>', input: '%s'", sessionID)
+	}
 	r := NewRecorder(types.EventActionType_Shell, conn.GetUser(), timer2.NewRealTimer(), c)
 	pty := &myPtyHandler{
 		container: c,

@@ -46,7 +46,7 @@ const DiffViewer: React.FC<{
     [mode]
   );
   return (
-    <div>
+    <div style={{ height: "100%" }}>
       {showCopyButton && (
         <div
           className={css`

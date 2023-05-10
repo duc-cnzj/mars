@@ -20426,6 +20426,7 @@ export const websocket = $root.websocket = (() => {
          * @interface IWsHandleExecShellInput
          * @property {websocket.Type|null} [type] WsHandleExecShellInput type
          * @property {types.Container|null} [container] WsHandleExecShellInput container
+         * @property {string|null} [session_id] WsHandleExecShellInput session_id
          */
 
         /**
@@ -20460,6 +20461,14 @@ export const websocket = $root.websocket = (() => {
         WsHandleExecShellInput.prototype.container = null;
 
         /**
+         * WsHandleExecShellInput session_id.
+         * @member {string} session_id
+         * @memberof websocket.WsHandleExecShellInput
+         * @instance
+         */
+        WsHandleExecShellInput.prototype.session_id = "";
+
+        /**
          * Encodes the specified WsHandleExecShellInput message. Does not implicitly {@link websocket.WsHandleExecShellInput.verify|verify} messages.
          * @function encode
          * @memberof websocket.WsHandleExecShellInput
@@ -20475,6 +20484,8 @@ export const websocket = $root.websocket = (() => {
                 writer.uint32(/* id 1, wireType 0 =*/8).int32(message.type);
             if (message.container != null && Object.hasOwnProperty.call(message, "container"))
                 $root.types.Container.encode(message.container, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+            if (message.session_id != null && Object.hasOwnProperty.call(message, "session_id"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.session_id);
             return writer;
         };
 
@@ -20502,6 +20513,10 @@ export const websocket = $root.websocket = (() => {
                     }
                 case 2: {
                         message.container = $root.types.Container.decode(reader, reader.uint32());
+                        break;
+                    }
+                case 3: {
+                        message.session_id = reader.string();
                         break;
                     }
                 default:

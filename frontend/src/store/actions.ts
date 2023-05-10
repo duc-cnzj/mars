@@ -11,6 +11,7 @@ import {
   SET_TIMER_START_AT,
   SET_TIMER_START,
   PROJECT_POD_EVENT,
+  REMOVE_SHELL,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -74,11 +75,10 @@ export const setProcessPercent = (id: string, percent: number) => ({
     processPercent: percent,
   },
 });
-export const setShellSessionId = (id: string, sessionID: string) => ({
+export const setShellSessionId = (id: string) => ({
   type: SET_SHELL_SESSION_ID,
   data: {
     id: id,
-    sessionID: sessionID,
   },
 });
 export const setShellLog = (id: string, log: pb.websocket.TerminalMessage) => ({
@@ -107,6 +107,14 @@ export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
+
+export const removeShell = (id: string) => ({
+  type: REMOVE_SHELL,
+  data: {
+    id: id,
+  },
+});
+
 export const setPodEventPID = (pid: number) => ({
   type: PROJECT_POD_EVENT,
   projectIDWithTimestamp: `${new Date().getTime()}-${pid}`,
@@ -238,6 +246,7 @@ export const handleEvents = (
       case pb.websocket.Type.ProcessPercent:
         dispatch(setProcessPercent(id, data.percent));
         break;
+      case pb.websocket.Type.HandleCloseShell:
       case pb.websocket.Type.HandleExecShell:
         if (data.result === pb.websocket.ResultType.Error) {
           message.error(data.message);
@@ -245,14 +254,12 @@ export const handleEvents = (
         }
         let res = pb.websocket.WsHandleShellResponse.decode(input);
 
-        res.container &&
-          res.terminal_message &&
-          dispatch(
-            setShellSessionId(
-              `${res.container.namespace}|${res.container.pod}|${res.container.container}`,
-              res.terminal_message.session_id
-            )
-          );
+        if (res.container && res.terminal_message) {
+          dispatch(setShellSessionId(res.terminal_message.session_id));
+          if (data.type.valueOf() === pb.websocket.Type.HandleCloseShell) {
+            dispatch(removeShell(res.terminal_message.session_id));
+          }
+        }
         break;
       case pb.websocket.Type.HandleExecShellMsg:
         let logRes = pb.websocket.WsHandleShellResponse.decode(input);
@@ -260,7 +267,7 @@ export const handleEvents = (
           logRes.terminal_message &&
           dispatch(
             setShellLog(
-              `${logRes.container.namespace}|${logRes.container.pod}|${logRes.container.container}`,
+              logRes.terminal_message.session_id,
               logRes.terminal_message
             )
           );

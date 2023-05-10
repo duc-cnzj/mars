@@ -1,9 +1,12 @@
-import { SET_SHELL_SESSION_ID, SET_SHELL_LOG } from "./../actionTypes";
+import {
+  SET_SHELL_SESSION_ID,
+  SET_SHELL_LOG,
+  REMOVE_SHELL,
+} from "./../actionTypes";
 import pb from "../../api/compiled";
 
 const initialState: {
   [id: string]: {
-    sessionID: string;
     log: pb.websocket.TerminalMessage;
     logCount: number;
   };
@@ -12,7 +15,6 @@ const initialState: {
 export const selectSessions = (state: {
   shell: {
     [id: string]: {
-      sessionID: string;
       log: pb.websocket.TerminalMessage;
       logCount: number;
     };
@@ -23,10 +25,13 @@ export default function shell(
   state = initialState,
   action: {
     type: string;
-    data: { id: string; sessionID: string; log: pb.websocket.TerminalMessage };
+    data: { id: string; log: pb.websocket.TerminalMessage };
   }
 ) {
   switch (action.type) {
+    case REMOVE_SHELL:
+      delete state[action.data.id];
+      return { ...state };
     case SET_SHELL_LOG:
       let count = 0;
       if (state[action.data.id] && state[action.data.id].logCount) {
@@ -43,7 +48,7 @@ export default function shell(
     case SET_SHELL_SESSION_ID:
       return {
         ...state,
-        [action.data.id]: { sessionID: action.data?.sessionID },
+        [action.data.id]: {},
       };
     default:
       return state;
