@@ -280,29 +280,13 @@ const TabShell: React.FC<{
     ws: WebSocket,
     value: { pod: string; namespace: string; container: string }
   ): React.ReactNode[] => {
-    if (items.length < 1) {
-      return [];
-    }
-    let ele: React.ReactNode[] = [];
+    let idx = 0;
+    let group: React.ReactNode[] = [];
+    let groups: React.ReactNode[] = [];
+    let lastType: "vertical" | "horizontal" | undefined;
     for (let index = 0; index < items.length; index++) {
-      const element = items[index];
-      if (index + 1 < items.length) {
-        const next = items[index + 1];
-        if (index > 0 && element.type !== next.type) {
-          let result = nestedAllotment(_.slice(items, index), ws, value);
-          result.length > 0 &&
-            ele.push(
-              <Allotment
-                vertical={next.type === "vertical"}
-                onDragEnd={() => setResizeTime(new Date().getTime())}
-              >
-                {result.map((v) => v)}
-              </Allotment>
-            );
-          break;
-        }
-      }
-      ele.push(
+      let element = items[index];
+      group.push(
         <ShellWindow
           id={element.id}
           key={element.id}
@@ -316,8 +300,36 @@ const TabShell: React.FC<{
           onClose={subWebTerm}
         />
       );
+      lastType = items[index].type;
+      if (
+        idx !== 0 &&
+        index + 1 < items.length &&
+        items[index].type !== items[index + 1].type
+      ) {
+        groups.push(
+          <Allotment vertical={lastType === "vertical"}>
+            {group.map((v) => v)}
+          </Allotment>
+        );
+        group = [];
+        idx = 0;
+        continue;
+      }
+      idx++;
     }
-    return [...ele];
+    if (group.length > 0) {
+      if (group.length === 1) {
+        groups.push(group[0]);
+      } else {
+        groups.push(
+          <Allotment vertical={lastType === "vertical"}>
+            {group.map((v) => v)}
+          </Allotment>
+        );
+      }
+      group = [];
+    }
+    return [...groups];
   };
 
   return (
@@ -410,20 +422,21 @@ const TabShell: React.FC<{
           <Empty description="列表还没有任何容器" />
         </div>
       )}
+
       {ws && wsReady && value && (
         <Allotment
           onDragEnd={() => setResizeTime(new Date().getTime())}
           vertical={true}
         >
-          {termMap.length > 1 && termMap[1].type !== "vertical" ? (
+          {termMap.length > 1 && termMap[1].type === "vertical" ? (
             <Allotment
               vertical={false}
               onDragEnd={() => setResizeTime(new Date().getTime())}
             >
-              {nestedAllotment(termMap, ws, value)}
+              {nestedAllotment(termMap, ws, value).map((v) => v)}
             </Allotment>
           ) : (
-            nestedAllotment(termMap, ws, value)
+            nestedAllotment(termMap, ws, value).map((v) => v)
           )}
         </Allotment>
       )}
