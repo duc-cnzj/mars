@@ -69,6 +69,15 @@ func TestHandleExecShell(t *testing.T) {
 	assert.Equal(t, "invalid session id, must format: '<namespace>-<pod>-<container>:<randomID>', input: 'xxxx'", err.Error())
 }
 
+type closeEqualMatcher struct {
+	gomock.Matcher
+}
+
+func (c closeEqualMatcher) Matches(x interface{}) bool {
+	response := x.(*websocket_pb.WsHandleShellResponse)
+	return response.Metadata.Type == WsHandleCloseShell
+}
+
 func TestMyPtyHandler_Close(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
@@ -86,7 +95,7 @@ func TestMyPtyHandler_Close(t *testing.T) {
 	}
 	assert.False(t, p.IsClosed())
 	assert.Len(t, p.shellCh, 0)
-	ps.EXPECT().ToSelf(gomock.Any()).Times(1)
+	ps.EXPECT().ToSelf(&closeEqualMatcher{}).Times(1)
 	p.Close("aaaa")
 	assert.True(t, p.IsClosed())
 	p.Close("aaaa")

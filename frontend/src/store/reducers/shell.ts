@@ -1,4 +1,8 @@
-import { SET_SHELL_SESSION_ID, SET_SHELL_LOG } from "./../actionTypes";
+import {
+  SET_SHELL_SESSION_ID,
+  SET_SHELL_LOG,
+  REMOVE_SHELL,
+} from "./../actionTypes";
 import pb from "../../api/compiled";
 
 const initialState: {
@@ -25,6 +29,9 @@ export default function shell(
   }
 ) {
   switch (action.type) {
+    case REMOVE_SHELL:
+      delete state[action.data.id];
+      return { ...state };
     case SET_SHELL_LOG:
       let count = 0;
       if (state[action.data.id] && state[action.data.id].logCount) {

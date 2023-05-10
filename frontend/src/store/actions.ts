@@ -11,6 +11,7 @@ import {
   SET_TIMER_START_AT,
   SET_TIMER_START,
   PROJECT_POD_EVENT,
+  REMOVE_SHELL,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -106,6 +107,14 @@ export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });
+
+export const removeShell = (id: string) => ({
+  type: REMOVE_SHELL,
+  data: {
+    id: id,
+  },
+});
+
 export const setPodEventPID = (pid: number) => ({
   type: PROJECT_POD_EVENT,
   projectIDWithTimestamp: `${new Date().getTime()}-${pid}`,
@@ -237,6 +246,7 @@ export const handleEvents = (
       case pb.websocket.Type.ProcessPercent:
         dispatch(setProcessPercent(id, data.percent));
         break;
+      case pb.websocket.Type.HandleCloseShell:
       case pb.websocket.Type.HandleExecShell:
         if (data.result === pb.websocket.ResultType.Error) {
           message.error(data.message);
@@ -244,9 +254,12 @@ export const handleEvents = (
         }
         let res = pb.websocket.WsHandleShellResponse.decode(input);
 
-        res.container &&
-          res.terminal_message &&
+        if (res.container && res.terminal_message) {
           dispatch(setShellSessionId(res.terminal_message.session_id));
+          if (data.type.valueOf() === pb.websocket.Type.HandleCloseShell) {
+            dispatch(removeShell(res.terminal_message.session_id));
+          }
+        }
         break;
       case pb.websocket.Type.HandleExecShellMsg:
         let logRes = pb.websocket.WsHandleShellResponse.decode(input);

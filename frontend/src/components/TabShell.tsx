@@ -542,9 +542,6 @@ const ShellWindow: React.FC<{
 
         if (frame.op === "toast") {
           message.error(decoder.decode(frame.data));
-          // listContainer().then((res) => {
-          //   setValuesByResult(res.data.items);
-          // });
         }
       },
       []

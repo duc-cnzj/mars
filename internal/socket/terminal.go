@@ -274,12 +274,12 @@ func (t *myPtyHandler) Close(reason string) bool {
 		return false
 	}
 	t.closed = true
-	NewMessageSender(t.conn, t.id, WsHandleExecShellMsg).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
+	NewMessageSender(t.conn, t.id, WsHandleCloseShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
 			Id:     t.conn.id,
 			Uid:    t.conn.uid,
 			Slug:   t.id,
-			Type:   WsHandleExecShellMsg,
+			Type:   WsHandleCloseShell,
 			Result: ResultSuccess,
 		},
 		TerminalMessage: &websocket_pb.TerminalMessage{
