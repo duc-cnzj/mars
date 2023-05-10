@@ -74,11 +74,10 @@ export const setProcessPercent = (id: string, percent: number) => ({
     processPercent: percent,
   },
 });
-export const setShellSessionId = (id: string, sessionID: string) => ({
+export const setShellSessionId = (id: string) => ({
   type: SET_SHELL_SESSION_ID,
   data: {
     id: id,
-    sessionID: sessionID,
   },
 });
 export const setShellLog = (id: string, log: pb.websocket.TerminalMessage) => ({
@@ -247,12 +246,7 @@ export const handleEvents = (
 
         res.container &&
           res.terminal_message &&
-          dispatch(
-            setShellSessionId(
-              `${res.container.namespace}|${res.container.pod}|${res.container.container}`,
-              res.terminal_message.session_id
-            )
-          );
+          dispatch(setShellSessionId(res.terminal_message.session_id));
         break;
       case pb.websocket.Type.HandleExecShellMsg:
         let logRes = pb.websocket.WsHandleShellResponse.decode(input);
@@ -260,7 +254,7 @@ export const handleEvents = (
           logRes.terminal_message &&
           dispatch(
             setShellLog(
-              `${logRes.container.namespace}|${logRes.container.pod}|${logRes.container.container}`,
+              logRes.terminal_message.session_id,
               logRes.terminal_message
             )
           );

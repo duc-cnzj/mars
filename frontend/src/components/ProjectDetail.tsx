@@ -148,6 +148,7 @@ const MyTabs: React.FC<{
   namespaceId: number;
 }> = memo(
   ({ detail, item, namespaceId, projectID, resizeAt, onSuccess, onDelete }) => {
+    console.log("render MyTabs");
     let items: Tab[] = [
       {
         key: "container-logs",

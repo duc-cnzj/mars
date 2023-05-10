@@ -15,7 +15,11 @@ import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 import { useWs, useWsReady } from "../contexts/useWebsocket";
-import { UploadOutlined } from "@ant-design/icons";
+import {
+  CloseOutlined,
+  MinusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import pb from "../api/compiled";
 import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
@@ -23,9 +27,29 @@ import { getToken } from "../utils/token";
 import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
+import { v4 as uuidv4 } from "uuid";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
+import { css } from "@emotion/css";
+import "../styles/allotment-overwrite.css";
+import _ from "lodash";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+const generateSessionID = (
+  namespace: string,
+  pod: string,
+  container: string
+): string => {
+  return `${namespace}-${pod}-${container}:${uuidv4()}`;
+};
+
+interface NPC {
+  namespace: string;
+  pod: string;
+  container: string;
+}
 
 const TabShell: React.FC<{
   namespaceID: number;
@@ -34,23 +58,30 @@ const TabShell: React.FC<{
   resizeAt: number;
   updatedAt: any;
 }> = ({ namespaceID, namespace, id, resizeAt, updatedAt }) => {
+  console.log("render: TabShell");
   const [list, setList] = useState<pb.types.StateContainer[]>([]);
-  const [sessionId, setSessionId] = useState<string>("");
-  const [value, setValue] = useState<string>("");
-  const [term, setTerm] = useState<Terminal>();
+  const [value, setValue] = useState<NPC | null>();
   const [timestamp, setTimestamp] = useState(new Date().getTime());
-  const fitAddon = useMemo(() => new FitAddon(), []);
   const [maxUploadInfo, setMaxUploadInfo] = useState({
     bytes: 0,
     humanizeSize: "",
   });
-
-  const ref = useRef<HTMLDivElement>(null);
-  const sessions = useSelector(selectSessions);
   const ws = useWs();
   const wsReady = useWsReady();
+  const [termMap, setTermMap] = useState<
+    { type: "vertical" | "horizontal" | undefined; id: string }[]
+  >([{ type: undefined, id: uuidv4() }]);
 
-  let sname = useMemo(() => namespace + "|" + value, [namespace, value]);
+  const [resizeTime, setResizeTime] = useState(resizeAt);
+  useEffect(() => {
+    setResizeTime(resizeAt);
+  }, [resizeAt]);
+
+  const projectIDStr = useSelector(selectPodEventProjectID);
+
+  const resetTermMap = useCallback(() => {
+    setTermMap([{ type: undefined, id: uuidv4() }]);
+  }, []);
 
   const listContainer = useCallback(
     () =>
@@ -63,13 +94,27 @@ const TabShell: React.FC<{
     [id]
   );
 
-  const projectIDStr = useSelector(selectPodEventProjectID);
+  const setValuesByResult = useCallback(
+    (items: pb.types.StateContainer[]) => {
+      if (items.length > 0) {
+        let first = items[0];
+        setValue({
+          namespace,
+          pod: first.pod,
+          container: first.container,
+        });
+      } else {
+        setValue(null);
+      }
+    },
+    [namespace, setValue]
+  );
 
   useEffect(() => {
     let d = debounce(() => {
       listContainer();
     }, 2000);
-    console.log("ns event: ", projectIDStr);
+    console.log("ns event: ", projectIDStr, id);
     if (projectIDStr.split("-").length === 2) {
       let pid = Number(projectIDStr.split("-")[1]);
       if (pid === Number(id)) {
@@ -80,21 +125,24 @@ const TabShell: React.FC<{
       d.cancel();
     };
   }, [projectIDStr, listContainer, id]);
+
   useEffect(() => {
     if (list.length > 0) {
-      if (value === "") {
-        setValue(list[0].pod + "|" + list[0].container);
+      if (!value) {
+        const first = list[0];
+        setValue({ namespace, pod: first.pod, container: first.container });
         return;
       }
-      if (!list.map((v) => v.pod + "|" + v.container).includes(value)) {
-        setValue(list[0].pod + "|" + list[0].container);
+      if (!list.map((v) => v.pod).includes(value.pod)) {
+        const first = list[0];
+        setValue({ namespace, pod: first.pod, container: first.container });
         return;
       }
     }
-    if (list.length === 0 && value.length !== 0) {
-      setValue("");
+    if (list.length === 0 && !!value && value.container !== "") {
+      setValue(null);
     }
-  }, [list, value]);
+  }, [list, value, namespace]);
 
   useEffect(() => {
     maxUploadSize().then(({ data }) => {
@@ -105,210 +153,37 @@ const TabShell: React.FC<{
     });
   }, []);
 
-  const sendMsg = useCallback(
-    (msg: any) => {
-      try {
-        ws?.send(msg);
-      } catch (e) {
-        console.log(e);
-      }
-    },
-    [ws]
-  );
-
-  const onTerminalSendString = useCallback((id: string, ws: WebSocket) => {
-    return (str: string) => {
-      let s = pb.websocket.TerminalMessageInput.encode({
-        type: pb.websocket.Type.HandleExecShellMsg,
-        message: {
-          session_id: id,
-          op: "stdin",
-          data: encoder.encode(str),
-          cols: 0,
-          rows: 0,
-        },
-      }).finish();
-      ws?.send(s);
-    };
-  }, []);
-
-  const debouncedFit_ = useCallback(
-    () =>
-      debounce(() => {
-        try {
-          fitAddon.fit();
-        } catch (e) {
-          console.log(e);
-        }
-      }, 300)(),
-    [fitAddon]
-  );
-  const setValuesByResult = useCallback((items: pb.types.StateContainer[]) => {
-    if (items.length > 0) {
-      let first = items[0];
-      setValue(first.pod + "|" + first.container);
-    } else {
-      setValue("");
-    }
-  }, []);
-
-  const handleConnectionMessage = useCallback(
-    (frame: pb.websocket.TerminalMessage, term: Terminal) => {
-      if (!term) {
-        return;
-      }
-      if (frame.op === "stdout") {
-        term.write(frame.data);
-      }
-
-      if (frame.op === "toast") {
-        message.error(decoder.decode(frame.data));
-        listContainer().then((res) => {
-          setValuesByResult(res.data.items);
-        });
-      }
-    },
-    [listContainer, setValuesByResult]
-  );
-
-  const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
-    return debounce(({ cols, rows }: { cols: number; rows: number }) => {
-      console.log("cols, rows. onTerminalResize");
-      let s = pb.websocket.TerminalMessageInput.encode({
-        type: pb.websocket.Type.HandleExecShellMsg,
-        message: new pb.websocket.TerminalMessage({
-          session_id: id,
-          op: "resize",
-          cols: cols,
-          rows: rows,
-        }),
-      }).finish();
-      ws?.send(s);
-    }, 200);
-  }, []);
-
-  const handleCloseShell = useCallback(
-    (id: string) => {
-      if (id) {
-        let s = pb.websocket.TerminalMessageInput.encode({
-          type: pb.websocket.Type.HandleCloseShell,
-          message: new pb.websocket.TerminalMessage({ session_id: id }),
-        }).finish();
-        sendMsg(s);
-      }
-    },
-    [sendMsg]
-  );
-
-  let logCount = useMemo(() => sessions[sname]?.logCount, [sessions, sname]);
-  let log = useMemo(() => sessions[sname]?.log, [sessions, sname]);
-  useEffect(() => {
-    if (logCount && term) {
-      handleConnectionMessage(log, term);
-    }
-  }, [logCount, log, handleConnectionMessage, term]);
-
   useEffect(() => {
     listContainer().then((res) => {
       setValuesByResult(res.data.items);
     });
-  }, [updatedAt, listContainer, setValuesByResult]);
+  }, [listContainer, setValuesByResult, updatedAt]);
 
-  const getTerm = useCallback(
-    (id: string, ws: WebSocket) => {
-      let myterm = new Terminal({
-        fontSize: 14,
-        fontFamily: '"Fira code", "Fira Mono", monospace',
-        cursorBlink: true,
-        // cols: 106,
-        rows: 25,
-      });
-
-      myterm.loadAddon(fitAddon);
-      myterm.onResize(onTerminalResize(id, ws));
-      myterm.onData(onTerminalSendString(id, ws));
-      ref.current && myterm.open(ref.current);
-      debouncedFit_();
-      myterm.focus();
-
-      return myterm;
-    },
-    [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_]
-  );
-
-  let sid = useMemo(() => sessions[sname]?.sessionID, [sessions, sname]);
-  useEffect(() => {
-    if (sid) {
-      setSessionId(sid);
-    }
-  }, [sid]);
-
-  useEffect(() => {
-    if (list.length === 0 && term) {
-      term.dispose();
-    }
-  }, [list, term]);
-
-  useEffect(() => {
-    if (wsReady && sessionId && ws) {
-      const t = getTerm(sessionId, ws);
-      setTerm(t);
-
-      return () => {
-        t.dispose();
-        handleCloseShell(sessionId);
-        console.log("close id: ", sessionId);
-      };
-    }
-  }, [wsReady, sessionId, setTerm, ws, getTerm, handleCloseShell]);
-
-  useEffect(() => {
-    debouncedFit_();
-  }, [debouncedFit_, resizeAt]);
-
-  const initShell = useCallback(() => {
-    let s = value.split("|");
-    let ss = pb.websocket.WsHandleExecShellInput.encode({
-      type: pb.websocket.Type.HandleExecShell,
-      container: {
-        namespace: namespace,
-        pod: s[0],
-        container: s[1],
-      },
-    }).finish();
-    sendMsg(ss);
-  }, [value, namespace, sendMsg]);
-
-  useEffect(() => {
-    if (value && wsReady) {
-      initShell();
-    }
-  }, [initShell, value, wsReady]);
-
+  const [forceRender, setForceRender] = useState<any>(null);
   const reconnect = useCallback(
     (e: any) => {
+      resetTermMap();
       setTimestamp(new Date().getTime());
       setValue((v) => {
-        if (v === e.target.value) {
-          let s = (e.target.value as string).split("|");
+        let [pod, container] = (e.target.value as string).split("|");
+        if (v?.pod === pod && v.container === container) {
           isPodRunning({
             namespace: namespace,
-            pod: s[0],
+            pod: pod,
           }).then((res) => {
             if (res.data.running) {
-              initShell();
+              setForceRender(new Date().getTime());
             } else {
-              // message.error(res.data.reason);
               listContainer().then((res) => {
                 setValuesByResult(res.data.items);
               });
             }
           });
         }
-        return e.target.value;
+        return { pod, container, namespace };
       });
     },
-    [namespace, initShell, listContainer, setValuesByResult]
+    [namespace, listContainer, setValuesByResult, resetTermMap]
   );
 
   const beforeUpload = useCallback(
@@ -341,8 +216,9 @@ const TabShell: React.FC<{
       if (info.file.status !== "uploading") {
         console.log(info.file, info.fileList);
       }
-      if (info.file.status === "done") {
-        let [pod, container] = value.split("|");
+      if (!!value && info.file.status === "done") {
+        let pod = value.pod;
+        let container = value.container;
         copyToPod({
           pod: pod,
           container: container,
@@ -369,6 +245,81 @@ const TabShell: React.FC<{
     },
   };
 
+  const canAddTerm = useCallback(() => termMap.length >= 4, [termMap]);
+
+  const addWebTerm = useCallback(
+    (type: "vertical" | "horizontal") => {
+      console.log("add web term");
+      setTermMap((tmap) => {
+        if (canAddTerm()) {
+          message.error("不能超过四个分屏");
+          return tmap;
+        }
+        tmap.push({ type: type, id: uuidv4() });
+        setResizeTime(new Date().getTime());
+        return [...tmap];
+      });
+    },
+    [canAddTerm]
+  );
+  const subWebTerm = useCallback((id: string) => {
+    console.log("sub web term");
+    setTermMap((tmap) => {
+      if (_.keys(tmap).length <= 1) {
+        message.error("至少一个屏幕");
+        return tmap;
+      }
+
+      setResizeTime(new Date().getTime());
+      return [...tmap.filter((v) => v.id !== id)];
+    });
+  }, []);
+
+  const nestedAllotment = (
+    items: { type: "vertical" | "horizontal" | undefined; id: string }[],
+    ws: WebSocket,
+    value: { pod: string; namespace: string; container: string }
+  ): React.ReactNode[] => {
+    if (items.length < 1) {
+      return [];
+    }
+    let ele: React.ReactNode[] = [];
+    for (let index = 0; index < items.length; index++) {
+      const element = items[index];
+      if (index + 1 < items.length) {
+        const next = items[index + 1];
+        if (index > 0 && element.type !== next.type) {
+          let result = nestedAllotment(_.slice(items, index), ws, value);
+          result.length > 0 &&
+            ele.push(
+              <Allotment
+                vertical={next.type === "vertical"}
+                onDragEnd={() => setResizeTime(new Date().getTime())}
+              >
+                {result.map((v) => v)}
+              </Allotment>
+            );
+          break;
+        }
+      }
+      ele.push(
+        <ShellWindow
+          id={element.id}
+          key={element.id}
+          ws={ws}
+          canClose={termMap.length > 1}
+          namespace={namespace}
+          pod={value.pod}
+          container={value.container}
+          resizeAt={resizeTime}
+          forceRender={forceRender}
+          onClose={subWebTerm}
+        />
+      );
+    }
+    return [...ele];
+  };
+
   return (
     <div
       style={{
@@ -378,9 +329,12 @@ const TabShell: React.FC<{
         overflowY: "auto",
       }}
     >
-      {list.length > 0 ? (
+      {list.length > 0 && value ? (
         <>
-          <Radio.Group value={value} style={{ marginBottom: 5 }}>
+          <Radio.Group
+            value={`${value.pod}|${value.container}`}
+            style={{ marginBottom: 5 }}
+          >
             {list.map((item) => (
               <Radio
                 onClick={reconnect}
@@ -393,22 +347,51 @@ const TabShell: React.FC<{
             ))}
           </Radio.Group>
 
-          {value.length > 0 && term && (
-            <div style={{ display: "flex", justifyContent: "start" }}>
-              <Upload {...props}>
+          {!!value && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "start",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 5,
+                }}
+              >
+                <Upload {...props}>
+                  <Button
+                    disabled={loading}
+                    loading={loading}
+                    size="small"
+                    style={{ fontSize: 12 }}
+                    icon={<UploadOutlined />}
+                  >
+                    {loading ? "上传中" : "上传到容器"}
+                  </Button>
+                </Upload>
                 <Button
-                  disabled={loading}
-                  loading={loading}
+                  style={{ margin: "0 2px" }}
                   size="small"
-                  style={{ fontSize: 12, marginRight: 5, margin: "5px 0" }}
-                  icon={<UploadOutlined />}
-                >
-                  {loading ? "上传中" : "上传到容器"}
-                </Button>
-              </Upload>
+                  disabled={canAddTerm()}
+                  icon={
+                    <MinusOutlined style={{ transform: "rotate(90deg)" }} />
+                  }
+                  onClick={() => addWebTerm("horizontal")}
+                />
+                <Button
+                  size="small"
+                  disabled={canAddTerm()}
+                  icon={<MinusOutlined />}
+                  onClick={() => addWebTerm("vertical")}
+                />
+              </div>
               <PodMetrics
                 namespace={namespace}
-                pod={value.split("|")[0]}
+                pod={value.pod}
                 timestamp={timestamp}
               />
             </div>
@@ -427,13 +410,243 @@ const TabShell: React.FC<{
           <Empty description="列表还没有任何容器" />
         </div>
       )}
-      <div
-        ref={ref}
-        id="terminal"
-        style={{ height: "100%", display: value.length > 0 ? "block" : "none" }}
-      ></div>
+      {ws && wsReady && value && (
+        <Allotment
+          onDragEnd={() => setResizeTime(new Date().getTime())}
+          vertical={true}
+        >
+          {termMap.length > 1 && termMap[1].type !== "vertical" ? (
+            <Allotment
+              vertical={false}
+              onDragEnd={() => setResizeTime(new Date().getTime())}
+            >
+              {nestedAllotment(termMap, ws, value)}
+            </Allotment>
+          ) : (
+            nestedAllotment(termMap, ws, value)
+          )}
+        </Allotment>
+      )}
     </div>
   );
 };
+
+const ShellWindow: React.FC<{
+  id: string;
+  ws: WebSocket;
+  namespace: string;
+  pod: string;
+  container: string;
+  canClose: boolean;
+  onClose?: (id: string) => void;
+  resizeAt: any;
+  forceRender: any;
+}> = memo(
+  ({
+    resizeAt,
+    namespace,
+    pod,
+    container,
+    forceRender,
+    ws,
+    onClose,
+    id,
+    canClose,
+  }) => {
+    console.log("render: ShellWindow", forceRender);
+    const ref = useRef<HTMLDivElement>(null);
+    const fitAddon = useMemo(() => new FitAddon(), []);
+    const [term, setTerm] = useState<Terminal>();
+    const sessionID = useMemo(() => {
+      let sid = generateSessionID(namespace, pod, container);
+      if (forceRender > 0) {
+        console.log("forceRender:", sid);
+      }
+      return sid;
+    }, [namespace, pod, container, forceRender]);
+    const sendMsg = useCallback(
+      (msg: any) => {
+        try {
+          ws?.send(msg);
+        } catch (e) {
+          console.log(e);
+        }
+      },
+      [ws]
+    );
+    const initShell = useCallback(() => {
+      let ss = pb.websocket.WsHandleExecShellInput.encode({
+        type: pb.websocket.Type.HandleExecShell,
+        container: {
+          namespace: namespace,
+          pod: pod,
+          container: container,
+        },
+        session_id: sessionID,
+      }).finish();
+      sendMsg(ss);
+    }, [namespace, pod, container, sendMsg, sessionID]);
+
+    const onTerminalResize = useCallback((id: string, ws: WebSocket) => {
+      return debounce(({ cols, rows }: { cols: number; rows: number }) => {
+        console.log("cols, rows. onTerminalResize");
+        let s = pb.websocket.TerminalMessageInput.encode({
+          type: pb.websocket.Type.HandleExecShellMsg,
+          message: new pb.websocket.TerminalMessage({
+            session_id: id,
+            op: "resize",
+            cols: cols,
+            rows: rows,
+          }),
+        }).finish();
+        ws?.send(s);
+      }, 200);
+    }, []);
+
+    const onTerminalSendString = useCallback((id: string, ws: WebSocket) => {
+      return (str: string) => {
+        let s = pb.websocket.TerminalMessageInput.encode({
+          type: pb.websocket.Type.HandleExecShellMsg,
+          message: {
+            session_id: id,
+            op: "stdin",
+            data: encoder.encode(str),
+            cols: 0,
+            rows: 0,
+          },
+        }).finish();
+        ws?.send(s);
+      };
+    }, []);
+
+    const debouncedFit_ = useCallback(
+      () =>
+        debounce(() => {
+          try {
+            fitAddon.fit();
+          } catch (e) {
+            console.log(e);
+          }
+        }, 300)(),
+      [fitAddon]
+    );
+
+    const handleConnectionMessage = useCallback(
+      (frame: pb.websocket.TerminalMessage, term: Terminal) => {
+        if (!term) {
+          return;
+        }
+        if (frame.op === "stdout") {
+          term.write(frame.data);
+        }
+
+        if (frame.op === "toast") {
+          message.error(decoder.decode(frame.data));
+          // listContainer().then((res) => {
+          //   setValuesByResult(res.data.items);
+          // });
+        }
+      },
+      []
+    );
+
+    const sessions = useSelector(selectSessions);
+    let logCount = useMemo(
+      () => sessions[sessionID]?.logCount,
+      [sessions, sessionID]
+    );
+    let log = useMemo(() => sessions[sessionID]?.log, [sessions, sessionID]);
+    useEffect(() => {
+      if (logCount && term) {
+        handleConnectionMessage(log, term);
+      }
+    }, [logCount, log, handleConnectionMessage, term]);
+
+    useEffect(() => {
+      if (!!resizeAt) {
+        debouncedFit_();
+      }
+    }, [debouncedFit_, resizeAt]);
+
+    const getTerm = useCallback(
+      (id: string, ws: WebSocket) => {
+        let myterm = new Terminal({
+          fontSize: 14,
+          fontFamily: '"Fira code", "Fira Mono", monospace',
+          cursorBlink: true,
+          // cols: 106,
+          rows: 25,
+        });
+
+        myterm.loadAddon(fitAddon);
+        myterm.onResize(onTerminalResize(id, ws));
+        myterm.onData(onTerminalSendString(id, ws));
+        ref.current && myterm.open(ref.current);
+        debouncedFit_();
+        myterm.focus();
+
+        return myterm;
+      },
+      [onTerminalResize, onTerminalSendString, fitAddon, debouncedFit_]
+    );
+    const handleCloseShell = useCallback(
+      (id: string) => {
+        if (id) {
+          let s = pb.websocket.TerminalMessageInput.encode({
+            type: pb.websocket.Type.HandleCloseShell,
+            message: new pb.websocket.TerminalMessage({ session_id: id }),
+          }).finish();
+          sendMsg(s);
+        }
+      },
+      [sendMsg]
+    );
+    useEffect(() => {
+      initShell();
+      if (sessionID) {
+        const t = getTerm(sessionID, ws);
+        setTerm(t);
+
+        return () => {
+          t.dispose();
+          handleCloseShell(sessionID);
+          console.log("term close id: ", sessionID);
+        };
+      }
+    }, [sessionID, initShell, setTerm, ws, getTerm, handleCloseShell]);
+
+    return (
+      <div
+        ref={ref}
+        id="terminal"
+        className={css`
+          .xterm {
+            height: 100%;
+          }
+        `}
+        style={{
+          height: "100%",
+          display: !!sessionID ? "block" : "none",
+          position: "relative",
+        }}
+      >
+        {canClose && (
+          <Button
+            size="small"
+            type="text"
+            icon={<CloseOutlined style={{ color: "gray" }} />}
+            onClick={() => onClose?.(id)}
+            className={css`
+              :hover {
+                background-color: #525252 !important;
+              }
+            `}
+            style={{ position: "absolute", top: 5, right: 3, zIndex: 1000 }}
+          />
+        )}
+      </div>
+    );
+  }
+);
 
 export default memo(TabShell);
