@@ -318,7 +318,7 @@ const TabShell: React.FC<{
       idx++;
     }
     if (group.length > 0) {
-      if (group.length === 1) {
+      if (group.length === 1 && lastType !== undefined) {
         groups.push(group[0]);
       } else {
         groups.push(
