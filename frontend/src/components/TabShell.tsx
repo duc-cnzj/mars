@@ -247,6 +247,10 @@ const TabShell: React.FC<{
 
   const canAddTerm = useCallback(() => termMap.length >= 4, [termMap]);
 
+  const resizeShellWindow = useCallback(() => {
+    setResizeTime(new Date().getTime());
+  }, []);
+
   const addWebTerm = useCallback(
     (type: "vertical" | "horizontal") => {
       console.log("add web term");
@@ -256,24 +260,27 @@ const TabShell: React.FC<{
           return tmap;
         }
         tmap.push({ type: type, id: uuidv4() });
-        setResizeTime(new Date().getTime());
+        resizeShellWindow();
         return [...tmap];
       });
     },
-    [canAddTerm]
+    [canAddTerm, resizeShellWindow]
   );
-  const subWebTerm = useCallback((id: string) => {
-    console.log("sub web term");
-    setTermMap((tmap) => {
-      if (_.keys(tmap).length <= 1) {
-        message.error("至少一个屏幕");
-        return tmap;
-      }
+  const subWebTerm = useCallback(
+    (id: string) => {
+      console.log("sub web term");
+      setTermMap((tmap) => {
+        if (_.keys(tmap).length <= 1) {
+          message.error("至少一个屏幕");
+          return tmap;
+        }
 
-      setResizeTime(new Date().getTime());
-      return [...tmap.filter((v) => v.id !== id)];
-    });
-  }, []);
+        resizeShellWindow();
+        return [...tmap.filter((v) => v.id !== id)];
+      });
+    },
+    [resizeShellWindow]
+  );
 
   const nestedAllotment = (
     items: { type: "vertical" | "horizontal" | undefined; id: string }[],
@@ -307,7 +314,10 @@ const TabShell: React.FC<{
         items[index].type !== items[index + 1].type
       ) {
         groups.push(
-          <Allotment vertical={lastType === "vertical"}>
+          <Allotment
+            vertical={lastType === "vertical"}
+            onDragEnd={resizeShellWindow}
+          >
             {group.map((v) => v)}
           </Allotment>
         );
@@ -322,7 +332,10 @@ const TabShell: React.FC<{
         groups.push(group[0]);
       } else {
         groups.push(
-          <Allotment vertical={lastType === "vertical"}>
+          <Allotment
+            vertical={lastType === "vertical"}
+            onDragEnd={resizeShellWindow}
+          >
             {group.map((v) => v)}
           </Allotment>
         );
@@ -447,15 +460,9 @@ const TabShell: React.FC<{
       )}
 
       {ws && wsReady && value && (
-        <Allotment
-          onDragEnd={() => setResizeTime(new Date().getTime())}
-          vertical={true}
-        >
+        <Allotment onDragEnd={resizeShellWindow} vertical={true}>
           {termMap.length > 1 && termMap[1].type === "vertical" ? (
-            <Allotment
-              vertical={false}
-              onDragEnd={() => setResizeTime(new Date().getTime())}
-            >
+            <Allotment vertical={false} onDragEnd={resizeShellWindow}>
               {nestedAllotment(termMap, ws, value).map((v) => v)}
             </Allotment>
           ) : (
