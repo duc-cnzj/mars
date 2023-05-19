@@ -251,6 +251,13 @@ const TabShell: React.FC<{
     setResizeTime(new Date().getTime());
   }, []);
 
+  useEffect(() => {
+    if (termMap.length > 0) {
+      console.log("resizeShellWindow");
+      resizeShellWindow();
+    }
+  }, [termMap, resizeShellWindow]);
+
   const addWebTerm = useCallback(
     (type: "vertical" | "horizontal") => {
       console.log("add web term");
@@ -260,27 +267,26 @@ const TabShell: React.FC<{
           return tmap;
         }
         tmap.push({ type: type, id: uuidv4() });
-        resizeShellWindow();
         return [...tmap];
       });
     },
-    [canAddTerm, resizeShellWindow]
+    [canAddTerm]
   );
-  const subWebTerm = useCallback(
-    (id: string) => {
-      console.log("sub web term");
-      setTermMap((tmap) => {
-        if (_.keys(tmap).length <= 1) {
-          message.error("至少一个屏幕");
-          return tmap;
-        }
+  const subWebTerm = useCallback((id: string) => {
+    console.log("sub web term");
+    setTermMap((tmap) => {
+      if (_.keys(tmap).length <= 1) {
+        message.error("至少一个屏幕");
+        return tmap;
+      }
 
-        resizeShellWindow();
-        return [...tmap.filter((v) => v.id !== id)];
-      });
-    },
-    [resizeShellWindow]
-  );
+      let newTerms = tmap.filter((v) => v.id !== id);
+      if (newTerms.length === 1) {
+        return [{ id: newTerms[0].id, type: undefined }];
+      }
+      return [...newTerms];
+    });
+  }, []);
 
   const nestedAllotment = (
     items: { type: "vertical" | "horizontal" | undefined; id: string }[],
