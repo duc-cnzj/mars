@@ -515,6 +515,9 @@
         },
         "global_enabled": {
           "type": "boolean"
+        },
+        "display_name": {
+          "type": "string"
         }
       }
     },

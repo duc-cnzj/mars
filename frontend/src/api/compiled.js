@@ -6373,6 +6373,7 @@ export const git = $root.git = (() => {
          * @property {string|null} [description] ProjectItem description
          * @property {boolean|null} [enabled] ProjectItem enabled
          * @property {boolean|null} [global_enabled] ProjectItem global_enabled
+         * @property {string|null} [display_name] ProjectItem display_name
          */
 
         /**
@@ -6455,6 +6456,14 @@ export const git = $root.git = (() => {
         ProjectItem.prototype.global_enabled = false;
 
         /**
+         * ProjectItem display_name.
+         * @member {string} display_name
+         * @memberof git.ProjectItem
+         * @instance
+         */
+        ProjectItem.prototype.display_name = "";
+
+        /**
          * Encodes the specified ProjectItem message. Does not implicitly {@link git.ProjectItem.verify|verify} messages.
          * @function encode
          * @memberof git.ProjectItem
@@ -6482,6 +6491,8 @@ export const git = $root.git = (() => {
                 writer.uint32(/* id 7, wireType 0 =*/56).bool(message.enabled);
             if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
                 writer.uint32(/* id 8, wireType 0 =*/64).bool(message.global_enabled);
+            if (message.display_name != null && Object.hasOwnProperty.call(message, "display_name"))
+                writer.uint32(/* id 9, wireType 2 =*/74).string(message.display_name);
             return writer;
         };
 
@@ -6533,6 +6544,10 @@ export const git = $root.git = (() => {
                     }
                 case 8: {
                         message.global_enabled = reader.bool();
+                        break;
+                    }
+                case 9: {
+                        message.display_name = reader.string();
                         break;
                     }
                 default:

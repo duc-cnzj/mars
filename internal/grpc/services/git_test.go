@@ -32,8 +32,9 @@ func TestGitSvc_All(t *testing.T) {
 	// p1 id: 1 enabled: false
 	// p2 id: 2 enabled: true
 	// p3 id: 3 enabled: false
+	// p4 id: 4 enabled: true
 	// ->
-	// p2, p1, p3
+	// p2, p4, p1, p3
 	p1 := mock.NewMockProjectInterface(m)
 	p1.EXPECT().GetID().Return(int64(1)).Times(2)
 	p1.EXPECT().GetName().Return("name1")
@@ -55,13 +56,27 @@ func TestGitSvc_All(t *testing.T) {
 	p3.EXPECT().GetWebURL().Return("weburl3")
 	p3.EXPECT().GetAvatarURL().Return("avatar3")
 	p3.EXPECT().GetDescription().Return("desc3")
-	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p3, p1, p2}, nil).Times(1)
+	p4 := mock.NewMockProjectInterface(m)
+	p4.EXPECT().GetID().Return(int64(4)).Times(2)
+	p4.EXPECT().GetName().Return("name4")
+	p4.EXPECT().GetPath().Return("path4")
+	p4.EXPECT().GetWebURL().Return("weburl4")
+	p4.EXPECT().GetAvatarURL().Return("avatar4")
+	p4.EXPECT().GetDescription().Return("desc4")
+	gits.EXPECT().AllProjects().Return([]contracts.ProjectInterface{p3, p1, p2, p4}, nil).Times(1)
 
 	db, closeDB := testutil.SetGormDB(m, app)
 	defer closeDB()
 	db.AutoMigrate(&models.GitProject{})
+	marshal, _ := json.Marshal(&mars.Config{DisplayName: "app"})
 	db.Create(&models.GitProject{
 		GitProjectId:  2,
+		Enabled:       true,
+		GlobalEnabled: true,
+		GlobalConfig:  string(marshal),
+	})
+	db.Create(&models.GitProject{
+		GitProjectId:  4,
 		Enabled:       true,
 		GlobalEnabled: true,
 	})
@@ -71,12 +86,19 @@ func TestGitSvc_All(t *testing.T) {
 	assert.Equal(t, int64(2), all.Items[0].Id)
 	assert.Equal(t, true, all.Items[0].Enabled)
 	assert.Equal(t, true, all.Items[0].GlobalEnabled)
-	assert.Equal(t, int64(1), all.Items[1].Id)
-	assert.Equal(t, false, all.Items[1].Enabled)
-	assert.Equal(t, false, all.Items[1].GlobalEnabled)
-	assert.Equal(t, int64(3), all.Items[2].Id)
+	assert.Equal(t, "app", all.Items[0].DisplayName)
+	assert.Equal(t, int64(4), all.Items[1].Id)
+	assert.Equal(t, true, all.Items[1].Enabled)
+	assert.Equal(t, true, all.Items[1].GlobalEnabled)
+	assert.Equal(t, "", all.Items[1].DisplayName)
+	assert.Equal(t, int64(1), all.Items[2].Id)
 	assert.Equal(t, false, all.Items[2].Enabled)
 	assert.Equal(t, false, all.Items[2].GlobalEnabled)
+	assert.Equal(t, "", all.Items[2].DisplayName)
+	assert.Equal(t, int64(3), all.Items[3].Id)
+	assert.Equal(t, false, all.Items[3].Enabled)
+	assert.Equal(t, false, all.Items[3].GlobalEnabled)
+	assert.Equal(t, "", all.Items[3].DisplayName)
 
 	gits.EXPECT().AllProjects().Return(nil, errors.New("xxx")).Times(1)
 	_, err = new(gitSvc).All(context.TODO(), &git.AllRequest{})
@@ -475,6 +497,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 	defer f()
 	db.AutoMigrate(&models.GitProject{})
 	marshal, _ := json.Marshal(&mars.Config{DisplayName: "app"})
+	marshal2, _ := json.Marshal(&mars.Config{DisplayName: "b"})
 
 	p1 := &models.GitProject{
 		DefaultBranch: "dev",
@@ -490,7 +513,7 @@ func TestGitSvc_ProjectOptions(t *testing.T) {
 		GitProjectId:  2,
 		Enabled:       true,
 		GlobalEnabled: true,
-		GlobalConfig:  "",
+		GlobalConfig:  string(marshal2),
 	}
 	p3 := &models.GitProject{
 		DefaultBranch: "dev2",

@@ -138,6 +138,12 @@ const GitProjectManager: React.FC = () => {
     },
   };
 
+  const projectNameFunc = useCallback(
+    (item: pb.git.ProjectItem) =>
+      `${item.name}${!!item.display_name ? `(${item.display_name})` : ""}`,
+    []
+  );
+
   return (
     <>
       <Card
@@ -181,7 +187,7 @@ const GitProjectManager: React.FC = () => {
             {list &&
               list.map((item, key) => (
                 <Option value={item.id} key={key}>
-                  {item.name}
+                  {projectNameFunc(item)}
                 </Option>
               ))}
           </Select>
@@ -228,7 +234,7 @@ const GitProjectManager: React.FC = () => {
                 avatar={<Avatar src={item.avatar_url} />}
                 title={
                   <div style={{ fontSize: 16 }}>
-                    {item.name}
+                    {projectNameFunc(item)}
                     <div
                       style={{
                         display: "inline-block",

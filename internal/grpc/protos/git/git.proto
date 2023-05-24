@@ -25,6 +25,7 @@ message ProjectItem {
   string description = 6;
   bool enabled = 7;
   bool global_enabled = 8;
+  string display_name = 9;
 }
 
 message AllResponse {

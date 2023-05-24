@@ -108,10 +108,14 @@ func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse
 	var infos = make([]*git.ProjectItem, 0)
 
 	for _, project := range projects {
-		var enabled, GlobalEnabled bool
+		var (
+			enabled, GlobalEnabled bool
+			displayName            string
+		)
 		if gitProject, ok := m[int(project.GetID())]; ok {
 			enabled = gitProject.Enabled
 			GlobalEnabled = gitProject.GlobalEnabled
+			displayName = gitProject.GlobalMarsConfig().DisplayName
 		}
 		infos = append(infos, &git.ProjectItem{
 			Id:            project.GetID(),
@@ -122,6 +126,7 @@ func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse
 			Description:   project.GetDescription(),
 			Enabled:       enabled,
 			GlobalEnabled: GlobalEnabled,
+			DisplayName:   displayName,
 		})
 	}
 
@@ -173,6 +178,9 @@ func (g *gitSvc) ProjectOptions(ctx context.Context, request *git.ProjectOptions
 				if marsC.DisplayName != "" {
 					displayName = marsC.DisplayName
 					pname = fmt.Sprintf("%s(%s)", project.Name, displayName)
+					if strings.EqualFold(project.Name, displayName) {
+						pname = displayName
+					}
 				}
 				ch <- &git.Option{
 					DisplayName:  displayName,

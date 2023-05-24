@@ -299,6 +299,8 @@ func (m *ProjectItem) validate(all bool) error {
 
 	// no validation rules for GlobalEnabled
 
+	// no validation rules for DisplayName
+
 	if len(errors) > 0 {
 		return ProjectItemMultiError(errors)
 	}

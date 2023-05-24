@@ -3053,6 +3053,9 @@ export namespace git {
 
         /** ProjectItem global_enabled */
         global_enabled?: (boolean|null);
+
+        /** ProjectItem display_name */
+        display_name?: (string|null);
     }
 
     /** Represents a ProjectItem. */
@@ -3087,6 +3090,9 @@ export namespace git {
 
         /** ProjectItem global_enabled. */
         public global_enabled: boolean;
+
+        /** ProjectItem display_name. */
+        public display_name: string;
 
         /**
          * Encodes the specified ProjectItem message. Does not implicitly {@link git.ProjectItem.verify|verify} messages.
