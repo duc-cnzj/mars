@@ -18,7 +18,6 @@ export default function openedModal(
 ) {
   switch (action.type) {
     case SET_OPENED_MODALS:
-      console.log(action.data.modals);
       return { modals: action.data.modals };
     default:
       return state;

@@ -32,7 +32,7 @@ const AppLayout: React.FC = () => {
           }}
         >
           <AppHeader />
-        </Header>{" "}
+        </Header>
         <Content
           className={css`
             margin-top: 64px;
