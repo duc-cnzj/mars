@@ -29,23 +29,21 @@ const ItemDetailModal: React.FC<{
 }> = ({ item, namespace, namespaceId }) => {
   const dispatch = useDispatch();
   const openModals = useSelector(modals);
-  const [visible, setVisible] = useState(openModals[namespaceId] || false);
+  const [visible, setVisible] = useState(openModals[item.id] || false);
   const [params, setParams] = useSearchParams();
   const onOpenModal = useCallback(() => {
     let pIDs = (params.get("pid") || "").split(",");
-    pIDs.push(String(namespaceId));
+    pIDs.push(String(item.id));
     setParams({ pid: sortedUniq(pIDs).join(",") });
     setVisible(true);
-  }, [namespaceId, setParams, params]);
+  }, [item.id, setParams, params]);
   const onCloseModal = useCallback(() => {
     setVisible(false);
     let pidStr = sortedUniq(
-      (params.get("pid") || "")
-        .split(",")
-        .filter((v) => v !== String(namespaceId))
+      (params.get("pid") || "").split(",").filter((v) => v !== String(item.id))
     ).join(",");
     setParams(!!pidStr ? { pid: pidStr } : {});
-  }, [namespaceId, setParams, params]);
+  }, [item.id, setParams, params]);
 
   const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();
   const [resizeAt, setResizeAt] = useState<number>(0);
