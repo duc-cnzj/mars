@@ -1,5 +1,5 @@
 import React, { useEffect, createContext, useState, useContext } from "react";
-import { Route, Redirect, useHistory } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { message } from "antd";
 import { login, info } from "../api/auth";
 import { setToken, getToken, removeToken } from "../utils/token";
@@ -41,7 +41,7 @@ function useAuth(): {
 function useProvideAuth() {
   const [user, setUser] = useState<pb.auth.InfoResponse>();
 
-  const h = useHistory();
+  const h = useNavigate();
   useEffect(() => {
     if (getToken() && !user) {
       info()
@@ -50,7 +50,7 @@ function useProvideAuth() {
         })
         .catch((e) => {
           removeToken();
-          h.push("/login");
+          h("/login");
         });
     }
   }, [user, h]);
@@ -92,60 +92,22 @@ function useProvideAuth() {
   };
 }
 
-function PrivateRoute({
-  path,
-  exact,
-  children,
-  ...rest
-}: {
-  exact?: boolean;
-  path: string;
-  children: any;
-}) {
-  return (
-    <Route
-      {...rest}
-      exact={exact}
-      render={({ location }) =>
-        getToken() ? (
-          children
-        ) : (
-          <Redirect
-            to={{
-              pathname: "/login",
-              state: { from: location },
-            }}
-          />
-        )
-      }
-    />
-  );
+function PrivateRoute({ children }: { children: JSX.Element }) {
+  let location = useLocation();
+  if (!getToken()) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 }
-function GuestRoute({
-  path,
-  children,
-  ...rest
-}: {
-  path: string;
-  children: any;
-}) {
-  return (
-    <Route
-      {...rest}
-      render={({ location }) =>
-        !getToken() ? (
-          children
-        ) : (
-          <Redirect
-            to={{
-              pathname: "/",
-              state: { from: location },
-            }}
-          />
-        )
-      }
-    />
-  );
+
+function GuestRoute({ children }: { children: JSX.Element }) {
+  let location = useLocation();
+  if (!!getToken()) {
+    return <Navigate to="/" state={{ from: location }} />;
+  }
+
+  return children;
 }
 
 export { ProvideAuth, PrivateRoute, useAuth, useProvideAuth, GuestRoute };

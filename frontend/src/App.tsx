@@ -1,17 +1,10 @@
 import React, { FC, lazy, Suspense } from "react";
-import { Layout } from "antd";
 import AppContent from "./components/AppContent";
-import { ProvideWebsocket } from "./contexts/useWebsocket";
-import { Switch, Route } from "react-router-dom";
-import AppHeader from "./components/AppHeader";
-import AppFooter from "./components/AppFooter";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import { PrivateRoute } from "./contexts/auth";
-import { GlobalScrollbar } from "mac-scrollbar";
 import "mac-scrollbar/dist/mac-scrollbar.css";
-import { css } from "@emotion/css";
-import appTheme from "./styles/theme";
-
-const { Header, Content, Footer } = Layout;
+import AppLayout from "./components/AppLayout";
+import { Button, Result } from "antd";
 
 const GitProjectManager = lazy(() => import("./components/GitProjectManager"));
 const Events = lazy(() => import("./components/Events"));
@@ -20,74 +13,66 @@ const AccessTokenManager = lazy(
 );
 
 const App: FC = () => {
+  const navigate = useNavigate();
   return (
-    <ProvideWebsocket>
-      <GlobalScrollbar />
-      <Layout className="app">
-        <Header
-          className={css`
-            position: "fixed";
-            z-index: 1;
-            width: "100%";
-            overflow: "hidden";
-            background-image: ${appTheme.mainLinear};
-          `}
-          style={{
-            position: "fixed",
-            zIndex: 1,
-            width: "100%",
-            overflow: "hidden",
-          }}
-        >
-          <AppHeader />
-        </Header>
-        <Content
-          className={css`
-            margin-top: 64px;
-            padding: 0 50px;
-            min-height: calc(100vh - 122px) !important;
-          `}
-        >
-          <Switch>
-            <PrivateRoute path={`/git_project_manager`}>
+    <Routes>
+      <Route path="/" element={<AppLayout />}>
+        <Route
+          index
+          element={
+            <PrivateRoute>
+              <AppContent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="git_project_manager"
+          element={
+            <PrivateRoute>
               <Suspense fallback={null}>
                 <GitProjectManager />
               </Suspense>
             </PrivateRoute>
-            <PrivateRoute path={`/events`}>
+          }
+        />
+        <Route
+          path="events"
+          element={
+            <PrivateRoute>
               <Suspense fallback={null}>
                 <Events />
               </Suspense>
             </PrivateRoute>
-            <PrivateRoute path={`/access_token_manager`}>
+          }
+        />
+        <Route
+          path="access_token_manager"
+          element={
+            <PrivateRoute>
               <Suspense fallback={null}>
                 <AccessTokenManager />
               </Suspense>
             </PrivateRoute>
-            <PrivateRoute path={`/`} exact>
-              <AppContent />
-            </PrivateRoute>
-            <Route path="*" exact>
-              404
-            </Route>
-          </Switch>
-        </Content>
-        <Footer
-          className={css`
-            background-image: ${appTheme.footerLinear};
-            padding: 8px 50px 2px !important;
-            text-align: center;
-            .copyright {
-              font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
-                sans-serif;
-              color: ${appTheme.mainFontColor};
-            }
-          `}
-        >
-          <AppFooter />
-        </Footer>
-      </Layout>
-    </ProvideWebsocket>
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <Result
+              status="404"
+              title="404"
+              subTitle="页面不存在~"
+              extra={
+                <Button type="primary" onClick={() => navigate("/")}>
+                  返回主页
+                </Button>
+              }
+            />
+          }
+        ></Route>
+      </Route>
+    </Routes>
   );
 };
 

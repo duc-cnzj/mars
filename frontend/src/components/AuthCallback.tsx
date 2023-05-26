@@ -1,5 +1,5 @@
 import React, { useEffect, memo } from "react";
-import { useLocation, useHistory } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { exchange, info } from "../api/auth";
 import { setToken, setLogoutUrl } from "../utils/token";
 import { useAuth } from "../contexts/auth";
@@ -11,12 +11,12 @@ function useQuery() {
 }
 const Callback: React.FC = () => {
   let query = useQuery();
-  const h = useHistory();
+  const h = useNavigate();
   let code = query.get("code");
   let state = query.get("state");
   const auth = useAuth();
   if (!code) {
-    h.push("/login");
+    h("/login");
   }
   useEffect(() => {
     if (code) {
@@ -27,12 +27,12 @@ const Callback: React.FC = () => {
             setLogoutUrl(res.data.logout_url);
             auth.setUser(res.data);
           });
-          h.push("/");
+          h("/");
         });
       } else {
         message.error("state 不一致，请重新登录");
         removeState();
-        h.push("/login");
+        h("/login");
       }
     }
   }, [code, h, auth, state]);

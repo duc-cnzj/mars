@@ -3,7 +3,7 @@ import { bg } from "../api/background";
 import pb from "../api/compiled";
 import { Form, Button, Input, Divider } from "antd";
 import { useAuth } from "../contexts/auth";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PushpinFilled, PushpinOutlined } from "@ant-design/icons";
 import { settings as settingsApi } from "../api/auth";
 import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
@@ -22,7 +22,7 @@ const Login: React.FC = () => {
     });
   }, []);
 
-  const h = useHistory();
+  const h = useNavigate();
   const auth = useAuth();
 
   return (
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
             name="basic"
             onFinish={(values: any) => {
               auth.login(values.username, values.password, () => {
-                h.push("/");
+                h("/");
               });
             }}
             autoComplete="off"
