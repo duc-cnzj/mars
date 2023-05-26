@@ -32,19 +32,19 @@ const ItemDetailModal: React.FC<{
   const [visible, setVisible] = useState(openModals[namespaceId] || false);
   const [params, setParams] = useSearchParams();
   const onOpenModal = useCallback(() => {
-    let tabIDs = (params.get("tab_id") || "").split(",");
-    tabIDs.push(String(namespaceId));
-    setParams({ tab_id: sortedUniq(tabIDs).join(",") });
+    let pIDs = (params.get("pid") || "").split(",");
+    pIDs.push(String(namespaceId));
+    setParams({ pid: sortedUniq(pIDs).join(",") });
     setVisible(true);
   }, [namespaceId, setParams, params]);
   const onCloseModal = useCallback(() => {
     setVisible(false);
-    let tabIDStr = sortedUniq(
-      (params.get("tab_id") || "")
+    let pidStr = sortedUniq(
+      (params.get("pid") || "")
         .split(",")
         .filter((v) => v !== String(namespaceId))
     ).join(",");
-    setParams(!!tabIDStr ? { tab_id: tabIDStr } : {});
+    setParams(!!pidStr ? { pid: pidStr } : {});
   }, [namespaceId, setParams, params]);
 
   const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();

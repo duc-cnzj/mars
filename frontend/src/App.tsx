@@ -14,6 +14,7 @@ const AccessTokenManager = lazy(
 
 const App: FC = () => {
   const navigate = useNavigate();
+
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>

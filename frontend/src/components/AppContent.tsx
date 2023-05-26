@@ -32,9 +32,9 @@ const AppContent: React.FC = () => {
   }, [setNamespaceItems]);
 
   const [params] = useSearchParams();
-  if (!!params.get("tab_id")) {
+  if (!!params.get("pid")) {
     let obj: { [key: number]: boolean } = {};
-    sortedUniq((params.get("tab_id") || "").split(","))
+    sortedUniq((params.get("pid") || "").split(","))
       .filter((v) => isNumber(Number(v)))
       .map((v) => (obj[Number(v)] = true));
     dispatch(setOpenedModals(obj));
