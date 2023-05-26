@@ -5,12 +5,14 @@ import { Empty, Row, Col } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { allNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
-import { setNamespaceReload } from "../store/actions";
+import { setNamespaceReload, setOpenedModals } from "../store/actions";
 import { selectReload, selectReloadNsID } from "../store/reducers/namespace";
 import pb from "../api/compiled";
 import AddNamespace from "./AddNamespace";
 import { useAsyncState } from "../utils/async";
 import styled from "@emotion/styled";
+import { useSearchParams } from "react-router-dom";
+import { isNumber, sortedUniq } from "lodash";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
@@ -28,6 +30,15 @@ const AppContent: React.FC = () => {
       })
       .finally(() => setLoading(false));
   }, [setNamespaceItems]);
+
+  const [params] = useSearchParams();
+  if (!!params.get("tab_id")) {
+    let obj: { [key: number]: boolean } = {};
+    sortedUniq((params.get("tab_id") || "").split(","))
+      .filter((v) => isNumber(Number(v)))
+      .map((v) => (obj[Number(v)] = true));
+    dispatch(setOpenedModals(obj));
+  }
 
   usePreventModalBack();
 

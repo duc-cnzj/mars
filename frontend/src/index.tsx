@@ -3,8 +3,8 @@ import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
 import store from "./store";
 import { disableReactDevTools } from "@fvilers/disable-react-devtools";
-import { BrowserRouter as Router, Switch } from "react-router-dom";
-import { PrivateRoute, GuestRoute, ProvideAuth } from "./contexts/auth";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { GuestRoute, ProvideAuth } from "./contexts/auth";
 import { createRoot } from "react-dom/client";
 import { ConfigProvider } from "antd";
 import theme from "./styles/theme";
@@ -29,17 +29,25 @@ root.render(
       <Router>
         <ProvideAuth>
           <ConfigProvider theme={{ token: theme }}>
-            <Switch>
-              <GuestRoute path="/auth/callback">
-                <Callback />
-              </GuestRoute>
-              <GuestRoute path="/login">
-                <Login />
-              </GuestRoute>
-              <PrivateRoute path="/">
-                <App />
-              </PrivateRoute>
-            </Switch>
+            <Routes>
+              <Route
+                path="/auth/callback"
+                element={
+                  <GuestRoute>
+                    <Callback />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <Login />
+                  </GuestRoute>
+                }
+              />
+              <Route path="/*" element={<App />} />
+            </Routes>
           </ConfigProvider>
         </ProvideAuth>
       </Router>

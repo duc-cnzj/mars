@@ -5,7 +5,7 @@ import { useWsReady } from "../contexts/useWebsocket";
 import { UserOutlined } from "@ant-design/icons";
 import { useAuth } from "../contexts/auth";
 import { removeToken } from "../utils/token";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Dropdown } from "antd";
 import theme from "../styles/theme";
 import { css } from "@emotion/css";
@@ -19,7 +19,7 @@ import {
 import { ItemType } from "rc-menu/lib/interface";
 
 const AppHeader: React.FC = () => {
-  const h = useHistory();
+  const h = useNavigate();
   const { user, isAdmin } = useAuth();
 
   let items: ItemType[] = [
@@ -41,7 +41,7 @@ const AppHeader: React.FC = () => {
             href="javascript(0);"
             onClick={(e) => {
               e.preventDefault();
-              h.push("/git_project_manager");
+              h("/git_project_manager");
             }}
           >
             <SettingOutlined /> 项目配置
@@ -55,7 +55,7 @@ const AppHeader: React.FC = () => {
             href="javascript(0);"
             onClick={(e) => {
               e.preventDefault();
-              h.push("/events");
+              h("/events");
             }}
           >
             <NotificationOutlined /> 查看事件
@@ -73,7 +73,7 @@ const AppHeader: React.FC = () => {
           href="javascript(0);"
           onClick={(e) => {
             e.preventDefault();
-            h.push("/access_token_manager");
+            h("/access_token_manager");
           }}
         >
           <KeyOutlined /> 令牌管理
@@ -94,7 +94,7 @@ const AppHeader: React.FC = () => {
             if (user.logout_url) {
               window.location.href = user.logout_url;
             } else {
-              h.push("/login");
+              h("/login");
             }
           }}
         >

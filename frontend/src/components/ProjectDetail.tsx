@@ -17,6 +17,10 @@ import TabLog from "./TabLog";
 import useProjectRoom from "../contexts/useProjectRoom";
 import { useWs } from "../contexts/useWebsocket";
 import { Tab } from "rc-tabs/lib/interface";
+import { useSelector } from "react-redux";
+import { modals } from "../store/reducers/openedModal";
+import { useSearchParams } from "react-router-dom";
+import { sortedUniq } from "lodash";
 
 const ItemDetailModal: React.FC<{
   item: pb.types.ProjectModel;
@@ -24,8 +28,25 @@ const ItemDetailModal: React.FC<{
   namespaceId: number;
 }> = ({ item, namespace, namespaceId }) => {
   const dispatch = useDispatch();
-  const [visible, setVisible] = useState(false);
-  const onOk = useCallback(() => setVisible(true), []);
+  const openModals = useSelector(modals);
+  const [visible, setVisible] = useState(openModals[namespaceId] || false);
+  const [params, setParams] = useSearchParams();
+  const onOpenModal = useCallback(() => {
+    let tabIDs = (params.get("tab_id") || "").split(",");
+    tabIDs.push(String(namespaceId));
+    setParams({ tab_id: sortedUniq(tabIDs).join(",") });
+    setVisible(true);
+  }, [namespaceId, setParams, params]);
+  const onCloseModal = useCallback(() => {
+    setVisible(false);
+    let tabIDStr = sortedUniq(
+      (params.get("tab_id") || "")
+        .split(",")
+        .filter((v) => v !== String(namespaceId))
+    ).join(",");
+    setParams(!!tabIDStr ? { tab_id: tabIDStr } : {});
+  }, [namespaceId, setParams, params]);
+
   const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();
   const [resizeAt, setResizeAt] = useState<number>(0);
 
@@ -39,8 +60,8 @@ const ItemDetailModal: React.FC<{
 
   const onDelete = useCallback(() => {
     dispatch(setNamespaceReload(true, namespaceId));
-    setVisible(false);
-  }, [dispatch, namespaceId]);
+    onCloseModal();
+  }, [dispatch, namespaceId, onCloseModal]);
 
   const onSuccess = useCallback(() => {
     item.id &&
@@ -49,15 +70,11 @@ const ItemDetailModal: React.FC<{
       });
   }, [item.id]);
 
-  const onCancel = useCallback(() => {
-    setVisible(false);
-  }, []);
-
   return (
     <div className="project-detail">
       <Button
         onClick={() => {
-          onOk();
+          onOpenModal();
         }}
         className={css`
           width: 100%;
@@ -94,7 +111,7 @@ const ItemDetailModal: React.FC<{
         initialHeight={600}
         footer={null}
         keyboard={false}
-        onCancel={onCancel}
+        onCancel={onCloseModal}
         title={
           <Badge.Ribbon
             className={css`

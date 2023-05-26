@@ -12,6 +12,7 @@ import {
   SET_TIMER_START,
   PROJECT_POD_EVENT,
   REMOVE_SHELL,
+  SET_OPENED_MODALS,
 } from "./actionTypes";
 import { DeployStatus } from "./reducers/createProject";
 import { Dispatch } from "redux";
@@ -118,6 +119,13 @@ export const removeShell = (id: string) => ({
 export const setPodEventPID = (pid: number) => ({
   type: PROJECT_POD_EVENT,
   projectIDWithTimestamp: `${new Date().getTime()}-${pid}`,
+});
+
+export const setOpenedModals = (modals: { [key: number]: boolean }) => ({
+  type: SET_OPENED_MODALS,
+  data: {
+    modals,
+  },
 });
 
 const debounceLoadNamespace = debounce((dispatch: Dispatch, nsID: number) => {
