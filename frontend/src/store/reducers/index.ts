@@ -5,6 +5,7 @@ import podEventWatcher from "./podEventWatcher";
 import cluster from "./cluster";
 import shell from "./shell";
 import deployTimer from "./deployTimer";
+import openedModal from "./openedModal";
 
 export default combineReducers({
   createProject,
@@ -13,4 +14,5 @@ export default combineReducers({
   cluster,
   shell,
   deployTimer,
+  openedModal,
 });
