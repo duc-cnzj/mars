@@ -39,13 +39,12 @@ const ItemDetailModal: React.FC<{
   }, [namespaceId, setParams, params]);
   const onCloseModal = useCallback(() => {
     setVisible(false);
-    let tabIDs = (params.get("tab_id") || "").split(",");
-
-    setParams({
-      tab_id: sortedUniq(tabIDs.filter((v) => v !== String(namespaceId))).join(
-        ","
-      ),
-    });
+    let tabIDStr = sortedUniq(
+      (params.get("tab_id") || "")
+        .split(",")
+        .filter((v) => v !== String(namespaceId))
+    ).join(",");
+    setParams(!!tabIDStr ? { tab_id: tabIDStr } : {});
   }, [namespaceId, setParams, params]);
 
   const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();
