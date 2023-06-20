@@ -2380,9 +2380,6 @@ export namespace file {
 
     /** Properties of a DeleteResponse. */
     interface IDeleteResponse {
-
-        /** DeleteResponse file */
-        file?: (types.FileModel|null);
     }
 
     /** Represents a DeleteResponse. */
@@ -2393,9 +2390,6 @@ export namespace file {
          * @param [properties] Properties to set
          */
         constructor(properties?: file.IDeleteResponse);
-
-        /** DeleteResponse file. */
-        public file?: (types.FileModel|null);
 
         /**
          * Encodes the specified DeleteResponse message. Does not implicitly {@link file.DeleteResponse.verify|verify} messages.

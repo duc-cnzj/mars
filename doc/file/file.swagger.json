@@ -174,12 +174,7 @@
   },
   "definitions": {
     "fileDeleteResponse": {
-      "type": "object",
-      "properties": {
-        "file": {
-          "$ref": "#/definitions/typesFileModel"
-        }
-      }
+      "type": "object"
     },
     "fileDiskInfoResponse": {
       "type": "object",

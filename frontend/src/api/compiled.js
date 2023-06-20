@@ -5017,7 +5017,6 @@ export const file = $root.file = (() => {
          * Properties of a DeleteResponse.
          * @memberof file
          * @interface IDeleteResponse
-         * @property {types.FileModel|null} [file] DeleteResponse file
          */
 
         /**
@@ -5036,14 +5035,6 @@ export const file = $root.file = (() => {
         }
 
         /**
-         * DeleteResponse file.
-         * @member {types.FileModel|null|undefined} file
-         * @memberof file.DeleteResponse
-         * @instance
-         */
-        DeleteResponse.prototype.file = null;
-
-        /**
          * Encodes the specified DeleteResponse message. Does not implicitly {@link file.DeleteResponse.verify|verify} messages.
          * @function encode
          * @memberof file.DeleteResponse
@@ -5055,8 +5046,6 @@ export const file = $root.file = (() => {
         DeleteResponse.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.file != null && Object.hasOwnProperty.call(message, "file"))
-                $root.types.FileModel.encode(message.file, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
             return writer;
         };
 
@@ -5078,10 +5067,6 @@ export const file = $root.file = (() => {
             while (reader.pos < end) {
                 let tag = reader.uint32();
                 switch (tag >>> 3) {
-                case 1: {
-                        message.file = $root.types.FileModel.decode(reader, reader.uint32());
-                        break;
-                    }
                 default:
                     reader.skipType(tag & 7);
                     break;

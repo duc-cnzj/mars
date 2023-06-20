@@ -13,9 +13,7 @@ message DeleteRequest {
   int64 id = 1 [(validate.rules).int64.gte = 1];
 }
 
-message DeleteResponse {
-  types.FileModel file = 1;
-}
+message DeleteResponse {}
 
 message DiskInfoRequest {}
 
