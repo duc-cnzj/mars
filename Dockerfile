@@ -7,7 +7,7 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=linux/amd64 golang:1.20 AS builder
+FROM --platform=linux/amd64 golang:1.20-bullseye AS builder
 
 ARG TARGETARCH
 ARG TARGETOS
