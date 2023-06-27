@@ -12,8 +12,7 @@ FROM --platform=linux/amd64 golang:1.20 AS builder
 ARG TARGETARCH
 ARG TARGETOS
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-  apt update && \
+RUN apt update && \
   apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu upx
 
 WORKDIR /app
