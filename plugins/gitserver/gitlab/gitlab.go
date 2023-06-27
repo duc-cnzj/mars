@@ -173,6 +173,7 @@ type server struct {
 func (g *server) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
+		Scope: gitlab.String("branches"),
 		ListOptions: gitlab.ListOptions{
 			Page:    1,
 			PerPage: 100,
