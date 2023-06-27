@@ -15,7 +15,7 @@ ARG TARGETOS
 RUN apt update && \
   apt install -y ca-certificates tzdata git gcc-aarch64-linux-gnu xz-utils && \
   wget $(curl -s https://api.github.com/repos/upx/upx/releases/latest \
-    | grep browser_download_url | grep amd64 | cut -d '"' -f 4) -o /upx.tar.xz && \
+    | grep browser_download_url | grep amd64 | cut -d '"' -f 4) -O upx.tar.xz && \
   tar -xvf upx.tar.xz && \
   cd upx-*-amd64_linux && \
   mv upx /bin/upx
