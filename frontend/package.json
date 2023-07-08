@@ -41,7 +41,7 @@
     "prism-themes": "^1.9.0",
     "prismjs": "^1.29.0",
     "prop-types": "^15.8.1",
-    "protobufjs": "^7.1.1",
+    "protobufjs": "^7.2.4",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-diff-viewer": "^3.1.1",
