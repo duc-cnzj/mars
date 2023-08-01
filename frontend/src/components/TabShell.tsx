@@ -568,7 +568,7 @@ const ShellWindow: React.FC<{
       };
     }, []);
 
-    const debouncedFit_ = useCallback(
+    const debouncedFit_ = useMemo(
       () =>
         debounce(() => {
           try {
@@ -576,7 +576,7 @@ const ShellWindow: React.FC<{
           } catch (e) {
             console.log(e);
           }
-        }, 300)(),
+        }, 300),
       [fitAddon]
     );
 
