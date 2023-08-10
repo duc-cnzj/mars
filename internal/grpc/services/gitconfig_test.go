@@ -336,6 +336,38 @@ func TestGitConfigSvc_Update(t *testing.T) {
 	assert.Equal(t, true, update.Config.IsSimpleEnv)
 }
 
+func TestConfigDefaultNotRequired(t *testing.T) {
+	var tests = []struct {
+		input      *mars.Element
+		wantsError bool
+	}{
+		{
+			input: &mars.Element{
+				Path:    "xx",
+				Default: "xx",
+			},
+			wantsError: false,
+		},
+		{
+			input: &mars.Element{
+				Path:    "xx",
+				Default: "",
+			},
+			wantsError: false,
+		},
+	}
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			if tt.wantsError {
+				assert.Error(t, tt.input.Validate())
+			} else {
+				assert.NoError(t, tt.input.Validate())
+			}
+		})
+	}
+}
+
 func Test_getDefaultBranch(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
