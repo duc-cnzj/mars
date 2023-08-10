@@ -252,16 +252,7 @@ func (m *Element) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetDefault()) < 1 {
-		err := ElementValidationError{
-			field:  "Default",
-			reason: "value length must be at least 1 bytes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Default
 
 	// no validation rules for Description
 

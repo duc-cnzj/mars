@@ -49,7 +49,7 @@ enum ElementType {
 message Element {
   string path = 1 [(validate.rules).string.min_bytes = 1];
   ElementType type = 2 [(validate.rules).enum.defined_only = true];
-  string default = 3 [(validate.rules).string.min_bytes = 1];
+  string default = 3;
   string description = 4;
   repeated string select_values = 6;
   uint32 order = 7;
