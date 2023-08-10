@@ -157,6 +157,11 @@ function yamlCompletions(context: CompletionContext) {
 
 const list = [
   { apply: "<.ImagePullSecrets>", label: "<.ImagePullSecrets>", type: "text" },
+  {
+    apply: "<.ImagePullSecretsNoName>",
+    label: "<.ImagePullSecretsNoName>",
+    type: "text",
+  },
   { apply: "<.Branch>", label: "<.Branch>", type: "text" },
   { apply: "<.Commit>", label: "<.Commit>", type: "text" },
   { apply: "<.Pipeline>", label: "<.Pipeline>", type: "text" },

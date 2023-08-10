@@ -45,7 +45,7 @@ elements:
     description: "开启web服务"
 # values_yaml 和 helm 的 values.yaml 用法一模一样，但是可以使用变量
 # 目前支持的变量有，使用 \`<>\` 作为 Delim，避免和内置模板语法冲突
-# \`<.ImagePullSecrets>\` \`<.Branch>\` \`<.Commit>\` \`<.Pipeline>\` \`<.ClusterIssuer>\`
+# \`<.ImagePullSecrets>\` \`<.ImagePullSecretsNoName>\` \`<.Branch>\` \`<.Commit>\` \`<.Pipeline>\` \`<.ClusterIssuer>\`
 # \`<.Host1>...<.Host10>\` \`<.TlsSecret1>...<.TlsSecret10>\`
 values_yaml: |
   # Default values for charts.

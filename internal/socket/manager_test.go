@@ -1357,6 +1357,7 @@ if-master-test: < if ne .Branch "master" >not-master/is- <- .Branch >< else >< .
 if-dev-test: < if eq .Branch "dev" >dev-< .Branch >   <- end >
 VarImagePullSecrets: <.ImagePullSecrets>
 image: <.Pipeline>-<.Branch>
+VarImagePullSecretsNoName: <.ImagePullSecretsNoName>
 `,
 		},
 		project: &models.Project{
@@ -1372,14 +1373,16 @@ image: <.Pipeline>-<.Branch>
 	assert.Equal(t, `
 if-master-test: not-master/is-dev
 if-dev-test: dev-dev
-VarImagePullSecrets: [{name: a},{name: b},{name: c},]
+VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
 image: 9999-dev
+VarImagePullSecretsNoName: [a, b, c, ]
 `,
 		job.valuesYaml)
 	assert.Equal(t, "dev", job.vars[VarBranch])
 	assert.Equal(t, "short_id", job.vars[VarCommit])
 	assert.Equal(t, int64(9999), job.vars[VarPipeline])
-	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
+	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
+	assert.Equal(t, "[a, b, c, ]", job.vars[VarImagePullSecretsNoName])
 
 	em2 := &emptyMsger{}
 	job2 := &jobRunner{
@@ -1439,13 +1442,13 @@ VarImagePullSecrets: <.ImagePullSecrets>
 	}
 	assert.Nil(t, (&VariableLoader{}).Load(job))
 	assert.Equal(t, `
-VarImagePullSecrets: [{name: a},{name: b},{name: c},]
+VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
 `,
 		job.valuesYaml)
 	assert.Equal(t, "dev", job.vars[VarBranch])
 	assert.Equal(t, "short_id", job.vars[VarCommit])
 	assert.Equal(t, int64(0), job.vars[VarPipeline])
-	assert.Equal(t, "[{name: a},{name: b},{name: c},]", job.vars[VarImagePullSecrets])
+	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
 }
 
 func TestVariableLoader_Load_fail(t *testing.T) {

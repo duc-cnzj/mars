@@ -1116,13 +1116,14 @@ const (
 	leftDelim  = "<"
 	rightDelim = ">"
 
-	VarImagePullSecrets = "ImagePullSecrets"
-	VarBranch           = "Branch"
-	VarCommit           = "Commit"
-	VarPipeline         = "Pipeline"
-	VarClusterIssuer    = "ClusterIssuer"
-	VarHost             = "Host"
-	VarTlsSecret        = "TlsSecret"
+	VarImagePullSecrets       = "ImagePullSecrets"
+	VarImagePullSecretsNoName = "ImagePullSecretsNoName"
+	VarBranch                 = "Branch"
+	VarCommit                 = "Commit"
+	VarPipeline               = "Pipeline"
+	VarClusterIssuer          = "ClusterIssuer"
+	VarHost                   = "Host"
+	VarTlsSecret              = "TlsSecret"
 )
 
 var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)\s*` + rightDelim)
@@ -1144,23 +1145,30 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 	if v.values == nil {
 		v.values = vars{}
 	}
-
-	//ImagePullSecrets
-	parse, e := template.New("ImagePullSecrets").Parse(fmt.Sprintf("[{{- range .%s }}{name: {{ . }}}, {{- end }}]", VarImagePullSecrets))
-	if e != nil {
-		return e
-	}
-
-	renderResult := &bytes.Buffer{}
-	if err := parse.Execute(renderResult, struct {
+	type pullSecrets struct {
 		ImagePullSecrets []string
-	}{
-		ImagePullSecrets: j.imagePullSecrets,
-	}); err != nil {
-		return err
 	}
+	t, _ := template.New("").Parse(`
+{{ define "pullSecrets"}}[{{- range .ImagePullSecrets }}{name: {{ . }}}, {{ end }}]{{ end }}
+{{ define "pullSecretsNoName"}}[{{- range .ImagePullSecrets }}{{ . }}, {{ end }}]{{ end }}
+`)
+	// ImagePullSecrets
+	// [{name: secret1}, {name: secret2}, ]
+	//parse, _ := template.New("").Parse("[{{- range .ImagePullSecrets }}{name: {{ . }}}, {{- end }}]")
+	renderResult := &bytes.Buffer{}
+	t.ExecuteTemplate(renderResult, "pullSecrets", pullSecrets{
+		ImagePullSecrets: j.imagePullSecrets,
+	})
+
+	// ImagePullSecretsNoName
+	// [secret1, secret2, ]
+	renderResultNoName := &bytes.Buffer{}
+	t.ExecuteTemplate(renderResultNoName, "pullSecretsNoName", pullSecrets{
+		ImagePullSecrets: j.imagePullSecrets,
+	})
 
 	v.values[VarImagePullSecrets] = renderResult.String()
+	v.values[VarImagePullSecretsNoName] = renderResultNoName.String()
 
 	//Host1...Host10
 	sub := utils.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
