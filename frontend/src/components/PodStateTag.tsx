@@ -45,7 +45,7 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
     return (
       <Tag
         icon={<SyncOutlined spin />}
-        color="#60a5fa"
+        color="#818cf8"
         style={{ marginLeft: 5 }}
       >
         {pod.pod} 启动中
