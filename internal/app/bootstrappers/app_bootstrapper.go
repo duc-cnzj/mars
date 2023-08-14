@@ -181,7 +181,7 @@ func projectPodEventListener(app contracts.ApplicationInterface) {
 				}
 				switch obj.Type() {
 				case contracts.Update:
-					if obj.Old().Status.Phase != obj.Current().Status.Phase {
+					if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(obj.Old(), obj.Current()) {
 						mlog.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
 						var ns models.Namespace
 						if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
@@ -205,4 +205,35 @@ func projectPodEventListener(app contracts.ApplicationInterface) {
 			}
 		}
 	}()
+}
+
+type watchContainerStatus struct {
+	Ready bool
+}
+
+func containerStatusChanged(old *v1.Pod, current *v1.Pod) bool {
+	if len(old.Status.ContainerStatuses) != len(current.Status.ContainerStatuses) {
+		return true
+	}
+	var oldMap = map[string]watchContainerStatus{}
+	for _, status := range old.Status.ContainerStatuses {
+		oldMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+	var currentMap = map[string]watchContainerStatus{}
+	for _, status := range current.Status.ContainerStatuses {
+		currentMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+
+	for k, v := range currentMap {
+		if b, ok := oldMap[k]; !(ok && b == v) {
+			mlog.Debugf("ContainerStatus old: %v current: %v", b, v)
+			return true
+		}
+	}
+
+	return false
 }

@@ -391,3 +391,94 @@ func Test_updateCerts(t *testing.T) {
 	manager.EXPECT().GetCerts().Return("name", "key", "crt").Times(1)
 	updateCerts(app)
 }
+
+func Test_containerStatusChanged(t *testing.T) {
+	tests := []struct {
+		old     *corev1.Pod
+		current *corev1.Pod
+		want    bool
+	}{
+		{
+			old: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: false,
+						},
+					},
+				},
+			},
+			current: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: true,
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			old: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{},
+				},
+			},
+			current: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: true,
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			old: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: true,
+						},
+					},
+				},
+			},
+			current: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: true,
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			old: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{},
+				},
+			},
+			current: &corev1.Pod{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			assert.Equal(t, tt.want, containerStatusChanged(tt.old, tt.current))
+		})
+	}
+}
