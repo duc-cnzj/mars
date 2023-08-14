@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	eventsv1 "k8s.io/api/events/v1"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -286,6 +289,20 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 
 var tailLines int64 = 1000
 
+type sortEvents []*eventsv1.Event
+
+func (s sortEvents) Len() int {
+	return len(s)
+}
+
+func (s sortEvents) Less(i, j int) bool {
+	return s[i].ResourceVersion < s[j].ResourceVersion
+}
+
+func (s sortEvents) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
 	podInfo, _ := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
 	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
@@ -295,8 +312,8 @@ func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogR
 	if podInfo.Status.Phase == v1.PodPending {
 		var logs []string
 		ret, _ := app.K8sClient().EventLister.Events(request.Namespace).List(labels.Everything())
+		sort.Sort(sortEvents(ret))
 		for _, event := range ret {
-			fmt.Printf("%#v", event)
 			if event.Regarding.Kind == "Pod" && event.Regarding.Name == request.Pod {
 				logs = append(logs, event.Note)
 			}

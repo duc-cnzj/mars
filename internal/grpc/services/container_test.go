@@ -92,8 +92,9 @@ func TestContainer_ContainerLogWhenPodPending(t *testing.T) {
 	}
 	ev1 := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ev1",
-			Namespace: "duc",
+			Name:            "ev1",
+			Namespace:       "duc",
+			ResourceVersion: "3",
 		},
 		Regarding: v1.ObjectReference{
 			Kind: "Pod",
@@ -103,8 +104,9 @@ func TestContainer_ContainerLogWhenPodPending(t *testing.T) {
 	}
 	ev2 := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ev2",
-			Namespace: "duc",
+			Name:            "ev2",
+			Namespace:       "duc",
+			ResourceVersion: "2",
 		},
 		Regarding: v1.ObjectReference{
 			Kind: "Pod",
@@ -112,11 +114,23 @@ func TestContainer_ContainerLogWhenPodPending(t *testing.T) {
 		},
 		Note: "event note 2",
 	}
+	ev3 := &eventsv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "ev3",
+			Namespace:       "duc",
+			ResourceVersion: "1",
+		},
+		Regarding: v1.ObjectReference{
+			Kind: "Pod",
+			Name: "pod1",
+		},
+		Note: "event note 3",
+	}
 	fk := fake.NewSimpleClientset(pod)
 	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
 		Client:      fk,
 		PodLister:   testutil.NewPodLister(pod),
-		EventLister: testutil.NewEventLister(ev1, ev2),
+		EventLister: testutil.NewEventLister(ev1, ev2, ev3),
 	})
 
 	log, err := new(containerSvc).ContainerLog(context.TODO(), &container.LogRequest{
@@ -139,7 +153,7 @@ func TestContainer_ContainerLogWhenPodPending(t *testing.T) {
 		Namespace:     "duc",
 		PodName:       "pod1",
 		ContainerName: "app",
-		Log:           "event note 1\nevent note 2",
+		Log:           "event note 3\nevent note 2\nevent note 1",
 	}).String(), log.String())
 }
 
