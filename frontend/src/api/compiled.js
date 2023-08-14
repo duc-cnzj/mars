@@ -16651,6 +16651,7 @@ export const types = $root.types = (() => {
          * @property {boolean|null} [is_old] StateContainer is_old
          * @property {boolean|null} [terminating] StateContainer terminating
          * @property {boolean|null} [pending] StateContainer pending
+         * @property {boolean|null} [ready] StateContainer ready
          */
 
         /**
@@ -16717,6 +16718,14 @@ export const types = $root.types = (() => {
         StateContainer.prototype.pending = false;
 
         /**
+         * StateContainer ready.
+         * @member {boolean} ready
+         * @memberof types.StateContainer
+         * @instance
+         */
+        StateContainer.prototype.ready = false;
+
+        /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.
          * @function encode
          * @memberof types.StateContainer
@@ -16740,6 +16749,8 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 5, wireType 0 =*/40).bool(message.terminating);
             if (message.pending != null && Object.hasOwnProperty.call(message, "pending"))
                 writer.uint32(/* id 6, wireType 0 =*/48).bool(message.pending);
+            if (message.ready != null && Object.hasOwnProperty.call(message, "ready"))
+                writer.uint32(/* id 7, wireType 0 =*/56).bool(message.ready);
             return writer;
         };
 
@@ -16783,6 +16794,10 @@ export const types = $root.types = (() => {
                     }
                 case 6: {
                         message.pending = reader.bool();
+                        break;
+                    }
+                case 7: {
+                        message.ready = reader.bool();
                         break;
                     }
                 default:

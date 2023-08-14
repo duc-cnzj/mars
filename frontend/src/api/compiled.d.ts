@@ -7913,6 +7913,9 @@ export namespace types {
 
         /** StateContainer pending */
         pending?: (boolean|null);
+
+        /** StateContainer ready */
+        ready?: (boolean|null);
     }
 
     /** Represents a StateContainer. */
@@ -7941,6 +7944,9 @@ export namespace types {
 
         /** StateContainer pending. */
         public pending: boolean;
+
+        /** StateContainer ready. */
+        public ready: boolean;
 
         /**
          * Encodes the specified StateContainer message. Does not implicitly {@link types.StateContainer.verify|verify} messages.

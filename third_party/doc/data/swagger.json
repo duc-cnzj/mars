@@ -3436,6 +3436,9 @@
         "pod": {
           "type": "string"
         },
+        "ready": {
+          "type": "boolean"
+        },
         "terminating": {
           "type": "boolean"
         }
