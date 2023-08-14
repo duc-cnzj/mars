@@ -3329,6 +3329,7 @@ export const container = $root.container = (() => {
          * @property {string|null} [namespace] LogRequest namespace
          * @property {string|null} [pod] LogRequest pod
          * @property {string|null} [container] LogRequest container
+         * @property {boolean|null} [show_events] LogRequest show_events
          */
 
         /**
@@ -3371,6 +3372,14 @@ export const container = $root.container = (() => {
         LogRequest.prototype.container = "";
 
         /**
+         * LogRequest show_events.
+         * @member {boolean} show_events
+         * @memberof container.LogRequest
+         * @instance
+         */
+        LogRequest.prototype.show_events = false;
+
+        /**
          * Encodes the specified LogRequest message. Does not implicitly {@link container.LogRequest.verify|verify} messages.
          * @function encode
          * @memberof container.LogRequest
@@ -3388,6 +3397,8 @@ export const container = $root.container = (() => {
                 writer.uint32(/* id 2, wireType 2 =*/18).string(message.pod);
             if (message.container != null && Object.hasOwnProperty.call(message, "container"))
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.container);
+            if (message.show_events != null && Object.hasOwnProperty.call(message, "show_events"))
+                writer.uint32(/* id 4, wireType 0 =*/32).bool(message.show_events);
             return writer;
         };
 
@@ -3419,6 +3430,10 @@ export const container = $root.container = (() => {
                     }
                 case 3: {
                         message.container = reader.string();
+                        break;
+                    }
+                case 4: {
+                        message.show_events = reader.bool();
                         break;
                     }
                 default:

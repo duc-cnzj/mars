@@ -202,6 +202,10 @@ func local_request_Container_IsPodExists_0(ctx context.Context, marshaler runtim
 
 }
 
+var (
+	filter_Container_ContainerLog_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0, "pod": 1, "container": 2}, Base: []int{1, 2, 4, 6, 0, 0, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 2, 3, 3, 4, 4}}
+)
+
 func request_Container_ContainerLog_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LogRequest
 	var metadata runtime.ServerMetadata
@@ -241,6 +245,13 @@ func request_Container_ContainerLog_0(ctx context.Context, marshaler runtime.Mar
 	protoReq.Container, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "container", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Container_ContainerLog_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.ContainerLog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -289,10 +300,21 @@ func local_request_Container_ContainerLog_0(ctx context.Context, marshaler runti
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "container", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Container_ContainerLog_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.ContainerLog(ctx, &protoReq)
 	return msg, metadata, err
 
 }
+
+var (
+	filter_Container_StreamContainerLog_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0, "pod": 1, "container": 2}, Base: []int{1, 2, 4, 6, 0, 0, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 2, 3, 3, 4, 4}}
+)
 
 func request_Container_StreamContainerLog_0(ctx context.Context, marshaler runtime.Marshaler, client ContainerClient, req *http.Request, pathParams map[string]string) (Container_StreamContainerLogClient, runtime.ServerMetadata, error) {
 	var protoReq LogRequest
@@ -333,6 +355,13 @@ func request_Container_StreamContainerLog_0(ctx context.Context, marshaler runti
 	protoReq.Container, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "container", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Container_StreamContainerLog_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	stream, err := client.StreamContainerLog(ctx, &protoReq)

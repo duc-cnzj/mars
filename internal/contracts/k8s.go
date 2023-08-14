@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/listers/apps/v1"
 	v1 "k8s.io/client-go/listers/core/v1"
+	eventsv1lister "k8s.io/client-go/listers/events/v1"
 	networkingv1 "k8s.io/client-go/listers/networking/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -82,6 +83,7 @@ type K8sClient struct {
 
 	EventFanOut FanOutInterface[*eventsv1.Event]
 	PodFanOut   FanOutInterface[*corev1.Pod]
+	EventLister eventsv1lister.EventLister
 }
 
 type ExecUrlBuilder interface {

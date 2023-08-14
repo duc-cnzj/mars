@@ -158,7 +158,7 @@ const MyLogUtil: React.FC<{
   };
 }> = ({ namespace, pod, container, onError, freshTime }) => {
   const getUrl = useCallback(() => {
-    return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${freshTime}`;
+    return `${process.env.REACT_APP_BASE_URL}/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/stream_logs?timestamp=${freshTime}&show_events=1`;
   }, [namespace, pod, container, freshTime]);
 
   return (

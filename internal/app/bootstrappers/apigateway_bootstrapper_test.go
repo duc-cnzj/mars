@@ -446,12 +446,14 @@ func Test_exportMarsConfig(t *testing.T) {
 				}
 			]
 `), fmt.Sprintf("\n%s\n", r3.Body.String()))
+	assert.Equal(t, `attachment; filename="mars-config.json"`, r3.Result().Header.Get("Content-Disposition"))
 
 	r4 := httptest.NewRecorder()
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	testutil.AssertAuditLogFiredWithMsg(m, app, "下载配置文件: app")
 	exportMarsConfig(r4, req, map[string]string{"git_project_id": "1"})
 	assert.Equal(t, 200, r4.Code)
+	assert.Equal(t, `attachment; filename="app.json"`, r4.Result().Header.Get("Content-Disposition"))
 }
 
 func Test_exportMarsConfigWithPid(t *testing.T) {

@@ -1546,6 +1546,9 @@ export namespace container {
 
         /** LogRequest container */
         container?: (string|null);
+
+        /** LogRequest show_events */
+        show_events?: (boolean|null);
     }
 
     /** Represents a LogRequest. */
@@ -1565,6 +1568,9 @@ export namespace container {
 
         /** LogRequest container. */
         public container: string;
+
+        /** LogRequest show_events. */
+        public show_events: boolean;
 
         /**
          * Encodes the specified LogRequest message. Does not implicitly {@link container.LogRequest.verify|verify} messages.

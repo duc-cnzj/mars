@@ -432,7 +432,11 @@ func exportMarsConfig(w http.ResponseWriter, r *http.Request, pathParams map[str
 	e.AuditLog(user.Name,
 		types.EventActionType_Download,
 		fmt.Sprintf("下载配置文件: %v", strings.Join(pname, ",")), nil, &e.StringYamlPrettier{Str: jsonString})
-	download(w, "mars-config.json", strings.NewReader(jsonString))
+	fileName := "mars-config.json"
+	if pid != "" && len(pname) == 1 {
+		fileName = pname[0] + ".json"
+	}
+	download(w, fileName, strings.NewReader(jsonString))
 }
 
 type gitProjectList []models.GitProject

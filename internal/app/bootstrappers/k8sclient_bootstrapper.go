@@ -135,6 +135,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 			},
 		},
 	})
+	eventLister := inf.Events().V1().Events().Lister()
 	inf.Start(app.Done())
 	cache.WaitForCacheSync(nil, eventInf.HasSynced, podInf.HasSynced, secretInf.HasSynced)
 
@@ -150,6 +151,7 @@ func (k *K8sClientBootstrapper) Bootstrap(app contracts.ApplicationInterface) er
 		ServiceLister:    svcLister,
 		IngressLister:    ingLister,
 		EventInformer:    eventInf,
+		EventLister:      eventLister,
 		EventFanOut:      eventFanOutObj,
 		PodFanOut:        podFanOutObj,
 	})

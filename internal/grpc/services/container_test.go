@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	eventsv1 "k8s.io/api/events/v1"
+
 	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -71,6 +73,73 @@ func TestContainer_ContainerLog(t *testing.T) {
 		PodName:       "pod1",
 		ContainerName: "app",
 		Log:           "fake logs",
+	}).String(), log.String())
+}
+
+func TestContainer_ContainerLogWhenPodPending(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "duc",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodPending,
+		},
+	}
+	ev1 := &eventsv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ev1",
+			Namespace: "duc",
+		},
+		Regarding: v1.ObjectReference{
+			Kind: "Pod",
+			Name: "pod1",
+		},
+		Note: "event note 1",
+	}
+	ev2 := &eventsv1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ev2",
+			Namespace: "duc",
+		},
+		Regarding: v1.ObjectReference{
+			Kind: "Pod",
+			Name: "pod1",
+		},
+		Note: "event note 2",
+	}
+	fk := fake.NewSimpleClientset(pod)
+	app.EXPECT().K8sClient().AnyTimes().Return(&contracts.K8sClient{
+		Client:      fk,
+		PodLister:   testutil.NewPodLister(pod),
+		EventLister: testutil.NewEventLister(ev1, ev2),
+	})
+
+	log, err := new(containerSvc).ContainerLog(context.TODO(), &container.LogRequest{
+		Namespace:  "duc",
+		Pod:        "pod1",
+		Container:  "app",
+		ShowEvents: false,
+	})
+	assert.Error(t, err)
+	assert.Nil(t, log)
+
+	log, err = new(containerSvc).ContainerLog(context.TODO(), &container.LogRequest{
+		Namespace:  "duc",
+		Pod:        "pod1",
+		Container:  "app",
+		ShowEvents: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, (&container.LogResponse{
+		Namespace:     "duc",
+		PodName:       "pod1",
+		ContainerName: "app",
+		Log:           "event note 1\nevent note 2",
 	}).String(), log.String())
 }
 
@@ -1073,53 +1142,6 @@ func Test_scannerText(t *testing.T) {
 			})
 			assert.Nil(t, err)
 			assert.Equal(t, tt.want, res)
-		})
-	}
-}
-
-func Test_podHasLog(t *testing.T) {
-	var tests = []struct {
-		pod  *v1.Pod
-		want bool
-	}{
-		{
-			pod: &v1.Pod{
-				Status: v1.PodStatus{
-					Phase: v1.PodFailed,
-				},
-			},
-			want: true,
-		},
-		{
-			pod: &v1.Pod{
-				Status: v1.PodStatus{
-					Phase: v1.PodRunning,
-				},
-			},
-			want: true,
-		},
-		{
-			pod: &v1.Pod{
-				Status: v1.PodStatus{
-					Phase: v1.PodPending,
-				},
-			},
-			want: false,
-		},
-		{
-			pod: &v1.Pod{
-				Status: v1.PodStatus{
-					Phase: v1.PodSucceeded,
-				},
-			},
-			want: true,
-		},
-	}
-	for _, test := range tests {
-		tt := test
-		t.Run("", func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.want, podHasLog(tt.pod))
 		})
 	}
 }
