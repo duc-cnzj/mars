@@ -376,30 +376,32 @@ export default class LazyLog extends Component {
   handleUpdate = ({ lines: moreLines, encodedLog }) => {
     this.encodedLog = encodedLog;
     const { scrollToLine, follow, stream, websocket } = this.props;
-    const { lineLimit, count: previousCount, isBottom } = this.state;
-    let offset = 0;
-    let lines = (this.state.lines || List()).concat(moreLines);
-    let count = lines.count();
 
-    if (count > lineLimit) {
-      offset = count - lineLimit;
-      lines = lines.slice(-lineLimit);
-      count = lines.count();
-    }
+    this.setState((prevState) => {
+      const { lineLimit, count: previousCount, isBottom } = prevState;
+      let offset = 0;
+      let lines = (prevState.lines || List()).concat(moreLines);
+      let count = lines.count();
+
+      if (count > lineLimit) {
+        offset = count - lineLimit;
+        lines = lines.slice(-lineLimit);
+        count = lines.count();
+      }
 
       let scrollToIndex = getScrollIndex({
-        follow:  follow && isBottom,
+        follow: follow && isBottom,
         scrollToLine,
         previousCount,
         count,
         offset,
       });
-
-    this.setState({
-      lines,
-      offset,
-      count,
-      scrollToIndex: scrollToIndex,
+      return {
+        lines,
+        offset,
+        count,
+        scrollToIndex: scrollToIndex,
+      };
     });
 
     if (stream || websocket) {
