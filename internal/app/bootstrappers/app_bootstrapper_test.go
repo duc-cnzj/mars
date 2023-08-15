@@ -494,17 +494,16 @@ func Test_lockFunc(t *testing.T) {
 	app := mock.NewMockApplicationInterface(m)
 	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
 	app.EXPECT().CacheLock().Return(lock).AnyTimes()
-	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).Times(1)
 	var num int64
 	wg := sync.WaitGroup{}
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			lockFunc(app, "test", func(app contracts.ApplicationInterface) {
+			lockFunc("test", func(app contracts.ApplicationInterface) {
 				time.Sleep(300 * time.Millisecond)
 				atomic.AddInt64(&num, 1)
-			}, 10, 2)
+			})(app)
 		}()
 	}
 	wg.Wait()
@@ -519,13 +518,77 @@ func Test_lockFuncReleaseFn(t *testing.T) {
 	num := 0
 	locker.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Return(func() { num++ }, true).Times(2)
 	app.EXPECT().CacheLock().Return(locker).AnyTimes()
-	tm := &trueExtractValueMatcher{}
-	app.EXPECT().RegisterAfterShutdownFunc(tm).Times(2)
-	lockFunc(app, "test", func(app contracts.ApplicationInterface) {}, 10, 2)
-	assert.NotNil(t, tm.v)
-	tm.v.(contracts.Callback)(app)
+	lockFunc("test", func(app contracts.ApplicationInterface) {})(app)
 	assert.Equal(t, 1, num)
 
-	lockFunc(app, "test", func(app contracts.ApplicationInterface) {}, 10, 2)
+	lockFunc("test", func(app contracts.ApplicationInterface) {})(app)
 	assert.Equal(t, 2, num)
+}
+
+func Test_blockLockFunc(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ch := make(chan struct{})
+	app := mock.NewMockApplicationInterface(m)
+	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
+	app.EXPECT().CacheLock().Return(lock).AnyTimes()
+	num := 0
+	blockLockFunc(app, "test", func(releaseFn func()) {
+		defer releaseFn()
+		num++
+	}, 1*time.Second, 100, 88, ch)
+	assert.Equal(t, 1, num)
+}
+
+func Test_blockLockFunc2(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	ch := make(chan struct{})
+	app := mock.NewMockApplicationInterface(m)
+	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
+	app.EXPECT().CacheLock().Return(lock).AnyTimes()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		close(ch)
+	}()
+	var num int64
+	wg := sync.WaitGroup{}
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			blockLockFunc(app, "test", func(releaseFn func()) {
+				defer releaseFn()
+				time.Sleep(600 * time.Millisecond)
+				atomic.AddInt64(&num, 1)
+			}, 100*time.Millisecond, 100, 88, ch)
+		}()
+	}
+	wg.Wait()
+	assert.Equal(t, int64(2), atomic.LoadInt64(&num))
+}
+
+func Test_blockForever(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
+	app.EXPECT().CacheLock().Return(lock).AnyTimes()
+	tm := &trueExtractValueMatcher{}
+	app.EXPECT().RegisterAfterShutdownFunc(tm).Times(1)
+	ch := make(chan struct{})
+	app.EXPECT().Done().Return(ch)
+	var num int64
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	blockForFuncForever("aaa", func(app contracts.ApplicationInterface) {
+		defer wg.Done()
+		atomic.AddInt64(&num, 1)
+	})(app)
+	wg.Wait()
+	assert.Equal(t, int64(1), atomic.LoadInt64(&num))
+	assert.False(t, lock.Acquire("aaa", 11))
+	tm.v.(contracts.Callback)(app)
+	assert.True(t, lock.Acquire("aaa", 11))
 }

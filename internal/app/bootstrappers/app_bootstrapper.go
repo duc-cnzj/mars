@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -36,33 +36,57 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetGitServer()
 	plugins.GetDomainManager()
 
-	lockFunc(app, "projectPodEventListener", func(app contracts.ApplicationInterface) {
-		app.BeforeServerRunHooks(projectPodEventListener)
-	}, 600, 550)
-	lockFunc(app, "updateCerts", func(app contracts.ApplicationInterface) {
-		app.BeforeServerRunHooks(updateCerts)
-	}, 600, 550)
-	lockFunc(app, "syncImagePullSecrets", func(app contracts.ApplicationInterface) {
-		app.BeforeServerRunHooks(syncImagePullSecrets)
-	}, 600, 550)
+	app.BeforeServerRunHooks(blockForFuncForever("projectPodEventListener", projectPodEventListener))
+	app.BeforeServerRunHooks(lockFunc("updateCerts", updateCerts))
+	app.BeforeServerRunHooks(lockFunc("syncImagePullSecrets", syncImagePullSecrets))
 
 	return nil
 }
 
-func lockFunc(app contracts.ApplicationInterface, key string, callback contracts.Callback, seconds, renewalSeconds int64) {
-	var once sync.Once
-	releaseFn, acquired := app.CacheLock().RenewalAcquire(key, seconds, renewalSeconds)
-	if !acquired {
-		return
+func blockForFuncForever(title string, cb contracts.Callback) func(app contracts.ApplicationInterface) {
+	return func(app contracts.ApplicationInterface) {
+		go func() {
+			blockLockFunc(app, title, func(releaseFn func()) {
+				app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
+					releaseFn()
+				})
+				cb(app)
+			}, 5*time.Second, 180, 150, app.Done())
+		}()
 	}
-	fn := func() {
-		once.Do(releaseFn)
+}
+
+func lockFunc(key string, callback contracts.Callback) contracts.Callback {
+	return func(app contracts.ApplicationInterface) {
+		releaseFn, acquired := app.CacheLock().RenewalAcquire(key, 180, 150)
+		if !acquired {
+			return
+		}
+		defer releaseFn()
+		callback(app)
 	}
-	defer fn()
-	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
-		fn()
-	})
-	callback(app)
+}
+
+func blockLockFunc(app contracts.ApplicationInterface, key string, fn func(releaseFn func()), tickerDuration time.Duration, seconds, renewalSeconds int64, done <-chan struct{}) {
+	ticker := time.NewTicker(tickerDuration)
+	defer ticker.Stop()
+	var (
+		acquired  bool
+		releaseFn func()
+	)
+Loop:
+	for {
+		select {
+		case <-ticker.C:
+			releaseFn, acquired = app.CacheLock().RenewalAcquire(key, seconds, renewalSeconds)
+			if acquired {
+				break Loop
+			}
+		case <-done:
+			return
+		}
+	}
+	fn(releaseFn)
 }
 
 func updateCerts(app contracts.ApplicationInterface) {
