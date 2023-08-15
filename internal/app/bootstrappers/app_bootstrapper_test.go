@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/duc-cnzj/mars/v4/internal/cachelock"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -47,6 +50,8 @@ func TestAppBootstrapper_Bootstrap(t *testing.T) {
 		DomainManagerPlugin: config.Plugin{Name: "test_domain"},
 		WsSenderPlugin:      config.Plugin{Name: "test_wssender"},
 	}).AnyTimes()
+	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
+	app.EXPECT().CacheLock().Return(lock).AnyTimes()
 
 	gits := mock.NewMockGitServer(m)
 	app.EXPECT().GetPluginByName("test_git_server").Return(gits).AnyTimes()
@@ -481,4 +486,46 @@ func Test_containerStatusChanged(t *testing.T) {
 			assert.Equal(t, tt.want, containerStatusChanged(tt.old, tt.current))
 		})
 	}
+}
+
+func Test_lockFunc(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	lock := cachelock.NewMemoryLock([2]int{1, 2}, cachelock.NewMemStore())
+	app.EXPECT().CacheLock().Return(lock).AnyTimes()
+	app.EXPECT().RegisterAfterShutdownFunc(gomock.Any()).Times(1)
+	var num int64
+	wg := sync.WaitGroup{}
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			lockFunc(app, "test", func(app contracts.ApplicationInterface) {
+				time.Sleep(300 * time.Millisecond)
+				atomic.AddInt64(&num, 1)
+			}, 10, 2)
+		}()
+	}
+	wg.Wait()
+	assert.Equal(t, int64(1), atomic.LoadInt64(&num))
+}
+
+func Test_lockFuncReleaseFn(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := mock.NewMockApplicationInterface(m)
+	locker := mock.NewMockLocker(m)
+	num := 0
+	locker.EXPECT().RenewalAcquire(gomock.Any(), gomock.Any(), gomock.Any()).Return(func() { num++ }, true).Times(2)
+	app.EXPECT().CacheLock().Return(locker).AnyTimes()
+	tm := &trueExtractValueMatcher{}
+	app.EXPECT().RegisterAfterShutdownFunc(tm).Times(2)
+	lockFunc(app, "test", func(app contracts.ApplicationInterface) {}, 10, 2)
+	assert.NotNil(t, tm.v)
+	tm.v.(contracts.Callback)(app)
+	assert.Equal(t, 1, num)
+
+	lockFunc(app, "test", func(app contracts.ApplicationInterface) {}, 10, 2)
+	assert.Equal(t, 2, num)
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -35,11 +36,33 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetGitServer()
 	plugins.GetDomainManager()
 
-	app.BeforeServerRunHooks(projectPodEventListener)
-	app.BeforeServerRunHooks(updateCerts)
-	app.BeforeServerRunHooks(syncImagePullSecrets)
+	lockFunc(app, "projectPodEventListener", func(app contracts.ApplicationInterface) {
+		app.BeforeServerRunHooks(projectPodEventListener)
+	}, 600, 550)
+	lockFunc(app, "updateCerts", func(app contracts.ApplicationInterface) {
+		app.BeforeServerRunHooks(updateCerts)
+	}, 600, 550)
+	lockFunc(app, "syncImagePullSecrets", func(app contracts.ApplicationInterface) {
+		app.BeforeServerRunHooks(syncImagePullSecrets)
+	}, 600, 550)
 
 	return nil
+}
+
+func lockFunc(app contracts.ApplicationInterface, key string, callback contracts.Callback, seconds, renewalSeconds int64) {
+	var once sync.Once
+	releaseFn, acquired := app.CacheLock().RenewalAcquire(key, seconds, renewalSeconds)
+	if !acquired {
+		return
+	}
+	fn := func() {
+		once.Do(releaseFn)
+	}
+	defer fn()
+	app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
+		fn()
+	})
+	callback(app)
 }
 
 func updateCerts(app contracts.ApplicationInterface) {

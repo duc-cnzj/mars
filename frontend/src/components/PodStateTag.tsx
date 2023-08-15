@@ -36,7 +36,7 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
         color="#67e8f9"
         style={{ marginLeft: 5 }}
       >
-        {pod.pod} 未就绪
+        {pod.pod} 启动中
       </Tag>
     );
   }
@@ -48,7 +48,7 @@ const PodStateTag: React.FC<{ pod: pb.types.StateContainer }> = ({ pod }) => {
         color="#93c5fd"
         style={{ marginLeft: 5 }}
       >
-        {pod.pod} 启动中
+        {pod.pod} 未就绪
       </Tag>
     );
   }
