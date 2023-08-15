@@ -3,6 +3,9 @@ package testutil
 import (
 	"testing"
 
+	eventsv1 "k8s.io/api/events/v1"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
@@ -201,4 +204,28 @@ func TestAssertAuditLogFiredWithLog(t *testing.T) {
 	a := MockApp(m)
 	AssertAuditLogFiredWithLog(m, a, events.NewEventAuditLog("duc", 1, "hello"))
 	a.EventDispatcher().Dispatch(events.EventAuditLog, events.NewEventAuditLog("duc", 1, "hello"))
+}
+
+func TestNewEventLister(t *testing.T) {
+	lister := NewEventLister(
+		&eventsv1.Event{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ev1",
+				Namespace: "duc",
+			},
+		},
+		&eventsv1.Event{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ev2",
+				Namespace: "duc",
+			},
+		},
+	)
+
+	_, err := lister.Events("duc").Get("ev1")
+	assert.Nil(t, err)
+	_, err = lister.Events("duc").Get("ev2")
+	assert.Nil(t, err)
+	ret, _ := lister.Events("duc").List(labels.Everything())
+	assert.Len(t, ret, 2)
 }

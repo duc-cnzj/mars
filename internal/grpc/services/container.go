@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	eventsv1 "k8s.io/api/events/v1"
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -18,6 +21,7 @@ import (
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	clientgoexec "k8s.io/client-go/util/exec"
 
 	"github.com/duc-cnzj/mars-client/v4/container"
@@ -283,16 +287,43 @@ func (c *containerSvc) StreamCopyToPod(server container.Container_StreamCopyToPo
 	}
 }
 
-func podHasLog(pod *v1.Pod) bool {
-	return pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed
-}
-
 var tailLines int64 = 1000
 
+type sortEvents []*eventsv1.Event
+
+func (s sortEvents) Len() int {
+	return len(s)
+}
+
+func (s sortEvents) Less(i, j int) bool {
+	return s[i].ResourceVersion < s[j].ResourceVersion
+}
+
+func (s sortEvents) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (c *containerSvc) ContainerLog(ctx context.Context, request *container.LogRequest) (*container.LogResponse, error) {
-	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
-	if err != nil || !podHasLog(podInfo) {
+	podInfo, _ := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
+	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
 		return nil, status.Error(codes.NotFound, "未找到日志")
+	}
+
+	if podInfo.Status.Phase == v1.PodPending {
+		var logs []string
+		ret, _ := app.K8sClient().EventLister.Events(request.Namespace).List(labels.Everything())
+		sort.Sort(sortEvents(ret))
+		for _, event := range ret {
+			if event.Regarding.Kind == "Pod" && event.Regarding.Name == request.Pod {
+				logs = append(logs, event.Note)
+			}
+		}
+		return &container.LogResponse{
+			Namespace:     request.Namespace,
+			PodName:       request.Pod,
+			ContainerName: request.Container,
+			Log:           strings.Join(logs, "\n"),
+		}, nil
 	}
 
 	var opt = &v1.PodLogOptions{
@@ -344,11 +375,12 @@ func scannerText(text string, fn func(s string)) error {
 }
 
 func (c *containerSvc) StreamContainerLog(request *container.LogRequest, server container.Container_StreamContainerLogServer) error {
-	podInfo, err := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
-	if err != nil || !podHasLog(podInfo) {
+	podInfo, _ := app.K8sClient().PodLister.Pods(request.Namespace).Get(request.Pod)
+	if podInfo == nil || (!request.ShowEvents && podInfo != nil && podInfo.Status.Phase == v1.PodPending) {
 		return status.Error(codes.NotFound, "未找到日志")
 	}
-	if podInfo.Status.Phase == v1.PodSucceeded || podInfo.Status.Phase == v1.PodFailed {
+
+	if podInfo.Status.Phase == v1.PodSucceeded || podInfo.Status.Phase == v1.PodFailed || podInfo.Status.Phase == v1.PodPending {
 		log, err := c.ContainerLog(server.Context(), request)
 		if err != nil {
 			return err

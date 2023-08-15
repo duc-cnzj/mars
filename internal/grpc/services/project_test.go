@@ -70,6 +70,12 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 		},
 		Status: v1.PodStatus{
 			Phase: v1.PodRunning,
+			ContainerStatuses: []v1.ContainerStatus{
+				{
+					Name:  "c5",
+					Ready: true,
+				},
+			},
 		},
 	}
 	pod2 := &v1.Pod{
@@ -152,8 +158,10 @@ func TestProjectSvc_AllContainers(t *testing.T) {
 	assert.Len(t, containers.Items, 2)
 	assert.Equal(t, "pod1", containers.Items[0].Pod)
 	assert.Equal(t, "c5", containers.Items[0].Container)
+	assert.Equal(t, true, containers.Items[0].Ready)
 	assert.Equal(t, "pod4", containers.Items[1].Pod)
 	assert.Equal(t, "c4-2", containers.Items[1].Container)
+	assert.Equal(t, false, containers.Items[1].Ready)
 	_, err = new(projectSvc).AllContainers(context.TODO(), &project.AllContainersRequest{ProjectId: int64(99999)})
 	assert.Equal(t, "record not found", err.Error())
 }
@@ -808,4 +816,67 @@ func TestProjectSvc_Version(t *testing.T) {
 	version, err = (&projectSvc{}).Version(context.TODO(), &project.VersionRequest{ProjectId: int64(p.ID)})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), version.Version)
+}
+
+func Test_isContainerReady(t *testing.T) {
+	var tests = []struct {
+		pod           *v1.Pod
+		containerName string
+		ready         bool
+	}{
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: false,
+						},
+					},
+				},
+			},
+			containerName: "app",
+			ready:         false,
+		},
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: false,
+						},
+						{
+							Name:  "bpp",
+							Ready: true,
+						},
+					},
+				},
+			},
+			containerName: "bpp",
+			ready:         true,
+		},
+		{
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "app",
+							Ready: false,
+						},
+					},
+				},
+			},
+			containerName: "bpp",
+			ready:         false,
+		},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.ready, isContainerReady(tt.pod, tt.containerName))
+		})
+	}
 }

@@ -78,6 +78,7 @@ message LogRequest {
   string namespace = 1 [(validate.rules).string.min_bytes = 1];
   string pod = 2 [(validate.rules).string.min_bytes = 1];
   string container = 3 [(validate.rules).string.min_bytes = 1];
+  bool show_events = 4;
 }
 
 message LogResponse {

@@ -346,6 +346,11 @@
             "name": "container",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "name": "show_events",
+            "in": "query"
           }
         ],
         "responses": {
@@ -389,6 +394,11 @@
             "name": "container",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "name": "show_events",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3425,6 +3435,9 @@
         },
         "pod": {
           "type": "string"
+        },
+        "ready": {
+          "type": "boolean"
         },
         "terminating": {
           "type": "boolean"

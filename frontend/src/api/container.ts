@@ -7,6 +7,6 @@ export function containerLog({
   container,
 }: pb.container.LogRequest) {
   return ajax.get<pb.container.LogResponse>(
-    `/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/logs`
+    `/api/containers/namespaces/${namespace}/pods/${pod}/containers/${container}/logs?show_events=1`
   );
 }

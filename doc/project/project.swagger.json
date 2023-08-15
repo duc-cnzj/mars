@@ -607,6 +607,9 @@
         },
         "pending": {
           "type": "boolean"
+        },
+        "ready": {
+          "type": "boolean"
         }
       }
     },

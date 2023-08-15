@@ -19,6 +19,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/scopes"
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
+	v1 "k8s.io/api/core/v1"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -244,12 +245,22 @@ func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllCont
 					IsOld:       item.IsOld,
 					Terminating: item.Terminating,
 					Pending:     item.Pending,
+					Ready:       isContainerReady(item.Pod, c.Name),
 				},
 			)
 		}
 	}
 
 	return &project.AllContainersResponse{Items: containerList}, nil
+}
+
+func isContainerReady(pod *v1.Pod, containerName string) bool {
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if containerStatus.Name == containerName {
+			return containerStatus.Ready
+		}
+	}
+	return false
 }
 
 func (p *projectSvc) HostVariables(ctx context.Context, req *project.HostVariablesRequest) (*project.HostVariablesResponse, error) {

@@ -321,6 +321,7 @@ const TabShell: React.FC<{
       ) {
         groups.push(
           <Allotment
+            key={groups.length + 1}
             vertical={lastType === "vertical"}
             onDragEnd={resizeShellWindow}
           >
@@ -339,6 +340,7 @@ const TabShell: React.FC<{
       } else {
         groups.push(
           <Allotment
+            key={groups.length + 1}
             vertical={lastType === "vertical"}
             onDragEnd={resizeShellWindow}
           >

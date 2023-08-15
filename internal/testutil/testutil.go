@@ -10,9 +10,11 @@ import (
 	"gorm.io/gorm"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	appsv1lister "k8s.io/client-go/listers/apps/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
+	eventsv1lister "k8s.io/client-go/listers/events/v1"
 	networkingv1lister "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -42,6 +44,14 @@ func NewPodLister(pods ...*corev1.Pod) corev1lister.PodLister {
 		idxer.Add(po)
 	}
 	return corev1lister.NewPodLister(idxer)
+}
+
+func NewEventLister(events ...*eventsv1.Event) eventsv1lister.EventLister {
+	idxer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	for _, po := range events {
+		idxer.Add(po)
+	}
+	return eventsv1lister.NewEventLister(idxer)
 }
 
 func NewRsLister(rs ...*appsv1.ReplicaSet) appsv1lister.ReplicaSetLister {

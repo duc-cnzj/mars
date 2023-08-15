@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -35,11 +36,57 @@ func (a *AppBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 	plugins.GetGitServer()
 	plugins.GetDomainManager()
 
-	app.BeforeServerRunHooks(projectPodEventListener)
-	app.BeforeServerRunHooks(updateCerts)
-	app.BeforeServerRunHooks(syncImagePullSecrets)
+	app.BeforeServerRunHooks(blockForFuncForever("projectPodEventListener", projectPodEventListener))
+	app.BeforeServerRunHooks(lockFunc("updateCerts", updateCerts))
+	app.BeforeServerRunHooks(lockFunc("syncImagePullSecrets", syncImagePullSecrets))
 
 	return nil
+}
+
+func blockForFuncForever(title string, cb contracts.Callback) func(app contracts.ApplicationInterface) {
+	return func(app contracts.ApplicationInterface) {
+		go func() {
+			blockLockFunc(app, title, func(releaseFn func()) {
+				app.RegisterAfterShutdownFunc(func(app contracts.ApplicationInterface) {
+					releaseFn()
+				})
+				cb(app)
+			}, 5*time.Second, 180, 150, app.Done())
+		}()
+	}
+}
+
+func lockFunc(key string, callback contracts.Callback) contracts.Callback {
+	return func(app contracts.ApplicationInterface) {
+		releaseFn, acquired := app.CacheLock().RenewalAcquire(key, 180, 150)
+		if !acquired {
+			return
+		}
+		defer releaseFn()
+		callback(app)
+	}
+}
+
+func blockLockFunc(app contracts.ApplicationInterface, key string, fn func(releaseFn func()), tickerDuration time.Duration, seconds, renewalSeconds int64, done <-chan struct{}) {
+	ticker := time.NewTicker(tickerDuration)
+	defer ticker.Stop()
+	var (
+		acquired  bool
+		releaseFn func()
+	)
+Loop:
+	for {
+		select {
+		case <-ticker.C:
+			releaseFn, acquired = app.CacheLock().RenewalAcquire(key, seconds, renewalSeconds)
+			if acquired {
+				break Loop
+			}
+		case <-done:
+			return
+		}
+	}
+	fn(releaseFn)
 }
 
 func updateCerts(app contracts.ApplicationInterface) {
@@ -181,7 +228,7 @@ func projectPodEventListener(app contracts.ApplicationInterface) {
 				}
 				switch obj.Type() {
 				case contracts.Update:
-					if obj.Old().Status.Phase != obj.Current().Status.Phase {
+					if obj.Old().Status.Phase != obj.Current().Status.Phase || containerStatusChanged(obj.Old(), obj.Current()) {
 						mlog.Debugf("old: '%s' new '%s'", obj.Old().Status.Phase, obj.Current().Status.Phase)
 						var ns models.Namespace
 						if app.DB().Where("`name` = ?", utils.GetMarsNamespace(obj.Current().Namespace)).First(&ns).Error == nil {
@@ -205,4 +252,35 @@ func projectPodEventListener(app contracts.ApplicationInterface) {
 			}
 		}
 	}()
+}
+
+type watchContainerStatus struct {
+	Ready bool
+}
+
+func containerStatusChanged(old *v1.Pod, current *v1.Pod) bool {
+	if len(old.Status.ContainerStatuses) != len(current.Status.ContainerStatuses) {
+		return true
+	}
+	var oldMap = map[string]watchContainerStatus{}
+	for _, status := range old.Status.ContainerStatuses {
+		oldMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+	var currentMap = map[string]watchContainerStatus{}
+	for _, status := range current.Status.ContainerStatuses {
+		currentMap[status.Name] = watchContainerStatus{
+			Ready: status.Ready,
+		}
+	}
+
+	for k, v := range currentMap {
+		if b, ok := oldMap[k]; !(ok && b == v) {
+			mlog.Debugf("ContainerStatus old: %v current: %v", b, v)
+			return true
+		}
+	}
+
+	return false
 }

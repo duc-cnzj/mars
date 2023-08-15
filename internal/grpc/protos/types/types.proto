@@ -40,6 +40,7 @@ message StateContainer {
   bool is_old = 4;
   bool terminating = 5;
   bool pending = 6;
+  bool ready = 7;
 }
 
 message ExtraValue {
