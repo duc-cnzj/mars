@@ -3,7 +3,7 @@ import pb from "../api/compiled";
 import { version as versionApi } from "../api/version";
 import dayjs from "dayjs";
 import { Button, Popover } from "antd";
-import { CoffeeOutlined, GithubOutlined } from "@ant-design/icons";
+import { GithubOutlined } from "@ant-design/icons";
 import Coffee from "./Coffee";
 
 require("dayjs/locale/zh-cn");

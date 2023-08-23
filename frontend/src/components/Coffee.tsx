@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import Alipay from "../assets/alipay.jpeg";
+import Alipay from "../assets/alipay.jpg";
 import WechatPay from "../assets/wechatpay.jpg";
 import styled from "@emotion/styled";
 import theme from "../styles/theme";
