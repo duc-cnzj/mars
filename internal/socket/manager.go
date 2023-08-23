@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v3"
@@ -755,7 +756,8 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 
 func (u userConfig) PrettyYaml() string {
 	sort.Sort(sortableExtraItem(u.ExtraValues))
-	out, _ := yaml.Marshal(&u)
+	// 这里想用 LiteralStyle, 不然前端显示的时候是一坨
+	out, _ := goyaml.MarshalWithOptions(&u, goyaml.UseLiteralStyleIfMultiline(true), goyaml.Indent(2), goyaml.IndentSequence(true))
 	return string(out)
 }
 

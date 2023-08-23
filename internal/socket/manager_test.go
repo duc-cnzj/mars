@@ -958,13 +958,13 @@ atomic: false
 web_url: weburl2
 title: title2
 extra_values:
-    - path: app->config
-      value: xxx
+  - path: app->config
+    value: xxx
 final_extra_values: |
-    {}
+  {}
 env_values:
-    var-a: aaa
-    var-b: bbb
+  var-a: aaa
+  var-b: bbb
 `, adlog.Old)
 	assert.Equal(t,
 		`config: ""
@@ -974,13 +974,13 @@ atomic: false
 web_url: url
 title: title
 extra_values:
-    - path: app->config
-      value: xxx
+  - path: app->config
+    value: xxx
 final_extra_values: |
-    {}
+  {}
 env_values:
-    var-a: aaa
-    var-b: bbb
+  var-a: aaa
+  var-b: bbb
 `, adlog.New)
 }
 
@@ -1587,6 +1587,10 @@ func Test_toUpdatesMap(t *testing.T) {
 
 func Test_userConfig_PrettyYaml(t *testing.T) {
 	res := userConfig{
+		Config: `name: duc
+age: 18  
+realAge: 28
+`,
 		ExtraValues: []*types.ExtraValue{
 			{
 				Path:  "a",
@@ -1602,19 +1606,19 @@ func Test_userConfig_PrettyYaml(t *testing.T) {
 			},
 		},
 	}.PrettyYaml()
-	assert.Equal(t, `config: ""
+	assert.Equal(t, `config: |
+  name: duc
+  age: 18  
+  realAge: 28
 branch: ""
 commit: ""
 atomic: false
 web_url: ""
 title: ""
 extra_values:
-    - path: a
-      value: ""
-    - path: b
-      value: ""
-    - path: c
-      value: ""
+  - path: a
+  - path: b
+  - path: c
 final_extra_values: ""
 env_values: {}
 `, res)

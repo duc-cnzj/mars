@@ -13,7 +13,6 @@ import { jsonParseLinter } from "@codemirror/lang-json";
 import { linter } from "@codemirror/lint";
 import { omitEqual } from "../utils/obj";
 import parser from "js-yaml";
-import { parseDocument } from "yaml";
 import { Diagnostic } from "@codemirror/lint";
 
 const yamlLinter = linter((view: EditorView): Diagnostic[] => {
@@ -79,19 +78,6 @@ export const MyCodeMirror: React.FC<{
         style={{ height: "100%" }}
         value={value}
         onChange={onChange}
-        onBlur={() => {
-          try {
-            if (mode === "yaml" && !!String(value).trim()) {
-              const data = parseDocument(String(value));
-              console.log(data.errors);
-              if (data.errors.length === 0) {
-                onChange?.(data.toString({ lineWidth: 200 }));
-              }
-            }
-          } catch (e) {
-            console.log(e);
-          }
-        }}
         theme={dracula}
         basicSetup={{
           lineNumbers: true,
