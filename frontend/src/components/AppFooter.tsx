@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import { Button, Popover } from "antd";
 import { CoffeeOutlined, GithubOutlined } from "@ant-design/icons";
 import Coffee from "./Coffee";
-import Icon from "./IconFont";
 
 require("dayjs/locale/zh-cn");
 
@@ -19,7 +18,14 @@ const AppFooter: React.FC = () => {
   return (
     <div className="copyright">
       <div style={{ fontSize: 14 }}>created by duc@2021.</div>
-      <div style={{ fontSize: 12 }}>
+      <div
+        style={{
+          fontSize: 12,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         version: {version?.version}, build at{" "}
         {dayjs(version?.build_date).format("YYYY-MM-DD HH:mm:ss")}
         <Button
@@ -28,12 +34,18 @@ const AppFooter: React.FC = () => {
           href={version?.git_repo}
           type="link"
         ></Button>
-        <Popover content={<Coffee />} trigger="click">
-          {/* <Icon name="yuanbao" /> */}
-          {/* <svg className="icon" aria-hidden="true">
-            <use xlinkHref="#icon-yuanbao"></use>
-          </svg> */}
-          {/* <CoffeeOutlined style={{ fontSize: 16, color: "#6f4e37" }} /> */}
+        <Popover
+          content={<Coffee />}
+          overlayInnerStyle={{ padding: 0, margin: 0 }}
+          trigger="click"
+        >
+          <svg
+            style={{ width: 18, height: 18, cursor: "pointer" }}
+            className="icon"
+            aria-hidden="true"
+          >
+            <use xlinkHref="#icon-dashang"></use>
+          </svg>
         </Popover>
       </div>
     </div>
