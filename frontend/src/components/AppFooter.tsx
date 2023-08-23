@@ -2,8 +2,10 @@ import React, { memo, useEffect, useState } from "react";
 import pb from "../api/compiled";
 import { version as versionApi } from "../api/version";
 import dayjs from "dayjs";
-import { Button } from "antd";
-import { GithubOutlined } from "@ant-design/icons";
+import { Button, Popover } from "antd";
+import { CoffeeOutlined, GithubOutlined } from "@ant-design/icons";
+import Coffee from "./Coffee";
+import Icon from "./IconFont";
 
 require("dayjs/locale/zh-cn");
 
@@ -26,6 +28,13 @@ const AppFooter: React.FC = () => {
           href={version?.git_repo}
           type="link"
         ></Button>
+        <Popover content={<Coffee />} trigger="click">
+          {/* <Icon name="yuanbao" /> */}
+          {/* <svg className="icon" aria-hidden="true">
+            <use xlinkHref="#icon-yuanbao"></use>
+          </svg> */}
+          {/* <CoffeeOutlined style={{ fontSize: 16, color: "#6f4e37" }} /> */}
+        </Popover>
       </div>
     </div>
   );
