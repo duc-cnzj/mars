@@ -1201,7 +1201,7 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 
 	v.values[VarBranch] = pipelineBranch
 	v.values[VarCommit] = pipelineCommit
-	v.values[VarPipeline] = pipelineID
+	v.values[VarPipeline] = fmt.Sprintf("%d", pipelineID)
 
 	// ingress
 	v.values[VarClusterIssuer] = plugins.GetDomainManager().GetClusterIssuer()

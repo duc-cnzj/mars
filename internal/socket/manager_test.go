@@ -1380,7 +1380,7 @@ VarImagePullSecretsNoName: [a, b, c, ]
 		job.valuesYaml)
 	assert.Equal(t, "dev", job.vars[VarBranch])
 	assert.Equal(t, "short_id", job.vars[VarCommit])
-	assert.Equal(t, int64(9999), job.vars[VarPipeline])
+	assert.Equal(t, "9999", job.vars[VarPipeline])
 	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
 	assert.Equal(t, "[a, b, c, ]", job.vars[VarImagePullSecretsNoName])
 
@@ -1447,7 +1447,7 @@ VarImagePullSecrets: [{name: a}, {name: b}, {name: c}, ]
 		job.valuesYaml)
 	assert.Equal(t, "dev", job.vars[VarBranch])
 	assert.Equal(t, "short_id", job.vars[VarCommit])
-	assert.Equal(t, int64(0), job.vars[VarPipeline])
+	assert.Equal(t, "0", job.vars[VarPipeline])
 	assert.Equal(t, "[{name: a}, {name: b}, {name: c}, ]", job.vars[VarImagePullSecrets])
 }
 
