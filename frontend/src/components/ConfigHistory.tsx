@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState } from "react";
 import { Popover, Button, Collapse, Tooltip, Spin } from "antd";
-import { HistoryOutlined } from "@ant-design/icons";
+import { CloseOutlined, HistoryOutlined } from "@ant-design/icons";
 import { changelogs } from "../api/changelog";
 import pb from "../api/compiled";
 import DiffViewer from "./DiffViewer";
@@ -18,7 +18,6 @@ const ConfigHistory: React.FC<{
     <Popover
       placement="right"
       open={visible}
-      onOpenChange={(v) => setVisible(v)}
       content={
         <Content
           onDataChange={(s) => {
@@ -32,10 +31,27 @@ const ConfigHistory: React.FC<{
         />
       }
       trigger="click"
-      title="历史修改记录"
+      title={
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>历史修改记录</span>{" "}
+          <Button
+            size="small"
+            type="link"
+            onClick={() => setVisible(false)}
+            icon={<CloseOutlined />}
+          ></Button>
+        </div>
+      }
     >
       <Button
         size="small"
+        onClick={() => setVisible((v) => !v)}
         style={{ fontSize: 12 }}
         icon={<HistoryOutlined />}
       />

@@ -145,7 +145,7 @@ const ItemDetailModal: React.FC<{
               alignItems: "center",
             }}
           >
-            <Spin tip="loading..." spinning={true} size="large" />
+            <Spin spinning={true} size="large" />
           </div>
         )}
       </DraggableModal>
