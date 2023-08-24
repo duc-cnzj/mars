@@ -7,8 +7,9 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/tidwall/gjson"
 
+	goyaml "github.com/goccy/go-yaml"
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v3"
 )
 
@@ -62,4 +63,9 @@ func YamlDeepSetKey(field string, data any) ([]byte, error) {
 	}
 
 	return yaml.Marshal(deepSet(field, data))
+}
+
+// PrettyMarshal 这里想用 LiteralStyle, 不然前端显示的时候是一坨
+func PrettyMarshal(v any) ([]byte, error) {
+	return goyaml.MarshalWithOptions(v, goyaml.UseLiteralStyleIfMultiline(true), goyaml.Indent(2), goyaml.IndentSequence(true))
 }

@@ -154,3 +154,21 @@ func Test_deepGet(t *testing.T) {
 		})
 	}
 }
+
+func TestPrettyMarshal(t *testing.T) {
+	v := struct {
+		Value string
+	}{
+		Value: `name: duc
+age: 18  
+content: x
+`,
+	}
+	marshal, _ := PrettyMarshal(&v)
+	assert.Equal(t,
+		`value: |
+  name: duc
+  age: 18  
+  content: x
+`, string(marshal))
+}

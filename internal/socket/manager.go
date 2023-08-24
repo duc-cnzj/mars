@@ -17,7 +17,6 @@ import (
 	"text/template"
 	"time"
 
-	goyaml "github.com/goccy/go-yaml"
 	"github.com/gosimple/slug"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v3"
@@ -426,7 +425,8 @@ func (j *jobRunner) Run() contracts.Job {
 			})
 		} else {
 			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
-			j.project.OverrideValues, _ = coalesceValues.YAML()
+			marshal, _ := utils.PrettyMarshal(&coalesceValues)
+			j.project.OverrideValues = string(marshal)
 
 			j.manifests = utils.SplitManifests(result.Manifest)
 			j.project.Manifest = result.Manifest
@@ -756,8 +756,8 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 
 func (u userConfig) PrettyYaml() string {
 	sort.Sort(sortableExtraItem(u.ExtraValues))
-	// 这里想用 LiteralStyle, 不然前端显示的时候是一坨
-	out, _ := goyaml.MarshalWithOptions(&u, goyaml.UseLiteralStyleIfMultiline(true), goyaml.Indent(2), goyaml.IndentSequence(true))
+	out, _ := utils.PrettyMarshal(&u)
+
 	return string(out)
 }
 

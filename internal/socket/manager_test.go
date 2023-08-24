@@ -837,7 +837,9 @@ func TestJober_Run_Success(t *testing.T) {
 
 	stopCtx := context.TODO()
 	rinstaller := mock.NewMockReleaseInstaller(m)
-	rinstaller.EXPECT().Chart().Return(&chart.Chart{Metadata: &chart.Metadata{Name: "busyapp"}, Values: map[string]any{}}).Times(1)
+	rinstaller.EXPECT().Chart().Return(&chart.Chart{Metadata: &chart.Metadata{Name: "busyapp"}, Values: map[string]any{
+		"body": "name: duc\nage:17  ",
+	}}).Times(1)
 	manifest := `
 ---
 apiVersion: apps/v1
@@ -927,7 +929,10 @@ spec:
 	assert.Nil(t, job.Run().Error())
 	assert.Equal(t, "部署成功", job.deployResult.Msg())
 
-	assert.Equal(t, "{}\n", job.Project().OverrideValues)
+	assert.Equal(t, `body: |-
+  name: duc
+  age:17
+`, job.Project().OverrideValues)
 	assert.Equal(t, manifest, job.Project().Manifest)
 	assert.Equal(t, "app=busybox", job.Project().PodSelectors)
 	assert.Equal(t, "busybox:latest", job.Project().DockerImage)
