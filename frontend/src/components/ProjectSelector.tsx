@@ -191,6 +191,7 @@ const ProjectSelector: React.FC<{
               border-bottom-left-radius: 0 !important;
             }
           `}
+          loading={loading.commit}
           onFocus={onCommitFocus}
           placeholder="选择 Commit"
           disabled={disabled}
