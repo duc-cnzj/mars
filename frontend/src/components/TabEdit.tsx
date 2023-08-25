@@ -91,7 +91,7 @@ const ModalSub: React.FC<{
   const [showLog, setShowLog] = useState(start);
 
   const [data, setData] = useState<WatchData>({
-    gitProjectId: Number(detail.git_project_id),
+    gitProjectId: detail.git_project_id,
     gitBranch: detail.git_branch,
     gitCommit: detail.git_commit,
     config: detail.config,
@@ -101,12 +101,13 @@ const ModalSub: React.FC<{
     () => ({
       selectors: {
         projectName: detail.name,
-        gitProjectId: Number(detail.git_project_id),
+        gitProjectId: detail.git_project_id,
         gitBranch: detail.git_branch,
         gitCommit: detail.git_commit,
+        gitCommitTitle: `[${detail.git_commit_date}]:  ${detail.git_commit_title}`,
       },
       name: detail.name,
-      gitProjectId: Number(detail.git_project_id),
+      gitProjectId: detail.git_project_id,
       gitBranch: detail.git_branch,
       gitCommit: detail.git_commit,
       config: detail.config,

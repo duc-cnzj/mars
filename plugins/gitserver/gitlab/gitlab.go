@@ -133,13 +133,15 @@ func (p *pipeline) GetProjectID() int64 {
 	return int64(p.p.ProjectID)
 }
 
+// GetStatus
+// created, waiting_for_resource, preparing, pending, running, success, failed, canceled, skipped, manual, scheduled
 func (p *pipeline) GetStatus() contracts.Status {
 	switch p.p.Status {
 	case "failed":
 		return contracts.StatusFailed
 	case "running":
 		return contracts.StatusRunning
-	case "success":
+	case "success", "manual":
 		return contracts.StatusSuccess
 	default:
 		return contracts.StatusUnknown

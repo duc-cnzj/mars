@@ -1,24 +1,20 @@
-import React, { useState, useEffect, memo, useCallback } from "react";
-import { Cascader, Skeleton } from "antd";
-import { commit } from "../api/git";
+import React, { useState, memo, useCallback } from "react";
+import { Col, Row, Select, SelectProps } from "antd";
 import { branchOptions, commitOptions, projectOptions } from "../api/git";
-import { get } from "lodash";
 import pb from "../api/compiled";
-import { useAsyncState } from "../utils/async";
-import { BaseOptionType } from "antd/lib/cascader";
 import { omitEqual } from "../utils/obj";
-interface Option extends pb.git.Option {
-  children?: Option[];
-}
+import { css } from "@emotion/css";
+import styled from "@emotion/styled";
 
 const ProjectSelector: React.FC<{
   isCreate: boolean;
   disabled?: boolean;
   value?: {
     projectName: string;
-    gitProjectId: string;
+    gitProjectId: number;
     gitBranch: string;
     gitCommit: string;
+    gitCommitTitle: string;
     time?: number;
   };
   onChange?: (data: {
@@ -26,184 +22,227 @@ const ProjectSelector: React.FC<{
     gitProjectId: number;
     gitBranch: string;
     gitCommit: string;
+    gitCommitTitle: string;
   }) => void;
 }> = ({ value: v, onChange: onCh, isCreate, disabled }) => {
   console.log("ProjectSelector render");
-  const [options, setOptions] = useAsyncState<Option[]>([]);
-  const [value, setValue] = useState<(string | number)[]>([]);
-  const [loading, setLoading] = useState(v ? !!v.gitCommit : false);
 
-  const [selectedValues, setSelectedValues] = useState<(string | number)[]>([]);
+  const [options, setOptions] = useState<{
+    projects: pb.git.Option[];
+    branches: pb.git.Option[];
+    commits: pb.git.Option[];
+  }>({ projects: [], branches: [], commits: [] });
+  const [loading, setLoading] = useState({
+    project: false,
+    branch: false,
+    commit: false,
+  });
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (isCreate) {
-      projectOptions().then(({ data }) => {
-        setOptions(
-          data.items.map((i: pb.git.Option): Option => ({ ...i, children: [] }))
-        );
+  const onProjectFocus = useCallback(() => {
+    setLoading((l) => ({ ...l, project: true }));
+    projectOptions()
+      .then(({ data }) =>
+        setOptions({ projects: data.items, branches: [], commits: [] })
+      )
+      .finally(() => setLoading((l) => ({ ...l, project: false })));
+  }, []);
+
+  const onProjectChange = useCallback(
+    (value: any) => {
+      let pid = Number(value);
+      let currentBranch =
+        v && Number(v.gitProjectId) === Number(value) ? v?.gitBranch : "";
+      let currentCommit = currentBranch === v?.gitBranch ? v.gitCommit : "";
+      let commitTitle = currentCommit === v?.gitCommit ? v?.gitCommitTitle : "";
+      onCh?.({
+        projectName:
+          options.projects.find((pro) => Number(pro.gitProjectId) === pid)
+            ?.display_name || "",
+        gitProjectId: pid,
+        gitBranch: currentBranch,
+        gitCommit: currentCommit,
+        gitCommitTitle: commitTitle,
       });
-    }
-  }, [isCreate, setOptions]);
-
-  // 初始化，设置 initvalue
-  useEffect(() => {
-    if (value.length < 1 && v && v.gitCommit && v.gitBranch && v.gitProjectId) {
-      projectOptions().then((res) => {
-        let r = res.data.items.find(
-          (item) => item.gitProjectId === String(v.gitProjectId)
-        );
-        !!r ? setOptions([{ ...r, children: [] }]) : setOptions([]);
-
-        commit({
-          git_project_id: String(v.gitProjectId),
-          branch: v.gitBranch,
-          commit: v.gitCommit,
-        }).then((res) => {
-          r && res.data && setValue([r.label, v.gitBranch, res.data.label]);
-          setLoading(false);
-        });
-      });
-    }
-  }, [v, value, setOptions]);
-
-  const loadData = useCallback(
-    (selectedOptions: BaseOptionType[]) => {
-      if (!selectedOptions) {
-        return;
-      }
-      const targetOption = selectedOptions[selectedOptions.length - 1];
-      targetOption.loading = true;
-      targetOption.children = undefined;
-
-      switch (targetOption.type) {
-        case "project":
-          branchOptions({
-            git_project_id: String(targetOption.value),
-            all: false,
-          }).then((res) => {
-            targetOption.loading = false;
-            targetOption.children = res.data.items;
-            setOptions((opts) => [...opts]);
-          });
-          return;
-        case "branch":
-          commitOptions({
-            git_project_id: String(targetOption.gitProjectId),
-            branch: String(targetOption.value),
-          }).then((res) => {
-            targetOption.loading = false;
-            targetOption.children = res.data.items;
-            setOptions((opts) => [...opts]);
-          });
-          return;
-      }
     },
-    [setOptions]
+    [onCh, options.projects, v]
   );
 
-  const onChange = (values: (string | number)[]) => {
-    setSelectedValues(values);
-    let gitId = get(values, 0, 0);
-    let gbranch = get(values, 1, "");
-    let gcommit = get(values, 2, "");
-
-    if (gitId) {
-      let o = options.find((item) => item.value === values[0]);
-      setValue([o ? o.label : ""]);
-      if (gbranch) {
-        if (o && o.children) {
-          let b = o.children.find((item) => item.value === gbranch);
-          setValue([o.label, b ? b.label : ""]);
-          if (gcommit) {
-            if (b && b.children) {
-              setValue([
-                o.label,
-                b.label,
-                b.children.find((item) => item.value === gcommit)?.label || "",
-              ]);
-              onCh?.({
-                projectName:
-                  options.find((item) => item.value === values[0])
-                    ?.display_name || "",
-                gitProjectId: Number(gitId),
-                gitBranch: String(gbranch),
-                gitCommit: String(gcommit),
-              });
-            }
-          }
-        }
-      }
+  const onBranchFocus = useCallback(() => {
+    if (!v?.gitProjectId) {
+      return;
     }
-  };
+    setLoading((l) => ({ ...l, branch: true }));
+    branchOptions({
+      git_project_id: String(v?.gitProjectId),
+      all: false,
+    })
+      .then(({ data }) =>
+        setOptions((opts) => ({ ...opts, branches: data.items, commits: [] }))
+      )
+      .finally(() => setLoading((l) => ({ ...l, branch: false })));
+  }, [v?.gitProjectId]);
+
+  const onBranchChange = useCallback(
+    (vv: any) => {
+      onCh?.({
+        projectName: v?.projectName || "",
+        gitProjectId: v?.gitProjectId || 0,
+        gitBranch: String(vv),
+        gitCommit: "",
+        gitCommitTitle: "",
+      });
+    },
+    [onCh, v?.gitProjectId, v?.projectName]
+  );
+
+  const onCommitFocus = useCallback(() => {
+    if (!v?.gitProjectId || !v?.gitBranch) {
+      return;
+    }
+    setLoading((l) => ({ ...l, commit: true }));
+    commitOptions({
+      git_project_id: String(v?.gitProjectId),
+      branch: String(v?.gitBranch),
+    })
+      .then(({ data }) => {
+        setOptions((opts) => ({ ...opts, commits: data.items }));
+      })
+      .finally(() => {
+        setLoading((l) => ({ ...l, commit: false }));
+      });
+  }, [v?.gitProjectId, v?.gitBranch]);
+
+  const onCommitChange = useCallback(
+    (vv: any) => {
+      onCh?.({
+        projectName: v?.projectName || "",
+        gitProjectId: v?.gitProjectId || 0,
+        gitBranch: v?.gitBranch || "",
+        gitCommit: String(vv),
+        gitCommitTitle:
+          options.commits.find((it) => it.value === String(vv))?.label || "",
+      });
+    },
+    [onCh, options.commits, v?.gitBranch, v?.gitProjectId, v?.projectName]
+  );
 
   return (
-    <Skeleton
-      active
-      paragraph={false}
-      avatar={false}
-      loading={loading}
-      title={{ style: { marginTop: 0, height: 24 } }}
-    >
-      <Cascader
-        onDropdownVisibleChange={() => {
-          if (selectedValues && selectedValues.length !== 3) {
-            setSelectedValues([]);
+    <Row>
+      <MyCol
+        span={6}
+        onFocus={() => setFocusIdx(1)}
+        onBlur={() => setFocusIdx(null)}
+        focus={focusIdx === 1 ? 1 : 0}
+      >
+        <SelectorItem
+          loading={loading.project}
+          className={css`
+            .ant-select-selector {
+              border-top-right-radius: 0 !important;
+              border-bottom-right-radius: 0 !important;
+            }
+          `}
+          placeholder="选择项目"
+          disabled={disabled}
+          value={v?.projectName}
+          onFocus={onProjectFocus}
+          onChange={onProjectChange}
+          options={
+            isCreate
+              ? options.projects
+              : options.projects.filter(
+                  (p) => String(p.gitProjectId) === String(v?.gitProjectId)
+                )
           }
-        }}
-        disabled={disabled}
-        showSearch={{
-          filter: (inputValue: string, options: any, fieldNames: any) => {
-            return options.some((option: any) => {
-              switch (selectedValues.length) {
-                case 0:
-                  if (option.type !== "project") {
-                    return false;
-                  }
-                  option.children = [];
-                  break;
-                case 1:
-                  if (option.type !== "branch") {
-                    return false;
-                  }
-                  if (
-                    String(option.gitProjectId) !== String(selectedValues[0])
-                  ) {
-                    return false;
-                  }
-                  break;
-                case 2:
-                  if (option.type !== "commit") {
-                    return false;
-                  }
-                  if (
-                    String(option.gitProjectId) !== String(selectedValues[0])
-                  ) {
-                    return false;
-                  }
-                  break;
-              }
-
-              return (
-                (option.label as string)
-                  .toLowerCase()
-                  .indexOf(inputValue.toLowerCase()) > -1
-              );
-            });
-          },
-        }}
-        options={options}
-        style={{ width: "100%" }}
-        value={value}
-        allowClear={false}
-        loadData={loadData}
-        onChange={onChange}
-        changeOnSelect
-        placeholder="选择项目/分支/提交"
-      />
-    </Skeleton>
+        />
+      </MyCol>
+      <MyCol
+        span={6}
+        onFocus={() => setFocusIdx(2)}
+        onBlur={() => setFocusIdx(null)}
+        focus={focusIdx === 2 ? 1 : 0}
+      >
+        <SelectorItem
+          className={css`
+            .ant-select-selector {
+              border-radius: 0 !important;
+            }
+          `}
+          loading={loading.branch}
+          onFocus={onBranchFocus}
+          placeholder="选择分支"
+          disabled={disabled}
+          value={v?.gitBranch}
+          onChange={onBranchChange}
+          options={options.branches}
+        />
+      </MyCol>
+      <MyCol
+        span={12}
+        onFocus={() => setFocusIdx(3)}
+        onBlur={() => setFocusIdx(null)}
+        focus={focusIdx === 3 ? 1 : 0}
+      >
+        <SelectorItem
+          className={css`
+            .ant-select-selector {
+              border-top-left-radius: 0 !important;
+              border-bottom-left-radius: 0 !important;
+            }
+          `}
+          onFocus={onCommitFocus}
+          placeholder="选择 Commit"
+          disabled={disabled}
+          value={v?.gitCommitTitle}
+          onChange={onCommitChange}
+          options={options.commits}
+        />
+      </MyCol>
+    </Row>
   );
 };
+
+const SelectorItem: React.FC<
+  {
+    className?: string;
+    value: any;
+    onChange: (v: any) => void;
+    options: pb.git.Option[];
+    disabled?: boolean;
+    placeholder: string;
+  } & SelectProps
+> = memo(
+  ({ className, value, onChange, options, disabled, placeholder, ...rest }) => {
+    return (
+      <Select
+        className={className}
+        showSearch
+        disabled={disabled}
+        placeholder={placeholder}
+        value={value === "" ? null : value}
+        defaultActiveFirstOption={false}
+        optionFilterProp="label"
+        onChange={onChange}
+        options={options}
+        {...rest}
+      />
+    );
+  }
+);
 
 export default memo(ProjectSelector, (prev, next) =>
   omitEqual(prev, next, "onChange")
 );
+
+const MyCol = styled(Col)<{ focus: number }>`
+  margin-right: -1px;
+  &:hover {
+    z-index: 100;
+  }
+  ${(p) =>
+    p.focus &&
+    `
+    z-index: 100;
+  `}
+`;
