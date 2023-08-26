@@ -39,7 +39,10 @@ const ProjectSelector: React.FC<{
   });
   const [focusIdx, setFocusIdx] = useState<number | null>(null);
 
-  const onProjectFocus = useCallback(() => {
+  const onProjectVisibleChange = useCallback((open: boolean) => {
+    if (!open) {
+      return;
+    }
     setLoading((l) => ({ ...l, project: true }));
     projectOptions()
       .then(({ data }) =>
@@ -68,20 +71,23 @@ const ProjectSelector: React.FC<{
     [onCh, options.projects, v]
   );
 
-  const onBranchFocus = useCallback(() => {
-    if (!v?.gitProjectId) {
-      return;
-    }
-    setLoading((l) => ({ ...l, branch: true }));
-    branchOptions({
-      git_project_id: String(v?.gitProjectId),
-      all: false,
-    })
-      .then(({ data }) =>
-        setOptions((opts) => ({ ...opts, branches: data.items, commits: [] }))
-      )
-      .finally(() => setLoading((l) => ({ ...l, branch: false })));
-  }, [v?.gitProjectId]);
+  const onBranchVisibleChange = useCallback(
+    (open: boolean) => {
+      if (!v?.gitProjectId || !open) {
+        return;
+      }
+      setLoading((l) => ({ ...l, branch: true }));
+      branchOptions({
+        git_project_id: String(v?.gitProjectId),
+        all: false,
+      })
+        .then(({ data }) =>
+          setOptions((opts) => ({ ...opts, branches: data.items, commits: [] }))
+        )
+        .finally(() => setLoading((l) => ({ ...l, branch: false })));
+    },
+    [v?.gitProjectId]
+  );
 
   const onBranchChange = useCallback(
     (vv: any) => {
@@ -96,22 +102,25 @@ const ProjectSelector: React.FC<{
     [onCh, v?.gitProjectId, v?.projectName]
   );
 
-  const onCommitFocus = useCallback(() => {
-    if (!v?.gitProjectId || !v?.gitBranch) {
-      return;
-    }
-    setLoading((l) => ({ ...l, commit: true }));
-    commitOptions({
-      git_project_id: String(v?.gitProjectId),
-      branch: String(v?.gitBranch),
-    })
-      .then(({ data }) => {
-        setOptions((opts) => ({ ...opts, commits: data.items }));
+  const onCommitClickVisibleChange = useCallback(
+    (open: boolean) => {
+      if (!v?.gitProjectId || !v?.gitBranch || !open) {
+        return;
+      }
+      setLoading((l) => ({ ...l, commit: true }));
+      commitOptions({
+        git_project_id: String(v?.gitProjectId),
+        branch: String(v?.gitBranch),
       })
-      .finally(() => {
-        setLoading((l) => ({ ...l, commit: false }));
-      });
-  }, [v?.gitProjectId, v?.gitBranch]);
+        .then(({ data }) => {
+          setOptions((opts) => ({ ...opts, commits: data.items }));
+        })
+        .finally(() => {
+          setLoading((l) => ({ ...l, commit: false }));
+        });
+    },
+    [v?.gitProjectId, v?.gitBranch]
+  );
 
   const onCommitChange = useCallback(
     (vv: any) => {
@@ -144,9 +153,9 @@ const ProjectSelector: React.FC<{
             }
           `}
           placeholder="选择项目"
-          disabled={disabled}
+          disabled={disabled || loading.branch || loading.commit}
           value={v?.projectName}
-          onFocus={onProjectFocus}
+          onDropdownVisibleChange={onProjectVisibleChange}
           onChange={onProjectChange}
           options={
             isCreate
@@ -170,9 +179,9 @@ const ProjectSelector: React.FC<{
             }
           `}
           loading={loading.branch}
-          onFocus={onBranchFocus}
+          onDropdownVisibleChange={onBranchVisibleChange}
           placeholder="选择分支"
-          disabled={disabled}
+          disabled={disabled || loading.commit}
           value={v?.gitBranch}
           onChange={onBranchChange}
           options={options.branches}
@@ -192,7 +201,7 @@ const ProjectSelector: React.FC<{
             }
           `}
           loading={loading.commit}
-          onFocus={onCommitFocus}
+          onDropdownVisibleChange={onCommitClickVisibleChange}
           placeholder="选择 Commit"
           disabled={disabled}
           value={v?.gitCommitTitle}
