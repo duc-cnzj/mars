@@ -336,13 +336,13 @@ func Test_gitServerCache_GetCommit(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func (s *stateGitServer) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
+func (s *stateGitServer) GetCommitPipeline(pid string, branch, sha string) (contracts.PipelineInterface, error) {
 	s.calledMap["GetCommitPipeline"] = true
 	return nil, nil
 }
 func Test_gitServerCache_GetCommitPipeline(t *testing.T) {
 	s := &stateGitServer{calledMap: map[string]bool{}}
-	(&gitServerCache{s: s}).GetCommitPipeline("", "")
+	(&gitServerCache{s: s}).GetCommitPipeline("", "", "")
 	assert.True(t, s.calledMap["GetCommitPipeline"])
 }
 

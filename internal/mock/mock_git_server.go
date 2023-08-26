@@ -94,18 +94,18 @@ func (mr *MockGitServerMockRecorder) GetCommit(arg0, arg1 any) *gomock.Call {
 }
 
 // GetCommitPipeline mocks base method.
-func (m *MockGitServer) GetCommitPipeline(arg0, arg1 string) (contracts.PipelineInterface, error) {
+func (m *MockGitServer) GetCommitPipeline(arg0, arg1, arg2 string) (contracts.PipelineInterface, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommitPipeline", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetCommitPipeline", arg0, arg1, arg2)
 	ret0, _ := ret[0].(contracts.PipelineInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommitPipeline indicates an expected call of GetCommitPipeline.
-func (mr *MockGitServerMockRecorder) GetCommitPipeline(arg0, arg1 any) *gomock.Call {
+func (mr *MockGitServerMockRecorder) GetCommitPipeline(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitServer)(nil).GetCommitPipeline), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitPipeline", reflect.TypeOf((*MockGitServer)(nil).GetCommitPipeline), arg0, arg1, arg2)
 }
 
 // GetDirectoryFilesWithBranch mocks base method.

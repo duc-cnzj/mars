@@ -323,7 +323,7 @@ func (c *commit) GetWebURL() string {
 	return c.c.GetHTMLURL()
 }
 
-func (g *server) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
+func (g *server) GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error) {
 	return nil, errors.New("github unimplemented this func")
 }
 

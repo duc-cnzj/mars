@@ -1188,7 +1188,7 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
-	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit); e == nil {
+	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitBranch, j.project.GitCommit); e == nil {
 		pipelineID = pipeline.GetID()
 		pipelineBranch = pipeline.GetRef()
 

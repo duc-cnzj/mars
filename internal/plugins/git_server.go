@@ -36,7 +36,7 @@ type GitServer interface {
 	AllBranches(pid string) ([]contracts.BranchInterface, error)
 
 	GetCommit(pid string, sha string) (contracts.CommitInterface, error)
-	GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error)
+	GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error)
 	ListCommits(pid string, branch string) ([]contracts.CommitInterface, error)
 
 	GetFileContentWithBranch(pid string, branch string, filename string) (string, error)
@@ -230,8 +230,8 @@ func (g *gitServerCache) GetCommit(pid string, sha string) (contracts.CommitInte
 	return msg, nil
 }
 
-func (g *gitServerCache) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
-	return g.s.GetCommitPipeline(pid, sha)
+func (g *gitServerCache) GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error) {
+	return g.s.GetCommitPipeline(pid, branch, sha)
 }
 
 func (g *gitServerCache) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {

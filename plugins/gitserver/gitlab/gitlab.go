@@ -172,14 +172,14 @@ type server struct {
 	client *gitlab.Client
 }
 
-func (g *server) GetCommitPipeline(pid string, sha string) (contracts.PipelineInterface, error) {
+func (g *server) GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
-		Scope: gitlab.String("branches"),
 		ListOptions: gitlab.ListOptions{
 			Page:    1,
 			PerPage: 100,
 		},
+		Ref: gitlab.String(branch),
 		SHA: gitlab.String(sha),
 	})
 	if err != nil {

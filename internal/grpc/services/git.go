@@ -317,7 +317,7 @@ func (g *gitSvc) Commit(ctx context.Context, request *git.CommitRequest) (*git.C
 }
 
 func (g *gitSvc) PipelineInfo(ctx context.Context, request *git.PipelineInfoRequest) (*git.PipelineInfoResponse, error) {
-	pipeline, err := plugins.GetGitServer().GetCommitPipeline(request.GitProjectId, request.Commit)
+	pipeline, err := plugins.GetGitServer().GetCommitPipeline(request.GitProjectId, request.Branch, request.Commit)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}

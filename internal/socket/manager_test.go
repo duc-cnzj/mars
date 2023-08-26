@@ -1347,7 +1347,7 @@ func TestVariableLoader_Load(t *testing.T) {
 	pipe := mock.NewMockPipelineInterface(m)
 	pipe.EXPECT().GetID().Return(int64(9999))
 	pipe.EXPECT().GetRef().Return("dev")
-	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(pipe, nil)
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(pipe, nil)
 
 	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
@@ -1422,7 +1422,7 @@ func TestVariableLoader_Load_ok(t *testing.T) {
 	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
-	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
 	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 
@@ -1470,7 +1470,7 @@ func TestVariableLoader_Load_fail(t *testing.T) {
 	app.EXPECT().GetPluginByName("gits").Return(gitS).AnyTimes()
 	app.EXPECT().RegisterAfterShutdownFunc(gomock.All()).AnyTimes()
 	gitS.EXPECT().Initialize(gomock.All()).AnyTimes()
-	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
+	gitS.EXPECT().GetCommitPipeline(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("xxx"))
 
 	app.EXPECT().GetPluginByName("domain").Return(domainmanager.NewDefaultDomainManager()).AnyTimes()
 

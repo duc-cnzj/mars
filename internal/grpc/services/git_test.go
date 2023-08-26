@@ -462,7 +462,7 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 	pipe := mock.NewMockPipelineInterface(m)
 	instance.SetInstance(app)
 	gitS := mockGitServer(m, app)
-	gitS.EXPECT().GetCommitPipeline("1", "xxx").Times(1).Return(pipe, nil)
+	gitS.EXPECT().GetCommitPipeline("1", "dev", "xxx").Times(1).Return(pipe, nil)
 	pipe.EXPECT().GetStatus().Times(1).Return("status")
 	pipe.EXPECT().GetWebURL().Times(1).Return("weburl")
 	info, _ := new(gitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
@@ -472,7 +472,7 @@ func TestGitSvc_PipelineInfo(t *testing.T) {
 	})
 	assert.Equal(t, "status", info.Status)
 	assert.Equal(t, "weburl", info.WebUrl)
-	gitS.EXPECT().GetCommitPipeline("1", "xxx").Times(1).Return(nil, errors.New("xxx"))
+	gitS.EXPECT().GetCommitPipeline("1", "dev", "xxx").Times(1).Return(nil, errors.New("xxx"))
 	_, err := new(gitSvc).PipelineInfo(context.TODO(), &git.PipelineInfoRequest{
 		GitProjectId: "1",
 		Branch:       "dev",
