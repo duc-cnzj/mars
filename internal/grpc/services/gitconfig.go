@@ -63,7 +63,7 @@ func (m *gitConfigSvc) GetDefaultChartValues(ctx context.Context, request *gitco
 	}
 	f, err := plugins.GetGitServer().GetFileContentWithBranch(pid, branch, filename)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	return &gitconfig.DefaultChartValuesResponse{Value: f}, nil

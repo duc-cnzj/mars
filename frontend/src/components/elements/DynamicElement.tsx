@@ -143,12 +143,14 @@ const DynamicElement: React.FC<{
                                   ]}
                                 >
                                   <Select
+                                    placeholder="选择类型"
                                     disabled={disabled}
                                     onChange={(v) => {
-                                      form.setFieldsValue([
-                                        "elements",
-                                        Number(v),
-                                      ]);
+                                      let eles = form.getFieldValue("elements");
+                                      Object.assign(eles[field.name], {
+                                        type: v,
+                                      });
+                                      form.setFieldsValue({ elements: eles });
                                     }}
                                   >
                                     <Select.Option

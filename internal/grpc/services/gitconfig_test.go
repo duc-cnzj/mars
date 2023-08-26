@@ -89,7 +89,10 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 		GitProjectId: 11,
 		Branch:       "dev",
 	})
-	assert.Equal(t, "xxx", err.Error())
+	s, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.NotFound, s.Code())
+	assert.Equal(t, "xxx", s.Message())
 	gits.EXPECT().GetFileContentWithBranch("1", "master", "charts/values.yaml").Times(1).Return("xxx", nil)
 	res, _ := new(gitConfigSvc).GetDefaultChartValues(context.TODO(), &gitconfig.DefaultChartValuesRequest{
 		GitProjectId: 11,
@@ -109,7 +112,9 @@ func TestGitConfigSvc_GetDefaultChartValues(t *testing.T) {
 		GitProjectId: 12,
 		Branch:       "",
 	})
-	assert.Equal(t, "bbb", err.Error())
+	fromError, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, fromError.Code())
+	assert.Equal(t, "bbb", fromError.Message())
 }
 
 func TestGitConfigSvc_GlobalConfig(t *testing.T) {

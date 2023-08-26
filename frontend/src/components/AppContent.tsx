@@ -55,7 +55,7 @@ const AppContent: React.FC = () => {
   return (
     <DraggableModalProvider>
       <Content>
-        <AddNamespace onCreated={() => fetchNamespaces()} />
+        <AddNamespace onCreated={fetchNamespaces} />
 
         {namespaceItems.length < 1 ? (
           <Empty description={false} imageStyle={{ height: 300 }} />
@@ -69,7 +69,7 @@ const AppContent: React.FC = () => {
                     (Number(item.id) === Number(reloadNsID) || reloadNsID === 0)
                   }
                   item={item}
-                  onNamespaceDeleted={() => fetchNamespaces()}
+                  onNamespaceDeleted={fetchNamespaces}
                 />
               </Col>
             ))}

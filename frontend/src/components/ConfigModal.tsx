@@ -549,7 +549,7 @@ const ConfigModal: React.FC<{
                             setWatch((w) => ({ ...w, config_file_type: v }));
                             form.setFieldsValue({ config_file_type: v });
                           }}
-                          showArrow={editMode}
+                          suffixIcon={editMode}
                           disabled={!editMode || !globalEnabled}
                         />
                       </Form.Item>
