@@ -275,7 +275,7 @@ const EventList: React.FC = () => {
             <Select
               defaultValue={pb.types.EventActionType.Unknown}
               size="small"
-              style={{ width: 200, marginLeft: 10 }}
+              style={{ width: 300, marginLeft: 10 }}
               onChange={(v) => {
                 setQueries((q) => ({ ...q, action_type: v }));
                 fetch(v, queries.search);
@@ -335,7 +335,7 @@ const EventList: React.FC = () => {
         <InfiniteScroll
           dataLength={data.length}
           next={loadMoreData}
-          hasMore={data.length % paginate.page_size === 0}
+          hasMore={data.length !== 0 && data.length % paginate.page_size === 0}
           loader={
             <Spin
               style={{
