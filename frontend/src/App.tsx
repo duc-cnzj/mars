@@ -1,7 +1,6 @@
 import React, { FC, lazy, Suspense } from "react";
 import AppContent from "./components/AppContent";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import { PrivateRoute } from "./contexts/auth";
 import "mac-scrollbar/dist/mac-scrollbar.css";
 import AppLayout from "./components/AppLayout";
 import { Button, Result } from "antd";
@@ -18,42 +17,29 @@ const App: FC = () => {
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route
-          index
-          element={
-            <PrivateRoute>
-              <AppContent />
-            </PrivateRoute>
-          }
-        />
+        <Route index element={<AppContent />} />
         <Route
           path="git_project_manager"
           element={
-            <PrivateRoute>
-              <Suspense fallback={null}>
-                <GitProjectManager />
-              </Suspense>
-            </PrivateRoute>
+            <Suspense fallback={null}>
+              <GitProjectManager />
+            </Suspense>
           }
         />
         <Route
           path="events"
           element={
-            <PrivateRoute>
-              <Suspense fallback={null}>
-                <Events />
-              </Suspense>
-            </PrivateRoute>
+            <Suspense fallback={null}>
+              <Events />
+            </Suspense>
           }
         />
         <Route
           path="access_token_manager"
           element={
-            <PrivateRoute>
-              <Suspense fallback={null}>
-                <AccessTokenManager />
-              </Suspense>
-            </PrivateRoute>
+            <Suspense fallback={null}>
+              <AccessTokenManager />
+            </Suspense>
           }
         />
 

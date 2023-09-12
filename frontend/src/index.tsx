@@ -9,7 +9,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { GuestRoute, ProvideAuth } from "./contexts/auth";
+import { GuestRoute, PrivateRoute, ProvideAuth } from "./contexts/auth";
 import { createRoot } from "react-dom/client";
 import { ConfigProvider } from "antd";
 import theme from "./styles/theme";
@@ -60,7 +60,14 @@ const RootElement: React.FC = () => {
               </GuestRoute>
             }
           />
-          <Route path="/*" element={<App />} />
+          <Route
+            path="/*"
+            element={
+              <PrivateRoute>
+                <App />
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </ConfigProvider>
     </ProvideAuth>
