@@ -12,7 +12,7 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "生成配置文件",
+	Short: "create default config file.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(configExampleFile) > 0 {
 			if utils.FileExists("config.yaml") {

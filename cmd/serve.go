@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/duc-cnzj/mars/v4/internal/app"
@@ -36,6 +37,9 @@ var serverBootstrappers = []contracts.Bootstrapper{
 var apiGatewayCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "start mars server use grpc.",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println(logo)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		app := app.NewApplication(
 			config.Init(cfgFile),
