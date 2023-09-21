@@ -7,7 +7,7 @@ COPY ./frontend .
 RUN yarn install --registry=https://registry.npm.taobao.org && \
     yarn build
 
-FROM --platform=linux/amd64 golang:1.21-bullseye AS builder
+FROM --platform=linux/amd64 golang:1.21 AS builder
 
 ARG TARGETARCH
 ARG TARGETOS
@@ -39,7 +39,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then CC=aarch64-linux-gnu-gcc && CC_FOR_TARG
     && CGO_ENABLED=1 CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$LDFLAGS $EXTRA_FLAGS" -o /bin/app main.go \
     && upx -9 /bin/app
 
-FROM --platform=$TARGETPLATFORM gcr.io/distroless/base
+FROM --platform=$TARGETPLATFORM gcr.io/distroless/base-debian12
 
 WORKDIR /
 
