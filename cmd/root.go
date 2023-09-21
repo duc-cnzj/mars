@@ -17,11 +17,14 @@ var (
 	}
 
 	configExampleFile []byte
+
+	logo string
 )
 
 // Execute root cmd.
-func Execute(configFile []byte) {
+func Execute(configFile []byte, logoStr string) {
 	configExampleFile = configFile
+	logo = logoStr
 	if !version.GetVersion().HasBuildInfo() {
 		rootCmd.AddCommand(testCmd)
 	}
