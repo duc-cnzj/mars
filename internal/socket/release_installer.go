@@ -8,44 +8,10 @@ import (
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
-
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 )
-
-type DefaultHelmer struct{}
-
-func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
-	var podSelectors []string
-	if wait && !dryRun {
-		re, err := utils.UpgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc)
-		if err != nil {
-			return nil, err
-		}
-
-		podSelectors = getPodSelectorsByManifest(utils.SplitManifests(re.Manifest))
-	}
-
-	return utils.UpgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc)
-}
-
-func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
-	return utils.Rollback(releaseName, namespace, wait, log, dryRun)
-}
-
-func (d *DefaultHelmer) PackageChart(path string, destDir string) (string, error) {
-	return utils.PackageChart(path, destDir)
-}
-
-func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log contracts.LogFn) error {
-	return utils.UninstallRelease(releaseName, namespace, log)
-}
-
-func (d *DefaultHelmer) ReleaseStatus(releaseName, namespace string) types.Deploy {
-	return utils.ReleaseStatus(releaseName, namespace)
-}
 
 type releaseInstaller struct {
 	helmer         contracts.Helmer
@@ -62,9 +28,9 @@ type releaseInstaller struct {
 	messageCh      contracts.SafeWriteMessageChInterface
 }
 
-func newReleaseInstaller(releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
+func newReleaseInstaller(helmer contracts.Helmer, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
 	return &releaseInstaller{
-		helmer:         &DefaultHelmer{},
+		helmer:         helmer,
 		dryRun:         dryRun,
 		chart:          chart,
 		valueOpts:      valueOpts,

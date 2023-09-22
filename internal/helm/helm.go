@@ -1,7 +1,6 @@
-package utils
+package helm
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,6 +8,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/duc-cnzj/mars-client/v4/types"
+	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 	"github.com/spf13/pflag"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -22,59 +27,52 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
-	v1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	v12 "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
-
-	"github.com/duc-cnzj/mars-client/v4/types"
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 
 func init() {
 	kube.New(nil)
 }
 
-type internalCloser struct {
-	closeFn func() error
-}
+type DefaultHelmer struct{}
 
-func (i *internalCloser) Close() error {
-	return i.closeFn()
-}
-
-func NewCloser(fn func() error) io.Closer {
-	return &internalCloser{closeFn: fn}
-}
-
-func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
-	var localUploader = app.LocalUploader()
-	file := fmt.Sprintf("mars-%s-%s.yaml", time.Now().Format("2006-01-02"), RandomString(20))
-	info, err := localUploader.Put(file, bytes.NewReader(data))
-	if err != nil {
-		return "", nil, err
-	}
-	path := info.Path()
-
-	return path, NewCloser(func() error {
-		mlog.Debug("delete file: " + path)
-		if err := localUploader.Delete(path); err != nil {
-			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
-			return err
+func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
+	var podSelectors []string
+	if wait && !dryRun {
+		re, err := upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc)
+		if err != nil {
+			return nil, err
 		}
 
-		return nil
-	}), nil
+		podSelectors = utils.GetPodSelectorsByManifest(utils.SplitManifests(re.Manifest))
+	}
+
+	return upgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc)
 }
 
-// UpgradeOrInstall
+func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
+	return rollback(releaseName, namespace, wait, log, dryRun)
+}
+
+func (d *DefaultHelmer) PackageChart(path string, destDir string) (string, error) {
+	return packageChart(path, destDir)
+}
+
+func (d *DefaultHelmer) Uninstall(releaseName, namespace string, log contracts.LogFn) error {
+	return uninstallRelease(releaseName, namespace, log)
+}
+
+func (d *DefaultHelmer) ReleaseStatus(releaseName, namespace string) types.Deploy {
+	return releaseStatus(releaseName, namespace)
+}
+
+// upgradeOrInstall
 // 不会自动回滚
-func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string, desc string) (*release.Release, error) {
+func upgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn contracts.WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, podSelectors []string, desc string) (*release.Release, error) {
 	actionConfig := getActionConfigAndSettings(namespace, fn.UnWrap())
 	client := action.NewUpgrade(actionConfig)
 	client.Install = true
@@ -107,11 +105,11 @@ func UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *ch
 		k8sClient.PodFanOut.AddListener(key, podCh)
 		k8sClient.EventFanOut.AddListener(key, evCh)
 		go func() {
-			defer recovery.HandlePanic("UpgradeOrInstall pod-fan-out")
+			defer recovery.HandlePanic("upgradeOrInstall pod-fan-out")
 			watchPodStatus(fanOutCtx, podCh, selectorList, fn)
 		}()
 		go func() {
-			defer recovery.HandlePanic("UpgradeOrInstall event-fan-out")
+			defer recovery.HandlePanic("upgradeOrInstall event-fan-out")
 			watchEvent(fanOutCtx, evCh, releaseName, fn, k8sClient.PodLister)
 		}()
 	}
@@ -227,7 +225,7 @@ func watchPodStatus(ctx context.Context, podCh chan contracts.Obj[*corev1.Pod], 
 	}
 }
 
-func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
+func watchEvent(ctx context.Context, evCh chan contracts.Obj[*eventsv1.Event], releaseName string, fn contracts.WrapLogFn, lister v12.PodLister) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -242,7 +240,7 @@ func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], release
 			}
 
 			var obj any = evobj.Current()
-			event := obj.(*v1.Event)
+			event := obj.(*eventsv1.Event)
 			p := event.Regarding
 			get, err := lister.Pods(p.Namespace).Get(p.Name)
 			if err != nil {
@@ -260,7 +258,7 @@ func watchEvent(ctx context.Context, evCh chan contracts.Obj[*v1.Event], release
 	}
 }
 
-func UninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
+func uninstallRelease(releaseName, namespace string, log contracts.LogFn) error {
 	actionConfig := getActionConfigAndSettings(namespace, log)
 	uninstall := action.NewUninstall(actionConfig)
 	_, err := uninstall.Run(releaseName)
@@ -309,7 +307,7 @@ var (
 	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
-func ReleaseStatus(releaseName, namespace string) types.Deploy {
+func releaseStatus(releaseName, namespace string) types.Deploy {
 	actionConfig := getActionConfigAndSettings(namespace, mlog.Debugf)
 	statusClient := action.NewStatus(actionConfig)
 	run, err := statusClient.Run(releaseName)
@@ -368,7 +366,7 @@ func (l ReleaseList) Add(r *release.Release) {
 	}
 }
 
-func PackageChart(path string, destDir string) (string, error) {
+func packageChart(path string, destDir string) (string, error) {
 	newPackage := action.NewPackage()
 	if destDir != "" {
 		newPackage.Destination = destDir
@@ -424,11 +422,7 @@ func wrapRestConfig(config *restclient.Config) *restclient.Config {
 	return config
 }
 
-func GetSlugName[T int64 | int](namespaceId T, name string) string {
-	return MD5(fmt.Sprintf("%d-%s", namespaceId, name))
-}
-
-func Rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
+func rollback(releaseName, namespace string, wait bool, log contracts.LogFn, dryRun bool) error {
 	actionConfig := getActionConfigAndSettings(namespace, log)
 	client := action.NewRollback(actionConfig)
 	client.Wait = wait

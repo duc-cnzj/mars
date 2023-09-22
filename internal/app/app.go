@@ -24,6 +24,7 @@ import (
 	mcron "github.com/duc-cnzj/mars/v4/internal/cron"
 	"github.com/duc-cnzj/mars/v4/internal/database"
 	"github.com/duc-cnzj/mars/v4/internal/event"
+	"github.com/duc-cnzj/mars/v4/internal/helm"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	muploader "github.com/duc-cnzj/mars/v4/internal/uploader"
@@ -71,6 +72,7 @@ type application struct {
 	cacheLock     contracts.Locker
 	tracer        trace.Tracer
 	sf            *singleflight.Group
+	helmer        contracts.Helmer
 }
 
 type Option func(*application)
@@ -109,6 +111,7 @@ func NewApplication(config *config.Config, opts ...Option) contracts.Application
 		sf:          &singleflight.Group{},
 		cache:       &cache.NoCache{},
 		excludeTags: config.ExcludeServer.List(),
+		helmer:      &helm.DefaultHelmer{},
 	}
 
 	app.cronManager = mcron.NewManager(adapter.NewRobfigCronV3Runner(), app)
@@ -213,6 +216,11 @@ func (app *application) SetUploader(uploader contracts.Uploader) {
 // Uploader impl contracts.ApplicationInterface Uploader.
 func (app *application) Uploader() contracts.Uploader {
 	return app.uploader
+}
+
+// Helmer impl contracts.ApplicationInterface Helmer.
+func (app *application) Helmer() contracts.Helmer {
+	return app.helmer
 }
 
 // Oidc impl contracts.ApplicationInterface Oidc.

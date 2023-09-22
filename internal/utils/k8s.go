@@ -1,23 +1,28 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"strings"
-
-	"k8s.io/client-go/kubernetes"
+	"time"
 
 	"helm.sh/helm/v3/pkg/releaseutil"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -332,4 +337,81 @@ func IsPodRunning(namespace, podName string) (running bool, notRunningReason str
 	}
 
 	return false, "pod not running."
+}
+
+// GetPodSelectorsByManifest
+// 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
+// 参考源码
+func GetPodSelectorsByManifest(manifests []string) []string {
+	var selectors []string
+	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	for _, f := range manifests {
+		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
+		switch a := obj.(type) {
+		case *appsv1.Deployment:
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
+		case *appsv1.StatefulSet:
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
+		case *appsv1.DaemonSet:
+			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
+			selectors = append(selectors, selector.String())
+		case *batchv1.Job:
+			jobPodLabels := a.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		case *batchv1beta1.CronJob:
+			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		case *batchv1.CronJob:
+			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
+			if jobPodLabels != nil {
+				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
+			}
+		default:
+			mlog.Debugf("未知: %#v", a)
+		}
+	}
+
+	return selectors
+}
+
+type internalCloser struct {
+	closeFn func() error
+}
+
+func (i *internalCloser) Close() error {
+	return i.closeFn()
+}
+
+func NewCloser(fn func() error) io.Closer {
+	return &internalCloser{closeFn: fn}
+}
+
+func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
+	var localUploader = app.LocalUploader()
+	file := fmt.Sprintf("mars-%s-%s.yaml", time.Now().Format("2006-01-02"), RandomString(20))
+	info, err := localUploader.Put(file, bytes.NewReader(data))
+	if err != nil {
+		return "", nil, err
+	}
+	path := info.Path()
+
+	return path, NewCloser(func() error {
+		mlog.Debug("delete file: " + path)
+		if err := localUploader.Delete(path); err != nil {
+			mlog.Error("WriteConfigYamlToTmpFile error: ", err)
+			return err
+		}
+
+		return nil
+	}), nil
+}
+
+func GetSlugName[T int64 | int](namespaceId T, name string) string {
+	return MD5(fmt.Sprintf("%d-%s", namespaceId, name))
 }

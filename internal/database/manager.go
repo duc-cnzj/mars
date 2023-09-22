@@ -319,6 +319,18 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 				return nil
 			},
 		},
+		{
+			ID: "2023-09-22-add-idx_deploy_status-to-projects-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Project{}, "DeployStatus") {
+					if err := tx.Migrator().CreateIndex(&models.Project{}, "DeployStatus"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
 	})
 
 	return gm.Migrate()

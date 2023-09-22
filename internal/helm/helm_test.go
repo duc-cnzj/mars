@@ -1,9 +1,7 @@
-package utils
+package helm
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,7 +23,6 @@ import (
 
 	"github.com/duc-cnzj/mars-client/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
@@ -36,20 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
-
-func TestGetSlugName(t *testing.T) {
-	assert.Equal(t, MD5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
-}
-
-func TestNewCloser(t *testing.T) {
-	called := 0
-	closer := NewCloser(func() error {
-		called++
-		return nil
-	})
-	closer.Close()
-	assert.Equal(t, 1, called)
-}
 
 func TestPackageChart(t *testing.T) {}
 
@@ -88,7 +71,7 @@ func TestReleaseStatus(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	status := ReleaseStatus("test", "ns")
+	status := releaseStatus("test", "ns")
 	assert.Equal(t, types.Deploy_StatusUnknown, status)
 }
 
@@ -97,7 +80,7 @@ func TestRollback(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	err := Rollback("test", "ns", false, nil, false)
+	err := rollback("test", "ns", false, nil, false)
 	assert.Error(t, err)
 }
 
@@ -106,34 +89,11 @@ func TestUninstallRelease(t *testing.T) {
 	defer m.Finish()
 	app := testutil.MockApp(m)
 	app.EXPECT().Config().Return(&config.Config{}).Times(1)
-	err := UninstallRelease("test", "ns", func(format string, v ...any) {})
+	err := uninstallRelease("test", "ns", func(format string, v ...any) {})
 	assert.Error(t, err)
 }
 
 func TestUpgradeOrInstall(t *testing.T) {}
-
-func TestWriteConfigYamlToTmpFile(t *testing.T) {
-	m := gomock.NewController(t)
-	defer m.Finish()
-	app := testutil.MockApp(m)
-	up := mock.NewMockUploader(m)
-	app.EXPECT().LocalUploader().Return(up).AnyTimes()
-	info := mock.NewMockFileInfo(m)
-	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil).Times(1)
-	info.EXPECT().Path().Return("/aa.txt").Times(1)
-	file, closer, err := WriteConfigYamlToTmpFile([]byte("xx"))
-	assert.Nil(t, err)
-	assert.Equal(t, "/aa.txt", file)
-	up.EXPECT().Delete("/aa.txt").Times(1).Return(nil)
-	assert.Nil(t, closer.Close())
-
-	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil, errors.New("xx")).Times(1)
-	_, _, err = WriteConfigYamlToTmpFile([]byte("xx"))
-	assert.Equal(t, "xx", err.Error())
-
-	up.EXPECT().Delete("/aa.txt").Times(1).Return(errors.New("xx"))
-	assert.Equal(t, "xx", closer.Close().Error())
-}
 
 func Test_checkIfInstallable(t *testing.T) {
 	err := checkIfInstallable(&chart.Chart{

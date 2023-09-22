@@ -5,18 +5,19 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
-	v13 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/golang/mock/gomock"
+	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
@@ -24,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
+	v13 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 )
 
 func TestDecodeDockerConfigJSON(t *testing.T) {
@@ -809,4 +812,258 @@ func TestEndpointMapping_Sort(t *testing.T) {
 			Url:  "http://xxx",
 		},
 	}, e["b"])
+}
+
+func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
+	var tests = []struct {
+		in  string
+		out string
+	}{
+		{
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: Deployment
+				metadata:
+				  annotations:
+				    meta.helm.sh/release-name: mars
+				  generation: 56
+				  labels:
+				    app.kubernetes.io/name: mars
+				  name: mars
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/instance: mars
+				      app.kubernetes.io/name: mars
+				`),
+			out: "app.kubernetes.io/instance=mars,app.kubernetes.io/name=mars",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: Deployment
+				metadata:
+				  annotations:
+				    meta.helm.sh/release-name: mars
+				  generation: 56
+				  labels:
+				    app.kubernetes.io/name: mars
+				  name: mars
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/instance: abc
+				      app.kubernetes.io/name: abc
+				`),
+			out: "app.kubernetes.io/instance=abc,app.kubernetes.io/name=abc",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: StatefulSet
+				metadata:
+				  labels:
+				    app.kubernetes.io/component: primary
+				    app.kubernetes.io/instance: mars-db
+				  name: mars-db-mysql-primary
+				  namespace: default
+				spec:
+				  selector:
+				    matchLabels:
+				      app.kubernetes.io/component: primary
+				      app.kubernetes.io/instance: mars-db
+				      app.kubernetes.io/name: mysql
+				`),
+			out: "app.kubernetes.io/component=primary,app.kubernetes.io/instance=mars-db,app.kubernetes.io/name=mysql",
+		},
+		{
+			in: dedent.Dedent(`
+				W0509 17:36:48.835823   98185 helpers.go:555] --dry-run is deprecated and can be replaced with --dry-run=client.
+				apiVersion: v1
+				kind: Pod
+				metadata:
+				  creationTimestamp: null
+				  labels:
+				    run: nginx
+				  name: nginx
+				spec:
+				  containers:
+				  - image: nginx
+				    name: nginx
+				    resources: {}
+				  dnsPolicy: ClusterFirst
+				  restartPolicy: Always
+				status: {}
+				`),
+			out: "",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: Job
+				metadata:
+				  name: pi
+				spec:
+				  template:
+				    spec:
+				      containers:
+				      - name: pi
+				        image: perl:5.34.0
+				        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+				      restartPolicy: Never
+				  backoffLimit: 4
+				`),
+			out: "",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: Job
+				metadata:
+				  name: pi
+				spec:
+				  template:
+				    metadata:
+				      labels:
+				        app: jobRunner-one
+				    spec:
+				      containers:
+				      - name: pi
+				        image: perl:5.34.0
+				        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+				      restartPolicy: Never
+				  backoffLimit: 4
+				`),
+			out: "app=jobRunner-one",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: apps/v1
+				kind: DaemonSet
+				metadata:
+				  name: fluentd-elasticsearch
+				spec:
+				  selector:
+				    matchLabels:
+				      name: fluentd-elasticsearch
+				  template:
+				    metadata:
+				      labels:
+				        name: fluentd-elasticsearch
+				    spec:
+				      containers:
+				      - name: fluentd-elasticsearch
+				        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+				        volumeMounts:
+				        - name: varlog
+				          mountPath: /var/log
+				`),
+			out: "name=fluentd-elasticsearch",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: batch/v1
+				kind: CronJob
+				metadata:
+				  name: hello
+				spec:
+				  schedule: "* * * * *"
+				  jobTemplate:
+				    spec:
+				      template:
+				        metadata:
+				          labels:
+				            app: cronjob
+				        spec:
+				          containers:
+				          - name: hello
+				            image: busybox:1.28
+				            imagePullPolicy: IfNotPresent
+				            command:
+				            - /bin/sh
+				            - -c
+				            - date; echo Hello from the Kubernetes cluster
+				          restartPolicy: OnFailure
+				`),
+			out: "app=cronjob",
+		},
+		{
+			in: dedent.Dedent(`
+				apiVersion: batch/v1beta1
+				kind: CronJob
+				metadata:
+				  name: hello
+				spec:
+				  schedule: "* * * * *"
+				  jobTemplate:
+				    spec:
+				      template:
+				        metadata:
+				          labels:
+				            app: cronjob-v1beta1
+				        spec:
+				          containers:
+				          - name: hello
+				            image: busybox:1.28
+				            imagePullPolicy: IfNotPresent
+				            command:
+				            - /bin/sh
+				            - -c
+				            - date; echo Hello from the Kubernetes cluster
+				          restartPolicy: OnFailure
+				`),
+			out: "app=cronjob-v1beta1",
+		},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run("", func(t *testing.T) {
+			labels := GetPodSelectorsByManifest([]string{tt.in})
+			if len(labels) > 0 {
+				assert.Equal(t, tt.out, labels[0])
+			} else {
+				assert.Equal(t, tt.out, "")
+			}
+		})
+	}
+}
+
+func TestGetSlugName(t *testing.T) {
+	assert.Equal(t, MD5(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
+}
+
+func TestNewCloser(t *testing.T) {
+	called := 0
+	closer := NewCloser(func() error {
+		called++
+		return nil
+	})
+	closer.Close()
+	assert.Equal(t, 1, called)
+}
+
+func TestWriteConfigYamlToTmpFile(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	app := testutil.MockApp(m)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	info := mock.NewMockFileInfo(m)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(info, nil).Times(1)
+	info.EXPECT().Path().Return("/aa.txt").Times(1)
+	file, closer, err := WriteConfigYamlToTmpFile([]byte("xx"))
+	assert.Nil(t, err)
+	assert.Equal(t, "/aa.txt", file)
+	up.EXPECT().Delete("/aa.txt").Times(1).Return(nil)
+	assert.Nil(t, closer.Close())
+
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil, errors.New("xx")).Times(1)
+	_, _, err = WriteConfigYamlToTmpFile([]byte("xx"))
+	assert.Equal(t, "xx", err.Error())
+
+	up.EXPECT().Delete("/aa.txt").Times(1).Return(errors.New("xx"))
+	assert.Equal(t, "xx", closer.Close().Error())
 }

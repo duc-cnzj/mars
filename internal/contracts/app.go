@@ -113,4 +113,6 @@ type ApplicationInterface interface {
 
 	SetCronManager(CronManager)
 	CronManager() CronManager
+
+	Helmer() Helmer
 }

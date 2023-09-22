@@ -30,7 +30,6 @@ import (
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
 		project.RegisterProjectServer(s, &projectSvc{
-			helmer:     &socket.DefaultHelmer{},
 			NewJobFunc: socket.NewJober,
 		})
 	})
@@ -38,7 +37,6 @@ func init() {
 }
 
 type projectSvc struct {
-	helmer     contracts.Helmer
 	NewJobFunc socket.NewJobFunc
 	project.UnimplementedProjectServer
 }
@@ -168,7 +166,7 @@ func (p *projectSvc) Delete(ctx context.Context, request *project.DeleteRequest)
 	if err := app.DB().Preload("Namespace").Where("`id` = ?", request.ProjectId).First(&projectModel).Error; err != nil {
 		return nil, err
 	}
-	if err := p.helmer.Uninstall(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
+	if err := app.Helmer().Uninstall(projectModel.Name, projectModel.Namespace.Name, mlog.Debugf); err != nil {
 		mlog.Error(err)
 	}
 	app.DB().Delete(&projectModel)

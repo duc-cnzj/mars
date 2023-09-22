@@ -169,9 +169,10 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 
 	d.EXPECT().Dispatch(events.EventNamespaceDeleted, gomock.Any()).Times(1)
 	h := mock.NewMockHelmer(m)
+	app.EXPECT().Helmer().Return(h).AnyTimes()
 	h.EXPECT().Uninstall("duc", "dev-aaa", gomock.Any()).Times(1)
 	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1).Return(errors.New("xxx"))
-	_, err := (&namespaceSvc{helmer: h}).Delete(adminCtx(), &namespace.DeleteRequest{
+	_, err := (&namespaceSvc{}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Nil(t, err)

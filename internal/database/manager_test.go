@@ -187,6 +187,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.False(t, db.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at"))
 	assert.False(t, db.Migrator().HasIndex(&models.Changelog{}, "idx_projectid_config_changed_deleted_at_version"))
 	assert.False(t, db.Migrator().HasColumn("projects", "version"))
+	assert.False(t, db.Migrator().HasIndex(&models.Project{}, "idx_deploy_status"))
 
 	assert.Nil(t, ma.AutoMigrate())
 
@@ -208,6 +209,7 @@ func TestManager_AutoMigrate(t *testing.T) {
 	assert.True(t, db.Migrator().HasTable(&models.AccessToken{}))
 	assert.True(t, db.Migrator().HasIndex(&models.Namespace{}, "DeletedAt"))
 	assert.True(t, db.Migrator().HasIndex(&models.Project{}, "idx_namespace_id_deleted_at"))
+	assert.True(t, db.Migrator().HasIndex(&models.Project{}, "idx_deploy_status"))
 
 	types, err = db.Migrator().ColumnTypes("git_projects")
 	assert.Nil(t, err)
