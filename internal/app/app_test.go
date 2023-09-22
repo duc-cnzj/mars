@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/duc-cnzj/mars/v4/internal/helm"
 	"testing"
+
+	"github.com/duc-cnzj/mars/v4/internal/helm"
 
 	"github.com/duc-cnzj/mars/v4/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/v4/internal/cache"

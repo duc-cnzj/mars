@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/go-gormigrate/gormigrate/v2"
@@ -83,6 +84,25 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 				if tx.Migrator().HasTable("commands") {
 					if err := tx.Migrator().DropTable("commands"); err != nil {
 						return fmt.Errorf("[DropTable 'commands']: err: %v", err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			ID: "2022-04-29-add-columns-to-projects",
+			Migrate: func(tx *gorm.DB) error {
+				addColumns := []string{
+					"DeployStatus",
+					"ConfigType",
+					"GitCommitWebUrl",
+					"GitCommitTitle",
+					"GitCommitAuthor",
+					"GitCommitDate",
+				}
+				for _, column := range addColumns {
+					if !tx.Migrator().HasColumn(&models.Project{}, column) {
+						tx.Migrator().AddColumn(&models.Project{}, column)
 					}
 				}
 				return nil
