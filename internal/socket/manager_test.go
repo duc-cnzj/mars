@@ -22,6 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/event"
 	"github.com/duc-cnzj/mars/v4/internal/event/events"
+	"github.com/duc-cnzj/mars/v4/internal/helm"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
@@ -1191,16 +1192,19 @@ app:
 func TestNewJober(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
+	app := testutil.MockApp(m)
 	msg := mock.NewMockDeployMsger(m)
 	ps := mock.NewMockPubSub(m)
 	l := mock.NewMockLocker(m)
-	testutil.MockApp(m).EXPECT().CacheLock().Return(l).Times(2)
+	app.EXPECT().CacheLock().Return(l).Times(2)
 	input := &JobInput{}
 	user := contracts.UserInfo{Name: "duc"}
+	h := mock.NewMockHelmer(m)
+	app.EXPECT().Helmer().Return(h).Times(2)
 	job := NewJober(input, user, "x", msg, ps, 10, WithDryRun()).(*jobRunner)
 	assert.False(t, job.IsNotDryRun())
 
-	assert.Equal(t, &DefaultHelmer{}, job.helmer)
+	assert.Equal(t, h, job.helmer)
 	assert.Equal(t, defaultLoaders(), job.loaders)
 	assert.Equal(t, user, job.user)
 	assert.Same(t, ps, job.pubsub)
@@ -1259,6 +1263,7 @@ func TestReleaseInstallerLoader_Load(t *testing.T) {
 	ep := &emptyPercenter{}
 	em := &emptyMsger{}
 	job := &jobRunner{
+		helmer:         &helm.DefaultHelmer{},
 		chart:          &chart.Chart{},
 		valuesOptions:  &values.Options{},
 		percenter:      ep,

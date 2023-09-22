@@ -22,6 +22,7 @@ type testApp struct {
 	k8sCalled           bool
 	dbmanager           contracts.DBManager
 	oidcCalled          bool
+	helmCalled          bool
 	uploaderCalled      bool
 	sfCalled            bool
 	tracerCalled        bool
@@ -64,6 +65,7 @@ func (a *testApp) CronManager() contracts.CronManager {
 	a.cronManagerCalled = true
 	return nil
 }
+
 func (a *testApp) CacheLock() contracts.Locker {
 	a.cacheLockCalled = true
 	return nil
@@ -94,16 +96,24 @@ func (a *testApp) DBManager() contracts.DBManager {
 	a.dbCalled = true
 	return a.dbmanager
 }
+
 func (a *testApp) EventDispatcher() contracts.DispatcherInterface {
 	a.eventCalled = true
 	return nil
 }
+
 func (a *testApp) Config() *config.Config {
 	a.configCalled = true
 	return nil
 }
+
 func (a *testApp) Cache() contracts.CacheInterface {
 	a.cacheCalled = true
+	return nil
+}
+
+func (a *testApp) Helmer() contracts.Helmer {
+	a.helmCalled = true
 	return nil
 }
 
@@ -218,4 +228,11 @@ func TestCronManager(t *testing.T) {
 	instance.SetInstance(a)
 	CronManager()
 	assert.True(t, a.cronManagerCalled)
+}
+
+func TestHelmer(t *testing.T) {
+	a := &testApp{}
+	instance.SetInstance(a)
+	Helmer()
+	assert.True(t, a.helmCalled)
 }

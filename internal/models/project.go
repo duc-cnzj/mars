@@ -36,7 +36,7 @@ type Project struct {
 	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
 	NamespaceId      int    `json:"namespace_id" gorm:"index:idx_namespace_id_deleted_at,priority:1;"`
 	Atomic           bool   `json:"atomic"`
-	DeployStatus     uint8  `json:"deploy_status" gorm:"not null;default:0"`
+	DeployStatus     uint8  `json:"deploy_status" gorm:"index:idx_deploy_status;not null;default:0"`
 	EnvValues        string `json:"env_values" gorm:"type:text;nullable;comment:可用的环境变量值"`
 	ExtraValues      string `json:"extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值"`
 	FinalExtraValues string `json:"final_extra_values" gorm:"type:longtext;nullable;comment:用户表单传入的额外值 + 系统默认的额外值"`

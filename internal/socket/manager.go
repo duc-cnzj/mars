@@ -219,7 +219,7 @@ func NewJober(
 	opts ...Option,
 ) contracts.Job {
 	jb := &jobRunner{
-		helmer:         &DefaultHelmer{},
+		helmer:         app.Helmer(),
 		loaders:        defaultLoaders(),
 		user:           user,
 		pubsub:         pubsub,
@@ -430,7 +430,7 @@ func (j *jobRunner) Run() contracts.Job {
 
 			j.manifests = utils.SplitManifests(result.Manifest)
 			j.project.Manifest = result.Manifest
-			j.project.SetPodSelectors(getPodSelectorsByManifest(j.manifests))
+			j.project.SetPodSelectors(utils.GetPodSelectorsByManifest(j.manifests))
 			j.project.DockerImage = matchDockerImage(pipelineVars{
 				Pipeline: j.vars.MustGetString("Pipeline"),
 				Commit:   j.vars.MustGetString("Commit"),
@@ -1295,6 +1295,6 @@ func (r *ReleaseInstallerLoader) Load(j *jobRunner) error {
 	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
+	j.installer = newReleaseInstaller(j.helmer, j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
 }

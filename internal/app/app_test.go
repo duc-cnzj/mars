@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/duc-cnzj/mars/v4/internal/helm"
+
 	"github.com/duc-cnzj/mars/v4/internal/app/bootstrappers"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/config"
@@ -456,4 +458,10 @@ func Test_printConfig(t *testing.T) {
 func Test_application_lazyCache(t *testing.T) {
 	c := cache.NewMetricsForCache(nil)
 	assert.Same(t, c, (&application{cache: c}).lazyCache())
+}
+
+func Test_application_Helmer(t *testing.T) {
+	a := NewApplication(&config.Config{}).(*application)
+	assert.NotNil(t, a.helmer)
+	assert.IsType(t, &helm.DefaultHelmer{}, a.helmer)
 }

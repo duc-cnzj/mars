@@ -245,6 +245,20 @@ func (mr *MockApplicationInterfaceMockRecorder) GetTracer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracer", reflect.TypeOf((*MockApplicationInterface)(nil).GetTracer))
 }
 
+// Helmer mocks base method.
+func (m *MockApplicationInterface) Helmer() contracts.Helmer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Helmer")
+	ret0, _ := ret[0].(contracts.Helmer)
+	return ret0
+}
+
+// Helmer indicates an expected call of Helmer.
+func (mr *MockApplicationInterfaceMockRecorder) Helmer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Helmer", reflect.TypeOf((*MockApplicationInterface)(nil).Helmer))
+}
+
 // IsDebug mocks base method.
 func (m *MockApplicationInterface) IsDebug() bool {
 	m.ctrl.T.Helper()

@@ -15,7 +15,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 
@@ -30,15 +29,12 @@ import (
 
 func init() {
 	RegisterServer(func(s grpc.ServiceRegistrar, app contracts.ApplicationInterface) {
-		namespace.RegisterNamespaceServer(s, &namespaceSvc{
-			helmer: &socket.DefaultHelmer{},
-		})
+		namespace.RegisterNamespaceServer(s, &namespaceSvc{})
 	})
 	RegisterEndpoint(namespace.RegisterNamespaceHandlerFromEndpoint)
 }
 
 type namespaceSvc struct {
-	helmer contracts.Helmer
 	namespace.UnimplementedNamespaceServer
 }
 
@@ -118,7 +114,7 @@ func (n *namespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) 
 				defer wg.Done()
 				defer recovery.HandlePanic("namespaceSvc.Delete")
 				mlog.Debugf("delete release %s namespace %s", releaseName, namespace)
-				if err := n.helmer.Uninstall(releaseName, namespace, mlog.Debugf); err != nil {
+				if err := app.Helmer().Uninstall(releaseName, namespace, mlog.Debugf); err != nil {
 					mlog.Error(err)
 					return
 				}

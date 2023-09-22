@@ -90,6 +90,25 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 			},
 		},
 		{
+			ID: "2022-04-29-add-columns-to-projects",
+			Migrate: func(tx *gorm.DB) error {
+				addColumns := []string{
+					"DeployStatus",
+					"ConfigType",
+					"GitCommitWebUrl",
+					"GitCommitTitle",
+					"GitCommitAuthor",
+					"GitCommitDate",
+				}
+				for _, column := range addColumns {
+					if !tx.Migrator().HasColumn(&models.Project{}, column) {
+						tx.Migrator().AddColumn(&models.Project{}, column)
+					}
+				}
+				return nil
+			},
+		},
+		{
 			ID: "2022-05-31-global_config-text-longtext",
 			Migrate: func(tx *gorm.DB) error {
 				if tx.Migrator().HasTable(&models.GitProject{}) {
@@ -143,9 +162,25 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 			//这里错了，实际上是 06-17
 			ID: "2022-07-17-changelogs-add-more-columns",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.AutoMigrate(&models.Changelog{}); err != nil {
-					return fmt.Errorf("[%s]: err: %v", "2022-07-17-changelogs-add-more-columns", err)
+				var addColumns = []string{
+					"ConfigType",
+					"GitBranch",
+					"GitCommit",
+					"DockerImage",
+					"EnvValues",
+					"ExtraValues",
+					"FinalExtraValues",
+					"GitCommitWebUrl",
+					"GitCommitTitle",
+					"GitCommitAuthor",
+					"GitCommitDate",
 				}
+				for _, column := range addColumns {
+					if !tx.Migrator().HasColumn(&models.Changelog{}, column) {
+						tx.Migrator().AddColumn(&models.Changelog{}, column)
+					}
+				}
+				tx.Migrator().AlterColumn(&models.Changelog{}, "Version")
 				return nil
 			},
 		},
@@ -312,6 +347,18 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 			Migrate: func(tx *gorm.DB) error {
 				if !tx.Migrator().HasColumn(&models.Project{}, "version") {
 					if err := tx.Migrator().AddColumn(&models.Project{}, "Version"); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			},
+		},
+		{
+			ID: "2023-09-22-add-idx_deploy_status-to-projects-table",
+			Migrate: func(tx *gorm.DB) error {
+				if !tx.Migrator().HasIndex(&models.Project{}, "DeployStatus") {
+					if err := tx.Migrator().CreateIndex(&models.Project{}, "DeployStatus"); err != nil {
 						return err
 					}
 				}

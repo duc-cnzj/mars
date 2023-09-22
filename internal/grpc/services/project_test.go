@@ -363,14 +363,15 @@ func TestProjectSvc_Delete(t *testing.T) {
 	d.EXPECT().Dispatch(events.EventProjectDeleted, gomock.Any()).Times(1)
 	h := mock.NewMockHelmer(m)
 	h.EXPECT().Uninstall("app", "test", gomock.Any()).Times(1).Return(errors.New("xxx"))
-	_, err := (&projectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
+	app.EXPECT().Helmer().Return(h).AnyTimes()
+	_, err := (&projectSvc{}).Delete(adminCtx(), &project.DeleteRequest{
 		ProjectId: int64(p.ID),
 	})
 	assert.Nil(t, err)
 	db.Unscoped().First(&p)
 	assert.True(t, p.DeletedAt.Valid)
 
-	_, err = (&projectSvc{helmer: h}).Delete(adminCtx(), &project.DeleteRequest{
+	_, err = (&projectSvc{}).Delete(adminCtx(), &project.DeleteRequest{
 		ProjectId: int64(999999),
 	})
 	assert.Error(t, err)

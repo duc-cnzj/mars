@@ -15,7 +15,7 @@ import (
 
 func Test_newReleaseInstaller(t *testing.T) {
 	chart := &chart.Chart{}
-	installer := newReleaseInstaller("app", "dev", chart, nil, true, 10, true)
+	installer := newReleaseInstaller(nil, "app", "dev", chart, nil, true, 10, true)
 	assert.Equal(t, "app", installer.releaseName)
 	assert.Equal(t, "dev", installer.namespace)
 	assert.Equal(t, chart, installer.chart)
@@ -26,12 +26,12 @@ func Test_newReleaseInstaller(t *testing.T) {
 
 func Test_releaseInstaller_Chart(t *testing.T) {
 	chart := &chart.Chart{}
-	installer := newReleaseInstaller("app", "dev", chart, nil, true, 10, true)
+	installer := newReleaseInstaller(nil, "app", "dev", chart, nil, true, 10, true)
 	assert.Same(t, chart, installer.Chart())
 }
 
 func Test_releaseInstaller_Logs(t *testing.T) {
-	installer := newReleaseInstaller("app", "dev", nil, nil, true, 10, true)
+	installer := newReleaseInstaller(nil, "app", "dev", nil, nil, true, 10, true)
 	installer.Logs()
 }
 
@@ -69,7 +69,7 @@ func Test_releaseInstaller_logger(t *testing.T) {
 	defer m.Finish()
 	msger := mock.NewMockDeployMsger(m)
 	msger.EXPECT().SendProcessPercent(int64(1)).Times(1)
-	installer := newReleaseInstaller("app", "dev", nil, nil, true, 10, true)
+	installer := newReleaseInstaller(nil, "app", "dev", nil, nil, true, 10, true)
 	installer.messageCh = &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)}
 	installer.startTime = time.Now().Add(-5 * time.Minute)
 	installer.percenter = newProcessPercent(msger, &fakeSleeper{})

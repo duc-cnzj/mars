@@ -8,15 +8,6 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/event/events"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-
-	v1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	"k8s.io/api/batch/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type pipelineVars struct {
@@ -75,47 +66,6 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 	}
 
 	return false
-}
-
-// getPodSelectorsByManifest
-// 参考 https://github.com/kubernetes/client-go/issues/193#issuecomment-363240636
-// 参考源码
-func getPodSelectorsByManifest(manifests []string) []string {
-	var selectors []string
-	info, _ := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
-	for _, f := range manifests {
-		obj, _, _ := info.Serializer.Decode([]byte(f), nil, nil)
-		switch a := obj.(type) {
-		case *v1.Deployment:
-			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
-			selectors = append(selectors, selector.String())
-		case *v1.StatefulSet:
-			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
-			selectors = append(selectors, selector.String())
-		case *v1.DaemonSet:
-			selector, _ := metav1.LabelSelectorAsSelector(a.Spec.Selector)
-			selectors = append(selectors, selector.String())
-		case *batchv1.Job:
-			jobPodLabels := a.Spec.Template.Labels
-			if jobPodLabels != nil {
-				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
-			}
-		case *v1beta1.CronJob:
-			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
-			if jobPodLabels != nil {
-				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
-			}
-		case *batchv1.CronJob:
-			jobPodLabels := a.Spec.JobTemplate.Spec.Template.Labels
-			if jobPodLabels != nil {
-				selectors = append(selectors, labels.SelectorFromSet(jobPodLabels).String())
-			}
-		default:
-			mlog.Debugf("未知: %#v", a)
-		}
-	}
-
-	return selectors
 }
 
 var AuditLogWithChange = events.AuditLog

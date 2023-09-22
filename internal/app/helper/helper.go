@@ -89,3 +89,8 @@ func CacheLock() contracts.Locker {
 func CronManager() contracts.CronManager {
 	return App().CronManager()
 }
+
+// Helmer return contracts.Helmer
+func Helmer() contracts.Helmer {
+	return App().Helmer()
+}
