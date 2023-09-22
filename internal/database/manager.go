@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/go-gormigrate/gormigrate/v2"
@@ -143,9 +142,25 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 			//这里错了，实际上是 06-17
 			ID: "2022-07-17-changelogs-add-more-columns",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.AutoMigrate(&models.Changelog{}); err != nil {
-					return fmt.Errorf("[%s]: err: %v", "2022-07-17-changelogs-add-more-columns", err)
+				var addColumns = []string{
+					"ConfigType",
+					"GitBranch",
+					"GitCommit",
+					"DockerImage",
+					"EnvValues",
+					"ExtraValues",
+					"FinalExtraValues",
+					"GitCommitWebUrl",
+					"GitCommitTitle",
+					"GitCommitAuthor",
+					"GitCommitDate",
 				}
+				for _, column := range addColumns {
+					if !tx.Migrator().HasColumn(&models.Changelog{}, column) {
+						tx.Migrator().AddColumn(&models.Changelog{}, column)
+					}
+				}
+				tx.Migrator().AlterColumn(&models.Changelog{}, "Version")
 				return nil
 			},
 		},
