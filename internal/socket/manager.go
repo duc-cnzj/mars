@@ -935,7 +935,10 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 		deleteDirFn()
 	})
 
-	loadDir, _ := c.chartLoader.LoadDir(filepath.Join(tmpChartsDir, dir))
+	loadDir, err := c.chartLoader.LoadDir(filepath.Join(tmpChartsDir, dir))
+	if err != nil {
+		return err
+	}
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
 		for _, dependency := range loadDir.Metadata.Dependencies {
 			if strings.HasPrefix(dependency.Repository, "file://") {

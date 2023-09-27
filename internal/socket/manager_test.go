@@ -39,7 +39,8 @@ import (
 )
 
 type fakeChartLoader struct {
-	c *chart.Chart
+	loadDirErr error
+	c          *chart.Chart
 }
 
 func (f *fakeChartLoader) LoadArchive(in io.Reader) (*chart.Chart, error) {
@@ -47,6 +48,9 @@ func (f *fakeChartLoader) LoadArchive(in io.Reader) (*chart.Chart, error) {
 }
 
 func (f *fakeChartLoader) LoadDir(dir string) (*chart.Chart, error) {
+	if f.loadDirErr != nil {
+		return nil, f.loadDirErr
+	}
 	return f.c, nil
 }
 
@@ -2029,4 +2033,43 @@ func TestChartFileLoader_Load(t *testing.T) {
 		called++
 	})
 	assert.Equal(t, 1, called)
+}
+
+func TestChartFileLoader_LoadWithChartMissing(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	em := &emptyMsger{}
+	h := mock.NewMockHelmer(m)
+	job := &jobRunner{
+		helmer: h,
+		input: &JobInput{
+			GitProjectId: 100,
+		},
+		messager:  em,
+		percenter: &emptyPercenter{},
+		config: &mars.Config{
+			LocalChartPath: "9999|master|dir",
+		},
+	}
+	loadDirErr := errors.New("Chart.yaml file is missing")
+	l := &ChartFileLoader{
+		chartLoader: &fakeChartLoader{
+			loadDirErr: loadDirErr,
+		},
+	}
+	app := testutil.MockApp(m)
+	gits := testutil.MockGitServer(m, app)
+
+	gits.EXPECT().GetDirectoryFilesWithBranch("9999", "master", "dir", true).Return([]string{"file1", "file2"}, nil)
+
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file1").Return("file1", nil).Times(1)
+	gits.EXPECT().GetFileContentWithSha("9999", "master", "file2").Return("file2", nil).Times(1)
+	up := mock.NewMockUploader(m)
+	app.EXPECT().LocalUploader().Return(up).AnyTimes()
+	up.EXPECT().AbsolutePath(gomock.Any()).Return("/dir")
+	up.EXPECT().MkDir(gomock.Any(), false).Times(1)
+	up.EXPECT().Put(gomock.Any(), gomock.Any()).Times(2)
+
+	err := l.Load(job)
+	assert.Equal(t, loadDirErr.Error(), err.Error())
 }
