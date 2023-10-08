@@ -749,7 +749,7 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 	var merged map[string]any
 	provider.Get("").Populate(&merged)
 
-	out, _ := yaml.Marshal(&merged)
+	out, _ := utils.PrettyMarshal(&merged)
 
 	return string(out), nil
 }

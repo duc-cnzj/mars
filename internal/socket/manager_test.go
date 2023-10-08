@@ -1528,14 +1528,31 @@ func Test_defaultLoaders(t *testing.T) {
 }
 
 func Test_mergeYamlString_MarshalYAML(t *testing.T) {
-	s := mergeYamlString{`
+	s := mergeYamlString{
+		`
 user:
   name: duc
-`, `
+`,
+		`
 user:
   age: 18
-`}
+`,
+		`user:
+  new_age: |
+    name: duc
+    age: 18  
+    content: x
+`,
+	}
 	marshalYAML, _ := s.MarshalYAML()
+	assert.Equal(t, `user:
+  age: 18
+  name: duc
+  new_age: |
+    name: duc
+    age: 18  
+    content: x
+`, marshalYAML.(string))
 	m := map[string]any{}
 	yaml.Unmarshal([]byte(marshalYAML.(string)), &m)
 	assert.Equal(t, 18, m["user"].(map[string]any)["age"])
