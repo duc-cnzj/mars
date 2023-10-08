@@ -118,7 +118,7 @@ func TestDynamicLoader_Load(t *testing.T) {
 	assert.Nil(t, (&DynamicLoader{}).Load(job))
 	assert.Equal(t,
 		`app:
-    config: xxxx
+  config: xxxx
 `, job.dynamicConfigYaml)
 	job2 := &jobRunner{
 		input: &JobInput{
@@ -134,9 +134,9 @@ func TestDynamicLoader_Load(t *testing.T) {
 	assert.Nil(t, (&DynamicLoader{}).Load(job2))
 	assert.Equal(t,
 		`app:
-    config:
-        age: 17
-        name: duc
+  config:
+    age: 17
+    name: duc
 `, job2.dynamicConfigYaml)
 
 	em.msgs = []string{}
@@ -186,12 +186,12 @@ func TestExtraValuesLoader_Load(t *testing.T) {
 	sort.Strings(job.extraValues)
 	assert.Equal(t,
 		`app:
-    config: "1"
+  config: "1"
 `,
 		job.extraValues[0])
 	assert.Equal(t,
 		`app:
-    xxx: true
+  xxx: true
 `,
 		job.extraValues[1])
 
@@ -269,7 +269,7 @@ func TestExtraValuesLoader_deepSetItems(t *testing.T) {
 	items = (&ExtraValuesLoader{}).deepSetItems(map[string]any{"a->b": "ab"})
 	assert.Equal(t,
 		`a:
-    b: ab
+  b: ab
 `, items[0])
 }
 

@@ -10,7 +10,6 @@ import (
 
 	goyaml "github.com/goccy/go-yaml"
 	"github.com/tidwall/gjson"
-	"gopkg.in/yaml.v3"
 )
 
 const separator = "->"
@@ -62,7 +61,7 @@ func YamlDeepSetKey(field string, data any) ([]byte, error) {
 		return nil, fmt.Errorf("%w: %s", ErrorInvalidSeparator, field)
 	}
 
-	return yaml.Marshal(deepSet(field, data))
+	return PrettyMarshal(deepSet(field, data))
 }
 
 // PrettyMarshal 这里想用 LiteralStyle, 不然前端显示的时候是一坨

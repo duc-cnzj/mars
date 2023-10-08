@@ -117,9 +117,9 @@ func TestParseInputConfig(t *testing.T) {
 			input:       `{"name": "duc", "age": 18}`,
 			wants: dedent.Dedent(`
                 conf:
-                    config:
-                        age: 18
-                        name: duc
+                  config:
+                    age: 18
+                    name: duc
 				`),
 		},
 		{
@@ -129,9 +129,9 @@ func TestParseInputConfig(t *testing.T) {
 			// 这里缩进有问题
 			wants: `
 conf:
-    config: |-
-        name: duc
-        age: 18
+  config: |-
+    name: duc
+    age: 18
 `,
 		},
 		{
@@ -139,15 +139,15 @@ conf:
 			ConfigField: "command",
 			input: `
 command:
-    - sh
-    - -c
-    - "sleep 3600;exit"
+  - sh
+  - -c
+  - "sleep 3600;exit"
 `,
 			wants: `
 command:
-    - sh
-    - -c
-    - sleep 3600;exit
+  - sh
+  - -c
+  - sleep 3600;exit
 `,
 		},
 		{
@@ -156,9 +156,9 @@ command:
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
 			wants: `
 command:
-    - sh
-    - -c
-    - sleep 3600;exit
+  - sh
+  - -c
+  - sleep 3600;exit
 `,
 		},
 		{
@@ -167,10 +167,10 @@ command:
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
 			wants: `
 conf:
-    command:
-        - sh
-        - -c
-        - sleep 3600;exit
+  command:
+    - sh
+    - -c
+    - sleep 3600;exit
 `,
 		},
 		{
@@ -179,10 +179,10 @@ conf:
 			input:       `command: ["sh", "-c", "sleep 3600;exit"]`,
 			wants: `
 "":
-    command:
-        - sh
-        - -c
-        - sleep 3600;exit
+  command:
+    - sh
+    - -c
+    - sleep 3600;exit
 `,
 		},
 		{
@@ -190,12 +190,12 @@ conf:
 			ConfigField: "command",
 			input: `
 command:
-    a: b
+  a: b
 `,
 			wants: `
 command:
-    command:
-        a: b
+  command:
+    a: b
 `,
 		},
 		{
@@ -203,18 +203,18 @@ command:
 			ConfigField: "command",
 			ValuesYaml: `
 command:
-    command: []
+  command: []
 `,
 			input: `
 command:
-    - a
-    - b
+  - a
+  - b
 `,
 			wants: `
 command:
-    command:
-        - a
-        - b
+  command:
+    - a
+    - b
 `,
 		},
 		{
@@ -225,13 +225,13 @@ command: []
 `,
 			input: `
 command:
-    - a
-    - b
+  - a
+  - b
 `,
 			wants: `
 command:
-    - a
-    - b
+  - a
+  - b
 `,
 		},
 		{
@@ -264,8 +264,8 @@ command:
 			ConfigField: "->command",
 			input: `
 command:
-    - a
-    - b
+  - a
+  - b
 `,
 			wants:      "",
 			wantsError: true,
