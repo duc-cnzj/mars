@@ -10,7 +10,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/duc-cnzj/mars-client/v4 v4.0.0
 	github.com/dustin/go-humanize v1.0.0
-	github.com/envoyproxy/protoc-gen-validate v0.10.0
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-gormigrate/gormigrate/v2 v2.0.2
 	github.com/go-redis/redis/v8 v8.11.5
@@ -50,7 +50,7 @@ require (
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.13.0
-	google.golang.org/grpc v1.55.0
+	google.golang.org/grpc v1.56.3
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
