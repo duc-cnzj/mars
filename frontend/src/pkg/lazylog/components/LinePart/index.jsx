@@ -1,8 +1,8 @@
-import { Component } from 'react';
-import { func, object, shape, string } from 'prop-types';
-import styles from './index.module.css';
+import { Component } from "react";
+import { func, object, shape, string } from "prop-types";
+import styles from "./index.module.css";
 
-const getClassName = part => {
+const getClassName = (part) => {
   const className = [];
 
   if (part.foreground && part.bold) {
@@ -25,7 +25,7 @@ const getClassName = part => {
     className.push(styles.underline);
   }
 
-  return className.join(' ');
+  return className.join(" ");
 };
 
 /**
@@ -60,9 +60,11 @@ export default class LinePart extends Component {
   render() {
     const { format, part, style } = this.props;
 
-    return (
+    return format ? (
+      format(part.text)
+    ) : (
       <span className={getClassName(part)} style={style}>
-        {format ? format(part.text) : part.text}
+        {part.text}
       </span>
     );
   }
