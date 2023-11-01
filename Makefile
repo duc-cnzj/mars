@@ -17,6 +17,7 @@ build_tools:
 		google.golang.org/protobuf/cmd/protoc-gen-go \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		golang.org/x/tools/cmd/goimports \
+		github.com/securego/gosec/v2/cmd/gosec \
 		github.com/golang/mock/mockgen
 
 .PHONY: gen_proto
@@ -26,6 +27,10 @@ gen_proto:
 .PHONY: gen
 gen:
 	go generate ./... && make fmt
+
+.PHONY: sec
+sec:
+	gosec -exclude=G104,G304 -stdout -tests=false -exclude-generated -fmt=json -out=gosec-results.json  ./...
 
 .PHONY: lint
 lint:

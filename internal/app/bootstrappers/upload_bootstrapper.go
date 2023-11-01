@@ -21,7 +21,7 @@ func (*UploadBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
 		if info, err := os.Stat(cfg.UploadDir); err != nil {
 			if os.IsNotExist(err) {
 				mlog.Infof("[UploadBootstrapper]: create upload dir %s", cfg.UploadDir)
-				if err := os.MkdirAll(cfg.UploadDir, 0755); err != nil {
+				if err := os.MkdirAll(cfg.UploadDir, 0750); err != nil {
 					return err
 				}
 			}

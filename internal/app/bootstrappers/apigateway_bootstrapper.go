@@ -170,8 +170,9 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 	router.PathPrefix("/").Handler(gmux)
 
 	s := &http.Server{
-		Addr:    ":" + app.Config().AppPort,
-		Handler: defaultMiddlewares.Wrap(router),
+		Addr:              ":" + app.Config().AppPort,
+		Handler:           defaultMiddlewares.Wrap(router),
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return s, nil

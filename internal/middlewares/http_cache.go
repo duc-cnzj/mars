@@ -16,7 +16,7 @@ func init() {
 
 func setEtag(v version.Version) {
 	if v.HasBuildInfo() {
-		Etag = utils.MD5(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate))
+		Etag = utils.Hash(fmt.Sprintf("%s-%s", v.GitCommit, v.BuildDate))
 	}
 }
 

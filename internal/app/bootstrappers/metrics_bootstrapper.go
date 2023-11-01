@@ -3,6 +3,7 @@ package bootstrappers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -31,7 +32,7 @@ func (m *metricsRunner) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mlog.Infof("[Server]: metrics running at :%s/metrics", m.port)
 	mux.Handle("/metrics", promhttp.Handler())
-	m.s = &http.Server{Addr: ":" + m.port, Handler: mux}
+	m.s = &http.Server{Addr: ":" + m.port, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		m.s.ListenAndServe()
 	}()

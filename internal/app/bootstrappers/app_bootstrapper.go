@@ -117,10 +117,12 @@ func syncImagePullSecrets(app contracts.ApplicationInterface) {
 		}
 	}
 	app.DB().Select("ID", "Name", "ImagePullSecrets").Find(&namespaceList)
-	for _, ns := range namespaceList {
-		var checked = make(map[string]struct{})
-		var missing config.DockerAuths
-
+	for _, namespace := range namespaceList {
+		var (
+			checked = make(map[string]struct{})
+			missing config.DockerAuths
+			ns      = namespace
+		)
 		for _, secretName := range ns.ImagePullSecretsArray() {
 			secret, err := k8sClient.SecretLister.Secrets(ns.Name).Get(secretName)
 			if err != nil {

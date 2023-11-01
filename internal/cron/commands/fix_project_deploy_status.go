@@ -21,10 +21,12 @@ func fixDeployStatus() error {
 	app.DB().Preload("Namespace", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
 	}).Where(`deploy_status in ?`, []types.Deploy{types.Deploy_StatusFailed, types.Deploy_StatusUnknown}).Find(&projects)
+	var status types.Deploy
 	for _, project := range projects {
-		status := app.Helmer().ReleaseStatus(project.Name, project.Namespace.Name)
+		pp := project
+		status = app.Helmer().ReleaseStatus(pp.Name, pp.Namespace.Name)
 		if status != types.Deploy_StatusFailed && status != types.Deploy_StatusUnknown {
-			app.DB().Model(&project).Updates(map[string]any{
+			app.DB().Model(&pp).Updates(map[string]any{
 				"deploy_status": status,
 			})
 		}

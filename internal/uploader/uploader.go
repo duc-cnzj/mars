@@ -27,7 +27,7 @@ func NewUploader(rootDir string, disk string) (contracts.Uploader, error) {
 	if rootDir == "" {
 		rootDir = DefaultRootDir
 		if !dirExists(rootDir) {
-			if err := os.MkdirAll(rootDir, 0755); err != nil {
+			if err := os.MkdirAll(rootDir, 0750); err != nil {
 				return nil, err
 			}
 		}
@@ -107,10 +107,10 @@ func (u *diskUploader) Exists(path string) bool {
 func (u *diskUploader) MkDir(path string, recursive bool) error {
 	dir := u.getPath(path)
 	if recursive {
-		return os.MkdirAll(dir, 0755)
+		return os.MkdirAll(dir, 0750)
 	}
 
-	return os.Mkdir(dir, 0755)
+	return os.Mkdir(dir, 0750)
 }
 
 func (u *diskUploader) DirExists(dir string) bool {

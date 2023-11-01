@@ -35,7 +35,7 @@ import (
 func TestHandleWsAuthorize(t *testing.T) {
 	m := gomock.NewController(t)
 	defer m.Finish()
-	key, _ := rsa.GenerateKey(rand.Reader, 1024)
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
 	privateKey, _ := x509.MarshalPKCS8PrivateKey(key)
 	bf := bytes.Buffer{}
 	pem.Encode(&bf, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKey})

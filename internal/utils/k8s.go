@@ -413,5 +413,5 @@ func WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
 }
 
 func GetSlugName[T int64 | int](namespaceId T, name string) string {
-	return MD5(fmt.Sprintf("%d-%s", namespaceId, name))
+	return Hash(fmt.Sprintf("%d-%s", namespaceId, name))
 }

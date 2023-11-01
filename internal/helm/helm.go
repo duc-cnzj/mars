@@ -303,7 +303,7 @@ const (
 )
 
 var (
-	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec G101
 	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
