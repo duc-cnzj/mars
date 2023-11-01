@@ -1032,7 +1032,7 @@ func Test_getPodSelectorsInDeploymentAndStatefulSetByManifest(t *testing.T) {
 }
 
 func TestGetSlugName(t *testing.T) {
-	assert.Equal(t, fmt.Sprintf("%d-%s", 1, "aa"), GetSlugName(1, "aa"))
+	assert.Equal(t, Hash(fmt.Sprintf("%d-%s", 1, "aa")), GetSlugName(1, "aa"))
 }
 
 func TestNewCloser(t *testing.T) {
