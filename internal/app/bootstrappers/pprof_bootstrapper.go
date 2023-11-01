@@ -20,9 +20,7 @@ func (p *PprofBootstrapper) Bootstrap(app contracts.ApplicationInterface) error 
 	app.AddServer(&pprofRunner{
 		server: &http.Server{
 			Addr:              "localhost:6060",
-			ReadTimeout:       10 * time.Second,
 			ReadHeaderTimeout: 5 * time.Second,
-			WriteTimeout:      30 * time.Second,
 			Handler:           pprofMux(),
 		},
 	})
