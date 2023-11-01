@@ -1,5 +1,5 @@
-import md5 from "blueimp-md5";
+import sha256 from "crypto-js/sha256";
 
 export function toSlug(namespaceId: number, name: string) {
-  return md5(namespaceId + "-" + name);
+  return sha256(namespaceId + "-" + name).toString();
 }

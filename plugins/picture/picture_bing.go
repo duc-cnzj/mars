@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 )
 
 var (

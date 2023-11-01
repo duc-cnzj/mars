@@ -5,7 +5,6 @@ package cachelock
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"gorm.io/gorm"
@@ -14,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 

@@ -2,13 +2,13 @@ package cachelock
 
 import (
 	"context"
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 )
 

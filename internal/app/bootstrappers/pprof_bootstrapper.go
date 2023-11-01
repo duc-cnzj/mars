@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -16,18 +17,28 @@ func (p *PprofBootstrapper) Tags() []string {
 }
 
 func (p *PprofBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	app.AddServer(&pprofRunner{})
+	app.AddServer(&pprofRunner{
+		server: &http.Server{
+			Addr:              "localhost:6060",
+			ReadTimeout:       10 * time.Second,
+			ReadHeaderTimeout: 5 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			Handler:           pprofMux(),
+		},
+	})
 
 	return nil
 }
 
-type pprofRunner struct{}
+type pprofRunner struct {
+	server httpServer
+}
 
 func (p *pprofRunner) Run(ctx context.Context) error {
 	mlog.Info("[Server]: start pprofRunner runner.")
 	go func() {
 		mlog.Info("Starting pprof server on localhost:6060.")
-		if err := http.ListenAndServe("localhost:6060", pprofMux()); err != nil && err != http.ErrServerClosed {
+		if err := p.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			mlog.Error(err)
 		}
 	}()
@@ -47,6 +58,5 @@ func pprofMux() *http.ServeMux {
 
 func (p *pprofRunner) Shutdown(ctx context.Context) error {
 	mlog.Info("[Server]: shutdown pprofRunner runner.")
-
-	return nil
+	return p.server.Shutdown(ctx)
 }

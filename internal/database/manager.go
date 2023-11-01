@@ -146,11 +146,12 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 				}
 				var projects []models.Project
 				tx.Find(&projects)
+				var changelog models.Changelog
 				for _, project := range projects {
-					if project.Manifest == "" {
-						var changelog models.Changelog
-						if tx.Where("`project_id` = ?", project.ID).Last(&changelog).Error == nil {
-							tx.Model(&project).UpdateColumn("manifest", changelog.Manifest)
+					pp := project
+					if pp.Manifest == "" {
+						if tx.Where("`project_id` = ?", pp.ID).Last(&changelog).Error == nil {
+							tx.Model(&pp).UpdateColumn("manifest", changelog.Manifest)
 						}
 					}
 				}

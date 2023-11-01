@@ -1,8 +1,6 @@
 package domainmanager
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -64,7 +62,7 @@ func (d *certManager) Destroy() error {
 }
 
 func (d *certManager) GetCertSecretName(projectName string, index int) string {
-	return fmt.Sprintf("mars-tls-%s", utils.MD5(fmt.Sprintf("%s-%d", projectName, index)))
+	return fmt.Sprintf("mars-tls-%s", utils.Hash(fmt.Sprintf("%s-%d", projectName, index)))
 }
 
 func (d *certManager) GetClusterIssuer() string {
@@ -155,7 +153,7 @@ func (s Subdomain) SimpleSubdomain() string {
 	if s.HasIndex() {
 		str = fmt.Sprintf("%s-%s-%d", s.projectName, s.namespace, s.index)
 	}
-	ss := substr(hash(str), leftLen)
+	ss := substr(utils.Hash(str), leftLen)
 
 	return fmt.Sprintf("%s.%s", ss, s.domainSuffix)
 }
@@ -166,11 +164,4 @@ func substr(s string, length int) string {
 	}
 
 	return s[0:length]
-}
-
-func hash(data string) string {
-	h := md5.New()
-	h.Write([]byte(data))
-
-	return hex.EncodeToString(h.Sum(nil))
 }

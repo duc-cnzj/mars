@@ -10,6 +10,7 @@ import { setState, isRandomBg, toggleRandomBg } from "../utils/token";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
 import styled from "@emotion/styled";
+
 const Login: React.FC = () => {
   const [bgInfo, setBgInfo] = useState<pb.picture.BackgroundResponse>();
   const [settings, setSettings] = useState<pb.auth.SettingsResponse>();

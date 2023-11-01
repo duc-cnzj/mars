@@ -8,7 +8,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
-const ManualCertSecretName = "mars-external-tls-secret"
+const ManualCertSecretName = "mars-external-tls-secret" // #nosec G101
 
 var _ plugins.DomainManager = (*manualDomainManager)(nil)
 

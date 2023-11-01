@@ -3,7 +3,6 @@ package picture
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 )
 
 var (

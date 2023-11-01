@@ -21,7 +21,9 @@ func TestPprofBootstrapper_Bootstrap(t *testing.T) {
 }
 
 func TestPprofRunner_Shutdown(t *testing.T) {
-	assert.Nil(t, (&pprofRunner{}).Shutdown(context.TODO()))
+	s := &mockHttpServer{}
+	assert.Nil(t, (&pprofRunner{server: s}).Shutdown(context.TODO()))
+	assert.True(t, s.shutdownCalled)
 }
 
 func TestPprofBootstrapper_Tags(t *testing.T) {
