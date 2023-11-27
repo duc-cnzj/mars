@@ -221,7 +221,7 @@ export default class LazyLog extends Component {
     loadingComponent: Loading,
     lineClassName: '',
     highlightLineClassName: '',
-    caseInsensitive: false,
+    caseInsensitive: true,
   };
 
   static getDerivedStateFromProps(

@@ -3557,6 +3557,11 @@ allotment@^1.19.0:
     lodash.isequal "^4.5.0"
     use-resize-observer "^9.0.0"
 
+anser@^1.4.1:
+  version "1.4.10"
+  resolved "https://registry.npmmirror.com/anser/-/anser-1.4.10.tgz#befa3eddf282684bd03b63dcda3927aef8c2e35b"
+  integrity sha512-hCv9AqTQ8ycjpSd3upOJd7vFwW1JaoYQ7tpham03GJ1ca8/65rqn0RpaWpItOAd6ylW9wAw6luXYPJIyPFVOww==
+
 ansi-escapes@^4.2.1, ansi-escapes@^4.3.0, ansi-escapes@^4.3.1:
   version "4.3.2"
   resolved "https://registry.npmmirror.com/ansi-escapes/-/ansi-escapes-4.3.2.tgz#6b2291d1db7d98b6521d5f1efa42d0f3a9feb65e"
@@ -3603,10 +3608,13 @@ ansi-styles@^6.0.0:
   resolved "https://registry.npmmirror.com/ansi-styles/-/ansi-styles-6.2.1.tgz#0e62320cf99c21afff3b3012192546aacbfb05c5"
   integrity sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==
 
-ansi_up@^6.0.2:
-  version "6.0.2"
-  resolved "https://registry.npmmirror.com/ansi_up/-/ansi_up-6.0.2.tgz#083adb65be5b21ba283fd105d3102e64f3f0b092"
-  integrity sha512-3G3vKvl1ilEp7J1u6BmULpMA0xVoW/f4Ekqhl8RTrJrhEBkonKn5k3bUc5Xt+qDayA6iDX0jyUh3AbZjB/l0tw==
+ansi-to-react@^6.1.6:
+  version "6.1.6"
+  resolved "https://registry.npmmirror.com/ansi-to-react/-/ansi-to-react-6.1.6.tgz#d6fe15ecd4351df626a08121b1646adfe6c02ccb"
+  integrity sha512-+HWn72GKydtupxX9TORBedqOMsJRiKTqaLUKW8txSBZw9iBpzPKLI8KOu4WzwD4R7hSv1zEspobY6LwlWvwZ6Q==
+  dependencies:
+    anser "^1.4.1"
+    escape-carriage "^1.3.0"
 
 antd@^5.8.4:
   version "5.8.4"
@@ -5420,6 +5428,11 @@ escalade@^3.1.1:
   version "3.1.1"
   resolved "https://registry.npmmirror.com/escalade/-/escalade-3.1.1.tgz#d8cfdc7000965c5a0174b4a82eaa5c0552742e40"
   integrity sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==
+
+escape-carriage@^1.3.0:
+  version "1.3.1"
+  resolved "https://registry.npmmirror.com/escape-carriage/-/escape-carriage-1.3.1.tgz#842658e5422497b1232585e517dc813fc6a86170"
+  integrity sha512-GwBr6yViW3ttx1kb7/Oh+gKQ1/TrhYwxKqVmg5gS+BK+Qe2KrOa/Vh7w3HPBvgGf0LfcDGoY9I6NHKoA5Hozhw==
 
 escape-html@^1.0.3, escape-html@~1.0.3:
   version "1.0.3"

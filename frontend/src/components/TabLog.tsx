@@ -9,7 +9,6 @@ import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import { debounce } from "lodash";
 import PodStateTag from "./PodStateTag";
 import { css } from "@emotion/css";
-import { AnsiUp } from "ansi_up";
 
 const ProjectContainerLogs: React.FC<{
   updatedAt: any;
@@ -177,15 +176,9 @@ const MyLogUtil: React.FC<{
           if (onError?.praseJsonError) {
             return onError?.praseJsonError(res.error);
           }
-          return <span>{res.error}</span>;
+          return res.error;
         }
-        return (
-          <span
-            dangerouslySetInnerHTML={{
-              __html: new AnsiUp().ansi_to_html(res.result.log),
-            }}
-          />
-        );
+        return res.result.log;
       }}
       stream
       onError={(e: any) => {
