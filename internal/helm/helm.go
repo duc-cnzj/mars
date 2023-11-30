@@ -386,7 +386,7 @@ func packageChart(path string, destDir string) (string, error) {
 	if chartLocal.Metadata.Dependencies != nil && action.CheckDependencies(chartLocal, chartLocal.Metadata.Dependencies) != nil {
 		// 更新依赖 dependency, 防止没有依赖文件打包失败
 		dockerCfgOnce.Do(func() {
-			os.WriteFile(dockerCfgOncePath, app.Config().ImagePullSecrets.FormatDockerCfg(), 0644)
+			os.WriteFile(dockerCfgOncePath, app.Config().ImagePullSecrets.FormatDockerCfg(), 0600)
 		})
 		client, err := newDefaultRegistryClient(debug, dockerCfgOncePath)
 		if err != nil {
