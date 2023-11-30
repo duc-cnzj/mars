@@ -524,3 +524,9 @@ func Test_logWriter_Write(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 3, n)
 }
+
+func Test_newDefaultRegistryClient(t *testing.T) {
+	client, err := newDefaultRegistryClient(false, "")
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+}
