@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/duc-cnzj/mars-client/v4/types"
@@ -23,6 +24,7 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/kube"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
 	corev1 "k8s.io/api/core/v1"
@@ -366,8 +368,13 @@ func (l ReleaseList) Add(r *release.Release) {
 	}
 }
 
+var dockerCfgOnce sync.Once
+
+const dockerCfgOncePath = "/tmp/mars-docker-config.json"
+
 func packageChart(path string, destDir string) (string, error) {
 	newPackage := action.NewPackage()
+	debug := app.Config().Debug
 	if destDir != "" {
 		newPackage.Destination = destDir
 	}
@@ -378,12 +385,20 @@ func packageChart(path string, destDir string) (string, error) {
 	}
 	if chartLocal.Metadata.Dependencies != nil && action.CheckDependencies(chartLocal, chartLocal.Metadata.Dependencies) != nil {
 		// 更新依赖 dependency, 防止没有依赖文件打包失败
+		dockerCfgOnce.Do(func() {
+			os.WriteFile(dockerCfgOncePath, app.Config().ImagePullSecrets.FormatDockerCfg(), 0600)
+		})
+		client, err := newDefaultRegistryClient(debug, dockerCfgOncePath)
+		if err != nil {
+			return "", err
+		}
 		downloadManager := &downloader.Manager{
-			Out:       io.Discard,
-			ChartPath: path,
-			Keyring:   newPackage.Keyring,
-			Getters:   getter.All(&cli.EnvSettings{PluginsDirectory: ""}),
-			Debug:     true,
+			Out:            io.Discard,
+			ChartPath:      path,
+			Debug:          debug,
+			Keyring:        newPackage.Keyring,
+			Getters:        getter.All(&cli.EnvSettings{PluginsDirectory: ""}),
+			RegistryClient: client,
 		}
 
 		if err := downloadManager.Update(); err != nil {
@@ -392,6 +407,28 @@ func packageChart(path string, destDir string) (string, error) {
 	}
 
 	return newPackage.Run(path, nil)
+}
+
+type logWriter struct{}
+
+func (l *logWriter) Write(p []byte) (n int, err error) {
+	mlog.Debugf(string(p))
+	return len(p), nil
+}
+
+func newDefaultRegistryClient(debug bool, cfg string) (*registry.Client, error) {
+	opts := []registry.ClientOption{
+		registry.ClientOptDebug(debug),
+		registry.ClientOptEnableCache(true),
+		registry.ClientOptWriter(&logWriter{}),
+		registry.ClientOptCredentialsFile(cfg),
+	}
+
+	registryClient, err := registry.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return registryClient, nil
 }
 
 func getActionConfigAndSettings(namespace string, log func(format string, v ...any)) *action.Configuration {

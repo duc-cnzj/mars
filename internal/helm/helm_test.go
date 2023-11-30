@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/mock"
+	"github.com/sirupsen/logrus"
+
 	restclient "k8s.io/client-go/rest"
 
 	"helm.sh/helm/v3/pkg/cli"
@@ -507,4 +511,22 @@ func Test_wrapRestConfig(t *testing.T) {
 	cfg := &restclient.Config{}
 	wrapRestConfig(cfg)
 	assert.Equal(t, float32(-1), cfg.QPS)
+}
+
+func Test_logWriter_Write(t *testing.T) {
+	m := gomock.NewController(t)
+	defer m.Finish()
+	l := mock.NewMockLoggerInterface(m)
+	mlog.SetLogger(l)
+	defer mlog.SetLogger(logrus.New())
+	l.EXPECT().Debugf("ass").Times(1)
+	n, err := (&logWriter{}).Write([]byte("ass"))
+	assert.Nil(t, err)
+	assert.Equal(t, 3, n)
+}
+
+func Test_newDefaultRegistryClient(t *testing.T) {
+	client, err := newDefaultRegistryClient(false, "")
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
 }
