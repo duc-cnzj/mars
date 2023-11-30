@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -43,6 +45,32 @@ func (a DockerAuths) String() string {
 		strs = append(strs, fmt.Sprintf("[%v]", auth))
 	}
 	return strings.Join(strs, " ")
+}
+
+func (a DockerAuths) FormatDockerCfg() []byte {
+	var cfg = DockerConfigJSON{Auths: map[string]DockerConfigEntry{}}
+	for _, auth := range a {
+		cfg.Auths[auth.Server] = DockerConfigEntry{
+			Username: auth.Username,
+			Password: auth.Password,
+			Email:    auth.Email,
+			Auth:     base64.StdEncoding.EncodeToString([]byte(auth.Username + ":" + auth.Password)),
+		}
+	}
+
+	marshal, _ := json.Marshal(cfg)
+	return marshal
+}
+
+type DockerConfigJSON struct {
+	Auths map[string]DockerConfigEntry `json:"auths"`
+}
+
+type DockerConfigEntry struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Auth     string `json:"auth,omitempty"`
 }
 
 type DockerAuth struct {

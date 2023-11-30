@@ -114,3 +114,27 @@ func TestExcludeServerTags_List(t *testing.T) {
 		})
 	}
 }
+
+func TestDockerAuths_FormatDockerCfg(t *testing.T) {
+	var au = DockerAuths{}
+	assert.Equal(t, `{"auths":{}}`, string(au.FormatDockerCfg()))
+
+	au = DockerAuths{
+		{
+			Username: "duc",
+			Password: "123",
+			Email:    "1@q.c",
+			Server:   "https://index.docker.io/v1/",
+		},
+		{
+			Username: "abc",
+			Password: "456",
+			Email:    "1@q.c",
+			Server:   "https://index.reg.io/",
+		},
+	}
+	assert.Equal(t,
+		`{"auths":{"https://index.docker.io/v1/":{"username":"duc","password":"123","email":"1@q.c","auth":"ZHVjOjEyMw=="},"https://index.reg.io/":{"username":"abc","password":"456","email":"1@q.c","auth":"YWJjOjQ1Ng=="}}}`,
+		string(au.FormatDockerCfg()),
+	)
+}
