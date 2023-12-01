@@ -32,7 +32,7 @@ type Project struct {
 	GitCommit        string `json:"git_commit" gorm:"not null;size:255;"`
 	Config           string `json:"config"`
 	OverrideValues   string `json:"override_values"`
-	DockerImage      string `json:"docker_image" gorm:"not null;size:255;default:''"`
+	DockerImage      string `json:"docker_image" gorm:"not null;size:1024;default:''"`
 	PodSelectors     string `json:"pod_selectors" gorm:"type:text;nullable;"`
 	NamespaceId      int    `json:"namespace_id" gorm:"index:idx_namespace_id_deleted_at,priority:1;"`
 	Atomic           bool   `json:"atomic"`

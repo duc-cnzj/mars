@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/go-gormigrate/gormigrate/v2"
@@ -364,6 +363,15 @@ func (m *dbManager) AutoMigrate(dst ...any) error {
 					}
 				}
 
+				return nil
+			},
+		},
+		{
+			ID: "2023-12-01-alter-column-docker_image-size-to-projects-table",
+			Migrate: func(tx *gorm.DB) error {
+				if tx.Dialector.Name() == "mysql" {
+					return tx.Migrator().AlterColumn(&models.Project{}, "DockerImage")
+				}
 				return nil
 			},
 		},
