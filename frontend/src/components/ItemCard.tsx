@@ -18,6 +18,7 @@ import CreateProjectModal from "./CreateProjectModal";
 import pb from "../api/compiled";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
+import { useAuth } from "../contexts/auth";
 
 const Item: React.FC<{
   item: pb.types.NamespaceModel;
@@ -25,7 +26,7 @@ const Item: React.FC<{
   loading: boolean;
 }> = ({ item, onNamespaceDeleted, loading }) => {
   const [cpuAndMemory, setCpuAndMemory] = useState({ cpu: "", memory: "" });
-
+  const { isAdmin } = useAuth();
   const [deleting, setDeleting] = useState<boolean>(false);
 
   return (
@@ -92,22 +93,26 @@ const Item: React.FC<{
         </CardTitle>
       }
       extra={
-        <Popconfirm
-          title={`确定要删除 '${item.name}' 这个名称空间吗？`}
-          okText="Yes"
-          cancelText="No"
-          onConfirm={() => {
-            setDeleting(true);
-            deleteNamespace({ namespace_id: item.id })
-              .then((res) => {
-                message.success("删除成功");
-                onNamespaceDeleted();
-              })
-              .catch((e) => message.error(e.response.data.message));
-          }}
-        >
-          <Button type="link" size="middle" icon={<CloseOutlined />} />
-        </Popconfirm>
+        isAdmin() ? (
+          <Popconfirm
+            title={`确定要删除 '${item.name}' 这个名称空间吗？`}
+            okText="Yes"
+            cancelText="No"
+            onConfirm={() => {
+              setDeleting(true);
+              deleteNamespace({ namespace_id: item.id })
+                .then((res) => {
+                  message.success("删除成功");
+                  onNamespaceDeleted();
+                })
+                .catch((e) => message.error(e.response.data.message));
+            }}
+          >
+            <Button type="link" size="middle" icon={<CloseOutlined />} />
+          </Popconfirm>
+        ) : (
+          <></>
+        )
       }
       bordered={false}
     >

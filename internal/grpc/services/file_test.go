@@ -42,9 +42,13 @@ func TestFile_Authorize(t *testing.T) {
 }
 
 func adminCtx() context.Context {
+	return userCtx("admin")
+}
+
+func userCtx(roles ...string) context.Context {
 	ctx := context.TODO()
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{
-		Roles: []string{"admin"},
+		Roles: roles,
 	})
 	return ctx
 }

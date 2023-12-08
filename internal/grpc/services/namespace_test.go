@@ -172,7 +172,11 @@ func TestNamespaceSvc_Delete(t *testing.T) {
 	app.EXPECT().Helmer().Return(h).AnyTimes()
 	h.EXPECT().Uninstall("duc", "dev-aaa", gomock.Any()).Times(1)
 	h.EXPECT().Uninstall("abc", "dev-aaa", gomock.Any()).Times(1).Return(errors.New("xxx"))
-	_, err := (&namespaceSvc{}).Delete(adminCtx(), &namespace.DeleteRequest{
+	_, err := (&namespaceSvc{}).Delete(userCtx(), &namespace.DeleteRequest{
+		NamespaceId: int64(ns.ID),
+	})
+	assert.ErrorIs(t, ErrorPermissionDenied, err)
+	_, err = (&namespaceSvc{}).Delete(adminCtx(), &namespace.DeleteRequest{
 		NamespaceId: int64(ns.ID),
 	})
 	assert.Nil(t, err)

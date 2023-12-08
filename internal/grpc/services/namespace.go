@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+
 	"github.com/duc-cnzj/mars-client/v4/namespace"
 	"github.com/duc-cnzj/mars-client/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
@@ -102,6 +104,11 @@ func (n *namespaceSvc) Create(ctx context.Context, request *namespace.CreateRequ
 }
 
 func (n *namespaceSvc) Delete(ctx context.Context, id *namespace.DeleteRequest) (*namespace.DeleteResponse, error) {
+	user := auth.MustGetUser(ctx)
+	if !user.IsAdmin() {
+		return nil, ErrorPermissionDenied
+	}
+
 	var ns models.Namespace
 	var deletedProjectNames []string
 	// 删除空间前，要先删除空间下的项目
