@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/duc-cnzj/mars/v4/internal/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func TestPprofBootstrapper_Bootstrap(t *testing.T) {

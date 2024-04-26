@@ -3,7 +3,7 @@ package contracts
 import (
 	"context"
 
-	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 )

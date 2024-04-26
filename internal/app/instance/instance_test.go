@@ -5,8 +5,8 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type testApp struct {

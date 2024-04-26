@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/mars"
-	"github.com/duc-cnzj/mars-client/v4/types"
-	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/mars"
+	"github.com/duc-cnzj/mars/api/v4/types"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/cachelock"
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
@@ -31,8 +31,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"

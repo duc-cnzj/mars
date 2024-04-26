@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/token"
+	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"github.com/duc-cnzj/mars/v4/internal/utils/date"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

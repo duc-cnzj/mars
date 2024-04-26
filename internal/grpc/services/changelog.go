@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	"github.com/duc-cnzj/mars-client/v4/changelog"
-	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/changelog"
+	"github.com/duc-cnzj/mars/api/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"

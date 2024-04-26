@@ -17,8 +17,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func newCacheByApp(app contracts.ApplicationInterface) contracts.CacheInterface {

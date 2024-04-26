@@ -9,7 +9,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHandleNamespaceDeleted(t *testing.T) {

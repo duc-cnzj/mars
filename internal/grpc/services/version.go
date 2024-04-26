@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/duc-cnzj/mars-client/v4/version"
+	"github.com/duc-cnzj/mars/api/v4/version"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	marsVersion "github.com/duc-cnzj/mars/v4/version"
 )

@@ -18,8 +18,8 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 )
 
 type MessageItem struct {

@@ -5,7 +5,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	appsv1 "k8s.io/api/apps/v1"

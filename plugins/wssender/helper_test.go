@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/stretchr/testify/assert"
 )
 

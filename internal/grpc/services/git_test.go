@@ -8,8 +8,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/duc-cnzj/mars-client/v4/git"
-	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars/api/v4/git"
+	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/app/instance"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
@@ -18,8 +18,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

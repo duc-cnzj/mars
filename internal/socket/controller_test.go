@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/proto"
 	"k8s.io/client-go/kubernetes/fake"
 	fake2 "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
-	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/cachelock"
 	"github.com/duc-cnzj/mars/v4/internal/config"

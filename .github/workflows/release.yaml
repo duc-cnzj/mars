@@ -1,8 +1,9 @@
 name: release
 on:
   push:
-    tags:
-      - "v*"
+    tags-ignore:
+      - 'api/*'
+
 jobs:
   build-frontend:
     name: build-frontend
@@ -141,7 +142,7 @@ jobs:
         artifacts: "/tmp/app*"
         token: ${{ secrets.GITHUB_TOKEN }}
 
-  release-client:
+  release-sdk:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
@@ -149,26 +150,13 @@ jobs:
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
-      - run: |
+      - name: tag sdk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           git config --global user.email "1025434218@qq.com"
-          git config --global user.name "release-robot"
+          git config --global user.name "duc"
           git config --global init.defaultBranch "master"
-          git clone https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git /tmp/client && \
-          (mkdir /tmp/new-client && \
-          cp -r ./pkg/* /tmp/new-client && \
-          mv /tmp/client/.git /tmp/new-client && \
-          cd /tmp/new-client  && \
-          echo ${{ env.tag }} > /tmp/new-client/README.md && \
-          git add . && \
-          git commit -am "release ${{ env.tag }}" && \
-          git push origin master) || \
-          (mkdir /tmp/new-client && \
-          cp -r ./pkg/* /tmp/new-client && \
-          cd /tmp/new-client && \
-          git init && \
-          echo ${{ env.tag }} > /tmp/new-client/README.md && \
-          git add . && \
-          git commit -am "release ${{ env.tag }}" && \
-          git remote add origin https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git && \
-          git push -u origin master)
-          cd /tmp/new-client && git tag ${{ env.tag }} && git push --tag
+
+          git tag api/$tag
+          git push origin api/$tag

@@ -24,8 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	clientgoexec "k8s.io/client-go/util/exec"
 
-	"github.com/duc-cnzj/mars-client/v4/container"
-	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/container"
+	"github.com/duc-cnzj/mars/api/v4/types"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
