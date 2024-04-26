@@ -20,5 +20,5 @@ jobs:
           git config --global user.name "duc"
           git config --global init.defaultBranch "master"
 
-          git tag api/$GITHUB_ENV
-          git push origin api/$GITHUB_ENV
+          git tag api/$tag
+          git push origin api/$tag
