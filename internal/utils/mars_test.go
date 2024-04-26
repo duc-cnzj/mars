@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/app/instance"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
-	"github.com/golang/mock/gomock"
 	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestBranchPass(t *testing.T) {

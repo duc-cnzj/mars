@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/adapter"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"

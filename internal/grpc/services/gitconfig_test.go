@@ -8,16 +8,16 @@ import (
 
 	cache2 "github.com/duc-cnzj/mars/v4/internal/cache"
 
-	"github.com/duc-cnzj/mars-client/v4/gitconfig"
-	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars/api/v4/gitconfig"
+	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

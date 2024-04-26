@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package version;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v4/version;version";
+
+message Request{}
+
+message Response {
+  string version = 1;
+  string build_date = 2;
+  string git_branch = 3;
+  string git_commit = 4;
+  string git_tag = 5;
+  string go_version = 6;
+  string compiler = 7;
+  string platform = 8;
+  string kubectl_version = 9;
+  string helm_version = 10;
+  string git_repo = 11;
+}
+
+service Version {
+  // Version 获取当前版本信息
+  rpc Version(Request) returns (Response) {
+    option (google.api.http) = {
+      get: "/api/version"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      security: {} // Disable security key
+    };
+  }
+}

@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/types"
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
-	"github.com/duc-cnzj/mars-client/v4/websocket"
+	"github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewMessageSender(t *testing.T) {

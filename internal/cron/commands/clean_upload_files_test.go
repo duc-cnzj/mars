@@ -10,8 +10,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"testing"
 	"time"

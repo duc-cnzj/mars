@@ -7,8 +7,8 @@ import (
 	mevent "github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestEventBootstrapper_Bootstrap(t *testing.T) {

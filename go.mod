@@ -2,13 +2,10 @@ module github.com/duc-cnzj/mars/v4
 
 go 1.21
 
-replace github.com/duc-cnzj/mars-client/v4 => ./pkg
-
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc/v3 v3.1.0
-	github.com/duc-cnzj/mars-client/v4 v4.0.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/ghodss/yaml v1.0.0
@@ -320,6 +317,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.1 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.tmz.dev/musttag v0.7.2 // indirect
+	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect

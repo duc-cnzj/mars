@@ -17,8 +17,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

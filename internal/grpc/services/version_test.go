@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/duc-cnzj/mars-client/v4/version"
+	"github.com/duc-cnzj/mars/api/v4/version"
 	marsVersion "github.com/duc-cnzj/mars/v4/version"
 	"github.com/stretchr/testify/assert"
 )

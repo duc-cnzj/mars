@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/duc-cnzj/mars-client/v4/mars"
+	"github.com/duc-cnzj/mars/api/v4/mars"
 	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/models"

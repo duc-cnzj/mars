@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"helm.sh/helm/v3/pkg/chart"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/utils/date"
 
-	"github.com/duc-cnzj/mars-client/v4/types"
+	"github.com/duc-cnzj/mars/api/v4/types"
 	"gorm.io/gorm"
 )
 

@@ -18,7 +18,7 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 
-	websocket_pb "github.com/duc-cnzj/mars-client/v4/websocket"
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/plugins"
 

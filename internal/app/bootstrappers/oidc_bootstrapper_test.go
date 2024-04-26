@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/oauth2"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"

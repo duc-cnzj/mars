@@ -1,147 +1,148 @@
 name: release
 on:
   push:
-    tags:
-      - "v*"
+    tags-ignore:
+      - 'api/*'
+
 jobs:
-  build-frontend:
-    name: build-frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          cache: "yarn"
-          cache-dependency-path: frontend/yarn.lock
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: |
-            frontend/node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('frontend/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: --cwd frontend install
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: --cwd frontend build
-      - name: upload build files
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend_dist_files
-          path: |
-            frontend/build
+#  build-frontend:
+#    name: build-frontend
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions/setup-node@v3
+#        with:
+#          cache: "yarn"
+#          cache-dependency-path: frontend/yarn.lock
+#      - uses: actions/cache@v3
+#        id: yarn-cache
+#        with:
+#          path: |
+#            frontend/node_modules
+#          key: ${{ runner.os }}-yarn-${{ hashFiles('frontend/yarn.lock') }}
+#          restore-keys: |
+#            ${{ runner.os }}-yarn-
+#      - uses: borales/actions-yarn@v3.0.0
+#        with:
+#          cmd: --cwd frontend install
+#      - uses: borales/actions-yarn@v3.0.0
+#        with:
+#          cmd: --cwd frontend build
+#      - name: upload build files
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: frontend_dist_files
+#          path: |
+#            frontend/build
+#
+#  build-linux:
+#    needs: [build-frontend]
+#    name: Build Go Binary linux amd64
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Download frontend files
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: frontend_dist_files
+#          path: frontend/build
+#      - uses: actions/cache@v3
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+#          restore-keys: |
+#            ${{ runner.os }}-go-
+#      - uses: actions/setup-go@v3
+#        with:
+#          go-version: '1.21'
+#      - run: |
+#          sudo apt update --fix-missing && sudo apt-get install -y gcc-aarch64-linux-gnu
+#          make build_linux_amd64
+#          make build_linux_arm64
+#      - name: upload app-linux-amd64
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: app-linux-amd64
+#          path: |
+#            app-linux-amd64
+#      - name: upload app-linux-arm64
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: app-linux-arm64
+#          path: |
+#            app-linux-arm64
+#
+#  build-darwin:
+#    needs: [build-frontend]
+#    name: Build Go Binary macos amd64
+#    runs-on: macos-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Download frontend files
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: frontend_dist_files
+#          path: frontend/build
+#      - uses: actions/cache@v3
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+#          restore-keys: |
+#            ${{ runner.os }}-go-
+#      - uses: actions/setup-go@v3
+#        with:
+#          go-version: '1.21'
+#      - run: |
+#          make build_darwin_arm64
+#          make build_darwin_amd64
+#      - name: upload app-darwin-arm64
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: app-darwin-arm64
+#          path: |
+#            app-darwin-arm64
+#      - name: upload app-darwin-amd64
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: app-darwin-amd64
+#          path: |
+#            app-darwin-amd64
+#
+#  release:
+#    needs: [build-darwin, build-linux]
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: write
+#    steps:
+#    - uses: actions/checkout@v3
+#    - name: Download linux arm64 app
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: app-linux-arm64
+#        path: /tmp
+#    - name: Download linux amd64 app
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: app-linux-amd64
+#        path: /tmp
+#    - name: Download darwin amd64 app
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: app-darwin-amd64
+#        path: /tmp
+#    - name: Download darwin arm64 app
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: app-darwin-arm64
+#        path: /tmp
+#    - uses: ncipollo/release-action@v1
+#      with:
+#        generateReleaseNotes: true
+#        allowUpdates: true
+#        artifacts: "/tmp/app*"
+#        token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-linux:
-    needs: [build-frontend]
-    name: Build Go Binary linux amd64
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download frontend files
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend_dist_files
-          path: frontend/build
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
-      - run: |
-          sudo apt update --fix-missing && sudo apt-get install -y gcc-aarch64-linux-gnu
-          make build_linux_amd64
-          make build_linux_arm64
-      - name: upload app-linux-amd64
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-linux-amd64
-          path: |
-            app-linux-amd64
-      - name: upload app-linux-arm64
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-linux-arm64
-          path: |
-            app-linux-arm64
-
-  build-darwin:
-    needs: [build-frontend]
-    name: Build Go Binary macos amd64
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download frontend files
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend_dist_files
-          path: frontend/build
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
-      - run: |
-          make build_darwin_arm64
-          make build_darwin_amd64
-      - name: upload app-darwin-arm64
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-darwin-arm64
-          path: |
-            app-darwin-arm64
-      - name: upload app-darwin-amd64
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-darwin-amd64
-          path: |
-            app-darwin-amd64
-
-  release:
-    needs: [build-darwin, build-linux]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download linux arm64 app
-      uses: actions/download-artifact@v3
-      with:
-        name: app-linux-arm64
-        path: /tmp
-    - name: Download linux amd64 app
-      uses: actions/download-artifact@v3
-      with:
-        name: app-linux-amd64
-        path: /tmp
-    - name: Download darwin amd64 app
-      uses: actions/download-artifact@v3
-      with:
-        name: app-darwin-amd64
-        path: /tmp
-    - name: Download darwin arm64 app
-      uses: actions/download-artifact@v3
-      with:
-        name: app-darwin-arm64
-        path: /tmp
-    - uses: ncipollo/release-action@v1
-      with:
-        generateReleaseNotes: true
-        allowUpdates: true
-        artifacts: "/tmp/app*"
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-  release-client:
+  release-sdk:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
@@ -149,26 +150,13 @@ jobs:
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
-      - run: |
+      - name: tag sdk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           git config --global user.email "1025434218@qq.com"
-          git config --global user.name "release-robot"
+          git config --global user.name "duc"
           git config --global init.defaultBranch "master"
-          git clone https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git /tmp/client && \
-          (mkdir /tmp/new-client && \
-          cp -r ./pkg/* /tmp/new-client && \
-          mv /tmp/client/.git /tmp/new-client && \
-          cd /tmp/new-client  && \
-          echo ${{ env.tag }} > /tmp/new-client/README.md && \
-          git add . && \
-          git commit -am "release ${{ env.tag }}" && \
-          git push origin master) || \
-          (mkdir /tmp/new-client && \
-          cp -r ./pkg/* /tmp/new-client && \
-          cd /tmp/new-client && \
-          git init && \
-          echo ${{ env.tag }} > /tmp/new-client/README.md && \
-          git add . && \
-          git commit -am "release ${{ env.tag }}" && \
-          git remote add origin https://${{ secrets.MARS_CLIENT_REPO_ACCESS_TOKEN }}@github.com/DuC-cnZj/mars-client.git && \
-          git push -u origin master)
-          cd /tmp/new-client && git tag ${{ env.tag }} && git push --tag
+
+          git tag api/$GITHUB_ENV
+          git push origin api/$GITHUB_ENV

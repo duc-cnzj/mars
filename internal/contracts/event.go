@@ -1,6 +1,6 @@
 package contracts
 
-import "github.com/duc-cnzj/mars-client/v4/types"
+import "github.com/duc-cnzj/mars/api/v4/types"
 
 //go:generate mockgen -destination ../mock/mock_event.go -package mock github.com/duc-cnzj/mars/v4/internal/contracts DispatcherInterface
 
