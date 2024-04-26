@@ -39,7 +39,7 @@ gen_proto:
 		--validate_out=lang=go,paths=source_relative:./api \
 		$(PROTO_FILES)
 
-	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/compiled.js -w es6  ./internal/grpc/protos/**/*.proto \
+	./frontend/node_modules/.bin/pbjs -t static-module -o ./frontend/src/api/compiled.js -w es6  ./api/**/*.proto \
       --keep-case \
       --no-verify \
       --no-convert \
