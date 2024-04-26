@@ -8,14 +8,14 @@ lang: zh-cn
 ## 🍀 go-sdk 接入
 
 ```bash
-go get -u github.com/duc-cnzj/mars-client/v4
+go get -u github.com/duc-cnzj/mars/api/v4
 ```
 
 ```go
 package main
 
 import (
-  client "github.com/duc-cnzj/mars-client/v4"
+  client "github.com/duc-cnzj/mars/api/v4"
 )
 
 func main()  {
