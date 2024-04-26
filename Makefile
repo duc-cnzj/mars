@@ -1,4 +1,4 @@
-VERSION_PATH=$(shell go list -m -f "{{.Path}}")/version
+VERSION_PATH=$(shell go list -m -f "{{.Path}}" | grep -v api)/version
 PROTO_FILES=$(shell find api -name *.proto)
 LDFLAGS=-w -s  \
  -X ${VERSION_PATH}.gitBranch=$(shell git rev-parse --abbrev-ref HEAD) \
