@@ -79,7 +79,7 @@ function useProvideAuth() {
 
   const isAdmin = () => {
     return user
-      ? user.roles.filter((item) => item === "admin").length > 0
+      ? user.roles.filter((item) => item === "mars_admin").length > 0
       : false;
   };
 
