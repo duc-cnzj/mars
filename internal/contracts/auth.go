@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -37,7 +38,7 @@ type OidcClaims struct {
 func (c OidcClaims) ToUserInfo() UserInfo {
 	return UserInfo{
 		LogoutUrl: c.LogoutUrl,
-		Roles:     []string{},
+		Roles:     c.Roles,
 		ID:        c.Sub,
 		Email:     c.Email,
 		Name:      c.Name,
@@ -66,7 +67,7 @@ func (ui UserInfo) GetID() string {
 
 func (ui UserInfo) IsAdmin() bool {
 	for _, role := range ui.Roles {
-		if role == "admin" {
+		if role == rbac.MarsAdmin {
 			return true
 		}
 	}
@@ -94,6 +95,9 @@ type OpenIDClaims struct {
 	PhoneNumberVerified bool           `json:"phone_number_verified"`
 	Address             map[string]any `json:"address"`
 	UpdatedAt           int            `json:"updated_at"`
+
+	// Roles 自定义权限
+	Roles []string `json:"roles"`
 }
 
 type SignData struct {

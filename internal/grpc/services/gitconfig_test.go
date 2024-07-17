@@ -6,14 +6,14 @@ import (
 	"errors"
 	"testing"
 
-	cache2 "github.com/duc-cnzj/mars/v4/internal/cache"
-
 	"github.com/duc-cnzj/mars/api/v4/gitconfig"
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/v4/internal/auth"
+	cache2 "github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,7 @@ func TestGitConfigSvc_Authorize(t *testing.T) {
 	_, err := e.Authorize(ctx, "")
 	assert.ErrorIs(t, err, status.Error(codes.PermissionDenied, ErrorPermissionDenied.Error()))
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{
-		Roles: []string{"admin"},
+		Roles: []string{rbac.MarsAdmin},
 	})
 	_, err = e.Authorize(ctx, "")
 	assert.Nil(t, err)
