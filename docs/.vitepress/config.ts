@@ -53,6 +53,12 @@ export default defineConfig({
         items: [
           { text: 'Golang', link: '/go-sdk' },
         ]
+      },
+      {
+        text: 'RBAC',
+        items: [
+          { text: '管理员权限', link: '/rbac' },
+        ]
       }
     ],
 
