@@ -21,6 +21,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/dustin/go-humanize"
@@ -275,7 +276,7 @@ func Test_handleDownload(t *testing.T) {
 		ID:    "1",
 		Email: "admin@qq.com",
 		Name:  "duc",
-		Roles: []string{"admin"},
+		Roles: []string{rbac.MarsAdmin},
 	})
 	db.Create(&models.File{
 		UploadType:    contracts.Local,
@@ -308,7 +309,7 @@ func Test_handleDownloadFileNotExists(t *testing.T) {
 		ID:    "1",
 		Email: "admin@qq.com",
 		Name:  "duc",
-		Roles: []string{"admin"},
+		Roles: []string{rbac.MarsAdmin},
 	})
 	db.Create(&models.File{
 		UploadType:    contracts.Local,
@@ -427,7 +428,7 @@ func Test_exportMarsConfig(t *testing.T) {
 		GlobalConfig:  "xxx",
 	})
 	admin := &contracts.JwtClaims{
-		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{rbac.MarsAdmin}},
 	}
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	r3 := httptest.NewRecorder()
@@ -486,7 +487,7 @@ func Test_exportMarsConfigWithPid(t *testing.T) {
 	}
 	db.Create(gp2)
 	admin := &contracts.JwtClaims{
-		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{rbac.MarsAdmin}},
 	}
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	r3 := httptest.NewRecorder()
@@ -557,7 +558,7 @@ func Test_importMarsConfig(t *testing.T) {
 	assert.Equal(t, 403, r2.Code)
 
 	admin := &contracts.JwtClaims{
-		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{"admin"}},
+		UserInfo: contracts.UserInfo{Name: "duc", Roles: []string{rbac.MarsAdmin}},
 	}
 	auth.EXPECT().VerifyToken(gomock.Any()).Return(admin, true).Times(1)
 	r3 := httptest.NewRecorder()

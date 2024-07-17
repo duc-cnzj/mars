@@ -10,8 +10,8 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
-
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -25,7 +25,7 @@ func TestAuth_Sign(t *testing.T) {
 	auth := NewJwtAuth(priKey, publicKey)
 	sign, err := auth.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
-		Roles:     []string{"admin"},
+		Roles:     []string{rbac.MarsAdmin},
 		ID:        "1",
 		Email:     "1025434218@qq.com",
 		Name:      "duc",
@@ -36,7 +36,7 @@ func TestAuth_Sign(t *testing.T) {
 	assert.Equal(t, "mars", token.StandardClaims.Issuer)
 	assert.Equal(t, "duc", token.UserInfo.Name)
 	assert.Equal(t, "1025434218@qq.com", token.StandardClaims.Subject)
-	assert.Equal(t, []string{"admin"}, token.UserInfo.Roles)
+	assert.Equal(t, []string{rbac.MarsAdmin}, token.UserInfo.Roles)
 	assert.Equal(t, "xxx", token.UserInfo.LogoutUrl)
 
 	pk := &rsa.PrivateKey{
@@ -48,7 +48,7 @@ func TestAuth_Sign(t *testing.T) {
 	authError := NewJwtAuth(pk, nil)
 	_, err = authError.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
-		Roles:     []string{"admin"},
+		Roles:     []string{rbac.MarsAdmin},
 		ID:        "1",
 		Email:     "1025434218@qq.com",
 		Name:      "duc",
@@ -60,7 +60,7 @@ func TestAuth_VerifyToken(t *testing.T) {
 	auth := NewJwtAuth(priKey, publicKey)
 	sign, _ := auth.Sign(contracts.UserInfo{
 		LogoutUrl: "xxx",
-		Roles:     []string{"admin"},
+		Roles:     []string{rbac.MarsAdmin},
 		ID:        "1",
 		Name:      "duc",
 	})
@@ -99,7 +99,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 		Email:     "admin@admin.com",
 		Name:      "duc",
 		Picture:   "xx",
-		Roles:     []string{"admin"},
+		Roles:     []string{rbac.MarsAdmin},
 		LogoutUrl: "https://xxx",
 	})
 	db.Create(at)
@@ -110,7 +110,7 @@ func TestAccessTokenAuth_VerifyToken(t *testing.T) {
 	assert.Equal(t, "admin@admin.com", u.UserInfo.Email)
 	assert.Equal(t, "duc", u.UserInfo.Name)
 	assert.Equal(t, "xx", u.UserInfo.Picture)
-	assert.Equal(t, []string{"admin"}, u.UserInfo.Roles)
+	assert.Equal(t, []string{rbac.MarsAdmin}, u.UserInfo.Roles)
 	assert.Equal(t, "https://xxx", u.UserInfo.LogoutUrl)
 
 	var at2 models.AccessToken

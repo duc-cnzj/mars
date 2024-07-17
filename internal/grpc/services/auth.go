@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -54,7 +55,7 @@ func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 	if request.Username == "admin" && request.Password == a.adminPwd {
 		userinfo := contracts.UserInfo{
 			LogoutUrl: "",
-			Roles:     []string{"admin"},
+			Roles:     []string{rbac.MarsAdmin},
 			ID:        "1",
 			Name:      "管理员",
 			Email:     "1025434218@qq.com",

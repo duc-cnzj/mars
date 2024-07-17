@@ -13,6 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mock"
 	"github.com/duc-cnzj/mars/v4/internal/models"
+	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/duc-cnzj/mars/v4/internal/testutil"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ import (
 func TestFile_Authorize(t *testing.T) {
 	ctx := context.TODO()
 	ctx = auth.SetUser(ctx, &contracts.UserInfo{
-		Roles: []string{"admin"},
+		Roles: []string{rbac.MarsAdmin},
 	})
 	_, err := new(fileSvc).Authorize(ctx, "")
 	assert.Nil(t, err)
@@ -42,7 +43,7 @@ func TestFile_Authorize(t *testing.T) {
 }
 
 func adminCtx() context.Context {
-	return userCtx("admin")
+	return userCtx(rbac.MarsAdmin)
 }
 
 func userCtx(roles ...string) context.Context {
