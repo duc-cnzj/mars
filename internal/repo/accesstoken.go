@@ -12,8 +12,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/mixin"
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils/pagination"
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/google/uuid"
 )
 

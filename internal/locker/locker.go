@@ -1,7 +1,7 @@
 package locker
 
 import (
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"

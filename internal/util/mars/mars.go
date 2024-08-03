@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	yaml2 "github.com/duc-cnzj/mars/v4/internal/utils/yaml"
+	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
 
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"gopkg.in/yaml.v3"

@@ -17,7 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util"
-	"github.com/duc-cnzj/mars/v4/internal/utils/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
 )

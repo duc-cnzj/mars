@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/v4/internal/util"
-	"github.com/duc-cnzj/mars/v4/internal/utils/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"

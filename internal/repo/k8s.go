@@ -17,7 +17,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/archiver/v3"
 	"github.com/samber/lo"

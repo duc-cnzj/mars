@@ -13,7 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
-	mars2 "github.com/duc-cnzj/mars/v4/internal/utils/mars"
+	mars2 "github.com/duc-cnzj/mars/v4/internal/util/mars"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

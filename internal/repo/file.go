@@ -19,10 +19,10 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/filters"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils/date"
-	"github.com/duc-cnzj/mars/v4/internal/utils/pagination"
-	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/util/date"
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+	"github.com/duc-cnzj/mars/v4/internal/util/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 )
 
 type Recorder interface {

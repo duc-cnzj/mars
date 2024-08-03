@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 	"github.com/google/wire"
 )
 

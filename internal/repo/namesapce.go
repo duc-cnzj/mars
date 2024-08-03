@@ -8,8 +8,8 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils/mars"
-	"github.com/duc-cnzj/mars/v4/internal/utils/serialize"
+	"github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
 )
 
 type NamespaceRepo interface {

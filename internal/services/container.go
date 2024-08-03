@@ -20,14 +20,14 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils/closeable"
-	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 	clientgoexec "k8s.io/client-go/util/exec"
 )
 

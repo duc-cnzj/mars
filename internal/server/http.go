@@ -26,7 +26,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/server/middlewares"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"github.com/duc-cnzj/mars/v4/third_party/doc/data"
 	swagger_ui "github.com/duc-cnzj/mars/v4/third_party/doc/swagger-ui"
 	"github.com/dustin/go-humanize"

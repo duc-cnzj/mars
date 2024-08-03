@@ -12,8 +12,8 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/utils/hash"
-	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
+	"github.com/duc-cnzj/mars/v4/internal/util/hash"
+	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"

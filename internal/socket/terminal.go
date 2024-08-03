@@ -14,7 +14,7 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/utils/closeable"
+	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
 	"k8s.io/client-go/tools/remotecommand"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/duc-cnzj/mars/v4/internal/utils/hash"
+	"github.com/duc-cnzj/mars/v4/internal/util/hash"
 
 	"github.com/duc-cnzj/mars/v4/version"
 )

@@ -20,7 +20,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/services"
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils/timer"
+	"github.com/duc-cnzj/mars/v4/internal/util/timer"
 )
 
 // Injectors from wire.go:

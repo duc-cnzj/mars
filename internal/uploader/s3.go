@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
-	"github.com/duc-cnzj/mars/v4/internal/utils/closeable"
+	"github.com/duc-cnzj/mars/v4/internal/util/closeable"
 	"github.com/minio/minio-go/v7"
 )
 

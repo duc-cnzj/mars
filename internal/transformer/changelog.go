@@ -5,7 +5,7 @@ import (
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/utils/date"
+	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
 func FromChangeLog(c *ent.Changelog) *types.ChangelogModel {

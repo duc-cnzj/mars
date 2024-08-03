@@ -3,7 +3,7 @@ package transformer
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
-	"github.com/duc-cnzj/mars/v4/internal/utils/date"
+	"github.com/duc-cnzj/mars/v4/internal/util/date"
 )
 
 // FromAccessToken transform to proto model.
