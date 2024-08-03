@@ -90,7 +90,7 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	accessTokenRepo := repo.NewAccessTokenRepo(timerTimer, logger, dataData)
 	accessTokenServer := services.NewAccessTokenSvc(eventRepo, timerTimer, accessTokenRepo)
 	repoRepo := repo.NewRepo(logger, dataData)
-	repoServer := services.NewRepoSvc(logger, repoRepo)
+	repoServer := services.NewRepoSvc(logger, eventRepo, gitRepo, repoRepo)
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitConfigServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
 	wsServer := socket.NewWebsocketManager(logger, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer)

@@ -80,6 +80,9 @@ clear_proto:
 gen:
 	go generate ./... && make fmt
 
+.PHONY: all
+all: api ent-generate wire fmt
+
 .PHONY: wire
 wire:
 	cd ./cmd && wire

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/duc-cnzj/mars/api/v4/auth"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	auth2 "github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/rbac"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
 	"golang.org/x/oauth2"
@@ -48,7 +49,7 @@ func (a *authSvc) Login(ctx context.Context, request *auth.LoginRequest) (*auth.
 	if request.Username == "admin" && request.Password == a.adminPwd {
 		userinfo := &auth2.UserInfo{
 			LogoutUrl: "",
-			Roles:     []string{rbac.MarsAdmin},
+			Roles:     []string{schematype.MarsAdmin},
 			ID:        "1",
 			Name:      "管理员",
 			Email:     "1025434218@qq.com",

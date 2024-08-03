@@ -2,8 +2,12 @@ package schematype
 
 import (
 	"encoding/json"
+)
 
-	"github.com/duc-cnzj/mars/v4/internal/rbac"
+type Role = string
+
+const (
+	MarsAdmin Role = "mars_admin"
 )
 
 type UserInfo struct {
@@ -27,7 +31,7 @@ func (ui *UserInfo) GetID() string {
 
 func (ui *UserInfo) IsAdmin() bool {
 	for _, role := range ui.Roles {
-		if role == rbac.MarsAdmin {
+		if role == MarsAdmin {
 			return true
 		}
 	}
