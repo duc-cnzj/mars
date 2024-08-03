@@ -13,7 +13,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/spf13/pflag"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -77,7 +77,7 @@ func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, names
 			return nil, err
 		}
 
-		podSelectors = d.k8sRepo.GetPodSelectorsByManifest(utils.SplitManifests(re.Manifest))
+		podSelectors = d.k8sRepo.GetPodSelectorsByManifest(util.SplitManifests(re.Manifest))
 	}
 
 	return d.upgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc, d.KubeConfig, d.K8sCli)

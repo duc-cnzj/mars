@@ -22,7 +22,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
@@ -441,7 +441,7 @@ func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c *WsConn,
 		return
 	}
 
-	var slugName = utils.GetSlugName(input.NamespaceId, input.Name)
+	var slugName = util.GetSlugName(input.NamespaceId, input.Name)
 	if cs.Has(slugName) {
 		ns, _ := wc.nsRepo.Show(ctx, int(input.NamespaceId))
 		wc.eventRepo.AuditLogWithChange(types.EventActionType_CancelDeploy, c.GetUser().Name, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
@@ -502,7 +502,7 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn
 }
 
 func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c *WsConn, input *JobInput) error {
-	slug := utils.GetSlugName(input.NamespaceId, input.Name)
+	slug := util.GetSlugName(input.NamespaceId, input.Name)
 	job := wc.jobManager.NewJob(input)
 	var cs = c.cs
 

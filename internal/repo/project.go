@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
-	"github.com/duc-cnzj/mars/v4/internal/annotations"
+	"github.com/duc-cnzj/mars/v4/internal/annotation"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
@@ -336,7 +336,7 @@ func (repo *projectRepo) GetAllPods(project *ent.Project) SortStatePod {
 			}
 		}
 
-		idx := pod.Annotations[annotations.PodOrderIndex]
+		idx := pod.Annotations[annotation.PodOrderIndex]
 
 		newList = append(newList, StatePod{
 			IsOld:       isOld,

@@ -9,14 +9,14 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/annotations"
+	"github.com/duc-cnzj/mars/v4/internal/annotation"
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/socket"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/utils/mars"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
@@ -127,7 +127,7 @@ func (p *projectSvc) Apply(input *project.ApplyRequest, server project.Project_A
 	}
 	t := websocket.Type_ApplyProject
 	msger := &messager{
-		slugName:    utils.GetSlugName(input.NamespaceId, input.Name),
+		slugName:    util.GetSlugName(input.NamespaceId, input.Name),
 		t:           t,
 		server:      server,
 		sendPercent: input.SendPercent,
@@ -245,7 +245,7 @@ func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllCont
 	var containerList []*types.StateContainer
 	for _, item := range list {
 		var ignores = make(map[string]struct{})
-		if s, ok := item.Pod.Annotations[annotations.IgnoreContainerNames]; ok {
+		if s, ok := item.Pod.Annotations[annotation.IgnoreContainerNames]; ok {
 			split := strings.Split(s, ",")
 			for _, sp := range split {
 				ignores[strings.TrimSpace(sp)] = struct{}{}

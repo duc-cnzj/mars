@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/utils/mars"
 	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 
@@ -17,8 +18,6 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
-
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,9 +103,9 @@ func syncImagePullSecrets(app application.App) {
 		cfgImagePullSecrets = app.Config().ImagePullSecrets
 		k8sClient           = app.Data().K8sClient
 	)
-	var serverMap = make(map[string]utils.DockerConfigEntry)
+	var serverMap = make(map[string]util.DockerConfigEntry)
 	for _, s := range cfgImagePullSecrets {
-		serverMap[s.Server] = utils.DockerConfigEntry{
+		serverMap[s.Server] = util.DockerConfigEntry{
 			Username: s.Username,
 			Password: s.Password,
 			Email:    s.Email,
@@ -135,13 +134,13 @@ func syncImagePullSecrets(app application.App) {
 			}
 			if secret.Type == v1.SecretTypeDockerConfigJson {
 				var dockerJsonKeyData []byte = secret.Data[v1.DockerConfigJsonKey]
-				res, err := utils.DecodeDockerConfigJSON(dockerJsonKeyData)
+				res, err := util.DecodeDockerConfigJSON(dockerJsonKeyData)
 				if err != nil {
 					app.Logger().Warningf("[syncImagePullSecrets]: decode secret '%s', err %v", secretName, err)
 					continue
 				}
-				var newConfigJson = utils.DockerConfigJSON{
-					Auths:       map[string]utils.DockerConfigEntry{},
+				var newConfigJson = util.DockerConfigJSON{
+					Auths:       map[string]util.DockerConfigEntry{},
 					HttpHeaders: map[string]string{},
 				}
 				for server, cfg := range serverMap {
@@ -179,7 +178,7 @@ func syncImagePullSecrets(app application.App) {
 		}
 
 		if len(missing) > 0 {
-			secret, err := utils.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
+			secret, err := util.CreateDockerSecrets(k8sClient.Client, ns.Name, missing)
 			if err == nil {
 				app.Logger().Warningf("[syncImagePullSecrets]: Missing %v", missing)
 

@@ -15,7 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/utils/mars"
 	"github.com/duc-cnzj/mars/v4/internal/utils/pipeline"
 	mysort "github.com/duc-cnzj/mars/v4/internal/utils/xsort"
@@ -186,7 +186,7 @@ type JobInput struct {
 }
 
 func (job *JobInput) Slug() string {
-	return utils.GetSlugName(job.NamespaceId, job.Name)
+	return util.GetSlugName(job.NamespaceId, job.Name)
 }
 
 func (job *JobInput) IsNotDryRun() bool {
@@ -384,7 +384,7 @@ func (j *jobRunner) Run(ctx context.Context) Job {
 				Atomic:       j.input.Atomic,
 				ConfigType:   j.config.GetConfigFileType(),
 				PodSelectors: j.k8sRepo.GetPodSelectorsByManifest(j.manifests),
-				Manifest:     utils.SplitManifests(result.Manifest),
+				Manifest:     util.SplitManifests(result.Manifest),
 				DockerImage: matchDockerImage(pipelineVars{
 					Pipeline: j.vars.MustGetString("Pipeline"),
 					Commit:   j.vars.MustGetString("Commit"),

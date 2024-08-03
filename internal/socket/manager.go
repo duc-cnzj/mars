@@ -23,6 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/util"
 	"github.com/duc-cnzj/mars/v4/internal/utils/closeable"
 	mars2 "github.com/duc-cnzj/mars/v4/internal/utils/mars"
 	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
@@ -33,7 +34,6 @@ import (
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
 	mysort "github.com/duc-cnzj/mars/v4/internal/utils/xsort"
 	"go.uber.org/config"
 	"gopkg.in/yaml.v3"
@@ -901,7 +901,7 @@ func (j *jobRunner) WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, er
 	}
 	path := info.Path()
 
-	return path, utils.NewCloser(func() error {
+	return path, util.NewCloser(func() error {
 		j.logger.Debug("delete file: " + path)
 		if err := j.uploader.LocalUploader().Delete(path); err != nil {
 			j.logger.Error("WriteConfigYamlToTmpFile error: ", err)

@@ -1,4 +1,4 @@
-package annotations
+package annotation
 
 // IgnoreContainerNames 过滤 sidecar 这样的容器
 const IgnoreContainerNames = "mars.duc-cnzj.github.io/ignore-containers"
