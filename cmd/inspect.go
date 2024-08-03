@@ -7,38 +7,37 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/utils/runtime"
-
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/utils/runtime"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	showCmd.AddCommand(showBootTagsCmd)
-	showCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
-	viper.BindPFlag("config", showCmd.PersistentFlags().Lookup("config"))
+	inspect.AddCommand(inspectBootTagsCmd)
+	inspect.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
+	viper.BindPFlag("config", inspect.PersistentFlags().Lookup("config"))
 
-	showCmd.AddCommand(showAllCmd)
-	showCmd.AddCommand(showCronJobsCmd)
-	showCmd.AddCommand(showEventsCmd)
-	showCmd.AddCommand(showPluginsCmd)
-	showCmd.AddCommand(showConfigCmd)
+	inspect.AddCommand(inspectAllCmd)
+	inspect.AddCommand(inspectCronJobsCmd)
+	inspect.AddCommand(inspectEventsCmd)
+	inspect.AddCommand(inspectPluginsCmd)
+	inspect.AddCommand(inspectConfigCmd)
 }
 
-var showCmd = &cobra.Command{
-	Use:   "show",
-	Short: "show app info.",
+var inspect = &cobra.Command{
+	Use:   "inspect",
+	Short: "inspect app info.",
 }
 
-var showAllCmd = &cobra.Command{
+var inspectAllCmd = &cobra.Command{
 	Use:   "all",
 	Short: "all app info.",
 	Run: func(cmd *cobra.Command, args []string) {
-		for _, command := range showCmd.Commands() {
+		for _, command := range inspect.Commands() {
 			if command.Use != "all" {
 				fmt.Println(command.Short)
 				command.Run(cmd, args)
@@ -47,7 +46,7 @@ var showAllCmd = &cobra.Command{
 	},
 }
 
-var showBootTagsCmd = &cobra.Command{
+var inspectBootTagsCmd = &cobra.Command{
 	Use:   "tags",
 	Short: "app boot tags.",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -77,9 +76,10 @@ func (l *loggerBootstrapper) Tags() []string {
 	return []string{}
 }
 
-var showCronJobsCmd = &cobra.Command{
-	Use:   "cronjobs",
-	Short: "app cron jobs.",
+var inspectCronJobsCmd = &cobra.Command{
+	Use:     "cronjobs",
+	Aliases: []string{"cronjob", "cron", "job", "jobs"},
+	Short:   "app cron jobs.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
 		cfg.LogChannel = ""
@@ -102,9 +102,10 @@ var showCronJobsCmd = &cobra.Command{
 	},
 }
 
-var showEventsCmd = &cobra.Command{
-	Use:   "events",
-	Short: "app events.",
+var inspectEventsCmd = &cobra.Command{
+	Use:     "events",
+	Aliases: []string{"event", "ev"},
+	Short:   "app events.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
 		cfg.LogChannel = ""
@@ -134,9 +135,10 @@ var showEventsCmd = &cobra.Command{
 	},
 }
 
-var showPluginsCmd = &cobra.Command{
-	Use:   "plugins",
-	Short: "app plugins.",
+var inspectPluginsCmd = &cobra.Command{
+	Use:     "plugins",
+	Aliases: []string{"plugin"},
+	Short:   "app plugins.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
 		table := tablewriter.NewWriter(os.Stdout)
@@ -184,9 +186,10 @@ var showPluginsCmd = &cobra.Command{
 	},
 }
 
-var showConfigCmd = &cobra.Command{
-	Use:   "config",
-	Short: "app config.",
+var inspectConfigCmd = &cobra.Command{
+	Use:     "config",
+	Aliases: []string{"cfg", "conf"},
+	Short:   "app config.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
 		var c = struct {

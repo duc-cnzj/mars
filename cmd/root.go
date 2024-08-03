@@ -26,7 +26,7 @@ func Execute(configFile []byte, logoStr string) {
 	logo = logoStr
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
-	rootCmd.AddCommand(showCmd)
+	rootCmd.AddCommand(inspect)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
