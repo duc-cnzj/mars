@@ -18,7 +18,7 @@
   "paths": {
     "/api/git/projects/{git_project_id}/default_values": {
       "get": {
-        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
+        "summary": "获取项目 helm charts 的默认 values.yaml",
         "operationId": "GitConfig_GetDefaultChartValues",
         "responses": {
           "200": {
@@ -56,7 +56,7 @@
     },
     "/api/git/projects/{git_project_id}/global_config": {
       "get": {
-        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
+        "summary": "查看项目 GlobalConfig 配置",
         "operationId": "GitConfig_GlobalConfig",
         "responses": {
           "200": {
@@ -88,7 +88,7 @@
     },
     "/api/git/projects/{git_project_id}/mars_config": {
       "get": {
-        "summary": "Show 查看项目配置",
+        "summary": "查看项目配置",
         "operationId": "GitConfig_Show",
         "responses": {
           "200": {
@@ -124,7 +124,7 @@
         ]
       },
       "put": {
-        "summary": "Update 更新全局配置",
+        "summary": "更新全局配置",
         "operationId": "GitConfig_Update",
         "responses": {
           "200": {
@@ -169,7 +169,7 @@
     },
     "/api/git/projects/{git_project_id}/toggle_status": {
       "post": {
-        "summary": "ToggleGlobalStatus 开启/关闭全局配置",
+        "summary": "开启/关闭全局配置",
         "operationId": "GitConfig_ToggleGlobalStatus",
         "responses": {
           "200": {

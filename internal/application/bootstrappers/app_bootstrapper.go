@@ -31,9 +31,11 @@ func (a *AppBootstrapper) Tags() []string {
 }
 
 func (a *AppBootstrapper) Bootstrap(app application.App) error {
-	app.BeforeServerRunHooks(blockForFuncForever("projectPodEventListener", projectPodEventListener))
-	app.BeforeServerRunHooks(lockFunc("updateCerts", updateCerts))
-	app.BeforeServerRunHooks(lockFunc("syncImagePullSecrets", syncImagePullSecrets))
+	if app.Config().KubeConfig != "" {
+		app.BeforeServerRunHooks(blockForFuncForever("projectPodEventListener", projectPodEventListener))
+		app.BeforeServerRunHooks(lockFunc("updateCerts", updateCerts))
+		app.BeforeServerRunHooks(lockFunc("syncImagePullSecrets", syncImagePullSecrets))
+	}
 
 	return nil
 }
@@ -235,9 +237,7 @@ func projectPodEventListener(app application.App) {
 							}
 						}
 					}
-				case data.Add:
-					fallthrough
-				case data.Delete:
+				case data.Add, data.Delete:
 					if ns, err := app.DB().Namespace.Query().Where(namespace.NameEQ(mars.GetMarsNamespace(obj.Current().Namespace, cfg.NsPrefix))).Only(context.TODO()); err == nil {
 						app.Logger().Debugf("[PodEventListener]: pod '%v': '%s' '%s' '%d' '%s'", obj.Type(), obj.Current().Name, obj.Current().Namespace, ns.ID, obj.Current().Status.Phase)
 						if err := namespacePublisher.Publish(int64(ns.ID), obj.Current()); err != nil {

@@ -18,7 +18,7 @@
   "paths": {
     "/api/containers/copy_to_pod": {
       "post": {
-        "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
+        "summary": "上传文件到 pod",
         "operationId": "Container_CopyToPod",
         "responses": {
           "200": {
@@ -51,7 +51,7 @@
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs": {
       "get": {
-        "summary": "ContainerLog 查看 pod 日志",
+        "summary": "查看 pod 日志",
         "operationId": "Container_ContainerLog",
         "responses": {
           "200": {
@@ -100,7 +100,7 @@
     },
     "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs": {
       "get": {
-        "summary": "StreamContainerLog stream 方式查看 pod 日志",
+        "summary": "stream 方式查看 pod 日志",
         "operationId": "Container_StreamContainerLog",
         "responses": {
           "200": {
@@ -158,7 +158,7 @@
     },
     "/api/containers/pod_exists": {
       "post": {
-        "summary": "IsPodExists pod 是否存在",
+        "summary": "pod 是否存在",
         "operationId": "Container_IsPodExists",
         "responses": {
           "200": {
@@ -191,7 +191,7 @@
     },
     "/api/containers/pod_running_status": {
       "post": {
-        "summary": "IsPodRunning pod 是否正常在跑",
+        "summary": "pod 是否 running",
         "operationId": "Container_IsPodRunning",
         "responses": {
           "200": {
@@ -240,7 +240,13 @@
         "container": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "file_id",
+        "namespace",
+        "pod",
+        "container"
+      ]
     },
     "containerCopyToPodResponse": {
       "type": "object",
@@ -288,7 +294,11 @@
         "pod": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "namespace",
+        "pod"
+      ]
     },
     "containerIsPodExistsResponse": {
       "type": "object",
@@ -307,7 +317,11 @@
         "pod": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "namespace",
+        "pod"
+      ]
     },
     "containerIsPodRunningResponse": {
       "type": "object",

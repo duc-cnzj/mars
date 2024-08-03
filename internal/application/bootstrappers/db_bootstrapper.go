@@ -13,9 +13,9 @@ func (d *DBBootstrapper) Tags() []string {
 	return []string{}
 }
 
-func (d *DBBootstrapper) Bootstrap(appli application.App) error {
-	appli.Logger().Info("[DB]: auto migrate database")
-	return appli.Data().DB.Schema.Create(
+func (d *DBBootstrapper) Bootstrap(app application.App) error {
+	app.Logger().Info("[DB]: auto migrate database")
+	return app.Data().DB.Schema.Create(
 		context.TODO(),
 		migrate.WithDropIndex(true),
 		migrate.WithDropColumn(true),

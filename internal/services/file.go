@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+
 	"github.com/duc-cnzj/mars/api/v4/file"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -32,6 +34,7 @@ func NewFileSvc(eventRepo repo.EventRepo, fileRepo repo.FileRepo, logger mlog.Lo
 }
 
 func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.ListResponse, error) {
+	pagination.InitByDefault(&request.Page, &request.PageSize)
 	files, pag, err := m.fileRepo.List(ctx, &repo.ListFileInput{
 		Page:           request.Page,
 		PageSize:       request.PageSize,

@@ -132,7 +132,11 @@ func initServer(ctx context.Context, a *apiGateway) (httpServer, error) {
 		writer.Write([]byte("pong"))
 	})
 
-	h := &handler{app: a.app, logger: a.app.Logger()}
+	h := &handler{
+		app:      a.app,
+		logger:   a.app.Logger(),
+		ServeMux: gmux,
+	}
 	h.handFile()
 	h.handleDownloadConfig()
 	h.serveWs(router)

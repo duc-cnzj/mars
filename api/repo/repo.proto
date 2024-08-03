@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package repo;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+import "types/types.proto";
+import "mars/mars.proto";
+
+option go_package = "github.com/duc-cnzj/mars/api/v4/repo;repo";
+
+message ListRequest {
+  int64         page      = 1;
+  int64         page_size = 2;
+  optional bool enabled   = 3;
+}
+
+message ListResponse {
+  int64                    page      = 1;
+  int64                    page_size = 2;
+  int64                    count     = 3;
+  repeated types.RepoModel items     = 4;
+}
+
+message ShowRequest {
+  int64 id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
+
+message ShowResponse {
+  types.RepoModel item = 1;
+}
+message ToggleEnabledRequest{
+  int64 id      = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  enabled = 2 [(google.api.field_behavior) = REQUIRED];
+}
+message ToggleEnabledResponse{
+  types.RepoModel item = 1;
+}
+
+message CreateRequest{
+  string         name           = 1 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
+  optional int64 git_project_id = 2;
+  bool           enabled        = 3;
+  mars.Config    mars_config    = 4;
+}
+message CreateResponse{
+  types.RepoModel item = 1;
+}
+
+service Repo {
+  rpc List(ListRequest) returns (ListResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/repos"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取 repo 列表",
+    };
+  }
+
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (google.api.http)                                               = {
+      post: "/api/repos"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "创建 repo",
+    };
+  }
+
+  rpc Show(ShowRequest) returns (ShowResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/repos/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取 repo 详情",
+    };
+  }
+
+  rpc ToggleEnabled(ToggleEnabledRequest) returns (ToggleEnabledResponse) {
+    option (google.api.http)                                               = {
+      post: "/api/repos/toggle_enabled"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "开启/关闭",
+    };
+  }
+}

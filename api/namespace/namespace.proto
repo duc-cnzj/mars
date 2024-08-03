@@ -2,48 +2,48 @@ syntax = "proto3";
 
 package namespace;
 
+import "google/api/field_behavior.proto";
 import "google/api/annotations.proto";
 import "types/types.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/namespace;namespace";
 
-message CreateRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  // 已存在则忽略，不会报错
-  bool ignore_if_exists = 2;
-}
 
-message ShowRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-}
 
-message DeleteRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0];
-}
-
-message IsExistsRequest {
-  string name = 1 [(validate.rules).string.min_bytes = 1];
-}
-
+message AllRequest {}
 message AllResponse {
   repeated types.NamespaceModel items = 1;
 }
 
+message CreateRequest {
+  string        namespace        = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  // 已存在则忽略，不会报错
+  bool ignore_if_exists = 2;
+}
 message CreateResponse {
   types.NamespaceModel namespace = 1;
-  bool exists = 2;
+  bool                 exists    = 2;
 }
 
+message ShowRequest {
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
 message ShowResponse {
   types.NamespaceModel namespace = 1;
 }
 
-message IsExistsResponse {
-  bool exists = 1;
-  int64 id = 2;
+message IsExistsRequest {
+  string name = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
-message AllRequest {}
+message IsExistsResponse {
+  bool  exists = 1;
+  int64 id     = 2;
+}
+
+message DeleteRequest {
+  int64 namespace_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+}
 message DeleteResponse {}
 
 service Namespace {

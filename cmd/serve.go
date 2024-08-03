@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/application/bootstrappers"
@@ -18,7 +17,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/singleflight"
-	"k8s.io/client-go/util/homedir"
 )
 
 var serverBootstrappers = []application.Bootstrapper{
@@ -98,16 +96,11 @@ func newApp(
 }
 
 func init() {
-	var defaultConfig string
-	if home := homedir.HomeDir(); home != "" {
-		defaultConfig = filepath.Join(home, ".kube", "config")
-	}
-
 	apiGatewayCmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $DIR/config.yaml)")
 	apiGatewayCmd.Flags().BoolP("debug", "", true, "debug mode.")
 	apiGatewayCmd.Flags().StringP("metrics_port", "", "9091", "metrics port")
 	apiGatewayCmd.Flags().StringP("app_port", "", "6000", "app port.")
-	apiGatewayCmd.Flags().StringP("kubeconfig", "", defaultConfig, "kubeconfig.")
+	apiGatewayCmd.Flags().StringP("kubeconfig", "", "", "kubeconfig.")
 	apiGatewayCmd.Flags().StringP("grpc_port", "", "", "grpc port.")
 	apiGatewayCmd.Flags().StringP("exclude_server", "", "", "do not start these services(api/metrics/cron/profile), join with ','.")
 

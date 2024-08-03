@@ -1,6 +1,8 @@
 package bootstrappers
 
 import (
+	"fmt"
+
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/server"
 )
@@ -12,7 +14,7 @@ func (g *GrpcBootstrapper) Tags() []string {
 }
 
 func (g *GrpcBootstrapper) Bootstrap(app application.App) error {
-	app.AddServer(server.NewGrpcRunner(app.Config().GrpcPort, app))
+	app.AddServer(server.NewGrpcRunner(fmt.Sprintf("localhost:%v", app.Config().GrpcPort), app))
 
 	return nil
 }

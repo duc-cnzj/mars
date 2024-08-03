@@ -63,7 +63,7 @@
     },
     "/api/files/disk_info": {
       "get": {
-        "summary": "DiskInfo 查看上传文件目录大小",
+        "summary": "查看文件目录大小",
         "operationId": "File_DiskInfo",
         "responses": {
           "200": {
@@ -86,6 +86,7 @@
     },
     "/api/files/max_upload_size": {
       "get": {
+        "summary": "获取最大上传大小",
         "operationId": "File_MaxUploadSize",
         "responses": {
           "200": {
@@ -141,7 +142,7 @@
     },
     "/api/record_files/{id}": {
       "get": {
-        "summary": "records 文件信息",
+        "summary": "文件详情",
         "operationId": "File_ShowRecords",
         "responses": {
           "200": {

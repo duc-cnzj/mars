@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+
 	"github.com/duc-cnzj/mars/api/v4/project"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
@@ -56,6 +58,7 @@ func NewProjectSvc(
 }
 
 func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
+	pagination.InitByDefault(&request.Page, &request.PageSize)
 	list, pag, err := p.projRepo.List(ctx, &repo.ListProjectInput{
 		Page:          request.Page,
 		PageSize:      request.PageSize,

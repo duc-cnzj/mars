@@ -155,7 +155,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Exchange sso code 换取 token",
+        "summary": "sso code 换取 token",
         "operationId": "Auth_Exchange",
         "parameters": [
           {
@@ -188,7 +188,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Info 获取当前登录的用户信息",
+        "summary": "获取当前登录的用户信息",
         "operationId": "Auth_Info",
         "responses": {
           "200": {
@@ -212,7 +212,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Login 登录接口",
+        "summary": "登录接口",
         "operationId": "Auth_Login",
         "parameters": [
           {
@@ -246,7 +246,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Settings 获取 sso 配置以及跳转 url",
+        "summary": "获取 sso 配置以及跳转 url",
         "operationId": "Auth_Settings",
         "responses": {
           "200": {
@@ -270,7 +270,7 @@
         "tags": [
           "Cluster"
         ],
-        "summary": "ClusterInfo 查看集群信息",
+        "summary": "查看集群信息",
         "operationId": "Cluster_ClusterInfo",
         "responses": {
           "200": {
@@ -293,7 +293,7 @@
         "tags": [
           "Container"
         ],
-        "summary": "CopyToPod (web): 页面上传文件到 pod 内部",
+        "summary": "上传文件到 pod",
         "operationId": "Container_CopyToPod",
         "parameters": [
           {
@@ -326,7 +326,7 @@
         "tags": [
           "Container"
         ],
-        "summary": "ContainerLog 查看 pod 日志",
+        "summary": "查看 pod 日志",
         "operationId": "Container_ContainerLog",
         "parameters": [
           {
@@ -374,7 +374,7 @@
         "tags": [
           "Container"
         ],
-        "summary": "StreamContainerLog stream 方式查看 pod 日志",
+        "summary": "stream 方式查看 pod 日志",
         "operationId": "Container_StreamContainerLog",
         "parameters": [
           {
@@ -431,7 +431,7 @@
         "tags": [
           "Container"
         ],
-        "summary": "IsPodExists pod 是否存在",
+        "summary": "pod 是否存在",
         "operationId": "Container_IsPodExists",
         "parameters": [
           {
@@ -464,7 +464,7 @@
         "tags": [
           "Container"
         ],
-        "summary": "IsPodRunning pod 是否正常在跑",
+        "summary": "pod 是否 running",
         "operationId": "Container_IsPodRunning",
         "parameters": [
           {
@@ -497,7 +497,7 @@
         "tags": [
           "Endpoint"
         ],
-        "summary": "InNamespace 名称空间下所有的 endpoints",
+        "summary": "获取名称空间下所有的 endpoints",
         "operationId": "Endpoint_InNamespace",
         "parameters": [
           {
@@ -529,7 +529,7 @@
         "tags": [
           "Endpoint"
         ],
-        "summary": "InProject 项目下所有的 endpoints",
+        "summary": "获取项目下所有的 endpoints",
         "operationId": "Endpoint_InProject",
         "parameters": [
           {
@@ -561,7 +561,7 @@
         "tags": [
           "Event"
         ],
-        "summary": "List 用户操作事件列表, 不包含 old, new",
+        "summary": "用户操作事件列表",
         "operationId": "Event_List",
         "parameters": [
           {
@@ -624,7 +624,7 @@
         "tags": [
           "Event"
         ],
-        "summary": "Show 查看事件详情, 包含 old, new",
+        "summary": "查看事件详情, 包含 old, new",
         "operationId": "Event_Show",
         "parameters": [
           {
@@ -698,7 +698,7 @@
         "tags": [
           "File"
         ],
-        "summary": "DiskInfo 查看上传文件目录大小",
+        "summary": "查看文件目录大小",
         "operationId": "File_DiskInfo",
         "responses": {
           "200": {
@@ -722,6 +722,7 @@
         "tags": [
           "File"
         ],
+        "summary": "获取最大上传大小",
         "operationId": "File_MaxUploadSize",
         "responses": {
           "200": {
@@ -776,7 +777,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "ProjectOptions 获取项目信息， 用在级联列表",
+        "summary": "获取项目信息， 用在级联列表",
         "operationId": "Git_ProjectOptions",
         "responses": {
           "200": {
@@ -799,7 +800,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "All 获取所有的 git 项目",
+        "summary": "获取所有的 git 项目",
         "operationId": "Git_All",
         "responses": {
           "200": {
@@ -822,7 +823,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "DisableProject 关闭项目",
+        "summary": "关闭项目",
         "operationId": "Git_DisableProject",
         "parameters": [
           {
@@ -855,7 +856,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
+        "summary": "开启项目，开启后可以在项目列表看到",
         "operationId": "Git_EnableProject",
         "parameters": [
           {
@@ -888,7 +889,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "BranchOptions 获取分支信息， 用在级联列表",
+        "summary": "获取分支信息， 用在级联列表",
         "operationId": "Git_BranchOptions",
         "parameters": [
           {
@@ -924,7 +925,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "CommitOptions 获取commit信息， 用在级联列表",
+        "summary": "获取commit信息， 用在级联列表",
         "operationId": "Git_CommitOptions",
         "parameters": [
           {
@@ -961,7 +962,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "Commit 获取 commit 详情",
+        "summary": "获取 commit 详情",
         "operationId": "Git_Commit",
         "parameters": [
           {
@@ -1004,7 +1005,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "PipelineInfo 获取 pipeline 详情",
+        "summary": "获取 pipeline 详情",
         "operationId": "Git_PipelineInfo",
         "parameters": [
           {
@@ -1047,7 +1048,7 @@
         "tags": [
           "Git"
         ],
-        "summary": "MarsConfigFile 获取项目 mars 配置详情",
+        "summary": "获取项目 mars 配置详情",
         "operationId": "Git_MarsConfigFile",
         "parameters": [
           {
@@ -1084,7 +1085,7 @@
         "tags": [
           "GitConfig"
         ],
-        "summary": "GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml",
+        "summary": "获取项目 helm charts 的默认 values.yaml",
         "operationId": "GitConfig_GetDefaultChartValues",
         "parameters": [
           {
@@ -1121,7 +1122,7 @@
         "tags": [
           "GitConfig"
         ],
-        "summary": "GlobalConfig 查看项目 GlobalConfig 配置",
+        "summary": "查看项目 GlobalConfig 配置",
         "operationId": "GitConfig_GlobalConfig",
         "parameters": [
           {
@@ -1153,7 +1154,7 @@
         "tags": [
           "GitConfig"
         ],
-        "summary": "Show 查看项目配置",
+        "summary": "查看项目配置",
         "operationId": "GitConfig_Show",
         "parameters": [
           {
@@ -1188,7 +1189,7 @@
         "tags": [
           "GitConfig"
         ],
-        "summary": "Update 更新全局配置",
+        "summary": "更新全局配置",
         "operationId": "GitConfig_Update",
         "parameters": [
           {
@@ -1233,7 +1234,7 @@
         "tags": [
           "GitConfig"
         ],
-        "summary": "ToggleGlobalStatus 开启/关闭全局配置",
+        "summary": "开启/关闭全局配置",
         "operationId": "GitConfig_ToggleGlobalStatus",
         "parameters": [
           {
@@ -1278,7 +1279,7 @@
         "tags": [
           "Metrics"
         ],
-        "summary": "CpuMemoryInNamespace 名称空间总共使用的 cpu memory",
+        "summary": "名称空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInNamespace",
         "parameters": [
           {
@@ -1310,7 +1311,7 @@
         "tags": [
           "Metrics"
         ],
-        "summary": "TopPod 获取 pod 的 cpu memory 信息",
+        "summary": "获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_TopPod",
         "parameters": [
           {
@@ -1347,7 +1348,7 @@
         "tags": [
           "Metrics"
         ],
-        "summary": "StreamTopPod stream 的方式获取 pod 的 cpu memory 信息",
+        "summary": "stream 的方式获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_StreamTopPod",
         "parameters": [
           {
@@ -1393,7 +1394,7 @@
         "tags": [
           "Metrics"
         ],
-        "summary": "CpuMemoryInProject 项目空间总共使用的 cpu memory",
+        "summary": "项目空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInProject",
         "parameters": [
           {
@@ -1485,7 +1486,8 @@
           {
             "type": "string",
             "name": "name",
-            "in": "query"
+            "in": "query",
+            "required": true
           }
         ],
         "responses": {
@@ -1734,7 +1736,7 @@
         "tags": [
           "Changelog"
         ],
-        "summary": "Show 查看项目修改的版本差异",
+        "summary": "查看项目修改的版本差异",
         "operationId": "Changelog_Show",
         "parameters": [
           {
@@ -1835,7 +1837,7 @@
         "tags": [
           "File"
         ],
-        "summary": "records 文件信息",
+        "summary": "文件详情",
         "operationId": "File_ShowRecords",
         "parameters": [
           {
@@ -1851,6 +1853,209 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/fileShowRecordsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/repos": {
+      "get": {
+        "tags": [
+          "Repo"
+        ],
+        "summary": "获取 repo 列表",
+        "operationId": "Repo_List",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "page_size",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "name": "enabled",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/repoListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Repo"
+        ],
+        "summary": "创建 repo",
+        "operationId": "Repo_Create",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "git_project_id",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "name": "enabled",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 \"pid|branch|filename\"",
+            "name": "mars_config.config_file",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个",
+            "name": "mars_config.config_file_values",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "mars_config.config_field",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "name": "mars_config.is_simple_env",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "config_file_type 配置文件类型，php/env/yaml...",
+            "name": "mars_config.config_file_type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 \"pid|branch|path\"",
+            "name": "mars_config.local_chart_path",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi",
+            "description": "branches 启用的分支",
+            "name": "mars_config.branches",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "values_yaml 和 values.yaml 一样",
+            "name": "mars_config.values_yaml",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "显示的名称 (helm app name), 不填就使用 git server project name\n以字母开头结尾，中间可以有 '_' '-'",
+            "name": "mars_config.display_name",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/repoCreateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/toggle_enabled": {
+      "post": {
+        "tags": [
+          "Repo"
+        ],
+        "summary": "开启/关闭",
+        "operationId": "Repo_ToggleEnabled",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/repoToggleEnabledRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/repoToggleEnabledResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/{id}": {
+      "get": {
+        "tags": [
+          "Repo"
+        ],
+        "summary": "获取 repo 详情",
+        "operationId": "Repo_Show",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "int64",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/repoShowResponse"
             }
           },
           "default": {
@@ -1910,6 +2115,9 @@
     },
     "authExchangeRequest": {
       "type": "object",
+      "required": [
+        "code"
+      ],
       "properties": {
         "code": {
           "type": "string"
@@ -1956,6 +2164,10 @@
     },
     "authLoginRequest": {
       "type": "object",
+      "required": [
+        "username",
+        "password"
+      ],
       "properties": {
         "password": {
           "type": "string"
@@ -2041,6 +2253,12 @@
     },
     "containerCopyToPodRequest": {
       "type": "object",
+      "required": [
+        "file_id",
+        "namespace",
+        "pod",
+        "container"
+      ],
       "properties": {
         "container": {
           "type": "string"
@@ -2096,6 +2314,10 @@
     },
     "containerIsPodExistsRequest": {
       "type": "object",
+      "required": [
+        "namespace",
+        "pod"
+      ],
       "properties": {
         "namespace": {
           "type": "string"
@@ -2115,6 +2337,10 @@
     },
     "containerIsPodRunningRequest": {
       "type": "object",
+      "required": [
+        "namespace",
+        "pod"
+      ],
       "properties": {
         "namespace": {
           "type": "string"
@@ -2429,8 +2655,7 @@
           "type": "string"
         },
         "isLeaf": {
-          "type": "boolean",
-          "title": "isLeaf 兼容 antd"
+          "type": "boolean"
         },
         "label": {
           "type": "string"
@@ -2713,6 +2938,9 @@
     },
     "namespaceCreateRequest": {
       "type": "object",
+      "required": [
+        "namespace"
+      ],
       "properties": {
         "ignore_if_exists": {
           "type": "boolean",
@@ -2904,6 +3132,70 @@
         }
       },
       "additionalProperties": false
+    },
+    "repoCreateResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/typesRepoModel"
+        }
+      }
+    },
+    "repoListResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/typesRepoModel"
+          }
+        },
+        "page": {
+          "type": "string",
+          "format": "int64"
+        },
+        "page_size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "repoShowResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/typesRepoModel"
+        }
+      }
+    },
+    "repoToggleEnabledRequest": {
+      "type": "object",
+      "required": [
+        "id",
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "repoToggleEnabledResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/typesRepoModel"
+        }
+      }
     },
     "tokenGrantRequest": {
       "type": "object",
@@ -3416,6 +3708,25 @@
         }
       }
     },
+    "typesRepoModel": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "git_project_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "mars_config": {
+          "$ref": "#/definitions/marsConfig"
+        }
+      }
+    },
     "typesServiceEndpoint": {
       "type": "object",
       "properties": {
@@ -3625,6 +3936,9 @@
     },
     {
       "name": "Project"
+    },
+    {
+      "name": "Repo"
     },
     {
       "name": "AccessToken"

@@ -33,7 +33,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ContainerClient interface {
-	// CopyToPod (web): 页面上传文件到 pod 内部
 	CopyToPod(ctx context.Context, in *CopyToPodRequest, opts ...grpc.CallOption) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (Container_ExecClient, error)
@@ -79,13 +78,10 @@ type ContainerClient interface {
 	//			 })
 	//		}
 	StreamCopyToPod(ctx context.Context, opts ...grpc.CallOption) (Container_StreamCopyToPodClient, error)
-	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(ctx context.Context, in *IsPodRunningRequest, opts ...grpc.CallOption) (*IsPodRunningResponse, error)
-	// IsPodExists pod 是否存在
 	IsPodExists(ctx context.Context, in *IsPodExistsRequest, opts ...grpc.CallOption) (*IsPodExistsResponse, error)
 	// ContainerLog 查看 pod 日志
 	ContainerLog(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error)
-	// StreamContainerLog stream 方式查看 pod 日志
 	StreamContainerLog(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (Container_StreamContainerLogClient, error)
 }
 
@@ -235,7 +231,6 @@ func (x *containerStreamContainerLogClient) Recv() (*LogResponse, error) {
 // All implementations must embed UnimplementedContainerServer
 // for forward compatibility
 type ContainerServer interface {
-	// CopyToPod (web): 页面上传文件到 pod 内部
 	CopyToPod(context.Context, *CopyToPodRequest) (*CopyToPodResponse, error)
 	// Exec grpc 执行 pod 命令
 	Exec(*ExecRequest, Container_ExecServer) error
@@ -281,13 +276,10 @@ type ContainerServer interface {
 	//			 })
 	//		}
 	StreamCopyToPod(Container_StreamCopyToPodServer) error
-	// IsPodRunning pod 是否正常在跑
 	IsPodRunning(context.Context, *IsPodRunningRequest) (*IsPodRunningResponse, error)
-	// IsPodExists pod 是否存在
 	IsPodExists(context.Context, *IsPodExistsRequest) (*IsPodExistsResponse, error)
 	// ContainerLog 查看 pod 日志
 	ContainerLog(context.Context, *LogRequest) (*LogResponse, error)
-	// StreamContainerLog stream 方式查看 pod 日志
 	StreamContainerLog(*LogRequest, Container_StreamContainerLogServer) error
 	mustEmbedUnimplementedContainerServer()
 }

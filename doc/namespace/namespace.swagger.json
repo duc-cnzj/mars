@@ -92,7 +92,7 @@
           {
             "name": "name",
             "in": "query",
-            "required": false,
+            "required": true,
             "type": "string"
           }
         ],
@@ -206,7 +206,10 @@
           "type": "boolean",
           "title": "已存在则忽略，不会报错"
         }
-      }
+      },
+      "required": [
+        "namespace"
+      ]
     },
     "namespaceCreateResponse": {
       "type": "object",

@@ -146,6 +146,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{EventsColumns[4]},
 			},
+			{
+				Name:    "event_username_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{EventsColumns[5], EventsColumns[1]},
+			},
 		},
 	}
 	// FilesColumns holds the columns for the "files" table.
@@ -252,6 +257,24 @@ var (
 			},
 		},
 	}
+	// ReposColumns holds the columns for the "repos" table.
+	ReposColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "default_branch", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "git_project_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "enabled", Type: field.TypeBool, Default: false},
+		{Name: "mars_config", Type: field.TypeJSON, Nullable: true},
+	}
+	// ReposTable holds the schema information for the "repos" table.
+	ReposTable = &schema.Table{
+		Name:       "repos",
+		Columns:    ReposColumns,
+		PrimaryKey: []*schema.Column{ReposColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AccessTokensTable,
@@ -263,6 +286,7 @@ var (
 		GitProjectsTable,
 		NamespacesTable,
 		ProjectsTable,
+		ReposTable,
 	}
 )
 

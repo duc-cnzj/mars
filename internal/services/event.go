@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+
 	"github.com/duc-cnzj/mars/api/v4/event"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -25,6 +27,7 @@ func NewEventSvc(eventRepo repo.EventRepo) event.EventServer {
 }
 
 func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
+	pagination.InitByDefault(&request.Page, &request.PageSize)
 	events, pag, err := e.eventRepo.List(ctx, &repo.ListEventInput{
 		Page:        request.Page,
 		PageSize:    request.PageSize,

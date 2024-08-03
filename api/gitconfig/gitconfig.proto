@@ -5,27 +5,29 @@ package gitconfig;
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 import "mars/mars.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/gitconfig;gitconfig";
 
 message FileRequest {
   string git_project_id = 1 [(validate.rules).string.min_bytes = 1];
-  string branch = 2 [(validate.rules).string.min_bytes = 1];
+  string branch         = 2 [(validate.rules).string.min_bytes = 1];
 }
 
 message FileResponse {
-  string data = 1;
-  string type = 2;
+  string                data     = 1;
+  string                type     = 2;
   repeated mars.Element elements = 3;
 }
 
 message ShowRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
+  int64  git_project_id = 1 [(validate.rules).int64.gt = 0];
+  string branch         = 2;
 }
 
 message ShowResponse {
-  string branch = 1;
+  string      branch = 1;
   mars.Config config = 2;
 }
 
@@ -34,13 +36,13 @@ message GlobalConfigRequest {
 }
 
 message GlobalConfigResponse {
-  bool enabled = 1;
-  mars.Config config = 2;
+  bool        enabled = 1;
+  mars.Config config  = 2;
 }
 
 message UpdateRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  mars.Config config = 2;
+  int64       git_project_id = 1 [(validate.rules).int64.gt = 0];
+  mars.Config config         = 2;
 }
 
 message UpdateResponse {
@@ -49,12 +51,12 @@ message UpdateResponse {
 
 message ToggleGlobalStatusRequest {
   int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  bool enabled = 2;
+  bool  enabled        = 2;
 }
 
 message DefaultChartValuesRequest {
-  int64 git_project_id = 1 [(validate.rules).int64.gt = 0];
-  string branch = 2;
+  int64  git_project_id = 1 [(validate.rules).int64.gt = 0];
+  string branch         = 2;
 }
 
 message DefaultChartValuesResponse {
@@ -64,40 +66,50 @@ message DefaultChartValuesResponse {
 message ToggleGlobalStatusResponse {}
 
 service GitConfig {
-  // Show 查看项目配置
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/mars_config"
     };
-  }
-
-  // GlobalConfig 查看项目 GlobalConfig 配置
-  rpc GlobalConfig(GlobalConfigRequest) returns (GlobalConfigResponse) {
-    option (google.api.http) = {
-      get: "/api/git/projects/{git_project_id}/global_config"
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查看项目配置",
     };
   }
 
-  // ToggleGlobalStatus 开启/关闭全局配置
+  rpc GlobalConfig(GlobalConfigRequest) returns (GlobalConfigResponse) {
+    option (google.api.http)                                               = {
+      get: "/api/git/projects/{git_project_id}/global_config"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查看项目 GlobalConfig 配置",
+    };
+  }
+
   rpc ToggleGlobalStatus(ToggleGlobalStatusRequest) returns (ToggleGlobalStatusResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/git/projects/{git_project_id}/toggle_status",
       body: "*"
     };
-  }
-
-  // Update 更新全局配置
-  rpc Update(UpdateRequest) returns (UpdateResponse) {
-    option (google.api.http) = {
-      put: "/api/git/projects/{git_project_id}/mars_config",
-      body: "*"
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "开启/关闭全局配置",
     };
   }
 
-  // GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
+  rpc Update(UpdateRequest) returns (UpdateResponse) {
+    option (google.api.http)                                               = {
+      put: "/api/git/projects/{git_project_id}/mars_config",
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新全局配置",
+    };
+  }
+
   rpc GetDefaultChartValues(DefaultChartValuesRequest) returns (DefaultChartValuesResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/git/projects/{git_project_id}/default_values",
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取项目 helm charts 的默认 values.yaml",
     };
   }
 }

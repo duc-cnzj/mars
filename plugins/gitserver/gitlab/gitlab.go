@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/proxy"
+
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/xanzy/go-gitlab"
@@ -204,7 +206,15 @@ func (g *server) Name() string {
 }
 
 func (g *server) Initialize(app application.App, args map[string]any) error {
-	client, err := gitlab.NewClient(args["token"].(string), gitlab.WithBaseURL(args["baseurl"].(string)))
+	var proxyStr string
+	if found, ok := args["http_proxy"]; ok {
+		proxyStr = found.(string)
+	}
+	client, err := gitlab.NewClient(
+		args["token"].(string),
+		gitlab.WithBaseURL(args["baseurl"].(string)),
+		gitlab.WithHTTPClient(proxy.NewHttpProxyClient(proxyStr)),
+	)
 	if err != nil {
 		return err
 	}

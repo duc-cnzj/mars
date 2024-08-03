@@ -494,7 +494,7 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn
 		Config:         input.Config,
 		Atomic:         input.Atomic,
 		ExtraValues:    input.ExtraValues,
-		Version:        input.Version,
+		Version:        &input.Version,
 		TimeoutSeconds: 0,
 		User:           c.GetUser(),
 		PubSub:         c.pubSub,

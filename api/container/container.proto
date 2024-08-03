@@ -3,71 +3,73 @@ syntax = "proto3";
 package container;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/container;container";
 
 message CopyToPodRequest {
-  int64 file_id = 1 [(validate.rules).int64.gt = 0];
-  string namespace = 2 [(validate.rules).string.min_bytes = 1];
-  string pod = 3 [(validate.rules).string.min_bytes = 1];
-  string container = 4 [(validate.rules).string.min_bytes = 1];
+  int64  file_id   = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  string namespace = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod       = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string container = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message CopyToPodResponse {
   string pod_file_path = 1;
-  string output = 2;
-  string file_name = 3;
+  string output        = 2;
+  string file_name     = 3;
 }
 
 message ExecRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string          namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string          pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   string container = 3;
-  repeated string command = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}];
+  repeated string command   = 4 [(validate.rules).repeated = {min_items: 1, items: {string: {min_bytes: 1}}}, (google.api.field_behavior) = REQUIRED];
 }
 
 message ExecError {
-  int64 code = 1;
+  int64  code    = 1;
   string message = 2;
 }
 
 message ExecResponse {
-  string message = 1;
-  ExecError error = 2;
+  string    message = 1;
+  ExecError error   = 2;
 }
 
 message StreamCopyToPodRequest {
   string file_name = 1 [(validate.rules).string.min_bytes = 1];
-  bytes data = 2;
+  bytes  data      = 2;
   string namespace = 3  [(validate.rules).string.min_bytes = 1];
-  string pod = 4  [(validate.rules).string.min_bytes = 1];
+  string pod       = 4  [(validate.rules).string.min_bytes = 1];
   string container = 5;
 }
 
 message StreamCopyToPodResponse {
-  int64 size = 1;
+  int64  size          = 1;
   string pod_file_path = 2;
-  string output = 3;
-  string pod = 4;
-  string namespace = 5;
-  string container = 6;
-  string filename = 7;
+  string output        = 3;
+  string pod           = 4;
+  string namespace     = 5;
+  string container     = 6;
+  string filename      = 7;
 }
 
 message IsPodRunningRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message IsPodRunningResponse {
-  bool running = 1;
-  string reason = 2;
+  bool   running = 1;
+  string reason  = 2;
 }
 
 message IsPodExistsRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
+  string namespace = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string pod       = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message IsPodExistsResponse {
@@ -75,25 +77,27 @@ message IsPodExistsResponse {
 }
 
 message LogRequest {
-  string namespace = 1 [(validate.rules).string.min_bytes = 1];
-  string pod = 2 [(validate.rules).string.min_bytes = 1];
-  string container = 3 [(validate.rules).string.min_bytes = 1];
+  string        namespace   = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string        pod         = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string        container   = 3 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   bool show_events = 4;
 }
 
 message LogResponse {
-  string namespace = 1;
-  string pod_name = 2;
+  string namespace      = 1;
+  string pod_name       = 2;
   string container_name = 3;
-  string log = 4;
+  string log            = 4;
 }
 
 service Container {
-  // CopyToPod (web): 页面上传文件到 pod 内部
   rpc CopyToPod(CopyToPodRequest) returns (CopyToPodResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/containers/copy_to_pod",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "上传文件到 pod",
     };
   }
 
@@ -142,33 +146,45 @@ service Container {
   //	}
   rpc StreamCopyToPod(stream StreamCopyToPodRequest) returns (StreamCopyToPodResponse);
 
-  // IsPodRunning pod 是否正常在跑
   rpc IsPodRunning(IsPodRunningRequest) returns (IsPodRunningResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/containers/pod_running_status",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "pod 是否 running",
+    };
   }
 
-  //  IsPodExists pod 是否存在
   rpc IsPodExists(IsPodExistsRequest) returns (IsPodExistsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/containers/pod_exists",
       body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "pod 是否存在",
     };
   }
 
   // ContainerLog 查看 pod 日志
   rpc ContainerLog(LogRequest) returns (LogResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查看 pod 日志",
     };
   }
 
-  // StreamContainerLog stream 方式查看 pod 日志
   rpc StreamContainerLog(LogRequest) returns (stream LogResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "stream 方式查看 pod 日志",
     };
   }
 }

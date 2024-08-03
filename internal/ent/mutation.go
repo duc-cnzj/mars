@@ -23,6 +23,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/predicate"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 )
 
@@ -44,6 +45,7 @@ const (
 	TypeGitProject  = "GitProject"
 	TypeNamespace   = "Namespace"
 	TypeProject     = "Project"
+	TypeRepo        = "Repo"
 )
 
 // AccessTokenMutation represents an operation that mutates the AccessToken nodes in the graph.
@@ -9253,4 +9255,824 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
+}
+
+// RepoMutation represents an operation that mutates the Repo nodes in the graph.
+type RepoMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	created_at        *time.Time
+	updated_at        *time.Time
+	deleted_at        *time.Time
+	name              *string
+	default_branch    *string
+	git_project_id    *int64
+	addgit_project_id *int64
+	enabled           *bool
+	mars_config       **mars.Config
+	clearedFields     map[string]struct{}
+	done              bool
+	oldValue          func(context.Context) (*Repo, error)
+	predicates        []predicate.Repo
+}
+
+var _ ent.Mutation = (*RepoMutation)(nil)
+
+// repoOption allows management of the mutation configuration using functional options.
+type repoOption func(*RepoMutation)
+
+// newRepoMutation creates new mutation for the Repo entity.
+func newRepoMutation(c config, op Op, opts ...repoOption) *RepoMutation {
+	m := &RepoMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRepo,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRepoID sets the ID field of the mutation.
+func withRepoID(id int) repoOption {
+	return func(m *RepoMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Repo
+		)
+		m.oldValue = func(ctx context.Context) (*Repo, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Repo.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRepo sets the old Repo of the mutation.
+func withRepo(node *Repo) repoOption {
+	return func(m *RepoMutation) {
+		m.oldValue = func(context.Context) (*Repo, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RepoMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RepoMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RepoMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RepoMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Repo.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RepoMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RepoMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RepoMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RepoMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RepoMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RepoMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *RepoMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *RepoMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *RepoMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[repo.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *RepoMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[repo.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *RepoMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, repo.FieldDeletedAt)
+}
+
+// SetName sets the "name" field.
+func (m *RepoMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RepoMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RepoMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDefaultBranch sets the "default_branch" field.
+func (m *RepoMutation) SetDefaultBranch(s string) {
+	m.default_branch = &s
+}
+
+// DefaultBranch returns the value of the "default_branch" field in the mutation.
+func (m *RepoMutation) DefaultBranch() (r string, exists bool) {
+	v := m.default_branch
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultBranch returns the old "default_branch" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefaultBranch is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefaultBranch requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultBranch: %w", err)
+	}
+	return oldValue.DefaultBranch, nil
+}
+
+// ClearDefaultBranch clears the value of the "default_branch" field.
+func (m *RepoMutation) ClearDefaultBranch() {
+	m.default_branch = nil
+	m.clearedFields[repo.FieldDefaultBranch] = struct{}{}
+}
+
+// DefaultBranchCleared returns if the "default_branch" field was cleared in this mutation.
+func (m *RepoMutation) DefaultBranchCleared() bool {
+	_, ok := m.clearedFields[repo.FieldDefaultBranch]
+	return ok
+}
+
+// ResetDefaultBranch resets all changes to the "default_branch" field.
+func (m *RepoMutation) ResetDefaultBranch() {
+	m.default_branch = nil
+	delete(m.clearedFields, repo.FieldDefaultBranch)
+}
+
+// SetGitProjectID sets the "git_project_id" field.
+func (m *RepoMutation) SetGitProjectID(i int64) {
+	m.git_project_id = &i
+	m.addgit_project_id = nil
+}
+
+// GitProjectID returns the value of the "git_project_id" field in the mutation.
+func (m *RepoMutation) GitProjectID() (r int64, exists bool) {
+	v := m.git_project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGitProjectID returns the old "git_project_id" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGitProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGitProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGitProjectID: %w", err)
+	}
+	return oldValue.GitProjectID, nil
+}
+
+// AddGitProjectID adds i to the "git_project_id" field.
+func (m *RepoMutation) AddGitProjectID(i int64) {
+	if m.addgit_project_id != nil {
+		*m.addgit_project_id += i
+	} else {
+		m.addgit_project_id = &i
+	}
+}
+
+// AddedGitProjectID returns the value that was added to the "git_project_id" field in this mutation.
+func (m *RepoMutation) AddedGitProjectID() (r int64, exists bool) {
+	v := m.addgit_project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearGitProjectID clears the value of the "git_project_id" field.
+func (m *RepoMutation) ClearGitProjectID() {
+	m.git_project_id = nil
+	m.addgit_project_id = nil
+	m.clearedFields[repo.FieldGitProjectID] = struct{}{}
+}
+
+// GitProjectIDCleared returns if the "git_project_id" field was cleared in this mutation.
+func (m *RepoMutation) GitProjectIDCleared() bool {
+	_, ok := m.clearedFields[repo.FieldGitProjectID]
+	return ok
+}
+
+// ResetGitProjectID resets all changes to the "git_project_id" field.
+func (m *RepoMutation) ResetGitProjectID() {
+	m.git_project_id = nil
+	m.addgit_project_id = nil
+	delete(m.clearedFields, repo.FieldGitProjectID)
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *RepoMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *RepoMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *RepoMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetMarsConfig sets the "mars_config" field.
+func (m *RepoMutation) SetMarsConfig(value *mars.Config) {
+	m.mars_config = &value
+}
+
+// MarsConfig returns the value of the "mars_config" field in the mutation.
+func (m *RepoMutation) MarsConfig() (r *mars.Config, exists bool) {
+	v := m.mars_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMarsConfig returns the old "mars_config" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldMarsConfig(ctx context.Context) (v *mars.Config, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMarsConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMarsConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMarsConfig: %w", err)
+	}
+	return oldValue.MarsConfig, nil
+}
+
+// ClearMarsConfig clears the value of the "mars_config" field.
+func (m *RepoMutation) ClearMarsConfig() {
+	m.mars_config = nil
+	m.clearedFields[repo.FieldMarsConfig] = struct{}{}
+}
+
+// MarsConfigCleared returns if the "mars_config" field was cleared in this mutation.
+func (m *RepoMutation) MarsConfigCleared() bool {
+	_, ok := m.clearedFields[repo.FieldMarsConfig]
+	return ok
+}
+
+// ResetMarsConfig resets all changes to the "mars_config" field.
+func (m *RepoMutation) ResetMarsConfig() {
+	m.mars_config = nil
+	delete(m.clearedFields, repo.FieldMarsConfig)
+}
+
+// Where appends a list predicates to the RepoMutation builder.
+func (m *RepoMutation) Where(ps ...predicate.Repo) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RepoMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RepoMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Repo, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RepoMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RepoMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Repo).
+func (m *RepoMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RepoMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, repo.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, repo.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, repo.FieldDeletedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, repo.FieldName)
+	}
+	if m.default_branch != nil {
+		fields = append(fields, repo.FieldDefaultBranch)
+	}
+	if m.git_project_id != nil {
+		fields = append(fields, repo.FieldGitProjectID)
+	}
+	if m.enabled != nil {
+		fields = append(fields, repo.FieldEnabled)
+	}
+	if m.mars_config != nil {
+		fields = append(fields, repo.FieldMarsConfig)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RepoMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case repo.FieldCreatedAt:
+		return m.CreatedAt()
+	case repo.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case repo.FieldDeletedAt:
+		return m.DeletedAt()
+	case repo.FieldName:
+		return m.Name()
+	case repo.FieldDefaultBranch:
+		return m.DefaultBranch()
+	case repo.FieldGitProjectID:
+		return m.GitProjectID()
+	case repo.FieldEnabled:
+		return m.Enabled()
+	case repo.FieldMarsConfig:
+		return m.MarsConfig()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case repo.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case repo.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case repo.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case repo.FieldName:
+		return m.OldName(ctx)
+	case repo.FieldDefaultBranch:
+		return m.OldDefaultBranch(ctx)
+	case repo.FieldGitProjectID:
+		return m.OldGitProjectID(ctx)
+	case repo.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case repo.FieldMarsConfig:
+		return m.OldMarsConfig(ctx)
+	}
+	return nil, fmt.Errorf("unknown Repo field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RepoMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case repo.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case repo.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case repo.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case repo.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case repo.FieldDefaultBranch:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultBranch(v)
+		return nil
+	case repo.FieldGitProjectID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGitProjectID(v)
+		return nil
+	case repo.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case repo.FieldMarsConfig:
+		v, ok := value.(*mars.Config)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMarsConfig(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Repo field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RepoMutation) AddedFields() []string {
+	var fields []string
+	if m.addgit_project_id != nil {
+		fields = append(fields, repo.FieldGitProjectID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RepoMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case repo.FieldGitProjectID:
+		return m.AddedGitProjectID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RepoMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case repo.FieldGitProjectID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGitProjectID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Repo numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RepoMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(repo.FieldDeletedAt) {
+		fields = append(fields, repo.FieldDeletedAt)
+	}
+	if m.FieldCleared(repo.FieldDefaultBranch) {
+		fields = append(fields, repo.FieldDefaultBranch)
+	}
+	if m.FieldCleared(repo.FieldGitProjectID) {
+		fields = append(fields, repo.FieldGitProjectID)
+	}
+	if m.FieldCleared(repo.FieldMarsConfig) {
+		fields = append(fields, repo.FieldMarsConfig)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RepoMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RepoMutation) ClearField(name string) error {
+	switch name {
+	case repo.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case repo.FieldDefaultBranch:
+		m.ClearDefaultBranch()
+		return nil
+	case repo.FieldGitProjectID:
+		m.ClearGitProjectID()
+		return nil
+	case repo.FieldMarsConfig:
+		m.ClearMarsConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Repo nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RepoMutation) ResetField(name string) error {
+	switch name {
+	case repo.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case repo.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case repo.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case repo.FieldName:
+		m.ResetName()
+		return nil
+	case repo.FieldDefaultBranch:
+		m.ResetDefaultBranch()
+		return nil
+	case repo.FieldGitProjectID:
+		m.ResetGitProjectID()
+		return nil
+	case repo.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case repo.FieldMarsConfig:
+		m.ResetMarsConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Repo field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RepoMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RepoMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RepoMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RepoMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RepoMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RepoMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RepoMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Repo unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RepoMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Repo edge %s", name)
 }

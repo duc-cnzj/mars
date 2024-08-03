@@ -3,13 +3,15 @@ syntax = "proto3";
 package changelog;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "types/types.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/changelog;changelog";
 
 message ShowRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0];
+  int64         project_id   = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
   bool only_changed = 2;
 }
 
@@ -18,10 +20,12 @@ message ShowResponse {
 }
 
 service Changelog {
-  //  Show 查看项目修改的版本差异
   rpc Show(ShowRequest) returns (ShowResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/projects/{project_id}/changelogs"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查看项目修改的版本差异",
     };
   }
 }

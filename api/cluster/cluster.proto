@@ -9,36 +9,36 @@ option go_package = "github.com/duc-cnzj/mars/api/v4/cluster;cluster";
 
 enum Status {
   StatusUnknown = 0;
-  StatusBad = 1;
+  StatusBad     = 1;
   StatusNotGood = 2;
-  StatusHealth = 3;
+  StatusHealth  = 3;
 }
 
 message InfoResponse {
-  string status = 1;
-  string free_memory = 2;
-  string free_cpu = 3;
+  string status              = 1;
+  string free_memory         = 2;
+  string free_cpu            = 3;
   string free_request_memory = 4;
-  string free_request_cpu = 5;
-  string total_memory = 6;
-  string total_cpu = 7;
-  string usage_memory_rate = 8;
-  string usage_cpu_rate = 9;
+  string free_request_cpu    = 5;
+  string total_memory        = 6;
+  string total_cpu           = 7;
+  string usage_memory_rate   = 8;
+  string usage_cpu_rate      = 9;
   string request_memory_rate = 10;
-  string request_cpu_rate = 11;
+  string request_cpu_rate    = 11;
 }
 
 message InfoRequest {}
 
 service Cluster {
-  // ClusterInfo 查看集群信息
   rpc ClusterInfo(InfoRequest) returns (InfoResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/cluster_info"
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: { } // Disable security key
+      security: {},
+      summary: "查看集群信息",
     };
   }
 }

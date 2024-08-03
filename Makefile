@@ -103,7 +103,7 @@ fmt:
 
 .PHONY: serve
 serve:
-	go run -race main.go serve --debug --app_port 4000 # --grpc_port 50000
+	go run -race main.go serve --debug
 
 .PHONY: build_race
 build_race:

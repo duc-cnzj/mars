@@ -26,6 +26,8 @@ var (
 	pluginSet = make(map[string]Plugin)
 )
 
+type newFunc[T Plugin] func(App) (T, error)
+
 // GetPlugins get all registered
 func GetPlugins() map[string]Plugin {
 	mu.RLock()
@@ -52,8 +54,6 @@ type PluginManger interface {
 }
 
 var _ PluginManger = (*manager)(nil)
-
-type newFunc[T Plugin] func(App) (T, error)
 
 type manager struct {
 	domainFunc newFunc[DomainManager]

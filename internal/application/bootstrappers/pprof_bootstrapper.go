@@ -8,7 +8,7 @@ import (
 type PprofBootstrapper struct{}
 
 func (p *PprofBootstrapper) Tags() []string {
-	return []string{"profile"}
+	return []string{"pprof"}
 }
 
 func (p *PprofBootstrapper) Bootstrap(app application.App) error {

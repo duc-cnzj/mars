@@ -18,7 +18,7 @@
   "paths": {
     "/api/endpoints/namespaces/{namespace_id}": {
       "get": {
-        "summary": "InNamespace 名称空间下所有的 endpoints",
+        "summary": "获取名称空间下所有的 endpoints",
         "operationId": "Endpoint_InNamespace",
         "responses": {
           "200": {
@@ -50,7 +50,7 @@
     },
     "/api/endpoints/projects/{project_id}": {
       "get": {
-        "summary": "InProject 项目下所有的 endpoints",
+        "summary": "获取项目下所有的 endpoints",
         "operationId": "Endpoint_InProject",
         "responses": {
           "200": {

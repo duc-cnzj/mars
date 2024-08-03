@@ -90,14 +90,14 @@ func (repo *eventRepo) Dispatch(created event.Event, createdData any) {
 
 type ListEventInput struct {
 	Page, PageSize int64
-	ActionType     types.EventActionType
+	ActionType     *types.EventActionType
 	Search         string
 	OrderIDDesc    *bool
 }
 
 func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events []*ent.Event, pag *pagination.Pagination, err error) {
 	query := repo.db.Event.Query().Where(
-		filters.IfInt64EQ(entevent.FieldAction)(int64(input.ActionType)),
+		filters.IfIntPtrEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
 		filters.IfOrderByDesc("id")(input.OrderIDDesc),
 		filters.If(func(t string) bool {
 			return t != ""

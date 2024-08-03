@@ -3,6 +3,7 @@ syntax = "proto3";
 package file;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "validate/validate.proto";
 import "types/types.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -10,7 +11,7 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v4/file;file";
 
 message DeleteRequest {
-  int64 id = 1 [(validate.rules).int64.gte = 1];
+  int64 id = 1 [(validate.rules).int64.gte = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message DeleteResponse {}
@@ -18,32 +19,32 @@ message DeleteResponse {}
 message DiskInfoRequest {}
 
 message DiskInfoResponse {
-  int64 usage = 1;
+  int64  usage          = 1;
   string humanize_usage = 2;
 }
 
 message ListRequest {
-  int64 page = 1 [(validate.rules).int64.gte = 1];
-  int64 page_size = 2 [(validate.rules).int64.gte = 1];
+  int64         page            = 1;
+  int64         page_size       = 2;
   bool without_deleted = 3;
 }
 
 message ListResponse{
-  int64 page = 1;
-  int64 page_size = 2;
-  repeated types.FileModel items = 3;
-  int64 count = 4;
+  int64                    page      = 1;
+  int64                    page_size = 2;
+  repeated types.FileModel items     = 3;
+  int64                    count     = 4;
 }
 
 message MaxUploadSizeRequest{}
 
 message MaxUploadSizeResponse{
   string humanize_size = 1;
-  uint64 bytes = 2;
+  uint64 bytes         = 2;
 }
 
 message ShowRecordsRequest {
-  int64 id = 1 [(validate.rules).int64.gt = 0];
+  int64 id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message ShowRecordsResponse {
@@ -51,41 +52,51 @@ message ShowRecordsResponse {
 }
 
 service File {
-  //  文件列表
   rpc List(ListRequest) returns (ListResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/files",
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "文件列表",
+    };
   }
 
-  //  records 文件信息
   rpc ShowRecords(ShowRecordsRequest) returns (ShowRecordsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/record_files/{id}",
     };
-  }
-
-  //  删除文件
-  rpc Delete(DeleteRequest) returns (DeleteResponse) {
-    option (google.api.http) = {
-      delete: "/api/files/{id}",
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "文件详情",
     };
   }
 
-  // DiskInfo 查看上传文件目录大小
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http)                                               = {
+      delete: "/api/files/{id}",
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除文件",
+    };
+  }
+
   rpc DiskInfo(DiskInfoRequest) returns (DiskInfoResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/files/disk_info",
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查看文件目录大小",
     };
   }
 
   rpc MaxUploadSize(MaxUploadSizeRequest) returns (MaxUploadSizeResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/files/max_upload_size",
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {} // Disable security key
+      security: {},
+      summary: "获取最大上传大小"
     };
   }
 }

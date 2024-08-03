@@ -31,15 +31,10 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GitConfigClient interface {
-	// Show 查看项目配置
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
-	// GlobalConfig 查看项目 GlobalConfig 配置
 	GlobalConfig(ctx context.Context, in *GlobalConfigRequest, opts ...grpc.CallOption) (*GlobalConfigResponse, error)
-	// ToggleGlobalStatus 开启/关闭全局配置
 	ToggleGlobalStatus(ctx context.Context, in *ToggleGlobalStatusRequest, opts ...grpc.CallOption) (*ToggleGlobalStatusResponse, error)
-	// Update 更新全局配置
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
-	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
 	GetDefaultChartValues(ctx context.Context, in *DefaultChartValuesRequest, opts ...grpc.CallOption) (*DefaultChartValuesResponse, error)
 }
 
@@ -100,15 +95,10 @@ func (c *gitConfigClient) GetDefaultChartValues(ctx context.Context, in *Default
 // All implementations must embed UnimplementedGitConfigServer
 // for forward compatibility
 type GitConfigServer interface {
-	// Show 查看项目配置
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
-	// GlobalConfig 查看项目 GlobalConfig 配置
 	GlobalConfig(context.Context, *GlobalConfigRequest) (*GlobalConfigResponse, error)
-	// ToggleGlobalStatus 开启/关闭全局配置
 	ToggleGlobalStatus(context.Context, *ToggleGlobalStatusRequest) (*ToggleGlobalStatusResponse, error)
-	// Update 更新全局配置
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
-	// GetDefaultChartValues 获取项目 helm charts 的默认 values.yaml
 	GetDefaultChartValues(context.Context, *DefaultChartValuesRequest) (*DefaultChartValuesResponse, error)
 	mustEmbedUnimplementedGitConfigServer()
 }

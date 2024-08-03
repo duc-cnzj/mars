@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
+
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
@@ -33,6 +35,7 @@ func NewAccessTokenSvc(eventRepo repo.EventRepo, timer timer.Timer, repo repo.Ac
 }
 
 func (a *accessTokenSvc) List(ctx context.Context, request *token.ListRequest) (*token.ListResponse, error) {
+	pagination.InitByDefault(&request.Page, &request.PageSize)
 	tokens, p, err := a.repo.List(ctx, &repo.ListAccessTokenInput{
 		Page:           request.Page,
 		PageSize:       request.PageSize,

@@ -3,93 +3,96 @@ syntax = "proto3";
 package auth;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "validate/validate.proto";
 
 option go_package = "github.com/duc-cnzj/mars/api/v4/auth;auth";
 
 message LoginRequest {
-  string username = 1 [(validate.rules).string.min_bytes = 1];
-  string password = 2 [(validate.rules).string.min_bytes = 1];
+  string username = 1 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
+  string password = 2 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message LoginResponse {
-  string token = 1;
-  int64 expires_in = 2;
+  string token      = 1;
+  int64  expires_in = 2;
 }
 
 message ExchangeRequest {
-  string code = 1 [(validate.rules).string.min_bytes = 1];
+  string code = 1 [(validate.rules).string.min_bytes = 1,  (google.api.field_behavior) = REQUIRED];
 }
 
 message ExchangeResponse {
-  string token = 1;
-  int64 expires_in = 2;
+  string token      = 1;
+  int64  expires_in = 2;
 }
 
 message InfoRequest {}
 
 message InfoResponse {
-  string id = 1;
-  string avatar = 2;
-  string name = 3;
-  string email = 4;
-  string logout_url = 5;
-  repeated string roles = 6;
+  string          id         = 1;
+  string          avatar     = 2;
+  string          name       = 3;
+  string          email      = 4;
+  string          logout_url = 5;
+  repeated string roles      = 6;
 }
 
 message SettingsRequest {}
 
 message SettingsResponse {
   message OidcSetting {
-    bool enabled = 1;
-    string name = 2;
-    string url = 3;
+    bool   enabled              = 1;
+    string name                 = 2;
+    string url                  = 3;
     string end_session_endpoint = 4;
-    string state = 5;
+    string state                = 5;
   }
 
   repeated OidcSetting items = 1;
 }
 
 service Auth {
-  //  Login 登录接口
   rpc Login(LoginRequest) returns (LoginResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/auth/login",
       body: "*"
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {} // Disable security key
+      security: {},
+      summary: "登录接口",
     };
   }
 
-  //  Info 获取当前登录的用户信息
   rpc Info(InfoRequest) returns (InfoResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/auth/info"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取当前登录的用户信息",
+    };
   }
 
-  //  Settings 获取 sso 配置以及跳转 url
   rpc Settings(SettingsRequest) returns (SettingsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       get: "/api/auth/settings"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {} // Disable security key
+      security: {}
+      summary: "获取 sso 配置以及跳转 url",
     };
   }
 
-  // Exchange sso code 换取 token
   rpc Exchange(ExchangeRequest) returns (ExchangeResponse) {
-    option (google.api.http) = {
+    option (google.api.http)                                               = {
       post: "/api/auth/exchange",
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      security: {} // Disable security key
+      security: {},
+      summary: "sso code 换取 token",
     };
   }
 }

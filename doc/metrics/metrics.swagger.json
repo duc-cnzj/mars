@@ -18,7 +18,7 @@
   "paths": {
     "/api/metrics/namespace/{namespace_id}/cpu_memory": {
       "get": {
-        "summary": "CpuMemoryInNamespace 名称空间总共使用的 cpu memory",
+        "summary": "名称空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInNamespace",
         "responses": {
           "200": {
@@ -50,7 +50,7 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}": {
       "get": {
-        "summary": "TopPod 获取 pod 的 cpu memory 信息",
+        "summary": "获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_TopPod",
         "responses": {
           "200": {
@@ -87,7 +87,7 @@
     },
     "/api/metrics/namespace/{namespace}/pods/{pod}/stream": {
       "get": {
-        "summary": "StreamTopPod stream 的方式获取 pod 的 cpu memory 信息",
+        "summary": "stream 的方式获取 pod 的 cpu memory 信息",
         "operationId": "Metrics_StreamTopPod",
         "responses": {
           "200": {
@@ -133,7 +133,7 @@
     },
     "/api/metrics/projects/{project_id}/cpu_memory": {
       "get": {
-        "summary": "CpuMemoryInProject 项目空间总共使用的 cpu memory",
+        "summary": "项目空间总共使用的 cpu memory",
         "operationId": "Metrics_CpuMemoryInProject",
         "responses": {
           "200": {

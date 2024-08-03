@@ -18,7 +18,7 @@
   "paths": {
     "/api/git/project_options": {
       "get": {
-        "summary": "ProjectOptions 获取项目信息， 用在级联列表",
+        "summary": "获取项目信息， 用在级联列表",
         "operationId": "Git_ProjectOptions",
         "responses": {
           "200": {
@@ -41,7 +41,7 @@
     },
     "/api/git/projects": {
       "get": {
-        "summary": "All 获取所有的 git 项目",
+        "summary": "获取所有的 git 项目",
         "operationId": "Git_All",
         "responses": {
           "200": {
@@ -64,7 +64,7 @@
     },
     "/api/git/projects/disable": {
       "post": {
-        "summary": "DisableProject 关闭项目",
+        "summary": "关闭项目",
         "operationId": "Git_DisableProject",
         "responses": {
           "200": {
@@ -97,7 +97,7 @@
     },
     "/api/git/projects/enable": {
       "post": {
-        "summary": "EnableProject 开启项目，开启后可以在项目列表看到",
+        "summary": "开启项目，开启后可以在项目列表看到",
         "operationId": "Git_EnableProject",
         "responses": {
           "200": {
@@ -130,7 +130,7 @@
     },
     "/api/git/projects/{git_project_id}/branch_options": {
       "get": {
-        "summary": "BranchOptions 获取分支信息， 用在级联列表",
+        "summary": "获取分支信息， 用在级联列表",
         "operationId": "Git_BranchOptions",
         "responses": {
           "200": {
@@ -167,7 +167,7 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commit_options": {
       "get": {
-        "summary": "CommitOptions 获取commit信息， 用在级联列表",
+        "summary": "获取commit信息， 用在级联列表",
         "operationId": "Git_CommitOptions",
         "responses": {
           "200": {
@@ -204,7 +204,7 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}": {
       "get": {
-        "summary": "Commit 获取 commit 详情",
+        "summary": "获取 commit 详情",
         "operationId": "Git_Commit",
         "responses": {
           "200": {
@@ -247,7 +247,7 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/commits/{commit}/pipeline_info": {
       "get": {
-        "summary": "PipelineInfo 获取 pipeline 详情",
+        "summary": "获取 pipeline 详情",
         "operationId": "Git_PipelineInfo",
         "responses": {
           "200": {
@@ -290,7 +290,7 @@
     },
     "/api/git/projects/{git_project_id}/branches/{branch}/config_file": {
       "get": {
-        "summary": "MarsConfigFile 获取项目 mars 配置详情",
+        "summary": "获取项目 mars 配置详情",
         "operationId": "Git_MarsConfigFile",
         "responses": {
           "200": {
@@ -463,8 +463,7 @@
           "type": "string"
         },
         "isLeaf": {
-          "type": "boolean",
-          "title": "isLeaf 兼容 antd"
+          "type": "boolean"
         },
         "gitProjectId": {
           "type": "string"

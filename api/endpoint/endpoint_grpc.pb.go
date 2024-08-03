@@ -28,9 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EndpointClient interface {
-	// InNamespace 名称空间下所有的 endpoints
 	InNamespace(ctx context.Context, in *InNamespaceRequest, opts ...grpc.CallOption) (*InNamespaceResponse, error)
-	// InProject 项目下所有的 endpoints
 	InProject(ctx context.Context, in *InProjectRequest, opts ...grpc.CallOption) (*InProjectResponse, error)
 }
 
@@ -64,9 +62,7 @@ func (c *endpointClient) InProject(ctx context.Context, in *InProjectRequest, op
 // All implementations must embed UnimplementedEndpointServer
 // for forward compatibility
 type EndpointServer interface {
-	// InNamespace 名称空间下所有的 endpoints
 	InNamespace(context.Context, *InNamespaceRequest) (*InNamespaceResponse, error)
-	// InProject 项目下所有的 endpoints
 	InProject(context.Context, *InProjectRequest) (*InProjectResponse, error)
 	mustEmbedUnimplementedEndpointServer()
 }

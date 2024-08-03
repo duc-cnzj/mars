@@ -176,7 +176,7 @@ type JobInput struct {
 	Config       string
 	Atomic       bool
 	ExtraValues  []*types.ExtraValue
-	Version      int64
+	Version      *int64
 
 	TimeoutSeconds int64
 	User           *auth.UserInfo

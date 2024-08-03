@@ -28,9 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
-	// List 用户操作事件列表, 不包含 old, new
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	// Show 查看事件详情, 包含 old, new
 	Show(ctx context.Context, in *ShowRequest, opts ...grpc.CallOption) (*ShowResponse, error)
 }
 
@@ -64,9 +62,7 @@ func (c *eventClient) Show(ctx context.Context, in *ShowRequest, opts ...grpc.Ca
 // All implementations must embed UnimplementedEventServer
 // for forward compatibility
 type EventServer interface {
-	// List 用户操作事件列表, 不包含 old, new
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	// Show 查看事件详情, 包含 old, new
 	Show(context.Context, *ShowRequest) (*ShowResponse, error)
 	mustEmbedUnimplementedEventServer()
 }

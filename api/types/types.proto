@@ -211,3 +211,10 @@ message AccessTokenModel {
   string updated_at   = 101;
   string deleted_at   = 102;
 }
+
+message RepoModel {
+  int64          id             = 1;
+  optional int64 git_project_id = 2;
+  bool           enabled        = 3;
+  mars.Config    mars_config    = 4;
+}

@@ -42,19 +42,18 @@ func IfInt64PtrEQ(field string) func(*int64) func(*sql.Selector) {
 		return sql.FieldEQ(field, s)
 	})
 }
+func IfIntPtrEQ[T ~int | ~int32](field string) func(*T) func(*sql.Selector) {
+	return If[*T](func(s *T) bool {
+		return s != nil
+	}, func(s *T) func(*sql.Selector) {
+		return sql.FieldEQ(field, s)
+	})
+}
 
 func IfInt64EQ(field string) func(int64) func(*sql.Selector) {
 	return If[int64](func(s int64) bool {
 		return s != 0
 	}, func(s int64) func(*sql.Selector) {
-		return sql.FieldEQ(field, s)
-	})
-}
-
-func IfIntPtrEQ(field string) func(*int) func(*sql.Selector) {
-	return If[*int](func(s *int) bool {
-		return s != nil
-	}, func(s *int) func(*sql.Selector) {
 		return sql.FieldEQ(field, s)
 	})
 }
@@ -91,3 +90,5 @@ func IfBool(field string) func(*bool) func(*sql.Selector) {
 }
 
 var IfEmail = IfStrEQ("email")
+var IfEnabled = IfBool("enabled")
+var IfOrderByIDDesc = IfOrderByDesc("id")

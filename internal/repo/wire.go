@@ -9,6 +9,7 @@ var WireRepoSet = wire.NewSet(
 	NewCronRepo,
 	NewK8sRepo,
 	NewDefaultHelmer,
+	NewRepo,
 	NewToolRepo,
 	NewDefaultArchiver,
 	NewExecutorManager,

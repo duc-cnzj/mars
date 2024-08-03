@@ -57,27 +57,9 @@ func (m *ListRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetPage() < 1 {
-		err := ListRequestValidationError{
-			field:  "Page",
-			reason: "value must be greater than or equal to 1",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Page
 
-	if m.GetPageSize() < 1 {
-		err := ListRequestValidationError{
-			field:  "PageSize",
-			reason: "value must be greater than or equal to 1",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for PageSize
 
 	if len(errors) > 0 {
 		return ListRequestMultiError(errors)

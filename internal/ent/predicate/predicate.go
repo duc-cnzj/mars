@@ -32,3 +32,6 @@ type Namespace func(*sql.Selector)
 
 // Project is the predicate function for project builders.
 type Project func(*sql.Selector)
+
+// Repo is the predicate function for repo builders.
+type Repo func(*sql.Selector)

@@ -111,10 +111,8 @@ func NewApp(
 	ws WsServer,
 	opts ...Option,
 ) App {
-	doneCtx, cancelFunc := context.WithCancel(context.Background())
+	doneCtx, cancelFunc := context.WithCancel(context.TODO())
 	appli := &app{
-		data:          data,
-		ws:            ws,
 		done:          doneCtx,
 		doneFunc:      cancelFunc,
 		servers:       []Server{},
@@ -128,12 +126,15 @@ func NewApp(
 		auth:          auth,
 		dispatcher:    dispatcher,
 		cronManager:   cronManager,
-		pluginManager: pm,
 		cache:         cache,
 		cacheLock:     cacheLock,
-		reg:           reg,
+		tracer:        nil,
 		//tracer:        tracer,
-		sf: sf,
+		sf:            sf,
+		data:          data,
+		pluginManager: pm,
+		reg:           reg,
+		ws:            ws,
 	}
 
 	for _, opt := range opts {
@@ -220,7 +221,7 @@ func (app *app) Done() <-chan struct{} {
 	return app.done.Done()
 }
 
-// Eventer impl App EventDispatcher.
+// Dispatcher impl event.Dispatcher.
 func (app *app) Dispatcher() event.Dispatcher {
 	return app.dispatcher
 }
@@ -258,7 +259,7 @@ loop:
 	return newBoots, excludeBoots
 }
 
-// { impl App {.
+// printConfig print config.
 func printConfig(app *app) {
 	app.logger.Debugf("imagepullsecrets %#v", app.Config().ImagePullSecrets)
 	for _, boot := range app.excludeBoots {

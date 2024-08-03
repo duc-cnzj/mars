@@ -106,6 +106,7 @@ type k8sRepo struct {
 	maxUploadSize uint64
 	archiver      Archiver
 	executor      ExecutorManager
+	k8sCli        *data.K8sClient
 }
 
 func NewK8sRepo(
@@ -118,9 +119,7 @@ func NewK8sRepo(
 	return &k8sRepo{
 		data:          data,
 		logger:        logger,
-		clientSet:     data.K8sClient.Client,
-		metricsCli:    data.K8sClient.MetricsClient,
-		config:        data.K8sClient.RestConfig,
+		k8sCli:        data.K8sClient,
 		uploader:      uploader,
 		maxUploadSize: data.Cfg.MaxUploadSize(),
 		archiver:      archiver,
@@ -694,21 +693,19 @@ type Executor interface {
 }
 
 type defaultRemoteExecutor struct {
-	clientSet kubernetes.Interface
-	config    *restclient.Config
+	k8sCli *data.K8sClient
 }
 
 func NewExecutorManager(data *data.Data) ExecutorManager {
 	return &defaultRemoteExecutor{
-		clientSet: data.K8sClient.Client,
-		config:    data.K8sClient.RestConfig,
+		k8sCli: data.K8sClient,
 	}
 }
 
 func (e *defaultRemoteExecutor) New() Executor {
 	return &executor{
-		clientSet: e.clientSet,
-		config:    e.config,
+		clientSet: e.k8sCli.Client,
+		config:    e.k8sCli.RestConfig,
 	}
 }
 

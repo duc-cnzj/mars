@@ -15,6 +15,7 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/ent/gitproject"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
 	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/ent/repo"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 )
@@ -418,6 +419,53 @@ func init() {
 	project.DefaultGitCommitAuthor = projectDescGitCommitAuthor.Default.(string)
 	// project.GitCommitAuthorValidator is a validator for the "git_commit_author" field. It is called by the builders before save.
 	project.GitCommitAuthorValidator = projectDescGitCommitAuthor.Validators[0].(func(string) error)
+	repoMixin := schema.Repo{}.Mixin()
+	repoMixinHooks2 := repoMixin[2].Hooks()
+	repo.Hooks[0] = repoMixinHooks2[0]
+	repoMixinInters2 := repoMixin[2].Interceptors()
+	repo.Interceptors[0] = repoMixinInters2[0]
+	repoMixinFields0 := repoMixin[0].Fields()
+	_ = repoMixinFields0
+	repoMixinFields1 := repoMixin[1].Fields()
+	_ = repoMixinFields1
+	repoFields := schema.Repo{}.Fields()
+	_ = repoFields
+	// repoDescCreatedAt is the schema descriptor for created_at field.
+	repoDescCreatedAt := repoMixinFields0[0].Descriptor()
+	// repo.DefaultCreatedAt holds the default value on creation for the created_at field.
+	repo.DefaultCreatedAt = repoDescCreatedAt.Default.(func() time.Time)
+	// repoDescUpdatedAt is the schema descriptor for updated_at field.
+	repoDescUpdatedAt := repoMixinFields1[0].Descriptor()
+	// repo.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	repo.DefaultUpdatedAt = repoDescUpdatedAt.Default.(func() time.Time)
+	// repo.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	repo.UpdateDefaultUpdatedAt = repoDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// repoDescName is the schema descriptor for name field.
+	repoDescName := repoFields[0].Descriptor()
+	// repo.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	repo.NameValidator = func() func(string) error {
+		validators := repoDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// repoDescDefaultBranch is the schema descriptor for default_branch field.
+	repoDescDefaultBranch := repoFields[1].Descriptor()
+	// repo.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
+	repo.DefaultBranchValidator = repoDescDefaultBranch.Validators[0].(func(string) error)
+	// repoDescEnabled is the schema descriptor for enabled field.
+	repoDescEnabled := repoFields[3].Descriptor()
+	// repo.DefaultEnabled holds the default value on creation for the enabled field.
+	repo.DefaultEnabled = repoDescEnabled.Default.(bool)
 }
 
 const (

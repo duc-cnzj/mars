@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	"k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 type ProjectRepo interface {
@@ -55,19 +54,17 @@ var _ ProjectRepo = (*projectRepo)(nil)
 type projectRepo struct {
 	logger mlog.Logger
 
-	k8sCli        *data.K8sClient
-	MetricsClient versioned.Interface
-	externalIp    string
-	db            *ent.Client
+	k8sCli     *data.K8sClient
+	externalIp string
+	db         *ent.Client
 }
 
 func NewProjectRepo(logger mlog.Logger, data *data.Data) ProjectRepo {
 	return &projectRepo{
-		logger:        logger,
-		k8sCli:        data.K8sClient,
-		MetricsClient: data.K8sClient.MetricsClient,
-		externalIp:    data.Cfg.ExternalIp,
-		db:            data.DB,
+		logger:     logger,
+		k8sCli:     data.K8sClient,
+		externalIp: data.Cfg.ExternalIp,
+		db:         data.DB,
 	}
 }
 
@@ -353,7 +350,7 @@ func (repo *projectRepo) GetAllPods(project *ent.Project) SortStatePod {
 
 func (repo *projectRepo) GetAllPodMetrics(project *ent.Project) []v1beta1.PodMetrics {
 	var (
-		metrics = repo.MetricsClient
+		metrics = repo.k8sCli.MetricsClient
 	)
 	//db.Preload("Namespace").First(&project)
 	metricses := metrics.MetricsV1beta1().PodMetricses(project.Edges.Namespace.Name)

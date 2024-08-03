@@ -14,6 +14,7 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/namespace"
 	"github.com/duc-cnzj/mars/api/v4/picture"
 	"github.com/duc-cnzj/mars/api/v4/project"
+	"github.com/duc-cnzj/mars/api/v4/repo"
 	"github.com/duc-cnzj/mars/api/v4/token"
 	"github.com/duc-cnzj/mars/api/v4/version"
 	"github.com/duc-cnzj/mars/v4/internal/application"
@@ -26,6 +27,7 @@ var WireServiceSet = wire.NewSet(
 	NewAuthSvc,
 	NewChangelogSvc,
 	NewClusterSvc,
+	NewRepoSvc,
 	NewContainerSvc,
 	NewEndpointSvc,
 	NewEventSvc,
@@ -56,9 +58,11 @@ func NewGrpcRegistry(
 	changelogServer changelog.ChangelogServer,
 	authServer auth.AuthServer,
 	tokenServer token.AccessTokenServer,
+	repoServer repo.RepoServer,
 ) *application.GrpcRegistry {
 	return &application.GrpcRegistry{
 		EndpointFuncs: []application.EndpointFunc{
+			repo.RegisterRepoHandlerFromEndpoint,
 			container.RegisterContainerHandlerFromEndpoint,
 			cluster.RegisterClusterHandlerFromEndpoint,
 			endpoint.RegisterEndpointHandlerFromEndpoint,
@@ -76,6 +80,7 @@ func NewGrpcRegistry(
 			token.RegisterAccessTokenHandlerFromEndpoint,
 		},
 		RegistryFunc: func(s grpc.ServiceRegistrar) {
+			repo.RegisterRepoServer(s, repoServer)
 			container.RegisterContainerServer(s, containerServer)
 			cluster.RegisterClusterServer(s, clusterServer)
 			endpoint.RegisterEndpointServer(s, endpointServer)

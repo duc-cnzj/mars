@@ -18,7 +18,7 @@
   "paths": {
     "/api/events": {
       "get": {
-        "summary": "List 用户操作事件列表, 不包含 old, new",
+        "summary": "用户操作事件列表",
         "operationId": "Event_List",
         "responses": {
           "200": {
@@ -85,7 +85,7 @@
     },
     "/api/events/{id}": {
       "get": {
-        "summary": "Show 查看事件详情, 包含 old, new",
+        "summary": "查看事件详情, 包含 old, new",
         "operationId": "Event_Show",
         "responses": {
           "200": {

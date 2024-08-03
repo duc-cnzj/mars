@@ -362,7 +362,7 @@ func (k *K8sClient) Start(done <-chan struct{}) {
 
 		k.PodFanOut.Distribute(done)
 	}()
-	cache.WaitForCacheSync(nil, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
+	cache.WaitForCacheSync(done, k.EventInformer.HasSynced, k.PodInformer.HasSynced, k.SecretInformer.HasSynced)
 	k.factory.Start(done)
 }
 

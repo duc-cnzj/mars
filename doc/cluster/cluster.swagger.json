@@ -18,7 +18,7 @@
   "paths": {
     "/api/cluster_info": {
       "get": {
-        "summary": "ClusterInfo 查看集群信息",
+        "summary": "查看集群信息",
         "operationId": "Cluster_ClusterInfo",
         "responses": {
           "200": {
