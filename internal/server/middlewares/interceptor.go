@@ -1,0 +1,64 @@
+package middlewares
+
+import (
+	"context"
+	"errors"
+
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"google.golang.org/grpc"
+)
+
+func AuthUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		if authorizeInterface, ok := info.Server.(auth.Authorize); ok {
+			ctx, err = authorizeInterface.Authorize(ctx, info.FullMethod)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return handler(ctx, req)
+	}
+}
+
+func AuthStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		var (
+			newCtx context.Context
+			err    error
+		)
+		if authorizeInterface, ok := srv.(auth.Authorize); ok {
+			newCtx, err = authorizeInterface.Authorize(ss.Context(), info.FullMethod)
+			if err != nil {
+				return err
+			}
+			wrapped := grpc_middleware.WrapServerStream(ss)
+			wrapped.WrappedContext = newCtx
+
+			return handler(srv, wrapped)
+		}
+
+		return handler(srv, ss)
+	}
+}
+
+type ctxTokenInfo struct{}
+
+func SetUser(ctx context.Context, info *auth.UserInfo) context.Context {
+	return context.WithValue(ctx, &ctxTokenInfo{}, info)
+}
+
+func GetUser(ctx context.Context) (*auth.UserInfo, error) {
+	if info, ok := ctx.Value(&ctxTokenInfo{}).(*auth.UserInfo); ok {
+		return info, nil
+	}
+
+	return nil, errors.New("user not found")
+}
+
+func MustGetUser(ctx context.Context) *auth.UserInfo {
+	info, _ := ctx.Value(&ctxTokenInfo{}).(*auth.UserInfo)
+	return info
+}

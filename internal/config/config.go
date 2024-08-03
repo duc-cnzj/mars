@@ -109,7 +109,7 @@ type Config struct {
 	MetricsPort string `mapstructure:"metrics_port"`
 
 	AdminPassword string `mapstructure:"admin_password"`
-	PrivateKey    string `mapstructure:"private_key"`
+	PrivateKey    string `mapstructure:"private_key"  json:"-"`
 
 	DomainManagerPlugin Plugin `mapstructure:"domain_manager_plugin"`
 	WsSenderPlugin      Plugin `mapstructure:"ws_sender_plugin"`
@@ -119,6 +119,7 @@ type Config struct {
 	UploadDir     string `mapstructure:"upload_dir"`
 	UploadMaxSize string `mapstructure:"upload_max_size"`
 
+	S3Enabled         bool   `mapstructure:"s3_enabled"`
 	S3Endpoint        string `mapstructure:"s3_endpoint"`
 	S3AccessKeyID     string `mapstructure:"s3_access_key_id"`
 	S3SecretAccessKey string `mapstructure:"s3_secret_access_key"`
@@ -143,8 +144,12 @@ type Config struct {
 
 	ImagePullSecrets DockerAuths `mapstructure:"imagepullsecrets"`
 
-	InstallTimeout time.Duration `mapstructure:"install_timeout"`
+	InstallTimeout time.Duration `mapstructure:"install_timeout" json:"-"`
 	Oidc           []OidcSetting `mapstructure:"oidc"`
+}
+
+func (c *Config) DSN() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.DBUsername, c.DBPassword, c.DBHost, c.DBPort, c.DBDatabase)
 }
 
 type OidcSetting struct {
@@ -213,8 +218,14 @@ func Init(cfgFile string) *Config {
 		cfg.UploadMaxSize = DefaultMaxUploadSize
 	}
 
+	if cfg.UploadDir == "" {
+		cfg.UploadDir = DefaultRootDir
+	}
+
 	return cfg
 }
+
+const DefaultRootDir = "/tmp/mars-uploads"
 
 func (c *Config) MaxUploadSize() uint64 {
 	bytes, err := humanize.ParseBytes(c.UploadMaxSize)

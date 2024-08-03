@@ -443,6 +443,17 @@
         }
       }
     },
+    "typesKeyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "typesNamespaceModel": {
       "type": "object",
       "properties": {
@@ -508,7 +519,10 @@
           "type": "string"
         },
         "pod_selectors": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "namespace_id": {
           "type": "string",
@@ -518,7 +532,11 @@
           "type": "boolean"
         },
         "env_values": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/typesKeyValue"
+          }
         },
         "extra_values": {
           "type": "array",

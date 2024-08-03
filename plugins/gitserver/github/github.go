@@ -8,21 +8,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/google/go-github/v47/github"
-
 	"golang.org/x/oauth2"
 )
 
-var _ plugins.GitServer = (*server)(nil)
+var _ application.GitServer = (*server)(nil)
 
 var name = "github"
 
 func init() {
 	dr := &server{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 type project struct {
@@ -61,13 +59,22 @@ type server struct {
 	client   *github.Client
 	user     *github.User
 	username string
+	logger   mlog.Logger
+}
+
+func (g *server) GetProject(pid string) (application.Project, error) {
+	p, _, err := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
+	if err != nil {
+		return nil, err
+	}
+	return &project{p: p}, nil
 }
 
 func (g *server) Name() string {
 	return name
 }
 
-func (g *server) Initialize(args map[string]any) error {
+func (g *server) Initialize(app application.App, args map[string]any) error {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: args["token"].(string)},
 	)
@@ -79,26 +86,18 @@ func (g *server) Initialize(args map[string]any) error {
 	}
 	g.user = user
 	g.username = user.GetLogin()
-	mlog.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
+	g.logger = app.Logger()
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (g *server) Destroy() error {
-	mlog.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (g *server) GetProject(pid string) (contracts.ProjectInterface, error) {
-	p, _, err := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
-	if err != nil {
-		return nil, err
-	}
-
-	return &project{p: p}, nil
-}
-
 type listProjectResponse struct {
-	items                    []contracts.ProjectInterface
+	items                    []application.Project
 	page, pageSize, nextPage int
 	hasMore                  bool
 }
@@ -111,7 +110,7 @@ func (l *listProjectResponse) HasMore() bool {
 	return l.hasMore
 }
 
-func (l *listProjectResponse) GetItems() []contracts.ProjectInterface {
+func (l *listProjectResponse) GetItems() []application.Project {
 	return l.items
 }
 
@@ -123,7 +122,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (application.ListProjectResponse, error) {
 	list, _, err := g.client.Repositories.List(context.TODO(), g.username, &github.RepositoryListOptions{
 		Sort:        "updated",
 		ListOptions: github.ListOptions{Page: page, PerPage: pageSize},
@@ -131,7 +130,7 @@ func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponse
 	if err != nil {
 		return nil, err
 	}
-	ps := make([]contracts.ProjectInterface, 0, len(list))
+	ps := make([]application.Project, 0, len(list))
 	for _, repository := range list {
 		ps = append(ps, &project{p: repository})
 	}
@@ -153,8 +152,8 @@ func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponse
 	}, nil
 }
 
-func (g *server) AllProjects() ([]contracts.ProjectInterface, error) {
-	var ps []contracts.ProjectInterface
+func (g *server) AllProjects() ([]application.Project, error) {
+	var ps []application.Project
 	page := 1
 	for page != -1 {
 		projects, err := g.ListProjects(page, 100)
@@ -173,7 +172,7 @@ func (g *server) AllProjects() ([]contracts.ProjectInterface, error) {
 }
 
 type listBranchResponse struct {
-	items                    []contracts.BranchInterface
+	items                    []application.Branch
 	page, pageSize, nextPage int
 	hasMore                  bool
 }
@@ -186,7 +185,7 @@ func (l *listBranchResponse) HasMore() bool {
 	return l.hasMore
 }
 
-func (l *listBranchResponse) GetItems() []contracts.BranchInterface {
+func (l *listBranchResponse) GetItems() []application.Branch {
 	return l.items
 }
 
@@ -215,7 +214,7 @@ func (b *branch) GetWebURL() string {
 	return ""
 }
 
-func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (application.ListBranchResponse, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 
 	branches, _, err := g.client.Repositories.ListBranches(context.TODO(), g.username, p.GetName(), &github.BranchListOptions{
@@ -224,7 +223,7 @@ func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBra
 	if err != nil {
 		return nil, err
 	}
-	bs := make([]contracts.BranchInterface, 0, len(branches))
+	bs := make([]application.Branch, 0, len(branches))
 	for _, b := range branches {
 		bs = append(bs, &branch{
 			b:    b,
@@ -249,8 +248,8 @@ func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBra
 	}, nil
 }
 
-func (g *server) AllBranches(pid string) ([]contracts.BranchInterface, error) {
-	var branches []contracts.BranchInterface
+func (g *server) AllBranches(pid string) ([]application.Branch, error) {
+	var branches []application.Branch
 	page := 1
 	for page != -1 {
 		githubBranches, err := g.ListBranches(pid, page, 100)
@@ -323,11 +322,11 @@ func (c *commit) GetWebURL() string {
 	return c.c.GetHTMLURL()
 }
 
-func (g *server) GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error) {
+func (g *server) GetCommitPipeline(pid string, branch string, sha string) (application.Pipeline, error) {
 	return nil, errors.New("github unimplemented this func")
 }
 
-func (g *server) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
+func (g *server) GetCommit(pid string, sha string) (application.Commit, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	c, _, err := g.client.Repositories.GetCommit(context.TODO(), g.username, p.GetName(), sha, &github.ListOptions{})
 	if err != nil {
@@ -336,7 +335,7 @@ func (g *server) GetCommit(pid string, sha string) (contracts.CommitInterface, e
 	return &commit{c: c, p: p, status: nil}, nil
 }
 
-func (g *server) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {
+func (g *server) ListCommits(pid string, branch string) ([]application.Commit, error) {
 	p, _, _ := g.client.Repositories.GetByID(context.TODO(), toInt64(pid))
 	cs, _, err := g.client.Repositories.ListCommits(context.TODO(), g.username, p.GetName(), &github.CommitsListOptions{
 		SHA:         branch,
@@ -345,7 +344,7 @@ func (g *server) ListCommits(pid string, branch string) ([]contracts.CommitInter
 	if err != nil {
 		return nil, err
 	}
-	res := make([]contracts.CommitInterface, 0, len(cs))
+	res := make([]application.Commit, 0, len(cs))
 	for _, c := range cs {
 		res = append(res, &commit{c: c, status: nil})
 	}

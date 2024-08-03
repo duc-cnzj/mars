@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "embed"
-
 	"github.com/duc-cnzj/mars/v4/cmd"
 	"github.com/duc-cnzj/mars/v4/logo"
+
+	_ "embed"
 
 	_ "github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	_ "github.com/duc-cnzj/mars/v4/plugins/gitserver/github"

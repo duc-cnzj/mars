@@ -8095,7 +8095,7 @@ export namespace types {
         username?: (string|null);
 
         /** ChangelogModel manifest */
-        manifest?: (string|null);
+        manifest?: (string[]|null);
 
         /** ChangelogModel config */
         config?: (string|null);
@@ -8131,13 +8131,13 @@ export namespace types {
         docker_image?: (string|null);
 
         /** ChangelogModel env_values */
-        env_values?: (string|null);
+        env_values?: (types.KeyValue[]|null);
 
         /** ChangelogModel extra_values */
-        extra_values?: (string|null);
+        extra_values?: (types.ExtraValue[]|null);
 
         /** ChangelogModel final_extra_values */
-        final_extra_values?: (string|null);
+        final_extra_values?: (string[]|null);
 
         /** ChangelogModel git_commit_web_url */
         git_commit_web_url?: (string|null);
@@ -8180,7 +8180,7 @@ export namespace types {
         public username: string;
 
         /** ChangelogModel manifest. */
-        public manifest: string;
+        public manifest: string[];
 
         /** ChangelogModel config. */
         public config: string;
@@ -8216,13 +8216,13 @@ export namespace types {
         public docker_image: string;
 
         /** ChangelogModel env_values. */
-        public env_values: string;
+        public env_values: types.KeyValue[];
 
         /** ChangelogModel extra_values. */
-        public extra_values: string;
+        public extra_values: types.ExtraValue[];
 
         /** ChangelogModel final_extra_values. */
-        public final_extra_values: string;
+        public final_extra_values: string[];
 
         /** ChangelogModel git_commit_web_url. */
         public git_commit_web_url: string;
@@ -8527,7 +8527,7 @@ export namespace types {
         global_enabled?: (boolean|null);
 
         /** GitProjectModel global_config */
-        global_config?: (string|null);
+        global_config?: (mars.Config|null);
 
         /** GitProjectModel created_at */
         created_at?: (string|null);
@@ -8567,7 +8567,7 @@ export namespace types {
         public global_enabled: boolean;
 
         /** GitProjectModel global_config. */
-        public global_config: string;
+        public global_config?: (mars.Config|null);
 
         /** GitProjectModel created_at. */
         public created_at: string;
@@ -8738,6 +8738,57 @@ export namespace types {
         StatusFailed = 3
     }
 
+    /** Properties of a KeyValue. */
+    interface IKeyValue {
+
+        /** KeyValue key */
+        key?: (string|null);
+
+        /** KeyValue value */
+        value?: (string|null);
+    }
+
+    /** Represents a KeyValue. */
+    class KeyValue implements IKeyValue {
+
+        /**
+         * Constructs a new KeyValue.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: types.IKeyValue);
+
+        /** KeyValue key. */
+        public key: string;
+
+        /** KeyValue value. */
+        public value: string;
+
+        /**
+         * Encodes the specified KeyValue message. Does not implicitly {@link types.KeyValue.verify|verify} messages.
+         * @param message KeyValue message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: types.KeyValue, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a KeyValue message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns KeyValue
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): types.KeyValue;
+
+        /**
+         * Gets the default type url for KeyValue
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
     /** Properties of a ProjectModel. */
     interface IProjectModel {
 
@@ -8766,7 +8817,7 @@ export namespace types {
         docker_image?: (string|null);
 
         /** ProjectModel pod_selectors */
-        pod_selectors?: (string|null);
+        pod_selectors?: (string[]|null);
 
         /** ProjectModel namespace_id */
         namespace_id?: (number|null);
@@ -8775,7 +8826,7 @@ export namespace types {
         atomic?: (boolean|null);
 
         /** ProjectModel env_values */
-        env_values?: (string|null);
+        env_values?: (types.KeyValue[]|null);
 
         /** ProjectModel extra_values */
         extra_values?: (types.ExtraValue[]|null);
@@ -8857,7 +8908,7 @@ export namespace types {
         public docker_image: string;
 
         /** ProjectModel pod_selectors. */
-        public pod_selectors: string;
+        public pod_selectors: string[];
 
         /** ProjectModel namespace_id. */
         public namespace_id: number;
@@ -8866,7 +8917,7 @@ export namespace types {
         public atomic: boolean;
 
         /** ProjectModel env_values. */
-        public env_values: string;
+        public env_values: types.KeyValue[];
 
         /** ProjectModel extra_values. */
         public extra_values: types.ExtraValue[];

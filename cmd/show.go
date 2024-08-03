@@ -1,22 +1,17 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/duc-cnzj/mars/v4/internal/adapter"
-	"github.com/duc-cnzj/mars/v4/internal/app"
-	"github.com/duc-cnzj/mars/v4/internal/app/bootstrappers"
-	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/cron"
-	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/utils/runtime"
 
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -73,8 +68,7 @@ var showBootTagsCmd = &cobra.Command{
 type loggerBootstrapper struct{}
 
 // Bootstrap boot logger.
-func (l *loggerBootstrapper) Bootstrap(app contracts.ApplicationInterface) error {
-	mlog.SetLogger(adapter.NewEmptyLogger())
+func (l *loggerBootstrapper) Bootstrap(app application.App) error {
 	return nil
 }
 
@@ -87,15 +81,20 @@ var showCronJobsCmd = &cobra.Command{
 	Use:   "cronjobs",
 	Short: "app cron jobs.",
 	Run: func(cmd *cobra.Command, args []string) {
-		app := app.NewApplication(config.Init(cfgFile), app.WithMustBootedBootstrappers(&loggerBootstrapper{}))
-		cm := cron.NewManager(nil, app)
-		for _, callback := range cron.RegisteredCronJobs() {
-			callback(cm, app)
+		cfg := config.Init(cfgFile)
+		cfg.LogChannel = ""
+		logger := mlog.NewLogger(cfg)
+		app, clean, err := InitializeApp(cfg, logger, nil)
+		if err != nil {
+			logger.Fatal(err)
 		}
+		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
+		defer app.Shutdown()
+
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetRowLine(true)
 		table.SetHeader([]string{"ID", "Name", "Expression"})
-		for i, command := range cm.List() {
+		for i, command := range app.CronManager().List() {
 			table.Append([]string{fmt.Sprintf("%d", i+1), command.Name(), command.Expression()})
 		}
 
@@ -107,15 +106,21 @@ var showEventsCmd = &cobra.Command{
 	Use:   "events",
 	Short: "app events.",
 	Run: func(cmd *cobra.Command, args []string) {
-		app := app.NewApplication(config.Init(cfgFile),
-			app.WithMustBootedBootstrappers(&loggerBootstrapper{}),
-			app.WithBootstrappers(&bootstrappers.EventBootstrapper{}))
-		app.Bootstrap()
+		cfg := config.Init(cfgFile)
+		cfg.LogChannel = ""
+		logger := mlog.NewLogger(cfg)
+		app, clean, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		if err != nil {
+			logger.Fatal(err)
+		}
+		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
+		defer app.Shutdown()
+
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetRowLine(true)
 		table.SetHeader([]string{"ID", "Event Name", "Listener Names", "Listener Count"})
 		i := 0
-		for event, listeners := range events.RegisteredEvents() {
+		for event, listeners := range app.Dispatcher().List() {
 			i++
 			var listenerNames []string
 			for _, listener := range listeners {
@@ -145,9 +150,18 @@ var showPluginsCmd = &cobra.Command{
 			cfg.GitServerPlugin.Name,
 		}
 
+		cfg.LogChannel = ""
+		logger := mlog.NewLogger(cfg)
+		app, clean, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		if err != nil {
+			logger.Fatal(err)
+		}
+		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
+		defer app.Shutdown()
+
 		var others [][]string
 		i := 0
-		for name := range plugins.GetPlugins() {
+		for name := range app.PluginMgr().GetPlugins() {
 			i++
 			used := false
 			for _, plugin := range usedPlugins {
@@ -175,22 +189,14 @@ var showConfigCmd = &cobra.Command{
 	Short: "app config.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetColWidth(200)
-		table.SetRowLine(true)
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.SetHeader([]string{"ID", "Key", "Value"})
-		rv := reflect.ValueOf(cfg).Elem()
-		rt := reflect.TypeOf(cfg).Elem()
-		for i := 0; i < rv.NumField(); i++ {
-			fieldName := rt.Field(i).Name
-			filedValue := fmt.Sprintf("%v", rv.Field(i).Interface())
-			if fieldName == "PrivateKey" {
-				filedValue = "MASKED"
-			}
-			table.Append([]string{fmt.Sprintf("%d", i+1), fieldName, filedValue})
+		var c = struct {
+			*config.Config
+			InstallTimeout string
+		}{
+			Config:         cfg,
+			InstallTimeout: cfg.InstallTimeout.String(),
 		}
-
-		table.Render()
+		indent, _ := json.MarshalIndent(c, "", "  ")
+		fmt.Println(string(indent))
 	},
 }

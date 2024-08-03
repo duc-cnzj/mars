@@ -593,8 +593,6 @@ func (m *ChangelogModel) validate(all bool) error {
 
 	// no validation rules for Username
 
-	// no validation rules for Manifest
-
 	// no validation rules for Config
 
 	// no validation rules for ConfigChanged
@@ -671,11 +669,73 @@ func (m *ChangelogModel) validate(all bool) error {
 
 	// no validation rules for DockerImage
 
-	// no validation rules for EnvValues
+	for idx, item := range m.GetEnvValues() {
+		_, _ = idx, item
 
-	// no validation rules for ExtraValues
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("EnvValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("EnvValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ChangelogModelValidationError{
+					field:  fmt.Sprintf("EnvValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
 
-	// no validation rules for FinalExtraValues
+	}
+
+	for idx, item := range m.GetExtraValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ChangelogModelValidationError{
+						field:  fmt.Sprintf("ExtraValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ChangelogModelValidationError{
+					field:  fmt.Sprintf("ExtraValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for GitCommitWebUrl
 
@@ -1080,7 +1140,34 @@ func (m *GitProjectModel) validate(all bool) error {
 
 	// no validation rules for GlobalEnabled
 
-	// no validation rules for GlobalConfig
+	if all {
+		switch v := interface{}(m.GetGlobalConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GitProjectModelValidationError{
+					field:  "GlobalConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GitProjectModelValidationError{
+					field:  "GlobalConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetGlobalConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GitProjectModelValidationError{
+				field:  "GlobalConfig",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for CreatedAt
 
@@ -1446,6 +1533,109 @@ var _ interface {
 	ErrorName() string
 } = NamespaceModelValidationError{}
 
+// Validate checks the field values on KeyValue with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *KeyValue) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on KeyValue with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in KeyValueMultiError, or nil
+// if none found.
+func (m *KeyValue) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *KeyValue) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Key
+
+	// no validation rules for Value
+
+	if len(errors) > 0 {
+		return KeyValueMultiError(errors)
+	}
+
+	return nil
+}
+
+// KeyValueMultiError is an error wrapping multiple validation errors returned
+// by KeyValue.ValidateAll() if the designated constraints aren't met.
+type KeyValueMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m KeyValueMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m KeyValueMultiError) AllErrors() []error { return m }
+
+// KeyValueValidationError is the validation error returned by
+// KeyValue.Validate if the designated constraints aren't met.
+type KeyValueValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e KeyValueValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e KeyValueValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e KeyValueValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e KeyValueValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e KeyValueValidationError) ErrorName() string { return "KeyValueValidationError" }
+
+// Error satisfies the builtin error interface
+func (e KeyValueValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sKeyValue.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = KeyValueValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = KeyValueValidationError{}
+
 // Validate checks the field values on ProjectModel with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1484,13 +1674,43 @@ func (m *ProjectModel) validate(all bool) error {
 
 	// no validation rules for DockerImage
 
-	// no validation rules for PodSelectors
-
 	// no validation rules for NamespaceId
 
 	// no validation rules for Atomic
 
-	// no validation rules for EnvValues
+	for idx, item := range m.GetEnvValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectModelValidationError{
+						field:  fmt.Sprintf("EnvValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectModelValidationError{
+						field:  fmt.Sprintf("EnvValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectModelValidationError{
+					field:  fmt.Sprintf("EnvValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	for idx, item := range m.GetExtraValues() {
 		_, _ = idx, item

@@ -17074,7 +17074,7 @@ export const types = $root.types = (() => {
          * @property {number|null} [id] ChangelogModel id
          * @property {number|null} [version] ChangelogModel version
          * @property {string|null} [username] ChangelogModel username
-         * @property {string|null} [manifest] ChangelogModel manifest
+         * @property {Array.<string>|null} [manifest] ChangelogModel manifest
          * @property {string|null} [config] ChangelogModel config
          * @property {boolean|null} [config_changed] ChangelogModel config_changed
          * @property {number|null} [project_id] ChangelogModel project_id
@@ -17086,9 +17086,9 @@ export const types = $root.types = (() => {
          * @property {string|null} [git_branch] ChangelogModel git_branch
          * @property {string|null} [git_commit] ChangelogModel git_commit
          * @property {string|null} [docker_image] ChangelogModel docker_image
-         * @property {string|null} [env_values] ChangelogModel env_values
-         * @property {string|null} [extra_values] ChangelogModel extra_values
-         * @property {string|null} [final_extra_values] ChangelogModel final_extra_values
+         * @property {Array.<types.KeyValue>|null} [env_values] ChangelogModel env_values
+         * @property {Array.<types.ExtraValue>|null} [extra_values] ChangelogModel extra_values
+         * @property {Array.<string>|null} [final_extra_values] ChangelogModel final_extra_values
          * @property {string|null} [git_commit_web_url] ChangelogModel git_commit_web_url
          * @property {string|null} [git_commit_title] ChangelogModel git_commit_title
          * @property {string|null} [git_commit_author] ChangelogModel git_commit_author
@@ -17107,6 +17107,10 @@ export const types = $root.types = (() => {
          * @param {types.IChangelogModel=} [properties] Properties to set
          */
         function ChangelogModel(properties) {
+            this.manifest = [];
+            this.env_values = [];
+            this.extra_values = [];
+            this.final_extra_values = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -17139,11 +17143,11 @@ export const types = $root.types = (() => {
 
         /**
          * ChangelogModel manifest.
-         * @member {string} manifest
+         * @member {Array.<string>} manifest
          * @memberof types.ChangelogModel
          * @instance
          */
-        ChangelogModel.prototype.manifest = "";
+        ChangelogModel.prototype.manifest = $util.emptyArray;
 
         /**
          * ChangelogModel config.
@@ -17235,27 +17239,27 @@ export const types = $root.types = (() => {
 
         /**
          * ChangelogModel env_values.
-         * @member {string} env_values
+         * @member {Array.<types.KeyValue>} env_values
          * @memberof types.ChangelogModel
          * @instance
          */
-        ChangelogModel.prototype.env_values = "";
+        ChangelogModel.prototype.env_values = $util.emptyArray;
 
         /**
          * ChangelogModel extra_values.
-         * @member {string} extra_values
+         * @member {Array.<types.ExtraValue>} extra_values
          * @memberof types.ChangelogModel
          * @instance
          */
-        ChangelogModel.prototype.extra_values = "";
+        ChangelogModel.prototype.extra_values = $util.emptyArray;
 
         /**
          * ChangelogModel final_extra_values.
-         * @member {string} final_extra_values
+         * @member {Array.<string>} final_extra_values
          * @memberof types.ChangelogModel
          * @instance
          */
-        ChangelogModel.prototype.final_extra_values = "";
+        ChangelogModel.prototype.final_extra_values = $util.emptyArray;
 
         /**
          * ChangelogModel git_commit_web_url.
@@ -17331,8 +17335,9 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 2, wireType 0 =*/16).int64(message.version);
             if (message.username != null && Object.hasOwnProperty.call(message, "username"))
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.username);
-            if (message.manifest != null && Object.hasOwnProperty.call(message, "manifest"))
-                writer.uint32(/* id 4, wireType 2 =*/34).string(message.manifest);
+            if (message.manifest != null && message.manifest.length)
+                for (let i = 0; i < message.manifest.length; ++i)
+                    writer.uint32(/* id 4, wireType 2 =*/34).string(message.manifest[i]);
             if (message.config != null && Object.hasOwnProperty.call(message, "config"))
                 writer.uint32(/* id 5, wireType 2 =*/42).string(message.config);
             if (message.config_changed != null && Object.hasOwnProperty.call(message, "config_changed"))
@@ -17355,12 +17360,15 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 14, wireType 2 =*/114).string(message.git_commit);
             if (message.docker_image != null && Object.hasOwnProperty.call(message, "docker_image"))
                 writer.uint32(/* id 15, wireType 2 =*/122).string(message.docker_image);
-            if (message.env_values != null && Object.hasOwnProperty.call(message, "env_values"))
-                writer.uint32(/* id 16, wireType 2 =*/130).string(message.env_values);
-            if (message.extra_values != null && Object.hasOwnProperty.call(message, "extra_values"))
-                writer.uint32(/* id 17, wireType 2 =*/138).string(message.extra_values);
-            if (message.final_extra_values != null && Object.hasOwnProperty.call(message, "final_extra_values"))
-                writer.uint32(/* id 18, wireType 2 =*/146).string(message.final_extra_values);
+            if (message.env_values != null && message.env_values.length)
+                for (let i = 0; i < message.env_values.length; ++i)
+                    $root.types.KeyValue.encode(message.env_values[i], writer.uint32(/* id 16, wireType 2 =*/130).fork()).ldelim();
+            if (message.extra_values != null && message.extra_values.length)
+                for (let i = 0; i < message.extra_values.length; ++i)
+                    $root.types.ExtraValue.encode(message.extra_values[i], writer.uint32(/* id 17, wireType 2 =*/138).fork()).ldelim();
+            if (message.final_extra_values != null && message.final_extra_values.length)
+                for (let i = 0; i < message.final_extra_values.length; ++i)
+                    writer.uint32(/* id 18, wireType 2 =*/146).string(message.final_extra_values[i]);
             if (message.git_commit_web_url != null && Object.hasOwnProperty.call(message, "git_commit_web_url"))
                 writer.uint32(/* id 19, wireType 2 =*/154).string(message.git_commit_web_url);
             if (message.git_commit_title != null && Object.hasOwnProperty.call(message, "git_commit_title"))
@@ -17409,7 +17417,9 @@ export const types = $root.types = (() => {
                         break;
                     }
                 case 4: {
-                        message.manifest = reader.string();
+                        if (!(message.manifest && message.manifest.length))
+                            message.manifest = [];
+                        message.manifest.push(reader.string());
                         break;
                     }
                 case 5: {
@@ -17457,15 +17467,21 @@ export const types = $root.types = (() => {
                         break;
                     }
                 case 16: {
-                        message.env_values = reader.string();
+                        if (!(message.env_values && message.env_values.length))
+                            message.env_values = [];
+                        message.env_values.push($root.types.KeyValue.decode(reader, reader.uint32()));
                         break;
                     }
                 case 17: {
-                        message.extra_values = reader.string();
+                        if (!(message.extra_values && message.extra_values.length))
+                            message.extra_values = [];
+                        message.extra_values.push($root.types.ExtraValue.decode(reader, reader.uint32()));
                         break;
                     }
                 case 18: {
-                        message.final_extra_values = reader.string();
+                        if (!(message.final_extra_values && message.final_extra_values.length))
+                            message.final_extra_values = [];
+                        message.final_extra_values.push(reader.string());
                         break;
                     }
                 case 19: {
@@ -18088,7 +18104,7 @@ export const types = $root.types = (() => {
          * @property {number|null} [git_project_id] GitProjectModel git_project_id
          * @property {boolean|null} [enabled] GitProjectModel enabled
          * @property {boolean|null} [global_enabled] GitProjectModel global_enabled
-         * @property {string|null} [global_config] GitProjectModel global_config
+         * @property {mars.Config|null} [global_config] GitProjectModel global_config
          * @property {string|null} [created_at] GitProjectModel created_at
          * @property {string|null} [updated_at] GitProjectModel updated_at
          * @property {string|null} [deleted_at] GitProjectModel deleted_at
@@ -18159,11 +18175,11 @@ export const types = $root.types = (() => {
 
         /**
          * GitProjectModel global_config.
-         * @member {string} global_config
+         * @member {mars.Config|null|undefined} global_config
          * @memberof types.GitProjectModel
          * @instance
          */
-        GitProjectModel.prototype.global_config = "";
+        GitProjectModel.prototype.global_config = null;
 
         /**
          * GitProjectModel created_at.
@@ -18214,7 +18230,7 @@ export const types = $root.types = (() => {
             if (message.global_enabled != null && Object.hasOwnProperty.call(message, "global_enabled"))
                 writer.uint32(/* id 6, wireType 0 =*/48).bool(message.global_enabled);
             if (message.global_config != null && Object.hasOwnProperty.call(message, "global_config"))
-                writer.uint32(/* id 7, wireType 2 =*/58).string(message.global_config);
+                $root.mars.Config.encode(message.global_config, writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
             if (message.created_at != null && Object.hasOwnProperty.call(message, "created_at"))
                 writer.uint32(/* id 100, wireType 2 =*/802).string(message.created_at);
             if (message.updated_at != null && Object.hasOwnProperty.call(message, "updated_at"))
@@ -18267,7 +18283,7 @@ export const types = $root.types = (() => {
                         break;
                     }
                 case 7: {
-                        message.global_config = reader.string();
+                        message.global_config = $root.mars.Config.decode(reader, reader.uint32());
                         break;
                     }
                 case 100: {
@@ -18618,6 +18634,118 @@ export const types = $root.types = (() => {
         return values;
     })();
 
+    types.KeyValue = (function() {
+
+        /**
+         * Properties of a KeyValue.
+         * @memberof types
+         * @interface IKeyValue
+         * @property {string|null} [key] KeyValue key
+         * @property {string|null} [value] KeyValue value
+         */
+
+        /**
+         * Constructs a new KeyValue.
+         * @memberof types
+         * @classdesc Represents a KeyValue.
+         * @implements IKeyValue
+         * @constructor
+         * @param {types.IKeyValue=} [properties] Properties to set
+         */
+        function KeyValue(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * KeyValue key.
+         * @member {string} key
+         * @memberof types.KeyValue
+         * @instance
+         */
+        KeyValue.prototype.key = "";
+
+        /**
+         * KeyValue value.
+         * @member {string} value
+         * @memberof types.KeyValue
+         * @instance
+         */
+        KeyValue.prototype.value = "";
+
+        /**
+         * Encodes the specified KeyValue message. Does not implicitly {@link types.KeyValue.verify|verify} messages.
+         * @function encode
+         * @memberof types.KeyValue
+         * @static
+         * @param {types.KeyValue} message KeyValue message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        KeyValue.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.key != null && Object.hasOwnProperty.call(message, "key"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.key);
+            if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.value);
+            return writer;
+        };
+
+        /**
+         * Decodes a KeyValue message from the specified reader or buffer.
+         * @function decode
+         * @memberof types.KeyValue
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {types.KeyValue} KeyValue
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        KeyValue.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.types.KeyValue();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1: {
+                        message.key = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.value = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Gets the default type url for KeyValue
+         * @function getTypeUrl
+         * @memberof types.KeyValue
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        KeyValue.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/types.KeyValue";
+        };
+
+        return KeyValue;
+    })();
+
     types.ProjectModel = (function() {
 
         /**
@@ -18632,10 +18760,10 @@ export const types = $root.types = (() => {
          * @property {string|null} [config] ProjectModel config
          * @property {string|null} [override_values] ProjectModel override_values
          * @property {string|null} [docker_image] ProjectModel docker_image
-         * @property {string|null} [pod_selectors] ProjectModel pod_selectors
+         * @property {Array.<string>|null} [pod_selectors] ProjectModel pod_selectors
          * @property {number|null} [namespace_id] ProjectModel namespace_id
          * @property {boolean|null} [atomic] ProjectModel atomic
-         * @property {string|null} [env_values] ProjectModel env_values
+         * @property {Array.<types.KeyValue>|null} [env_values] ProjectModel env_values
          * @property {Array.<types.ExtraValue>|null} [extra_values] ProjectModel extra_values
          * @property {string|null} [final_extra_values] ProjectModel final_extra_values
          * @property {types.Deploy|null} [deploy_status] ProjectModel deploy_status
@@ -18662,6 +18790,8 @@ export const types = $root.types = (() => {
          * @param {types.IProjectModel=} [properties] Properties to set
          */
         function ProjectModel(properties) {
+            this.pod_selectors = [];
+            this.env_values = [];
             this.extra_values = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -18735,11 +18865,11 @@ export const types = $root.types = (() => {
 
         /**
          * ProjectModel pod_selectors.
-         * @member {string} pod_selectors
+         * @member {Array.<string>} pod_selectors
          * @memberof types.ProjectModel
          * @instance
          */
-        ProjectModel.prototype.pod_selectors = "";
+        ProjectModel.prototype.pod_selectors = $util.emptyArray;
 
         /**
          * ProjectModel namespace_id.
@@ -18759,11 +18889,11 @@ export const types = $root.types = (() => {
 
         /**
          * ProjectModel env_values.
-         * @member {string} env_values
+         * @member {Array.<types.KeyValue>} env_values
          * @memberof types.ProjectModel
          * @instance
          */
-        ProjectModel.prototype.env_values = "";
+        ProjectModel.prototype.env_values = $util.emptyArray;
 
         /**
          * ProjectModel extra_values.
@@ -18913,14 +19043,16 @@ export const types = $root.types = (() => {
                 writer.uint32(/* id 7, wireType 2 =*/58).string(message.override_values);
             if (message.docker_image != null && Object.hasOwnProperty.call(message, "docker_image"))
                 writer.uint32(/* id 8, wireType 2 =*/66).string(message.docker_image);
-            if (message.pod_selectors != null && Object.hasOwnProperty.call(message, "pod_selectors"))
-                writer.uint32(/* id 9, wireType 2 =*/74).string(message.pod_selectors);
+            if (message.pod_selectors != null && message.pod_selectors.length)
+                for (let i = 0; i < message.pod_selectors.length; ++i)
+                    writer.uint32(/* id 9, wireType 2 =*/74).string(message.pod_selectors[i]);
             if (message.namespace_id != null && Object.hasOwnProperty.call(message, "namespace_id"))
                 writer.uint32(/* id 10, wireType 0 =*/80).int64(message.namespace_id);
             if (message.atomic != null && Object.hasOwnProperty.call(message, "atomic"))
                 writer.uint32(/* id 11, wireType 0 =*/88).bool(message.atomic);
-            if (message.env_values != null && Object.hasOwnProperty.call(message, "env_values"))
-                writer.uint32(/* id 12, wireType 2 =*/98).string(message.env_values);
+            if (message.env_values != null && message.env_values.length)
+                for (let i = 0; i < message.env_values.length; ++i)
+                    $root.types.KeyValue.encode(message.env_values[i], writer.uint32(/* id 12, wireType 2 =*/98).fork()).ldelim();
             if (message.extra_values != null && message.extra_values.length)
                 for (let i = 0; i < message.extra_values.length; ++i)
                     $root.types.ExtraValue.encode(message.extra_values[i], writer.uint32(/* id 13, wireType 2 =*/106).fork()).ldelim();
@@ -19006,7 +19138,9 @@ export const types = $root.types = (() => {
                         break;
                     }
                 case 9: {
-                        message.pod_selectors = reader.string();
+                        if (!(message.pod_selectors && message.pod_selectors.length))
+                            message.pod_selectors = [];
+                        message.pod_selectors.push(reader.string());
                         break;
                     }
                 case 10: {
@@ -19018,7 +19152,9 @@ export const types = $root.types = (() => {
                         break;
                     }
                 case 12: {
-                        message.env_values = reader.string();
+                        if (!(message.env_values && message.env_values.length))
+                            message.env_values = [];
+                        message.env_values.push($root.types.KeyValue.decode(reader, reader.uint32()));
                         break;
                     }
                 case 13: {

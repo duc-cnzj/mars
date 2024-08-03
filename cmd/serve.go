@@ -4,34 +4,35 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/duc-cnzj/mars/v4/internal/app"
-	"github.com/duc-cnzj/mars/v4/internal/app/bootstrappers"
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/application/bootstrappers"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/cache"
 	"github.com/duc-cnzj/mars/v4/internal/config"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/cron"
+	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/event"
+	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/singleflight"
 	"k8s.io/client-go/util/homedir"
 )
 
-var serverBootstrappers = []contracts.Bootstrapper{
+var serverBootstrappers = []application.Bootstrapper{
 	&bootstrappers.EventBootstrapper{},
-	&bootstrappers.PluginsBootstrapper{},
-	&bootstrappers.AuthBootstrapper{},
-	&bootstrappers.CacheBootstrapper{},
-	&bootstrappers.UploadBootstrapper{},
-	&bootstrappers.K8sClientBootstrapper{},
 	&bootstrappers.DBBootstrapper{},
+	&bootstrappers.K8sBootstrapper{},
 	&bootstrappers.ApiGatewayBootstrapper{},
 	&bootstrappers.PprofBootstrapper{},
 	&bootstrappers.GrpcBootstrapper{},
 	&bootstrappers.MetricsBootstrapper{},
-	&bootstrappers.OidcBootstrapper{},
-	&bootstrappers.TracingBootstrapper{},
+	//&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
+	&bootstrappers.PluginBootstrapper{},
 	&bootstrappers.AppBootstrapper{},
-	&bootstrappers.S3UploaderBootstrapper{},
 }
 
 var apiGatewayCmd = &cobra.Command{
@@ -41,16 +42,59 @@ var apiGatewayCmd = &cobra.Command{
 		fmt.Println(logo)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		app := app.NewApplication(
-			config.Init(cfgFile),
-			app.WithBootstrappers(serverBootstrappers...),
-		)
+		cfg := config.Init(cfgFile)
+		logger := mlog.NewLogger(cfg)
+		app, clean, err := InitializeApp(cfg, logger, serverBootstrappers)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
 		if err := app.Bootstrap(); err != nil {
-			mlog.Fatal(err)
+			logger.Fatal(err)
 		}
 		<-app.Run().Done()
 		app.Shutdown()
 	},
+}
+
+func NewSingleflight() *singleflight.Group {
+	return &singleflight.Group{}
+}
+
+func newApp(
+	cfg *config.Config,
+	data *data.Data,
+	cron cron.Manager,
+	bootstrappers []application.Bootstrapper,
+	logger mlog.Logger,
+	uploader uploader.Uploader,
+	auth auth.Auth,
+	dispatcher event.Dispatcher,
+	cache cache.Cache,
+	cacheLock locker.Locker,
+	//tracer trace.Tracer,
+	sf *singleflight.Group,
+	pm application.PluginManger,
+	reg *application.GrpcRegistry,
+	ws application.WsServer,
+) application.App {
+	return application.NewApp(
+		cfg,
+		data,
+		logger,
+		uploader,
+		auth,
+		dispatcher,
+		cron,
+		cache,
+		cacheLock,
+		//tracer,
+		sf,
+		pm,
+		reg,
+		ws,
+		application.WithBootstrappers(bootstrappers...),
+	)
 }
 
 func init() {

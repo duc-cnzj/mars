@@ -19,11 +19,12 @@ build_tools:
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		golang.org/x/tools/cmd/goimports \
 		github.com/securego/gosec/v2/cmd/gosec \
-		github.com/golang/mock/mockgen
+		go install go.uber.org/mock/mockgen \
+		go install github.com/google/wire/cmd/wire@0.5.0 \
+		entgo.io/ent/cmd/ent
 
-
-.PHONY: gen_proto
-gen_proto:
+.PHONY: api
+api:
 	protoc \
         --proto_path=./api \
 		--proto_path ./third_party/protos \
@@ -78,6 +79,10 @@ clear_proto:
 .PHONY: gen
 gen:
 	go generate ./... && make fmt
+
+.PHONY: wire
+wire:
+	cd ./cmd && wire
 
 .PHONY: sec
 sec:
@@ -135,3 +140,13 @@ build_darwin_arm64:
 .PHONY: build_windows
 build_windows:
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o app.exe main.go
+
+.PHONY: ent-new
+# make ent-new NAME=User
+ent-new:
+	ent new --target internal/ent/schema $(NAME)
+
+.PHONY: ent-generate
+# go generate ./internal/...
+ent-generate:
+	go generate ./internal/ent/...

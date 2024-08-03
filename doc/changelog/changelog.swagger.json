@@ -87,6 +87,98 @@
         }
       }
     },
+    "marsConfig": {
+      "type": "object",
+      "properties": {
+        "config_file": {
+          "type": "string",
+          "title": "config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 \"pid|branch|filename\""
+        },
+        "config_file_values": {
+          "type": "string",
+          "title": "config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个"
+        },
+        "config_field": {
+          "type": "string"
+        },
+        "is_simple_env": {
+          "type": "boolean"
+        },
+        "config_file_type": {
+          "type": "string",
+          "description": "config_file_type 配置文件类型，php/env/yaml..."
+        },
+        "local_chart_path": {
+          "type": "string",
+          "title": "local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 \"pid|branch|path\""
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "branches 启用的分支"
+        },
+        "values_yaml": {
+          "type": "string",
+          "title": "values_yaml 和 values.yaml 一样"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/marsElement"
+          },
+          "title": "elements 自定义字段"
+        },
+        "display_name": {
+          "type": "string",
+          "title": "显示的名称 (helm app name), 不填就使用 git server project name\n以字母开头结尾，中间可以有 '_' '-'"
+        }
+      }
+    },
+    "marsElement": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/marsElementType"
+        },
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "select_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "order": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "marsElementType": {
+      "type": "string",
+      "enum": [
+        "ElementTypeUnknown",
+        "ElementTypeInput",
+        "ElementTypeInputNumber",
+        "ElementTypeSelect",
+        "ElementTypeRadio",
+        "ElementTypeSwitch",
+        "ElementTypeTextArea",
+        "ElementTypeNumberSelect",
+        "ElementTypeNumberRadio"
+      ],
+      "default": "ElementTypeUnknown"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -111,7 +203,10 @@
           "type": "string"
         },
         "manifest": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "config": {
           "type": "string"
@@ -149,13 +244,24 @@
           "type": "string"
         },
         "env_values": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/typesKeyValue"
+          }
         },
         "extra_values": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/typesExtraValue"
+          }
         },
         "final_extra_values": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "git_commit_web_url": {
           "type": "string"
@@ -225,7 +331,7 @@
           "type": "boolean"
         },
         "global_config": {
-          "type": "string"
+          "$ref": "#/definitions/marsConfig"
         },
         "created_at": {
           "type": "string"
@@ -242,6 +348,17 @@
       "type": "object",
       "properties": {
         "name": {
+          "type": "string"
+        }
+      }
+    },
+    "typesKeyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
           "type": "string"
         }
       }
@@ -311,7 +428,10 @@
           "type": "string"
         },
         "pod_selectors": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "namespace_id": {
           "type": "string",
@@ -321,7 +441,11 @@
           "type": "boolean"
         },
         "env_values": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/typesKeyValue"
+          }
         },
         "extra_values": {
           "type": "array",

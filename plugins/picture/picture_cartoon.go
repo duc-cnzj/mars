@@ -7,12 +7,9 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/cache"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 )
 
@@ -24,14 +21,17 @@ var (
 	}
 )
 
-var _ plugins.PictureInterface = (*cartoon)(nil)
+var _ application.Picture = (*cartoon)(nil)
 
 func init() {
 	p := &cartoon{}
-	plugins.RegisterPlugin(p.Name(), p)
+	application.RegisterPlugin(p.Name(), p)
 }
 
-type cartoon struct{}
+type cartoon struct {
+	cache  cache.Cache
+	logger mlog.Logger
+}
 
 var client = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -39,27 +39,27 @@ var client = http.Client{
 	},
 }
 
-func (c *cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
+func (c *cartoon) Get(ctx context.Context, random bool) (*application.PictureItem, error) {
 	day := time.Now().Format("2006-01-02")
 	seconds := 0
 	if !random {
 		seconds = 24 * 60 * 60
 	}
-	bg, _ := app.Cache().Remember(cache.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
+	bg, _ := c.cache.Remember(cache.NewKey("picture-%s-%d", day, seconds), seconds, func() ([]byte, error) {
 		var (
 			response *http.Response
 			err      error
 		)
 		if err := backoff.Retry(func() error {
 			weburl := urls[rand.Intn(len(urls))]
-			mlog.Debugf("[Picture]: request %s", weburl)
+			c.logger.Debugf("[PictureItem]: request %s", weburl)
 			response, err = client.Get(weburl)
 			if err != nil {
 				return err
 			}
 			defer response.Body.Close()
 			if response.StatusCode > 400 {
-				mlog.Debug(errors.New(weburl + ": status code > 400"))
+				c.logger.Debug(errors.New(weburl + ": status code > 400"))
 				return errors.New(weburl + ": status code > 400")
 			}
 			return nil
@@ -70,7 +70,7 @@ func (c *cartoon) Get(ctx context.Context, random bool) (*contracts.Picture, err
 		return []byte(response.Header.Get("Location")), nil
 	})
 
-	return &contracts.Picture{
+	return &application.PictureItem{
 		Url:       string(bg),
 		Copyright: "",
 	}, nil
@@ -80,12 +80,13 @@ func (c *cartoon) Name() string {
 	return nameCartoon
 }
 
-func (c *cartoon) Initialize(args map[string]any) error {
-	mlog.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
+func (c *cartoon) Initialize(app application.App, args map[string]any) error {
+	c.logger = app.Logger()
+	c.logger.Info("[Plugin]: " + c.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (c *cartoon) Destroy() error {
-	mlog.Info("[Plugin]: " + c.Name() + " plugin Destroy...")
+	c.logger.Info("[Plugin]: " + c.Name() + " plugin Destroy...")
 	return nil
 }

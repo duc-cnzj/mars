@@ -3,7 +3,6 @@ package socket
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,30 +16,31 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gosimple/slug"
-	"go.uber.org/config"
-	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/cli/values"
-	"helm.sh/helm/v3/pkg/release"
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/locker"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/transformer"
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
+	"github.com/duc-cnzj/mars/v4/internal/utils/closeable"
+	mars2 "github.com/duc-cnzj/mars/v4/internal/utils/mars"
+	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
+	yaml2 "github.com/duc-cnzj/mars/v4/internal/utils/yaml"
 
 	"github.com/duc-cnzj/mars/api/v4/mars"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/event/events"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
-	"github.com/duc-cnzj/mars/v4/internal/utils/pipeline"
-	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
 	mysort "github.com/duc-cnzj/mars/v4/internal/utils/xsort"
+	"go.uber.org/config"
+	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli/values"
 )
 
 const (
@@ -89,14 +89,15 @@ func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjects
 type WsResponse = websocket_pb.WsMetadataResponse
 
 type safeWriteMessageCh struct {
-	closeable utils.Closeable
+	logger    mlog.Logger
+	closeable closeable.Closeable
 
 	chMu sync.Mutex
 	ch   chan contracts.MessageItem
 }
 
 func (s *safeWriteMessageCh) Close() {
-	mlog.Debug("safeWriteMessageCh closed")
+	s.logger.Debug("safeWriteMessageCh closed")
 	if s.closeable.Close() {
 		close(s.ch)
 	}
@@ -108,7 +109,7 @@ func (s *safeWriteMessageCh) Chan() <-chan contracts.MessageItem {
 
 func (s *safeWriteMessageCh) Send(m contracts.MessageItem) {
 	if s.closeable.IsClosed() {
-		mlog.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
+		s.logger.Debugf("[Websocket]: Drop %s type %s", m.Msg, m.Type)
 		return
 	}
 	// 存在并发写
@@ -117,33 +118,52 @@ func (s *safeWriteMessageCh) Send(m contracts.MessageItem) {
 	s.ch <- m
 }
 
-type vars map[string]any
+type vars map[string]string
 
+func (v vars) ToKeyValue() (res []*types.KeyValue) {
+	for k, va := range v {
+		res = append(res, &types.KeyValue{
+			Key:   k,
+			Value: va,
+		})
+	}
+	return
+}
 func (v vars) MustGetString(key string) string {
-	if v != nil {
-		if value, ok := v[key]; ok {
-			return fmt.Sprintf("%v", value)
-		}
+	if value, ok := v[key]; ok {
+		return value
 	}
 
 	return ""
 }
 
+func (v vars) Add(key, value string) {
+	v[key] = value
+}
+
 type jobRunner struct {
+	logger       mlog.Logger
+	nsRepo       repo.NamespaceRepo
+	projRepo     repo.ProjectRepo
+	gitServer    application.GitServer
+	domainServer application.DomainManager
+	helmer       repo.HelmerRepo
+	locker       locker.Locker
+	k8sRepo      repo.K8sRepo
+	eventRepo    repo.EventRepo
+	toolRepo     repo.ToolRepo
+	uploader     uploader.Uploader
+
 	err error
 
-	helmer contracts.Helmer
-
 	deployResult DeployResult
-	locker       contracts.Locker
 
 	loaders []Loader
 
 	dryRun    bool
 	manifests []string
 
-	input    *JobInput
-	slugName string
+	input *JobInput
 
 	finallyCallback mysort.PrioritySort[func(err error, next func())]
 	errorCallback   mysort.PrioritySort[func(err error, next func())]
@@ -157,449 +177,32 @@ type jobRunner struct {
 	chart             *chart.Chart
 	valuesOptions     *values.Options
 	installer         contracts.ReleaseInstaller
-	commit            contracts.CommitInterface
+	commit            application.Commit
 
 	messageCh contracts.SafeWriteMessageChInterface
 	stopCtx   context.Context
 	stopFn    func(error)
 
+	config *mars.Config
+
 	isNew       bool
-	config      *mars.Config
-	ns          *models.Namespace
-	project     *models.Project
-	prevProject *models.Project
+	ns          *ent.Namespace
+	project     *ent.Project
+	prevProject *ent.Project
 
 	percenter contracts.Percentable
 	messager  contracts.DeployMsger
 
-	pubsub contracts.PubSub
-
-	user           contracts.UserInfo
+	user           *auth.UserInfo
 	timeoutSeconds int64
 }
 
 type Option func(*jobRunner)
 
-func WithDryRun() Option {
+func WithDryRun(dryRun bool) Option {
 	return func(j *jobRunner) {
-		j.dryRun = true
+		j.dryRun = dryRun
 	}
-}
-
-type JobInput struct {
-	Type         websocket_pb.Type
-	NamespaceId  int64
-	Name         string
-	GitProjectId int64
-	GitBranch    string
-	GitCommit    string
-	Config       string
-	Atomic       bool
-	ExtraValues  []*types.ExtraValue
-	Version      int64
-}
-
-type NewJobFunc func(
-	input *JobInput,
-	user contracts.UserInfo,
-	slugName string,
-	messager contracts.DeployMsger,
-	pubsub contracts.PubSub,
-	timeoutSeconds int64,
-	opts ...Option,
-) contracts.Job
-
-func NewJober(
-	input *JobInput,
-	user contracts.UserInfo,
-	slugName string,
-	messager contracts.DeployMsger,
-	pubsub contracts.PubSub,
-	timeoutSeconds int64,
-	opts ...Option,
-) contracts.Job {
-	jb := &jobRunner{
-		helmer:         app.Helmer(),
-		loaders:        defaultLoaders(),
-		user:           user,
-		pubsub:         pubsub,
-		messager:       messager,
-		vars:           vars{},
-		valuesOptions:  &values.Options{},
-		slugName:       slugName,
-		input:          input,
-		timeoutSeconds: timeoutSeconds,
-		locker:         app.CacheLock(),
-		messageCh:      &safeWriteMessageCh{ch: make(chan contracts.MessageItem, 100)},
-		percenter:      newProcessPercent(messager, &realSleeper{}),
-	}
-	jb.stopCtx, jb.stopFn = utils.NewCustomErrorContext()
-	for _, opt := range opts {
-		opt(jb)
-	}
-
-	return jb
-}
-
-func (j *jobRunner) ID() string {
-	return j.slugName
-}
-
-func (j *jobRunner) IsNotDryRun() bool {
-	return !j.IsDryRun()
-}
-
-func (j *jobRunner) GlobalLock() contracts.Job {
-	if j.HasError() {
-		return j
-	}
-	releaseFn, acquired := j.locker.RenewalAcquire(j.ID(), 30, 20)
-	if !acquired {
-		return j.SetError(errors.New("正在部署中，请稍后再试"))
-	}
-
-	return j.OnFinally(-1, func(err error, sendResultToUser func()) {
-		sendResultToUser()
-		releaseFn()
-	})
-}
-
-func (j *jobRunner) Validate() contracts.Job {
-	var err error
-	if j.HasError() {
-		return j
-	}
-
-	if !j.WsTypeValidated() {
-		return j.SetError(errors.New("type error: " + j.input.Type.String()))
-	}
-
-	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
-	j.Percenter().To(5)
-
-	j.Messager().SendMsg("[Check]: 校验名称空间...")
-
-	if err = app.DB().Where("`id` = ?", j.input.NamespaceId).First(&j.ns).Error; err != nil {
-		return j.SetError(fmt.Errorf("[FAILED]: 校验名称空间: %w", err))
-	}
-
-	j.Messager().SendMsg("[Loading]: 加载用户配置")
-	j.Percenter().To(10)
-
-	j.config, err = utils.GetProjectMarsConfig(j.input.GitProjectId, j.input.GitBranch)
-	if err != nil {
-		return j.SetError(err)
-	}
-	if j.input.Name == "" {
-		j.input.Name = utils.GetProjectName(j.input.GitProjectId, j.config)
-	}
-
-	j.project = &models.Project{
-		Name:         slug.Make(j.input.Name),
-		GitProjectId: int(j.input.GitProjectId),
-		GitBranch:    j.input.GitBranch,
-		GitCommit:    j.input.GitCommit,
-		Config:       j.input.Config,
-		NamespaceId:  j.ns.ID,
-		Atomic:       j.input.Atomic,
-		ConfigType:   j.config.ConfigFileType,
-	}
-
-	j.Messager().SendMsg("[Check]: 检查项目是否存在")
-
-	var p models.Project
-	if app.DB().Where("`name` = ? AND `namespace_id` = ?", j.project.Name, j.project.NamespaceId).First(&p).Error == gorm.ErrRecordNotFound {
-		j.Messager().SendMsg("[Check]: 新建项目")
-		j.project.DeployStatus = uint8(types.Deploy_StatusDeploying)
-		j.isNew = true
-		if j.IsNotDryRun() {
-			app.DB().Create(&j.project)
-			j.OnError(1, func(err error, sendResultToUser func()) {
-				mlog.Debug("清理项目")
-				app.DB().Delete(&j.project)
-				sendResultToUser()
-			})
-		}
-	} else {
-		j.project.ID = p.ID
-		j.prevProject = &p
-
-		if j.IsNotDryRun() {
-			j.Messager().SendMsg("[Check]: 检查当前版本")
-			if app.DB().Model(&models.Project{ID: p.ID}).Where("`version` = ?", j.input.Version).Updates(map[string]any{
-				"version":       gorm.Expr("`version` + ?", 1),
-				"deploy_status": types.Deploy_StatusDeploying,
-			}).RowsAffected == 0 {
-				return j.SetError(ErrorVersionNotMatched)
-			}
-			j.OnError(1, func(err error, sendResultToUser func()) {
-				app.DB().Model(&models.Project{ID: p.ID}).UpdateColumn("version", j.prevProject.Version)
-				sendResultToUser()
-			})
-		}
-	}
-
-	if j.IsNotDryRun() {
-		j.PubSub().ToAll(reloadProjectsMessage(j.ns.ID))
-		j.OnFinally(1, func(err error, sendResultToUser func()) {
-			// 如果状态出现问题，只有拿到锁的才能更新状态
-			app.DB().Model(j.Project()).UpdateColumn("deploy_status", j.helmer.ReleaseStatus(j.Project().Name, j.Namespace().Name))
-			j.PubSub().ToAll(reloadProjectsMessage(j.Namespace().ID))
-			sendResultToUser()
-		})
-	}
-	j.imagePullSecrets = j.Namespace().ImagePullSecretsArray()
-	j.commit, err = plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitCommit)
-
-	return j.SetError(err)
-}
-
-func (j *jobRunner) WsTypeValidated() bool {
-	return j.input.Type == websocket_pb.Type_CreateProject || j.input.Type == websocket_pb.Type_UpdateProject || j.input.Type == websocket_pb.Type_ApplyProject
-}
-
-func (j *jobRunner) LoadConfigs() contracts.Job {
-	if j.HasError() {
-		return j
-	}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	ch := make(chan error, 1)
-	go func() {
-		defer recovery.HandlePanic("LoadConfigs")
-		defer wg.Done()
-		defer close(ch)
-		err := func() error {
-			j.Messager().SendMsg("[Check]: 加载项目文件")
-
-			for _, defaultLoader := range j.loaders {
-				if err := j.GetStoppedErrorIfHas(); err != nil {
-					return err
-				}
-				if err := defaultLoader.Load(j); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		}()
-		ch <- err
-	}()
-
-	var err error
-	select {
-	case err = <-ch:
-	case <-j.stopCtx.Done():
-		err = j.stopCtx.Err()
-	}
-	wg.Wait()
-
-	return j.SetError(err)
-}
-
-func (j *jobRunner) Run() contracts.Job {
-	if j.HasError() {
-		return j
-	}
-	done := make(chan struct{}, 1)
-	go func() {
-		defer func() {
-			done <- struct{}{}
-			close(done)
-		}()
-		defer recovery.HandlePanic("[Websocket]: jobRunner Run")
-		j.HandleMessage()
-	}()
-
-	err := func() error {
-		var (
-			result *release.Release
-			err    error
-		)
-
-		if result, err = j.ReleaseInstaller().Run(j.stopCtx, j.messageCh, j.Percenter(), j.IsNew(), j.Commit().GetTitle()); err != nil {
-			mlog.Errorf("[Websocket]: %v", err)
-			j.messageCh.Send(contracts.MessageItem{
-				Msg:  err.Error(),
-				Type: contracts.MessageError,
-			})
-		} else {
-			coalesceValues, _ := chartutil.CoalesceValues(j.ReleaseInstaller().Chart(), result.Config)
-			marshal, _ := utils.PrettyMarshal(&coalesceValues)
-			j.project.OverrideValues = string(marshal)
-
-			j.manifests = utils.SplitManifests(result.Manifest)
-			j.project.Manifest = result.Manifest
-			j.project.SetPodSelectors(utils.GetPodSelectorsByManifest(j.manifests))
-			j.project.DockerImage = matchDockerImage(pipelineVars{
-				Pipeline: j.vars.MustGetString("Pipeline"),
-				Commit:   j.vars.MustGetString("Commit"),
-				Branch:   j.vars.MustGetString("Branch"),
-			}, result.Manifest)
-			j.project.GitCommitTitle = j.Commit().GetTitle()
-			j.project.GitCommitWebUrl = j.Commit().GetWebURL()
-			j.project.GitCommitAuthor = j.Commit().GetAuthorName()
-			j.project.GitCommitDate = j.Commit().GetCommittedDate()
-			j.project.ConfigType = j.config.GetConfigFileType()
-
-			if len(j.input.ExtraValues) > 0 {
-				marshal, _ := json.Marshal(j.input.ExtraValues)
-				j.project.ExtraValues = string(marshal)
-			}
-			if len(j.extraValues) > 0 {
-				marshal, _ := json.Marshal(j.extraValues)
-				j.project.FinalExtraValues = string(marshal)
-			}
-			if len(j.vars) > 0 {
-				marshal, _ := json.Marshal(j.vars)
-				j.project.EnvValues = string(marshal)
-			}
-
-			var (
-				p                *models.Project
-				oldConf, newConf userConfig
-			)
-			if j.prevProject != nil && j.prevProject.ID > 0 {
-				p = j.prevProject
-				j.project.ID = p.ID
-				if j.IsNotDryRun() {
-					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
-				}
-				var (
-					ev  []*types.ExtraValue
-					fev mergeYamlString
-				)
-				if len(p.ExtraValues) > 0 {
-					json.Unmarshal([]byte(p.ExtraValues), &ev)
-				}
-				if len(p.FinalExtraValues) > 0 {
-					json.Unmarshal([]byte(p.FinalExtraValues), &fev)
-				}
-
-				oldConf = userConfig{
-					Config:           p.Config,
-					Branch:           p.GitBranch,
-					Commit:           p.GitCommit,
-					Atomic:           p.Atomic,
-					ExtraValues:      ev,
-					FinalExtraValues: fev,
-					EnvValues:        vars(p.GetEnvValues()),
-				}
-				commit, err := plugins.GetGitServer().GetCommit(fmt.Sprintf("%d", p.GitProjectId), p.GitCommit)
-				if err == nil {
-					oldConf.WebUrl = commit.GetWebURL()
-					oldConf.Title = commit.GetTitle()
-				}
-			} else {
-				if j.IsNotDryRun() {
-					app.DB().Model(j.project).Updates(toUpdatesMap(j.project))
-				}
-			}
-			newConf = userConfig{
-				Config:           j.project.Config,
-				Branch:           j.project.GitBranch,
-				Commit:           j.project.GitCommit,
-				Atomic:           j.project.Atomic,
-				WebUrl:           j.project.GitCommitWebUrl,
-				Title:            j.project.GitCommitTitle,
-				ExtraValues:      j.input.ExtraValues,
-				FinalExtraValues: mergeYamlString(j.extraValues),
-				EnvValues:        j.vars,
-			}
-			if j.IsNotDryRun() {
-				app.Event().Dispatch(events.EventProjectChanged, &events.ProjectChangedData{
-					Project:  j.project,
-					Username: j.User().Name,
-				})
-			}
-			var act types.EventActionType = types.EventActionType_Create
-			if !j.IsNew() {
-				act = types.EventActionType_Update
-			}
-			if j.IsDryRun() {
-				act = types.EventActionType_DryRun
-			}
-			AuditLogWithChange(j.User().Name, act,
-				fmt.Sprintf("%s 项目: %s/%s", act.String(), j.Namespace().Name, j.Project().Name),
-				oldConf, newConf)
-			j.Percenter().To(100)
-			j.messageCh.Send(contracts.MessageItem{
-				Msg:  "部署成功",
-				Type: contracts.MessageSuccess,
-			})
-		}
-		return err
-	}()
-	<-done
-	return j.SetError(err)
-}
-
-func (j *jobRunner) Finish() contracts.Job {
-	mlog.Debug("finished")
-
-	var callbacks []func(err error, next func())
-
-	// Run error hooks
-	if j.HasError() {
-		func(err error) {
-			j.SetDeployResult(websocket_pb.ResultType_DeployedFailed, err.Error(), j.ProjectModel())
-
-			if e := j.GetStoppedErrorIfHas(); e != nil {
-				j.SetDeployResult(websocket_pb.ResultType_DeployedCanceled, e.Error(), j.ProjectModel())
-				err = e
-			}
-		}(j.Error())
-		callbacks = append(callbacks, j.errorCallback.Sort()...)
-	}
-
-	// Run success hooks
-	if !j.HasError() {
-		callbacks = append(callbacks, j.successCallback.Sort()...)
-	}
-
-	// run finally hooks
-	callbacks = append(callbacks, j.finallyCallback.Sort()...)
-
-	pipeline.NewPipeline[error]().
-		Send(j.Error()).
-		Through(callbacks...).
-		Then(func(error) {
-			if j.deployResult.IsSet() {
-				j.messager.SendDeployedResult(j.deployResult.ResultType(), j.deployResult.Msg(), j.deployResult.Model())
-			}
-			mlog.Debug("SendDeployedResult")
-		})
-
-	return j
-}
-
-func (j *jobRunner) Manifests() []string {
-	return j.manifests
-}
-
-func (j *jobRunner) Stop(err error) {
-	j.messager.SendMsg("收到取消信号, 开始停止部署~")
-	mlog.Debugf("stop deploy jobRunner, because '%v'", err)
-	j.stopFn(err)
-}
-
-func (j *jobRunner) OnError(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.errorCallback.Add(p, fn)
-	return j
-}
-
-func (j *jobRunner) OnSuccess(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.successCallback.Add(p, fn)
-	return j
-}
-
-func (j *jobRunner) OnFinally(p int, fn func(err error, sendResultToUser func())) contracts.Job {
-	j.finallyCallback.Add(p, fn)
-	return j
-}
-
-func (j *jobRunner) Error() error {
-	return j.err
 }
 
 func (j *jobRunner) SetError(err error) *jobRunner {
@@ -619,11 +222,11 @@ func (j *jobRunner) IsDryRun() bool {
 	return j.dryRun
 }
 
-func (j *jobRunner) Commit() contracts.CommitInterface {
+func (j *jobRunner) Commit() application.Commit {
 	return j.commit
 }
 
-func (j *jobRunner) User() contracts.UserInfo {
+func (j *jobRunner) User() *auth.UserInfo {
 	return j.user
 }
 
@@ -631,14 +234,14 @@ func (j *jobRunner) ProjectModel() *types.ProjectModel {
 	if j.project == nil {
 		return nil
 	}
-	return j.project.ProtoTransform()
+	return transformer.FromProject(j.project)
 }
 
-func (j *jobRunner) Project() *models.Project {
+func (j *jobRunner) Project() *ent.Project {
 	return j.project
 }
 
-func (j *jobRunner) Namespace() *models.Namespace {
+func (j *jobRunner) Namespace() *ent.Namespace {
 	return j.ns
 }
 
@@ -693,12 +296,12 @@ func (d *DeployResult) Set(t websocket_pb.ResultType, msg string, model *types.P
 	d.set = true
 }
 
-func (j *jobRunner) HandleMessage() {
-	defer mlog.Debug("HandleMessage exit")
+func (j *jobRunner) HandleMessage(ctx context.Context) {
+	defer j.logger.Debug("HandleMessage exit")
 	ch := j.messageCh.Chan()
 	for {
 		select {
-		case <-app.App().Done():
+		case <-ctx.Done():
 			return
 		case s, ok := <-ch:
 			if !ok {
@@ -710,13 +313,13 @@ func (j *jobRunner) HandleMessage() {
 			case contracts.MessageError:
 				select {
 				case <-j.stopCtx.Done():
-					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployCanceled, j.stopCtx.Err().Error(), transformer.FromProject(j.project))
 				default:
-					j.SetDeployResult(ResultDeployFailed, s.Msg, j.project.ProtoTransform())
+					j.SetDeployResult(ResultDeployFailed, s.Msg, transformer.FromProject(j.project))
 				}
 				return
 			case contracts.MessageSuccess:
-				j.SetDeployResult(ResultDeployed, s.Msg, j.project.ProtoTransform())
+				j.SetDeployResult(ResultDeployed, s.Msg, transformer.FromProject(j.project))
 				return
 			}
 		}
@@ -735,6 +338,24 @@ type userConfig struct {
 	EnvValues        vars                `yaml:"env_values"`
 }
 
+func newUserConfig(p *ent.Project) *userConfig {
+	var v = vars{}
+	for _, value := range p.EnvValues {
+		v.Add(value.Key, value.Value)
+	}
+	return &userConfig{
+		Config:           p.Config,
+		Branch:           p.GitBranch,
+		Commit:           p.GitCommit,
+		Atomic:           p.Atomic,
+		ExtraValues:      p.ExtraValues,
+		FinalExtraValues: p.FinalExtraValues,
+		EnvValues:        v,
+		WebUrl:           p.GitCommitWebURL,
+		Title:            p.GitCommitTitle,
+	}
+}
+
 type mergeYamlString []string
 
 func (s mergeYamlString) MarshalYAML() (any, error) {
@@ -749,14 +370,14 @@ func (s mergeYamlString) MarshalYAML() (any, error) {
 	var merged map[string]any
 	provider.Get("").Populate(&merged)
 
-	out, _ := utils.PrettyMarshal(&merged)
+	out, _ := yaml2.PrettyMarshal(&merged)
 
 	return string(out), nil
 }
 
 func (u userConfig) PrettyYaml() string {
 	sort.Sort(sortableExtraItem(u.ExtraValues))
-	out, _ := utils.PrettyMarshal(&u)
+	out, _ := yaml2.PrettyMarshal(&u)
 
 	return string(out)
 }
@@ -773,28 +394,6 @@ func (s sortableExtraItem) Less(i, j int) bool {
 
 func (s sortableExtraItem) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
-}
-
-func toUpdatesMap(p *models.Project) map[string]any {
-	return map[string]any{
-		"manifest":           p.Manifest,
-		"config":             p.Config,
-		"git_project_id":     p.GitProjectId,
-		"git_commit":         p.GitCommit,
-		"git_branch":         p.GitBranch,
-		"docker_image":       p.DockerImage,
-		"pod_selectors":      p.PodSelectors,
-		"override_values":    p.OverrideValues,
-		"atomic":             p.Atomic,
-		"extra_values":       p.ExtraValues,
-		"final_extra_values": p.FinalExtraValues,
-		"env_values":         p.EnvValues,
-		"git_commit_title":   p.GitCommitTitle,
-		"git_commit_web_url": p.GitCommitWebUrl,
-		"git_commit_author":  p.GitCommitAuthor,
-		"git_commit_date":    p.GitCommitDate,
-		"config_type":        p.ConfigType,
-	}
 }
 
 func (j *jobRunner) SetDeployResult(t websocket_pb.ResultType, msg string, model *types.ProjectModel) {
@@ -816,8 +415,8 @@ func (j *jobRunner) Messager() contracts.DeployMsger {
 	return j.messager
 }
 
-func (j *jobRunner) PubSub() contracts.PubSub {
-	return j.pubsub
+func (j *jobRunner) PubSub() application.PubSub {
+	return j.input.PubSub
 }
 
 func (j *jobRunner) Percenter() contracts.Percentable {
@@ -905,16 +504,16 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 		branch string = j.input.GitBranch
 		path   string = j.config.LocalChartPath
 	)
-	if utils.IsRemoteChart(j.config) {
+	if mars2.IsRemoteChart(j.config) {
 		pid = split[0]
 		branch = split[1]
 		path = split[2]
-		files, _ = plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, path, true)
+		files, _ = j.gitServer.GetDirectoryFilesWithBranch(pid, branch, path, true)
 		if len(files) < 1 {
 			return errors.New("charts 文件不存在")
 		}
 		var err error
-		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(pid, branch, files)
+		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(pid, branch, files)
 		if err != nil {
 			return err
 		}
@@ -924,8 +523,8 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 	} else {
 		var err error
 		dir = j.config.LocalChartPath
-		files, _ = plugins.GetGitServer().GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitProjectId), j.input.GitCommit, j.config.LocalChartPath, true)
-		tmpChartsDir, deleteDirFn, err = utils.DownloadFiles(j.input.GitProjectId, j.input.GitCommit, files)
+		files, _ = j.gitServer.GetDirectoryFilesWithSha(fmt.Sprintf("%d", j.input.GitProjectId), j.input.GitCommit, j.config.LocalChartPath, true)
+		tmpChartsDir, deleteDirFn, err = j.DownloadFiles(j.input.GitProjectId, j.input.GitCommit, files)
 		if err != nil {
 			return err
 		}
@@ -942,8 +541,8 @@ func (c *ChartFileLoader) Load(j *jobRunner) error {
 	if loadDir.Metadata.Dependencies != nil && action.CheckDependencies(loadDir, loadDir.Metadata.Dependencies) != nil {
 		for _, dependency := range loadDir.Metadata.Dependencies {
 			if strings.HasPrefix(dependency.Repository, "file://") {
-				depFiles, _ := plugins.GetGitServer().GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
-				_, depDeleteFn, err := utils.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
+				depFiles, _ := j.gitServer.GetDirectoryFilesWithBranch(pid, branch, filepath.Join(path, strings.TrimPrefix(dependency.Repository, "file://")), true)
+				_, depDeleteFn, err := j.DownloadFilesToDir(pid, branch, depFiles, tmpChartsDir)
 				if err != nil {
 					return err
 				}
@@ -988,8 +587,9 @@ func (d *DynamicLoader) Load(j *jobRunner) error {
 		return nil
 	}
 
-	dynamicConfigYaml, err := utils.ParseInputConfig(j.config, j.input.Config)
+	dynamicConfigYaml, err := mars2.ParseInputConfig(j.config, j.input.Config)
 	if err != nil && !errors.Is(err, io.EOF) {
+		j.logger.Error(err)
 		return err
 	}
 	j.dynamicConfigYaml = dynamicConfigYaml
@@ -1062,7 +662,6 @@ func (d *ExtraValuesLoader) typedValue(element *mars.Element, input string) (any
 		}
 		v, err := strconv.ParseBool(input)
 		if err != nil {
-			mlog.Error(err)
 			return nil, fmt.Errorf("%s 字段类型不正确，应该为 bool，你传入的是 %s", element.Path, input)
 		}
 		return v, nil
@@ -1072,7 +671,6 @@ func (d *ExtraValuesLoader) typedValue(element *mars.Element, input string) (any
 		}
 		v, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
-			mlog.Error(err)
 			return nil, fmt.Errorf("%s 字段类型不正确，应该为整数，你传入的是 %s", element.Path, input)
 		}
 		return v, nil
@@ -1095,7 +693,7 @@ func (d *ExtraValuesLoader) typedValue(element *mars.Element, input string) (any
 			if atoi, err := strconv.Atoi(input); err == nil {
 				return atoi, nil
 			}
-			mlog.Warning("[ExtraValuesLoader]: '%v' 非 number 类型, 无法转换", input)
+			return nil, fmt.Errorf("[ExtraValuesLoader]: '%v' 非 number 类型, 无法转换", input)
 		}
 
 		return input, nil
@@ -1107,9 +705,8 @@ func (d *ExtraValuesLoader) typedValue(element *mars.Element, input string) (any
 func (d *ExtraValuesLoader) deepSetItems(items map[string]any) []string {
 	var evs []string
 	for k, v := range items {
-		ysk, err := utils.YamlDeepSetKey(k, v)
+		ysk, err := yaml2.YamlDeepSetKey(k, v)
 		if err != nil {
-			mlog.Error(err)
 			continue
 		}
 		evs = append(evs, string(ysk))
@@ -1135,6 +732,10 @@ var tagRegex = regexp.MustCompile(leftDelim + `\s*(\.Branch|\.Commit|\.Pipeline)
 
 type VariableLoader struct {
 	values vars
+}
+
+func (v *VariableLoader) Add(key, value string) {
+	v.values.Add(key, value)
 }
 
 func (v *VariableLoader) Load(j *jobRunner) error {
@@ -1172,15 +773,15 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 		ImagePullSecrets: j.imagePullSecrets,
 	})
 
-	v.values[VarImagePullSecrets] = renderResult.String()
-	v.values[VarImagePullSecretsNoName] = renderResultNoName.String()
+	v.Add(VarImagePullSecrets, renderResult.String())
+	v.Add(VarImagePullSecretsNoName, renderResultNoName.String())
 
 	//Host1...Host10
-	sub := utils.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
-	mlog.Debug("getPreOccupiedLenByValuesYaml: ", sub)
+	sub := j.toolRepo.GetPreOccupiedLenByValuesYaml(j.config.ValuesYaml)
+	j.logger.Debug("getPreOccupiedLenByValuesYaml: ", sub)
 	for i := 1; i <= 10; i++ {
-		v.values[fmt.Sprintf("%s%d", VarHost, i)] = plugins.GetDomainManager().GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub)
-		v.values[fmt.Sprintf("%s%d", VarTlsSecret, i)] = plugins.GetDomainManager().GetCertSecretName(j.project.Name, i)
+		v.Add(fmt.Sprintf("%s%d", VarHost, i), j.domainServer.GetDomainByIndex(j.project.Name, j.Namespace().Name, i, sub))
+		v.Add(fmt.Sprintf("%s%d", VarTlsSecret, i), j.domainServer.GetCertSecretName(j.project.Name, i))
 	}
 
 	//{{.Branch}}{{.Commit}}{{.Pipeline}}
@@ -1191,7 +792,7 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 	)
 
 	// 如果存在需要传变量的，则必须有流水线信息
-	if pipeline, e := plugins.GetGitServer().GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectId), j.project.GitBranch, j.project.GitCommit); e == nil {
+	if pipeline, e := j.gitServer.GetCommitPipeline(fmt.Sprintf("%d", j.project.GitProjectID), j.project.GitBranch, j.project.GitCommit); e == nil {
 		pipelineID = pipeline.GetID()
 		pipelineBranch = pipeline.GetRef()
 
@@ -1202,12 +803,12 @@ func (v *VariableLoader) Load(j *jobRunner) error {
 		}
 	}
 
-	v.values[VarBranch] = pipelineBranch
-	v.values[VarCommit] = pipelineCommit
-	v.values[VarPipeline] = fmt.Sprintf("%d", pipelineID)
+	v.Add(VarBranch, pipelineBranch)
+	v.Add(VarCommit, pipelineCommit)
+	v.Add(VarPipeline, fmt.Sprintf("%d", pipelineID))
 
 	// ingress
-	v.values[VarClusterIssuer] = plugins.GetDomainManager().GetClusterIssuer()
+	v.Add(VarClusterIssuer, j.domainServer.GetClusterIssuer())
 
 	tpl, err := template.New("values_yaml").Delims(leftDelim, rightDelim).Parse(j.config.ValuesYaml)
 	if err != nil {
@@ -1264,13 +865,13 @@ func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	// 5. 用用户传入的yaml配置去合并 `default_values`
 	provider, err := config.NewYAML(opts...)
 	if err != nil {
-		mlog.Error(loaderName, err, j.valuesYaml, j.dynamicConfigYaml)
+		j.logger.Error(loaderName, err, j.valuesYaml, j.dynamicConfigYaml)
 
 		return err
 	}
 	var mergedDefaultAndConfigYamlValues map[string]any
 	if err := provider.Get("").Populate(&mergedDefaultAndConfigYamlValues); err != nil {
-		mlog.Error(loaderName, mergedDefaultAndConfigYamlValues, err)
+		j.logger.Error(loaderName, mergedDefaultAndConfigYamlValues, err)
 		return err
 	}
 
@@ -1279,7 +880,7 @@ func (m *MergeValuesLoader) Load(j *jobRunner) error {
 		return err
 	}
 	//mlog.Debug("fileData", fileData)
-	mergedFile, closer, err := utils.WriteConfigYamlToTmpFile(fileData)
+	mergedFile, closer, err := j.WriteConfigYamlToTmpFile(fileData)
 	if err != nil {
 		return err
 	}
@@ -1292,12 +893,70 @@ func (m *MergeValuesLoader) Load(j *jobRunner) error {
 	return nil
 }
 
+func (j *jobRunner) WriteConfigYamlToTmpFile(data []byte) (string, io.Closer, error) {
+	file := fmt.Sprintf("mars-%s-%s.yaml", time.Now().Format("2006-01-02"), rand.String(20))
+	info, err := j.uploader.LocalUploader().Put(file, bytes.NewReader(data))
+	if err != nil {
+		return "", nil, err
+	}
+	path := info.Path()
+
+	return path, utils.NewCloser(func() error {
+		j.logger.Debug("delete file: " + path)
+		if err := j.uploader.LocalUploader().Delete(path); err != nil {
+			j.logger.Error("WriteConfigYamlToTmpFile error: ", err)
+			return err
+		}
+
+		return nil
+	}), nil
+}
+
 type ReleaseInstallerLoader struct{}
 
 func (r *ReleaseInstallerLoader) Load(j *jobRunner) error {
 	const loaderName = "[ReleaseInstallerLoader]: "
 	j.Messager().SendMsg(loaderName + "worker 已就绪, 准备安装")
 	j.Percenter().To(80)
-	j.installer = newReleaseInstaller(j.helmer, j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
+	j.installer = newReleaseInstaller(j.logger, j.helmer, j.project.Name, j.Namespace().Name, j.chart, j.valuesOptions, j.input.Atomic, j.timeoutSeconds, j.dryRun)
 	return nil
+}
+
+func (j *jobRunner) DownloadFiles(pid any, commit string, files []string) (string, func(), error) {
+	id := fmt.Sprintf("%v", pid)
+	dir := fmt.Sprintf("mars_tmp_%s", rand.String(10))
+	if err := j.uploader.LocalUploader().MkDir(dir, false); err != nil {
+		return "", nil, err
+	}
+
+	return j.DownloadFilesToDir(id, commit, files, j.uploader.LocalUploader().AbsolutePath(dir))
+}
+
+func (j *jobRunner) DownloadFilesToDir(pid any, commit string, files []string, dir string) (string, func(), error) {
+	wg := &sync.WaitGroup{}
+	wg.Add(len(files))
+	for _, file := range files {
+		go func(file string) {
+			defer wg.Done()
+			defer j.logger.HandlePanic("DownloadFilesToDir")
+			raw, err := j.gitServer.GetFileContentWithSha(fmt.Sprintf("%v", pid), commit, file)
+			if err != nil {
+				j.logger.Error(err)
+			}
+			localPath := filepath.Join(dir, file)
+			if _, err := j.uploader.LocalUploader().Put(localPath, strings.NewReader(raw)); err != nil {
+				j.logger.Errorf("[DownloadFilesToDir]: err '%s'", err.Error())
+			}
+		}(file)
+	}
+	wg.Wait()
+
+	return dir, func() {
+		err := j.uploader.LocalUploader().DeleteDir(dir)
+		if err != nil {
+			j.logger.Warning(err)
+			return
+		}
+		j.logger.Debug("remove " + dir)
+	}, nil
 }

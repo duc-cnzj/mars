@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 )
 
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-		if authorizeInterface, ok := info.Server.(contracts.AuthorizeInterface); ok {
+		if authorizeInterface, ok := info.Server.(Authorize); ok {
 			ctx, err = authorizeInterface.Authorize(ctx, info.FullMethod)
 			if err != nil {
 				return nil, err
@@ -28,7 +27,7 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 			newCtx context.Context
 			err    error
 		)
-		if authorizeInterface, ok := srv.(contracts.AuthorizeInterface); ok {
+		if authorizeInterface, ok := srv.(Authorize); ok {
 			newCtx, err = authorizeInterface.Authorize(ss.Context(), info.FullMethod)
 			if err != nil {
 				return err
@@ -45,19 +44,19 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 
 type ctxTokenInfo struct{}
 
-func SetUser(ctx context.Context, info *contracts.UserInfo) context.Context {
+func SetUser(ctx context.Context, info *UserInfo) context.Context {
 	return context.WithValue(ctx, &ctxTokenInfo{}, info)
 }
 
-func GetUser(ctx context.Context) (*contracts.UserInfo, error) {
-	if info, ok := ctx.Value(&ctxTokenInfo{}).(*contracts.UserInfo); ok {
+func GetUser(ctx context.Context) (*UserInfo, error) {
+	if info, ok := ctx.Value(&ctxTokenInfo{}).(*UserInfo); ok {
 		return info, nil
 	}
 
 	return nil, errors.New("user not found")
 }
 
-func MustGetUser(ctx context.Context) *contracts.UserInfo {
-	info, _ := ctx.Value(&ctxTokenInfo{}).(*contracts.UserInfo)
+func MustGetUser(ctx context.Context) *UserInfo {
+	info, _ := ctx.Value(&ctxTokenInfo{}).(*UserInfo)
 	return info
 }

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/utils/hash"
+
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
-	"github.com/duc-cnzj/mars/v4/internal/utils"
 )
 
 var (
@@ -15,11 +16,11 @@ var (
 	maxDomainLength = 64
 )
 
-var _ plugins.DomainManager = (*certManager)(nil)
+var _ application.DomainManager = (*certManager)(nil)
 
 func init() {
 	dr := &certManager{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 // certManager 因为 lets encrypt 对 subdomain 长度要求为 64，所以需要处理。
@@ -28,13 +29,15 @@ type certManager struct {
 	clusterIssuer  string
 	wildcardDomain string
 	domainSuffix   string
+
+	logger mlog.Logger
 }
 
 func (d *certManager) Name() string {
 	return name
 }
 
-func (d *certManager) Initialize(args map[string]any) error {
+func (d *certManager) Initialize(app application.App, args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -51,18 +54,19 @@ func (d *certManager) Initialize(args map[string]any) error {
 	if d.clusterIssuer == "" || d.wildcardDomain == "" {
 		return errors.New("cluster_issuer, wildcard_domain required")
 	}
+	d.logger = app.Logger()
 
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (d *certManager) Destroy() error {
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
 func (d *certManager) GetCertSecretName(projectName string, index int) string {
-	return fmt.Sprintf("mars-tls-%s", utils.Hash(fmt.Sprintf("%s-%d", projectName, index)))
+	return fmt.Sprintf("mars-tls-%s", hash.Hash(fmt.Sprintf("%s-%d", projectName, index)))
 }
 
 func (d *certManager) GetClusterIssuer() string {
@@ -153,7 +157,7 @@ func (s Subdomain) SimpleSubdomain() string {
 	if s.HasIndex() {
 		str = fmt.Sprintf("%s-%s-%d", s.projectName, s.namespace, s.index)
 	}
-	ss := substr(utils.Hash(str), leftLen)
+	ss := substr(hash.Hash(str), leftLen)
 
 	return fmt.Sprintf("%s.%s", ss, s.domainSuffix)
 }

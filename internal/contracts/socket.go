@@ -14,12 +14,12 @@ import (
 	"io"
 	"time"
 
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/release"
-	"k8s.io/client-go/tools/remotecommand"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/api/v4/websocket"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 type MessageItem struct {
@@ -53,27 +53,6 @@ type RecorderInterface interface {
 }
 
 // PtyHandler is what remotecommand expects from a pty
-type PtyHandler interface {
-	io.Reader
-	io.Writer
-	remotecommand.TerminalSizeQueue
-
-	Container() Container
-	SetShell(string)
-	Toast(string) error
-
-	Send(*websocket.TerminalMessage) error
-	Resize(remotecommand.TerminalSize) error
-
-	Recorder() RecorderInterface
-
-	ResetTerminalRowCol(bool)
-	Rows() uint16
-	Cols() uint16
-
-	Close(string) bool
-	IsClosed() bool
-}
 
 type WebsocketConn interface {
 	Close() error
@@ -110,7 +89,7 @@ type Msger interface {
 	SendEndError(error)
 	SendError(error)
 	SendMsg(string)
-	SendProtoMsg(WebsocketMessage)
+	SendProtoMsg(application.WebsocketMessage)
 	SendMsgWithContainerLog(msg string, containers []*types.Container)
 }
 
@@ -122,38 +101,4 @@ type SafeWriteMessageChInterface interface {
 	Close()
 	Chan() <-chan MessageItem
 	Send(m MessageItem)
-}
-
-type CancelSignaler interface {
-	Remove(id string)
-	Has(id string) bool
-	Cancel(id string)
-	Add(id string, fn func(error)) error
-	CancelAll()
-}
-
-type Job interface {
-	Stop(error)
-	IsNotDryRun() bool
-
-	ID() string
-	GlobalLock() Job
-	Validate() Job
-	LoadConfigs() Job
-	Run() Job
-	Finish() Job
-	Error() error
-	Manifests() []string
-
-	OnError(p int, fn func(err error, sendResultToUser func())) Job
-	OnSuccess(p int, fn func(err error, sendResultToUser func())) Job
-	OnFinally(p int, fn func(err error, sendResultToUser func())) Job
-}
-
-type SessionMapper interface {
-	Send(message *websocket.TerminalMessage)
-	Get(sessionId string) (PtyHandler, bool)
-	Set(sessionId string, session PtyHandler)
-	CloseAll()
-	Close(sessionId string, status uint32, reason string)
 }

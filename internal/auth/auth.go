@@ -1,27 +1,110 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"strings"
 	"time"
 
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-
+	"github.com/duc-cnzj/mars/v4/internal/config"
+	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
+	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/golang-jwt/jwt"
 )
 
+const Expired = 8 * time.Hour
+
+type Authenticator interface {
+	VerifyToken(string) (*JwtClaims, bool)
+}
+type Auth interface {
+	Authenticator
+	Sign(*UserInfo) (*SignData, error)
+}
+type Authorize interface {
+	Authorize(ctx context.Context, fullMethodName string) (context.Context, error)
+}
+
+type JwtClaims struct {
+	*jwt.StandardClaims
+	UserInfo *UserInfo `json:"user_info"`
+}
+
+type OidcClaims struct {
+	LogoutUrl string `json:"logout_url"`
+	OpenIDClaims
+}
+
+func (c OidcClaims) ToUserInfo() *UserInfo {
+	return &UserInfo{
+		LogoutUrl: c.LogoutUrl,
+		Roles:     c.Roles,
+		ID:        c.Sub,
+		Email:     c.Email,
+		Name:      c.Name,
+		Picture:   c.Picture,
+	}
+}
+
+type UserInfo = schematype.UserInfo
+
+type OpenIDClaims struct {
+	Sub                 string         `json:"sub"`
+	Name                string         `json:"name"`
+	GivenName           string         `json:"given_name"`
+	FamilyName          string         `json:"family_name"`
+	MiddleName          string         `json:"middle_name"`
+	Nickname            string         `json:"nickname"`
+	PreferredUsername   string         `json:"preferred_username"`
+	Profile             string         `json:"profile"`
+	Picture             string         `json:"picture"`
+	Website             string         `json:"website"`
+	Email               string         `json:"email"`
+	EmailVerified       bool           `json:"email_verified"`
+	Gender              string         `json:"gender"`
+	Birthdate           string         `json:"birthdate"`
+	Zoneinfo            string         `json:"zoneinfo"`
+	Locale              string         `json:"locale"`
+	PhoneNumber         string         `json:"phone_number"`
+	PhoneNumberVerified bool           `json:"phone_number_verified"`
+	Address             map[string]any `json:"address"`
+	UpdatedAt           int            `json:"updated_at"`
+
+	// Roles 自定义权限
+	Roles []string `json:"roles"`
+}
+
+type SignData struct {
+	Token     string
+	ExpiredIn int64
+}
+
+var _ Auth = (*Authn)(nil)
+
 type Authn struct {
-	Authns   []contracts.Authenticator
-	signFunc func(info contracts.UserInfo) (*contracts.SignData, error)
+	Authns   []Authenticator
+	signFunc func(info *UserInfo) (*SignData, error)
 }
 
-func NewAuthn(signFunc func(info contracts.UserInfo) (*contracts.SignData, error), authns ...contracts.Authenticator) *Authn {
-	return &Authn{Authns: authns, signFunc: signFunc}
+func NewAuthn(cfg *config.Config, data *data.Data) (Auth, error) {
+	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
+	if err != nil {
+		return nil, err
+	}
+	auth := NewJwtAuth(pem, pem.Public().(*rsa.PublicKey))
+
+	return &Authn{
+		Authns: []Authenticator{
+			auth,
+			NewAccessTokenAuth(data.DB),
+		},
+		signFunc: auth.Sign,
+	}, nil
 }
 
-func (a *Authn) VerifyToken(s string) (*contracts.JwtClaims, bool) {
+func (a *Authn) VerifyToken(s string) (*JwtClaims, bool) {
 	for _, authn := range a.Authns {
 		if token, ok := authn.VerifyToken(s); ok {
 			return token, true
@@ -31,7 +114,7 @@ func (a *Authn) VerifyToken(s string) (*contracts.JwtClaims, bool) {
 	return nil, false
 }
 
-func (a *Authn) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
+func (a *Authn) Sign(info *UserInfo) (*SignData, error) {
 	return a.signFunc(info)
 }
 
@@ -40,31 +123,31 @@ type jwtAuth struct {
 	pubKey *rsa.PublicKey
 }
 
-func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) contracts.AuthInterface {
+func NewJwtAuth(priKey *rsa.PrivateKey, pubKey *rsa.PublicKey) Auth {
 	return &jwtAuth{priKey: priKey, pubKey: pubKey}
 }
 
-func (a *jwtAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
+func (a *jwtAuth) VerifyToken(t string) (*JwtClaims, bool) {
 	var token string = t
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])
 	}
 	if token != "" {
-		parse, err := jwt.ParseWithClaims(token, &contracts.JwtClaims{}, func(token *jwt.Token) (any, error) {
+		parse, err := jwt.ParseWithClaims(token, &JwtClaims{}, func(token *jwt.Token) (any, error) {
 			return a.pubKey, nil
 		})
 		if err == nil && parse.Valid {
-			return parse.Claims.(*contracts.JwtClaims), true
+			return parse.Claims.(*JwtClaims), true
 		}
 	}
 
 	return nil, false
 }
 
-func (a *jwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &contracts.JwtClaims{
+func (a *jwtAuth) Sign(info *UserInfo) (*SignData, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &JwtClaims{
 		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(contracts.Expired).Unix(),
+			ExpiresAt: time.Now().Add(Expired).Unix(),
 			Issuer:    "mars",
 			IssuedAt:  time.Now().Unix(),
 			Subject:   info.Email,
@@ -76,30 +159,29 @@ func (a *jwtAuth) Sign(info contracts.UserInfo) (*contracts.SignData, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &contracts.SignData{
+	return &SignData{
 		Token:     signedString,
-		ExpiredIn: int64(contracts.Expired.Seconds()),
+		ExpiredIn: int64(Expired.Seconds()),
 	}, nil
 }
 
 type accessTokenAuth struct {
-	app contracts.ApplicationInterface
+	db *ent.Client
 }
 
-func NewAccessTokenAuth(app contracts.ApplicationInterface) contracts.Authenticator {
-	return &accessTokenAuth{app: app}
+func NewAccessTokenAuth(db *ent.Client) Authenticator {
+	return &accessTokenAuth{db: db}
 }
 
-func (a *accessTokenAuth) VerifyToken(t string) (*contracts.JwtClaims, bool) {
+func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
 	var token string = t
 	if len(t) > 6 && strings.EqualFold("bearer", t[0:6]) {
 		token = strings.TrimSpace(t[6:])
 	}
-	if token != "" {
-		var at models.AccessToken
-		if err := app.DB().Where("`token` = ?", token).First(&at).Error; err == nil {
-			app.DB().Model(&at).Update("last_used_at", time.Now())
-			return &contracts.JwtClaims{UserInfo: at.GetUserInfo()}, true
+	if token == "" {
+		if first, err := a.db.AccessToken.Query().Where(accesstoken.Token(token)).First(context.TODO()); err == nil {
+			first.Update().SetLastUsedAt(time.Now()).Save(context.TODO())
+			return &JwtClaims{UserInfo: &first.UserInfo}, true
 		}
 	}
 

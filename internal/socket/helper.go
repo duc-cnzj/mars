@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/duc-cnzj/mars/v4/internal/event/events"
 )
 
 type pipelineVars struct {
@@ -18,7 +16,7 @@ type pipelineVars struct {
 
 var matchTag = regexp.MustCompile(`image:\s+(\S+)`)
 
-func matchDockerImage(v pipelineVars, manifest string) string {
+func matchDockerImage(v pipelineVars, manifest string) []string {
 	var (
 		candidateImages []string
 		all             []string
@@ -41,10 +39,10 @@ func matchDockerImage(v pipelineVars, manifest string) string {
 	}
 	// 如果找到至少一个镜像就直接返回，如果未找到，则返回所有匹配到的镜像
 	if len(candidateImages) > 0 {
-		return strings.Join(candidateImages, " ")
+		return candidateImages
 	}
 
-	return strings.Join(all, " ")
+	return all
 }
 
 // imageUsedPipelineVars 使用的流水线变量的镜像，都把他当成是我们的目标镜像
@@ -67,8 +65,6 @@ func imageUsedPipelineVars(v pipelineVars, s string) bool {
 
 	return false
 }
-
-var AuditLogWithChange = events.AuditLog
 
 type timeOrderedSetStringItem struct {
 	t    time.Time

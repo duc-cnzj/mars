@@ -4,17 +4,18 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/duc-cnzj/mars/v4/internal/application"
+
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
 const ManualCertSecretName = "mars-external-tls-secret" // #nosec G101
 
-var _ plugins.DomainManager = (*manualDomainManager)(nil)
+var _ application.DomainManager = (*manualDomainManager)(nil)
 
 func init() {
 	dr := &manualDomainManager{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 type manualDomainManager struct {
@@ -24,13 +25,14 @@ type manualDomainManager struct {
 
 	tlsCrt string
 	tlsKey string
+	logger mlog.Logger
 }
 
 func (m *manualDomainManager) Name() string {
 	return "manual_domain_manager"
 }
 
-func (m *manualDomainManager) Initialize(args map[string]any) error {
+func (m *manualDomainManager) Initialize(app application.App, args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		m.nsPrefix = p.(string)
 	}
@@ -52,12 +54,13 @@ func (m *manualDomainManager) Initialize(args map[string]any) error {
 	if err := validateTelsWildcardDomain(m.tlsKey, m.tlsCrt, m.wildcardDomain); err != nil {
 		return err
 	}
-	mlog.Info("[Plugin]: " + m.Name() + " plugin Initialize...")
+	m.logger = app.Logger()
+	m.logger.Info("[Plugin]: " + m.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (m *manualDomainManager) Destroy() error {
-	mlog.Info("[Plugin]: " + m.Name() + " plugin Destroy...")
+	m.logger.Info("[Plugin]: " + m.Name() + " plugin Destroy...")
 	return nil
 }
 

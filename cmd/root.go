@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/duc-cnzj/mars/v4/version"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +24,6 @@ var (
 func Execute(configFile []byte, logoStr string) {
 	configExampleFile = configFile
 	logo = logoStr
-	if !version.GetVersion().HasBuildInfo() {
-		rootCmd.AddCommand(testCmd)
-	}
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
 	rootCmd.AddCommand(showCmd)

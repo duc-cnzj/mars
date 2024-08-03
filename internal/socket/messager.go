@@ -3,6 +3,7 @@ package socket
 import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
@@ -107,10 +108,10 @@ func (ms *messager) SendMsgWithContainerLog(msg string, containers []*types.Cont
 	ms.send(res)
 }
 
-func (ms *messager) SendProtoMsg(msg contracts.WebsocketMessage) {
+func (ms *messager) SendProtoMsg(msg application.WebsocketMessage) {
 	ms.send(msg)
 }
 
-func (ms *messager) send(res contracts.WebsocketMessage) {
+func (ms *messager) send(res application.WebsocketMessage) {
 	ms.conn.pubSub.ToSelf(res)
 }

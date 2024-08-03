@@ -3,8 +3,9 @@ package wssender
 import (
 	"encoding/json"
 
+	"github.com/duc-cnzj/mars/v4/internal/application"
+
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -32,7 +33,7 @@ func DecodeMessage(data []byte) (msg Message, err error) {
 	return
 }
 
-func ProtoToMessage(m contracts.WebsocketMessage, id string) Message {
+func ProtoToMessage(m application.WebsocketMessage, id string) Message {
 	return Message{
 		Data: TransformToResponse(m),
 		To:   m.GetMetadata().GetTo(),

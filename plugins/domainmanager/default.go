@@ -1,20 +1,22 @@
 package domainmanager
 
 import (
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 )
 
-var _ plugins.DomainManager = (*defaultDomainManager)(nil)
+var _ application.DomainManager = (*defaultDomainManager)(nil)
 
 func init() {
 	dr := &defaultDomainManager{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
-type defaultDomainManager struct{}
+type defaultDomainManager struct {
+	logger mlog.Logger
+}
 
-func NewDefaultDomainManager() plugins.DomainManager {
+func NewDefaultDomainManager() application.DomainManager {
 	return &defaultDomainManager{}
 }
 
@@ -22,13 +24,14 @@ func (d *defaultDomainManager) Name() string {
 	return "default_domain_manager"
 }
 
-func (d *defaultDomainManager) Initialize(args map[string]any) error {
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
+func (d *defaultDomainManager) Initialize(app application.App, args map[string]any) error {
+	d.logger = app.Logger()
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (d *defaultDomainManager) Destroy() error {
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 

@@ -65,6 +65,7 @@ upload_dir: ""
 #upload_max_size: "50m"
 
 # 文件上传到 s3
+s3_enabled: false
 s3_endpoint: ""
 s3_access_key_id: ""
 s3_secret_access_key: ""

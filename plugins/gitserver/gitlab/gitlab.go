@@ -5,20 +5,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
-
 	"github.com/xanzy/go-gitlab"
 )
 
-var _ plugins.GitServer = (*server)(nil)
+var _ application.GitServer = (*server)(nil)
 
 var name = "gitlab"
 
 func init() {
 	dr := &server{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 type project struct {
@@ -135,16 +133,16 @@ func (p *pipeline) GetProjectID() int64 {
 
 // GetStatus
 // created, waiting_for_resource, preparing, pending, running, success, failed, canceled, skipped, manual, scheduled
-func (p *pipeline) GetStatus() contracts.Status {
+func (p *pipeline) GetStatus() application.Status {
 	switch p.p.Status {
 	case "failed":
-		return contracts.StatusFailed
+		return application.StatusFailed
 	case "running":
-		return contracts.StatusRunning
+		return application.StatusRunning
 	case "success", "manual":
-		return contracts.StatusSuccess
+		return application.StatusSuccess
 	default:
-		return contracts.StatusUnknown
+		return application.StatusUnknown
 	}
 }
 
@@ -170,9 +168,10 @@ func (p *pipeline) GetCreatedAt() *time.Time {
 
 type server struct {
 	client *gitlab.Client
+	logger mlog.Logger
 }
 
-func (g *server) GetCommitPipeline(pid string, branch string, sha string) (contracts.PipelineInterface, error) {
+func (g *server) GetCommitPipeline(pid string, branch string, sha string) (application.Pipeline, error) {
 	var p *gitlab.PipelineInfo
 	pipelines, _, err := g.client.Pipelines.ListProjectPipelines(pid, &gitlab.ListProjectPipelinesOptions{
 		ListOptions: gitlab.ListOptions{
@@ -204,30 +203,30 @@ func (g *server) Name() string {
 	return name
 }
 
-func (g *server) Initialize(args map[string]any) error {
+func (g *server) Initialize(app application.App, args map[string]any) error {
 	client, err := gitlab.NewClient(args["token"].(string), gitlab.WithBaseURL(args["baseurl"].(string)))
 	if err != nil {
 		return err
 	}
 	g.client = client
-
-	mlog.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
+	g.logger = app.Logger()
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (g *server) Destroy() error {
-	mlog.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
+	g.logger.Info("[Plugin]: " + g.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (g *server) GetProject(pid string) (contracts.ProjectInterface, error) {
+func (g *server) GetProject(pid string) (application.Project, error) {
 	p, _, err := g.client.Projects.GetProject(pid, &gitlab.GetProjectOptions{})
 
 	return &project{p: p}, err
 }
 
 type listProjectResponse struct {
-	items                    []contracts.ProjectInterface
+	items                    []application.Project
 	page, pageSize, nextPage int
 	hasMore                  bool
 }
@@ -240,7 +239,7 @@ func (l *listProjectResponse) HasMore() bool {
 	return l.hasMore
 }
 
-func (l *listProjectResponse) GetItems() []contracts.ProjectInterface {
+func (l *listProjectResponse) GetItems() []application.Project {
 	return l.items
 }
 
@@ -252,7 +251,7 @@ func (l *listProjectResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponseInterface, error) {
+func (g *server) ListProjects(page, pageSize int) (application.ListProjectResponse, error) {
 	res, r, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{
 		MinAccessLevel: gitlab.AccessLevel(gitlab.DeveloperPermissions),
 		ListOptions:    gitlab.ListOptions{PerPage: pageSize, Page: page},
@@ -261,7 +260,7 @@ func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponse
 		return nil, err
 	}
 	nextPage := r.Header.Get("x-next-page")
-	var projects = make([]contracts.ProjectInterface, 0, len(res))
+	var projects = make([]application.Project, 0, len(res))
 	for _, re := range res {
 		projects = append(projects, &project{p: re})
 	}
@@ -280,8 +279,8 @@ func (g *server) ListProjects(page, pageSize int) (contracts.ListProjectResponse
 	}, err
 }
 
-func (g *server) AllProjects() ([]contracts.ProjectInterface, error) {
-	var ps []contracts.ProjectInterface
+func (g *server) AllProjects() ([]application.Project, error) {
+	var ps []application.Project
 	page := 1
 	pageSize := 100
 	for page != -1 {
@@ -307,7 +306,7 @@ func (g *server) AllProjects() ([]contracts.ProjectInterface, error) {
 }
 
 type listBranchResponse struct {
-	items                    []contracts.BranchInterface
+	items                    []application.Branch
 	page, pageSize, nextPage int
 	hasMore                  bool
 }
@@ -320,7 +319,7 @@ func (l *listBranchResponse) HasMore() bool {
 	return l.hasMore
 }
 
-func (l *listBranchResponse) GetItems() []contracts.BranchInterface {
+func (l *listBranchResponse) GetItems() []application.Branch {
 	return l.items
 }
 
@@ -332,9 +331,9 @@ func (l *listBranchResponse) PageSize() int {
 	return l.pageSize
 }
 
-func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBranchResponseInterface, error) {
+func (g *server) ListBranches(pid string, page, pageSize int) (application.ListBranchResponse, error) {
 	var (
-		branches []contracts.BranchInterface
+		branches []application.Branch
 		next     int
 	)
 
@@ -358,8 +357,8 @@ func (g *server) ListBranches(pid string, page, pageSize int) (contracts.ListBra
 	}, nil
 }
 
-func (g *server) AllBranches(pid string) ([]contracts.BranchInterface, error) {
-	var branches []contracts.BranchInterface
+func (g *server) AllBranches(pid string) ([]application.Branch, error) {
+	var branches []application.Branch
 	page := 1
 	pageSize := 100
 	for page != -1 {
@@ -384,7 +383,7 @@ func (g *server) AllBranches(pid string) ([]contracts.BranchInterface, error) {
 	return branches, nil
 }
 
-func (g *server) GetCommit(pid string, sha string) (contracts.CommitInterface, error) {
+func (g *server) GetCommit(pid string, sha string) (application.Commit, error) {
 	c, _, err := g.client.Commits.GetCommit(pid, sha)
 	if err != nil {
 		return nil, err
@@ -392,10 +391,10 @@ func (g *server) GetCommit(pid string, sha string) (contracts.CommitInterface, e
 	return &commit{c: c}, nil
 }
 
-func (g *server) ListCommits(pid string, branch string) ([]contracts.CommitInterface, error) {
+func (g *server) ListCommits(pid string, branch string) ([]application.Commit, error) {
 	commits, _, err := g.client.Commits.ListCommits(pid, &gitlab.ListCommitsOptions{RefName: gitlab.String(branch), ListOptions: gitlab.ListOptions{PerPage: 100}})
 
-	res := make([]contracts.CommitInterface, 0, len(commits))
+	res := make([]application.Commit, 0, len(commits))
 	for _, c := range commits {
 		res = append(res, &commit{c: c})
 	}
@@ -410,7 +409,7 @@ func getRawFile(client *gitlab.Client, pid string, shaOrBranch string, filename 
 	}
 	raw, _, err := client.RepositoryFiles.GetRawFile(pid, filename, &opt)
 	if err != nil {
-		mlog.Warning(err)
+		//mlog.Warning(err)
 	}
 	return string(raw), err
 }

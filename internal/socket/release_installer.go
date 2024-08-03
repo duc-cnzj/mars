@@ -8,13 +8,15 @@ import (
 	"github.com/duc-cnzj/mars/api/v4/types"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/release"
 )
 
 type releaseInstaller struct {
-	helmer         contracts.Helmer
+	logger         mlog.Logger
+	helmer         repo.HelmerRepo
 	dryRun         bool
 	chart          *chart.Chart
 	timeoutSeconds int64
@@ -28,8 +30,9 @@ type releaseInstaller struct {
 	messageCh      contracts.SafeWriteMessageChInterface
 }
 
-func newReleaseInstaller(helmer contracts.Helmer, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
+func newReleaseInstaller(logger mlog.Logger, helmer repo.HelmerRepo, releaseName, namespace string, chart *chart.Chart, valueOpts *values.Options, wait bool, timeoutSeconds int64, dryRun bool) *releaseInstaller {
 	return &releaseInstaller{
+		logger:         logger,
 		helmer:         helmer,
 		dryRun:         dryRun,
 		chart:          chart,
@@ -47,28 +50,28 @@ func (r *releaseInstaller) Chart() *chart.Chart {
 }
 
 func (r *releaseInstaller) Run(stopCtx context.Context, messageCh contracts.SafeWriteMessageChInterface, percenter contracts.Percentable, isNew bool, desc string) (*release.Release, error) {
-	defer mlog.Debug("releaseInstaller exit")
+	defer r.logger.Debug("releaseInstaller exit")
 
 	r.messageCh = messageCh
 	r.percenter = percenter
 	r.startTime = time.Now()
 
-	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.logger(), r.wait, r.timeoutSeconds, r.dryRun, desc)
+	re, err := r.helmer.UpgradeOrInstall(stopCtx, r.releaseName, r.namespace, r.chart, r.valueOpts, r.loggerWrap(), r.wait, r.timeoutSeconds, r.dryRun, desc)
 	if err == nil {
 		return re, nil
 	}
-	mlog.Debug(err)
+	r.logger.Debug(err)
 	if !r.dryRun && !isNew {
 		// 失败了，需要手动回滚
-		mlog.Debug("rollback project")
-		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.logger().UnWrap(), r.dryRun); err != nil {
-			mlog.Debug(err)
+		r.logger.Debug("rollback project")
+		if err := r.helmer.Rollback(r.releaseName, r.namespace, false, r.loggerWrap().UnWrap(), r.dryRun); err != nil {
+			r.logger.Debug(err)
 		}
 	}
 	if !r.dryRun && isNew {
-		mlog.Debug("uninstall project")
-		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.logger().UnWrap()); err != nil {
-			mlog.Debug(err)
+		r.logger.Debug("uninstall project")
+		if err := r.helmer.Uninstall(r.releaseName, r.namespace, r.loggerWrap().UnWrap()); err != nil {
+			r.logger.Debug(err)
 		}
 	}
 	return nil, err
@@ -78,7 +81,7 @@ func (r *releaseInstaller) Logs() []string {
 	return r.logs.sortedItems()
 }
 
-func (r *releaseInstaller) logger() contracts.WrapLogFn {
+func (r *releaseInstaller) loggerWrap() repo.WrapLogFn {
 	return func(containers []*types.Container, format string, v ...any) {
 		if r.percenter.Current() < 99 {
 			r.percenter.Add()

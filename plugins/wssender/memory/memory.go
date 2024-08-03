@@ -2,26 +2,23 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
+	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/plugins/wssender"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
-	"github.com/duc-cnzj/mars/v4/plugins/wssender"
 )
 
 var memorySenderName = "ws_sender_memory"
 
 func init() {
 	dr := &memorySender{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 type Conn struct {
@@ -39,6 +36,8 @@ type memorySender struct {
 	roomIDs map[int64]map[int64]map[string][]labels.Selector
 	// socketID => map[nsID]struct{}
 	idRooms map[string]map[int64]struct{}
+	logger  mlog.Logger
+	db      *ent.Client
 }
 
 func (ms *memorySender) Add(uid, id string) {
@@ -64,25 +63,33 @@ func (ms *memorySender) Name() string {
 	return memorySenderName
 }
 
-func (ms *memorySender) Initialize(args map[string]any) error {
+func (ms *memorySender) Initialize(app application.App, args map[string]any) error {
 	ms.conns = map[string]*Conn{}
 	ms.idRooms = make(map[string]map[int64]struct{})
 	ms.roomIDs = make(map[int64]map[int64]map[string][]labels.Selector)
-	mlog.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
+	ms.logger = app.Logger()
+	ms.db = app.DB()
+	ms.logger.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (ms *memorySender) Destroy() error {
-	mlog.Info("[Plugin]: " + ms.Name() + " plugin Destroy...")
+	ms.logger.Info("[Plugin]: " + ms.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (ms *memorySender) New(uid, id string) contracts.PubSub {
+func (ms *memorySender) New(uid, id string) application.PubSub {
 	ms.Add(uid, id)
-	return &memoryPubSub{uid: uid, id: id, manager: ms}
+	return &memoryPubSub{
+		db:      ms.db,
+		manager: ms,
+		uid:     uid,
+		id:      id,
+	}
 }
 
 type memoryPubSub struct {
+	db      *ent.Client
 	manager *memorySender
 	uid     string
 	id      string
@@ -107,14 +114,14 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 					if ok {
 						for _, selector := range selectors {
 							if selector.Matches(labels.Set(pod.Labels)) {
-								mlog.Debugf("publish to: (%d---%d)", nsID, pid)
+								//mlog.Debugf("publish to: (%d---%d)", nsID, pid)
 								conn.ch <- wssender.TransformToResponse(&websocket_pb.WsProjectPodEventResponse{
 									Metadata: &websocket_pb.Metadata{
 										Id:     socketID,
 										Type:   websocket_pb.Type_ProjectPodEvent,
 										End:    true,
 										Result: websocket_pb.ResultType_Success,
-										To:     plugins.ToSelf,
+										To:     websocket_pb.To_ToSelf,
 									},
 									ProjectId: pid,
 								})
@@ -131,16 +138,15 @@ func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 }
 
 func (p *memoryPubSub) Join(projectID int64) error {
-	var pmodel models.Project
-	app.DB().Select("id", "namespace_id", "pod_selectors").First(&pmodel, projectID)
+	pmodel, _ := p.db.Project.Query().Where(project.ID(int(projectID))).Only(context.TODO())
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
-	mlog.Warningf("Join to: (%d---%d)", pmodel.NamespaceId, projectID)
+	//mlog.Warningf("Join to: (%d---%d)", pmodel.NamespaceId, projectID)
 	var (
-		nsID = int64(pmodel.NamespaceId)
+		nsID = int64(pmodel.Edges.Namespace.ID)
 	)
 	var selectors []labels.Selector
-	for _, s := range pmodel.GetPodSelectors() {
+	for _, s := range pmodel.PodSelectors {
 		parse, _ := labels.Parse(s)
 		selectors = append(selectors, parse)
 	}
@@ -165,7 +171,7 @@ func (p *memoryPubSub) Join(projectID int64) error {
 func (p *memoryPubSub) Leave(nsID, projectID int64) error {
 	p.manager.roomMu.Lock()
 	defer p.manager.roomMu.Unlock()
-	mlog.Warningf("Leave to: (%d---%d)", nsID, projectID)
+	//mlog.Warningf("Leave to: (%d---%d)", nsID, projectID)
 	rooms, ok := p.manager.idRooms[p.id]
 	if ok {
 		delete(rooms, nsID)
@@ -197,7 +203,7 @@ func (p *memoryPubSub) ID() string {
 	return p.id
 }
 
-func (p *memoryPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
+func (p *memoryPubSub) ToSelf(wsResponse application.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 	conn, ok := p.manager.conns[p.id]
@@ -207,7 +213,7 @@ func (p *memoryPubSub) ToSelf(wsResponse contracts.WebsocketMessage) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
+func (p *memoryPubSub) ToAll(wsResponse application.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 
@@ -217,7 +223,7 @@ func (p *memoryPubSub) ToAll(wsResponse contracts.WebsocketMessage) error {
 	return nil
 }
 
-func (p *memoryPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
+func (p *memoryPubSub) ToOthers(wsResponse application.WebsocketMessage) error {
 	p.manager.RLock()
 	defer p.manager.RUnlock()
 
@@ -230,7 +236,7 @@ func (p *memoryPubSub) ToOthers(wsResponse contracts.WebsocketMessage) error {
 }
 
 func (p *memoryPubSub) Close() error {
-	mlog.Debugf(fmt.Sprintf("[Websocket]: Closed, uid: %s, id: %s", p.uid, p.id))
+	//mlog.Debugf(fmt.Sprintf("[Websocket]: Closed, uid: %s, id: %s", p.uid, p.id))
 	p.manager.Delete(p.uid, p.id)
 	return nil
 }

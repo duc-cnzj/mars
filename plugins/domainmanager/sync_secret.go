@@ -1,31 +1,37 @@
 package domainmanager
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
 
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
-	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
-	"github.com/duc-cnzj/mars/v4/internal/utils/tls"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "k8s.io/api/core/v1"
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
-var _ plugins.DomainManager = (*syncSecretDomainManager)(nil)
+var _ application.DomainManager = (*syncSecretDomainManager)(nil)
 
 // SyncSecretSecretName 和 manual 方式保持名称一致，避免两种方式之间切换时需要手动部署才能生效的问题
 const SyncSecretSecretName = ManualCertSecretName
 
 func init() {
-	dr := &syncSecretDomainManager{updateCertTlsFunc: tls.UpdateCertTls}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	dr := &syncSecretDomainManager{
+		updateCertTlsFunc: UpdateCertTls,
+	}
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 type syncSecretDomainManager struct {
-	updateCertTlsFunc func(name, key, crt string)
+	updateCertTlsFunc func(db *ent.Client, k8sCli *data.K8sClient, logger mlog.Logger, secretName, tlsKey, tlsCrt string)
 	nsPrefix          string
 	wildcardDomain    string
 	domainSuffix      string
@@ -33,17 +39,21 @@ type syncSecretDomainManager struct {
 	secretNamespace string
 	secretName      string
 
+	k8sCli *data.K8sClient
+	db     *ent.Client
+	logger mlog.Logger
+
 	mu     sync.RWMutex
-	secret *v1.Secret
+	secret *corev1.Secret
 }
 
-func (d *syncSecretDomainManager) SetSecret(s *v1.Secret) {
+func (d *syncSecretDomainManager) SetSecret(s *corev1.Secret) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.secret = s
 }
 
-func (d *syncSecretDomainManager) GetSecret() *v1.Secret {
+func (d *syncSecretDomainManager) GetSecret() *corev1.Secret {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.secret
@@ -53,7 +63,7 @@ func (d *syncSecretDomainManager) Name() string {
 	return "sync_secret_domain_manager"
 }
 
-func (d *syncSecretDomainManager) Initialize(args map[string]any) error {
+func (d *syncSecretDomainManager) Initialize(app application.App, args map[string]any) error {
 	if p, ok := args["ns_prefix"]; ok {
 		d.nsPrefix = p.(string)
 	}
@@ -75,12 +85,12 @@ func (d *syncSecretDomainManager) Initialize(args map[string]any) error {
 		return errors.New("secret_namespace, secret_name, wildcard_domain required")
 	}
 
-	secret, err := app.K8sClient().SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
+	secret, err := d.k8sCli.SecretLister.Secrets(d.secretNamespace).Get(d.secretName)
 	if err != nil {
 		return err
 	}
 
-	if secret.Type != v1.SecretTypeTLS {
+	if secret.Type != corev1.SecretTypeTLS {
 		return errors.New("secret not verified")
 	}
 
@@ -94,16 +104,19 @@ func (d *syncSecretDomainManager) Initialize(args map[string]any) error {
 	}
 	d.SetSecret(secret)
 
-	app.K8sClient().SecretInformer.AddEventHandler(d.eventHandler(d.handleSecretChange))
+	d.k8sCli = app.Data().K8sClient
+	d.db = app.DB()
+	d.logger = app.Logger()
+	d.k8sCli.SecretInformer.AddEventHandler(d.eventHandler(d.handleSecretChange))
 
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (d *syncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj any)) cache.FilteringResourceEventHandler {
 	return cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj any) bool {
-			sec := obj.(*v1.Secret)
+			sec := obj.(*corev1.Secret)
 			return sec.Namespace == d.secretNamespace && sec.Name == d.secretName
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
@@ -117,13 +130,13 @@ func (d *syncSecretDomainManager) eventHandler(updateFunc func(oldObj, newObj an
 
 func (d *syncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
 	if oldObj == nil && newObj != nil {
-		d.SetSecret(newObj.(*v1.Secret))
-		d.updateCertTlsFunc(d.GetCerts())
+		d.SetSecret(newObj.(*corev1.Secret))
+		//d.updateCertTlsFunc(d.GetCerts())
 		return
 	}
 
-	oldSec := oldObj.(*v1.Secret)
-	newSec := newObj.(*v1.Secret)
+	oldSec := oldObj.(*corev1.Secret)
+	newSec := newObj.(*corev1.Secret)
 	if newSec.ResourceVersion != oldSec.ResourceVersion {
 		d.SetSecret(newSec)
 		// 更新当前的所有 secret
@@ -135,13 +148,14 @@ func (d *syncSecretDomainManager) handleSecretChange(oldObj any, newObj any) {
 			newCrt = string(newSec.Data["tls.crt"])
 		)
 		if oldKey != newKey || oldCrt != newCrt {
-			d.updateCertTlsFunc(d.GetCerts())
+			certs, key, crt := d.GetCerts()
+			d.updateCertTlsFunc(d.db, d.k8sCli, d.logger, certs, key, crt)
 		}
 	}
 }
 
 func (d *syncSecretDomainManager) Destroy() error {
-	mlog.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
+	d.logger.Info("[Plugin]: " + d.Name() + " plugin Destroy...")
 	return nil
 }
 
@@ -178,4 +192,60 @@ func (d *syncSecretDomainManager) GetClusterIssuer() string {
 func (d *syncSecretDomainManager) GetCerts() (name, key, crt string) {
 	sec := d.GetSecret()
 	return SyncSecretSecretName, string(sec.Data["tls.key"]), string(sec.Data["tls.crt"])
+}
+
+func AddTlsSecret(k8sCli *data.K8sClient, ns string, name string, key string, crt string) error {
+	_, err := k8sCli.Client.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Annotations: map[string]string{
+				"created-by": "mars",
+			},
+		},
+		StringData: map[string]string{
+			"tls.key": key,
+			"tls.crt": crt,
+		},
+		Type: corev1.SecretTypeTLS,
+	}, metav1.CreateOptions{})
+	return err
+}
+
+func UpdateCertTls(db *ent.Client, k8sCli *data.K8sClient, logger mlog.Logger, secretName, tlsKey, tlsCrt string) {
+	namespaceList := db.Namespace.Query().Select(namespace.FieldID, namespace.FieldName).AllX(context.TODO())
+	var changed bool
+	var changedSecrets []*corev1.Secret
+	for _, n := range namespaceList {
+		secret, err := k8sCli.SecretLister.Secrets(n.Name).Get(secretName)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.Infof("[TLS]: Add secret namespace: %s, name %s.", n.Name, secretName)
+				AddTlsSecret(k8sCli, n.Name, secretName, tlsKey, tlsCrt)
+				continue
+			}
+		}
+		if string(secret.Data["tls.crt"]) != tlsCrt || string(secret.Data["tls.key"]) != tlsKey {
+			changed = true
+			changedSecrets = append(changedSecrets, secret.DeepCopy())
+		}
+	}
+	if changed {
+		sdata := map[string]string{
+			"tls.key": tlsKey,
+			"tls.crt": tlsCrt,
+		}
+		logger.Warning("[TLS]: certs changed, updating...")
+		for _, secret := range changedSecrets {
+			secret.StringData = sdata
+			_, err := k8sCli.Client.CoreV1().Secrets(secret.Namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
+			if err == nil {
+				logger.Infof("[TLS]: namespace: %s, name %s updated", secret.Namespace, secret.Name)
+			}
+		}
+	}
 }

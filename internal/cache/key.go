@@ -2,18 +2,16 @@ package cache
 
 import (
 	"fmt"
-
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
 )
 
-var _ contracts.CacheKeyInterface = (*Key)(nil)
+var _ CacheKey = (*Key)(nil)
 
 type Key struct {
 	slug string
 	key  string
 }
 
-// NewKey impl contracts.CacheKeyInterface
+// NewKey impl contracts.CacheKey
 func NewKey(slug string, vals ...any) *Key {
 	return &Key{slug: slug, key: fmt.Sprintf(slug, vals...)}
 }

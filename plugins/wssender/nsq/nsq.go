@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/ent/project"
+
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	"github.com/duc-cnzj/mars/v4/internal/adapter"
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/plugins/wssender"
 
 	gonsq "github.com/nsqio/go-nsq"
@@ -28,7 +28,7 @@ var nsqSenderName = "ws_sender_nsq"
 
 func init() {
 	dr := &nsqSender{}
-	plugins.RegisterPlugin(dr.Name(), dr)
+	application.RegisterPlugin(dr.Name(), dr)
 }
 
 func getNsqProjectEventRoom[T int64 | int](nsID T) string {
@@ -40,50 +40,54 @@ type nsqSender struct {
 	cfg         *gonsq.Config
 	lookupdAddr string
 	addr        string
+	logger      mlog.Logger
+	db          *ent.Client
 }
 
 func (n *nsqSender) Name() string {
 	return nsqSenderName
 }
 
-func (n *nsqSender) Initialize(args map[string]any) (err error) {
+func (n *nsqSender) Initialize(app application.App, args map[string]any) (err error) {
 	n.cfg = gonsq.NewConfig()
 	// 坑:
 	// 当多个nsqd服务都有相同的topic的时候，consumer要修改默认设置config.MaxInFlight才能连接
 	// 本地 k8s 搭建 nsq 集群时，访问 lookupd 返回的是集群内部的 ip，不通的
 	n.cfg.MaxInFlight = 1000
 	n.cfg.LookupdPollInterval = 3 * time.Second
-
+	n.logger = app.Logger()
 	if s, ok := args["addr"]; ok {
-		mlog.Debugf("[NSQ]: addr '%v'", s)
+		n.logger.Debugf("[NSQ]: addr '%v'", s)
 		n.addr = s.(string)
 	} else {
 		err = errors.New("[nsq]: add not exits")
 		return
 	}
 	if s, ok := args["lookupd_addr"]; ok {
-		mlog.Debugf("[NSQ]: lookupd_addr '%v'", s)
+		n.logger.Debugf("[NSQ]: lookupd_addr '%v'", s)
 		n.lookupdAddr = s.(string)
 	}
 	p, _ := gonsq.NewProducer(n.addr, n.cfg)
-	setLogLevel(p)
+	setLogLevel(n.logger, p)
 	err = p.Ping()
 	if err != nil {
 		return err
 	}
+	n.db = app.DB()
 	n.producer = p
-	mlog.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
+	n.logger.Info("[Plugin]: " + n.Name() + " plugin Initialize...")
 	return
 }
 
 func (n *nsqSender) Destroy() error {
 	n.producer.Stop()
-	mlog.Info("[Plugin]: " + n.Name() + " plugin Destroy...")
+	n.logger.Info("[Plugin]: " + n.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (n *nsqSender) New(uid, id string) contracts.PubSub {
+func (n *nsqSender) New(uid, id string) application.PubSub {
 	return &nsq{
+		db:           n.db,
 		addr:         n.addr,
 		lookupdAddr:  n.lookupdAddr,
 		cfg:          n.cfg,
@@ -99,9 +103,11 @@ func (n *nsqSender) New(uid, id string) contracts.PubSub {
 }
 
 type nsq struct {
+	logger            mlog.Logger
 	addr, lookupdAddr string
 	cfg               *gonsq.Config
 	uid, id           string
+	db                *ent.Client
 
 	consumersMu sync.RWMutex
 	consumers   map[string]*gonsq.Consumer
@@ -131,19 +137,19 @@ func (j *directHandler) HandleMessage(m *gonsq.Message) error {
 }
 
 func (n *nsq) Join(projectID int64) error {
-	var pmodel models.Project
-	if err := app.DB().First(&pmodel, projectID).Error; err != nil {
+	pmodel, err := n.db.Project.Query().WithNamespace().Where(project.ID(int(projectID))).Only(context.TODO())
+	if err != nil {
 		return err
 	}
-	channel := getNsqProjectEventRoom(pmodel.NamespaceId)
+	channel := getNsqProjectEventRoom(pmodel.Edges.Namespace.ID)
 
 	consumer, err := gonsq.NewConsumer(channel, n.ephemeralID(), n.cfg)
 	if err != nil {
-		mlog.Error(err)
+		n.logger.Error(err)
 		return err
 	}
-	if err := connect(consumer, n.addr, n.lookupdAddr, &directHandler{ch: n.eventMsgCh}); err != nil {
-		mlog.Error(err)
+	if err := n.connect(consumer, n.addr, n.lookupdAddr, &directHandler{ch: n.eventMsgCh}); err != nil {
+		n.logger.Error(err)
 		return err
 	}
 
@@ -163,7 +169,7 @@ func (n *nsq) Join(projectID int64) error {
 		n.pMu.Lock()
 		defer n.pMu.Unlock()
 		var selectors []labels.Selector
-		for _, s := range pmodel.GetPodSelectors() {
+		for _, s := range pmodel.PodSelectors {
 			parse, _ := labels.Parse(s)
 			selectors = append(selectors, parse)
 		}
@@ -208,15 +214,14 @@ func (n *nsq) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		case data, ok := <-n.eventMsgCh:
 			if !ok {
-				mlog.Warning("nsq event ch closed")
-				return nil
+				return errors.New("nsq event ch closed")
 			}
 			var obj projectEventObj
 			if err := json.Unmarshal([]byte(data), &obj); err != nil {
-				mlog.Error(err)
+				n.logger.Error(err)
 			}
 			fn := func() bool {
 				n.mu.RLock()
@@ -242,7 +247,7 @@ func (n *nsq) Run(ctx context.Context) error {
 										Type:   websocket_pb.Type_ProjectPodEvent,
 										End:    true,
 										Result: websocket_pb.ResultType_Success,
-										To:     plugins.ToSelf,
+										To:     websocket_pb.To_ToSelf,
 									},
 									ProjectId: pid,
 								})
@@ -278,19 +283,19 @@ func (n *nsq) ID() string {
 	return n.id
 }
 
-func (n *nsq) ToSelf(response contracts.WebsocketMessage) error {
+func (n *nsq) ToSelf(response application.WebsocketMessage) error {
 	return n.to(response, websocket_pb.To_ToSelf)
 }
 
-func (n *nsq) ToAll(response contracts.WebsocketMessage) error {
+func (n *nsq) ToAll(response application.WebsocketMessage) error {
 	return n.to(response, websocket_pb.To_ToAll)
 }
 
-func (n *nsq) ToOthers(response contracts.WebsocketMessage) error {
+func (n *nsq) ToOthers(response application.WebsocketMessage) error {
 	return n.to(response, websocket_pb.To_ToOthers)
 }
 
-func (n *nsq) to(response contracts.WebsocketMessage, to websocket_pb.To) error {
+func (n *nsq) to(response application.WebsocketMessage, to websocket_pb.To) error {
 	response.GetMetadata().To = to
 	response.GetMetadata().Uid = n.uid
 	response.GetMetadata().Id = n.id
@@ -309,8 +314,8 @@ func (n *nsq) Subscribe() <-chan []byte {
 	consumerAll, _ := gonsq.NewConsumer(ephemeralBroadcastRoom, n.ephemeralID(), n.cfg)
 	consumer, _ := gonsq.NewConsumer(n.ephemeralID(), n.ephemeralID(), n.cfg)
 	h := &handler{msgCh: n.msgCh, id: n.id}
-	connect(consumer, n.addr, n.lookupdAddr, h)
-	connect(consumerAll, n.addr, n.lookupdAddr, h)
+	n.connect(consumer, n.addr, n.lookupdAddr, h)
+	n.connect(consumerAll, n.addr, n.lookupdAddr, h)
 
 	n.consumersMu.Lock()
 	defer n.consumersMu.Unlock()
@@ -322,8 +327,8 @@ func (n *nsq) Subscribe() <-chan []byte {
 	return n.msgCh
 }
 
-func connect(consumer *gonsq.Consumer, addr, lookupdAddr string, h gonsq.Handler) error {
-	setLogLevel(consumer)
+func (n *nsq) connect(consumer *gonsq.Consumer, addr, lookupdAddr string, h gonsq.Handler) error {
+	setLogLevel(n.logger, consumer)
 	consumer.AddHandler(h)
 
 	var err error
@@ -337,7 +342,7 @@ func connect(consumer *gonsq.Consumer, addr, lookupdAddr string, h gonsq.Handler
 }
 
 func (n *nsq) Close() error {
-	defer mlog.Debugf("[nsq]: id: %v closed", n.ID())
+	defer n.logger.Debugf("[nsq]: id: %v closed", n.ID())
 	n.consumersMu.Lock()
 	defer n.consumersMu.Unlock()
 	for _, c := range n.consumers {
@@ -362,11 +367,11 @@ func (h *handler) HandleMessage(m *gonsq.Message) error {
 	}
 	message, _ := wssender.DecodeMessage(m.Body)
 	switch message.To {
-	case plugins.ToSelf:
+	case websocket_pb.To_ToSelf:
 		fallthrough
-	case plugins.ToAll:
+	case websocket_pb.To_ToAll:
 		h.msgCh <- message.Data
-	case plugins.ToOthers:
+	case websocket_pb.To_ToOthers:
 		if message.ID != h.id {
 			h.msgCh <- message.Data
 		}
@@ -375,13 +380,32 @@ func (h *handler) HandleMessage(m *gonsq.Message) error {
 	return nil
 }
 
-func setLogLevel(s any) {
+func setLogLevel(logger mlog.Logger, s any) {
+	log := NewNsqLoggerAdapter(logger)
 	if ss, ok := s.(*gonsq.Consumer); ok {
 		ss.SetLoggerLevel(gonsq.LogLevelError)
-		ss.SetLoggerForLevel(&adapter.NsqLoggerAdapter{}, gonsq.LogLevelError)
+		ss.SetLoggerForLevel(log, gonsq.LogLevelError)
 	}
 	if ss, ok := s.(*gonsq.Producer); ok {
 		ss.SetLoggerLevel(gonsq.LogLevelError)
-		ss.SetLoggerForLevel(&adapter.NsqLoggerAdapter{}, gonsq.LogLevelError)
+		ss.SetLoggerForLevel(log, gonsq.LogLevelError)
 	}
+}
+
+type NsqLoggerAdapter struct {
+	logger mlog.Logger
+}
+
+func NewNsqLoggerAdapter(logger mlog.Logger) *NsqLoggerAdapter {
+	return &NsqLoggerAdapter{logger: logger}
+}
+
+// Output impl nsq.logger
+func (n *NsqLoggerAdapter) Output(calldepth int, s string) error {
+	if strings.Contains(s, "TOPIC_NOT_FOUND") {
+		n.logger.Debug(s)
+	} else {
+		n.logger.Error(s)
+	}
+	return nil
 }

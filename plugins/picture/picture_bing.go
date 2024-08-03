@@ -10,9 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
 	"github.com/duc-cnzj/mars/v4/internal/utils/rand"
 )
 
@@ -21,11 +20,11 @@ var (
 	bingname = "picture_bing"
 )
 
-var _ plugins.PictureInterface = (*bing)(nil)
+var _ application.Picture = (*bing)(nil)
 
 func init() {
 	p := &bing{}
-	plugins.RegisterPlugin(p.Name(), p)
+	application.RegisterPlugin(p.Name(), p)
 }
 
 type Item struct {
@@ -54,23 +53,25 @@ type bing struct {
 	sync.RWMutex
 	cacheItems []Item
 	cacheDay   string
+	logger     mlog.Logger
 }
 
 func (b *bing) Name() string {
 	return bingname
 }
 
-func (b *bing) Initialize(args map[string]any) error {
-	mlog.Info("[Plugin]: " + b.Name() + " plugin Initialize...")
+func (b *bing) Initialize(app application.App, args map[string]any) error {
+	b.logger = app.Logger()
+	b.logger.Info("[Plugin]: " + b.Name() + " plugin Initialize...")
 	return nil
 }
 
 func (b *bing) Destroy() error {
-	mlog.Info("[Plugin]: " + b.Name() + " plugin Destroy...")
+	b.logger.Info("[Plugin]: " + b.Name() + " plugin Destroy...")
 	return nil
 }
 
-func (b *bing) Get(ctx context.Context, random bool) (*contracts.Picture, error) {
+func (b *bing) Get(ctx context.Context, random bool) (*application.PictureItem, error) {
 	key, n := 0, 8
 	if random {
 		key = rand.Intn(n - 1)
@@ -82,7 +83,7 @@ func (b *bing) Get(ctx context.Context, random bool) (*contracts.Picture, error)
 		b.RLock()
 		defer b.RUnlock()
 		if len(b.cacheItems) > 0 && b.cacheDay == day {
-			mlog.Debug("use cache")
+			b.logger.Debug("use cache")
 			res = b.cacheItems
 		}
 	}()
@@ -106,7 +107,7 @@ func (b *bing) Get(ctx context.Context, random bool) (*contracts.Picture, error)
 		b.cacheDay = day
 	}
 
-	return &contracts.Picture{
+	return &application.PictureItem{
 		Url:       "https://cn.bing.com/" + strings.TrimLeft(res[key].URL, "/"),
 		Copyright: res[key].Copyright[:strings.Index(res[key].Copyright, "(©")],
 	}, nil

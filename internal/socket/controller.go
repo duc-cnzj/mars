@@ -9,107 +9,69 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/prometheus/client_golang/prometheus"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/duc-cnzj/mars/api/v4/cluster"
 	"github.com/duc-cnzj/mars/api/v4/types"
 	websocket_pb "github.com/duc-cnzj/mars/api/v4/websocket"
-	app "github.com/duc-cnzj/mars/v4/internal/app/helper"
+	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
+	"github.com/duc-cnzj/mars/v4/internal/data"
+	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
-	"github.com/duc-cnzj/mars/v4/internal/models"
-	"github.com/duc-cnzj/mars/v4/internal/plugins"
+	"github.com/duc-cnzj/mars/v4/internal/repo"
+	"github.com/duc-cnzj/mars/v4/internal/uploader"
 	"github.com/duc-cnzj/mars/v4/internal/utils"
-	"github.com/duc-cnzj/mars/v4/internal/utils/executor"
-	"github.com/duc-cnzj/mars/v4/internal/utils/recovery"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
 
-type HandleRequestFunc func(c *WsConn, t websocket_pb.Type, message []byte)
-
-var handlers map[websocket_pb.Type]HandleRequestFunc = map[websocket_pb.Type]HandleRequestFunc{
-	WsAuthorize:          HandleWsAuthorize,
-	WsHandleCloseShell:   HandleWsHandleCloseShell,
-	WsHandleExecShellMsg: HandleWsHandleExecShellMsg,
-	WsHandleExecShell:    HandleWsHandleExecShell,
-	WsCancel:             HandleWsCancel,
-	WsCreateProject:      HandleWsCreateProject,
-	WsUpdateProject:      HandleWsUpdateProject,
-	ProjectPodEvent:      HandleWsProjectPodEvent,
-}
+type HandleRequestFunc func(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte)
 
 type WsConn struct {
-	doneFunc func()
+	id     string
+	uid    string
+	conn   contracts.WebsocketConn
+	pubSub application.PubSub
 
-	id   string
-	uid  string
-	conn contracts.WebsocketConn
+	userMu sync.RWMutex
+	user   *auth.UserInfo
 
-	newJobFunc      NewJobFunc
-	newShellFunc    newShellFunc
-	newExecutorFunc func() contracts.RemoteExecutor
-
-	userMu           sync.RWMutex
-	user             contracts.UserInfo
-	pubSub           contracts.PubSub
-	cancelSignaler   contracts.CancelSignaler
-	terminalSessions contracts.SessionMapper
-	doneCtx          context.Context
+	cs CancelSignaler
+	sm SessionMapper
 }
 
-func (wc *WebsocketManager) initConn(r *http.Request, c *websocket.Conn) *WsConn {
-	var uid string
-	uid = r.URL.Query().Get("uid")
-	if uid == "" {
-		uid = uuid.New().String()
+func (wc *WebsocketManager) initConn(uid, id string, c *websocket.Conn) *WsConn {
+	return &WsConn{
+		id:     id,
+		uid:    uid,
+		conn:   c,
+		pubSub: wc.pl.Ws().New(uid, id),
+		cs:     NewCancelSignal(),
+		sm:     NewSessionMap(wc.logger),
 	}
-	id := uuid.New().String()
-
-	ps := plugins.GetWsSender().New(uid, id)
-	ctx, cancelFunc := context.WithCancel(context.TODO())
-	var wsconn = &WsConn{
-		doneCtx:      ctx,
-		doneFunc:     cancelFunc,
-		pubSub:       ps,
-		id:           id,
-		uid:          uid,
-		newJobFunc:   NewJober,
-		newShellFunc: HandleExecShell,
-		newExecutorFunc: func() contracts.RemoteExecutor {
-			return executor.NewDefaultRemoteExecutor()
-		},
-		conn:           c,
-		cancelSignaler: newCancelSignals(),
-	}
-	wsconn.terminalSessions = NewSessionMap(wsconn)
-
-	Wait.Inc()
-
-	return wsconn
 }
 
 func (c *WsConn) Shutdown() {
-	mlog.Debug("[Websocket]: Ws exit ")
-
-	c.doneFunc()
-	c.cancelSignaler.CancelAll()
-	c.terminalSessions.CloseAll()
+	//c.cancelSignaler.CancelAll()
+	//c.terminalSessions.CloseAll()
 	c.pubSub.Close()
 	c.conn.Close()
 	metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": c.GetUser().Name}).Dec()
 	Wait.Dec()
 }
 
-func (c *WsConn) SetUser(info contracts.UserInfo) {
+func (c *WsConn) SetUser(info *auth.UserInfo) {
 	c.userMu.Lock()
 	defer c.userMu.Unlock()
 	c.user = info
 }
 
-func (c *WsConn) GetUser() contracts.UserInfo {
+func (c *WsConn) GetUser() *auth.UserInfo {
 	c.userMu.RLock()
 	defer c.userMu.RUnlock()
 	return c.user
@@ -117,59 +79,115 @@ func (c *WsConn) GetUser() contracts.UserInfo {
 
 type WebsocketManager struct {
 	healthTickDuration time.Duration
+
+	logger     mlog.Logger
+	k8sCli     *data.K8sClient
+	pl         application.PluginManger
+	auth       auth.Auth
+	uploader   uploader.Uploader
+	locker     locker.Locker
+	jobManager JobManager
+
+	projRepo  repo.ProjectRepo
+	k8sRepo   repo.K8sRepo
+	fileRepo  repo.FileRepo
+	nsRepo    repo.NamespaceRepo
+	eventRepo repo.EventRepo
+
+	executor repo.ExecutorManager
+	db       *ent.Client
+
+	handlers map[websocket_pb.Type]HandleRequestFunc
 }
 
-func NewWebsocketManager(healthTickDuration time.Duration) *WebsocketManager {
-	return &WebsocketManager{healthTickDuration: healthTickDuration}
+func NewWebsocketManager(
+	logger mlog.Logger,
+	jobManager JobManager,
+	data *data.Data,
+	pl application.PluginManger,
+	auth auth.Auth,
+	uploader uploader.Uploader,
+	locker locker.Locker,
+	clusterRepo repo.K8sRepo,
+	eventRepo repo.EventRepo,
+	executor repo.ExecutorManager,
+	fileRepo repo.FileRepo,
+) application.WsServer {
+	mgr := &WebsocketManager{
+		jobManager:         jobManager,
+		fileRepo:           fileRepo,
+		healthTickDuration: 15 * time.Second,
+		logger:             logger,
+		k8sCli:             data.K8sClient,
+		pl:                 pl,
+		auth:               auth,
+		uploader:           uploader,
+		locker:             locker,
+		k8sRepo:            clusterRepo,
+		eventRepo:          eventRepo,
+		executor:           executor,
+		db:                 data.DB,
+	}
+	mgr.handlers = map[websocket_pb.Type]HandleRequestFunc{
+		WsAuthorize:          mgr.HandleWsAuthorize,
+		WsHandleExecShell:    mgr.HandleStartShell,
+		WsHandleExecShellMsg: mgr.HandleWsShellMsg,
+		WsHandleCloseShell:   mgr.HandleWsCloseShell,
+		WsCancel:             mgr.HandleWsCancelDeploy,
+		ProjectPodEvent:      mgr.HandleWsProjectPodEvent,
+		WsCreateProject:      mgr.HandleWsCreateProject,
+		WsUpdateProject:      mgr.HandleWsUpdateProject,
+	}
+	return mgr
 }
 
-func (wc *WebsocketManager) TickClusterHealth() {
+func (wc *WebsocketManager) TickClusterHealth(done <-chan struct{}) {
 	ticker := time.NewTicker(wc.healthTickDuration)
-	done := app.App().Done()
-	sub := plugins.GetWsSender().New("", "")
-	lock := app.CacheLock()
+	lock := wc.locker
+	sub := wc.pl.Ws().New("", "")
+	defer sub.Close()
 
-	go func() {
-		defer recovery.HandlePanic("TickClusterHealth")
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				if lock.Acquire("TickClusterHealth", 5) {
-					func() {
-						defer lock.Release("TickClusterHealth")
-						info := utils.ClusterInfo()
-						sub.ToAll(&websocket_pb.WsHandleClusterResponse{
-							Metadata: &websocket_pb.Metadata{
-								Type: WsClusterInfoSync,
-							},
-							Info: &cluster.InfoResponse{
-								Status:            info.Status,
-								FreeMemory:        info.FreeMemory,
-								FreeCpu:           info.FreeCpu,
-								FreeRequestMemory: info.FreeRequestMemory,
-								FreeRequestCpu:    info.FreeRequestCpu,
-								TotalMemory:       info.TotalMemory,
-								TotalCpu:          info.TotalCpu,
-								UsageMemoryRate:   info.UsageMemoryRate,
-								UsageCpuRate:      info.UsageCpuRate,
-								RequestMemoryRate: info.RequestMemoryRate,
-								RequestCpuRate:    info.RequestCpuRate,
-							},
-						})
-					}()
-				}
-			case <-done:
-				mlog.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
-				return
+	defer wc.logger.HandlePanic("TickClusterHealth")
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if lock.Acquire("TickClusterHealth", 5) {
+				func() {
+					defer lock.Release("TickClusterHealth")
+					info := wc.k8sRepo.ClusterInfo()
+					sub.ToAll(&websocket_pb.WsHandleClusterResponse{
+						Metadata: &websocket_pb.Metadata{
+							Type: WsClusterInfoSync,
+						},
+						Info: &cluster.InfoResponse{
+							Status:            info.Status,
+							FreeMemory:        info.FreeMemory,
+							FreeCpu:           info.FreeCpu,
+							FreeRequestMemory: info.FreeRequestMemory,
+							FreeRequestCpu:    info.FreeRequestCpu,
+							TotalMemory:       info.TotalMemory,
+							TotalCpu:          info.TotalCpu,
+							UsageMemoryRate:   info.UsageMemoryRate,
+							UsageCpuRate:      info.UsageCpuRate,
+							RequestMemoryRate: info.RequestMemoryRate,
+							RequestCpuRate:    info.RequestCpuRate,
+						},
+					})
+				}()
 			}
+		case <-done:
+			wc.logger.Info("[Websocket]: app shutdown and stop WsClusterInfoSync")
+			return
 		}
-	}()
+	}
 }
 
 func (wc *WebsocketManager) Info(writer http.ResponseWriter, request *http.Request) {
+	sub := wc.pl.Ws().New("", "")
+	defer sub.Close()
+	marshal, _ := json.Marshal(sub.Info())
 	writer.Header().Set("Content-Type", "application/json")
-	marshal, _ := json.Marshal(plugins.GetWsSender().New("", "").Info())
 	writer.Write(marshal)
 }
 
@@ -179,52 +197,66 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (wc *WebsocketManager) Ws(w http.ResponseWriter, r *http.Request) {
+func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		mlog.Error(err)
+		wc.logger.Error(err)
 		return
 	}
 
-	wsconn := wc.initConn(r, c)
-	defer wsconn.Shutdown()
+	var (
+		id  string = uuid.New().String()
+		uid string = uuid.New().String()
 
-	go func() {
-		defer recovery.HandlePanic("[ProjectPodEventSubscriber]: Run")
-		wsconn.pubSub.Run(wsconn.doneCtx)
+		inputUid = r.URL.Query().Get("uid")
+	)
+	if inputUid == "" {
+		uid = inputUid
+	}
+
+	wsConn := wc.initConn(uid, id, c)
+	g, ctx := errgroup.WithContext(r.Context())
+
+	defer func() {
+		wc.logger.Debugf("[Websocket]: Serve exit")
+		wsConn.Shutdown()
 	}()
 
-	go func() {
-		defer recovery.HandlePanic("Websocket: Write")
+	g.Go(func() error {
+		defer wc.logger.HandlePanic("[ProjectPodEventSubscriber]: Run")
+		return wsConn.pubSub.Run(ctx)
+	})
 
-		write(wsconn)
-	}()
-
-	NewMessageSender(wsconn, "", WsSetUid).SendMsg(wsconn.uid)
-
-	ch := make(chan struct{})
-	go func() {
+	g.Go(func() error {
 		var err error
 		defer func() {
-			mlog.Debugf("[Websocket]: go read exit, err: %v", err)
+			wc.logger.Debugf("[Websocket]: go write exit, err: %v", err)
 		}()
-		defer recovery.HandlePanic("[Websocket]: read recovery")
-		err = read(wsconn)
-		close(ch)
-	}()
+		defer wc.logger.HandlePanic("Websocket: Write, err %v")
 
-	select {
-	case <-app.App().Done():
-		return
-	case <-ch:
+		return wc.write(ctx, wsConn)
+	})
+
+	NewMessageSender(wsConn, "", WsSetUid).SendMsg(wsConn.uid)
+
+	g.Go(func() error {
+		var err error
+		defer func() {
+			wc.logger.Debugf("[Websocket]: go read exit, err: %v", err)
+		}()
+		defer wc.logger.HandlePanic("[Websocket]: read recovery")
+		return wc.read(ctx, wsConn)
+	})
+
+	if err = g.Wait(); err != nil {
 		return
 	}
 }
 
-func write(wsconn *WsConn) (err error) {
+func (wc *WebsocketManager) write(ctx context.Context, wsconn *WsConn) (err error) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		mlog.Debugf("[Websocket]: go write exit, %v", err)
+		wc.logger.Debugf("[Websocket]: go write exit, %v", err)
 		ticker.Stop()
 		wsconn.conn.Close()
 	}()
@@ -232,19 +264,21 @@ func write(wsconn *WsConn) (err error) {
 	var w io.WriteCloser
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case message, ok := <-ch:
-			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				return wsconn.conn.WriteMessage(websocket.CloseMessage, []byte{})
 			}
 
+			wsconn.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			w, err = wsconn.conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return err
 			}
 			w.Write(message)
 
-			if err := w.Close(); err != nil {
+			if err = w.Close(); err != nil {
 				return err
 			}
 		case <-ticker.C:
@@ -256,7 +290,7 @@ func write(wsconn *WsConn) (err error) {
 	}
 }
 
-func read(wsconn *WsConn) error {
+func (wc *WebsocketManager) read(ctx context.Context, wsconn *WsConn) error {
 	wsconn.conn.SetReadLimit(maxMessageSize)
 	wsconn.conn.SetReadDeadline(time.Now().Add(pongWait))
 	wsconn.conn.SetPongHandler(func(string) error {
@@ -267,7 +301,7 @@ func read(wsconn *WsConn) error {
 		var wsRequest websocket_pb.WsRequestMetadata
 		_, message, err := wsconn.conn.ReadMessage()
 		if err != nil {
-			mlog.Debugf("[Websocket]: read error: %v", err)
+			wc.logger.Debugf("[Websocket]: read error: %v", err)
 			return err
 		}
 		if err := proto.Unmarshal(message, &wsRequest); err != nil {
@@ -276,13 +310,13 @@ func read(wsconn *WsConn) error {
 			continue
 		}
 
-		go handleWsRead(wsconn, &wsRequest, message, handlers)
+		go wc.handleWsRead(ctx, wsconn, &wsRequest, message)
 	}
 }
 
-func handleWsRead(wsconn *WsConn, wsRequest *websocket_pb.WsRequestMetadata, message []byte, handlers map[websocket_pb.Type]HandleRequestFunc) {
-	if handler, ok := handlers[wsRequest.Type]; ok {
-		defer recovery.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
+func (wc *WebsocketManager) handleWsRead(ctx context.Context, wsconn *WsConn, wsRequest *websocket_pb.WsRequestMetadata, message []byte) {
+	if handler, ok := wc.handlers[wsRequest.Type]; ok {
+		defer wc.logger.HandlePanicWithCallback(wsRequest.Type.String(), func(err error) {
 			metrics.WebsocketPanicCount.With(prometheus.Labels{"method": wsRequest.Type.String()}).Inc()
 		})
 		defer func(t time.Time) {
@@ -297,83 +331,86 @@ func handleWsRead(wsconn *WsConn, wsRequest *websocket_pb.WsRequestMetadata, mes
 		}(time.Now())
 
 		// websocket.onopen 事件不一定是最早发出来的，所以要等 onopen 的认证结束后才能进行后面的操作
-		if wsconn.GetUser().GetID() == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize {
+		if wsconn.GetUser() == nil || (wsconn.GetUser() != nil && wsconn.GetUser().GetID() == "" && wsRequest.Type != websocket_pb.Type_HandleAuthorize) {
 			NewMessageSender(wsconn, "", WsAuthorize).SendMsg("认证中，请稍等~")
 			return
 		}
-		handler(wsconn, wsRequest.Type, message)
+		handler(ctx, wsconn, wsRequest.Type, message)
 	}
 }
 
-func HandleWsAuthorize(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsAuthorize(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.AuthorizeTokenInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		mlog.Error("[Websocket]: " + err.Error())
+		wc.logger.Error("[Websocket]: " + err.Error())
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
 
-	if claims, b := app.Auth().VerifyToken(input.Token); b {
+	if claims, b := wc.auth.VerifyToken(input.Token); b {
 		c.SetUser(claims.UserInfo)
 		metrics.WebsocketConnectionsCount.With(prometheus.Labels{"username": claims.UserInfo.Name}).Inc()
 	}
 }
 
-func HandleWsProjectPodEvent(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsProjectPodEvent(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.ProjectPodEventJoinInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		mlog.Error("[Websocket]: " + err.Error())
+		wc.logger.Error("[Websocket]: " + err.Error())
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
 	if input.Join {
-		c.pubSub.(contracts.ProjectPodEventSubscriber).Join(input.GetProjectId())
+		c.pubSub.(application.ProjectPodEventSubscriber).Join(input.GetProjectId())
 	} else {
-		c.pubSub.(contracts.ProjectPodEventSubscriber).Leave(input.GetNamespaceId(), input.GetProjectId())
+		c.pubSub.(application.ProjectPodEventSubscriber).Leave(input.GetNamespaceId(), input.GetProjectId())
 	}
 }
 
-func HandleWsHandleCloseShell(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsCloseShell(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
-		mlog.Error(err.Error())
+		wc.logger.Error(err.Error())
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	mlog.Debugf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
-	c.terminalSessions.Close(input.Message.SessionId, 0, "")
+	msg := fmt.Sprintf("[Websocket]: %v 收到客户端主动断开的消息", input.Message.SessionId)
+	wc.logger.Debugf(msg)
+	c.sm.Close(ctx, input.Message.SessionId, 0, msg)
 }
 
-func HandleWsHandleExecShellMsg(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsShellMsg(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.TerminalMessageInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	if input.Message.SessionId != "" {
-		c.terminalSessions.Send(input.Message)
+
+	if pty, ok := c.sm.Get(input.Message.SessionId); ok {
+		if err := pty.Send(ctx, input.Message); err != nil {
+			pty.Close(ctx, err.Error())
+		}
 	}
 }
 
-func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleStartShell(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.WsHandleExecShellInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
-
-	sessionID, err := c.newShellFunc(&input, c)
+	sessionID, err := wc.StartShell(ctx, &input, c)
 	if err != nil {
-		mlog.Error(err)
+		wc.logger.Error(err)
 		NewMessageSender(c, "", WsHandleExecShell).SendEndError(err)
 		return
 	}
 
-	mlog.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, id: %v", sessionID)
+	wc.logger.Debugf("[Websocket]: 收到 初始化连接 WsHandleExecShell 消息, sessionID: %v", sessionID)
 
 	NewMessageSender(c, "", WsHandleExecShell).SendProtoMsg(&websocket_pb.WsHandleShellResponse{
 		Metadata: &websocket_pb.Metadata{
@@ -393,32 +430,33 @@ func HandleWsHandleExecShell(c *WsConn, t websocket_pb.Type, message []byte) {
 	})
 }
 
-func HandleWsCancel(c *WsConn, t websocket_pb.Type, message []byte) {
-	var input websocket_pb.CancelInput
+func (wc *WebsocketManager) HandleWsCancelDeploy(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
+	var (
+		input websocket_pb.CancelInput
+		cs    = c.cs
+	)
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
 
-	// cancel
 	var slugName = utils.GetSlugName(input.NamespaceId, input.Name)
-	if c.cancelSignaler.Has(slugName) {
-		var ns models.Namespace
-		app.DB().Select("name").First(&ns, input.NamespaceId)
-		AuditLogWithChange(c.GetUser().Name, types.EventActionType_CancelDeploy, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
-		c.cancelSignaler.Cancel(slugName)
+	if cs.Has(slugName) {
+		ns, _ := wc.nsRepo.Show(ctx, int(input.NamespaceId))
+		wc.eventRepo.AuditLogWithChange(types.EventActionType_CancelDeploy, c.GetUser().Name, fmt.Sprintf("用户取消部署 namespace: %s, 服务 %s.", ns.Name, input.Name), nil, nil)
+		cs.Cancel(slugName)
 	}
 }
 
-func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsCreateProject(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.CreateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 
 		return
 	}
-	upgradeOrInstall(c, &JobInput{
+	wc.upgradeOrInstall(ctx, c, &JobInput{
 		Type:         input.Type,
 		NamespaceId:  input.NamespaceId,
 		Name:         input.Name,
@@ -428,52 +466,59 @@ func HandleWsCreateProject(c *WsConn, t websocket_pb.Type, message []byte) {
 		Config:       input.Config,
 		Atomic:       input.Atomic,
 		ExtraValues:  input.ExtraValues,
+		User:         c.GetUser(),
+		PubSub:       c.pubSub,
 	})
 }
 
-func HandleWsUpdateProject(c *WsConn, t websocket_pb.Type, message []byte) {
+func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn, t websocket_pb.Type, message []byte) {
 	var input websocket_pb.UpdateProjectInput
 	if err := proto.Unmarshal(message, &input); err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
-	var p models.Project
-	if err := app.DB().Where("`id` = ?", input.ProjectId).First(&p).Error; err != nil {
+
+	p, err := wc.projRepo.Show(ctx, int(input.ProjectId))
+	if err != nil {
 		NewMessageSender(c, "", t).SendEndError(err)
 		return
 	}
 
-	upgradeOrInstall(c, &JobInput{
-		Type:         t,
-		NamespaceId:  int64(p.NamespaceId),
-		Name:         p.Name,
-		GitProjectId: int64(p.GitProjectId),
-		GitBranch:    input.GitBranch,
-		GitCommit:    input.GitCommit,
-		Config:       input.Config,
-		Atomic:       input.Atomic,
-		ExtraValues:  input.ExtraValues,
-		Version:      input.Version,
+	wc.upgradeOrInstall(ctx, c, &JobInput{
+		Type:           t,
+		NamespaceId:    int64(p.NamespaceID),
+		Name:           p.Name,
+		GitProjectId:   int64(p.GitProjectID),
+		GitBranch:      input.GitBranch,
+		GitCommit:      input.GitCommit,
+		Config:         input.Config,
+		Atomic:         input.Atomic,
+		ExtraValues:    input.ExtraValues,
+		Version:        input.Version,
+		TimeoutSeconds: 0,
+		User:           c.GetUser(),
+		PubSub:         c.pubSub,
 	})
 }
 
-func upgradeOrInstall(c *WsConn, input *JobInput) error {
+func (wc *WebsocketManager) upgradeOrInstall(ctx context.Context, c *WsConn, input *JobInput) error {
 	slug := utils.GetSlugName(input.NamespaceId, input.Name)
-	job := c.newJobFunc(input, c.GetUser(), slug, NewMessageSender(c, slug, input.Type), c.pubSub, 0)
+	job := wc.jobManager.NewJob(input)
+	var cs = c.cs
 
-	if job.IsNotDryRun() {
-		if err := c.cancelSignaler.Add(job.ID(), job.Stop); err != nil {
+	if input.IsNotDryRun() {
+		if err := cs.Add(job.ID(), job.Stop); err != nil {
 			NewMessageSender(c, slug, input.Type).SendDeployedResult(ResultDeployFailed, "正在清理中，请稍后再试。", nil)
 			return nil
 		}
 		job.OnFinally(1000, func(err error, base func()) {
-			c.cancelSignaler.Remove(job.ID())
+			cs.Remove(job.ID())
 			base()
 		})
 	}
-	return InstallProject(job)
+	return InstallProject(ctx, job)
 }
 
-func InstallProject(job contracts.Job) (err error) {
-	return job.GlobalLock().Validate().LoadConfigs().Run().Finish().Error()
+func InstallProject(ctx context.Context, job Job) (err error) {
+	return job.GlobalLock().Validate().LoadConfigs().Run(ctx).Finish().Error()
 }
