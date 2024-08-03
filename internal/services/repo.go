@@ -2,13 +2,17 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	reposerver "github.com/duc-cnzj/mars/api/v4/repo"
+	"github.com/duc-cnzj/mars/api/v4/types"
+	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/repo"
 	"github.com/duc-cnzj/mars/v4/internal/transformer"
 	"github.com/duc-cnzj/mars/v4/internal/util/pagination"
 	"github.com/duc-cnzj/mars/v4/internal/util/serialize"
+	yaml2 "github.com/duc-cnzj/mars/v4/internal/util/yaml"
 	"github.com/samber/lo"
 )
 
@@ -17,14 +21,15 @@ var _ reposerver.RepoServer = (*repoSvc)(nil)
 type repoSvc struct {
 	guest
 
-	gitRepo  repo.GitRepo
-	logger   mlog.Logger
-	repoRepo repo.Repo
+	gitRepo   repo.GitRepo
+	logger    mlog.Logger
+	repoRepo  repo.Repo
+	eventRepo repo.EventRepo
 	reposerver.UnimplementedRepoServer
 }
 
-func NewRepoSvc(logger mlog.Logger, gitRepo repo.GitRepo, repoRepo repo.Repo) reposerver.RepoServer {
-	return &repoSvc{logger: logger, repoRepo: repoRepo, gitRepo: gitRepo}
+func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRepo, repoRepo repo.Repo) reposerver.RepoServer {
+	return &repoSvc{logger: logger, repoRepo: repoRepo, gitRepo: gitRepo, eventRepo: eventRepo}
 }
 
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {
@@ -47,6 +52,11 @@ func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*r
 }
 
 func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*reposerver.CreateResponse, error) {
+	user := auth.MustGetUser(ctx)
+	if !user.IsAdmin() {
+		return nil, ErrorPermissionDenied
+	}
+
 	var defaultBranch *string
 
 	if req.GitProjectId != nil {
@@ -66,6 +76,14 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 	if err != nil {
 		return nil, err
 	}
+	out, _ := yaml2.PrettyMarshal(create)
+	r.eventRepo.AuditLogWithChange(
+		types.EventActionType_Create,
+		user.Name,
+		fmt.Sprintf("创建仓库: %d: %s", create.ID, create.Name),
+		nil, &repo.StringYamlPrettier{
+			Str: string(out),
+		})
 	return &reposerver.CreateResponse{
 		Item: transformer.FromRepo(create),
 	}, nil
@@ -82,10 +100,17 @@ func (r *repoSvc) Show(ctx context.Context, request *reposerver.ShowRequest) (*r
 }
 
 func (r *repoSvc) ToggleEnabled(ctx context.Context, request *reposerver.ToggleEnabledRequest) (*reposerver.ToggleEnabledResponse, error) {
+	user := auth.MustGetUser(ctx)
+	if !user.IsAdmin() {
+		return nil, ErrorPermissionDenied
+	}
+
 	toggle, err := r.repoRepo.ToggleEnabled(ctx, int(request.Id), request.Enabled)
 	if err != nil {
 		return nil, err
 	}
+	r.eventRepo.AuditLog(types.EventActionType_Update, user.Name, fmt.Sprintf("打开/关闭仓库 %s 的状态: %t", toggle.Name, request.Enabled))
+
 	return &reposerver.ToggleEnabledResponse{
 		Item: transformer.FromRepo(toggle),
 	}, nil
