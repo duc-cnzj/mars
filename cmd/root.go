@@ -24,8 +24,10 @@ var (
 func Execute(configFile []byte, logoStr string) {
 	configExampleFile = configFile
 	logo = logoStr
+	if !version.GetVersion().HasBuildInfo() {
+		rootCmd.AddCommand(testCmd)
+	}
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
 	rootCmd.AddCommand(inspect)
 
