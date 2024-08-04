@@ -21,9 +21,10 @@ import { useSelector } from "react-redux";
 import { modals } from "../store/reducers/openedModal";
 import { useSearchParams } from "react-router-dom";
 import { sortedUniq } from "lodash";
+import { components } from "../api/schema";
 
 const ItemDetailModal: React.FC<{
-  item: pb.types.ProjectModel;
+  item: components["schemas"]["types.ProjectModel"];
   namespace: string;
   namespaceId: number;
 }> = ({ item, namespace, namespaceId }) => {
@@ -45,7 +46,9 @@ const ItemDetailModal: React.FC<{
     setParams(!!pidStr ? { pid: pidStr } : {});
   }, [item.id, setParams, params]);
 
-  const [detail, setDetail] = useState<pb.project.ShowResponse | undefined>();
+  const [detail, setDetail] = useState<
+    components["schemas"]["project.ShowResponse"] | undefined
+  >();
   const [resizeAt, setResizeAt] = useState<number>(0);
 
   useEffect(() => {
@@ -154,8 +157,8 @@ const ItemDetailModal: React.FC<{
 };
 
 const MyTabs: React.FC<{
-  detail: pb.project.ShowResponse;
-  item: pb.types.ProjectModel;
+  detail: components["schemas"]["project.ShowResponse"];
+  item: components["schemas"]["types.NamespaceModel"];
   resizeAt: any;
   onSuccess: () => void;
   onDelete: () => void;

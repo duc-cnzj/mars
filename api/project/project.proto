@@ -13,19 +13,19 @@ option go_package = "github.com/duc-cnzj/mars/api/v4/project;project";
 
 
 message ListRequest {
-  int64 page      = 1;
-  int64 page_size = 2;
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
 }
 message ListResponse {
-  int64                       page      = 1;
-  int64                       page_size = 2;
-  int64                       count     = 3;
+  int32                       page      = 1;
+  int32                       page_size = 2;
+  int32                       count     = 3;
   repeated types.ProjectModel items     = 4;
 }
 
 
 message ShowRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message ShowResponse {
   types.ProjectModel             project  = 1;
@@ -38,19 +38,19 @@ message ShowResponse {
 
 
 message DeleteRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message DeleteResponse {}
 
 message VersionRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message VersionResponse {
-  int64 version = 1;
+  int32 version = 1;
 }
 
 message AllContainersRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message AllContainersResponse {
   repeated types.StateContainer items = 1;
@@ -65,10 +65,10 @@ message DryRunApplyResponse {
 }
 // ApplyRequest same as ProjectInput
 message ApplyRequest {
-  int64                     namespace_id            = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32                     namespace_id            = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   // name 不传就使用 git 默认的 name
   string                    name                    = 2;
-  int64                     git_project_id          = 3 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32                     git_project_id          = 3 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   string                    git_branch              = 4 [(validate.rules).string.min_bytes = 1, (google.api.field_behavior) = REQUIRED];
   //  git_commit 不传就用最新的 commit
   string                    git_commit              = 5;
@@ -77,18 +77,18 @@ message ApplyRequest {
   bool                      websocket_sync          = 8;
   repeated types.ExtraValue extra_values            = 9;
   // 部署超时时间
-  int64                     install_timeout_seconds = 10 [(validate.rules).int64.gte = 0, (google.api.field_behavior) = REQUIRED];
+  int32                     install_timeout_seconds = 10 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
   // 发送百分比
   bool                      send_percent            = 11;
   // 版本号, dryRun 时可以不传
-  optional int64            version                 = 12 [(validate.rules).int64.gte = 0, (google.api.field_behavior) = REQUIRED];
+  optional int32            version                 = 12 [(validate.rules).int32.gte = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message HostVariablesRequest {
   // 如果不指定则使用从 git server 获取的项目名称
   string project_name   = 1;
   string namespace      = 2 [(validate.rules).string.min_bytes = 1];
-  int64  git_project_id = 3 [(validate.rules).int64.gt = 0];
+  int32  git_project_id = 3 [(validate.rules).int32.gt = 0];
   string git_branch     = 4 [(validate.rules).string.min_bytes = 1];
 }
 message HostVariablesResponse {

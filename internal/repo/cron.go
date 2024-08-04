@@ -32,15 +32,15 @@ var _ CronRepo = (*cronRepo)(nil)
 type cronRepo struct {
 	logger      mlog.Logger
 	event       EventRepo
-	db          *ent.Client
+	data        data.Data
 	up          uploader.Uploader
 	helm        HelmerRepo
 	gitRepo     GitRepo
 	cronManager cron.Manager
 }
 
-func NewCronRepo(logger mlog.Logger, event EventRepo, data *data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
-	cr := &cronRepo{logger: logger, event: event, db: data.DB, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
+func NewCronRepo(logger mlog.Logger, event EventRepo, data data.Data, up uploader.Uploader, helm HelmerRepo, gitRepo GitRepo, cronManager cron.Manager) CronRepo {
+	cr := &cronRepo{logger: logger, event: event, data: data, up: up, helm: helm, gitRepo: gitRepo, cronManager: cronManager}
 
 	cronManager.NewCommand("clean_upload_files", cr.CleanUploadFiles).DailyAt("2:00")
 	cronManager.NewCommand("disk_info", func() error {
@@ -49,7 +49,7 @@ func NewCronRepo(logger mlog.Logger, event EventRepo, data *data.Data, up upload
 	}).EveryFifteenMinutes()
 	cronManager.NewCommand("fix_project_deploy_status", cr.FixDeployStatus).EveryTwoMinutes()
 
-	if data.Cfg.GitServerCached {
+	if data.Config().GitServerCached {
 		cronManager.NewCommand("all_git_project_cache", cr.CacheAllGitProjects).EveryFiveMinutes()
 		cronManager.NewCommand("all_branch_cache", cr.CacheAllBranches).EveryTwoMinutes()
 	}
@@ -104,7 +104,7 @@ func (repo *cronRepo) CacheAllGitProjects() error {
 
 // FixDeployStatus 当 project helm 状态为异常的时候，自动去查询状态并且修复它(当人工手动把 helm 恢复时)
 func (repo *cronRepo) FixDeployStatus() error {
-	var db = repo.db
+	var db = repo.data.DB()
 	projects := db.Project.Query().WithNamespace(func(query *ent.NamespaceQuery) {
 		query.Select(namespace.FieldID, namespace.FieldName)
 	}).Where(project.DeployStatusIn(types.Deploy_StatusFailed, types.Deploy_StatusUnknown)).AllX(context.TODO())
@@ -134,7 +134,7 @@ func (repo *cronRepo) CleanUploadFiles() error {
 	var (
 		filesMap = make(map[string]struct{})
 
-		db            = repo.db
+		db            = repo.data.DB()
 		clearList     = make(listFiles, 0)
 		upldr         = repo.up
 		localUploader = repo.up.LocalUploader()

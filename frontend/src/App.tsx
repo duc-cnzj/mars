@@ -7,6 +7,7 @@ import { Button, Result } from "antd";
 
 const GitProjectManager = lazy(() => import("./components/GitProjectManager"));
 const Events = lazy(() => import("./components/Events"));
+const RepoPage = lazy(() => import("./pages/Repo"));
 const AccessTokenManager = lazy(
   () => import("./components/AccessTokenManager")
 );
@@ -23,6 +24,14 @@ const App: FC = () => {
           element={
             <Suspense fallback={null}>
               <GitProjectManager />
+            </Suspense>
+          }
+        />
+        <Route
+          path="repos"
+          element={
+            <Suspense fallback={null}>
+              <RepoPage />
             </Suspense>
           }
         />

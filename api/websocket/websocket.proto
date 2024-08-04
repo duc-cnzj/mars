@@ -74,8 +74,8 @@ message ProjectPodEventJoinInput {
   Type type = 1;
 
   bool join = 2;
-  int64 project_id = 3;
-  int64 namespace_id = 4;
+  int32 project_id = 3;
+  int32 namespace_id = 4;
 }
 
 message TerminalMessageInput {
@@ -95,7 +95,7 @@ message WsHandleExecShellInput {
 message CancelInput {
   Type type = 1;
 
-  int64 namespace_id = 2;
+  int32 namespace_id = 2;
   string name = 3;
 }
 
@@ -103,9 +103,9 @@ message CancelInput {
 message CreateProjectInput {
   Type type = 1;
 
-  int64 namespace_id = 2;
+  int32 namespace_id = 2;
   string name = 3;
-  int64 git_project_id = 4;
+  int32 git_project_id = 4;
   string git_branch = 5;
   string git_commit = 6;
   string config = 7;
@@ -116,13 +116,13 @@ message CreateProjectInput {
 message UpdateProjectInput {
   Type type = 1;
 
-  int64 project_id = 2;
+  int32 project_id = 2;
   string git_branch = 3;
   string git_commit = 4;
   string config = 5;
   bool atomic = 6;
   repeated types.ExtraValue extra_values = 7;
-  int64 version = 8;
+  int32 version = 8;
 }
 
 // Response
@@ -135,7 +135,7 @@ message Metadata {
   ResultType result = 6;
   To to = 7;
   string message = 8;
-  int64 percent = 9;
+  int32 percent = 9;
 }
 
 message WsMetadataResponse {
@@ -165,11 +165,11 @@ message WsWithContainerMessageResponse {
 message WsProjectPodEventResponse {
   Metadata metadata = 1;
 
-  int64 project_id = 2;
+  int32 project_id = 2;
 }
 
 message WsReloadProjectsResponse {
   Metadata metadata = 1;
 
-  int64 namespace_id = 2;
+  int32 namespace_id = 2;
 }

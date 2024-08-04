@@ -15,14 +15,14 @@ func FromEvent(e *ent.Event) *types.EventModel {
 		fID = int64(*e.FileID)
 	}
 	return &types.EventModel{
-		Id:        int64(e.ID),
+		Id:        int32(e.ID),
 		Action:    e.Action,
 		Username:  e.Username,
 		Message:   e.Message,
 		Old:       e.Old,
 		New:       e.New,
 		Duration:  e.Duration,
-		FileId:    fID,
+		FileId:    int32(fID),
 		File:      FromFile(e.Edges.File),
 		HasDiff:   e.Old != e.New,
 		EventAt:   date.ToHumanizeDatetimeString(&e.CreatedAt),

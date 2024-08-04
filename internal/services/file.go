@@ -34,10 +34,10 @@ func NewFileSvc(eventRepo repo.EventRepo, fileRepo repo.FileRepo, logger mlog.Lo
 }
 
 func (m *fileSvc) List(ctx context.Context, request *file.ListRequest) (*file.ListResponse, error) {
-	pagination.InitByDefault(&request.Page, &request.PageSize)
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	files, pag, err := m.fileRepo.List(ctx, &repo.ListFileInput{
-		Page:           request.Page,
-		PageSize:       request.PageSize,
+		Page:           page,
+		PageSize:       size,
 		OrderIDDesc:    lo.ToPtr(true),
 		WithSoftDelete: request.WithoutDeleted,
 	})
@@ -131,7 +131,7 @@ func (m *fileSvc) MaxUploadSize(ctx context.Context, request *file.MaxUploadSize
 	size := m.fileRepo.MaxUploadSize()
 	return &file.MaxUploadSizeResponse{
 		HumanizeSize: humanize.Bytes(size),
-		Bytes:        size,
+		Bytes:        uint32(size),
 	}, nil
 }
 

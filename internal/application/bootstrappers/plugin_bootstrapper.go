@@ -11,5 +11,14 @@ func (d *PluginBootstrapper) Tags() []string {
 }
 
 func (d *PluginBootstrapper) Bootstrap(app application.App) error {
-	return app.PluginMgr().Load(app)
+	if err := app.PluginMgr().Load(app); err != nil {
+		return err
+	}
+	app.RegisterAfterShutdownFunc(func(app application.App) {
+		app.PluginMgr().Ws().Destroy()
+		app.PluginMgr().Domain().Destroy()
+		app.PluginMgr().Git().Destroy()
+		app.PluginMgr().Picture().Destroy()
+	})
+	return nil
 }

@@ -25,11 +25,11 @@ var _ GitProjectRepo = (*gitProjectRepo)(nil)
 
 type gitProjectRepo struct {
 	logger mlog.Logger
-	db     *ent.Client
+	data   data.Data
 }
 
-func NewGitProjectRepo(logger mlog.Logger, data *data.Data) GitProjectRepo {
-	return &gitProjectRepo{logger: logger, db: data.DB}
+func NewGitProjectRepo(logger mlog.Logger, data data.Data) GitProjectRepo {
+	return &gitProjectRepo{logger: logger, data: data}
 }
 
 type AllGitProjectInput struct {
@@ -37,7 +37,8 @@ type AllGitProjectInput struct {
 }
 
 func (g *gitProjectRepo) All(ctx context.Context, input *AllGitProjectInput) ([]*ent.GitProject, error) {
-	return g.db.GitProject.Query().Where(filters.IfBool("id")(input.Enabled)).All(ctx)
+	var db = g.data.DB()
+	return db.GitProject.Query().Where(filters.IfBool("id")(input.Enabled)).All(ctx)
 }
 
 type UpsertGitProjectInput struct {
@@ -48,7 +49,8 @@ type UpsertGitProjectInput struct {
 }
 
 func (g *gitProjectRepo) Upsert(ctx context.Context, input *UpsertGitProjectInput) error {
-	return g.db.GitProject.Create().SetName(input.Name).
+	var db = g.data.DB()
+	return db.GitProject.Create().SetName(input.Name).
 		SetGitProjectID(input.GitProjectId).
 		SetDefaultBranch(input.DefaultBranch).
 		SetEnabled(input.Enabled).
@@ -58,15 +60,18 @@ func (g *gitProjectRepo) Upsert(ctx context.Context, input *UpsertGitProjectInpu
 }
 
 func (g *gitProjectRepo) GetByProjectID(ctx context.Context, projID int) (project *ent.GitProject, err error) {
-	return g.db.GitProject.Query().Where(gitproject.GitProjectID(projID)).Only(ctx)
+	var db = g.data.DB()
+	return db.GitProject.Query().Where(gitproject.GitProjectID(projID)).Only(ctx)
 }
 
 func (g *gitProjectRepo) GetByID(ctx context.Context, id int) (project *ent.GitProject, err error) {
-	return g.db.GitProject.Query().Where(gitproject.ID(id)).Only(ctx)
+	var db = g.data.DB()
+	return db.GitProject.Query().Where(gitproject.ID(id)).Only(ctx)
 }
 
 func (g *gitProjectRepo) UpdateGlobalConfig(ctx context.Context, projID int, cfg *mars.Config) (*ent.GitProject, error) {
-	first, err := g.db.GitProject.Query().Where(gitproject.GitProjectID(projID)).First(ctx)
+	var db = g.data.DB()
+	first, err := db.GitProject.Query().Where(gitproject.GitProjectID(projID)).First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +79,8 @@ func (g *gitProjectRepo) UpdateGlobalConfig(ctx context.Context, projID int, cfg
 }
 
 func (g *gitProjectRepo) ToggleEnabled(ctx context.Context, projID int) (*ent.GitProject, error) {
-	only, err := g.db.GitProject.Query().Where(gitproject.GitProjectID(projID)).Only(ctx)
+	var db = g.data.DB()
+	only, err := db.GitProject.Query().Where(gitproject.GitProjectID(projID)).Only(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +88,8 @@ func (g *gitProjectRepo) ToggleEnabled(ctx context.Context, projID int) (*ent.Gi
 }
 
 func (g *gitProjectRepo) DisabledByProjectID(ctx context.Context, projID int) (*ent.GitProject, error) {
-	first, err := g.db.GitProject.Query().Where(gitproject.GitProjectID(projID)).First(ctx)
+	var db = g.data.DB()
+	first, err := db.GitProject.Query().Where(gitproject.GitProjectID(projID)).First(ctx)
 	if err != nil {
 		return nil, err
 	}

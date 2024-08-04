@@ -25,22 +25,20 @@ var _ NamespaceRepo = (*namespaceRepo)(nil)
 
 type namespaceRepo struct {
 	logger   mlog.Logger
-	db       *ent.Client
-	data     *data.Data
+	data     data.Data
 	NsPrefix string
 }
 
-func NewNamespaceRepo(logger mlog.Logger, data *data.Data) NamespaceRepo {
+func NewNamespaceRepo(logger mlog.Logger, data data.Data) NamespaceRepo {
 	return &namespaceRepo{
 		logger:   logger,
 		data:     data,
-		db:       data.DB,
-		NsPrefix: data.Cfg.NsPrefix,
+		NsPrefix: data.Config().NsPrefix,
 	}
 }
 
 func (repo *namespaceRepo) All(ctx context.Context) ([]*ent.Namespace, error) {
-	return repo.db.Namespace.Query().
+	return repo.data.DB().Namespace.Query().
 		WithProjects(
 			func(query *ent.ProjectQuery) {
 				query.Select(
@@ -63,13 +61,13 @@ type CreateNamespaceInput struct {
 }
 
 func (repo *namespaceRepo) Create(ctx context.Context, input *CreateNamespaceInput) (*ent.Namespace, error) {
-	return repo.db.Namespace.Create().
+	return repo.data.DB().Namespace.Create().
 		SetName(mars.GetMarsNamespace(input.Name, repo.NsPrefix)).
 		Save(ctx)
 }
 
 func (repo *namespaceRepo) Show(ctx context.Context, id int) (*ent.Namespace, error) {
-	return repo.db.Namespace.Query().
+	return repo.data.DB().Namespace.Query().
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
 				project.FieldID,
@@ -87,11 +85,11 @@ func (repo *namespaceRepo) GetMarsNamespace(name string) string {
 }
 
 func (repo *namespaceRepo) FindByName(ctx context.Context, name string) (*ent.Namespace, error) {
-	return repo.db.Namespace.Query().Where(namespace.Name(mars.GetMarsNamespace(name, repo.NsPrefix))).First(ctx)
+	return repo.data.DB().Namespace.Query().Where(namespace.Name(mars.GetMarsNamespace(name, repo.NsPrefix))).First(ctx)
 }
 
 func (repo *namespaceRepo) Delete(ctx context.Context, id int) error {
-	first, err := repo.db.Namespace.Query().WithProjects().Where(namespace.ID(id)).First(ctx)
+	first, err := repo.data.DB().Namespace.Query().WithProjects().Where(namespace.ID(id)).First(ctx)
 	if err != nil {
 		return err
 	}

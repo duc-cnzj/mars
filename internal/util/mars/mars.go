@@ -185,7 +185,7 @@ func intPid(pid string) bool {
 	return false
 }
 
-func GetProjectName[T ~int | ~int64 | ~string](projectID T, marsC *mars.Config) string {
+func GetProjectName[T ~int | ~int32 | ~int64 | ~string](projectID T, marsC *mars.Config) string {
 	return ""
 	//if marsC.DisplayName != "" {
 	//	return marsC.DisplayName

@@ -25,10 +25,14 @@ func (Repo) Fields() []ent.Field {
 			MaxLen(255).
 			Nillable().
 			Optional(),
-		field.Int64("git_project_id").
+		field.String("git_project_name").
 			Optional().
 			Nillable().
-			Comment("关联的 git 项目"),
+			Comment("关联的 git 项目 name"),
+		field.Int32("git_project_id").
+			Optional().
+			Nillable().
+			Comment("关联的 git 项目 id"),
 		field.Bool("enabled").
 			Default(false),
 		field.JSON("mars_config", &mars.Config{}).

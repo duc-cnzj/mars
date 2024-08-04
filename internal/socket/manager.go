@@ -82,7 +82,7 @@ var (
 func reloadProjectsMessage[T int64 | int](nsID T) *websocket_pb.WsReloadProjectsResponse {
 	return &websocket_pb.WsReloadProjectsResponse{
 		Metadata:    &websocket_pb.Metadata{Type: WsReloadProjects},
-		NamespaceId: int64(nsID),
+		NamespaceId: int32(nsID),
 	}
 }
 

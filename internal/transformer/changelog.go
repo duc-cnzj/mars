@@ -13,8 +13,8 @@ func FromChangeLog(c *ent.Changelog) *types.ChangelogModel {
 		return nil
 	}
 	return &types.ChangelogModel{
-		Id:               int64(c.ID),
-		Version:          int64(c.Version),
+		Id:               int32(c.ID),
+		Version:          int32(c.Version),
 		Username:         c.Username,
 		Manifest:         c.Manifest,
 		Config:           c.Config,

@@ -3711,6 +3711,12 @@
     "typesRepoModel": {
       "type": "object",
       "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string"
+        },
         "enabled": {
           "type": "boolean"
         },
@@ -3718,12 +3724,21 @@
           "type": "string",
           "format": "int64"
         },
+        "git_project_name": {
+          "type": "string"
+        },
         "id": {
           "type": "string",
           "format": "int64"
         },
         "mars_config": {
           "$ref": "#/definitions/marsConfig"
+        },
+        "name": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
         }
       }
     },

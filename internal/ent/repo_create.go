@@ -85,14 +85,28 @@ func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
 	return rc
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (rc *RepoCreate) SetGitProjectName(s string) *RepoCreate {
+	rc.mutation.SetGitProjectName(s)
+	return rc
+}
+
+// SetNillableGitProjectName sets the "git_project_name" field if the given value is not nil.
+func (rc *RepoCreate) SetNillableGitProjectName(s *string) *RepoCreate {
+	if s != nil {
+		rc.SetGitProjectName(*s)
+	}
+	return rc
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (rc *RepoCreate) SetGitProjectID(i int64) *RepoCreate {
+func (rc *RepoCreate) SetGitProjectID(i int32) *RepoCreate {
 	rc.mutation.SetGitProjectID(i)
 	return rc
 }
 
 // SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (rc *RepoCreate) SetNillableGitProjectID(i *int64) *RepoCreate {
+func (rc *RepoCreate) SetNillableGitProjectID(i *int32) *RepoCreate {
 	if i != nil {
 		rc.SetGitProjectID(*i)
 	}
@@ -253,8 +267,12 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		_spec.SetField(repo.FieldDefaultBranch, field.TypeString, value)
 		_node.DefaultBranch = &value
 	}
+	if value, ok := rc.mutation.GitProjectName(); ok {
+		_spec.SetField(repo.FieldGitProjectName, field.TypeString, value)
+		_node.GitProjectName = &value
+	}
 	if value, ok := rc.mutation.GitProjectID(); ok {
-		_spec.SetField(repo.FieldGitProjectID, field.TypeInt64, value)
+		_spec.SetField(repo.FieldGitProjectID, field.TypeInt32, value)
 		_node.GitProjectID = &value
 	}
 	if value, ok := rc.mutation.Enabled(); ok {
@@ -377,8 +395,26 @@ func (u *RepoUpsert) ClearDefaultBranch() *RepoUpsert {
 	return u
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (u *RepoUpsert) SetGitProjectName(v string) *RepoUpsert {
+	u.Set(repo.FieldGitProjectName, v)
+	return u
+}
+
+// UpdateGitProjectName sets the "git_project_name" field to the value that was provided on create.
+func (u *RepoUpsert) UpdateGitProjectName() *RepoUpsert {
+	u.SetExcluded(repo.FieldGitProjectName)
+	return u
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (u *RepoUpsert) ClearGitProjectName() *RepoUpsert {
+	u.SetNull(repo.FieldGitProjectName)
+	return u
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (u *RepoUpsert) SetGitProjectID(v int64) *RepoUpsert {
+func (u *RepoUpsert) SetGitProjectID(v int32) *RepoUpsert {
 	u.Set(repo.FieldGitProjectID, v)
 	return u
 }
@@ -390,7 +426,7 @@ func (u *RepoUpsert) UpdateGitProjectID() *RepoUpsert {
 }
 
 // AddGitProjectID adds v to the "git_project_id" field.
-func (u *RepoUpsert) AddGitProjectID(v int64) *RepoUpsert {
+func (u *RepoUpsert) AddGitProjectID(v int32) *RepoUpsert {
 	u.Add(repo.FieldGitProjectID, v)
 	return u
 }
@@ -546,15 +582,36 @@ func (u *RepoUpsertOne) ClearDefaultBranch() *RepoUpsertOne {
 	})
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (u *RepoUpsertOne) SetGitProjectName(v string) *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetGitProjectName(v)
+	})
+}
+
+// UpdateGitProjectName sets the "git_project_name" field to the value that was provided on create.
+func (u *RepoUpsertOne) UpdateGitProjectName() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateGitProjectName()
+	})
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (u *RepoUpsertOne) ClearGitProjectName() *RepoUpsertOne {
+	return u.Update(func(s *RepoUpsert) {
+		s.ClearGitProjectName()
+	})
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (u *RepoUpsertOne) SetGitProjectID(v int64) *RepoUpsertOne {
+func (u *RepoUpsertOne) SetGitProjectID(v int32) *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.SetGitProjectID(v)
 	})
 }
 
 // AddGitProjectID adds v to the "git_project_id" field.
-func (u *RepoUpsertOne) AddGitProjectID(v int64) *RepoUpsertOne {
+func (u *RepoUpsertOne) AddGitProjectID(v int32) *RepoUpsertOne {
 	return u.Update(func(s *RepoUpsert) {
 		s.AddGitProjectID(v)
 	})
@@ -890,15 +947,36 @@ func (u *RepoUpsertBulk) ClearDefaultBranch() *RepoUpsertBulk {
 	})
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (u *RepoUpsertBulk) SetGitProjectName(v string) *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.SetGitProjectName(v)
+	})
+}
+
+// UpdateGitProjectName sets the "git_project_name" field to the value that was provided on create.
+func (u *RepoUpsertBulk) UpdateGitProjectName() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.UpdateGitProjectName()
+	})
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (u *RepoUpsertBulk) ClearGitProjectName() *RepoUpsertBulk {
+	return u.Update(func(s *RepoUpsert) {
+		s.ClearGitProjectName()
+	})
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (u *RepoUpsertBulk) SetGitProjectID(v int64) *RepoUpsertBulk {
+func (u *RepoUpsertBulk) SetGitProjectID(v int32) *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.SetGitProjectID(v)
 	})
 }
 
 // AddGitProjectID adds v to the "git_project_id" field.
-func (u *RepoUpsertBulk) AddGitProjectID(v int64) *RepoUpsertBulk {
+func (u *RepoUpsertBulk) AddGitProjectID(v int32) *RepoUpsertBulk {
 	return u.Update(func(s *RepoUpsert) {
 		s.AddGitProjectID(v)
 	})

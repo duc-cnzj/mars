@@ -12,9 +12,9 @@ func FromFile(f *ent.File) *types.FileModel {
 		return nil
 	}
 	return &types.FileModel{
-		Id:             int64(f.ID),
+		Id:             int32(f.ID),
 		Path:           f.Path,
-		Size:           int64(f.Size),
+		Size:           int32(f.Size),
 		Username:       f.Username,
 		Namespace:      f.Namespace,
 		Pod:            f.Pod,

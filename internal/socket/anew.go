@@ -168,17 +168,17 @@ func (m *CustomErrorContext) Value(key any) any {
 
 type JobInput struct {
 	Type         websocket_pb.Type
-	NamespaceId  int64
+	NamespaceId  int32
 	Name         string
-	GitProjectId int64
+	GitProjectId int32
 	GitBranch    string
 	GitCommit    string
 	Config       string
 	Atomic       bool
 	ExtraValues  []*types.ExtraValue
-	Version      *int64
+	Version      *int32
 
-	TimeoutSeconds int64
+	TimeoutSeconds int32
 	User           *auth.UserInfo
 	DryRun         bool
 
@@ -226,7 +226,7 @@ func (j *jobRunner) Validate() Job {
 		return j.SetError(errors.New("type error: " + j.input.Type.String()))
 	}
 
-	j.Messager().SendMsg("[Start]: 收到请求，开始创建项目")
+	j.Messager().SendMsg("[start]: 收到请求，开始创建项目")
 	j.Percenter().To(5)
 
 	j.Messager().SendMsg("[Check]: 校验名称空间...")

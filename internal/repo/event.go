@@ -47,22 +47,21 @@ var _ EventRepo = (*eventRepo)(nil)
 
 type eventRepo struct {
 	logger         mlog.Logger
-	db             *ent.Client
 	eventer        event.Dispatcher
 	pl             application.PluginManger
-	k8sCli         *data.K8sClient
 	clRepo         ChangelogRepo
+	data           data.Data
 	gitprojectRepo GitProjectRepo
 }
 
-func NewEventRepo(gitprojectRepo GitProjectRepo, clRepo ChangelogRepo, logger mlog.Logger, data *data.Data, eventer event.Dispatcher) EventRepo {
-	repo := &eventRepo{gitprojectRepo: gitprojectRepo, clRepo: clRepo, logger: logger, db: data.DB, eventer: eventer, k8sCli: data.K8sClient}
-	eventer.Listen(AuditLogEvent, repo.HandleAuditLog)
-	eventer.Listen(EventNamespaceCreated, repo.HandleInjectTlsSecret)
-	eventer.Listen(EventNamespaceDeleted, repo.HandleNamespaceDeleted)
-	eventer.Listen(EventProjectChanged, repo.HandleProjectChanged)
-	eventer.Listen(EventProjectDeleted, repo.HandleProjectDeleted)
-	return repo
+func NewEventRepo(gitprojectRepo GitProjectRepo, clRepo ChangelogRepo, logger mlog.Logger, data data.Data, eventer event.Dispatcher) EventRepo {
+	r := &eventRepo{gitprojectRepo: gitprojectRepo, clRepo: clRepo, logger: logger, eventer: eventer, data: data}
+	eventer.Listen(AuditLogEvent, r.HandleAuditLog)
+	eventer.Listen(EventNamespaceCreated, r.HandleInjectTlsSecret)
+	eventer.Listen(EventNamespaceDeleted, r.HandleNamespaceDeleted)
+	eventer.Listen(EventProjectChanged, r.HandleProjectChanged)
+	eventer.Listen(EventProjectDeleted, r.HandleProjectDeleted)
+	return r
 }
 
 func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
@@ -72,7 +71,7 @@ func (repo *eventRepo) HandleAuditLog(data any, e event.Event) error {
 		ffid := logData.GetFileID()
 		fid = &ffid
 	}
-	var db = repo.db
+	var db = repo.data.DB()
 	db.Event.Create().SetAction(logData.GetAction()).
 		SetUsername(logData.GetUsername()).
 		SetMessage(logData.GetMsg()).
@@ -89,14 +88,15 @@ func (repo *eventRepo) Dispatch(created event.Event, createdData any) {
 }
 
 type ListEventInput struct {
-	Page, PageSize int64
+	Page, PageSize int32
 	ActionType     *types.EventActionType
 	Search         string
 	OrderIDDesc    *bool
 }
 
 func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events []*ent.Event, pag *pagination.Pagination, err error) {
-	query := repo.db.Event.Query().Where(
+	var db = repo.data.DB()
+	query := db.Event.Query().Where(
 		filters.IfIntPtrEQ[types.EventActionType](entevent.FieldAction)(input.ActionType),
 		filters.IfOrderByDesc("id")(input.OrderIDDesc),
 		filters.If(func(t string) bool {
@@ -109,18 +109,16 @@ func (repo *eventRepo) List(ctx context.Context, input *ListEventInput) (events 
 		})(input.Search),
 	)
 	items := query.Clone().
-		Offset(pagination.GetPageOffset(int(input.Page), int(input.PageSize))).
+		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).
 		AllX(ctx)
 
-	return items, &pagination.Pagination{
-		Page:     input.Page,
-		PageSize: input.PageSize,
-	}, nil
+	return items, pagination.NewPagination(input.Page, input.PageSize, 0), nil
 }
 
 func (repo *eventRepo) Show(ctx context.Context, id int) (*ent.Event, error) {
-	return repo.db.Event.Query().WithFile().Where(entevent.ID(id)).First(ctx)
+	var db = repo.data.DB()
+	return db.Event.Query().WithFile().Where(entevent.ID(id)).First(ctx)
 }
 
 func (repo *eventRepo) AuditLog(action types.EventActionType, username string, msg string) {
@@ -147,11 +145,12 @@ type NamespaceCreatedData struct {
 }
 
 func (repo *eventRepo) HandleInjectTlsSecret(data any, e event.Event) error {
+	var k8sCli = repo.data.K8sClient()
 	if createdData, ok := data.(NamespaceCreatedData); ok {
 		name, key, crt := repo.pl.Domain().GetCerts()
 		if name != "" && key != "" && crt != "" {
 			ns := createdData.NsK8sObj.Name
-			err := domainmanager.AddTlsSecret(repo.k8sCli, ns, name, key, crt)
+			err := domainmanager.AddTlsSecret(k8sCli, ns, name, key, crt)
 			if err != nil {
 				repo.logger.Error(err)
 			}
@@ -173,7 +172,7 @@ func (repo *eventRepo) HandleNamespaceDeleted(data any, e event.Event) error {
 	defer sub.Close()
 	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
 		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-		NamespaceId: int64(data.(NamespaceDeletedData).NsModel.ID),
+		NamespaceId: int32(data.(NamespaceDeletedData).NsModel.ID),
 	})
 	logger.Debug("event handled: ", e.String())
 	return nil
@@ -231,9 +230,9 @@ func (repo *eventRepo) HandleProjectDeleted(data any, e event.Event) error {
 	project := data.(*ent.Project)
 	sub := ws.New("", "")
 	defer sub.Close()
-	ws.New("", "").ToAll(&websocket_pb.WsReloadProjectsResponse{
+	sub.ToAll(&websocket_pb.WsReloadProjectsResponse{
 		Metadata:    &websocket_pb.Metadata{Type: websocket_pb.Type_ReloadProjects},
-		NamespaceId: int64(project.NamespaceID),
+		NamespaceId: int32(project.NamespaceID),
 	})
 	logger.Debug("event handled: ", e.String(), data)
 	return nil

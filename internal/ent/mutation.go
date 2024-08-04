@@ -9268,8 +9268,9 @@ type RepoMutation struct {
 	deleted_at        *time.Time
 	name              *string
 	default_branch    *string
-	git_project_id    *int64
-	addgit_project_id *int64
+	git_project_name  *string
+	git_project_id    *int32
+	addgit_project_id *int32
 	enabled           *bool
 	mars_config       **mars.Config
 	clearedFields     map[string]struct{}
@@ -9582,14 +9583,63 @@ func (m *RepoMutation) ResetDefaultBranch() {
 	delete(m.clearedFields, repo.FieldDefaultBranch)
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (m *RepoMutation) SetGitProjectName(s string) {
+	m.git_project_name = &s
+}
+
+// GitProjectName returns the value of the "git_project_name" field in the mutation.
+func (m *RepoMutation) GitProjectName() (r string, exists bool) {
+	v := m.git_project_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGitProjectName returns the old "git_project_name" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldGitProjectName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGitProjectName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGitProjectName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGitProjectName: %w", err)
+	}
+	return oldValue.GitProjectName, nil
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (m *RepoMutation) ClearGitProjectName() {
+	m.git_project_name = nil
+	m.clearedFields[repo.FieldGitProjectName] = struct{}{}
+}
+
+// GitProjectNameCleared returns if the "git_project_name" field was cleared in this mutation.
+func (m *RepoMutation) GitProjectNameCleared() bool {
+	_, ok := m.clearedFields[repo.FieldGitProjectName]
+	return ok
+}
+
+// ResetGitProjectName resets all changes to the "git_project_name" field.
+func (m *RepoMutation) ResetGitProjectName() {
+	m.git_project_name = nil
+	delete(m.clearedFields, repo.FieldGitProjectName)
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (m *RepoMutation) SetGitProjectID(i int64) {
+func (m *RepoMutation) SetGitProjectID(i int32) {
 	m.git_project_id = &i
 	m.addgit_project_id = nil
 }
 
 // GitProjectID returns the value of the "git_project_id" field in the mutation.
-func (m *RepoMutation) GitProjectID() (r int64, exists bool) {
+func (m *RepoMutation) GitProjectID() (r int32, exists bool) {
 	v := m.git_project_id
 	if v == nil {
 		return
@@ -9600,7 +9650,7 @@ func (m *RepoMutation) GitProjectID() (r int64, exists bool) {
 // OldGitProjectID returns the old "git_project_id" field's value of the Repo entity.
 // If the Repo object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v *int64, err error) {
+func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v *int32, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGitProjectID is only allowed on UpdateOne operations")
 	}
@@ -9615,7 +9665,7 @@ func (m *RepoMutation) OldGitProjectID(ctx context.Context) (v *int64, err error
 }
 
 // AddGitProjectID adds i to the "git_project_id" field.
-func (m *RepoMutation) AddGitProjectID(i int64) {
+func (m *RepoMutation) AddGitProjectID(i int32) {
 	if m.addgit_project_id != nil {
 		*m.addgit_project_id += i
 	} else {
@@ -9624,7 +9674,7 @@ func (m *RepoMutation) AddGitProjectID(i int64) {
 }
 
 // AddedGitProjectID returns the value that was added to the "git_project_id" field in this mutation.
-func (m *RepoMutation) AddedGitProjectID() (r int64, exists bool) {
+func (m *RepoMutation) AddedGitProjectID() (r int32, exists bool) {
 	v := m.addgit_project_id
 	if v == nil {
 		return
@@ -9771,7 +9821,7 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, repo.FieldCreatedAt)
 	}
@@ -9786,6 +9836,9 @@ func (m *RepoMutation) Fields() []string {
 	}
 	if m.default_branch != nil {
 		fields = append(fields, repo.FieldDefaultBranch)
+	}
+	if m.git_project_name != nil {
+		fields = append(fields, repo.FieldGitProjectName)
 	}
 	if m.git_project_id != nil {
 		fields = append(fields, repo.FieldGitProjectID)
@@ -9814,6 +9867,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case repo.FieldDefaultBranch:
 		return m.DefaultBranch()
+	case repo.FieldGitProjectName:
+		return m.GitProjectName()
 	case repo.FieldGitProjectID:
 		return m.GitProjectID()
 	case repo.FieldEnabled:
@@ -9839,6 +9894,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case repo.FieldDefaultBranch:
 		return m.OldDefaultBranch(ctx)
+	case repo.FieldGitProjectName:
+		return m.OldGitProjectName(ctx)
 	case repo.FieldGitProjectID:
 		return m.OldGitProjectID(ctx)
 	case repo.FieldEnabled:
@@ -9889,8 +9946,15 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDefaultBranch(v)
 		return nil
+	case repo.FieldGitProjectName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGitProjectName(v)
+		return nil
 	case repo.FieldGitProjectID:
-		v, ok := value.(int64)
+		v, ok := value.(int32)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -9941,7 +10005,7 @@ func (m *RepoMutation) AddedField(name string) (ent.Value, bool) {
 func (m *RepoMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	case repo.FieldGitProjectID:
-		v, ok := value.(int64)
+		v, ok := value.(int32)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -9960,6 +10024,9 @@ func (m *RepoMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(repo.FieldDefaultBranch) {
 		fields = append(fields, repo.FieldDefaultBranch)
+	}
+	if m.FieldCleared(repo.FieldGitProjectName) {
+		fields = append(fields, repo.FieldGitProjectName)
 	}
 	if m.FieldCleared(repo.FieldGitProjectID) {
 		fields = append(fields, repo.FieldGitProjectID)
@@ -9986,6 +10053,9 @@ func (m *RepoMutation) ClearField(name string) error {
 		return nil
 	case repo.FieldDefaultBranch:
 		m.ClearDefaultBranch()
+		return nil
+	case repo.FieldGitProjectName:
+		m.ClearGitProjectName()
 		return nil
 	case repo.FieldGitProjectID:
 		m.ClearGitProjectID()
@@ -10015,6 +10085,9 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldDefaultBranch:
 		m.ResetDefaultBranch()
+		return nil
+	case repo.FieldGitProjectName:
+		m.ResetGitProjectName()
 		return nil
 	case repo.FieldGitProjectID:
 		m.ResetGitProjectID()

@@ -19,12 +19,11 @@ import (
 var _ reposerver.RepoServer = (*repoSvc)(nil)
 
 type repoSvc struct {
-	guest
-
 	gitRepo   repo.GitRepo
 	logger    mlog.Logger
 	repoRepo  repo.Repo
 	eventRepo repo.EventRepo
+
 	reposerver.UnimplementedRepoServer
 }
 
@@ -33,10 +32,11 @@ func NewRepoSvc(logger mlog.Logger, eventRepo repo.EventRepo, gitRepo repo.GitRe
 }
 
 func (r *repoSvc) List(ctx context.Context, request *reposerver.ListRequest) (*reposerver.ListResponse, error) {
-	pagination.InitByDefault(&request.Page, &request.PageSize)
+	page, pageSize := pagination.InitByDefault(request.Page, request.PageSize)
+
 	list, pag, err := r.repoRepo.List(ctx, &repo.ListRepoRequest{
-		Page:          request.Page,
-		PageSize:      request.PageSize,
+		Page:          page,
+		PageSize:      pageSize,
 		Enabled:       request.Enabled,
 		OrderByIDDesc: lo.ToPtr(true),
 	})
@@ -57,7 +57,10 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 		return nil, ErrorPermissionDenied
 	}
 
-	var defaultBranch *string
+	var (
+		defaultBranch *string
+		projName      *string
+	)
 
 	if req.GitProjectId != nil {
 		project, err := r.gitRepo.GetByProjectID(ctx, int(*req.GitProjectId))
@@ -65,13 +68,15 @@ func (r *repoSvc) Create(ctx context.Context, req *reposerver.CreateRequest) (*r
 			return nil, err
 		}
 		defaultBranch = lo.ToPtr(project.GetDefaultBranch())
+		projName = lo.ToPtr(project.GetName())
 	}
 	create, err := r.repoRepo.Create(ctx, &repo.CreateRepoInput{
-		Name:          req.Name,
-		Enabled:       req.Enabled,
-		GitProjectID:  req.GitProjectId,
-		MarsConfig:    req.MarsConfig,
-		DefaultBranch: defaultBranch,
+		Name:           req.Name,
+		Enabled:        req.Enabled,
+		GitProjectID:   req.GitProjectId,
+		GitProjectName: projName,
+		MarsConfig:     req.MarsConfig,
+		DefaultBranch:  defaultBranch,
 	})
 	if err != nil {
 		return nil, err

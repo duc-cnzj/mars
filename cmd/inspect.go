@@ -84,11 +84,10 @@ var inspectCronJobsCmd = &cobra.Command{
 		cfg := config.Init(cfgFile)
 		cfg.LogChannel = ""
 		logger := mlog.NewLogger(cfg)
-		app, clean, err := InitializeApp(cfg, logger, nil)
+		app, err := InitializeApp(cfg, logger, nil)
 		if err != nil {
 			logger.Fatal(err)
 		}
-		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
 		defer app.Shutdown()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -110,11 +109,10 @@ var inspectEventsCmd = &cobra.Command{
 		cfg := config.Init(cfgFile)
 		cfg.LogChannel = ""
 		logger := mlog.NewLogger(cfg)
-		app, clean, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)
 		}
-		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
 		defer app.Shutdown()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -154,11 +152,10 @@ var inspectPluginsCmd = &cobra.Command{
 
 		cfg.LogChannel = ""
 		logger := mlog.NewLogger(cfg)
-		app, clean, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
+		app, err := InitializeApp(cfg, logger, []application.Bootstrapper{})
 		if err != nil {
 			logger.Fatal(err)
 		}
-		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
 		defer app.Shutdown()
 
 		var others [][]string

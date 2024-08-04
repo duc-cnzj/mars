@@ -2022,6 +2022,8 @@ func (m *RepoModel) validate(all bool) error {
 
 	// no validation rules for Id
 
+	// no validation rules for Name
+
 	// no validation rules for Enabled
 
 	if all {
@@ -2053,8 +2055,18 @@ func (m *RepoModel) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for CreatedAt
+
+	// no validation rules for UpdatedAt
+
+	// no validation rules for DeletedAt
+
 	if m.GitProjectId != nil {
 		// no validation rules for GitProjectId
+	}
+
+	if m.GitProjectName != nil {
+		// no validation rules for GitProjectName
 	}
 
 	if len(errors) > 0 {

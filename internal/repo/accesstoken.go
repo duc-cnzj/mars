@@ -20,7 +20,7 @@ import (
 type AccessTokenRepo interface {
 	List(ctx context.Context, input *ListAccessTokenInput) ([]*ent.AccessToken, *pagination.Pagination, error)
 	Grant(ctx context.Context, input *GrantAccessTokenInput) (*ent.AccessToken, error)
-	Lease(ctx context.Context, token string, expireSeconds int64) (*ent.AccessToken, error)
+	Lease(ctx context.Context, token string, expireSeconds int32) (*ent.AccessToken, error)
 	Revoke(ctx context.Context, token string) error
 }
 
@@ -28,25 +28,26 @@ var _ AccessTokenRepo = (*accessTokenRepo)(nil)
 
 type accessTokenRepo struct {
 	logger mlog.Logger
-	db     *ent.Client
+	data   data.Data
 	timer  timer.Timer
 }
 
-func NewAccessTokenRepo(timer timer.Timer, logger mlog.Logger, data *data.Data) AccessTokenRepo {
-	return &accessTokenRepo{logger: logger, db: data.DB, timer: timer}
+func NewAccessTokenRepo(timer timer.Timer, logger mlog.Logger, data data.Data) AccessTokenRepo {
+	return &accessTokenRepo{logger: logger, data: data, timer: timer}
 }
 
 type ListAccessTokenInput struct {
-	Page, PageSize int64
+	Page, PageSize int32
 	WithSoftDelete bool
 	Email          string
 }
 
 func (a *accessTokenRepo) List(ctx context.Context, input *ListAccessTokenInput) ([]*ent.AccessToken, *pagination.Pagination, error) {
+	var db = a.data.DB()
 	if input.WithSoftDelete {
 		ctx = mixin.SkipSoftDelete(ctx)
 	}
-	query := a.db.AccessToken.Query().
+	query := db.AccessToken.Query().
 		Where(filters.IfEmail(input.Email))
 
 	tokens := query.Clone().
@@ -55,21 +56,18 @@ func (a *accessTokenRepo) List(ctx context.Context, input *ListAccessTokenInput)
 		Limit(int(input.PageSize)).
 		AllX(ctx)
 	count := query.Clone().CountX(ctx)
-	return tokens, &pagination.Pagination{
-		Page:     input.Page,
-		PageSize: input.PageSize,
-		Count:    int64(count),
-	}, nil
+	return tokens, pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
 type GrantAccessTokenInput struct {
-	ExpireSeconds int64
+	ExpireSeconds int32
 	Usage         string
 	User          *auth.UserInfo
 }
 
 func (a *accessTokenRepo) Grant(ctx context.Context, input *GrantAccessTokenInput) (*ent.AccessToken, error) {
-	return a.db.AccessToken.Create().
+	var db = a.data.DB()
+	return db.AccessToken.Create().
 		SetToken(uuid.NewString()).
 		SetEmail(input.User.Email).
 		SetUsage(input.Usage).
@@ -79,8 +77,9 @@ func (a *accessTokenRepo) Grant(ctx context.Context, input *GrantAccessTokenInpu
 }
 
 // Lease 续约
-func (a *accessTokenRepo) Lease(ctx context.Context, token string, expireSeconds int64) (*ent.AccessToken, error) {
-	first, err := a.db.AccessToken.Query().Where(accesstoken.Token(token)).First(ctx)
+func (a *accessTokenRepo) Lease(ctx context.Context, token string, expireSeconds int32) (*ent.AccessToken, error) {
+	var db = a.data.DB()
+	first, err := db.AccessToken.Query().Where(accesstoken.Token(token)).First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +90,7 @@ func (a *accessTokenRepo) Lease(ctx context.Context, token string, expireSeconds
 }
 
 func (a *accessTokenRepo) Revoke(ctx context.Context, token string) error {
-	_, err := a.db.AccessToken.Delete().Where(accesstoken.Token(token)).Exec(ctx)
+	var db = a.data.DB()
+	_, err := db.AccessToken.Delete().Where(accesstoken.Token(token)).Exec(ctx)
 	return err
 }

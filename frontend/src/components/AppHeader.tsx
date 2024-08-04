@@ -55,6 +55,20 @@ const AppHeader: React.FC = () => {
             href="javascript(0);"
             onClick={(e) => {
               e.preventDefault();
+              h("/repos");
+            }}
+          >
+            <SettingOutlined /> 仓库管理
+          </a>
+        ),
+        key: "11",
+      },
+      {
+        label: (
+          <a
+            href="javascript(0);"
+            onClick={(e) => {
+              e.preventDefault();
               h("/events");
             }}
           >

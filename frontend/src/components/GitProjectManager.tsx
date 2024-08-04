@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { disabledProject, enabledProject, allProjects } from "../api/git";
 import { CopyOutlined } from "@ant-design/icons";
 import { copy } from "../utils/copy";
-import { maxUploadSize } from "../api/file";
 import type { UploadProps } from "antd";
 import {
   List,
@@ -27,10 +25,14 @@ import { getToken } from "../utils/token";
 import { RcFile } from "antd/lib/upload";
 import { css } from "@emotion/css";
 import theme from "../styles/theme";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const { Option } = Select;
 const GitProjectManager: React.FC = () => {
-  const [list, setList] = useState<pb.git.ProjectItem[]>([]);
+  const [list, setList] = useState<components["schemas"]["git.ProjectItem"][]>(
+    []
+  );
   const [initLoading, setInitLoading] = useState(true);
   const [loadingList, setLoadingList] = useState<{ [name: number]: boolean }>();
   const [maxUploadInfo, setMaxUploadInfo] = useState({
@@ -38,19 +40,21 @@ const GitProjectManager: React.FC = () => {
     humanizeSize: "",
   });
   const fetchList = useCallback(() => {
-    return allProjects()
-      .then((res) => {
-        setList(res.data.items);
+    return ajax
+      .GET("/api/git/projects")
+      .then(({ data }) => {
+        data && setList(data.items);
       })
       .catch((e) => message.error(e.response.data.message));
   }, [setList]);
 
   useEffect(() => {
-    maxUploadSize().then(({ data }) => {
-      setMaxUploadInfo({
-        bytes: data.bytes,
-        humanizeSize: data.humanize_size,
-      });
+    ajax.GET("/api/files/max_upload_size").then(({ data }) => {
+      data &&
+        setMaxUploadInfo({
+          bytes: data.bytes,
+          humanizeSize: data.humanizeSize,
+        });
     });
   }, []);
 
@@ -60,13 +64,19 @@ const GitProjectManager: React.FC = () => {
     });
   }, [fetchList, setInitLoading]);
 
-  const toggleStatus = async (item: pb.git.ProjectItem) => {
+  const toggleStatus = async (
+    item: components["schemas"]["git.ProjectItem"]
+  ) => {
     setLoadingList((l) => ({ ...l, [item.id]: true }));
     try {
       if (item.enabled) {
-        await disabledProject({ git_project_id: String(item.id) });
+        await ajax.POST("/api/git/projects/disable", {
+          body: { gitProjectId: String(item.id) },
+        });
       } else {
-        await enabledProject({ git_project_id: String(item.id) });
+        await ajax.POST("/api/git/projects/enable", {
+          body: { gitProjectId: String(item.id) },
+        });
       }
     } catch (e: any) {
       message.error(e.response.data.message);
@@ -80,9 +90,11 @@ const GitProjectManager: React.FC = () => {
     });
   };
 
-  const [currentItem, setCurrentItem] = useState<pb.git.ProjectItem>();
+  const [currentItem, setCurrentItem] =
+    useState<components["schemas"]["git.ProjectItem"]>();
   const [configVisible, setConfigVisible] = useState(false);
-  const [selected, setSelected] = useState<pb.git.ProjectItem>();
+  const [selected, setSelected] =
+    useState<components["schemas"]["git.ProjectItem"]>();
 
   const onChange = useCallback(
     (v: Pick<UploadProps, "onChange">) => {
@@ -139,8 +151,8 @@ const GitProjectManager: React.FC = () => {
   };
 
   const projectNameFunc = useCallback(
-    (item: pb.git.ProjectItem) =>
-      `${item.name}${!!item.display_name ? `(${item.display_name})` : ""}`,
+    (item: components["schemas"]["git.ProjectItem"]) =>
+      `${item.name}${!!item.displayName ? `(${item.displayName})` : ""}`,
     []
   );
 
@@ -199,7 +211,7 @@ const GitProjectManager: React.FC = () => {
           dataSource={list.filter((item) =>
             selected ? item.id === selected.id : true
           )}
-          renderItem={(item: pb.git.ProjectItem) => (
+          renderItem={(item: components["schemas"]["git.ProjectItem"]) => (
             <List.Item
               className={css`
                 padding: 14px 24px !important;
@@ -231,7 +243,7 @@ const GitProjectManager: React.FC = () => {
             >
               <List.Item.Meta
                 key={item.id}
-                avatar={<Avatar src={item.avatar_url} />}
+                avatar={<Avatar src={item.avatarUrl} />}
                 title={
                   <div style={{ fontSize: 16 }}>
                     {projectNameFunc(item)}
@@ -253,7 +265,7 @@ const GitProjectManager: React.FC = () => {
                       </span>
                       )
                     </div>
-                    {item.global_enabled && (
+                    {item.globalEnabled && (
                       <>
                         <Tooltip
                           placement="top"

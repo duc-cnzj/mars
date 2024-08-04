@@ -12,27 +12,27 @@ import "mars/mars.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v4/repo;repo";
 
 message ListRequest {
-  int64         page      = 1;
-  int64         page_size = 2;
-  optional bool enabled   = 3;
+  optional int32 page      = 1;
+  optional int32 page_size = 2;
+  optional bool  enabled   = 3;
 }
 
 message ListResponse {
-  int64                    page      = 1;
-  int64                    page_size = 2;
-  int64                    count     = 3;
+  int32                    page      = 1;
+  int32                    page_size = 2;
+  int32                    count     = 3;
   repeated types.RepoModel items     = 4;
 }
 
 message ShowRequest {
-  int64 id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message ShowResponse {
   types.RepoModel item = 1;
 }
 message ToggleEnabledRequest{
-  int64 id      = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id      = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
   bool  enabled = 2 [(google.api.field_behavior) = REQUIRED];
 }
 message ToggleEnabledResponse{
@@ -41,7 +41,7 @@ message ToggleEnabledResponse{
 
 message CreateRequest{
   string         name           = 1 [(validate.rules).string = {min_bytes: 1, pattern: "^[a-zA-Z0-9_-]+$"}, (google.api.field_behavior) = REQUIRED];
-  optional int64 git_project_id = 2;
+  optional int32 git_project_id = 2;
   bool           enabled        = 3;
   mars.Config    mars_config    = 4;
 }

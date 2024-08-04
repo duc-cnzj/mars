@@ -71,7 +71,7 @@ func (ms *messager) SendProcessPercent(percent int64) {
 			End:     false,
 			Uid:     ms.conn.uid,
 			Id:      ms.conn.id,
-			Percent: percent,
+			Percent: int32(percent),
 		},
 	}
 	ms.send(res)

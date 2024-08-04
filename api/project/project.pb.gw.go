@@ -142,7 +142,7 @@ func request_Project_Show_0(ctx context.Context, marshaler runtime.Marshaler, cl
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -168,7 +168,7 @@ func local_request_Project_Show_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -194,7 +194,7 @@ func request_Project_Version_0(ctx context.Context, marshaler runtime.Marshaler,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -220,7 +220,7 @@ func local_request_Project_Version_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -246,7 +246,7 @@ func request_Project_Delete_0(ctx context.Context, marshaler runtime.Marshaler, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -272,7 +272,7 @@ func local_request_Project_Delete_0(ctx context.Context, marshaler runtime.Marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -298,7 +298,7 @@ func request_Project_AllContainers_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -324,7 +324,7 @@ func local_request_Project_AllContainers_0(ctx context.Context, marshaler runtim
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/duc-cnzj/mars/v4/internal/auth"
 	"github.com/duc-cnzj/mars/v4/internal/contracts"
 	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/locker"
 	"github.com/duc-cnzj/mars/v4/internal/metrics"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
@@ -80,8 +79,8 @@ func (c *WsConn) GetUser() *auth.UserInfo {
 type WebsocketManager struct {
 	healthTickDuration time.Duration
 
+	data       data.Data
 	logger     mlog.Logger
-	k8sCli     *data.K8sClient
 	pl         application.PluginManger
 	auth       auth.Auth
 	uploader   uploader.Uploader
@@ -95,7 +94,6 @@ type WebsocketManager struct {
 	eventRepo repo.EventRepo
 
 	executor repo.ExecutorManager
-	db       *ent.Client
 
 	handlers map[websocket_pb.Type]HandleRequestFunc
 }
@@ -103,7 +101,7 @@ type WebsocketManager struct {
 func NewWebsocketManager(
 	logger mlog.Logger,
 	jobManager JobManager,
-	data *data.Data,
+	data data.Data,
 	pl application.PluginManger,
 	auth auth.Auth,
 	uploader uploader.Uploader,
@@ -118,7 +116,6 @@ func NewWebsocketManager(
 		fileRepo:           fileRepo,
 		healthTickDuration: 15 * time.Second,
 		logger:             logger,
-		k8sCli:             data.K8sClient,
 		pl:                 pl,
 		auth:               auth,
 		uploader:           uploader,
@@ -126,7 +123,7 @@ func NewWebsocketManager(
 		k8sRepo:            clusterRepo,
 		eventRepo:          eventRepo,
 		executor:           executor,
-		db:                 data.DB,
+		data:               data,
 	}
 	mgr.handlers = map[websocket_pb.Type]HandleRequestFunc{
 		WsAuthorize:          mgr.HandleWsAuthorize,
@@ -210,7 +207,7 @@ func (wc *WebsocketManager) Serve(w http.ResponseWriter, r *http.Request) {
 
 		inputUid = r.URL.Query().Get("uid")
 	)
-	if inputUid == "" {
+	if inputUid != "" {
 		uid = inputUid
 	}
 
@@ -260,6 +257,7 @@ func (wc *WebsocketManager) write(ctx context.Context, wsconn *WsConn) (err erro
 		ticker.Stop()
 		wsconn.conn.Close()
 	}()
+	wc.logger.Debug(wsconn.pubSub.ID(), wsconn.pubSub.Uid())
 	ch := wsconn.pubSub.Subscribe()
 	var w io.WriteCloser
 	for {
@@ -363,9 +361,9 @@ func (wc *WebsocketManager) HandleWsProjectPodEvent(ctx context.Context, c *WsCo
 		return
 	}
 	if input.Join {
-		c.pubSub.(application.ProjectPodEventSubscriber).Join(input.GetProjectId())
+		c.pubSub.(application.ProjectPodEventSubscriber).Join(int64(input.GetProjectId()))
 	} else {
-		c.pubSub.(application.ProjectPodEventSubscriber).Leave(input.GetNamespaceId(), input.GetProjectId())
+		c.pubSub.(application.ProjectPodEventSubscriber).Leave(int64(input.GetNamespaceId()), int64(input.GetProjectId()))
 	}
 }
 
@@ -486,9 +484,9 @@ func (wc *WebsocketManager) HandleWsUpdateProject(ctx context.Context, c *WsConn
 
 	wc.upgradeOrInstall(ctx, c, &JobInput{
 		Type:           t,
-		NamespaceId:    int64(p.NamespaceID),
+		NamespaceId:    int32(p.NamespaceID),
 		Name:           p.Name,
-		GitProjectId:   int64(p.GitProjectID),
+		GitProjectId:   int32(p.GitProjectID),
 		GitBranch:      input.GitBranch,
 		GitCommit:      input.GitCommit,
 		Config:         input.Config,

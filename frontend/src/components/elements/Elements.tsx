@@ -3,6 +3,7 @@ import pb from "../../api/compiled";
 import { Form, Input, InputNumber, Radio, Select, Switch } from "antd";
 import { omitEqual } from "../../utils/obj";
 import { css } from "@emotion/css";
+import { components } from "../../api/schema";
 
 const Option = Select.Option;
 const { TextArea } = Input;
@@ -45,7 +46,7 @@ const initStyle = {
 const Elements: React.FC<{
   value?: pb.types.ExtraValue[];
   onChange?: (value: pb.types.ExtraValue[]) => void;
-  elements: pb.mars.Element[];
+  elements: components["schemas"]["mars.Element"][];
   style?: st;
 }> = ({ elements, style, value, onChange }) => {
   let initValues = useMemo(() => {
@@ -74,7 +75,7 @@ const Elements: React.FC<{
   const getElement = useCallback(
     (
       item: pb.types.ExtraValue,
-      ele: pb.mars.Element[],
+      ele: components["schemas"]["mars.Element"][],
       index: number
     ): React.ReactNode => {
       for (let i = 0; i < ele.length; i++) {
@@ -112,7 +113,7 @@ const Elements: React.FC<{
 const Element: React.FC<{
   value: any;
   onChange: (v: any) => void;
-  element: pb.mars.Element;
+  element: components["schemas"]["mars.Element"];
   style: st;
 }> = ({ element, style, value: v, onChange }) => {
   const [value, setValue] = useState(v);
@@ -191,7 +192,7 @@ const Element: React.FC<{
               onChange(e.target.value);
             }}
           >
-            {element.select_values.map((i, k) => (
+            {element.selectValues.map((i, k) => (
               <Radio key={k} value={i} style={style.radio}>
                 {i}
               </Radio>
@@ -215,7 +216,7 @@ const Element: React.FC<{
               onChange(e);
             }}
           >
-            {element.select_values.map((i, k) => (
+            {element.selectValues.map((i, k) => (
               <Option value={i} key={k} style={style}>
                 {i}
               </Option>

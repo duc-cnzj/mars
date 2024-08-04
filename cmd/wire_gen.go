@@ -25,36 +25,32 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []application.Bootstrapper) (application.App, func(), error) {
-	dataData, cleanup, err := data.NewData(configConfig, logger)
+func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []application.Bootstrapper) (application.App, error) {
+	dataData, err := data.NewData(configConfig, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	runner := cron.NewRobfigCronV3Runner(logger)
 	timerTimer := timer.NewRealTimer()
 	lockerLocker, err := locker.NewLocker(configConfig, dataData, logger, timerTimer)
 	if err != nil {
-		cleanup()
-		return nil, nil, err
+		return nil, err
 	}
 	manager := cron.NewManager(runner, lockerLocker, logger)
 	group := NewSingleflight()
 	cacheCache := cache.NewCacheImpl(configConfig, dataData, logger, group)
 	uploaderUploader, err := uploader.NewUploader(configConfig, logger, dataData, cacheCache)
 	if err != nil {
-		cleanup()
-		return nil, nil, err
+		return nil, err
 	}
 	authAuth, err := auth.NewAuthn(configConfig, dataData)
 	if err != nil {
-		cleanup()
-		return nil, nil, err
+		return nil, err
 	}
 	dispatcher := event.NewDispatcher(logger)
-	pluginManger, cleanup2, err := application.NewPluginManager(configConfig, logger)
+	pluginManger, err := application.NewPluginManager(configConfig, logger)
 	if err != nil {
-		cleanup()
-		return nil, nil, err
+		return nil, err
 	}
 	versionServer := services.NewVersionSvc()
 	namespaceRepo := repo.NewNamespaceRepo(logger, dataData)
@@ -94,8 +90,5 @@ func InitializeApp(configConfig *config.Config, logger mlog.Logger, arg []applic
 	grpcRegistry := services.NewGrpcRegistry(versionServer, projectServer, pictureServer, namespaceServer, metricsServer, gitConfigServer, gitServer, fileServer, eventServer, endpointServer, containerServer, clusterServer, changelogServer, authServer, accessTokenServer, repoServer)
 	wsServer := socket.NewWebsocketManager(logger, jobManager, dataData, pluginManger, authAuth, uploaderUploader, lockerLocker, k8sRepo, eventRepo, executorManager, fileRepo)
 	app := newApp(configConfig, dataData, manager, arg, logger, uploaderUploader, authAuth, dispatcher, cacheCache, lockerLocker, group, pluginManger, grpcRegistry, wsServer)
-	return app, func() {
-		cleanup2()
-		cleanup()
-	}, nil
+	return app, nil
 }

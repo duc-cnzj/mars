@@ -11,7 +11,7 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v4/file;file";
 
 message DeleteRequest {
-  int64 id = 1 [(validate.rules).int64.gte = 1, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gte = 1, (google.api.field_behavior) = REQUIRED];
 }
 
 message DeleteResponse {}
@@ -24,27 +24,27 @@ message DiskInfoResponse {
 }
 
 message ListRequest {
-  int64         page            = 1;
-  int64         page_size       = 2;
-  bool without_deleted = 3;
+  optional int32 page            = 1;
+  optional int32 page_size       = 2;
+  bool           without_deleted = 3;
 }
 
 message ListResponse{
-  int64                    page      = 1;
-  int64                    page_size = 2;
+  int32                    page      = 1;
+  int32                    page_size = 2;
   repeated types.FileModel items     = 3;
-  int64                    count     = 4;
+  int32                    count     = 4;
 }
 
 message MaxUploadSizeRequest{}
 
 message MaxUploadSizeResponse{
   string humanize_size = 1;
-  uint64 bytes         = 2;
+  uint32 bytes         = 2;
 }
 
 message ShowRecordsRequest {
-  int64 id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message ShowRecordsResponse {

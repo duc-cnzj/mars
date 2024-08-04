@@ -25,6 +25,7 @@ func Execute(configFile []byte, logoStr string) {
 	configExampleFile = configFile
 	logo = logoStr
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(apiGatewayCmd)
 	rootCmd.AddCommand(inspect)
 

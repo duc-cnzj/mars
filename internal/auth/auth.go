@@ -8,7 +8,6 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/accesstoken"
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 	"github.com/golang-jwt/jwt"
@@ -88,7 +87,7 @@ type Authn struct {
 	signFunc func(info *UserInfo) (*SignData, error)
 }
 
-func NewAuthn(cfg *config.Config, data *data.Data) (Auth, error) {
+func NewAuthn(cfg *config.Config, data data.Data) (Auth, error) {
 	pem, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
 	if err != nil {
 		return nil, err
@@ -98,7 +97,7 @@ func NewAuthn(cfg *config.Config, data *data.Data) (Auth, error) {
 	return &Authn{
 		Authns: []Authenticator{
 			auth,
-			NewAccessTokenAuth(data.DB),
+			NewAccessTokenAuth(data),
 		},
 		signFunc: auth.Sign,
 	}, nil
@@ -166,11 +165,11 @@ func (a *jwtAuth) Sign(info *UserInfo) (*SignData, error) {
 }
 
 type accessTokenAuth struct {
-	db *ent.Client
+	data data.Data
 }
 
-func NewAccessTokenAuth(db *ent.Client) Authenticator {
-	return &accessTokenAuth{db: db}
+func NewAccessTokenAuth(data data.Data) Authenticator {
+	return &accessTokenAuth{data: data}
 }
 
 func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
@@ -179,7 +178,7 @@ func (a *accessTokenAuth) VerifyToken(t string) (*JwtClaims, bool) {
 		token = strings.TrimSpace(t[6:])
 	}
 	if token == "" {
-		if first, err := a.db.AccessToken.Query().Where(accesstoken.Token(token)).First(context.TODO()); err == nil {
+		if first, err := a.data.DB().AccessToken.Query().Where(accesstoken.Token(token)).First(context.TODO()); err == nil {
 			first.Update().SetLastUsedAt(time.Now()).Save(context.TODO())
 			return &JwtClaims{UserInfo: &first.UserInfo}, true
 		}

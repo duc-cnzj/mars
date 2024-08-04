@@ -98,7 +98,7 @@ func (n *nsqSender) New(uid, id string) application.PubSub {
 		msgCh:        make(chan []byte, wssender.MessageChSize),
 		eventMsgCh:   make(chan []byte, wssender.MessageChSize),
 		channels:     map[string]struct{}{},
-		pidSelectors: map[int64][]labels.Selector{},
+		pidSelectors: map[int32][]labels.Selector{},
 	}
 }
 
@@ -120,7 +120,7 @@ type nsq struct {
 	channels map[string]struct{}
 
 	pMu          sync.RWMutex
-	pidSelectors map[int64][]labels.Selector
+	pidSelectors map[int32][]labels.Selector
 }
 
 type directHandler struct {
@@ -173,7 +173,7 @@ func (n *nsq) Join(projectID int64) error {
 			parse, _ := labels.Parse(s)
 			selectors = append(selectors, parse)
 		}
-		n.pidSelectors[projectID] = selectors
+		n.pidSelectors[int32(projectID)] = selectors
 	}()
 	return nil
 }
@@ -199,7 +199,7 @@ func (n *nsq) Leave(nsID int64, projectID int64) error {
 	func() {
 		n.pMu.Lock()
 		defer n.pMu.Unlock()
-		delete(n.pidSelectors, projectID)
+		delete(n.pidSelectors, int32(projectID))
 	}()
 	return nil
 }

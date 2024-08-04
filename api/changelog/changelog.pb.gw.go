@@ -51,7 +51,7 @@ func request_Changelog_Show_0(ctx context.Context, marshaler runtime.Marshaler, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}
@@ -84,7 +84,7 @@ func local_request_Changelog_Show_0(ctx context.Context, marshaler runtime.Marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_id")
 	}
 
-	protoReq.ProjectId, err = runtime.Int64(val)
+	protoReq.ProjectId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
 	}

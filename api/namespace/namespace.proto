@@ -42,7 +42,7 @@ message IsExistsResponse {
 }
 
 message DeleteRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 namespace_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 message DeleteResponse {}
 

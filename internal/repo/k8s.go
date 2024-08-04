@@ -97,21 +97,19 @@ type K8sRepo interface {
 var _ K8sRepo = (*k8sRepo)(nil)
 
 type k8sRepo struct {
-	data          *data.Data
 	logger        mlog.Logger
 	clientSet     kubernetes.Interface
 	metricsCli    metricsv.Interface
-	config        *restclient.Config
 	uploader      uploader.Uploader
 	maxUploadSize uint64
 	archiver      Archiver
 	executor      ExecutorManager
-	k8sCli        *data.K8sClient
+	data          data.Data
 }
 
 func NewK8sRepo(
 	logger mlog.Logger,
-	data *data.Data,
+	data data.Data,
 	uploader uploader.Uploader,
 	archiver Archiver,
 	remoteExecutor ExecutorManager,
@@ -119,9 +117,8 @@ func NewK8sRepo(
 	return &k8sRepo{
 		data:          data,
 		logger:        logger,
-		k8sCli:        data.K8sClient,
 		uploader:      uploader,
-		maxUploadSize: data.Cfg.MaxUploadSize(),
+		maxUploadSize: data.Config().MaxUploadSize(),
 		archiver:      archiver,
 		executor:      remoteExecutor,
 	}
@@ -158,7 +155,7 @@ func (repo *k8sRepo) DeleteSecret(ctx context.Context, namespace, secret string)
 
 func (repo *k8sRepo) CreateDockerSecrets(ctx context.Context, namespace string) (*corev1.Secret, error) {
 	var entries = make(map[string]DockerConfigEntry)
-	for _, auth := range repo.data.Cfg.ImagePullSecrets {
+	for _, auth := range repo.data.Config().ImagePullSecrets {
 		entries[auth.Server] = DockerConfigEntry{
 			Username: auth.Username,
 			Password: auth.Password,
@@ -222,7 +219,7 @@ func (repo *k8sRepo) GetPodLogs(namespace, podName string, options *corev1.PodLo
 }
 
 func (repo *k8sRepo) ListEvents(namespace string) ([]*eventv1.Event, error) {
-	return repo.data.K8sClient.EventLister.Events(namespace).List(labels.Everything())
+	return repo.data.K8sClient().EventLister.Events(namespace).List(labels.Everything())
 }
 
 func (repo *k8sRepo) FindDefaultContainer(pod *corev1.Pod) string {
@@ -242,11 +239,11 @@ func (repo *k8sRepo) FindDefaultContainer(pod *corev1.Pod) string {
 }
 
 func (repo *k8sRepo) GetPod(namespace, podName string) (*corev1.Pod, error) {
-	return repo.data.K8sClient.PodLister.Pods(namespace).Get(podName)
+	return repo.data.K8sClient().PodLister.Pods(namespace).Get(podName)
 }
 
 func (repo *k8sRepo) IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, err := repo.data.K8sClient.PodLister.Pods(namespace).Get(podName)
+	podInfo, err := repo.data.K8sClient().PodLister.Pods(namespace).Get(podName)
 	if err != nil {
 		return false, err.Error()
 	}
@@ -693,19 +690,19 @@ type Executor interface {
 }
 
 type defaultRemoteExecutor struct {
-	k8sCli *data.K8sClient
+	data data.Data
 }
 
-func NewExecutorManager(data *data.Data) ExecutorManager {
+func NewExecutorManager(data data.Data) ExecutorManager {
 	return &defaultRemoteExecutor{
-		k8sCli: data.K8sClient,
+		data: data,
 	}
 }
 
 func (e *defaultRemoteExecutor) New() Executor {
 	return &executor{
-		clientSet: e.k8sCli.Client,
-		config:    e.k8sCli.RestConfig,
+		clientSet: e.data.K8sClient().Client,
+		config:    e.data.K8sClient().RestConfig,
 	}
 }
 

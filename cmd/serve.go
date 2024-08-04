@@ -30,6 +30,9 @@ var serverBootstrappers = []application.Bootstrapper{
 	//&bootstrappers.TracingBootstrapper{},
 	&bootstrappers.CronBootstrapper{},
 	&bootstrappers.PluginBootstrapper{},
+	&bootstrappers.SSOBootstrapper{},
+	&bootstrappers.S3Bootstrapper{},
+	&bootstrappers.PluginBootstrapper{},
 	&bootstrappers.AppBootstrapper{},
 }
 
@@ -42,11 +45,10 @@ var apiGatewayCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.Init(cfgFile)
 		logger := mlog.NewLogger(cfg)
-		app, clean, err := InitializeApp(cfg, logger, serverBootstrappers)
+		app, err := InitializeApp(cfg, logger, serverBootstrappers)
 		if err != nil {
 			logger.Fatal(err)
 		}
-		app.RegisterAfterShutdownFunc(func(application.App) { clean() })
 		if err := app.Bootstrap(); err != nil {
 			logger.Fatal(err)
 		}
@@ -61,7 +63,7 @@ func NewSingleflight() *singleflight.Group {
 
 func newApp(
 	cfg *config.Config,
-	data *data.Data,
+	data data.Data,
 	cron cron.Manager,
 	bootstrappers []application.Bootstrapper,
 	logger mlog.Logger,

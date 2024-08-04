@@ -12,7 +12,7 @@ func FromNamespace(ns *ent.Namespace) *types.NamespaceModel {
 		return nil
 	}
 	return &types.NamespaceModel{
-		Id:               int64(ns.ID),
+		Id:               int32(ns.ID),
 		Name:             ns.Name,
 		ImagePullSecrets: ns.GetImagePullSecrets(),
 		Projects:         serialize.Serialize(ns.Edges.Projects, FromProject),

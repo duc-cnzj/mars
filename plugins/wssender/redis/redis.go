@@ -77,7 +77,7 @@ func (p *redisSender) New(uid, id string) application.PubSub {
 		rds:          p.rds,
 		channels:     make(map[string]struct{}),
 		pubSub:       p.rds.Subscribe(context.TODO()),
-		pidSelectors: make(map[int64][]labels.Selector),
+		pidSelectors: make(map[int32][]labels.Selector),
 	}
 
 	return &rdsPubSub{
@@ -134,7 +134,7 @@ type podEventManagers struct {
 	channels map[string]struct{}
 
 	pmu          sync.RWMutex
-	pidSelectors map[int64][]labels.Selector
+	pidSelectors map[int32][]labels.Selector
 }
 
 func (p *podEventManagers) Publish(nsID int64, pod *v1.Pod) error {
@@ -172,7 +172,7 @@ func (p *podEventManagers) Join(projectID int64) error {
 			parse, _ := labels.Parse(s)
 			selectors = append(selectors, parse)
 		}
-		p.pidSelectors[projectID] = selectors
+		p.pidSelectors[int32(projectID)] = selectors
 	}()
 
 	return nil
@@ -191,7 +191,7 @@ func (p *podEventManagers) Leave(nsID int64, projectID int64) error {
 	func() {
 		p.pmu.Lock()
 		defer p.pmu.Unlock()
-		delete(p.pidSelectors, projectID)
+		delete(p.pidSelectors, int32(projectID))
 	}()
 
 	return nil
@@ -297,7 +297,7 @@ func (p *rdsPubSub) Subscribe() <-chan []byte {
 		p.logger.Fatal(err)
 	}
 	channel := p.wsPubSub.Channel()
-	p.logger.Debugf("[Websocket]: Subscribe Start id: %v channels: %v %s", p.id, p.id, wssender.BroadcastRoom)
+	p.logger.Debugf("[Websocket]: Subscribe start id: %v channels: %v %s", p.id, p.id, wssender.BroadcastRoom)
 	go func() {
 		defer p.logger.HandlePanic("[PubSub]: Subscribe")
 		for {

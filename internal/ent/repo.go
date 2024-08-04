@@ -29,8 +29,10 @@ type Repo struct {
 	Name string `json:"name,omitempty"`
 	// DefaultBranch holds the value of the "default_branch" field.
 	DefaultBranch *string `json:"default_branch,omitempty"`
-	// 关联的 git 项目
-	GitProjectID *int64 `json:"git_project_id,omitempty"`
+	// 关联的 git 项目 name
+	GitProjectName *string `json:"git_project_name,omitempty"`
+	// 关联的 git 项目 id
+	GitProjectID *int32 `json:"git_project_id,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
 	// mars 配置
@@ -49,7 +51,7 @@ func (*Repo) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case repo.FieldID, repo.FieldGitProjectID:
 			values[i] = new(sql.NullInt64)
-		case repo.FieldName, repo.FieldDefaultBranch:
+		case repo.FieldName, repo.FieldDefaultBranch, repo.FieldGitProjectName:
 			values[i] = new(sql.NullString)
 		case repo.FieldCreatedAt, repo.FieldUpdatedAt, repo.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -106,12 +108,19 @@ func (r *Repo) assignValues(columns []string, values []any) error {
 				r.DefaultBranch = new(string)
 				*r.DefaultBranch = value.String
 			}
+		case repo.FieldGitProjectName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field git_project_name", values[i])
+			} else if value.Valid {
+				r.GitProjectName = new(string)
+				*r.GitProjectName = value.String
+			}
 		case repo.FieldGitProjectID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field git_project_id", values[i])
 			} else if value.Valid {
-				r.GitProjectID = new(int64)
-				*r.GitProjectID = value.Int64
+				r.GitProjectID = new(int32)
+				*r.GitProjectID = int32(value.Int64)
 			}
 		case repo.FieldEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -179,6 +188,11 @@ func (r *Repo) String() string {
 	builder.WriteString(", ")
 	if v := r.DefaultBranch; v != nil {
 		builder.WriteString("default_branch=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := r.GitProjectName; v != nil {
+		builder.WriteString("git_project_name=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

@@ -1,19 +1,19 @@
 import React, { useEffect, memo } from "react";
-import { clusterInfo } from "../api/cluster";
 import { useDispatch, useSelector } from "react-redux";
 import { setClusterInfo } from "../store/actions";
 import { selectClusterInfo } from "../store/reducers/cluster";
 import { Tooltip } from "antd";
 import { css } from "@emotion/react";
 import styled from "@emotion/styled";
+import ajax from "../api/ajax";
 
 const ClusterInfo: React.FC = () => {
   const dispatch = useDispatch();
   const info = useSelector(selectClusterInfo);
 
   useEffect(() => {
-    clusterInfo().then((res) => {
-      dispatch(setClusterInfo(res.data));
+    ajax.GET("/api/cluster_info").then(({ data }) => {
+      data && dispatch(setClusterInfo(data));
     });
   }, [dispatch]);
 

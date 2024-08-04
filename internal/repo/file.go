@@ -54,14 +54,14 @@ type fileRepo struct {
 	timer    timer.Timer
 	crRepo   CronRepo
 
-	db            *ent.Client
 	maxUploadSize uint64
+	data          data.Data
 }
 
 func NewFileRepo(
 	crRepo CronRepo,
 	logger mlog.Logger,
-	data *data.Data,
+	data data.Data,
 	uploader uploader.Uploader,
 	timer timer.Timer,
 ) FileRepo {
@@ -70,33 +70,30 @@ func NewFileRepo(
 		logger:        logger,
 		uploader:      uploader,
 		timer:         timer,
-		db:            data.DB,
-		maxUploadSize: data.Cfg.MaxUploadSize(),
+		data:          data,
+		maxUploadSize: data.Config().MaxUploadSize(),
 	}
 }
 
 type ListFileInput struct {
-	Page, PageSize int64
+	Page, PageSize int32
 	OrderIDDesc    *bool
 	WithSoftDelete bool
 }
 
 func (repo *fileRepo) List(ctx context.Context, input *ListFileInput) ([]*ent.File, *pagination.Pagination, error) {
+	var db = repo.data.DB()
 	queryCtx := context.TODO()
 	if input.WithSoftDelete {
 		queryCtx = mixin.SkipSoftDelete(queryCtx)
 	}
-	query := repo.db.File.Query().Where(filters.IfOrderByDesc("id")(input.OrderIDDesc))
+	query := db.File.Query().Where(filters.IfOrderByDesc("id")(input.OrderIDDesc))
 	files := query.Clone().
 		Offset(pagination.GetPageOffset(input.Page, input.PageSize)).
 		Limit(int(input.PageSize)).AllX(queryCtx)
 	count := query.Clone().CountX(queryCtx)
 
-	return files, &pagination.Pagination{
-		Page:     input.Page,
-		PageSize: input.PageSize,
-		Count:    int64(count),
-	}, nil
+	return files, pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
 type CreateFileInput struct {
@@ -107,7 +104,8 @@ type CreateFileInput struct {
 }
 
 func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*ent.File, error) {
-	return repo.db.File.Create().
+	var db = repo.data.DB()
+	return db.File.Create().
 		SetPath(input.Path).
 		SetUsername(input.Username).
 		SetSize(input.Size).
@@ -116,7 +114,8 @@ func (repo *fileRepo) Create(todo context.Context, input *CreateFileInput) (*ent
 }
 
 func (repo *fileRepo) GetByID(ctx context.Context, id int) (*ent.File, error) {
-	return repo.db.File.Query().Where(file.ID(id)).First(ctx)
+	var db = repo.data.DB()
+	return db.File.Query().Where(file.ID(id)).First(ctx)
 }
 
 func (repo *fileRepo) MaxUploadSize() uint64 {
@@ -124,18 +123,20 @@ func (repo *fileRepo) MaxUploadSize() uint64 {
 }
 
 func (repo *fileRepo) Delete(ctx context.Context, id int) error {
-	file, err := repo.db.File.Query().Where(file.ID(id)).First(ctx)
+	var db = repo.data.DB()
+	file, err := db.File.Query().Where(file.ID(id)).First(ctx)
 	if err != nil {
 		return err
 	}
-	if err = repo.db.File.DeleteOneID(id).Exec(ctx); err != nil {
+	if err = db.File.DeleteOneID(id).Exec(ctx); err != nil {
 		return err
 	}
 	return repo.uploader.Delete(file.Path)
 }
 
 func (repo *fileRepo) ShowRecords(ctx context.Context, id int) (io.ReadCloser, error) {
-	file, err := repo.db.File.Query().Where(file.ID(id)).First(ctx)
+	var db = repo.data.DB()
+	file, err := db.File.Query().Where(file.ID(id)).First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func (repo *fileRepo) DiskInfo() (int64, error) {
 func (repo *fileRepo) NewRecorder(action types.EventActionType, user *auth.UserInfo, container *Container) Recorder {
 	return &recorder{
 		RWMutex:       sync.RWMutex{},
-		db:            repo.db,
+		data:          repo.data,
 		logger:        repo.logger,
 		action:        action,
 		timer:         repo.timer,
@@ -178,7 +179,7 @@ func (repo *fileRepo) NewDisk(disk string) uploader.Uploader {
 type recorder struct {
 	sync.RWMutex
 
-	db        *ent.Client
+	data      data.Data
 	logger    mlog.Logger
 	action    types.EventActionType
 	timer     timer.Timer
@@ -265,7 +266,9 @@ func (r *recorder) Close() error {
 	r.RLock()
 	defer r.RUnlock()
 	var (
-		err           error
+		err error
+
+		db            = r.data.DB()
 		localUploader = r.localUploader
 		uploader      = r.uploader
 	)
@@ -302,7 +305,7 @@ func (r *recorder) Close() error {
 	}
 	var emptyFile bool = true
 	if stat.Size() > 0 {
-		file, _ := r.db.File.Create().
+		file, _ := db.File.Create().
 			SetUploadType(uploader.Type()).
 			SetPath(upFile.Name()).
 			SetSize(uint64(stat.Size())).
@@ -312,7 +315,7 @@ func (r *recorder) Close() error {
 			SetContainer(r.container.Container).
 			Save(context.TODO())
 
-		r.db.Event.Create().SetAction(r.action).SetUsername(r.user.Name).
+		db.Event.Create().SetAction(r.action).SetUsername(r.user.Name).
 			SetMessage(fmt.Sprintf("用户进入容器执行命令，container: '%s', namespace: '%s', pod： '%s'", r.container.Container, r.container.Namespace, r.container.Pod)).
 			SetFileID(file.ID).
 			SetDuration(date.HumanDuration(time.Since(r.startTime))).

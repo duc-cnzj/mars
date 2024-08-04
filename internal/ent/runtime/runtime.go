@@ -463,7 +463,7 @@ func init() {
 	// repo.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
 	repo.DefaultBranchValidator = repoDescDefaultBranch.Validators[0].(func(string) error)
 	// repoDescEnabled is the schema descriptor for enabled field.
-	repoDescEnabled := repoFields[3].Descriptor()
+	repoDescEnabled := repoFields[4].Descriptor()
 	// repo.DefaultEnabled holds the default value on creation for the enabled field.
 	repo.DefaultEnabled = repoDescEnabled.Default.(bool)
 }

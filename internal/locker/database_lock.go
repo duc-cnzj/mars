@@ -7,7 +7,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/ent"
+	"github.com/duc-cnzj/mars/v4/internal/data"
+
 	"github.com/duc-cnzj/mars/v4/internal/ent/cachelock"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 	"github.com/duc-cnzj/mars/v4/internal/util/rand"
@@ -18,12 +19,12 @@ type databaseLock struct {
 	lottery [2]int
 	timer   timer.Timer
 	owner   string
-	db      *ent.Client
+	data    data.Data
 	logger  mlog.Logger
 }
 
-func NewDatabaseLock(timer timer.Timer, lottery [2]int, db *ent.Client, logger mlog.Logger) Locker {
-	return &databaseLock{lottery: lottery, db: db, owner: rand.String(40), timer: timer, logger: logger}
+func NewDatabaseLock(timer timer.Timer, lottery [2]int, data data.Data, logger mlog.Logger) Locker {
+	return &databaseLock{lottery: lottery, data: data, owner: rand.String(40), timer: timer, logger: logger}
 }
 
 func (d *databaseLock) RenewalAcquire(key string, seconds int64, renewalSeconds int64) (func(), bool) {
@@ -67,7 +68,7 @@ func (d *databaseLock) Acquire(key string, seconds int64) bool {
 	var (
 		acquired bool
 
-		db = d.db
+		db = d.data.DB()
 	)
 
 	_, err := db.CacheLock.Create().SetKey(key).SetOwner(d.owner).SetExpiredAt(d.timer.Now().Add(time.Duration(seconds) * time.Second)).Save(context.TODO())
@@ -92,7 +93,7 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 	var (
 		acquired bool
 
-		db = d.db
+		db = d.data.DB()
 	)
 
 	_, err := db.CacheLock.Query().Where(cachelock.Key(key)).Only(context.TODO())
@@ -110,7 +111,7 @@ func (d *databaseLock) renewalExistKey(key string, seconds int64) bool {
 
 func (d *databaseLock) Release(key string) bool {
 	if d.Owner(key) == d.owner {
-		d.db.CacheLock.Delete().Where(cachelock.Key(key), cachelock.Owner(d.owner)).Exec(context.TODO())
+		d.data.DB().CacheLock.Delete().Where(cachelock.Key(key), cachelock.Owner(d.owner)).Exec(context.TODO())
 		return true
 	}
 
@@ -118,13 +119,13 @@ func (d *databaseLock) Release(key string) bool {
 }
 
 func (d *databaseLock) ForceRelease(key string) bool {
-	d.db.CacheLock.Delete().Where(cachelock.Key(key)).Exec(context.TODO())
+	d.data.DB().CacheLock.Delete().Where(cachelock.Key(key)).Exec(context.TODO())
 
 	return true
 }
 
 func (d *databaseLock) Owner(key string) string {
-	cl, _ := d.db.CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
+	cl, _ := d.data.DB().CacheLock.Query().Where(cachelock.Key(key)).First(context.TODO())
 
 	return cl.Owner
 }

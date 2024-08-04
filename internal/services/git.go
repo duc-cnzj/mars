@@ -102,7 +102,7 @@ func (g *gitSvc) All(ctx context.Context, req *git.AllRequest) (*git.AllResponse
 			displayName = gitProject.GlobalMarsConfig().DisplayName
 		}
 		infos = append(infos, &git.ProjectItem{
-			Id:            project.GetID(),
+			Id:            int32(project.GetID()),
 			Name:          project.GetName(),
 			Path:          project.GetPath(),
 			WebUrl:        project.GetWebURL(),

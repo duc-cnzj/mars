@@ -82,6 +82,7 @@ func (g *grpcRunner) initServer() *grpc.Server {
 			middlewares.MetricsStreamServerInterceptor,
 		),
 		grpc.ChainUnaryInterceptor(
+			middlewares.LoggerUnaryServerInterceptor(g.app.Logger()),
 			grpc_auth.UnaryServerInterceptor(authFn),
 			middlewares.MetricsServerInterceptor,
 			middlewares.TraceUnaryServerInterceptor,

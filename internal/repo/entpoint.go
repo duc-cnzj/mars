@@ -20,17 +20,18 @@ var _ EndpointRepo = (*endpointRepo)(nil)
 
 type endpointRepo struct {
 	logger mlog.Logger
-	db     *ent.Client
+	data   data.Data
 
 	projRepo ProjectRepo
 }
 
-func NewEndpointRepo(logger mlog.Logger, data *data.Data) EndpointRepo {
-	return &endpointRepo{logger: logger, db: data.DB}
+func NewEndpointRepo(logger mlog.Logger, data data.Data) EndpointRepo {
+	return &endpointRepo{logger: logger, data: data}
 }
 
 func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*types.ServiceEndpoint, err error) {
-	first, err := repo.db.Project.Query().WithNamespace().Select(
+	var db = repo.data.DB()
+	first, err := db.Project.Query().WithNamespace().Select(
 		project.FieldID,
 		project.FieldManifest,
 		project.FieldName,
@@ -52,7 +53,8 @@ func (repo *endpointRepo) InProject(ctx context.Context, projectID int) (res []*
 }
 
 func (repo *endpointRepo) InNamespace(ctx context.Context, namespaceID int) (res []*types.ServiceEndpoint, err error) {
-	first, err := repo.db.Namespace.Query().
+	var db = repo.data.DB()
+	first, err := db.Namespace.Query().
 		WithProjects(func(query *ent.ProjectQuery) {
 			query.Select(
 				project.FieldID,

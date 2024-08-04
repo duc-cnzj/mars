@@ -1,10 +1,10 @@
 import React, { useState, memo, useCallback } from "react";
 import { Col, Row, Select, SelectProps } from "antd";
-import { branchOptions, commitOptions, projectOptions } from "../api/git";
-import pb from "../api/compiled";
 import { omitEqual } from "../utils/obj";
 import { css } from "@emotion/css";
 import styled from "@emotion/styled";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const ProjectSelector: React.FC<{
   isCreate: boolean;
@@ -28,10 +28,10 @@ const ProjectSelector: React.FC<{
   console.log("ProjectSelector render");
 
   const [options, setOptions] = useState<{
-    projects: pb.git.Option[];
-    branches: pb.git.Option[];
-    commits: pb.git.Option[];
-  }>({ projects: [], branches: [], commits: [] });
+    projects: components["schemas"]["git.Option"][];
+    branches: components["schemas"]["git.Option"][];
+    commits: components["schemas"]["git.Option"][];
+  }>();
   const [loading, setLoading] = useState({
     project: false,
     branch: false,
@@ -44,9 +44,12 @@ const ProjectSelector: React.FC<{
       return;
     }
     setLoading((l) => ({ ...l, project: true }));
-    projectOptions()
-      .then(({ data }) =>
-        setOptions({ projects: data.items, branches: [], commits: [] })
+    ajax
+      .GET("/api/git/project_options")
+      .then(
+        ({ data }) =>
+          data &&
+          setOptions({ projects: data.items, branches: [], commits: [] })
       )
       .finally(() => setLoading((l) => ({ ...l, project: false })));
   }, []);
@@ -60,15 +63,17 @@ const ProjectSelector: React.FC<{
       let commitTitle = currentCommit === v?.gitCommit ? v?.gitCommitTitle : "";
       onCh?.({
         projectName:
-          options.projects.find((pro) => Number(pro.gitProjectId) === pid)
-            ?.display_name || "",
+          (options &&
+            options.projects.find((pro) => Number(pro.gitProjectId) === pid)
+              ?.displayName) ||
+          "",
         gitProjectId: pid,
         gitBranch: currentBranch,
         gitCommit: currentCommit,
         gitCommitTitle: commitTitle,
       });
     },
-    [onCh, options.projects, v]
+    [onCh, options?.projects, v]
   );
 
   const onBranchVisibleChange = useCallback(
@@ -77,12 +82,21 @@ const ProjectSelector: React.FC<{
         return;
       }
       setLoading((l) => ({ ...l, branch: true }));
-      branchOptions({
-        git_project_id: String(v?.gitProjectId),
-        all: false,
-      })
-        .then(({ data }) =>
-          setOptions((opts) => ({ ...opts, branches: data.items, commits: [] }))
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/branch_options", {
+          params: {
+            path: { gitProjectId: `${v.gitProjectId}` },
+            query: { all: false },
+          },
+        })
+        .then(
+          ({ data }) =>
+            data &&
+            setOptions((opts) => ({
+              projects: opts ? opts.projects : [],
+              branches: data.items,
+              commits: [],
+            }))
         )
         .finally(() => setLoading((l) => ({ ...l, branch: false })));
     },
@@ -108,12 +122,25 @@ const ProjectSelector: React.FC<{
         return;
       }
       setLoading((l) => ({ ...l, commit: true }));
-      commitOptions({
-        git_project_id: String(v?.gitProjectId),
-        branch: String(v?.gitBranch),
-      })
+      ajax
+        .GET(
+          "/api/git/projects/{gitProjectId}/branches/{branch}/commit_options",
+          {
+            params: {
+              path: {
+                gitProjectId: String(v?.gitProjectId),
+                branch: v.gitBranch,
+              },
+            },
+          }
+        )
         .then(({ data }) => {
-          setOptions((opts) => ({ ...opts, commits: data.items }));
+          data &&
+            setOptions((opts) => ({
+              projects: opts ? opts.projects : [],
+              branches: opts ? opts.branches : [],
+              commits: data.items,
+            }));
         })
         .finally(() => {
           setLoading((l) => ({ ...l, commit: false }));
@@ -130,10 +157,20 @@ const ProjectSelector: React.FC<{
         gitBranch: v?.gitBranch || "",
         gitCommit: String(vv),
         gitCommitTitle:
-          options.commits.find((it) => it.value === String(vv))?.label || "",
+          (options &&
+            options.commits &&
+            options.commits.find((it) => it.value === String(vv))?.label) ||
+          "",
       });
     },
-    [onCh, options.commits, v?.gitBranch, v?.gitProjectId, v?.projectName]
+    [
+      onCh,
+      options,
+      options?.commits,
+      v?.gitBranch,
+      v?.gitProjectId,
+      v?.projectName,
+    ]
   );
 
   return (
@@ -158,11 +195,13 @@ const ProjectSelector: React.FC<{
           onDropdownVisibleChange={onProjectVisibleChange}
           onChange={onProjectChange}
           options={
-            isCreate
-              ? options.projects
-              : options.projects.filter(
-                  (p) => String(p.gitProjectId) === String(v?.gitProjectId)
-                )
+            options
+              ? isCreate
+                ? options.projects
+                : options.projects.filter(
+                    (p) => String(p.gitProjectId) === String(v?.gitProjectId)
+                  )
+              : []
           }
         />
       </MyCol>
@@ -184,7 +223,7 @@ const ProjectSelector: React.FC<{
           disabled={disabled || loading.commit}
           value={v?.gitBranch}
           onChange={onBranchChange}
-          options={options.branches}
+          options={options ? options.branches : []}
         />
       </MyCol>
       <MyCol
@@ -206,7 +245,7 @@ const ProjectSelector: React.FC<{
           disabled={disabled}
           value={v?.gitCommitTitle}
           onChange={onCommitChange}
-          options={options.commits}
+          options={options ? options.commits : []}
         />
       </MyCol>
     </Row>
@@ -218,7 +257,7 @@ const SelectorItem: React.FC<
     className?: string;
     value: any;
     onChange: (v: any) => void;
-    options: pb.git.Option[];
+    options: components["schemas"]["git.Option"][];
     disabled?: boolean;
     placeholder: string;
   } & SelectProps

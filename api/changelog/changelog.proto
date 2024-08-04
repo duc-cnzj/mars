@@ -11,8 +11,8 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v4/changelog;changelog";
 
 message ShowRequest {
-  int64         project_id   = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
-  bool only_changed = 2;
+  int32 project_id   = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
+  bool  only_changed = 2;
 }
 
 message ShowResponse {

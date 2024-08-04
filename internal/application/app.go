@@ -60,7 +60,7 @@ type app struct {
 	cacheLock     locker.Locker
 	tracer        trace.Tracer
 	sf            *singleflight.Group
-	data          *data.Data
+	data          data.Data
 	pluginManager PluginManger
 	reg           *GrpcRegistry
 	ws            WsServer
@@ -96,7 +96,7 @@ func WithExcludeTags(tags ...string) Option {
 // NewApp return App.
 func NewApp(
 	config *config.Config,
-	data *data.Data,
+	data data.Data,
 	logger mlog.Logger,
 	uploader uploader.Uploader,
 	auth auth.Auth,
@@ -169,7 +169,7 @@ func NewApp(
 
 // Oidc impl App Oidc.
 func (app *app) Oidc() data.OidcConfig {
-	return app.data.Oidc
+	return app.data.OidcConfig()
 }
 
 // PluginMgr impl App PluginMgr.
@@ -178,7 +178,7 @@ func (app *app) PluginMgr() PluginManger {
 }
 
 // Data impl App Data.
-func (app *app) Data() *data.Data {
+func (app *app) Data() data.Data {
 	return app.data
 }
 
@@ -296,7 +296,7 @@ func (app *app) GetTracer() trace.Tracer {
 
 // DB impl App DB.
 func (app *app) DB() *ent.Client {
-	return app.data.DB
+	return app.data.DB()
 }
 
 // IsDebug impl App IsDebug.

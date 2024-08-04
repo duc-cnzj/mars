@@ -20,6 +20,7 @@ import { message } from "antd";
 import { setUid } from "../utils/uid";
 import pb from "../api/compiled";
 import { debounce } from "lodash";
+import { components } from "../api/schema";
 
 export const setCreateProjectLoading = (id: string, loading: boolean) => ({
   type: SET_CREATE_PROJECT_LOADING,
@@ -104,7 +105,9 @@ export const setStartAt = (id: string, startAt: number) => ({
   },
 });
 
-export const setClusterInfo = (info: pb.cluster.InfoResponse) => ({
+export const setClusterInfo = (
+  info: components["schemas"]["cluster.InfoResponse"]
+) => ({
   type: SET_CLUSTER_INFO,
   info: info,
 });

@@ -151,7 +151,7 @@ func request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
 	}
 
-	protoReq.NamespaceId, err = runtime.Int64(val)
+	protoReq.NamespaceId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
 	}
@@ -177,7 +177,7 @@ func local_request_Namespace_Delete_0(ctx context.Context, marshaler runtime.Mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace_id")
 	}
 
-	protoReq.NamespaceId, err = runtime.Int64(val)
+	protoReq.NamespaceId, err = runtime.Int32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace_id", err)
 	}

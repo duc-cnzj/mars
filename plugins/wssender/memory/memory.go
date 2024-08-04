@@ -29,18 +29,20 @@ type Conn struct {
 
 type memorySender struct {
 	sync.RWMutex
+
 	conns map[string]*Conn
 
 	roomMu sync.RWMutex
 	// nsID => map[projectID]map[socketID]selectors
-	roomIDs map[int64]map[int64]map[string][]labels.Selector
+	roomIDs map[int32]map[int32]map[string][]labels.Selector
 	// socketID => map[nsID]struct{}
-	idRooms map[string]map[int64]struct{}
+	idRooms map[string]map[int32]struct{}
 	logger  mlog.Logger
 	db      *ent.Client
 }
 
 func (ms *memorySender) Add(uid, id string) {
+	ms.logger.Debugf("Add: %s, %s", uid, id)
 	if uid == "" || id == "" {
 		return
 	}
@@ -65,8 +67,8 @@ func (ms *memorySender) Name() string {
 
 func (ms *memorySender) Initialize(app application.App, args map[string]any) error {
 	ms.conns = map[string]*Conn{}
-	ms.idRooms = make(map[string]map[int64]struct{})
-	ms.roomIDs = make(map[int64]map[int64]map[string][]labels.Selector)
+	ms.idRooms = make(map[string]map[int32]struct{})
+	ms.roomIDs = make(map[int32]map[int32]map[string][]labels.Selector)
 	ms.logger = app.Logger()
 	ms.db = app.DB()
 	ms.logger.Info("[Plugin]: " + ms.Name() + " plugin Initialize...")
@@ -102,7 +104,7 @@ func (p *memoryPubSub) Run(ctx context.Context) error {
 func (p *memoryPubSub) Publish(nsID int64, pod *corev1.Pod) error {
 	p.manager.roomMu.RLock()
 	defer p.manager.roomMu.RUnlock()
-	projectMap, ok := p.manager.roomIDs[nsID]
+	projectMap, ok := p.manager.roomIDs[int32(nsID)]
 
 	if ok {
 		for pid, socketIDMap := range projectMap {
@@ -150,20 +152,20 @@ func (p *memoryPubSub) Join(projectID int64) error {
 		parse, _ := labels.Parse(s)
 		selectors = append(selectors, parse)
 	}
-	_, projectMapFound := p.manager.roomIDs[nsID]
+	_, projectMapFound := p.manager.roomIDs[int32(nsID)]
 	if !projectMapFound {
-		p.manager.roomIDs[nsID] = make(map[int64]map[string][]labels.Selector)
+		p.manager.roomIDs[int32(nsID)] = make(map[int32]map[string][]labels.Selector)
 	}
-	_, socketIDMapFound := p.manager.roomIDs[nsID][projectID]
+	_, socketIDMapFound := p.manager.roomIDs[int32(nsID)][int32(projectID)]
 	if !socketIDMapFound {
-		p.manager.roomIDs[nsID][projectID] = make(map[string][]labels.Selector)
+		p.manager.roomIDs[int32(nsID)][int32(projectID)] = make(map[string][]labels.Selector)
 	}
-	p.manager.roomIDs[nsID][projectID][p.id] = selectors
+	p.manager.roomIDs[int32(nsID)][int32(projectID)][p.id] = selectors
 	rooms, nsIDFound := p.manager.idRooms[p.id]
 	if nsIDFound {
-		rooms[nsID] = struct{}{}
+		rooms[int32(nsID)] = struct{}{}
 	} else {
-		p.manager.idRooms[p.id] = map[int64]struct{}{nsID: {}}
+		p.manager.idRooms[p.id] = map[int32]struct{}{int32(nsID): {}}
 	}
 	return nil
 }
@@ -174,17 +176,17 @@ func (p *memoryPubSub) Leave(nsID, projectID int64) error {
 	//mlog.Warningf("Leave to: (%d---%d)", nsID, projectID)
 	rooms, ok := p.manager.idRooms[p.id]
 	if ok {
-		delete(rooms, nsID)
+		delete(rooms, int32(nsID))
 	}
 	if len(p.manager.idRooms[p.id]) == 0 {
 		delete(p.manager.idRooms, p.id)
 	}
-	mm, ok := p.manager.roomIDs[nsID]
+	mm, ok := p.manager.roomIDs[int32(nsID)]
 	if ok {
-		delete(mm, projectID)
+		delete(mm, int32(projectID))
 	}
-	if len(p.manager.roomIDs[nsID]) == 0 {
-		delete(p.manager.roomIDs, nsID)
+	if len(p.manager.roomIDs[int32(nsID)]) == 0 {
+		delete(p.manager.roomIDs, int32(nsID))
 	}
 	return nil
 }

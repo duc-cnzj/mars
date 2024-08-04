@@ -11,10 +11,10 @@ func FromGitProject(g *ent.GitProject) *types.GitProjectModel {
 		return nil
 	}
 	return &types.GitProjectModel{
-		Id:            int64(g.ID),
+		Id:            int32(g.ID),
 		DefaultBranch: g.DefaultBranch,
 		Name:          g.Name,
-		GitProjectId:  int64(g.GitProjectID),
+		GitProjectId:  int32(g.GitProjectID),
 		Enabled:       g.Enabled,
 		GlobalEnabled: g.GlobalEnabled,
 		GlobalConfig:  g.GlobalConfig,

@@ -35,7 +35,7 @@ type cacheImpl struct {
 	logger mlog.Logger
 }
 
-func NewCacheImpl(cfg *config.Config, data *data.Data, logger mlog.Logger, sf *singleflight.Group) (ca Cache) {
+func NewCacheImpl(cfg *config.Config, data data.Data, logger mlog.Logger, sf *singleflight.Group) (ca Cache) {
 	switch cfg.CacheDriver {
 	case "memory":
 		ca = newCache(
@@ -46,7 +46,7 @@ func NewCacheImpl(cfg *config.Config, data *data.Data, logger mlog.Logger, sf *s
 			sf,
 		)
 	case "db":
-		ca = newCache(NewDBStore(data.DB), logger, sf)
+		ca = newCache(NewDBStore(data), logger, sf)
 	default:
 		ca = &NoCache{}
 	}

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, memo } from "react";
 import { Affix, Button, Modal, Input, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { createNamespace } from "../api/namespace";
+import ajax from "../api/ajax";
 
 interface IProps {
   onCreated: ({ id, name }: { id: number; name: string }) => void;
@@ -21,10 +21,10 @@ const AddNamespace: React.FC<IProps> = ({ onCreated }) => {
       return;
     }
 
-    createNamespace(namespace)
+    ajax
+      .POST("/api/namespaces", { body: { namespace } })
       .then(({ data }) => {
-        data.namespace &&
-          onCreated({ id: data.namespace.id, name: data.namespace.name });
+        data && onCreated({ id: data.namespace.id, name: data.namespace.name });
         message.success("名称空间创建成功");
         setIsVisible(false);
         setNamespace("");

@@ -11,7 +11,7 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/duc-cnzj/mars/api/v4/endpoint;endpoint";
 
 message InNamespaceRequest {
-  int64 namespace_id = 1[(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 namespace_id = 1[(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message InNamespaceResponse {
@@ -19,7 +19,7 @@ message InNamespaceResponse {
 }
 
 message InProjectRequest {
-  int64 project_id = 1[(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1[(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message InProjectResponse {

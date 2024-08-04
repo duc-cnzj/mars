@@ -26,9 +26,7 @@ import theme from "../styles/theme";
 import AsciinemaPlayer from "./Player";
 import pb from "../api/compiled";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { events, showEvent } from "../api/event";
-import { showRecords } from "../api/file";
-import { deleteFile, downloadFile, diskInfo as diskInfoApi } from "../api/file";
+import { downloadFile } from "../api/file";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DiffViewer from "./DiffViewer";
 import { css } from "@emotion/css";
@@ -39,6 +37,8 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import styled from "@emotion/styled";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const defaultPageSize = 15;
 const { Option } = Select;
@@ -47,19 +47,24 @@ const initQuery = { action_type: pb.types.EventActionType.Unknown, search: "" };
 
 const EventList: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [diskInfo, setDiskInfo] = useState<pb.file.DiskInfoResponse>();
+  const [diskInfo, setDiskInfo] =
+    useState<components["schemas"]["file.DiskInfoResponse"]>();
   const [paginate, setPaginate] = useState<{
     page: number;
     page_size: number;
   }>({ page: 0, page_size: defaultPageSize });
-  const [data, setData] = useState<pb.types.EventModel[]>([]);
+  const [data, setData] = useState<components["schemas"]["types.EventModel"][]>(
+    []
+  );
   const [queries, setQueries] = useState<{
     action_type: pb.types.EventActionType;
     search: string;
   }>(initQuery);
 
   useEffect(() => {
-    diskInfoApi().then(({ data }) => setDiskInfo(data));
+    ajax.GET("/api/files/disk_info").then(({ data }) => {
+      data && setDiskInfo(data);
+    });
   }, []);
 
   const loadMoreData = () => {
@@ -67,18 +72,24 @@ const EventList: React.FC = () => {
       return;
     }
     setLoading(true);
-    events({
-      page: paginate.page + 1,
-      page_size: paginate.page_size,
-      action_type: queries.action_type,
-      search: queries.search,
-    })
-      .then(({ data: res }) => {
-        setData((data) => [...data, ...res.items]);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-        });
+    ajax
+      .GET("/api/events", {
+        params: {
+          query: {
+            page: paginate.page + 1,
+            page_size: paginate.page_size,
+            action_type: queries.action_type,
+            search: queries.search,
+          },
+        },
+      })
+      .then(({ data }) => {
+        data && setData((items) => [...items, ...data.items]);
+        data &&
+          setPaginate({
+            page: Number(data.page),
+            page_size: Number(data.pageSize),
+          });
         setLoading(false);
       })
       .catch((e) => {
@@ -92,18 +103,24 @@ const EventList: React.FC = () => {
     if (scrollDiv.current) {
       scrollDiv.current.scrollTo(0, 0);
     }
-    events({
-      page: 1,
-      page_size: defaultPageSize,
-      action_type: action_type,
-      search: search,
-    })
-      .then(({ data: res }) => {
-        setData(res.items);
-        setPaginate({
-          page: Number(res.page),
-          page_size: Number(res.page_size),
-        });
+    ajax
+      .GET("/api/events", {
+        params: {
+          query: {
+            page: 1,
+            page_size: defaultPageSize,
+            action_type: action_type,
+            search: search,
+          },
+        },
+      })
+      .then(({ data }) => {
+        data && setData(data.items);
+        data &&
+          setPaginate({
+            page: Number(data.page),
+            page_size: Number(data.pageSize),
+          });
       })
       .catch((e) => {
         message.error(e.response.data.message);
@@ -226,15 +243,18 @@ const EventList: React.FC = () => {
 
   const showWindow = useCallback(
     (id: number) => {
-      showEvent(id).then(({ data }) => {
-        data.event &&
-          setConfig({
-            old: data.event.old,
-            new: data.event.new,
-            title: detail(data.event.username, data.event.message),
-          });
-        setIsWindowVisible(true);
-      });
+      ajax
+        .GET("/api/events/{id}", { params: { path: { id: id } } })
+        .then(({ data }) => {
+          data &&
+            data.event &&
+            setConfig({
+              old: data.event.old,
+              new: data.event.new,
+              title: detail(data.event.username, data.event.message),
+            });
+          setIsWindowVisible(true);
+        });
     },
     [detail]
   );
@@ -255,9 +275,11 @@ const EventList: React.FC = () => {
   const [key, setKey] = useState(0);
 
   const fetchFileRaw = useCallback((id: number) => {
-    showRecords(id).then(({ data }) => {
-      setRecords(data.items);
-    });
+    ajax
+      .GET("/api/record_files/{id}", { params: { path: { id: id } } })
+      .then(({ data }) => {
+        data && setRecords(data.items);
+      });
   }, []);
 
   return (
@@ -312,7 +334,7 @@ const EventList: React.FC = () => {
           </div>
           <div style={{ fontSize: 12, fontWeight: "normal" }}>
             文件占用:{" "}
-            <span style={{ color: "blue" }}>{diskInfo?.humanize_usage}</span>
+            <span style={{ color: "blue" }}>{diskInfo?.humanizeUsage}</span>
           </div>
         </div>
       }
@@ -351,7 +373,7 @@ const EventList: React.FC = () => {
         >
           <List
             dataSource={data}
-            renderItem={(item: pb.types.EventModel) => (
+            renderItem={(item: components["schemas"]["types.EventModel"]) => (
               <ListItem key={item.id}>
                 <List.Item.Meta
                   title={
@@ -365,9 +387,9 @@ const EventList: React.FC = () => {
                           font-weight: normal;
                         `}
                       >
-                        {item.event_at}
+                        {item.eventAt}
                         <DateSpan>
-                          {dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss")}
+                          {dayjs(item.createdAt).format("YYYY-MM-DD HH:mm:ss")}
                         </DateSpan>
                       </div>
                     </div>
@@ -386,25 +408,30 @@ const EventList: React.FC = () => {
                             visible: true,
                             title: detail(item.username, item.message),
                           });
-                          fetchFileRaw(item.file_id);
+                          fetchFileRaw(item.fileId);
                         }}
                       >
                         查看操作记录{" "}
                         {item.duration && (
                           <span style={{ fontSize: "10px", marginLeft: 5 }}>
                             (时长: {item.duration}, 大小:{" "}
-                            {item.file?.humanize_size})
+                            {item.file?.humanizeSize})
                           </span>
                         )}
                       </Button>
                       <DeleteFile
                         onDelete={() => {
-                          deleteFile({ id: item.file_id })
-                            .then((res) => {
+                          ajax
+                            .DELETE("/api/files/{id}", {
+                              params: { path: { id: item.fileId } },
+                            })
+                            .then(() => {
                               setData(
-                                data.map((v) =>
-                                  v.id === item.id ? { ...v, file: null } : v
-                                )
+                                data.map((v) => {
+                                  return v.id === item.id
+                                    ? { ...v, fileId: 0 }
+                                    : v;
+                                })
                               );
                               message.success("删除成功");
                             })
@@ -422,18 +449,21 @@ const EventList: React.FC = () => {
                         type="dashed"
                         style={{ marginRight: 5 }}
                         onClick={() => {
-                          downloadFile(item.file_id);
+                          downloadFile(item.fileId);
                         }}
                       >
                         下载文件
                       </Button>
                       <DeleteFile
                         onDelete={() => {
-                          deleteFile({ id: item.file_id })
-                            .then((res) => {
+                          ajax
+                            .DELETE("/api/files/{id}", {
+                              params: { path: { id: item.fileId } },
+                            })
+                            .then(() => {
                               setData(
                                 data.map((v) =>
-                                  v.id === item.id ? { ...v, file: null } : v
+                                  v.id === item.id ? { ...v, fileId: 0 } : v
                                 )
                               );
                               message.success("删除成功");
@@ -445,7 +475,7 @@ const EventList: React.FC = () => {
                       />
                     </>
                   )}
-                {item.has_diff && (
+                {item.hasDiff && (
                   <Button
                     type="dashed"
                     onClick={() => {

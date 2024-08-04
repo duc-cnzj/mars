@@ -3,16 +3,16 @@ import { DraggableModalProvider } from "../pkg/DraggableModal/DraggableModalProv
 import ItemCard from "./ItemCard";
 import { Empty, Row, Col } from "antd";
 import "../pkg/DraggableModal/index.css";
-import { allNamespaces } from "../api/namespace";
 import { useSelector, useDispatch } from "react-redux";
 import { setNamespaceReload, setOpenedModals } from "../store/actions";
 import { selectReload, selectReloadNsID } from "../store/reducers/namespace";
-import pb from "../api/compiled";
 import AddNamespace from "./AddNamespace";
 import { useAsyncState } from "../utils/async";
 import styled from "@emotion/styled";
 import { useSearchParams } from "react-router-dom";
 import { isNumber, sortedUniq } from "lodash";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const AppContent: React.FC = () => {
   const reloadNamespace = useSelector(selectReload);
@@ -20,13 +20,14 @@ const AppContent: React.FC = () => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [namespaceItems, setNamespaceItems] = useAsyncState<
-    pb.types.NamespaceModel[]
+    components["schemas"]["types.NamespaceModel"][]
   >([]);
   const fetchNamespaces = useCallback(() => {
     setLoading(true);
-    return allNamespaces()
-      .then((res) => {
-        setNamespaceItems(res.data.items);
+    return ajax
+      .GET("/api/namespaces")
+      .then(({ data }) => {
+        data && setNamespaceItems(data.items);
       })
       .finally(() => setLoading(false));
   }, [setNamespaceItems]);
@@ -61,18 +62,21 @@ const AppContent: React.FC = () => {
           <Empty description={false} imageStyle={{ height: 300 }} />
         ) : (
           <Row gutter={[16, 16]}>
-            {namespaceItems.map((item: pb.types.NamespaceModel) => (
-              <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
-                <ItemCard
-                  loading={
-                    loading &&
-                    (Number(item.id) === Number(reloadNsID) || reloadNsID === 0)
-                  }
-                  item={item}
-                  onNamespaceDeleted={fetchNamespaces}
-                />
-              </Col>
-            ))}
+            {namespaceItems.map(
+              (item: components["schemas"]["types.NamespaceModel"]) => (
+                <Col md={12} lg={8} sm={12} xs={24} key={item.id}>
+                  <ItemCard
+                    loading={
+                      loading &&
+                      (Number(item.id) === Number(reloadNsID) ||
+                        reloadNsID === 0)
+                    }
+                    item={item}
+                    onNamespaceDeleted={fetchNamespaces}
+                  />
+                </Col>
+              )
+            )}
           </Row>
         )}
       </Content>

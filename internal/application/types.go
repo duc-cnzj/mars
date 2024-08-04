@@ -59,7 +59,7 @@ type Bootstrapper interface {
 // App app.
 type App interface {
 	// Data app data.
-	Data() *data.Data
+	Data() data.Data
 
 	// Config app configuration.
 	Config() *config.Config

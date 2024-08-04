@@ -57,8 +57,8 @@ message ServiceEndpoint {
 }
 
 message ChangelogModel {
-  int64               id                 = 1;
-  int64               version            = 2;
+  int32               id                 = 1;
+  int32               version            = 2;
   string              username           = 3;
   repeated string     manifest           = 4;
   string              config             = 5;
@@ -88,14 +88,14 @@ message ChangelogModel {
 }
 
 message EventModel {
-  int64           id         = 1;
+  int32           id         = 1;
   EventActionType action     = 2;
   string          username   = 3;
   string          message    = 4;
   string          old        = 5;
   string          new        = 6;
   string          duration   = 7;
-  int64           file_id    = 8;
+  int32           file_id    = 8;
 
   FileModel       file       = 9;
   string          event_at   = 10;
@@ -107,9 +107,9 @@ message EventModel {
 }
 
 message FileModel {
-  int64  id             = 1;
+  int32  id             = 1;
   string path           = 2;
-  int64  size           = 3;
+  int32  size           = 3;
   string username       = 4;
   string namespace      = 5;
   string pod            = 6;
@@ -124,10 +124,10 @@ message FileModel {
 }
 
 message GitProjectModel {
-  int64       id             = 1;
+  int32       id             = 1;
   string      default_branch = 2;
   string      name           = 3;
-  int64       git_project_id = 4;
+  int32       git_project_id = 4;
   bool        enabled        = 5;
   bool        global_enabled = 6;
   mars.Config global_config  = 7;
@@ -142,7 +142,7 @@ message ImagePullSecret {
 }
 
 message NamespaceModel {
-  int64                    id               = 1;
+  int32                    id               = 1;
   string                   name             = 2;
   repeated ImagePullSecret ImagePullSecrets = 3;
 
@@ -166,16 +166,16 @@ message KeyValue {
 }
 
 message ProjectModel {
-  int64               id                  = 1;
+  int32               id                  = 1;
   string              name                = 2;
-  int64               git_project_id      = 3;
+  int32               git_project_id      = 3;
   string              git_branch          = 4;
   string              git_commit          = 5;
   string              config              = 6;
   string              override_values     = 7;
   string              docker_image        = 8;
   repeated string     pod_selectors       = 9;
-  int64               namespace_id        = 10;
+  int32               namespace_id        = 10;
   bool                atomic              = 11;
   repeated KeyValue   env_values          = 12;
   repeated ExtraValue extra_values        = 13;
@@ -189,7 +189,7 @@ message ProjectModel {
   string              git_commit_title    = 20;
   string              git_commit_author   = 21;
   string              git_commit_date     = 22;
-  int64               version             = 23;
+  int32               version             = 23;
 
   NamespaceModel      namespace           = 50;
 
@@ -213,8 +213,14 @@ message AccessTokenModel {
 }
 
 message RepoModel {
-  int64          id             = 1;
-  optional int64 git_project_id = 2;
-  bool           enabled        = 3;
-  mars.Config    mars_config    = 4;
+  int32           id               = 1;
+  string          name             = 2;
+  optional int32  git_project_id   = 3;
+  optional string git_project_name = 4;
+  bool            enabled          = 5;
+  mars.Config     mars_config      = 6;
+
+  string          created_at       = 100;
+  string          updated_at       = 101;
+  string          deleted_at       = 102;
 }

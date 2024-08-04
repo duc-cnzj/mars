@@ -147,6 +147,6 @@ func NewCloser(fn func() error) io.Closer {
 	return &internalCloser{closeFn: fn}
 }
 
-func GetSlugName[T int64 | int](namespaceId T, name string) string {
+func GetSlugName[T int64 | int | int32](namespaceId T, name string) string {
 	return hash.Hash(fmt.Sprintf("%d-%s", namespaceId, name))
 }

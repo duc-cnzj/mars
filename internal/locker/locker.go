@@ -18,7 +18,7 @@ type Locker interface {
 	Owner(key string) string
 }
 
-func NewLocker(cfg *config.Config, data *data.Data, logger mlog.Logger, timer timer.Timer) (Locker, error) {
+func NewLocker(cfg *config.Config, data data.Data, logger mlog.Logger, timer timer.Timer) (Locker, error) {
 	if cfg.DBDriver == "sqlite" && cfg.CacheDriver == "db" {
 		cfg.CacheDriver = "memory"
 		logger.Warning(`使用 DBDriver 为 "sqlite" 时，CacheDriver,Locker 只能使用 "memory"!`)
@@ -28,7 +28,7 @@ func NewLocker(cfg *config.Config, data *data.Data, logger mlog.Logger, timer ti
 
 	switch driver {
 	case "db":
-		return NewDatabaseLock(timer, [2]int{2, 100}, data.DB, logger), nil
+		return NewDatabaseLock(timer, [2]int{2, 100}, data, logger), nil
 	case "memory":
 		fallthrough
 	default:

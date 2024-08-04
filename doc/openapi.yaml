@@ -1,0 +1,2317 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: mars api.
+    version: ""
+paths:
+    /api/access_tokens:
+        get:
+            tags:
+                - AccessToken
+            operationId: AccessToken_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.ListResponse'
+        post:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Grant
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/token.GrantRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.GrantResponse'
+    /api/access_tokens/{token}:
+        put:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Lease
+            parameters:
+                - name: token
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/token.LeaseRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.LeaseResponse'
+        delete:
+            tags:
+                - AccessToken
+            operationId: AccessToken_Revoke
+            parameters:
+                - name: token
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/token.RevokeResponse'
+    /api/auth/exchange:
+        post:
+            tags:
+                - Auth
+            operationId: Auth_Exchange
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.ExchangeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.ExchangeResponse'
+    /api/auth/info:
+        get:
+            tags:
+                - Auth
+            operationId: Auth_Info
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.InfoResponse'
+    /api/auth/login:
+        post:
+            tags:
+                - Auth
+            operationId: Auth_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.LoginResponse'
+    /api/auth/settings:
+        get:
+            tags:
+                - Auth
+            operationId: Auth_Settings
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.SettingsResponse'
+    /api/cluster_info:
+        get:
+            tags:
+                - Cluster
+            operationId: Cluster_ClusterInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/cluster.InfoResponse'
+    /api/containers/copy_to_pod:
+        post:
+            tags:
+                - Container
+            operationId: Container_CopyToPod
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.CopyToPodRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.CopyToPodResponse'
+    /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/logs:
+        get:
+            tags:
+                - Container
+            description: ContainerLog 查看 pod 日志
+            operationId: Container_ContainerLog
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: container
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showEvents
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.LogResponse'
+    /api/containers/namespaces/{namespace}/pods/{pod}/containers/{container}/stream_logs:
+        get:
+            tags:
+                - Container
+            operationId: Container_StreamContainerLog
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: container
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showEvents
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.LogResponse'
+    /api/containers/pod_exists:
+        post:
+            tags:
+                - Container
+            operationId: Container_IsPodExists
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.IsPodExistsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.IsPodExistsResponse'
+    /api/containers/pod_running_status:
+        post:
+            tags:
+                - Container
+            operationId: Container_IsPodRunning
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/container.IsPodRunningRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/container.IsPodRunningResponse'
+    /api/endpoints/namespaces/{namespaceId}:
+        get:
+            tags:
+                - Endpoint
+            operationId: Endpoint_InNamespace
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/endpoint.InNamespaceResponse'
+    /api/endpoints/projects/{projectId}:
+        get:
+            tags:
+                - Endpoint
+            operationId: Endpoint_InProject
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/endpoint.InProjectResponse'
+    /api/events:
+        get:
+            tags:
+                - Event
+            operationId: Event_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: actionType
+                  in: query
+                  schema:
+                    type: integer
+                    format: enum
+                - name: search
+                  in: query
+                  description: 模糊搜索 message 和 username
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/event.ListResponse'
+    /api/events/{id}:
+        get:
+            tags:
+                - Event
+            operationId: Event_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/event.ShowResponse'
+    /api/files:
+        get:
+            tags:
+                - File
+            operationId: File_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: withoutDeleted
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.ListResponse'
+    /api/files/disk_info:
+        get:
+            tags:
+                - File
+            operationId: File_DiskInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.DiskInfoResponse'
+    /api/files/max_upload_size:
+        get:
+            tags:
+                - File
+            operationId: File_MaxUploadSize
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.MaxUploadSizeResponse'
+    /api/files/{id}:
+        delete:
+            tags:
+                - File
+            operationId: File_Delete
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.DeleteResponse'
+    /api/git/project_options:
+        get:
+            tags:
+                - Git
+            operationId: Git_ProjectOptions
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.ProjectOptionsResponse'
+    /api/git/projects:
+        get:
+            tags:
+                - Git
+            operationId: Git_All
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.AllResponse'
+    /api/git/projects/disable:
+        post:
+            tags:
+                - Git
+            operationId: Git_DisableProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/git.DisableProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.DisableProjectResponse'
+    /api/git/projects/enable:
+        post:
+            tags:
+                - Git
+            operationId: Git_EnableProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/git.EnableProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.EnableProjectResponse'
+    /api/git/projects/{gitProjectId}/branch_options:
+        get:
+            tags:
+                - Git
+            operationId: Git_BranchOptions
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: all
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.BranchOptionsResponse'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commit_options:
+        get:
+            tags:
+                - Git
+            operationId: Git_CommitOptions
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.CommitOptionsResponse'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}:
+        get:
+            tags:
+                - Git
+            operationId: Git_Commit
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: commit
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.CommitResponse'
+    /api/git/projects/{gitProjectId}/branches/{branch}/commits/{commit}/pipeline_info:
+        get:
+            tags:
+                - Git
+            operationId: Git_PipelineInfo
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: commit
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.PipelineInfoResponse'
+    /api/git/projects/{gitProjectId}/branches/{branch}/config_file:
+        get:
+            tags:
+                - Git
+            operationId: Git_MarsConfigFile
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/git.MarsConfigFileResponse'
+    /api/git/projects/{gitProjectId}/default_values:
+        get:
+            tags:
+                - GitConfig
+            operationId: GitConfig_GetDefaultChartValues
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/gitconfig.DefaultChartValuesResponse'
+    /api/git/projects/{gitProjectId}/global_config:
+        get:
+            tags:
+                - GitConfig
+            operationId: GitConfig_GlobalConfig
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/gitconfig.GlobalConfigResponse'
+    /api/git/projects/{gitProjectId}/mars_config:
+        get:
+            tags:
+                - GitConfig
+            operationId: GitConfig_Show
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: branch
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/gitconfig.ShowResponse'
+        put:
+            tags:
+                - GitConfig
+            operationId: GitConfig_Update
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/gitconfig.UpdateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/gitconfig.UpdateResponse'
+    /api/git/projects/{gitProjectId}/toggle_status:
+        post:
+            tags:
+                - GitConfig
+            operationId: GitConfig_ToggleGlobalStatus
+            parameters:
+                - name: gitProjectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/gitconfig.ToggleGlobalStatusRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/gitconfig.ToggleGlobalStatusResponse'
+    /api/metrics/namespace/{namespaceId}/cpu_memory:
+        get:
+            tags:
+                - Metrics
+            operationId: Metrics_CpuMemoryInNamespace
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.CpuMemoryInNamespaceResponse'
+    /api/metrics/namespace/{namespace}/pods/{pod}:
+        get:
+            tags:
+                - Metrics
+            operationId: Metrics_TopPod
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.TopPodResponse'
+    /api/metrics/namespace/{namespace}/pods/{pod}/stream:
+        get:
+            tags:
+                - Metrics
+            operationId: Metrics_StreamTopPod
+            parameters:
+                - name: namespace
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pod
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.TopPodResponse'
+    /api/metrics/projects/{projectId}/cpu_memory:
+        get:
+            tags:
+                - Metrics
+            operationId: Metrics_CpuMemoryInProject
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/metrics.CpuMemoryInProjectResponse'
+    /api/namespaces:
+        get:
+            tags:
+                - Namespace
+            description: All 获取所有的名称空间
+            operationId: Namespace_All
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.AllResponse'
+        post:
+            tags:
+                - Namespace
+            description: Create 创建名称空间
+            operationId: Namespace_Create
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/namespace.CreateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.CreateResponse'
+    /api/namespaces/exists:
+        post:
+            tags:
+                - Namespace
+            description: IsExists 名称空间是否存在
+            operationId: Namespace_IsExists
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.IsExistsResponse'
+    /api/namespaces/{namespaceId}:
+        get:
+            tags:
+                - Namespace
+            description: Show 查看名称空间详情
+            operationId: Namespace_Show
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.ShowResponse'
+        delete:
+            tags:
+                - Namespace
+            description: Delete 删除名称空间
+            operationId: Namespace_Delete
+            parameters:
+                - name: namespaceId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/namespace.DeleteResponse'
+    /api/picture/background:
+        get:
+            tags:
+                - Picture
+            description: Background 获取背景图片
+            operationId: Picture_Background
+            parameters:
+                - name: random
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/picture.BackgroundResponse'
+    /api/projects:
+        get:
+            tags:
+                - Project
+            description: List 获取项目列表
+            operationId: Project_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ListResponse'
+    /api/projects/host_variables:
+        post:
+            tags:
+                - Project
+            description: HostVariables 获取 hosts 变量
+            operationId: Project_HostVariables
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/project.HostVariablesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.HostVariablesResponse'
+    /api/projects/{projectId}:
+        get:
+            tags:
+                - Project
+            description: Show 项目详情
+            operationId: Project_Show
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.ShowResponse'
+        delete:
+            tags:
+                - Project
+            description: Delete 删除项目
+            operationId: Project_Delete
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.DeleteResponse'
+    /api/projects/{projectId}/changelogs:
+        get:
+            tags:
+                - Changelog
+            operationId: Changelog_Show
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+                - name: onlyChanged
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/changelog.ShowResponse'
+    /api/projects/{projectId}/containers:
+        get:
+            tags:
+                - Project
+            description: AllContainers 获取项目下的所有 pod
+            operationId: Project_AllContainers
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.AllContainersResponse'
+    /api/projects/{projectId}/version:
+        get:
+            tags:
+                - Project
+            description: Version 版本号, 如果不存在则返回 0
+            operationId: Project_Version
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/project.VersionResponse'
+    /api/record_files/{id}:
+        get:
+            tags:
+                - File
+            operationId: File_ShowRecords
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/file.ShowRecordsResponse'
+    /api/repos:
+        get:
+            tags:
+                - Repo
+            operationId: Repo_List
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: enabled
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ListResponse'
+        post:
+            tags:
+                - Repo
+            operationId: Repo_Create
+            parameters:
+                - name: name
+                  in: query
+                  schema:
+                    type: string
+                - name: gitProjectId
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: enabled
+                  in: query
+                  schema:
+                    type: boolean
+                - name: marsConfig.configFile
+                  in: query
+                  description: config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
+                  schema:
+                    type: string
+                - name: marsConfig.configFileValues
+                  in: query
+                  description: config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
+                  schema:
+                    type: string
+                - name: marsConfig.configField
+                  in: query
+                  schema:
+                    type: string
+                - name: marsConfig.isSimpleEnv
+                  in: query
+                  schema:
+                    type: boolean
+                - name: marsConfig.configFileType
+                  in: query
+                  description: config_file_type 配置文件类型，php/env/yaml...
+                  schema:
+                    type: string
+                - name: marsConfig.localChartPath
+                  in: query
+                  description: local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
+                  schema:
+                    type: string
+                - name: marsConfig.branches
+                  in: query
+                  description: branches 启用的分支
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: marsConfig.valuesYaml
+                  in: query
+                  description: values_yaml 和 values.yaml 一样
+                  schema:
+                    type: string
+                - name: marsConfig.displayName
+                  in: query
+                  description: |-
+                    显示的名称 (helm app name), 不填就使用 git server project name
+                     以字母开头结尾，中间可以有 '_' '-'
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.CreateResponse'
+    /api/repos/toggle_enabled:
+        post:
+            tags:
+                - Repo
+            operationId: Repo_ToggleEnabled
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/repo.ToggleEnabledRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ToggleEnabledResponse'
+    /api/repos/{id}:
+        get:
+            tags:
+                - Repo
+            operationId: Repo_Show
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/repo.ShowResponse'
+    /api/version:
+        get:
+            tags:
+                - Version
+            description: Version 获取当前版本信息
+            operationId: Version_Version
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/version.Response'
+components:
+    schemas:
+        auth.ExchangeRequest:
+            required:
+                - code
+            type: object
+            properties:
+                code:
+                    type: string
+        auth.ExchangeResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                expiresIn:
+                    type: string
+        auth.InfoResponse:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                avatar:
+                    type: string
+                name:
+                    type: string
+                email:
+                    type: string
+                logoutUrl:
+                    type: string
+                roles:
+                    type: array
+                    items:
+                        type: string
+        auth.LoginRequest:
+            required:
+                - username
+                - password
+            type: object
+            properties:
+                username:
+                    type: string
+                password:
+                    type: string
+        auth.LoginResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                expiresIn:
+                    type: string
+        auth.SettingsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/auth.SettingsResponse_OidcSetting'
+        auth.SettingsResponse_OidcSetting:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                name:
+                    type: string
+                url:
+                    type: string
+                endSessionEndpoint:
+                    type: string
+                state:
+                    type: string
+        changelog.ShowResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ChangelogModel'
+        cluster.InfoResponse:
+            type: object
+            properties:
+                status:
+                    type: string
+                freeMemory:
+                    type: string
+                freeCpu:
+                    type: string
+                freeRequestMemory:
+                    type: string
+                freeRequestCpu:
+                    type: string
+                totalMemory:
+                    type: string
+                totalCpu:
+                    type: string
+                usageMemoryRate:
+                    type: string
+                usageCpuRate:
+                    type: string
+                requestMemoryRate:
+                    type: string
+                requestCpuRate:
+                    type: string
+        container.CopyToPodRequest:
+            required:
+                - fileId
+                - namespace
+                - pod
+                - container
+            type: object
+            properties:
+                fileId:
+                    type: string
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+        container.CopyToPodResponse:
+            type: object
+            properties:
+                podFilePath:
+                    type: string
+                output:
+                    type: string
+                fileName:
+                    type: string
+        container.IsPodExistsRequest:
+            required:
+                - namespace
+                - pod
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+        container.IsPodExistsResponse:
+            type: object
+            properties:
+                exists:
+                    type: boolean
+        container.IsPodRunningRequest:
+            required:
+                - namespace
+                - pod
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+        container.IsPodRunningResponse:
+            type: object
+            properties:
+                running:
+                    type: boolean
+                reason:
+                    type: string
+        container.LogResponse:
+            type: object
+            properties:
+                namespace:
+                    type: string
+                podName:
+                    type: string
+                containerName:
+                    type: string
+                log:
+                    type: string
+        endpoint.InNamespaceResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+        endpoint.InProjectResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+        event.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.EventModel'
+        event.ShowResponse:
+            type: object
+            properties:
+                event:
+                    $ref: '#/components/schemas/types.EventModel'
+        file.DeleteResponse:
+            type: object
+            properties: {}
+        file.DiskInfoResponse:
+            type: object
+            properties:
+                usage:
+                    type: string
+                humanizeUsage:
+                    type: string
+        file.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.FileModel'
+                count:
+                    type: integer
+                    format: int32
+        file.MaxUploadSizeResponse:
+            type: object
+            properties:
+                humanizeSize:
+                    type: string
+                bytes:
+                    type: integer
+                    format: uint32
+        file.ShowRecordsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        type: string
+        git.AllResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.ProjectItem'
+        git.BranchOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        git.CommitOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        git.CommitResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                shortId:
+                    type: string
+                gitProjectId:
+                    type: string
+                label:
+                    type: string
+                title:
+                    type: string
+                branch:
+                    type: string
+                authorName:
+                    type: string
+                authorEmail:
+                    type: string
+                committerName:
+                    type: string
+                committerEmail:
+                    type: string
+                webUrl:
+                    type: string
+                message:
+                    type: string
+                committedDate:
+                    type: string
+                createdAt:
+                    type: string
+        git.DisableProjectRequest:
+            type: object
+            properties:
+                gitProjectId:
+                    type: string
+        git.DisableProjectResponse:
+            type: object
+            properties: {}
+        git.EnableProjectRequest:
+            type: object
+            properties:
+                gitProjectId:
+                    type: string
+        git.EnableProjectResponse:
+            type: object
+            properties: {}
+        git.MarsConfigFileResponse:
+            type: object
+            properties:
+                data:
+                    type: string
+                type:
+                    type: string
+                elements:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/mars.Element'
+        git.Option:
+            type: object
+            properties:
+                value:
+                    type: string
+                label:
+                    type: string
+                type:
+                    type: string
+                isLeaf:
+                    type: boolean
+                gitProjectId:
+                    type: string
+                branch:
+                    type: string
+                displayName:
+                    type: string
+        git.PipelineInfoResponse:
+            type: object
+            properties:
+                status:
+                    type: string
+                webUrl:
+                    type: string
+        git.ProjectItem:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                path:
+                    type: string
+                webUrl:
+                    type: string
+                avatarUrl:
+                    type: string
+                description:
+                    type: string
+                enabled:
+                    type: boolean
+                globalEnabled:
+                    type: boolean
+                displayName:
+                    type: string
+        git.ProjectOptionsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/git.Option'
+        gitconfig.DefaultChartValuesResponse:
+            type: object
+            properties:
+                value:
+                    type: string
+        gitconfig.GlobalConfigResponse:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                config:
+                    $ref: '#/components/schemas/mars.Config'
+        gitconfig.ShowResponse:
+            type: object
+            properties:
+                branch:
+                    type: string
+                config:
+                    $ref: '#/components/schemas/mars.Config'
+        gitconfig.ToggleGlobalStatusRequest:
+            type: object
+            properties:
+                gitProjectId:
+                    type: string
+                enabled:
+                    type: boolean
+        gitconfig.ToggleGlobalStatusResponse:
+            type: object
+            properties: {}
+        gitconfig.UpdateRequest:
+            type: object
+            properties:
+                gitProjectId:
+                    type: string
+                config:
+                    $ref: '#/components/schemas/mars.Config'
+        gitconfig.UpdateResponse:
+            type: object
+            properties:
+                config:
+                    $ref: '#/components/schemas/mars.Config'
+        mars.Config:
+            type: object
+            properties:
+                configFile:
+                    type: string
+                    description: config_file 指定项目下的默认配置文件, 也可以是别的项目的文件，格式为 "pid|branch|filename"
+                configFileValues:
+                    type: string
+                    description: config_file_values 全局配置文件，如果没有 ConfigFile 则使用这个
+                configField:
+                    type: string
+                isSimpleEnv:
+                    type: boolean
+                configFileType:
+                    type: string
+                    description: config_file_type 配置文件类型，php/env/yaml...
+                localChartPath:
+                    type: string
+                    description: local_chart_path helm charts 目录, charts 文件在项目中存放的目录(必填), 也可以是别的项目的文件，格式为 "pid|branch|path"
+                branches:
+                    type: array
+                    items:
+                        type: string
+                    description: branches 启用的分支
+                valuesYaml:
+                    type: string
+                    description: values_yaml 和 values.yaml 一样
+                elements:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/mars.Element'
+                    description: elements 自定义字段
+                displayName:
+                    type: string
+                    description: |-
+                        显示的名称 (helm app name), 不填就使用 git server project name
+                         以字母开头结尾，中间可以有 '_' '-'
+        mars.Element:
+            type: object
+            properties:
+                path:
+                    type: string
+                type:
+                    type: integer
+                    format: enum
+                default:
+                    type: string
+                description:
+                    type: string
+                selectValues:
+                    type: array
+                    items:
+                        type: string
+                order:
+                    type: integer
+                    format: uint32
+        metrics.CpuMemoryInNamespaceResponse:
+            type: object
+            properties:
+                cpu:
+                    type: string
+                memory:
+                    type: string
+        metrics.CpuMemoryInProjectResponse:
+            type: object
+            properties:
+                cpu:
+                    type: string
+                memory:
+                    type: string
+        metrics.TopPodResponse:
+            type: object
+            properties:
+                cpu:
+                    type: number
+                    format: double
+                memory:
+                    type: number
+                    format: double
+                humanizeCpu:
+                    type: string
+                humanizeMemory:
+                    type: string
+                time:
+                    type: string
+                length:
+                    type: integer
+                    format: int32
+        namespace.AllResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.NamespaceModel'
+        namespace.CreateRequest:
+            required:
+                - namespace
+            type: object
+            properties:
+                namespace:
+                    type: string
+                ignoreIfExists:
+                    type: boolean
+                    description: 已存在则忽略，不会报错
+        namespace.CreateResponse:
+            type: object
+            properties:
+                namespace:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+                exists:
+                    type: boolean
+        namespace.DeleteResponse:
+            type: object
+            properties: {}
+        namespace.IsExistsResponse:
+            type: object
+            properties:
+                exists:
+                    type: boolean
+                id:
+                    type: string
+        namespace.ShowResponse:
+            type: object
+            properties:
+                namespace:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+        picture.BackgroundResponse:
+            type: object
+            properties:
+                url:
+                    type: string
+                copyright:
+                    type: string
+        project.AllContainersResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.StateContainer'
+        project.DeleteResponse:
+            type: object
+            properties: {}
+        project.HostVariablesRequest:
+            type: object
+            properties:
+                projectName:
+                    type: string
+                    description: 如果不指定则使用从 git server 获取的项目名称
+                namespace:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                gitBranch:
+                    type: string
+        project.HostVariablesResponse:
+            type: object
+            properties:
+                hosts:
+                    type: object
+                    additionalProperties:
+                        type: string
+        project.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ProjectModel'
+        project.ShowResponse:
+            type: object
+            properties:
+                project:
+                    $ref: '#/components/schemas/types.ProjectModel'
+                urls:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ServiceEndpoint'
+                cpu:
+                    type: string
+                memory:
+                    type: string
+                elements:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/mars.Element'
+        project.VersionResponse:
+            type: object
+            properties:
+                version:
+                    type: integer
+                    format: int32
+        repo.CreateResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                count:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.RepoModel'
+        repo.ShowResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        repo.ToggleEnabledRequest:
+            required:
+                - id
+                - enabled
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                enabled:
+                    type: boolean
+        repo.ToggleEnabledResponse:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/types.RepoModel'
+        token.GrantRequest:
+            type: object
+            properties:
+                expireSeconds:
+                    type: integer
+                    format: int32
+                usage:
+                    type: string
+        token.GrantResponse:
+            type: object
+            properties:
+                token:
+                    $ref: '#/components/schemas/types.AccessTokenModel'
+        token.LeaseRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+                expireSeconds:
+                    type: integer
+                    format: int32
+        token.LeaseResponse:
+            type: object
+            properties:
+                token:
+                    $ref: '#/components/schemas/types.AccessTokenModel'
+        token.ListResponse:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.AccessTokenModel'
+                count:
+                    type: integer
+                    format: int32
+        token.RevokeResponse:
+            type: object
+            properties: {}
+        types.AccessTokenModel:
+            type: object
+            properties:
+                token:
+                    type: string
+                email:
+                    type: string
+                expiredAt:
+                    type: string
+                usage:
+                    type: string
+                lastUsedAt:
+                    type: string
+                isDeleted:
+                    type: boolean
+                isExpired:
+                    type: boolean
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ChangelogModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                version:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                manifest:
+                    type: array
+                    items:
+                        type: string
+                config:
+                    type: string
+                configChanged:
+                    type: boolean
+                projectId:
+                    type: string
+                gitProjectId:
+                    type: string
+                project:
+                    $ref: '#/components/schemas/types.ProjectModel'
+                gitProject:
+                    $ref: '#/components/schemas/types.GitProjectModel'
+                date:
+                    type: string
+                configType:
+                    type: string
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                dockerImage:
+                    type: string
+                envValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.KeyValue'
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ExtraValue'
+                finalExtraValues:
+                    type: array
+                    items:
+                        type: string
+                gitCommitWebUrl:
+                    type: string
+                gitCommitTitle:
+                    type: string
+                gitCommitAuthor:
+                    type: string
+                gitCommitDate:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.EventModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                action:
+                    type: integer
+                    format: enum
+                username:
+                    type: string
+                message:
+                    type: string
+                old:
+                    type: string
+                new:
+                    type: string
+                duration:
+                    type: string
+                fileId:
+                    type: integer
+                    format: int32
+                file:
+                    $ref: '#/components/schemas/types.FileModel'
+                eventAt:
+                    type: string
+                hasDiff:
+                    type: boolean
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ExtraValue:
+            type: object
+            properties:
+                path:
+                    type: string
+                value:
+                    type: string
+        types.FileModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                path:
+                    type: string
+                size:
+                    type: integer
+                    format: int32
+                username:
+                    type: string
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+                containerPath:
+                    type: string
+                humanizeSize:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.GitProjectModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                defaultBranch:
+                    type: string
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                enabled:
+                    type: boolean
+                globalEnabled:
+                    type: boolean
+                globalConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ImagePullSecret:
+            type: object
+            properties:
+                name:
+                    type: string
+        types.KeyValue:
+            type: object
+            properties:
+                key:
+                    type: string
+                value:
+                    type: string
+        types.NamespaceModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                ImagePullSecrets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ImagePullSecret'
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ProjectModel'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ProjectModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                config:
+                    type: string
+                overrideValues:
+                    type: string
+                dockerImage:
+                    type: string
+                podSelectors:
+                    type: array
+                    items:
+                        type: string
+                namespaceId:
+                    type: integer
+                    format: int32
+                atomic:
+                    type: boolean
+                envValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.KeyValue'
+                extraValues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/types.ExtraValue'
+                finalExtraValues:
+                    type: string
+                deployStatus:
+                    type: integer
+                    format: enum
+                humanizeCreatedAt:
+                    type: string
+                humanizeUpdatedAt:
+                    type: string
+                configType:
+                    type: string
+                gitCommitWebUrl:
+                    type: string
+                gitCommitTitle:
+                    type: string
+                gitCommitAuthor:
+                    type: string
+                gitCommitDate:
+                    type: string
+                version:
+                    type: integer
+                    format: int32
+                namespace:
+                    $ref: '#/components/schemas/types.NamespaceModel'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.RepoModel:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                name:
+                    type: string
+                gitProjectId:
+                    type: integer
+                    format: int32
+                gitProjectName:
+                    type: string
+                enabled:
+                    type: boolean
+                marsConfig:
+                    $ref: '#/components/schemas/mars.Config'
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+                deletedAt:
+                    type: string
+        types.ServiceEndpoint:
+            type: object
+            properties:
+                name:
+                    type: string
+                url:
+                    type: string
+                portName:
+                    type: string
+        types.StateContainer:
+            type: object
+            properties:
+                namespace:
+                    type: string
+                pod:
+                    type: string
+                container:
+                    type: string
+                isOld:
+                    type: boolean
+                    description: 在滚动更新的时候会出现新旧 pod，is_old 用来标识旧的即将被删除的 pod
+                terminating:
+                    type: boolean
+                pending:
+                    type: boolean
+                ready:
+                    type: boolean
+        version.Response:
+            type: object
+            properties:
+                version:
+                    type: string
+                buildDate:
+                    type: string
+                gitBranch:
+                    type: string
+                gitCommit:
+                    type: string
+                gitTag:
+                    type: string
+                goVersion:
+                    type: string
+                compiler:
+                    type: string
+                platform:
+                    type: string
+                kubectlVersion:
+                    type: string
+                helmVersion:
+                    type: string
+                gitRepo:
+                    type: string
+tags:
+    - name: AccessToken
+    - name: Auth
+    - name: Changelog
+    - name: Cluster
+    - name: Container
+    - name: Endpoint
+    - name: Event
+    - name: File
+    - name: Git
+    - name: GitConfig
+    - name: Metrics
+    - name: Namespace
+    - name: Picture
+    - name: Project
+    - name: Repo
+    - name: Version

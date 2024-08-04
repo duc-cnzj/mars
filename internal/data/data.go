@@ -40,48 +40,283 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Data struct {
-	Cfg       *config.Config
+type Data interface {
+	Config() *config.Config
+	DB() *ent.Client
+	MinioCli() *minio.Client
+	K8sClient() *K8sClient
+	OidcConfig() OidcConfig
+
+	InitDB() (func() error, error)
+	InitS3() error
+	InitK8s(ch <-chan struct{}) (err error)
+	InitOidcProvider()
+
+	WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error
+}
+
+var _ Data = (*dataImpl)(nil)
+
+type dataImpl struct {
+	cfg       *config.Config
 	Oidc      OidcConfig
-	DB        *ent.Client
-	MinioCli  *minio.Client
-	K8sClient *K8sClient
+	db        *ent.Client
+	minioCli  *minio.Client
+	k8sClient *K8sClient
+
+	logger mlog.Logger
+
+	initDBOnce  sync.Once
+	initK8sOnce sync.Once
+	initS3Once  sync.Once
+	oidcOnce    sync.Once
 }
 
-func NewData(cfg *config.Config, logger mlog.Logger) (*Data, func(), error) {
-	client, err := OpenDB(cfg, logger)
-	if err != nil {
-		return nil, nil, err
-	}
+func NewData(cfg *config.Config, logger mlog.Logger) (Data, error) {
+	return &dataImpl{cfg: cfg, logger: logger}, nil
+}
 
-	var miniocli *minio.Client
-	if miniocli, err = NewS3(cfg); err != nil {
-		return nil, nil, err
-	}
-	newOidc := NewOidc(cfg)
-	var sClient *K8sClient
-	if cfg.KubeConfig != "" {
-		if sClient, err = NewK8sClient(cfg, logger); err != nil {
-			return nil, nil, err
+func (data *dataImpl) Config() *config.Config {
+	return data.cfg
+}
+
+func (data *dataImpl) DB() *ent.Client {
+	return data.db
+}
+
+func (data *dataImpl) MinioCli() *minio.Client {
+	return data.minioCli
+}
+
+func (data *dataImpl) K8sClient() *K8sClient {
+	return data.k8sClient
+}
+
+func (data *dataImpl) OidcConfig() OidcConfig {
+	return data.Oidc
+}
+
+func (data *dataImpl) InitDB() (func() error, error) {
+	var (
+		closeFunc func() error
+		err       error
+	)
+
+	data.initDBOnce.Do(func() {
+		var logger = data.logger
+		logger.Debug("connecting to mysql...")
+		defer logger.Debug("mysql connected!")
+
+		var drv *sql.Driver
+		drv, err = sql.Open("mysql", data.Config().DSN())
+		if err != nil {
+			return
 		}
-	}
+		// Get the underlying sql.DB object of the driver.
+		db := drv.DB()
+		db.SetMaxIdleConns(10)
+		db.SetMaxOpenConns(100)
+		db.SetConnMaxLifetime(time.Hour)
+		data.db = ent.NewClient(
+			ent.Driver(drv),
+			ent.Log(func(a ...any) {
+				logger.Debug(fmt.Sprint(a...))
+			}),
+		)
 
-	cleanup := func() {
-		logger.Flush()
-		client.Close()
-	}
-
-	return &Data{
-		Cfg:       cfg,
-		Oidc:      newOidc,
-		DB:        client,
-		MinioCli:  miniocli,
-		K8sClient: sClient,
-	}, cleanup, nil
+		if data.Config().Debug {
+			data.db = data.DB().Debug()
+		}
+		closeFunc = func() error {
+			return data.DB().Close()
+		}
+	})
+	return closeFunc, nil
 }
 
-func (data *Data) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
-	tx, err := data.DB.Tx(ctx)
+func (data *dataImpl) InitS3() error {
+	var err error
+
+	data.initS3Once.Do(func() {
+		var (
+			cfg             = data.Config()
+			endpoint        = cfg.S3Endpoint
+			accessKeyID     = cfg.S3AccessKeyID
+			secretAccessKey = cfg.S3SecretAccessKey
+			useSSL          = cfg.S3UseSSL
+		)
+		data.logger.Info("init s3 client...")
+		if !cfg.S3Enabled {
+			return
+		}
+		if endpoint == "" || accessKeyID == "" || secretAccessKey == "" {
+			err = errors.New("s3 config error")
+			return
+		}
+
+		// Initialize minio client object.
+		data.minioCli, err = minio.New(endpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+			Secure: useSSL,
+		})
+	})
+	return err
+}
+
+func (data *dataImpl) InitK8s(ch <-chan struct{}) (err error) {
+	data.initK8sOnce.Do(func() {
+		var (
+			cfg      = data.Config()
+			logger   = data.logger
+			config   *restclient.Config
+			nsPrefix = cfg.NsPrefix
+
+			eventFanOutObj = &fanOut[*eventsv1.Event]{
+				name:      "event",
+				ch:        make(chan Obj[*eventsv1.Event], 100),
+				listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
+			}
+
+			podFanOutObj = &fanOut[*corev1.Pod]{
+				name:      "pod",
+				ch:        make(chan Obj[*corev1.Pod], 100),
+				listeners: make(map[string]chan<- Obj[*corev1.Pod]),
+			}
+		)
+		logger.Info("init k8s client...")
+
+		runtime.ErrorHandlers = []func(err error){
+			func(err error) {
+				logger.Warning(err)
+			},
+		}
+
+		if cfg.KubeConfig != "" {
+			config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+			if err != nil {
+				return
+			}
+		} else {
+			config, err = restclient.InClusterConfig()
+			if err != nil {
+				return
+			}
+		}
+
+		// 客户端不限速，有可能会把集群打死。
+		config.QPS = -1
+
+		var clientset kubernetes.Interface
+		clientset, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			return
+		}
+
+		var metrics versioned.Interface
+		metrics, err = metricsv.NewForConfig(config)
+		if err != nil {
+			return
+		}
+
+		inf := informers.NewSharedInformerFactory(clientset, 0)
+		svcLister := inf.Core().V1().Services().Lister()
+		ingLister := inf.Networking().V1().Ingresses().Lister()
+		rsLister := inf.Apps().V1().ReplicaSets().Lister()
+		podInf := inf.Core().V1().Pods().Informer()
+		podLister := inf.Core().V1().Pods().Lister()
+		secretInf := inf.Core().V1().Secrets().Informer()
+		secretLister := inf.Core().V1().Secrets().Lister()
+		podInf.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: filterPod(nsPrefix),
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj any) {
+					podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Add)
+				},
+				UpdateFunc: func(oldObj, newObj any) {
+					old := oldObj.(*corev1.Pod)
+					curr := newObj.(*corev1.Pod)
+					if old.ResourceVersion != curr.ResourceVersion {
+						select {
+						case podFanOutObj.ch <- NewObj[*corev1.Pod](old, curr, Update):
+						default:
+							logger.Warningf("[INFORMER]: podFanOutObj full")
+						}
+					}
+				},
+				DeleteFunc: func(obj any) {
+					podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Delete)
+				},
+			},
+		})
+		eventInf := inf.Events().V1().Events().Informer()
+		eventInf.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: filterEvent(nsPrefix),
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(current any) {
+					event := current.(*eventsv1.Event)
+					select {
+					case eventFanOutObj.ch <- NewObj[*eventsv1.Event](nil, event, Add):
+					default:
+						logger.Warningf("[INFORMER]: eventFanOutObj full")
+					}
+				},
+			},
+		})
+		eventLister := inf.Events().V1().Events().Lister()
+		data.k8sClient = &K8sClient{
+			logger:           logger,
+			factory:          inf,
+			Client:           clientset,
+			MetricsClient:    metrics,
+			RestConfig:       config,
+			PodInformer:      podInf,
+			PodLister:        podLister,
+			SecretInformer:   secretInf,
+			SecretLister:     secretLister,
+			ReplicaSetLister: rsLister,
+			ServiceLister:    svcLister,
+			IngressLister:    ingLister,
+			EventInformer:    eventInf,
+			EventFanOut:      eventFanOutObj,
+			PodFanOut:        podFanOutObj,
+			EventLister:      eventLister,
+		}
+		data.k8sClient.start(ch)
+	})
+	return
+}
+
+func (data *dataImpl) InitOidcProvider() {
+	data.oidcOnce.Do(func() {
+		var (
+			oidcConfig OidcConfig = make(OidcConfig)
+			cfg                   = data.Config()
+			logger                = data.logger
+		)
+		logger.Info("init oidc provider...")
+		for _, setting := range cfg.Oidc {
+			if !setting.Enabled {
+				continue
+			}
+			var (
+				err      error
+				provider *oidc.Provider
+			)
+			if provider, err = oidc.NewProvider(context.TODO(), setting.ProviderUrl); err != nil {
+				return
+			}
+
+			var ev extraValues
+			if err = provider.Claims(&ev); err != nil {
+				return
+			}
+			addOidcCfg(provider, ev, setting, oidcConfig)
+		}
+	})
+}
+
+func (data *dataImpl) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
+	tx, err := data.DB().Tx(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,30 +352,6 @@ type OidcConfigItem struct {
 
 type OidcConfig map[string]OidcConfigItem
 
-func NewOidc(cfg *config.Config) OidcConfig {
-	var oidcConfig OidcConfig = make(OidcConfig)
-	for _, setting := range cfg.Oidc {
-		if !setting.Enabled {
-			continue
-		}
-		var (
-			err      error
-			provider *oidc.Provider
-		)
-		if provider, err = oidc.NewProvider(context.TODO(), setting.ProviderUrl); err != nil {
-			return nil
-		}
-
-		var ev extraValues
-		if err = provider.Claims(&ev); err != nil {
-			return nil
-		}
-		addOidcCfg(provider, ev, setting, oidcConfig)
-	}
-
-	return oidcConfig
-}
-
 func addOidcCfg(provider *oidc.Provider, extraValues extraValues, setting config.OidcSetting, oidcConfig OidcConfig) {
 	scopes := extraValues.ScopesSupported
 	if len(scopes) < 1 {
@@ -159,56 +370,6 @@ func addOidcCfg(provider *oidc.Provider, extraValues extraValues, setting config
 		Config:             oauth2Config,
 		EndSessionEndpoint: extraValues.EndSessionEndpoint,
 	}
-}
-
-func OpenDB(cfg *config.Config, logger mlog.Logger) (*ent.Client, error) {
-	logger.Debug("connecting to mysql...")
-	defer logger.Debug("mysql connected!")
-
-	drv, err := sql.Open("mysql", cfg.DSN())
-	if err != nil {
-		return nil, err
-	}
-	// Get the underlying sql.DB object of the driver.
-	db := drv.DB()
-	db.SetMaxIdleConns(10)
-	db.SetMaxOpenConns(100)
-	db.SetConnMaxLifetime(time.Hour)
-	cli := ent.NewClient(
-		ent.Driver(drv),
-		ent.Log(func(a ...any) {
-			logger.Debug(fmt.Sprint(a...))
-		}),
-	)
-	if cfg.Debug {
-		cli = cli.Debug()
-	}
-	return cli, nil
-}
-
-func NewS3(cfg *config.Config) (*minio.Client, error) {
-	var (
-		endpoint        = cfg.S3Endpoint
-		accessKeyID     = cfg.S3AccessKeyID
-		secretAccessKey = cfg.S3SecretAccessKey
-		useSSL          = cfg.S3UseSSL
-	)
-	if !cfg.S3Enabled {
-		return nil, nil
-	}
-	if endpoint == "" || accessKeyID == "" || secretAccessKey == "" {
-		return nil, errors.New("s3 config error")
-	}
-
-	// Initialize minio client object.
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: useSSL,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return minioClient, nil
 }
 
 type K8sClient struct {
@@ -235,123 +396,7 @@ type K8sClient struct {
 	EventLister eventsv1lister.EventLister
 }
 
-func NewK8sClient(cfg *config.Config, logger mlog.Logger) (*K8sClient, error) {
-	var (
-		config   *restclient.Config
-		err      error
-		nsPrefix = cfg.NsPrefix
-
-		eventFanOutObj = &fanOut[*eventsv1.Event]{
-			name:      "event",
-			ch:        make(chan Obj[*eventsv1.Event], 100),
-			listeners: make(map[string]chan<- Obj[*eventsv1.Event]),
-		}
-
-		podFanOutObj = &fanOut[*corev1.Pod]{
-			name:      "pod",
-			ch:        make(chan Obj[*corev1.Pod], 100),
-			listeners: make(map[string]chan<- Obj[*corev1.Pod]),
-		}
-	)
-
-	runtime.ErrorHandlers = []func(err error){
-		func(err error) {
-			logger.Warning(err)
-		},
-	}
-
-	if cfg.KubeConfig != "" {
-		config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		config, err = restclient.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// 客户端不限速，有可能会把集群打死。
-	config.QPS = -1
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	metrics, err := metricsv.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	inf := informers.NewSharedInformerFactory(clientset, 0)
-	svcLister := inf.Core().V1().Services().Lister()
-	ingLister := inf.Networking().V1().Ingresses().Lister()
-	rsLister := inf.Apps().V1().ReplicaSets().Lister()
-	podInf := inf.Core().V1().Pods().Informer()
-	podLister := inf.Core().V1().Pods().Lister()
-	secretInf := inf.Core().V1().Secrets().Informer()
-	secretLister := inf.Core().V1().Secrets().Lister()
-	podInf.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterPod(nsPrefix),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-				podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Add)
-			},
-			UpdateFunc: func(oldObj, newObj any) {
-				old := oldObj.(*corev1.Pod)
-				curr := newObj.(*corev1.Pod)
-				if old.ResourceVersion != curr.ResourceVersion {
-					select {
-					case podFanOutObj.ch <- NewObj[*corev1.Pod](old, curr, Update):
-					default:
-						logger.Warningf("[INFORMER]: podFanOutObj full")
-					}
-				}
-			},
-			DeleteFunc: func(obj any) {
-				podFanOutObj.ch <- NewObj[*corev1.Pod](nil, obj.(*corev1.Pod), Delete)
-			},
-		},
-	})
-	eventInf := inf.Events().V1().Events().Informer()
-	eventInf.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterEvent(nsPrefix),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(current any) {
-				event := current.(*eventsv1.Event)
-				select {
-				case eventFanOutObj.ch <- NewObj[*eventsv1.Event](nil, event, Add):
-				default:
-					logger.Warningf("[INFORMER]: eventFanOutObj full")
-				}
-			},
-		},
-	})
-	eventLister := inf.Events().V1().Events().Lister()
-
-	return &K8sClient{
-		logger:           logger,
-		factory:          inf,
-		Client:           clientset,
-		MetricsClient:    metrics,
-		RestConfig:       config,
-		PodInformer:      podInf,
-		PodLister:        podLister,
-		SecretInformer:   secretInf,
-		SecretLister:     secretLister,
-		ReplicaSetLister: rsLister,
-		ServiceLister:    svcLister,
-		IngressLister:    ingLister,
-		EventInformer:    eventInf,
-		EventFanOut:      eventFanOutObj,
-		PodFanOut:        podFanOutObj,
-		EventLister:      eventLister,
-	}, nil
-}
-
-func (k *K8sClient) Start(done <-chan struct{}) {
+func (k *K8sClient) start(done <-chan struct{}) {
 	go func() {
 		defer k.logger.HandlePanic("[FANOUT]: event Distribute")
 

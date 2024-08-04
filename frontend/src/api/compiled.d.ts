@@ -244,7 +244,7 @@ export namespace auth {
     interface IInfoResponse {
 
         /** InfoResponse id */
-        id?: (string|null);
+        id?: (number|null);
 
         /** InfoResponse avatar */
         avatar?: (string|null);
@@ -272,7 +272,7 @@ export namespace auth {
         constructor(properties?: auth.IInfoResponse);
 
         /** InfoResponse id. */
-        public id: string;
+        public id: number;
 
         /** InfoResponse avatar. */
         public avatar: string;
@@ -7306,13 +7306,19 @@ export namespace repo {
         constructor(properties?: repo.IListRequest);
 
         /** ListRequest page. */
-        public page: number;
+        public page?: (number|null);
 
         /** ListRequest page_size. */
-        public page_size: number;
+        public page_size?: (number|null);
 
         /** ListRequest enabled. */
         public enabled?: (boolean|null);
+
+        /** ListRequest _page. */
+        public _page?: "page";
+
+        /** ListRequest _page_size. */
+        public _page_size?: "page_size";
 
         /** ListRequest _enabled. */
         public _enabled?: "enabled";
@@ -7826,10 +7832,16 @@ export namespace token {
         constructor(properties?: token.IListRequest);
 
         /** ListRequest page. */
-        public page: number;
+        public page?: (number|null);
 
         /** ListRequest page_size. */
-        public page_size: number;
+        public page_size?: (number|null);
+
+        /** ListRequest _page. */
+        public _page?: "page";
+
+        /** ListRequest _page_size. */
+        public _page_size?: "page_size";
 
         /**
          * Encodes the specified ListRequest message. Does not implicitly {@link token.ListRequest.verify|verify} messages.
@@ -9624,14 +9636,29 @@ export namespace types {
         /** RepoModel id */
         id?: (number|null);
 
+        /** RepoModel name */
+        name?: (string|null);
+
         /** RepoModel git_project_id */
         git_project_id?: (number|null);
+
+        /** RepoModel git_project_name */
+        git_project_name?: (string|null);
 
         /** RepoModel enabled */
         enabled?: (boolean|null);
 
         /** RepoModel mars_config */
         mars_config?: (mars.Config|null);
+
+        /** RepoModel created_at */
+        created_at?: (string|null);
+
+        /** RepoModel updated_at */
+        updated_at?: (string|null);
+
+        /** RepoModel deleted_at */
+        deleted_at?: (string|null);
     }
 
     /** Represents a RepoModel. */
@@ -9646,8 +9673,14 @@ export namespace types {
         /** RepoModel id. */
         public id: number;
 
+        /** RepoModel name. */
+        public name: string;
+
         /** RepoModel git_project_id. */
         public git_project_id?: (number|null);
+
+        /** RepoModel git_project_name. */
+        public git_project_name?: (string|null);
 
         /** RepoModel enabled. */
         public enabled: boolean;
@@ -9655,8 +9688,20 @@ export namespace types {
         /** RepoModel mars_config. */
         public mars_config?: (mars.Config|null);
 
+        /** RepoModel created_at. */
+        public created_at: string;
+
+        /** RepoModel updated_at. */
+        public updated_at: string;
+
+        /** RepoModel deleted_at. */
+        public deleted_at: string;
+
         /** RepoModel _git_project_id. */
         public _git_project_id?: "git_project_id";
+
+        /** RepoModel _git_project_name. */
+        public _git_project_name?: "git_project_name";
 
         /**
          * Encodes the specified RepoModel message. Does not implicitly {@link types.RepoModel.verify|verify} messages.

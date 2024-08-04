@@ -1,10 +1,10 @@
 import React, { useEffect, memo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { exchange, info } from "../api/auth";
 import { setToken, setLogoutUrl } from "../utils/token";
 import { useAuth } from "../contexts/auth";
 import { getState, removeState } from "../utils/token";
 import { message } from "antd";
+import ajax from "../api/ajax";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -21,11 +21,11 @@ const Callback: React.FC = () => {
   useEffect(() => {
     if (code) {
       if (state === getState()) {
-        exchange({ code }).then((res) => {
-          setToken(res.data.token);
-          info().then((res) => {
-            setLogoutUrl(res.data.logout_url);
-            auth.setUser(res.data);
+        ajax.POST("/api/auth/exchange", { body: { code } }).then(({ data }) => {
+          data && setToken(data.token);
+          ajax.GET("/api/auth/info").then(({ data }) => {
+            data && setLogoutUrl(data?.logoutUrl);
+            data && auth.setUser(data);
           });
           h("/");
         });

@@ -7,17 +7,15 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/duc-cnzj/mars/v4/internal/util"
-	"github.com/duc-cnzj/mars/v4/internal/util/mars"
-	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
-
 	"github.com/duc-cnzj/mars/v4/internal/application"
+	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/data"
 	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/ent/namespace"
-
-	"github.com/duc-cnzj/mars/v4/internal/config"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
+	"github.com/duc-cnzj/mars/v4/internal/util"
+	"github.com/duc-cnzj/mars/v4/internal/util/mars"
+	"github.com/duc-cnzj/mars/v4/plugins/domainmanager"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +86,7 @@ Loop:
 
 func updateCerts(app application.App) {
 	name, key, crt := app.PluginMgr().Domain().GetCerts()
-	domainmanager.UpdateCertTls(app.DB(), app.Data().K8sClient, app.Logger(), name, key, crt)
+	domainmanager.UpdateCertTls(app.DB(), app.Data().K8sClient(), app.Logger(), name, key, crt)
 }
 
 // syncImagePullSecrets
@@ -103,7 +101,7 @@ func syncImagePullSecrets(app application.App) {
 	var (
 		namespaceList       []*ent.Namespace
 		cfgImagePullSecrets = app.Config().ImagePullSecrets
-		k8sClient           = app.Data().K8sClient
+		k8sClient           = app.Data().K8sClient()
 	)
 	var serverMap = make(map[string]util.DockerConfigEntry)
 	for _, s := range cfgImagePullSecrets {
@@ -208,7 +206,7 @@ func projectPodEventListener(app application.App) {
 	ch := make(chan data.Obj[*v1.Pod], 100)
 	listener := "pod-watcher"
 	namespacePublisher := app.PluginMgr().Ws().New("", "").(application.ProjectPodEventPublisher)
-	podFanOut := app.Data().K8sClient.PodFanOut
+	podFanOut := app.Data().K8sClient().PodFanOut
 	podFanOut.AddListener(listener, ch)
 
 	go func() {

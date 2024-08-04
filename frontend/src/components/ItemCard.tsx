@@ -11,7 +11,6 @@ import {
 } from "antd";
 import "../pkg/DraggableModal/index.css";
 import { CloseOutlined } from "@ant-design/icons";
-import { deleteNamespace, getNamespaceCpuMemory } from "../api/namespace";
 import ServiceEndpoint from "./ServiceEndpoint";
 import ProjectDetail from "./ProjectDetail";
 import CreateProjectModal from "./CreateProjectModal";
@@ -19,9 +18,11 @@ import pb from "../api/compiled";
 import { copy } from "../utils/copy";
 import styled from "@emotion/styled";
 import { useAuth } from "../contexts/auth";
+import { components } from "../api/schema";
+import ajax from "../api/ajax";
 
 const Item: React.FC<{
-  item: pb.types.NamespaceModel;
+  item: components["schemas"]["types.NamespaceModel"];
   onNamespaceDeleted: () => void;
   loading: boolean;
 }> = ({ item, onNamespaceDeleted, loading }) => {
@@ -46,14 +47,17 @@ const Item: React.FC<{
               <Tooltip
                 onOpenChange={(visible: boolean) => {
                   if (visible) {
-                    getNamespaceCpuMemory({ namespace_id: item.id }).then(
-                      (res) => {
-                        setCpuAndMemory({
-                          cpu: res.data.cpu,
-                          memory: res.data.memory,
-                        });
-                      }
-                    );
+                    ajax
+                      .GET("/api/metrics/namespace/{namespaceId}/cpu_memory", {
+                        params: { path: { namespaceId: item.id } },
+                      })
+                      .then(({ data }) => {
+                        data &&
+                          setCpuAndMemory({
+                            cpu: data.cpu,
+                            memory: data.memory,
+                          });
+                      });
                   }
                 }}
                 title={
@@ -100,7 +104,10 @@ const Item: React.FC<{
             cancelText="No"
             onConfirm={() => {
               setDeleting(true);
-              deleteNamespace({ namespace_id: item.id })
+              ajax
+                .DELETE("/api/namespaces/{namespaceId}", {
+                  params: { path: { namespaceId: item.id } },
+                })
                 .then((res) => {
                   message.success("删除成功");
                   onNamespaceDeleted();

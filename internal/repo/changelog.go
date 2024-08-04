@@ -23,11 +23,11 @@ var _ ChangelogRepo = (*changelogRepo)(nil)
 
 type changelogRepo struct {
 	logger mlog.Logger
-	db     *ent.Client
+	data   data.Data
 }
 
-func NewChangelogRepo(logger mlog.Logger, data *data.Data) ChangelogRepo {
-	return &changelogRepo{logger: logger, db: data.DB}
+func NewChangelogRepo(logger mlog.Logger, data data.Data) ChangelogRepo {
+	return &changelogRepo{logger: logger, data: data}
 }
 
 type CreateChangeLogInput struct {
@@ -52,7 +52,8 @@ type CreateChangeLogInput struct {
 }
 
 func (c *changelogRepo) Create(ctx context.Context, input *CreateChangeLogInput) (*ent.Changelog, error) {
-	return c.db.Changelog.Create().
+	var db = c.data.DB()
+	return db.Changelog.Create().
 		SetVersion(input.Version).
 		SetUsername(input.Username).
 		SetManifest(input.Manifest).
@@ -81,7 +82,8 @@ type ShowChangeLogInput struct {
 }
 
 func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]*ent.Changelog, error) {
-	return c.db.Changelog.Query().
+	var db = c.data.DB()
+	return db.Changelog.Query().
 		WithProject(func(query *ent.ProjectQuery) {
 			query.Where(filters.IfBool("config_changed")(func() *bool {
 				if input.OnlyChanged {
@@ -99,5 +101,6 @@ func (c *changelogRepo) Show(ctx context.Context, input *ShowChangeLogInput) ([]
 }
 
 func (c *changelogRepo) FindLastChangeByProjectID(ctx context.Context, projectID int) (*ent.Changelog, error) {
-	return c.db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
+	var db = c.data.DB()
+	return db.Changelog.Query().Where(changelog.ProjectID(projectID)).Order(ent.Desc(changelog.FieldID)).First(ctx)
 }

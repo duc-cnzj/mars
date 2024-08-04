@@ -104,7 +104,7 @@ func (d *syncSecretDomainManager) Initialize(app application.App, args map[strin
 	}
 	d.SetSecret(secret)
 
-	d.k8sCli = app.Data().K8sClient
+	d.k8sCli = app.Data().K8sClient()
 	d.db = app.DB()
 	d.logger = app.Logger()
 	d.k8sCli.SecretInformer.AddEventHandler(d.eventHandler(d.handleSecretChange))

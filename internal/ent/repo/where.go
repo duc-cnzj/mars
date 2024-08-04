@@ -79,8 +79,13 @@ func DefaultBranch(v string) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldDefaultBranch, v))
 }
 
+// GitProjectName applies equality check predicate on the "git_project_name" field. It's identical to GitProjectNameEQ.
+func GitProjectName(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldGitProjectName, v))
+}
+
 // GitProjectID applies equality check predicate on the "git_project_id" field. It's identical to GitProjectIDEQ.
-func GitProjectID(v int64) predicate.Repo {
+func GitProjectID(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldGitProjectID, v))
 }
 
@@ -359,43 +364,118 @@ func DefaultBranchContainsFold(v string) predicate.Repo {
 	return predicate.Repo(sql.FieldContainsFold(FieldDefaultBranch, v))
 }
 
+// GitProjectNameEQ applies the EQ predicate on the "git_project_name" field.
+func GitProjectNameEQ(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEQ(FieldGitProjectName, v))
+}
+
+// GitProjectNameNEQ applies the NEQ predicate on the "git_project_name" field.
+func GitProjectNameNEQ(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldNEQ(FieldGitProjectName, v))
+}
+
+// GitProjectNameIn applies the In predicate on the "git_project_name" field.
+func GitProjectNameIn(vs ...string) predicate.Repo {
+	return predicate.Repo(sql.FieldIn(FieldGitProjectName, vs...))
+}
+
+// GitProjectNameNotIn applies the NotIn predicate on the "git_project_name" field.
+func GitProjectNameNotIn(vs ...string) predicate.Repo {
+	return predicate.Repo(sql.FieldNotIn(FieldGitProjectName, vs...))
+}
+
+// GitProjectNameGT applies the GT predicate on the "git_project_name" field.
+func GitProjectNameGT(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldGT(FieldGitProjectName, v))
+}
+
+// GitProjectNameGTE applies the GTE predicate on the "git_project_name" field.
+func GitProjectNameGTE(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldGTE(FieldGitProjectName, v))
+}
+
+// GitProjectNameLT applies the LT predicate on the "git_project_name" field.
+func GitProjectNameLT(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldLT(FieldGitProjectName, v))
+}
+
+// GitProjectNameLTE applies the LTE predicate on the "git_project_name" field.
+func GitProjectNameLTE(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldLTE(FieldGitProjectName, v))
+}
+
+// GitProjectNameContains applies the Contains predicate on the "git_project_name" field.
+func GitProjectNameContains(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldContains(FieldGitProjectName, v))
+}
+
+// GitProjectNameHasPrefix applies the HasPrefix predicate on the "git_project_name" field.
+func GitProjectNameHasPrefix(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldHasPrefix(FieldGitProjectName, v))
+}
+
+// GitProjectNameHasSuffix applies the HasSuffix predicate on the "git_project_name" field.
+func GitProjectNameHasSuffix(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldHasSuffix(FieldGitProjectName, v))
+}
+
+// GitProjectNameIsNil applies the IsNil predicate on the "git_project_name" field.
+func GitProjectNameIsNil() predicate.Repo {
+	return predicate.Repo(sql.FieldIsNull(FieldGitProjectName))
+}
+
+// GitProjectNameNotNil applies the NotNil predicate on the "git_project_name" field.
+func GitProjectNameNotNil() predicate.Repo {
+	return predicate.Repo(sql.FieldNotNull(FieldGitProjectName))
+}
+
+// GitProjectNameEqualFold applies the EqualFold predicate on the "git_project_name" field.
+func GitProjectNameEqualFold(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldEqualFold(FieldGitProjectName, v))
+}
+
+// GitProjectNameContainsFold applies the ContainsFold predicate on the "git_project_name" field.
+func GitProjectNameContainsFold(v string) predicate.Repo {
+	return predicate.Repo(sql.FieldContainsFold(FieldGitProjectName, v))
+}
+
 // GitProjectIDEQ applies the EQ predicate on the "git_project_id" field.
-func GitProjectIDEQ(v int64) predicate.Repo {
+func GitProjectIDEQ(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldEQ(FieldGitProjectID, v))
 }
 
 // GitProjectIDNEQ applies the NEQ predicate on the "git_project_id" field.
-func GitProjectIDNEQ(v int64) predicate.Repo {
+func GitProjectIDNEQ(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldNEQ(FieldGitProjectID, v))
 }
 
 // GitProjectIDIn applies the In predicate on the "git_project_id" field.
-func GitProjectIDIn(vs ...int64) predicate.Repo {
+func GitProjectIDIn(vs ...int32) predicate.Repo {
 	return predicate.Repo(sql.FieldIn(FieldGitProjectID, vs...))
 }
 
 // GitProjectIDNotIn applies the NotIn predicate on the "git_project_id" field.
-func GitProjectIDNotIn(vs ...int64) predicate.Repo {
+func GitProjectIDNotIn(vs ...int32) predicate.Repo {
 	return predicate.Repo(sql.FieldNotIn(FieldGitProjectID, vs...))
 }
 
 // GitProjectIDGT applies the GT predicate on the "git_project_id" field.
-func GitProjectIDGT(v int64) predicate.Repo {
+func GitProjectIDGT(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldGT(FieldGitProjectID, v))
 }
 
 // GitProjectIDGTE applies the GTE predicate on the "git_project_id" field.
-func GitProjectIDGTE(v int64) predicate.Repo {
+func GitProjectIDGTE(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldGTE(FieldGitProjectID, v))
 }
 
 // GitProjectIDLT applies the LT predicate on the "git_project_id" field.
-func GitProjectIDLT(v int64) predicate.Repo {
+func GitProjectIDLT(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldLT(FieldGitProjectID, v))
 }
 
 // GitProjectIDLTE applies the LTE predicate on the "git_project_id" field.
-func GitProjectIDLTE(v int64) predicate.Repo {
+func GitProjectIDLTE(v int32) predicate.Repo {
 	return predicate.Repo(sql.FieldLTE(FieldGitProjectID, v))
 }
 

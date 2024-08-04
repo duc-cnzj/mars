@@ -18,7 +18,7 @@ message DisableProjectRequest {
 }
 
 message ProjectItem {
-  int64  id             = 1;
+  int32  id             = 1;
   string name           = 2;
   string path           = 3;
   string web_url        = 4;

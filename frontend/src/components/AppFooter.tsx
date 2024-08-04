@@ -1,18 +1,19 @@
 import React, { memo, useEffect, useState } from "react";
-import pb from "../api/compiled";
-import { version as versionApi } from "../api/version";
 import dayjs from "dayjs";
 import { Button, Popover } from "antd";
 import { GithubOutlined } from "@ant-design/icons";
 import Coffee from "./Coffee";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 require("dayjs/locale/zh-cn");
 
 const AppFooter: React.FC = () => {
-  const [version, setVersion] = useState<pb.version.Response>();
+  const [version, setVersion] =
+    useState<components["schemas"]["version.Response"]>();
 
   useEffect(() => {
-    versionApi().then((res) => setVersion(res.data));
+    ajax.GET("/api/version").then(({ data }) => setVersion(data));
   }, []);
 
   return (
@@ -27,11 +28,11 @@ const AppFooter: React.FC = () => {
         }}
       >
         version: {version?.version}, build at{" "}
-        {dayjs(version?.build_date).format("YYYY-MM-DD HH:mm:ss")}
+        {dayjs(version?.buildDate).format("YYYY-MM-DD HH:mm:ss")}
         <Button
           icon={<GithubOutlined />}
           target={"_blank"}
-          href={version?.git_repo}
+          href={version?.gitRepo}
           type="link"
         ></Button>
         <Popover

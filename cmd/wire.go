@@ -20,7 +20,7 @@ import (
 	"github.com/google/wire"
 )
 
-func InitializeApp(*config.Config, mlog.Logger, []application.Bootstrapper) (application.App, func(), error) {
+func InitializeApp(*config.Config, mlog.Logger, []application.Bootstrapper) (application.App, error) {
 	panic(
 		wire.Build(
 			NewSingleflight,

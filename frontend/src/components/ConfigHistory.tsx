@@ -1,9 +1,9 @@
 import React, { memo, useEffect, useState } from "react";
 import { Popover, Button, Collapse, Tooltip, Spin } from "antd";
 import { CloseOutlined, HistoryOutlined } from "@ant-design/icons";
-import { changelogs } from "../api/changelog";
-import pb from "../api/compiled";
 import DiffViewer from "./DiffViewer";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 const { Panel } = Collapse;
 
 const ConfigHistory: React.FC<{
@@ -66,11 +66,20 @@ const Content: React.FC<{
   updatedAt: any;
   onDataChange: (s: string) => void;
 }> = ({ currentConfig, projectID, configType, updatedAt, onDataChange }) => {
-  const [list, setList] = useState<pb.types.ChangelogModel[]>([]);
+  const [list, setList] = useState<
+    components["schemas"]["types.ChangelogModel"][]
+  >([]);
   useEffect(() => {
-    changelogs({ project_id: projectID, only_changed: true }).then((res) => {
-      setList(res.data.items);
-    });
+    ajax
+      .GET("/api/projects/{projectId}/changelogs", {
+        params: {
+          path: { projectId: projectID },
+          query: { onlyChanged: true },
+        },
+      })
+      .then(({ data }) => {
+        data && setList(data.items);
+      });
   }, [projectID, updatedAt]);
 
   return (

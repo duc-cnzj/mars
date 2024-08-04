@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/spf13/cast"
+
 	"github.com/duc-cnzj/mars/v4/internal/ent/schema/schematype"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -26,7 +28,7 @@ var _ auth.AuthServer = (*authSvc)(nil)
 type authSvc struct {
 	guest
 
-	cfg      data.OidcConfig
+	data     data.Data
 	adminPwd string
 	authsvc  auth2.Auth
 	logger   mlog.Logger
@@ -35,12 +37,12 @@ type authSvc struct {
 	eventRepo repo.EventRepo
 }
 
-func NewAuthSvc(eventRepo repo.EventRepo, logger mlog.Logger, authsvc auth2.Auth, data *data.Data) auth.AuthServer {
+func NewAuthSvc(eventRepo repo.EventRepo, logger mlog.Logger, authsvc auth2.Auth, data data.Data) auth.AuthServer {
 	return &authSvc{
 		logger:    logger,
 		eventRepo: eventRepo,
-		cfg:       data.Oidc,
-		adminPwd:  data.Cfg.AdminPassword,
+		data:      data,
+		adminPwd:  data.Config().AdminPassword,
 		authsvc:   authsvc,
 	}
 }
@@ -76,7 +78,7 @@ func (a *authSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoRe
 		if len(tokenSlice) == 1 {
 			if c, b := a.authsvc.VerifyToken(tokenSlice[0]); b {
 				return &auth.InfoResponse{
-					Id:        c.StandardClaims.Subject,
+					Id:        cast.ToInt32(c.StandardClaims.Subject),
 					Avatar:    c.UserInfo.Picture,
 					Name:      c.UserInfo.Name,
 					Email:     c.UserInfo.Email,
@@ -91,8 +93,8 @@ func (a *authSvc) Info(ctx context.Context, req *auth.InfoRequest) (*auth.InfoRe
 }
 
 func (a *authSvc) Settings(ctx context.Context, request *auth.SettingsRequest) (*auth.SettingsResponse, error) {
-	var items = make([]*auth.SettingsResponse_OidcSetting, 0, len(a.cfg))
-	for name, setting := range a.cfg {
+	var items = make([]*auth.SettingsResponse_OidcSetting, 0, len(a.data.OidcConfig()))
+	for name, setting := range a.data.OidcConfig() {
 		state := rand.String(32)
 
 		items = append(items, &auth.SettingsResponse_OidcSetting{
@@ -118,7 +120,7 @@ func (a *authSvc) Exchange(ctx context.Context, request *auth.ExchangeRequest) (
 		parsed     bool
 	)
 
-	for _, item := range a.cfg {
+	for _, item := range a.data.OidcConfig() {
 		var (
 			token   string
 			err     error

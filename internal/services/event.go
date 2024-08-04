@@ -27,10 +27,10 @@ func NewEventSvc(eventRepo repo.EventRepo) event.EventServer {
 }
 
 func (e *eventSvc) List(ctx context.Context, request *event.ListRequest) (*event.ListResponse, error) {
-	pagination.InitByDefault(&request.Page, &request.PageSize)
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	events, pag, err := e.eventRepo.List(ctx, &repo.ListEventInput{
-		Page:        request.Page,
-		PageSize:    request.PageSize,
+		Page:        page,
+		PageSize:    size,
 		ActionType:  request.ActionType,
 		Search:      request.Search,
 		OrderIDDesc: lo.ToPtr(true),

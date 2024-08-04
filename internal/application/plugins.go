@@ -48,7 +48,6 @@ type PluginManger interface {
 	Ws() WsSender
 	Git() GitServer
 	Picture() Picture
-	Destroy()
 
 	GetPlugins() map[string]Plugin
 }
@@ -66,8 +65,7 @@ type manager struct {
 	git    GitServer
 	pic    Picture
 
-	logger      mlog.Logger
-	destroyFunc []func()
+	logger mlog.Logger
 }
 
 func (m *manager) Load(app App) (err error) {
@@ -105,64 +103,46 @@ func (m *manager) GetPlugins() map[string]Plugin {
 	return GetPlugins()
 }
 
-func (m *manager) Destroy() {
-	for _, f := range m.destroyFunc {
-		f()
-	}
-}
-
-func NewPluginManager(cfg *config.Config, logger mlog.Logger) (PluginManger, func(), error) {
-	var destroyFunc []func()
-	domain, f, err := GetPlugin[DomainManager](cfg.DomainManagerPlugin)
+func NewPluginManager(cfg *config.Config, logger mlog.Logger) (PluginManger, error) {
+	domain, err := GetPlugin[DomainManager](cfg.DomainManagerPlugin)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	destroyFunc = append(destroyFunc, f)
 
-	ws, f, err := GetPlugin[WsSender](cfg.WsSenderPlugin)
+	ws, err := GetPlugin[WsSender](cfg.WsSenderPlugin)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	destroyFunc = append(destroyFunc, f)
 
-	git, f, err := GetPlugin[GitServer](cfg.GitServerPlugin)
+	git, err := GetPlugin[GitServer](cfg.GitServerPlugin)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	destroyFunc = append(destroyFunc, f)
 
-	pic, f, err := GetPlugin[Picture](cfg.PicturePlugin)
+	pic, err := GetPlugin[Picture](cfg.PicturePlugin)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	destroyFunc = append(destroyFunc, f)
 
 	ma := &manager{
-		logger:      logger,
-		domainFunc:  domain,
-		wsFunc:      ws,
-		gitFunc:     git,
-		picFunc:     pic,
-		destroyFunc: destroyFunc,
+		logger:     logger,
+		domainFunc: domain,
+		wsFunc:     ws,
+		gitFunc:    git,
+		picFunc:    pic,
 	}
-	return ma, func() { ma.Destroy() }, nil
+	return ma, nil
 }
 
-func GetPlugin[T Plugin](p config.Plugin) (func(app App) (T, error), func(), error) {
+func GetPlugin[T Plugin](p config.Plugin) (func(app App) (T, error), error) {
 	pl := GetPlugins()[p.Name]
-	var inited bool
 	return func(app App) (T, error) {
-			var res T
-			if err := pl.Initialize(app, p.Args); err != nil {
-				return res, err
-			}
-			inited = true
-			return pl.(T), nil
-		}, func() {
-			if inited {
-				pl.Destroy()
-			}
-		}, nil
+		var res T
+		if err := pl.Initialize(app, p.Args); err != nil {
+			return res, err
+		}
+		return pl.(T), nil
+	}, nil
 }
 
 type WsSender interface {

@@ -21,11 +21,11 @@ message TopPodResponse {
   string humanize_cpu    = 3;
   string humanize_memory = 4;
   string time            = 5;
-  int64  length          = 6;
+  int32  length          = 6;
 }
 
 message CpuMemoryInNamespaceRequest {
-  int64 namespace_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 namespace_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message CpuMemoryInNamespaceResponse {
@@ -34,7 +34,7 @@ message CpuMemoryInNamespaceResponse {
 }
 
 message CpuMemoryInProjectRequest {
-  int64 project_id = 1 [(validate.rules).int64.gt = 0, (google.api.field_behavior) = REQUIRED];
+  int32 project_id = 1 [(validate.rules).int32.gt = 0, (google.api.field_behavior) = REQUIRED];
 }
 
 message CpuMemoryInProjectResponse {

@@ -54,28 +54,26 @@ var _ ProjectRepo = (*projectRepo)(nil)
 type projectRepo struct {
 	logger mlog.Logger
 
-	k8sCli     *data.K8sClient
 	externalIp string
-	db         *ent.Client
+	data       data.Data
 }
 
-func NewProjectRepo(logger mlog.Logger, data *data.Data) ProjectRepo {
+func NewProjectRepo(logger mlog.Logger, data data.Data) ProjectRepo {
 	return &projectRepo{
 		logger:     logger,
-		k8sCli:     data.K8sClient,
-		externalIp: data.Cfg.ExternalIp,
-		db:         data.DB,
+		externalIp: data.Config().ExternalIp,
+		data:       data,
 	}
 }
 
 type ListProjectInput struct {
-	Page          int64
-	PageSize      int64
+	Page          int32
+	PageSize      int32
 	OrderByIDDesc *bool
 }
 
 func (repo *projectRepo) List(ctx context.Context, input *ListProjectInput) ([]*ent.Project, *pagination.Pagination, error) {
-	query := repo.db.Project.Query().
+	query := repo.data.DB().Project.Query().
 		WithNamespace().
 		Where(filters.IfOrderByDesc("id")(input.OrderByIDDesc))
 	all := query.Clone().
@@ -83,11 +81,7 @@ func (repo *projectRepo) List(ctx context.Context, input *ListProjectInput) ([]*
 		Limit(int(input.PageSize)).
 		AllX(ctx)
 	count := query.Clone().CountX(ctx)
-	return all, &pagination.Pagination{
-		Page:     input.Page,
-		PageSize: input.PageSize,
-		Count:    int64(count),
-	}, nil
+	return all, pagination.NewPagination(input.Page, input.PageSize, count), nil
 }
 
 type CreateProjectInput struct {
@@ -105,7 +99,7 @@ type CreateProjectInput struct {
 }
 
 func (repo *projectRepo) Create(ctx context.Context, input *CreateProjectInput) (*ent.Project, error) {
-	return repo.db.Project.Create().
+	return repo.data.DB().Project.Create().
 		SetName(input.Name).
 		SetGitProjectID(input.GitProjectID).
 		SetGitBranch(input.GitBranch).
@@ -141,7 +135,7 @@ type UpdateProjectInput struct {
 }
 
 func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProjectInput) (*ent.Project, error) {
-	first, err := repo.db.Project.Query().Where(project.ID(input.ID)).First(ctx)
+	first, err := repo.data.DB().Project.Query().Where(project.ID(input.ID)).First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -166,38 +160,38 @@ func (repo *projectRepo) UpdateProject(ctx context.Context, input *UpdateProject
 }
 
 func (repo *projectRepo) Show(ctx context.Context, id int) (*ent.Project, error) {
-	return repo.db.Project.Query().WithNamespace().Where(project.ID(id)).First(ctx)
+	return repo.data.DB().Project.Query().WithNamespace().Where(project.ID(id)).First(ctx)
 }
 
 func (repo *projectRepo) Delete(ctx context.Context, id int) error {
-	return repo.db.Project.DeleteOneID(id).Exec(ctx)
+	return repo.data.DB().Project.DeleteOneID(id).Exec(ctx)
 }
 
 func (repo *projectRepo) UpdateStatusByVersion(ctx context.Context, id int, status types.Deploy, version int) (*ent.Project, error) {
 	if _, err := repo.FindByVersion(ctx, id, version); err != nil {
 		return nil, err
 	}
-	return repo.db.Project.UpdateOneID(id).SetDeployStatus(status).SetVersion(version).Save(ctx)
+	return repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).SetVersion(version).Save(ctx)
 }
 
 func (repo *projectRepo) FindByVersion(ctx context.Context, id, version int) (*ent.Project, error) {
-	return repo.db.Project.Query().Where(project.ID(id), project.Version(version)).First(ctx)
+	return repo.data.DB().Project.Query().Where(project.ID(id), project.Version(version)).First(ctx)
 }
 
 func (repo *projectRepo) UpdateVersion(ctx context.Context, id int, version int) (*ent.Project, error) {
-	return repo.db.Project.UpdateOneID(id).SetVersion(version).Save(ctx)
+	return repo.data.DB().Project.UpdateOneID(id).SetVersion(version).Save(ctx)
 }
 
 func (repo *projectRepo) UpdateDeployStatus(ctx context.Context, id int, status types.Deploy) (*ent.Project, error) {
-	return repo.db.Project.UpdateOneID(id).SetDeployStatus(status).Save(ctx)
+	return repo.data.DB().Project.UpdateOneID(id).SetDeployStatus(status).Save(ctx)
 }
 
 func (repo *projectRepo) FindByName(ctx context.Context, name string, nsID int) (*ent.Project, error) {
-	return repo.db.Project.Query().Where(project.Name(name), project.NamespaceID(nsID)).First(ctx)
+	return repo.data.DB().Project.Query().Where(project.Name(name), project.NamespaceID(nsID)).First(ctx)
 }
 
 func (repo *projectRepo) IsPodRunning(namespace, podName string) (running bool, notRunningReason string) {
-	podInfo, err := repo.k8sCli.PodLister.Pods(namespace).Get(podName)
+	podInfo, err := repo.data.K8sClient().PodLister.Pods(namespace).Get(podName)
 	if err != nil {
 		return false, err.Error()
 	}
@@ -220,7 +214,7 @@ func (repo *projectRepo) IsPodRunning(namespace, podName string) (running bool, 
 func (repo *projectRepo) GetNodePortMappingByProjects(namespace string, projects ...*ent.Project) EndpointMapping {
 	var (
 		projectMap = make(projectObjectMap)
-		k8sCli     = repo.k8sCli
+		k8sCli     = repo.data.K8sClient()
 	)
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
@@ -260,7 +254,7 @@ func (repo *projectRepo) GetAllPods(project *ent.Project) SortStatePod {
 		list      = make(map[string]*corev1.Pod)
 		newList   SortStatePod
 		split     []string = project.PodSelectors
-		k8sClient          = repo.k8sCli
+		k8sClient          = repo.data.K8sClient()
 	)
 	if len(split) == 0 {
 		return nil
@@ -350,7 +344,7 @@ func (repo *projectRepo) GetAllPods(project *ent.Project) SortStatePod {
 
 func (repo *projectRepo) GetAllPodMetrics(project *ent.Project) []v1beta1.PodMetrics {
 	var (
-		metrics = repo.k8sCli.MetricsClient
+		metrics = repo.data.K8sClient().MetricsClient
 	)
 	//db.Preload("Namespace").First(&project)
 	metricses := metrics.MetricsV1beta1().PodMetricses(project.Edges.Namespace.Name)
@@ -375,7 +369,7 @@ func (repo *projectRepo) GetLoadBalancerMappingByProjects(namespace string, proj
 	for _, project := range projects {
 		projectMap[project.Name] = FilterRuntimeObjectFromManifests[*v1.Service](repo.logger, project.Manifest)
 	}
-	var k8sCli = repo.k8sCli
+	var k8sCli = repo.data.K8sClient()
 	list, _ := k8sCli.ServiceLister.Services(namespace).List(labels.Everything())
 	var m = EndpointMapping{}
 
@@ -421,7 +415,7 @@ func (repo *projectRepo) GetIngressMappingByProjects(namespace string, projects 
 	}
 
 	var m = EndpointMapping{}
-	var k8sCli = repo.k8sCli
+	var k8sCli = repo.data.K8sClient()
 	list, _ := k8sCli.IngressLister.Ingresses(namespace).List(labels.Everything())
 	type Host = string
 	var allHosts = make(map[Host]struct {

@@ -21,10 +21,8 @@ import {
   UploadOutlined,
 } from "@ant-design/icons";
 import pb from "../api/compiled";
-import { copyToPod } from "../api/cp";
 import PodMetrics from "./PodMetrics";
 import { getToken } from "../utils/token";
-import { maxUploadSize } from "../api/file";
 import { selectPodEventProjectID } from "../store/reducers/podEventWatcher";
 import PodStateTag from "./PodStateTag";
 import { v4 as uuidv4 } from "uuid";
@@ -33,6 +31,7 @@ import "allotment/dist/style.css";
 import { css } from "@emotion/css";
 import "../styles/allotment-overwrite.css";
 import _ from "lodash";
+import ajax from "../api/ajax";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -145,11 +144,12 @@ const TabShell: React.FC<{
   }, [list, value, namespace]);
 
   useEffect(() => {
-    maxUploadSize().then(({ data }) => {
-      setMaxUploadInfo({
-        bytes: data.bytes,
-        humanizeSize: data.humanize_size,
-      });
+    ajax.GET("/api/files/max_upload_size").then(({ data }) => {
+      data &&
+        setMaxUploadInfo({
+          bytes: data.bytes,
+          humanizeSize: data.humanizeSize,
+        });
     });
   }, []);
 
@@ -219,16 +219,19 @@ const TabShell: React.FC<{
       if (!!value && info.file.status === "done") {
         let pod = value.pod;
         let container = value.container;
-        copyToPod({
-          pod: pod,
-          container: container,
-          namespace: namespace,
-          file_id: info.file.response.id,
-        })
-          .then((res) => {
-            console.log(res);
+        ajax
+          .POST("/api/containers/copy_to_pod", {
+            body: {
+              pod: pod,
+              container: container,
+              namespace: namespace,
+              fileId: info.file.response.id,
+            },
+          })
+          .then(({ data }) => {
+            console.log(data);
             message.success(
-              `文件 ${info.file.name} 已上传到容器 ${res.data.pod_file_path} 下`,
+              `文件 ${info.file.name} 已上传到容器 ${data?.podFilePath} 下`,
               2
             );
           })

@@ -13,16 +13,16 @@ func FromProject(project *ent.Project) *types.ProjectModel {
 		return nil
 	}
 	return &types.ProjectModel{
-		Id:                int64(project.ID),
+		Id:                int32(project.ID),
 		Name:              project.Name,
-		GitProjectId:      int64(project.GitProjectID),
+		GitProjectId:      int32(project.GitProjectID),
 		GitBranch:         project.GitBranch,
 		GitCommit:         project.GitCommit,
 		Config:            project.Config,
 		OverrideValues:    project.OverrideValues,
 		DockerImage:       strings.Join(project.DockerImage, ","),
 		PodSelectors:      project.PodSelectors,
-		NamespaceId:       int64(project.NamespaceID),
+		NamespaceId:       int32(project.NamespaceID),
 		Atomic:            project.Atomic,
 		EnvValues:         project.EnvValues,
 		ExtraValues:       project.ExtraValues,
@@ -35,7 +35,7 @@ func FromProject(project *ent.Project) *types.ProjectModel {
 		GitCommitTitle:    project.GitCommitTitle,
 		GitCommitAuthor:   project.GitCommitAuthor,
 		GitCommitDate:     date.ToHumanizeDatetimeString(project.GitCommitDate),
-		Version:           int64(project.Version),
+		Version:           int32(project.Version),
 		Namespace:         FromNamespace(project.Edges.Namespace),
 		CreatedAt:         date.ToRFC3339DatetimeString(&project.CreatedAt),
 		UpdatedAt:         date.ToRFC3339DatetimeString(&project.UpdatedAt),

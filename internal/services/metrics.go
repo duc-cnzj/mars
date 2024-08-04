@@ -132,6 +132,6 @@ func (m *metricsSvc) metrics(podMetrics *v1beta1.PodMetrics) *metrics.TopPodResp
 		HumanizeCpu:    HumanizeCpu,
 		HumanizeMemory: humanize.Bytes(uint64(asInt64)),
 		Time:           now(),
-		Length:         int64(length),
+		Length:         int32(length),
 	}
 }

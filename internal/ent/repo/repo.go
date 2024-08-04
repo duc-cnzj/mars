@@ -24,6 +24,8 @@ const (
 	FieldName = "name"
 	// FieldDefaultBranch holds the string denoting the default_branch field in the database.
 	FieldDefaultBranch = "default_branch"
+	// FieldGitProjectName holds the string denoting the git_project_name field in the database.
+	FieldGitProjectName = "git_project_name"
 	// FieldGitProjectID holds the string denoting the git_project_id field in the database.
 	FieldGitProjectID = "git_project_id"
 	// FieldEnabled holds the string denoting the enabled field in the database.
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldName,
 	FieldDefaultBranch,
+	FieldGitProjectName,
 	FieldGitProjectID,
 	FieldEnabled,
 	FieldMarsConfig,
@@ -110,6 +113,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByDefaultBranch orders the results by the default_branch field.
 func ByDefaultBranch(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDefaultBranch, opts...).ToFunc()
+}
+
+// ByGitProjectName orders the results by the git_project_name field.
+func ByGitProjectName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGitProjectName, opts...).ToFunc()
 }
 
 // ByGitProjectID orders the results by the git_project_id field.

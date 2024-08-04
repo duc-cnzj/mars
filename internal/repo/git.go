@@ -6,7 +6,6 @@ import (
 
 	"github.com/duc-cnzj/mars/v4/internal/application"
 	"github.com/duc-cnzj/mars/v4/internal/data"
-	"github.com/duc-cnzj/mars/v4/internal/ent"
 	"github.com/duc-cnzj/mars/v4/internal/mlog"
 )
 
@@ -26,14 +25,14 @@ var _ GitRepo = (*gitRepo)(nil)
 type gitRepo struct {
 	logger mlog.Logger
 	pl     application.PluginManger
-	db     *ent.Client
+	data   data.Data
 }
 
-func NewGitRepo(logger mlog.Logger, pl application.PluginManger, data *data.Data) GitRepo {
+func NewGitRepo(logger mlog.Logger, pl application.PluginManger, data data.Data) GitRepo {
 	return &gitRepo{
 		logger: logger,
 		pl:     pl,
-		db:     data.DB,
+		data:   data,
 	}
 }
 

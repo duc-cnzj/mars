@@ -33,11 +33,12 @@ import {
   updateGlobalConfig,
   getDefaultValues,
 } from "../api/mars";
-import { branchOptions as branches } from "../api/git";
 import MarsExample from "./MarsExample";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import pyaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import { components } from "../api/schema";
+import ajax from "../api/ajax";
 
 SyntaxHighlighter.registerLanguage("yaml", pyaml);
 
@@ -45,16 +46,16 @@ interface Config extends pb.mars.Config {}
 
 const { Option } = Select;
 
-const initConfig = {
-  display_name: "",
-  config_file: "",
-  config_file_values: "",
-  config_field: "",
-  is_simple_env: true,
-  config_file_type: "yaml",
-  local_chart_path: "",
+const initConfig: components["schemas"]["mars.Config"] = {
+  displayName: "",
+  configFile: "",
+  configFileValues: "",
+  configField: "",
+  isSimpleEnv: true,
+  configFileType: "yaml",
+  localChartPath: "",
   branches: [],
-  values_yaml: "",
+  valuesYaml: "",
   elements: [],
 };
 
@@ -68,17 +69,18 @@ const initDefaultValues = "# 没找到对应的 values.yaml";
 
 const ConfigModal: React.FC<{
   visible: boolean;
-  item: pb.git.ProjectItem;
+  item: components["schemas"]["git.ProjectItem"];
   onCancel: () => void;
 }> = ({ visible, item, onCancel }) => {
   const [watch, setWatch] = useAsyncState<WatchData>({
-    config_field: initConfig.config_field,
-    config_file_values: initConfig.config_file_values,
-    config_file_type: initConfig.config_file_type,
+    config_field: initConfig.configField,
+    config_file_values: initConfig.configFileValues,
+    config_file_type: initConfig.configFileType,
   });
   const [editMode, setEditMode] = useAsyncState(true);
   const [globalEnabled, setGlobalEnabled] = useAsyncState(false);
-  const [config, setConfig] = useAsyncState<Config>(initConfig);
+  const [config, setConfig] =
+    useAsyncState<components["schemas"]["mars.Config"]>(initConfig);
   const [modalBranch, setModalBranch] = useAsyncState("");
   const [configVisible, setConfigVisible] = useAsyncState(visible);
   const [mbranches, setMbranches] = useAsyncState<string[]>([]);
@@ -244,20 +246,33 @@ const ConfigModal: React.FC<{
     setConfigVisible(visible);
     if (visible) {
       setLoading(true);
-      branches({ git_project_id: String(item.id), all: true }).then((res) => {
-        setMbranches(res.data.items.map((op) => op.value));
-      });
-      globalConfigApi({ git_project_id: item.id })
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/branch_options", {
+          params: {
+            query: { all: true },
+            path: { gitProjectId: `${item.id}` },
+          },
+        })
         .then(({ data }) => {
-          setGlobalEnabled(data.enabled);
-          if (!data.enabled) {
-            loadConfig(item.id);
-          } else {
-            if (data.config) {
-              setConfig(data.config);
+          data && setMbranches(data.items.map((op) => op.value));
+        });
+
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/global_config", {
+          params: { path: { gitProjectId: `${item.id}` } },
+        })
+        .then(({ data }) => {
+          if (data) {
+            setGlobalEnabled(data.enabled);
+            if (!data.enabled) {
+              loadConfig(item.id);
+            } else {
+              if (data.config) {
+                setConfig(data.config);
+              }
+              loadDefaultValues(item.id, "");
+              setLoading(false);
             }
-            loadDefaultValues(item.id, "");
-            setLoading(false);
           }
         })
         .catch((e) => {
@@ -385,9 +400,9 @@ const ConfigModal: React.FC<{
                         setConfigFileContent("");
                         form.resetFields();
                         setWatch({
-                          config_field: config.config_field,
-                          config_file_values: config.config_file_values,
-                          config_file_type: config.config_file_type,
+                          config_field: config.configField,
+                          config_file_values: config.configFileValues,
+                          config_file_type: config.configFileType,
                         });
                       }
                       return !editMode;

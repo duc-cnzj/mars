@@ -7,7 +7,6 @@ import { MyCodeMirror as CodeMirror, getMode } from "./MyCodeMirror";
 import pb from "../api/compiled";
 import { useAsyncState } from "../utils/async";
 import { selectTimer } from "../store/reducers/deployTimer";
-import { configFile } from "../api/git";
 import {
   DeployStatus as DeployStatusEnum,
   selectList,
@@ -29,6 +28,8 @@ import ProjectSelector from "./ProjectSelector";
 import DebugModeSwitch from "./DebugModeSwitch";
 import TimeCost from "./TimeCost";
 import { css } from "@emotion/css";
+import ajax from "../api/ajax";
+import { components } from "../api/schema";
 
 const initFormValues = {
   debug: true,
@@ -59,7 +60,8 @@ const CreateProjectModal: React.FC<{
   const [visible, setVisible] = useAsyncState<boolean>(false);
   const info = useSelector(selectClusterInfo);
 
-  const [elements, setElements] = useState<pb.mars.Element[]>();
+  const [elements, setElements] =
+    useState<components["schemas"]["mars.Element"][]>();
 
   const timer = useSelector(selectTimer);
   const start = useMemo(() => timer[slug]?.start || false, [timer, slug]);
@@ -183,16 +185,24 @@ const CreateProjectModal: React.FC<{
 
   const loadConfigFile = useCallback(
     (gitProjectId: string, gitBranch: string) => {
-      configFile({
-        git_project_id: gitProjectId,
-        branch: gitBranch,
-      }).then((res) => {
-        if (!form.getFieldValue("config")) {
-          form.setFieldsValue({ config: res.data.data });
-        }
-        setMode(getMode(res.data.type));
-        setElements(res.data.elements);
-      });
+      ajax
+        .GET("/api/git/projects/{gitProjectId}/branches/{branch}/config_file", {
+          params: {
+            path: {
+              gitProjectId: gitProjectId,
+              branch: gitBranch,
+            },
+          },
+        })
+        .then(({ data }) => {
+          if (data) {
+            if (!form.getFieldValue("config")) {
+              form.setFieldsValue({ config: data.data });
+            }
+            setMode(getMode(data.type));
+            setElements(data.elements);
+          }
+        });
     },
     [form]
   );
@@ -386,7 +396,7 @@ const CreateProjectModal: React.FC<{
               >
                 <Form.Item name="extra_values" noStyle>
                   <Elements
-                    elements={elements || []}
+                    elements={elements}
                     style={{
                       inputNumber: { fontSize: 10, width: "100%" },
                       input: { fontSize: 10 },

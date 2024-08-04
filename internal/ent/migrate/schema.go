@@ -265,7 +265,8 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "name", Type: field.TypeString, Size: 255},
 		{Name: "default_branch", Type: field.TypeString, Nullable: true, Size: 255},
-		{Name: "git_project_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "git_project_name", Type: field.TypeString, Nullable: true},
+		{Name: "git_project_id", Type: field.TypeInt32, Nullable: true},
 		{Name: "enabled", Type: field.TypeBool, Default: false},
 		{Name: "mars_config", Type: field.TypeJSON, Nullable: true},
 	}

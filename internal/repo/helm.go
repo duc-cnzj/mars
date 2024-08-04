@@ -53,26 +53,26 @@ type DefaultHelmer struct {
 	Debug      bool
 	DockerAuth config.DockerAuths
 	KubeConfig string
-	K8sCli     *data.K8sClient
 	k8sRepo    K8sRepo
 	logger     mlog.Logger
+	data       data.Data
 }
 
-func NewDefaultHelmer(k8sRepo K8sRepo, data *data.Data, cfg *config.Config, logger mlog.Logger) HelmerRepo {
+func NewDefaultHelmer(k8sRepo K8sRepo, data data.Data, cfg *config.Config, logger mlog.Logger) HelmerRepo {
 	return &DefaultHelmer{
 		k8sRepo:    k8sRepo,
 		Debug:      cfg.Debug,
 		logger:     logger,
 		DockerAuth: cfg.ImagePullSecrets,
 		KubeConfig: cfg.KubeConfig,
-		K8sCli:     data.K8sClient,
+		data:       data,
 	}
 }
 
 func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, namespace string, ch *chart.Chart, valueOpts *values.Options, fn WrapLogFn, wait bool, timeoutSeconds int64, dryRun bool, desc string) (*release.Release, error) {
 	var podSelectors []string
 	if wait && !dryRun {
-		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.K8sCli)
+		re, err := d.upgradeOrInstall(context.TODO(), releaseName, namespace, ch, valueOpts, func(container []*types.Container, format string, v ...any) {}, false, timeoutSeconds, true, nil, desc, d.KubeConfig, d.data.K8sClient())
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func (d *DefaultHelmer) UpgradeOrInstall(ctx context.Context, releaseName, names
 		podSelectors = d.k8sRepo.GetPodSelectorsByManifest(util.SplitManifests(re.Manifest))
 	}
 
-	return d.upgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc, d.KubeConfig, d.K8sCli)
+	return d.upgradeOrInstall(ctx, releaseName, namespace, ch, valueOpts, fn, wait, timeoutSeconds, dryRun, podSelectors, desc, d.KubeConfig, d.data.K8sClient())
 }
 
 func (d *DefaultHelmer) Rollback(releaseName, namespace string, wait bool, log LogFn, dryRun bool) error {

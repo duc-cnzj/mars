@@ -89,15 +89,35 @@ func (ru *RepoUpdate) ClearDefaultBranch() *RepoUpdate {
 	return ru
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (ru *RepoUpdate) SetGitProjectName(s string) *RepoUpdate {
+	ru.mutation.SetGitProjectName(s)
+	return ru
+}
+
+// SetNillableGitProjectName sets the "git_project_name" field if the given value is not nil.
+func (ru *RepoUpdate) SetNillableGitProjectName(s *string) *RepoUpdate {
+	if s != nil {
+		ru.SetGitProjectName(*s)
+	}
+	return ru
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (ru *RepoUpdate) ClearGitProjectName() *RepoUpdate {
+	ru.mutation.ClearGitProjectName()
+	return ru
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (ru *RepoUpdate) SetGitProjectID(i int64) *RepoUpdate {
+func (ru *RepoUpdate) SetGitProjectID(i int32) *RepoUpdate {
 	ru.mutation.ResetGitProjectID()
 	ru.mutation.SetGitProjectID(i)
 	return ru
 }
 
 // SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (ru *RepoUpdate) SetNillableGitProjectID(i *int64) *RepoUpdate {
+func (ru *RepoUpdate) SetNillableGitProjectID(i *int32) *RepoUpdate {
 	if i != nil {
 		ru.SetGitProjectID(*i)
 	}
@@ -105,7 +125,7 @@ func (ru *RepoUpdate) SetNillableGitProjectID(i *int64) *RepoUpdate {
 }
 
 // AddGitProjectID adds i to the "git_project_id" field.
-func (ru *RepoUpdate) AddGitProjectID(i int64) *RepoUpdate {
+func (ru *RepoUpdate) AddGitProjectID(i int32) *RepoUpdate {
 	ru.mutation.AddGitProjectID(i)
 	return ru
 }
@@ -239,14 +259,20 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ru.mutation.DefaultBranchCleared() {
 		_spec.ClearField(repo.FieldDefaultBranch, field.TypeString)
 	}
+	if value, ok := ru.mutation.GitProjectName(); ok {
+		_spec.SetField(repo.FieldGitProjectName, field.TypeString, value)
+	}
+	if ru.mutation.GitProjectNameCleared() {
+		_spec.ClearField(repo.FieldGitProjectName, field.TypeString)
+	}
 	if value, ok := ru.mutation.GitProjectID(); ok {
-		_spec.SetField(repo.FieldGitProjectID, field.TypeInt64, value)
+		_spec.SetField(repo.FieldGitProjectID, field.TypeInt32, value)
 	}
 	if value, ok := ru.mutation.AddedGitProjectID(); ok {
-		_spec.AddField(repo.FieldGitProjectID, field.TypeInt64, value)
+		_spec.AddField(repo.FieldGitProjectID, field.TypeInt32, value)
 	}
 	if ru.mutation.GitProjectIDCleared() {
-		_spec.ClearField(repo.FieldGitProjectID, field.TypeInt64)
+		_spec.ClearField(repo.FieldGitProjectID, field.TypeInt32)
 	}
 	if value, ok := ru.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)
@@ -337,15 +363,35 @@ func (ruo *RepoUpdateOne) ClearDefaultBranch() *RepoUpdateOne {
 	return ruo
 }
 
+// SetGitProjectName sets the "git_project_name" field.
+func (ruo *RepoUpdateOne) SetGitProjectName(s string) *RepoUpdateOne {
+	ruo.mutation.SetGitProjectName(s)
+	return ruo
+}
+
+// SetNillableGitProjectName sets the "git_project_name" field if the given value is not nil.
+func (ruo *RepoUpdateOne) SetNillableGitProjectName(s *string) *RepoUpdateOne {
+	if s != nil {
+		ruo.SetGitProjectName(*s)
+	}
+	return ruo
+}
+
+// ClearGitProjectName clears the value of the "git_project_name" field.
+func (ruo *RepoUpdateOne) ClearGitProjectName() *RepoUpdateOne {
+	ruo.mutation.ClearGitProjectName()
+	return ruo
+}
+
 // SetGitProjectID sets the "git_project_id" field.
-func (ruo *RepoUpdateOne) SetGitProjectID(i int64) *RepoUpdateOne {
+func (ruo *RepoUpdateOne) SetGitProjectID(i int32) *RepoUpdateOne {
 	ruo.mutation.ResetGitProjectID()
 	ruo.mutation.SetGitProjectID(i)
 	return ruo
 }
 
 // SetNillableGitProjectID sets the "git_project_id" field if the given value is not nil.
-func (ruo *RepoUpdateOne) SetNillableGitProjectID(i *int64) *RepoUpdateOne {
+func (ruo *RepoUpdateOne) SetNillableGitProjectID(i *int32) *RepoUpdateOne {
 	if i != nil {
 		ruo.SetGitProjectID(*i)
 	}
@@ -353,7 +399,7 @@ func (ruo *RepoUpdateOne) SetNillableGitProjectID(i *int64) *RepoUpdateOne {
 }
 
 // AddGitProjectID adds i to the "git_project_id" field.
-func (ruo *RepoUpdateOne) AddGitProjectID(i int64) *RepoUpdateOne {
+func (ruo *RepoUpdateOne) AddGitProjectID(i int32) *RepoUpdateOne {
 	ruo.mutation.AddGitProjectID(i)
 	return ruo
 }
@@ -517,14 +563,20 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 	if ruo.mutation.DefaultBranchCleared() {
 		_spec.ClearField(repo.FieldDefaultBranch, field.TypeString)
 	}
+	if value, ok := ruo.mutation.GitProjectName(); ok {
+		_spec.SetField(repo.FieldGitProjectName, field.TypeString, value)
+	}
+	if ruo.mutation.GitProjectNameCleared() {
+		_spec.ClearField(repo.FieldGitProjectName, field.TypeString)
+	}
 	if value, ok := ruo.mutation.GitProjectID(); ok {
-		_spec.SetField(repo.FieldGitProjectID, field.TypeInt64, value)
+		_spec.SetField(repo.FieldGitProjectID, field.TypeInt32, value)
 	}
 	if value, ok := ruo.mutation.AddedGitProjectID(); ok {
-		_spec.AddField(repo.FieldGitProjectID, field.TypeInt64, value)
+		_spec.AddField(repo.FieldGitProjectID, field.TypeInt32, value)
 	}
 	if ruo.mutation.GitProjectIDCleared() {
-		_spec.ClearField(repo.FieldGitProjectID, field.TypeInt64)
+		_spec.ClearField(repo.FieldGitProjectID, field.TypeInt32)
 	}
 	if value, ok := ruo.mutation.Enabled(); ok {
 		_spec.SetField(repo.FieldEnabled, field.TypeBool, value)

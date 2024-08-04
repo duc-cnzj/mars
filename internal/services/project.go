@@ -58,10 +58,10 @@ func NewProjectSvc(
 }
 
 func (p *projectSvc) List(ctx context.Context, request *project.ListRequest) (*project.ListResponse, error) {
-	pagination.InitByDefault(&request.Page, &request.PageSize)
+	page, size := pagination.InitByDefault(request.Page, request.PageSize)
 	list, pag, err := p.projRepo.List(ctx, &repo.ListProjectInput{
-		Page:          request.Page,
-		PageSize:      request.PageSize,
+		Page:          page,
+		PageSize:      size,
 		OrderByIDDesc: lo.ToPtr(true),
 	})
 	if err != nil {
@@ -234,7 +234,7 @@ func (p *projectSvc) Show(ctx context.Context, request *project.ShowRequest) (*p
 func (p *projectSvc) Version(ctx context.Context, req *project.VersionRequest) (*project.VersionResponse, error) {
 	show, _ := p.projRepo.Show(ctx, int(req.ProjectId))
 
-	return &project.VersionResponse{Version: int64(show.Version)}, nil
+	return &project.VersionResponse{Version: int32(show.Version)}, nil
 }
 
 func (p *projectSvc) AllContainers(ctx context.Context, request *project.AllContainersRequest) (*project.AllContainersResponse, error) {
@@ -366,7 +366,7 @@ func (m *messager) SendProcessPercent(p int64) {
 			Type:    websocket.Type_ProcessPercent,
 			Result:  websocket.ResultType_Success,
 			End:     false,
-			Percent: p,
+			Percent: int32(p),
 		}
 		m.send(&project.ApplyResponse{Metadata: res})
 	}
